@@ -1,0 +1,805 @@
+{
+  "$defs": {
+    "ArchitectureEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "edge_id": {
+          "pattern": "^edge:[A-Za-z0-9._:>-]+$",
+          "title": "Edge Id",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "kind": {
+          "$ref": "#/$defs/EdgeKind"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Metadata",
+          "type": "object"
+        },
+        "semantic_role": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Semantic Role"
+        },
+        "source_node_id": {
+          "pattern": "^node:[A-Za-z0-9._:-]+$",
+          "title": "Source Node Id",
+          "type": "string"
+        },
+        "source_port_id": {
+          "anyOf": [
+            {
+              "pattern": "^port:[A-Za-z0-9._:>-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Source Port Id"
+        },
+        "target_node_id": {
+          "pattern": "^node:[A-Za-z0-9._:-]+$",
+          "title": "Target Node Id",
+          "type": "string"
+        },
+        "target_port_id": {
+          "anyOf": [
+            {
+              "pattern": "^port:[A-Za-z0-9._:>-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Target Port Id"
+        },
+        "tensor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TensorSpec"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "edge_id",
+        "source_node_id",
+        "source_port_id",
+        "target_node_id",
+        "target_port_id",
+        "kind",
+        "tensor",
+        "semantic_role",
+        "evidence",
+        "metadata"
+      ],
+      "title": "ArchitectureEdge",
+      "type": "object"
+    },
+    "ArchitectureNode": {
+      "additionalProperties": false,
+      "properties": {
+        "display_name": {
+          "minLength": 1,
+          "title": "Display Name",
+          "type": "string"
+        },
+        "identity_id": {
+          "pattern": "^identity:[A-Za-z0-9._-]+$",
+          "title": "Identity Id",
+          "type": "string"
+        },
+        "input_ports": {
+          "items": {
+            "$ref": "#/$defs/ArchitecturePort"
+          },
+          "title": "Input Ports",
+          "type": "array"
+        },
+        "kind": {
+          "$ref": "#/$defs/NodeKind"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Metadata",
+          "type": "object"
+        },
+        "node_id": {
+          "pattern": "^node:[A-Za-z0-9._:-]+$",
+          "title": "Node Id",
+          "type": "string"
+        },
+        "op_type": {
+          "minLength": 1,
+          "title": "Op Type",
+          "type": "string"
+        },
+        "output_ports": {
+          "items": {
+            "$ref": "#/$defs/ArchitecturePort"
+          },
+          "title": "Output Ports",
+          "type": "array"
+        },
+        "parameters": {
+          "items": {
+            "$ref": "#/$defs/ArchitectureParameter"
+          },
+          "title": "Parameters",
+          "type": "array"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "pattern": "^node:[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Parent Id"
+        },
+        "semantic_role": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Semantic Role"
+        },
+        "source_anchor_ids": {
+          "items": {
+            "pattern": "^anchor:[A-Za-z0-9._-]+$",
+            "type": "string"
+          },
+          "title": "Source Anchor Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "node_id",
+        "identity_id",
+        "kind",
+        "op_type",
+        "display_name",
+        "parent_id",
+        "parameters",
+        "input_ports",
+        "output_ports",
+        "semantic_role",
+        "source_anchor_ids",
+        "metadata"
+      ],
+      "title": "ArchitectureNode",
+      "type": "object"
+    },
+    "ArchitectureParameter": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "expression": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Expression"
+        },
+        "name": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "origin": {
+          "$ref": "#/$defs/ParameterOrigin"
+        },
+        "source_name": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Source Name"
+        },
+        "value": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "required": [
+        "name",
+        "source_name",
+        "value",
+        "expression",
+        "origin",
+        "evidence"
+      ],
+      "title": "ArchitectureParameter",
+      "type": "object"
+    },
+    "ArchitecturePort": {
+      "additionalProperties": false,
+      "properties": {
+        "direction": {
+          "enum": [
+            "input",
+            "output"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Name"
+        },
+        "port_id": {
+          "pattern": "^port:[A-Za-z0-9._:>-]+$",
+          "title": "Port Id",
+          "type": "string"
+        },
+        "tensor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TensorSpec"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "port_id",
+        "direction",
+        "name",
+        "tensor"
+      ],
+      "title": "ArchitecturePort",
+      "type": "object"
+    },
+    "Confidence": {
+      "enum": [
+        "confirmed",
+        "probable",
+        "proposed",
+        "unresolved"
+      ],
+      "title": "Confidence",
+      "type": "string"
+    },
+    "EdgeKind": {
+      "enum": [
+        "data",
+        "residual",
+        "control",
+        "parameter"
+      ],
+      "title": "EdgeKind",
+      "type": "string"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "anchor_id": {
+          "anyOf": [
+            {
+              "pattern": "^anchor:[A-Za-z0-9._-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Anchor Id"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Description"
+        },
+        "source": {
+          "$ref": "#/$defs/EvidenceSource"
+        },
+        "trace_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Trace Id"
+        }
+      },
+      "required": [
+        "source",
+        "confidence",
+        "description",
+        "anchor_id",
+        "trace_id"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "EvidenceSource": {
+      "enum": [
+        "static_ast",
+        "static_cst",
+        "torch_fx",
+        "torch_export",
+        "torchview",
+        "user",
+        "agent"
+      ],
+      "title": "EvidenceSource",
+      "type": "string"
+    },
+    "Framework": {
+      "enum": [
+        "pytorch",
+        "keras",
+        "onnx",
+        "unknown"
+      ],
+      "title": "Framework",
+      "type": "string"
+    },
+    "JsonValue": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "type": "array"
+        },
+        {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "ModelDescriptor": {
+      "additionalProperties": false,
+      "properties": {
+        "entrypoint": {
+          "minLength": 1,
+          "title": "Entrypoint",
+          "type": "string"
+        },
+        "framework": {
+          "$ref": "#/$defs/Framework"
+        },
+        "model_class": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Model Class"
+        }
+      },
+      "required": [
+        "framework",
+        "entrypoint",
+        "model_class"
+      ],
+      "title": "ModelDescriptor",
+      "type": "object"
+    },
+    "NodeKind": {
+      "enum": [
+        "module",
+        "function",
+        "operator",
+        "input",
+        "output",
+        "merge",
+        "constant",
+        "control"
+      ],
+      "title": "NodeKind",
+      "type": "string"
+    },
+    "ParameterOrigin": {
+      "additionalProperties": false,
+      "properties": {
+        "anchor_ids": {
+          "items": {
+            "pattern": "^anchor:[A-Za-z0-9._-]+$",
+            "type": "string"
+          },
+          "title": "Anchor Ids",
+          "type": "array"
+        },
+        "kind": {
+          "$ref": "#/$defs/ParameterOriginKind"
+        }
+      },
+      "required": [
+        "kind",
+        "anchor_ids"
+      ],
+      "title": "ParameterOrigin",
+      "type": "object"
+    },
+    "ParameterOriginKind": {
+      "enum": [
+        "literal",
+        "constant",
+        "argument",
+        "config_attribute",
+        "computed",
+        "unknown"
+      ],
+      "title": "ParameterOriginKind",
+      "type": "string"
+    },
+    "RepeatSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Count"
+        },
+        "count_symbol": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Count Symbol"
+        },
+        "member_node_ids": {
+          "items": {
+            "pattern": "^node:[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Member Node Ids",
+          "type": "array"
+        },
+        "repeat_id": {
+          "pattern": "^repeat:[A-Za-z0-9._:-]+$",
+          "title": "Repeat Id",
+          "type": "string"
+        },
+        "source_anchor_ids": {
+          "items": {
+            "pattern": "^anchor:[A-Za-z0-9._-]+$",
+            "type": "string"
+          },
+          "title": "Source Anchor Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "repeat_id",
+        "member_node_ids",
+        "count",
+        "count_symbol",
+        "source_anchor_ids"
+      ],
+      "title": "RepeatSpec",
+      "type": "object"
+    },
+    "SymbolicDim": {
+      "additionalProperties": false,
+      "properties": {
+        "lower_bound": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lower Bound"
+        },
+        "symbol": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Symbol",
+          "type": "string"
+        },
+        "upper_bound": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Upper Bound"
+        }
+      },
+      "required": [
+        "symbol"
+      ],
+      "title": "SymbolicDim",
+      "type": "object"
+    },
+    "TensorSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Device"
+        },
+        "dtype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dtype"
+        },
+        "requires_grad": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Requires Grad"
+        },
+        "semantic_axes": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Semantic Axes",
+          "type": "array"
+        },
+        "shape": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "$ref": "#/$defs/SymbolicDim"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Shape",
+          "type": "array"
+        }
+      },
+      "required": [
+        "shape",
+        "dtype",
+        "device",
+        "requires_grad",
+        "semantic_axes"
+      ],
+      "title": "TensorSpec",
+      "type": "object"
+    },
+    "UnresolvedFact": {
+      "additionalProperties": false,
+      "properties": {
+        "anchor_ids": {
+          "items": {
+            "pattern": "^anchor:[A-Za-z0-9._-]+$",
+            "type": "string"
+          },
+          "title": "Anchor Ids",
+          "type": "array"
+        },
+        "blocking": {
+          "title": "Blocking",
+          "type": "boolean"
+        },
+        "code": {
+          "pattern": "^[A-Z][A-Z0-9_]+$",
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "anchor_ids",
+        "blocking"
+      ],
+      "title": "UnresolvedFact",
+      "type": "object"
+    }
+  },
+  "$id": "https://archcanvas.dev/schemas/architecture-ir-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "edges": {
+      "items": {
+        "$ref": "#/$defs/ArchitectureEdge"
+      },
+      "title": "Edges",
+      "type": "array"
+    },
+    "ir_id": {
+      "pattern": "^ir:[A-Za-z0-9._-]+$",
+      "title": "Ir Id",
+      "type": "string"
+    },
+    "metadata": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Metadata",
+      "type": "object"
+    },
+    "model": {
+      "$ref": "#/$defs/ModelDescriptor"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/ArchitectureNode"
+      },
+      "minItems": 1,
+      "title": "Nodes",
+      "type": "array"
+    },
+    "project_id": {
+      "minLength": 1,
+      "title": "Project Id",
+      "type": "string"
+    },
+    "repeats": {
+      "items": {
+        "$ref": "#/$defs/RepeatSpec"
+      },
+      "title": "Repeats",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_revision": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Source Revision",
+      "type": "string"
+    },
+    "unresolved": {
+      "items": {
+        "$ref": "#/$defs/UnresolvedFact"
+      },
+      "title": "Unresolved",
+      "type": "array"
+    }
+  },
+  "required": [
+    "ir_id",
+    "project_id",
+    "source_revision",
+    "model",
+    "nodes",
+    "edges",
+    "repeats",
+    "unresolved",
+    "metadata"
+  ],
+  "title": "ArchitectureIR",
+  "type": "object"
+}

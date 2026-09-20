@@ -1,0 +1,38 @@
+{
+  "stage": "stage-1",
+  "base_revision": "uncommitted-initial-workspace",
+  "environment": {
+    "conda": "TFB_py311",
+    "python": "3.11.16"
+  },
+  "protocol_versions": [
+    "source-identity:1.0",
+    "architecture-ir:1.0",
+    "patch-protocol:1.0"
+  ],
+  "commands": [
+    {
+      "command": "conda run -n TFB_py311 python -m pytest",
+      "exit_code": 0,
+      "result": "23 passed"
+    },
+    {
+      "command": "conda run -n TFB_py311 python -m compileall -q src tools tests",
+      "exit_code": 0
+    },
+    {
+      "command": "conda run -n TFB_py311 python tools/export_schemas.py",
+      "exit_code": 0
+    }
+  ],
+  "fixtures": [
+    {
+      "name": "transformer_set_parameter_v1",
+      "status": "passed"
+    }
+  ],
+  "blocking": false,
+  "known_limitations": [
+    "fixture-scoped analyzer only; unregistered projects fail closed"
+  ]
+}

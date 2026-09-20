@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "archcanvas-model-architecture-studio"
+version = "0.1.0"
+description = "Source-aware architecture recovery and safe parameter round-tripping."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "jsonschema>=4.20,<5",
+  "libcst>=1.4,<2",
+  "pydantic>=2.7,<3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<9"]
+
+[project.scripts]
+archcanvas-fixture-transaction = "archcanvas_python.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/archcanvas_core", "src/archcanvas_python", "src/archcanvas_pytorch"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

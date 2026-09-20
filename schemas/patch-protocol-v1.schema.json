@@ -1,0 +1,307 @@
+{
+  "$defs": {
+    "ExpectedGraphDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed_edge_additions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowed Edge Additions",
+          "type": "array"
+        },
+        "allowed_edge_modifications": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowed Edge Modifications",
+          "type": "array"
+        },
+        "allowed_edge_removals": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowed Edge Removals",
+          "type": "array"
+        },
+        "allowed_node_additions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowed Node Additions",
+          "type": "array"
+        },
+        "allowed_node_modifications": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowed Node Modifications",
+          "type": "array"
+        },
+        "allowed_node_removals": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowed Node Removals",
+          "type": "array"
+        },
+        "require_identity_retention": {
+          "title": "Require Identity Retention",
+          "type": "boolean"
+        },
+        "required_parameter_changes": {
+          "items": {
+            "$ref": "#/$defs/ParameterChange"
+          },
+          "minItems": 1,
+          "title": "Required Parameter Changes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "required_parameter_changes",
+        "allowed_node_additions",
+        "allowed_node_removals",
+        "allowed_node_modifications",
+        "allowed_edge_additions",
+        "allowed_edge_removals",
+        "allowed_edge_modifications",
+        "require_identity_retention"
+      ],
+      "title": "ExpectedGraphDelta",
+      "type": "object"
+    },
+    "ParameterChange": {
+      "additionalProperties": false,
+      "properties": {
+        "after": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "After"
+        },
+        "before": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Before"
+        },
+        "node_id": {
+          "pattern": "^node:[A-Za-z0-9._:-]+$",
+          "title": "Node Id",
+          "type": "string"
+        },
+        "parameter": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*$",
+          "title": "Parameter",
+          "type": "string"
+        }
+      },
+      "required": [
+        "node_id",
+        "parameter",
+        "before",
+        "after"
+      ],
+      "title": "ParameterChange",
+      "type": "object"
+    },
+    "PatchTarget": {
+      "additionalProperties": false,
+      "properties": {
+        "anchor_id": {
+          "pattern": "^anchor:[A-Za-z0-9._-]+$",
+          "title": "Anchor Id",
+          "type": "string"
+        },
+        "node_id": {
+          "pattern": "^node:[A-Za-z0-9._:-]+$",
+          "title": "Node Id",
+          "type": "string"
+        },
+        "parameter": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*$",
+          "title": "Parameter",
+          "type": "string"
+        }
+      },
+      "required": [
+        "node_id",
+        "parameter",
+        "anchor_id"
+      ],
+      "title": "PatchTarget",
+      "type": "object"
+    },
+    "SetParameterPatch": {
+      "additionalProperties": false,
+      "properties": {
+        "after": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "After"
+        },
+        "anchor_content_fingerprint": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Anchor Content Fingerprint",
+          "type": "string"
+        },
+        "before": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Before"
+        },
+        "expected_delta": {
+          "$ref": "#/$defs/ExpectedGraphDelta"
+        },
+        "operation": {
+          "const": "set_parameter",
+          "default": "set_parameter",
+          "title": "Operation",
+          "type": "string"
+        },
+        "patch_id": {
+          "pattern": "^patch:[A-Za-z0-9._-]+$",
+          "title": "Patch Id",
+          "type": "string"
+        },
+        "scope": {
+          "const": "architecture",
+          "default": "architecture",
+          "title": "Scope",
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/PatchTarget"
+        }
+      },
+      "required": [
+        "patch_id",
+        "target",
+        "before",
+        "after",
+        "anchor_content_fingerprint",
+        "expected_delta"
+      ],
+      "title": "SetParameterPatch",
+      "type": "object"
+    }
+  },
+  "$id": "https://archcanvas.dev/schemas/patch-protocol-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "base_source_revision": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Base Source Revision",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "created_by": {
+      "enum": [
+        "user",
+        "agent",
+        "system"
+      ],
+      "title": "Created By",
+      "type": "string"
+    },
+    "patch_set_id": {
+      "pattern": "^patchset:[A-Za-z0-9._-]+$",
+      "title": "Patch Set Id",
+      "type": "string"
+    },
+    "patches": {
+      "items": {
+        "$ref": "#/$defs/SetParameterPatch"
+      },
+      "maxItems": 1,
+      "minItems": 1,
+      "title": "Patches",
+      "type": "array"
+    },
+    "project_id": {
+      "minLength": 1,
+      "title": "Project Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "patch_set_id",
+    "project_id",
+    "base_source_revision",
+    "created_at",
+    "created_by",
+    "patches"
+  ],
+  "title": "PatchSet",
+  "type": "object"
+}

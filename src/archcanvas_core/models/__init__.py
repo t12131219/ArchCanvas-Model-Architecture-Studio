@@ -1,0 +1,1 @@
+"""Strict ArchCanvas protocol models."""
