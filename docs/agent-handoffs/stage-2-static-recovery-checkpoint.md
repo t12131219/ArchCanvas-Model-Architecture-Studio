@@ -22,6 +22,23 @@
   failures. It discovered the public `models/PatchTST.py:Model` entrypoint plus its backbone and
   layer candidates. The result is discovery evidence only: cross-file custom calls are not yet
   asserted as Exact IR topology.
+- Added direct local `nn.Module` symbol resolution for selected entrypoints. The PatchTST public
+  model now resolves `PatchTST_backbone` to `layers/PatchTST_backbone.py:PatchTST_backbone` and
+  `series_decomp` to `layers/PatchTST_layers.py:series_decomp`; no code was imported or executed.
+- Constructor scanning now stops at `if`, loop, `try`, `with`, and `match` statements. It emits
+  `DYNAMIC_CONSTRUCTOR_CONTROL_FLOW` and does not retain assignments in those bodies as confirmed
+  modules. Direct-call and literal `OrderedDict` `nn.Sequential` instances, plus literal
+  `nn.ModuleList` instances, materialize every member and their ordered internal edges;
+  dynamic/non-literal members stay unresolved. `ModuleList(range(...))` remains a repeat record.
+  A selected, branch-free direct local constructor call now creates one anchored
+  local-module node: its identity includes both the entrypoint call anchor and the imported class
+  declaration anchor, while the source snapshot includes the imported class file revision. Unused
+  local imports and conditional local calls do not produce target-class topology anchors.
+- Added bounded transitive declaration evidence. From a confirmed root local-call node, the adapter
+  can record direct local calls in the target class with their call-site anchor, target-class anchor,
+  entrypoint and file revision. These records are metadata only, not recursively flattened IR
+  topology; traversal has a configurable depth limit, explicit expanded/depth-limit/duplicate/cycle
+  status, and never starts from a conditional root call.
 
 ## Validation
 
@@ -33,11 +50,16 @@ conda run -n TFB_py311 python tools/export_schemas.py
 git diff --check
 ```
 
+The latest local `TFB_py311` run passed 56 tests after the constructor, Sequential, ModuleList,
+selected-entrypoint, direct-local-call, and dynamic-container regression cases were added.
+
 ## Known Limitations
 
-- This is a project scanner, not yet a local/cross-file symbol resolver or complete-project IR
-  compiler. `Sequential` is discovered as a container but does not yet materialize every inner
-  member.
+- This is a project scanner with direct local-symbol resolution, not a complete local/cross-file
+  resolver or complete-project IR compiler. It represents only branch-free direct local calls as
+  one node; it does not recursively flatten a target class implementation. Dynamically built
+  `Sequential` or `ModuleList` forms remain unresolved; literal `OrderedDict` Sequential and
+  literal ModuleList members are supported.
 - Functional operations other than residual add, `torch.cat`, and `torch.stack` are not modeled.
 - Reconciliation is analysis evidence only. No Stage 2 path performs a source transaction.
 - Wheel construction could not be verified locally: `TFB_py311` lacks importable `hatchling`, and
@@ -48,6 +70,6 @@ git diff --check
 ## Next Input Contract
 
 Extend only the Stage 2 static adapter. Preserve strict v1 Source Identity and Architecture IR,
-the committed goldens, and fail-closed unresolved behavior. The next work should add
-local/cross-file import and symbol resolution for a selected entrypoint before claiming Stage 2
-complete.
+the committed goldens, and fail-closed unresolved behavior. The next work should add a separately
+specified transitive/local-container subset with fixture proof, rather than flattening dynamic or
+conditional source paths into confirmed topology.

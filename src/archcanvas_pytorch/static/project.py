@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from .scanner import PyTorchStaticScanner
-
+from .symbols import PyTorchProjectSymbolTable, build_symbol_table
 
 _SKIPPED_DIRECTORIES = {".git", ".venv", "__pycache__", "build", "dist", "node_modules"}
 
@@ -82,3 +82,9 @@ class PyTorchProjectScanner:
             entrypoints=sorted(entrypoints, key=lambda item: (item.relative_file, item.model_class)),
             issues=sorted(issues, key=lambda item: (item.relative_file, item.code)),
         )
+
+    def build_symbol_table(self, root: Path) -> PyTorchProjectSymbolTable:
+        """Build direct local-module bindings from a fresh, bounded scan report."""
+
+        report = self.scan(root)
+        return build_symbol_table(root, report)

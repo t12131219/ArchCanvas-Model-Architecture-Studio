@@ -79,6 +79,142 @@ class Conditional(nn.Module):
     assert [item.code for item in result.unresolved] == ["DYNAMIC_CONTROL_FLOW"]
 
 
+def test_scanner_fails_closed_for_constructor_control_flow() -> None:
+    source = b'''import torch.nn as nn
+
+class ConditionalConstructor(nn.Module):
+    def __init__(self, enabled):
+        super().__init__()
+        if enabled:
+            self.left = nn.Linear(2, 2)
+        else:
+            self.right = nn.Linear(2, 2)
+
+    def forward(self, x):
+        return x
+'''
+    result = PyTorchStaticScanner().scan(source)
+    assert result.modules == []
+    assert [(item.code, item.message) for item in result.unresolved] == [
+        ("DYNAMIC_CONSTRUCTOR_CONTROL_FLOW", "if in __init__")
+    ]
+
+
+def test_scanner_expands_sequential_members_in_order() -> None:
+    source = b'''import torch.nn as nn
+
+class SequentialModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.blocks = nn.Sequential(nn.Linear(2, 4), nn.ReLU(), nn.Linear(4, 2))
+
+    def forward(self, x):
+        return self.blocks(x)
+'''
+    result = PyTorchStaticScanner().scan(source)
+    assert [(item.attribute_path, item.op_type, item.container) for item in result.modules] == [
+        ("blocks.0", "torch.nn.Linear", "Sequential"),
+        ("blocks.1", "torch.nn.ReLU", "Sequential"),
+        ("blocks.2", "torch.nn.Linear", "Sequential"),
+    ]
+    assert [(item.source, item.target) for item in result.edges] == [
+        ("blocks.0", "blocks.1"),
+        ("blocks.1", "blocks.2"),
+        ("blocks.2", "output"),
+        ("input", "blocks.0"),
+    ]
+
+
+def test_scanner_expands_literal_ordered_dict_sequential_members_in_order() -> None:
+    source = b'''from collections import OrderedDict
+import torch.nn as nn
+
+class NamedSequentialModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.blocks = nn.Sequential(OrderedDict([
+            ("projection", nn.Linear(2, 4)),
+            ("activation", nn.ReLU()),
+            ("head", nn.Linear(4, 2)),
+        ]))
+
+    def forward(self, x):
+        return self.blocks(x)
+'''
+    result = PyTorchStaticScanner().scan(source)
+    assert [(item.attribute_path, item.op_type, item.container) for item in result.modules] == [
+        ("blocks.projection", "torch.nn.Linear", "Sequential"),
+        ("blocks.activation", "torch.nn.ReLU", "Sequential"),
+        ("blocks.head", "torch.nn.Linear", "Sequential"),
+    ]
+    assert [(item.source, item.target) for item in result.edges] == [
+        ("blocks.activation", "blocks.head"),
+        ("blocks.head", "output"),
+        ("blocks.projection", "blocks.activation"),
+        ("input", "blocks.projection"),
+    ]
+    assert result.unresolved == []
+
+
+def test_scanner_marks_dynamic_ordered_dict_sequential_members_unresolved() -> None:
+    source = b'''from collections import OrderedDict
+import torch.nn as nn
+
+class DynamicNamedSequential(nn.Module):
+    def __init__(self, members):
+        super().__init__()
+        self.blocks = nn.Sequential(OrderedDict(members))
+'''
+    result = PyTorchStaticScanner().scan(source)
+    assert result.modules == []
+    assert [(item.code, item.message) for item in result.unresolved] == [
+        ("UNRESOLVED_CONTAINER_MEMBER", "blocks")
+    ]
+
+
+def test_scanner_expands_literal_module_list_members_in_loop_order() -> None:
+    source = b'''import torch.nn as nn
+
+class ExplicitModuleList(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.blocks = nn.ModuleList([nn.Linear(2, 4), nn.ReLU(), nn.Linear(4, 2)])
+
+    def forward(self, x):
+        for block in self.blocks:
+            x = block(x)
+        return x
+'''
+    result = PyTorchStaticScanner().scan(source)
+    assert [(item.attribute_path, item.op_type, item.container) for item in result.modules] == [
+        ("blocks.0", "torch.nn.Linear", "ModuleList"),
+        ("blocks.1", "torch.nn.ReLU", "ModuleList"),
+        ("blocks.2", "torch.nn.Linear", "ModuleList"),
+    ]
+    assert [(item.source, item.target) for item in result.edges] == [
+        ("blocks.0", "blocks.1"),
+        ("blocks.1", "blocks.2"),
+        ("blocks.2", "output"),
+        ("input", "blocks.0"),
+    ]
+    assert result.unresolved == []
+
+
+def test_scanner_does_not_partially_recover_dynamic_module_list_members() -> None:
+    source = b'''import torch.nn as nn
+
+class DynamicModuleList(nn.Module):
+    def __init__(self, member):
+        super().__init__()
+        self.blocks = nn.ModuleList([nn.Linear(2, 2), member])
+'''
+    result = PyTorchStaticScanner().scan(source)
+    assert result.modules == []
+    assert [(item.code, item.message) for item in result.unresolved] == [
+        ("UNRESOLVED_CONTAINER_MEMBER", "blocks")
+    ]
+
+
 def test_scanner_resolves_direct_torch_nn_imports() -> None:
     source = b'''from torch.nn import Linear, Module
 

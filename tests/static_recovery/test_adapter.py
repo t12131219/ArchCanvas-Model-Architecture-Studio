@@ -86,3 +86,171 @@ def test_adapter_reconciles_identities_after_irrelevant_blank_line_change(before
     ]
     assert [item.node_id for item in refreshed_ir.nodes] == [item.node_id for item in initial_ir.nodes]
     assert refreshed_ir.unresolved == []
+
+
+def test_adapter_does_not_emit_confirmed_nodes_from_constructor_branch() -> None:
+    source = b'''import torch.nn as nn
+
+class ConditionalConstructor(nn.Module):
+    def __init__(self, enabled):
+        super().__init__()
+        if enabled:
+            self.left = nn.Linear(2, 2)
+        else:
+            self.right = nn.Linear(2, 2)
+
+    def forward(self, x):
+        return x
+'''
+    _, ir = PyTorchStaticAdapter().analyze(
+        source,
+        project_id="project:conditional-constructor",
+        relative_file="model.py",
+        entrypoint="model.py:ConditionalConstructor",
+    )
+    assert [node.node_id for node in ir.nodes] == ["node:input", "node:output"]
+    assert [(item.code, item.blocking) for item in ir.unresolved] == [
+        ("DYNAMIC_CONSTRUCTOR_CONTROL_FLOW", False)
+    ]
+
+
+def test_adapter_expands_each_direct_sequential_member_with_source_anchors() -> None:
+    source = b'''import torch.nn as nn
+
+class SequentialModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.blocks = nn.Sequential(nn.Linear(2, 4), nn.ReLU(), nn.Linear(4, 2))
+
+    def forward(self, x):
+        return self.blocks(x)
+'''
+    identity, ir = PyTorchStaticAdapter().analyze(
+        source,
+        project_id="project:sequential",
+        relative_file="model.py",
+        entrypoint="model.py:SequentialModel",
+    )
+    assert validate_architecture_semantics(ir, identity) == []
+    assert [node.node_id for node in ir.nodes] == [
+        "node:input",
+        "node:sequentialmodel.blocks.0",
+        "node:sequentialmodel.blocks.1",
+        "node:sequentialmodel.blocks.2",
+        "node:output",
+    ]
+    assert [(edge.source_node_id, edge.target_node_id) for edge in ir.edges] == [
+        ("node:sequentialmodel.blocks.0", "node:sequentialmodel.blocks.1"),
+        ("node:sequentialmodel.blocks.1", "node:sequentialmodel.blocks.2"),
+        ("node:sequentialmodel.blocks.2", "node:output"),
+        ("node:input", "node:sequentialmodel.blocks.0"),
+    ]
+    assert all(node.source_anchor_ids for node in ir.nodes[1:-1])
+
+
+def test_adapter_expands_literal_ordered_dict_sequential_members() -> None:
+    source = b'''from collections import OrderedDict
+import torch.nn as nn
+
+class NamedSequentialModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.blocks = nn.Sequential(OrderedDict([
+            ("projection", nn.Linear(2, 4)),
+            ("activation", nn.ReLU()),
+        ]))
+
+    def forward(self, x):
+        return self.blocks(x)
+'''
+    identity, ir = PyTorchStaticAdapter().analyze(
+        source,
+        project_id="project:named-sequential",
+        relative_file="model.py",
+        entrypoint="model.py:NamedSequentialModel",
+    )
+    assert validate_architecture_semantics(ir, identity) == []
+    assert [node.node_id for node in ir.nodes] == [
+        "node:input",
+        "node:namedsequentialmodel.blocks.projection",
+        "node:namedsequentialmodel.blocks.activation",
+        "node:output",
+    ]
+    assert [(edge.source_node_id, edge.target_node_id) for edge in ir.edges] == [
+        ("node:namedsequentialmodel.blocks.activation", "node:output"),
+        (
+            "node:namedsequentialmodel.blocks.projection",
+            "node:namedsequentialmodel.blocks.activation",
+        ),
+        ("node:input", "node:namedsequentialmodel.blocks.projection"),
+    ]
+
+
+def test_adapter_expands_literal_module_list_members_in_loop_order() -> None:
+    source = b'''import torch.nn as nn
+
+class ExplicitModuleList(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.blocks = nn.ModuleList([nn.Linear(2, 4), nn.ReLU(), nn.Linear(4, 2)])
+
+    def forward(self, x):
+        for block in self.blocks:
+            x = block(x)
+        return x
+'''
+    identity, ir = PyTorchStaticAdapter().analyze(
+        source,
+        project_id="project:explicit-module-list",
+        relative_file="model.py",
+        entrypoint="model.py:ExplicitModuleList",
+    )
+    assert validate_architecture_semantics(ir, identity) == []
+    assert [node.node_id for node in ir.nodes] == [
+        "node:input",
+        "node:explicitmodulelist.blocks.0",
+        "node:explicitmodulelist.blocks.1",
+        "node:explicitmodulelist.blocks.2",
+        "node:output",
+    ]
+    assert [(edge.source_node_id, edge.target_node_id) for edge in ir.edges] == [
+        ("node:explicitmodulelist.blocks.0", "node:explicitmodulelist.blocks.1"),
+        ("node:explicitmodulelist.blocks.1", "node:explicitmodulelist.blocks.2"),
+        ("node:explicitmodulelist.blocks.2", "node:output"),
+        ("node:input", "node:explicitmodulelist.blocks.0"),
+    ]
+
+
+def test_adapter_selects_entrypoint_class_when_source_contains_multiple_modules() -> None:
+    source = b'''import torch.nn as nn
+
+class Auxiliary(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.ignored = nn.ReLU()
+
+    def forward(self, x):
+        return self.ignored(x)
+
+class Target(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.selected = nn.Linear(2, 2)
+
+    def forward(self, x):
+        return self.selected(x)
+'''
+    identity, ir = PyTorchStaticAdapter().analyze(
+        source,
+        project_id="project:selected-entrypoint",
+        relative_file="models.py",
+        entrypoint="models.py:Target",
+    )
+
+    assert validate_architecture_semantics(ir, identity) == []
+    assert ir.model.model_class == "Target"
+    assert [node.node_id for node in ir.nodes] == [
+        "node:input",
+        "node:target.selected",
+        "node:output",
+    ]

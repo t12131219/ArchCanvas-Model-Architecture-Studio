@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from hashlib import sha256
 
 from archcanvas_core.models.architecture import (
@@ -218,11 +219,21 @@ class PyTorchStaticAdapter:
         relative_file: str,
         entrypoint: str,
         previous_source: SourceIdentityDocument | None = None,
+        local_module_aliases: Mapping[str, str] | None = None,
     ) -> tuple[SourceIdentityDocument, ArchitectureIR]:
-        recovery = self._scanner.scan(raw_source)
-        if len(recovery.model_classes) != 1:
-            raise ValueError("v1 static adapter requires exactly one nn.Module class per entrypoint")
-        model_class = recovery.model_classes[0]
+        try:
+            entrypoint_file, model_class = entrypoint.split(":", maxsplit=1)
+        except ValueError as error:
+            raise ValueError("entrypoint must use 'relative_file:ClassName'") from error
+        if entrypoint_file != relative_file or not model_class:
+            raise ValueError("entrypoint must match relative_file and name a model class")
+        recovery = self._scanner.scan(
+            raw_source,
+            local_module_aliases=local_module_aliases,
+            selected_model_class=model_class,
+        )
+        if recovery.model_classes != [model_class]:
+            raise ValueError("selected entrypoint is not an nn.Module class in relative_file")
         revision = file_revision(raw_source)
         lines = raw_source.decode("utf-8").splitlines(keepends=True)
         anchors: list[SourceAnchor] = []

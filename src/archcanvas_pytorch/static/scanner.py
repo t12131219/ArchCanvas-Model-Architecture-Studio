@@ -7,7 +7,9 @@ complete Architecture IR; Stage 2's adapter will convert only proven discoveries
 from __future__ import annotations
 
 import ast
+from collections.abc import Mapping
 from dataclasses import dataclass, field
+from itertools import pairwise
 from typing import Literal
 
 
@@ -20,7 +22,7 @@ class ModuleDiscovery:
     end_line: int
     end_column: int
     container: str | None = None
-    parameters: list["ParameterDiscovery"] = field(default_factory=list)
+    parameters: list[ParameterDiscovery] = field(default_factory=list)
     repeat_count: int | None = None
     repeat_symbol: str | None = None
 
@@ -112,10 +114,10 @@ def _json_literal(node: ast.expr) -> object:
 
 def _is_config_attribute(node: ast.expr) -> bool:
     dotted = _dotted(node)
-    return dotted is not None and (dotted.startswith("self.config.") or dotted.startswith("config."))
+    return dotted is not None and dotted.startswith(("self.config.", "config."))
 
 
-def _inner_module_call(call: ast.Call, imports: "_ImportIndex", op_type: str) -> ast.Call | None:
+def _inner_module_call(call: ast.Call, imports: _ImportIndex, op_type: str) -> ast.Call | None:
     resolved = imports.resolve(call.func)
     if resolved == op_type:
         return call
@@ -168,9 +170,13 @@ def _canonical_parameter_name(op_type: str, source_name: str) -> str:
     return source_name
 
 
+def _is_supported_module_type(value: str) -> bool:
+    return value.startswith(("torch.nn.", "local:"))
+
+
 class _ImportIndex(ast.NodeVisitor):
-    def __init__(self) -> None:
-        self.aliases: dict[str, str] = {}
+    def __init__(self, local_module_aliases: Mapping[str, str] | None = None) -> None:
+        self.aliases = dict(local_module_aliases or {})
 
     def visit_Import(self, node: ast.Import) -> None:
         for item in node.names:
@@ -178,6 +184,8 @@ class _ImportIndex(ast.NodeVisitor):
                 self.aliases[item.asname or "torch"] = item.name
             if item.name == "torch.nn":
                 self.aliases[item.asname or "torch"] = item.name
+            if item.name == "collections":
+                self.aliases[item.asname or "collections"] = item.name
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         if node.module == "torch":
@@ -188,6 +196,10 @@ class _ImportIndex(ast.NodeVisitor):
             for item in node.names:
                 if item.name != "*":
                     self.aliases[item.asname or item.name] = f"torch.nn.{item.name}"
+        if node.module == "collections":
+            for item in node.names:
+                if item.name == "OrderedDict":
+                    self.aliases[item.asname or item.name] = "collections.OrderedDict"
 
     def resolve(self, expression: ast.expr) -> str | None:
         dotted = _dotted(expression)
@@ -200,16 +212,25 @@ class _ImportIndex(ast.NodeVisitor):
 
 
 class _ModuleClassScanner(ast.NodeVisitor):
-    def __init__(self, imports: _ImportIndex, constants: dict[str, ast.expr]) -> None:
+    def __init__(
+        self,
+        imports: _ImportIndex,
+        constants: dict[str, ast.expr],
+        selected_model_class: str | None = None,
+    ) -> None:
         self.imports = imports
         self.constants = constants
+        self.selected_model_class = selected_model_class
         self.model_classes: list[str] = []
         self.modules: list[ModuleDiscovery] = []
         self.edges: list[EdgeDiscovery] = []
         self.merges: list[MergeDiscovery] = []
         self.unresolved: list[UnresolvedDiscovery] = []
+        self.container_members: dict[str, list[str]] = {}
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        if self.selected_model_class is not None and node.name != self.selected_model_class:
+            return
         if not any(self.imports.resolve(base) == "torch.nn.Module" for base in node.bases):
             return
         self.model_classes.append(node.name)
@@ -229,62 +250,207 @@ class _ModuleClassScanner(ast.NodeVisitor):
             )
             if argument.arg != "self"
         }
-        for node in ast.walk(method):
-            if not isinstance(node, ast.Assign) or len(node.targets) != 1:
-                continue
-            target = node.targets[0]
-            if not (
-                isinstance(target, ast.Attribute)
-                and isinstance(target.value, ast.Name)
-                and target.value.id == "self"
-                and isinstance(node.value, ast.Call)
-            ):
-                continue
-            resolved = self.imports.resolve(node.value.func)
-            if resolved is None or not resolved.startswith("torch.nn."):
-                continue
-            container = None
-            op_type = resolved
-            repeat_count = None
-            repeat_symbol = None
-            if resolved in {"torch.nn.ModuleList", "torch.nn.Sequential"}:
-                inner = next(
-                    (
-                        self.imports.resolve(call.func)
-                        for call in ast.walk(node.value)
-                        if isinstance(call, ast.Call)
-                        and self.imports.resolve(call.func) not in {resolved, None}
-                        and (self.imports.resolve(call.func) or "").startswith("torch.nn.")
-                    ),
-                    None,
-                )
-                if inner is None:
+        def scan_statements(statements: list[ast.stmt]) -> None:
+            for node in statements:
+                if isinstance(node, (ast.If, ast.For, ast.While, ast.Try, ast.With, ast.Match)):
                     self.unresolved.append(
-                        UnresolvedDiscovery("UNRESOLVED_CONTAINER_MEMBER", node.lineno, target.attr)
+                        UnresolvedDiscovery(
+                            "DYNAMIC_CONSTRUCTOR_CONTROL_FLOW",
+                            node.lineno,
+                            f"{type(node).__name__.lower()} in __init__",
+                        )
                     )
                     continue
-                container, op_type = resolved.removeprefix("torch.nn."), inner
-                if resolved == "torch.nn.ModuleList":
-                    repeat_count, repeat_symbol = self._module_list_repeat(node.value)
-            parameters = self._parameters_for_call(
-                node.value,
-                op_type=op_type,
-                constructor_arguments=constructor_arguments,
+                if isinstance(node, ast.Assign):
+                    self._scan_constructor_assignment(node, constructor_arguments)
+
+        scan_statements(method.body)
+
+    def _scan_constructor_assignment(
+        self, node: ast.Assign, constructor_arguments: set[str]
+    ) -> None:
+        if len(node.targets) != 1:
+            return
+        target = node.targets[0]
+        if not (
+            isinstance(target, ast.Attribute)
+            and isinstance(target.value, ast.Name)
+            and target.value.id == "self"
+            and isinstance(node.value, ast.Call)
+        ):
+            return
+        resolved = self.imports.resolve(node.value.func)
+        if resolved is None or not _is_supported_module_type(resolved):
+            self.unresolved.append(
+                UnresolvedDiscovery("UNRESOLVED_MODULE_CONSTRUCTOR", node.lineno, target.attr)
             )
-            self.modules.append(
-                ModuleDiscovery(
-                    target.attr,
-                    op_type,
-                    node.value.lineno,
-                    node.value.col_offset,
-                    node.value.end_lineno,
-                    node.value.end_col_offset,
-                    container,
-                    parameters,
-                    repeat_count,
-                    repeat_symbol,
+            return
+        if resolved == "torch.nn.Sequential":
+            self._scan_sequential(target.attr, node.value, constructor_arguments)
+            return
+        container = None
+        op_type = resolved
+        repeat_count = None
+        repeat_symbol = None
+        if resolved == "torch.nn.ModuleList":
+            members = self._module_list_literal_members(node.value)
+            if members is not None:
+                self._scan_explicit_container(
+                    target.attr, members, "ModuleList", constructor_arguments
                 )
+                return
+            repeated_member = self._module_list_repeated_member(node.value)
+            repeat_count, repeat_symbol = self._module_list_repeat(node.value)
+            if repeated_member is None or (repeat_count is None and repeat_symbol is None):
+                self.unresolved.append(
+                    UnresolvedDiscovery("UNRESOLVED_CONTAINER_MEMBER", node.lineno, target.attr)
+                )
+                return
+            container, op_type = "ModuleList", repeated_member
+        self._append_module_discovery(
+            target.attr,
+            node.value,
+            op_type,
+            container,
+            repeat_count,
+            repeat_symbol,
+            constructor_arguments,
+        )
+
+    def _scan_sequential(
+        self, attribute: str, call: ast.Call, constructor_arguments: set[str]
+    ) -> None:
+        members = self._sequential_members(call)
+        if members is None:
+            self.unresolved.append(
+                UnresolvedDiscovery("UNRESOLVED_CONTAINER_MEMBER", call.lineno, attribute)
             )
+            return
+        self._scan_explicit_container(attribute, members, "Sequential", constructor_arguments)
+
+    def _scan_explicit_container(
+        self,
+        attribute: str,
+        members: list[tuple[str, ast.Call]],
+        container: str,
+        constructor_arguments: set[str],
+    ) -> None:
+        member_names: list[str] = []
+        resolved_members: list[tuple[ast.Call, str]] = []
+        for member_key, item in members:
+            op_type = self.imports.resolve(item.func)
+            if op_type is None or not _is_supported_module_type(op_type):
+                self.unresolved.append(
+                    UnresolvedDiscovery("UNRESOLVED_CONTAINER_MEMBER", item.lineno, attribute)
+                )
+                return
+            member_names.append(f"{attribute}.{member_key}")
+            resolved_members.append((item, op_type))
+        self.container_members[attribute] = member_names
+        self.edges.extend(
+            EdgeDiscovery(source, target)
+            for source, target in pairwise(member_names)
+        )
+        for member_name, (member_call, op_type) in zip(member_names, resolved_members):
+            self._append_module_discovery(
+                member_name,
+                member_call,
+                op_type,
+                container,
+                None,
+                None,
+                constructor_arguments,
+            )
+
+    def _sequential_members(self, call: ast.Call) -> list[tuple[str, ast.Call]] | None:
+        if call.keywords or not call.args:
+            return None
+        if all(
+            isinstance(item, ast.Call)
+            and _is_supported_module_type(self.imports.resolve(item.func) or "")
+            for item in call.args
+        ):
+            return [(str(index), item) for index, item in enumerate(call.args) if isinstance(item, ast.Call)]
+        if (
+            len(call.args) != 1
+            or not isinstance(call.args[0], ast.Call)
+            or self.imports.resolve(call.args[0].func) != "collections.OrderedDict"
+        ):
+            return None
+        ordered_dict = call.args[0]
+        if ordered_dict.keywords or len(ordered_dict.args) != 1:
+            return None
+        pairs = ordered_dict.args[0]
+        if not isinstance(pairs, (ast.List, ast.Tuple)):
+            return None
+        members: list[tuple[str, ast.Call]] = []
+        names: set[str] = set()
+        for pair in pairs.elts:
+            if not (
+                isinstance(pair, ast.Tuple)
+                and len(pair.elts) == 2
+                and isinstance(pair.elts[0], ast.Constant)
+                and isinstance(pair.elts[0].value, str)
+                and isinstance(pair.elts[1], ast.Call)
+            ):
+                return None
+            name = pair.elts[0].value
+            if not name or name in names or not all(
+                character.isascii() and (character.isalnum() or character in {"_", "-"})
+                for character in name
+            ):
+                return None
+            names.add(name)
+            members.append((name, pair.elts[1]))
+        return members or None
+
+    def _module_list_literal_members(self, call: ast.Call) -> list[tuple[str, ast.Call]] | None:
+        if call.keywords or len(call.args) != 1 or not isinstance(call.args[0], (ast.List, ast.Tuple)):
+            return None
+        elements = call.args[0].elts
+        if not elements or not all(isinstance(item, ast.Call) for item in elements):
+            return None
+        return [(str(index), item) for index, item in enumerate(elements) if isinstance(item, ast.Call)]
+
+    def _module_list_repeated_member(self, call: ast.Call) -> str | None:
+        if call.keywords or len(call.args) != 1 or not isinstance(call.args[0], ast.ListComp):
+            return None
+        list_comp = call.args[0]
+        if len(list_comp.generators) != 1 or list_comp.generators[0].ifs:
+            return None
+        if not isinstance(list_comp.elt, ast.Call):
+            return None
+        op_type = self.imports.resolve(list_comp.elt.func)
+        return op_type if op_type is not None and _is_supported_module_type(op_type) else None
+
+    def _append_module_discovery(
+        self,
+        attribute: str,
+        call: ast.Call,
+        op_type: str,
+        container: str | None,
+        repeat_count: int | None,
+        repeat_symbol: str | None,
+        constructor_arguments: set[str],
+    ) -> None:
+        self.modules.append(
+            ModuleDiscovery(
+                attribute,
+                op_type,
+                call.lineno,
+                call.col_offset,
+                call.end_lineno,
+                call.end_col_offset,
+                container,
+                self._parameters_for_call(
+                    call,
+                    op_type=op_type,
+                    constructor_arguments=constructor_arguments,
+                ),
+                repeat_count,
+                repeat_symbol,
+            )
+        )
 
     def _module_list_repeat(self, call: ast.Call) -> tuple[int | None, str | None]:
         if not call.args or not isinstance(call.args[0], ast.ListComp):
@@ -403,6 +569,14 @@ class _ModuleClassScanner(ast.NodeVisitor):
         if arguments:
             value_origin[arguments[0]] = "input"
 
+        def record_module_call(source: str, module: str) -> str:
+            members = self.container_members.get(module)
+            if members:
+                self.edges.append(EdgeDiscovery(source, members[0]))
+                return members[-1]
+            self.edges.append(EdgeDiscovery(source, module))
+            return module
+
         def scan_statements(statements: list[ast.stmt]) -> None:
             for node in statements:
                 if isinstance(node, ast.For) and isinstance(node.target, ast.Name):
@@ -465,27 +639,41 @@ class _ModuleClassScanner(ast.NodeVisitor):
                         else:
                             continue
                         source_name = _dotted(node.value.args[0]) if node.value.args else None
-                        self.edges.append(EdgeDiscovery(value_origin.get(source_name or "", "input"), module))
-                        value_origin[target] = module
+                        value_origin[target] = record_module_call(
+                            value_origin.get(source_name or "", "input"), module
+                        )
                     continue
-                if isinstance(node, ast.Return) and isinstance(node.value, ast.Call):
-                    called = _dotted(node.value.func)
-                    if called and called.startswith("self."):
-                        module = called.removeprefix("self.")
-                        source_name = _dotted(node.value.args[0]) if node.value.args else None
-                        self.edges.append(EdgeDiscovery(value_origin.get(source_name or "", "input"), module))
-                        self.edges.append(EdgeDiscovery(module, "output"))
+                if isinstance(node, ast.Return):
+                    if isinstance(node.value, ast.Call):
+                        called = _dotted(node.value.func)
+                        if called and called.startswith("self."):
+                            module = called.removeprefix("self.")
+                            source_name = _dotted(node.value.args[0]) if node.value.args else None
+                            output_module = record_module_call(
+                                value_origin.get(source_name or "", "input"), module
+                            )
+                            self.edges.append(EdgeDiscovery(output_module, "output"))
+                            continue
+                    returned_value = value_origin.get(_dotted(node.value) or "")
+                    if returned_value is not None:
+                        self.edges.append(EdgeDiscovery(returned_value, "output"))
 
         scan_statements(method.body)
 
 
 class PyTorchStaticScanner:
-    def scan(self, raw_source: bytes) -> StaticRecoveryResult:
+    def scan(
+        self,
+        raw_source: bytes,
+        *,
+        local_module_aliases: Mapping[str, str] | None = None,
+        selected_model_class: str | None = None,
+    ) -> StaticRecoveryResult:
         try:
             module = ast.parse(raw_source.decode("utf-8"))
         except UnicodeDecodeError as error:
             raise ValueError("PyTorch source must be UTF-8") from error
-        imports = _ImportIndex()
+        imports = _ImportIndex(local_module_aliases)
         imports.visit(module)
         constants = {
             target.id: node.value
@@ -495,7 +683,7 @@ class PyTorchStaticScanner:
             and isinstance(target := node.targets[0], ast.Name)
             and _json_literal(node.value) is not _NOT_LITERAL
         }
-        scanner = _ModuleClassScanner(imports, constants)
+        scanner = _ModuleClassScanner(imports, constants, selected_model_class)
         scanner.visit(module)
         return StaticRecoveryResult(
             model_classes=scanner.model_classes,

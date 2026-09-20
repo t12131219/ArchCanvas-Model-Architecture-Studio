@@ -10,7 +10,15 @@ def test_static_capability_report_is_machine_readable_and_bounded() -> None:
     payload = report.as_dict()
     assert json.loads(json.dumps(payload)) == payload
     assert "torch.cat and torch.stack with known list/tuple inputs" in payload["supported"]
+    assert "selected nn.Module entrypoint in a source file" in payload["supported"]
+    assert "bounded transitive local call declaration evidence" in payload["supported"]
+    assert "literal ModuleList member expansion and range repeat discovery" in payload["supported"]
     assert "read-only project entrypoint discovery" in payload["supported"]
+    assert "direct local nn.Module import resolution" in payload["supported"]
     assert "dynamic if control flow" in payload["unresolved"]
-    assert "cross-file custom module topology" in payload["excluded"]
+    assert "branch-free direct local constructor-call nodes" in payload["supported"]
+    assert "constructor control flow" in payload["unresolved"]
+    assert "direct-call and literal OrderedDict Sequential member expansion" in payload["supported"]
+    assert "dynamic or non-literal Sequential and ModuleList members" in payload["unresolved"]
+    assert "transitive cross-file custom module topology" in payload["excluded"]
     assert "runtime shape inference" in payload["excluded"]
