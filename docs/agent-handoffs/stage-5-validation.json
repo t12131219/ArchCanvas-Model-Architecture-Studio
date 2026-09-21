@@ -1,0 +1,55 @@
+{
+  "stage": "stage-5",
+  "base_revision": "774f76d",
+  "environment": {
+    "conda": "TFB_py311",
+    "python": "3.11.16"
+  },
+  "protocol_versions": [
+    "source-identity:1.0",
+    "architecture-ir:1.0",
+    "publication-ir:1.0",
+    "visual-scene:1.0",
+    "project-manifest:1.0",
+    "visual-patch:1.0",
+    "engine-rpc:1.0"
+  ],
+  "commands": [
+    {
+      "command": "conda run -n TFB_py311 python -m pytest -q",
+      "exit_code": 0
+    },
+    {
+      "command": "conda run -n TFB_py311 python -m ruff check src tests tools",
+      "exit_code": 0
+    },
+    {
+      "command": "conda run -n TFB_py311 python -m compileall -q src tools tests",
+      "exit_code": 0
+    },
+    {
+      "command": "conda run -n TFB_py311 python tools/export_schemas.py",
+      "exit_code": 0
+    },
+    {
+      "command": "conda run -n TFB_py311 python tools/generate_static_goldens.py && conda run -n TFB_py311 python tools/generate_publication_goldens.py",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "fixtures": [
+    {
+      "name": "transformer_static_v1 engine lifecycle",
+      "status": "passed"
+    }
+  ],
+  "blocking": false,
+  "known_limitations": [
+    "The Engine uses deterministic polling rather than a background filesystem subscription.",
+    "VisualPatch persistence covers expansion and annotations; CanvasDocument begins in Stage 6.",
+    "Source-changing transactions and CLI routing through Engine begin in Stage 7."
+  ]
+}

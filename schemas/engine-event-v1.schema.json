@@ -1,0 +1,53 @@
+{
+  "$id": "https://archcanvas.dev/schemas/engine-event-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "pattern": "^engine-event:[A-Za-z0-9._-]+$",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "project_opened",
+        "analysis_completed",
+        "source_stale",
+        "visual_patch_saved",
+        "canvas_document_saved"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "message": {
+      "minLength": 1,
+      "title": "Message",
+      "type": "string"
+    },
+    "project_id": {
+      "pattern": "^project:[A-Za-z0-9._-]+$",
+      "title": "Project Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_revision": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Source Revision",
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_id",
+    "kind",
+    "project_id",
+    "source_revision",
+    "message"
+  ],
+  "title": "EngineEvent",
+  "type": "object"
+}

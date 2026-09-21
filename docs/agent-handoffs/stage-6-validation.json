@@ -1,0 +1,42 @@
+{
+  "stage": "stage-6",
+  "base_revision": "774f76d",
+  "environment": {
+    "conda": "TFB_py311",
+    "node": "24.19.0",
+    "rust": "1.94.0"
+  },
+  "protocol_versions": [
+    "canvas-document:1.0",
+    "engine-rpc:1.0",
+    "publication-ir:1.0"
+  ],
+  "commands": [
+    { "command": "conda run -n TFB_py311 python -m pytest tests/models tests/engine tests/schema -q", "exit_code": 0 },
+    { "command": "conda run -n TFB_py311 python -m ruff check src tests tools", "exit_code": 0 },
+    { "command": "conda run -n TFB_py311 python -m compileall -q src tools tests", "exit_code": 0 },
+    { "command": "conda run -n TFB_py311 python tools/export_schemas.py", "exit_code": 0 },
+    { "command": "npm run build && npm run lint", "exit_code": 0 },
+    { "command": "cargo fmt --check", "exit_code": 0 },
+    { "command": "git diff --check", "exit_code": 0 },
+    { "command": "ARCHCANVAS_ENGINE_PYTHON=/home/fzg/anaconda3/envs/TFB_py311/bin/python ARCHCANVAS_ENGINE_CACHE_ROOT=/tmp/archcanvas-tauri-cache ARCHCANVAS_WEBKIT_DRIVER=/path/to/WebKitWebDriver npm run test:e2e:tauri", "exit_code": 0 }
+  ],
+  "browser_fixture": {
+    "status": "passed",
+    "observed": ["publication canvas", "exact canvas", "inspector", "collapse persistence after reload"]
+  },
+  "native_e2e": {
+    "status": "passed",
+    "observed": ["Engine project open", "Publication node drag", "CanvasDocument save", "native restart", "CanvasDocument replay", "Exact source-backed ModuleList node", "source SHA-256 unchanged"],
+    "webdriver_protocol": "classic"
+  },
+  "blocking": false,
+  "sidecar": {
+    "status": "passed",
+    "observed": ["typed JSONL dispatch", "process restart", "cached analysis load", "CanvasDocument replay", "source bytes unchanged"]
+  },
+  "blockers": [],
+  "pending_external_acceptance": [
+    "The configured GitHub Actions Ubuntu 24.04 native desktop job has not yet produced its first hosted CI result."
+  ]
+}

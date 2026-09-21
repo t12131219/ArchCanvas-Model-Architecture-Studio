@@ -22,3 +22,25 @@ jobs:
       - run: python tools/generate_publication_goldens.py
       - run: git diff --check
       - run: git diff --exit-code
+
+  test-desktop-native:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y libwebkit2gtk-4.1-dev librsvg2-dev webkit2gtk-driver
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e .[dev]
+      - run: cargo install tauri-driver --version 2.0.0 --locked
+      - run: npm ci
+        working-directory: desktop
+      - run: ARCHCANVAS_ENGINE_PYTHON="$(which python)" ARCHCANVAS_ENGINE_CACHE_ROOT=/tmp/archcanvas-engine-ci ARCHCANVAS_WEBKIT_DRIVER=WebKitWebDriver npm run test:e2e:tauri
+        working-directory: desktop

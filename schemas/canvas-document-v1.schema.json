@@ -1,0 +1,239 @@
+{
+  "$defs": {
+    "CanvasAnnotation": {
+      "additionalProperties": false,
+      "properties": {
+        "annotation_id": {
+          "pattern": "^canvas-annotation:[A-Za-z0-9._-]+$",
+          "title": "Annotation Id",
+          "type": "string"
+        },
+        "target_node_id": {
+          "pattern": "^publication-node:[A-Za-z0-9._-]+$",
+          "title": "Target Node Id",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "annotation_id",
+        "target_node_id",
+        "text"
+      ],
+      "title": "CanvasAnnotation",
+      "type": "object"
+    },
+    "CanvasLayoutMode": {
+      "enum": [
+        "automatic",
+        "manual"
+      ],
+      "title": "CanvasLayoutMode",
+      "type": "string"
+    },
+    "CanvasNodeState": {
+      "additionalProperties": false,
+      "description": "Per-publication-node visual state; it cannot encode a graph or source patch.",
+      "properties": {
+        "collapsed": {
+          "default": false,
+          "title": "Collapsed",
+          "type": "boolean"
+        },
+        "height": {
+          "maximum": 640,
+          "minimum": 40,
+          "title": "Height",
+          "type": "number"
+        },
+        "locked": {
+          "default": false,
+          "title": "Locked",
+          "type": "boolean"
+        },
+        "publication_node_id": {
+          "pattern": "^publication-node:[A-Za-z0-9._-]+$",
+          "title": "Publication Node Id",
+          "type": "string"
+        },
+        "style": {
+          "$ref": "#/$defs/CanvasNodeStyle"
+        },
+        "width": {
+          "maximum": 1200,
+          "minimum": 80,
+          "title": "Width",
+          "type": "number"
+        },
+        "x": {
+          "maximum": 100000,
+          "minimum": -100000,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "maximum": 100000,
+          "minimum": -100000,
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "publication_node_id",
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "title": "CanvasNodeState",
+      "type": "object"
+    },
+    "CanvasNodeStyle": {
+      "additionalProperties": false,
+      "description": "A deliberately small, visual-only style palette.",
+      "properties": {
+        "accent_color": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9A-Fa-f]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Accent Color"
+        },
+        "fill_color": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9A-Fa-f]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fill Color"
+        },
+        "stroke_color": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9A-Fa-f]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stroke Color"
+        }
+      },
+      "title": "CanvasNodeStyle",
+      "type": "object"
+    },
+    "CanvasViewport": {
+      "additionalProperties": false,
+      "description": "The client viewport, intentionally independent from publication geometry.",
+      "properties": {
+        "x": {
+          "maximum": 100000,
+          "minimum": -100000,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "maximum": 100000,
+          "minimum": -100000,
+          "title": "Y",
+          "type": "number"
+        },
+        "zoom": {
+          "maximum": 4.0,
+          "minimum": 0.1,
+          "title": "Zoom",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "zoom"
+      ],
+      "title": "CanvasViewport",
+      "type": "object"
+    }
+  },
+  "$id": "https://archcanvas.dev/schemas/canvas-document-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Persisted visual state keyed to one immutable Publication IR revision.\n\nThis model intentionally contains no architecture parameters, source anchors, ports,\nedges, or source-write payload. Those facts belong to other, independently validated\nprotocols.",
+  "properties": {
+    "annotations": {
+      "items": {
+        "$ref": "#/$defs/CanvasAnnotation"
+      },
+      "title": "Annotations",
+      "type": "array"
+    },
+    "base_source_revision": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Base Source Revision",
+      "type": "string"
+    },
+    "canvas_document_id": {
+      "pattern": "^canvas-document:[A-Za-z0-9._-]+$",
+      "title": "Canvas Document Id",
+      "type": "string"
+    },
+    "layout_mode": {
+      "$ref": "#/$defs/CanvasLayoutMode",
+      "default": "automatic"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/CanvasNodeState"
+      },
+      "minItems": 1,
+      "title": "Nodes",
+      "type": "array"
+    },
+    "project_id": {
+      "pattern": "^project:[A-Za-z0-9._-]+$",
+      "title": "Project Id",
+      "type": "string"
+    },
+    "publication_id": {
+      "pattern": "^publication:[A-Za-z0-9._-]+$",
+      "title": "Publication Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "viewport": {
+      "$ref": "#/$defs/CanvasViewport"
+    }
+  },
+  "required": [
+    "canvas_document_id",
+    "project_id",
+    "publication_id",
+    "base_source_revision",
+    "viewport",
+    "nodes"
+  ],
+  "title": "CanvasDocument",
+  "type": "object"
+}

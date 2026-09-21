@@ -2,9 +2,12 @@
 
 ## Current State
 
-The repository has completed fixture-backed implementations for Stages 1 through 4. It is not a
-complete ArchCanvas product: Engine/RPC, persistence, desktop interaction, structural editing,
-MCP transport and release hardening have not started.
+The repository has completed fixture-backed implementations for Stages 1 through 4, Stage 5's
+Engine lifecycle, and Stage 6's desktop canvas MVP. Native Linux Tauri E2E now opens an
+Engine-approved Transformer fixture, persists a visual drag across a native restart, verifies the
+Exact/Publication view boundary, and confirms source bytes remain unchanged. The same test is
+configured in Linux CI; its first remote run remains an external acceptance observation. Semantic
+editing, structural editing, MCP transport and release hardening have not started.
 
 ## Completed In Current Worktree
 
@@ -18,6 +21,17 @@ MCP transport and release hardening have not started.
   stage reductions, node/edge omission ledger, deterministic SVG, preflight, and fixture goldens.
   A repeat group has a default collapsed scene and an explicit visual-only expanded scene; neither
   state changes Publication IR, Exact IR or source bytes.
+- Stage 5: approved-root project manifests, explicit environment validation, cache-root-only graph
+  repository, polling source freshness, revision history, visual patch persistence/orphan replay,
+  and typed Engine request/response/event schemas. The Engine opens, analyzes, caches and reloads
+  the Transformer fixture without writing its source.
+- Stage 6: a strict `CanvasDocument` schema for visual state only; Engine persistence, restart
+  replay, stale-revision rejection and typed RPC coverage; React Flow Publication and Exact
+  Architecture canvases; inspector, source-jump request, SVG export, layout reset, undo/redo,
+  visual lock/collapse controls and an explicit browser-only read-only fixture client. The Tauri 2
+  shell forwards typed JSONL requests to a host-configured Engine sidecar instead of reading
+  project source directly. Native E2E covers Engine open, drag/save/restart/replay, Exact view
+  selection and byte-identical source. Open Project and source-location queries remain Engine RPC.
 
 ## Scope Boundaries
 
@@ -25,12 +39,19 @@ MCP transport and release hardening have not started.
   read-only observations until separately approved A0-A6 evidence exists.
 - Publication reduction supports declared Transformer repeat and residual-stage patterns. It does
   not claim a complete paper diagram for arbitrary Python or arbitrary PyTorch code.
-- The current CLI is fixture-scoped. It is not an Engine API and must not be represented as a
-  general project editing workflow.
+- The current CLI remains fixture-scoped and has not yet been routed through Engine.
+- Browser fixture mode persists only visual state in browser storage and must never be confused
+  with Engine-backed project persistence. Actual CanvasDocument Engine persistence is covered by
+  Python integration tests.
+- Native E2E requires Tauri's Linux SDK libraries plus a `WebKitWebDriver` binary. The test accepts
+  `ARCHCANVAS_WEBKIT_DRIVER` for distributions where the binary is not on `PATH`; CI installs the
+  distro driver explicitly.
+- The Tauri bridge requires `ARCHCANVAS_ENGINE_PYTHON` and `ARCHCANVAS_ENGINE_CACHE_ROOT`; when
+  either is absent it fails closed. It does not offer a direct filesystem fallback.
 
-## Next Entry Criteria
+## Stage 6 Exit Criteria
 
-Before Stage 5 starts, commit the reviewed Stage 3/4 schemas, source, tests and goldens from a
-clean worktree. Stage 5 then owns the only policy entrypoint: approved project manifests,
-environment selection, cache/history, refresh orchestration and typed Engine RPC integration
-tests. Desktop, MCP and visual persistence must remain clients of that Engine.
+The local exit evidence is complete: native E2E opens an Engine-approved Transformer fixture,
+moves a node, restarts the desktop, restores its `CanvasDocument`, distinguishes Exact from
+Publication nodes and asserts byte-identical source. The Linux CI job now executes the same test;
+its first successful hosted run is the remaining external observation before Stage 7 is entered.

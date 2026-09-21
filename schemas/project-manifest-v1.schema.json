@@ -1,0 +1,120 @@
+{
+  "$defs": {
+    "EngineEnvironment": {
+      "additionalProperties": false,
+      "properties": {
+        "dependency_lockfile": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dependency Lockfile"
+        },
+        "environment_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Environment Name"
+        },
+        "python_executable": {
+          "minLength": 1,
+          "title": "Python Executable",
+          "type": "string"
+        }
+      },
+      "required": [
+        "python_executable"
+      ],
+      "title": "EngineEnvironment",
+      "type": "object"
+    },
+    "ProjectSourceStatus": {
+      "enum": [
+        "ready",
+        "stale"
+      ],
+      "title": "ProjectSourceStatus",
+      "type": "string"
+    }
+  },
+  "$id": "https://archcanvas.dev/schemas/project-manifest-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "analysis_generation": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Analysis Generation",
+      "type": "integer"
+    },
+    "approved_root": {
+      "minLength": 1,
+      "title": "Approved Root",
+      "type": "string"
+    },
+    "entrypoint": {
+      "pattern": "^[A-Za-z0-9_./-]+\\.py:[A-Za-z_][A-Za-z0-9_]*$",
+      "title": "Entrypoint",
+      "type": "string"
+    },
+    "environment": {
+      "$ref": "#/$defs/EngineEnvironment"
+    },
+    "file_revisions": {
+      "additionalProperties": {
+        "pattern": "^sha256:[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "minProperties": 1,
+      "title": "File Revisions",
+      "type": "object"
+    },
+    "framework": {
+      "const": "pytorch",
+      "title": "Framework",
+      "type": "string"
+    },
+    "project_id": {
+      "pattern": "^project:[A-Za-z0-9._-]+$",
+      "title": "Project Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_revision": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Source Revision",
+      "type": "string"
+    },
+    "source_status": {
+      "$ref": "#/$defs/ProjectSourceStatus",
+      "default": "ready"
+    }
+  },
+  "required": [
+    "project_id",
+    "approved_root",
+    "framework",
+    "entrypoint",
+    "environment",
+    "source_revision",
+    "file_revisions"
+  ],
+  "title": "ProjectManifest",
+  "type": "object"
+}
