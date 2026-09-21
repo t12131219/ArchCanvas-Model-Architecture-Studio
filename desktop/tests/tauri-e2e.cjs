@@ -62,17 +62,15 @@ async function openProject(browser) {
   const openButton = await browser.$('button=Open project')
   if (!await projectId.isDisplayed()) await openButton.click()
   await projectId.waitForDisplayed()
-  await projectId.clearValue()
-  await projectId.setValue('project:tauri-transformer')
+  await setReactInput(browser, '#project-id', 'project:tauri-transformer')
   for (const [selector, value] of [
     ['#approved-root', fixtureRoot],
     ['#entrypoint', 'model.py:EncoderModel'],
     ['#python-executable', python],
     ['#environment-name', 'TFB_py311'],
   ]) {
-    const field = await browser.$(selector)
-    await field.clearValue()
-    await field.setValue(value)
+    const field = await setReactInput(browser, selector, value)
+    assert.equal(await field.getValue(), value, `${selector} must retain the approved test input before submit`)
   }
   await (await browser.$('button=Open and analyze')).click()
   try {
@@ -87,10 +85,23 @@ async function openProject(browser) {
   assert(size.width > 0 && size.height > 0, 'Canvas nodes must have non-zero rendered geometry')
 }
 
+async function setReactInput(browser, selector, value) {
+  await browser.execute((inputSelector, nextValue) => {
+    const field = document.querySelector(inputSelector)
+    if (!(field instanceof HTMLInputElement)) throw new Error(`Input not found: ${inputSelector}`)
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+    setValue?.call(field, nextValue)
+    field.dispatchEvent(new Event('input', { bubbles: true }))
+    field.dispatchEvent(new Event('change', { bubbles: true }))
+  }, selector, value)
+  return browser.$(selector)
+}
+
 async function captureRepeatPosition(browser) {
   const repeat = await browser.$('.node-repeat_group')
   await repeat.waitForExist()
   const beforeScreen = await repeat.getLocation()
+  const beforeCanvas = await canvasPosition(repeat)
   await browser.action('pointer', { parameters: { pointerType: 'mouse' } })
     .move({ origin: repeat, x: 80, y: 36 })
     .down({ button: 0 })
@@ -100,7 +111,7 @@ async function captureRepeatPosition(browser) {
   await browser.pause(250)
   const afterScreen = await repeat.getLocation()
   assert.notDeepEqual(afterScreen, beforeScreen, 'visual drag must move the repeat group')
-  return canvasPosition(repeat)
+  return { before: beforeCanvas, after: await canvasPosition(repeat) }
 }
 
 async function canvasPosition(node) {
@@ -124,6 +135,21 @@ async function panCanvas(browser) {
   await browser.pause(100)
   const after = await world.getAttribute('style')
   assert.notEqual(after, before, 'middle-mouse pan must update the viewport transform')
+}
+
+async function verifyZoomAndSelection(browser) {
+  const readout = await browser.$('.zoom-readout')
+  const beforeZoom = await readout.getText()
+  await (await browser.$('button[title="Zoom in"]')).click()
+  assert.notEqual(await readout.getText(), beforeZoom, 'zoom control must update the viewport readout')
+  await (await browser.$('button[title="Zoom out"]')).click()
+
+  const embedding = await browser.$('[data-id="publication-node:embedding"]')
+  const head = await browser.$('[data-id="publication-node:head"]')
+  await embedding.click()
+  assert.equal(await (await browser.$('.inspector-content h1')).getText(), 'Token embedding', 'single selection must update the inspector')
+  await head.click({ modifiers: ['Shift'] })
+  assert.equal(await (await browser.$('.selection-summary')).getText(), '2 selected', 'Shift-click must create a multi-selection')
 }
 
 async function run() {
@@ -152,8 +178,16 @@ async function run() {
     await openProject(browser)
     const publicationCount = await browser.$$('.architecture-node').then((nodes) => nodes.length)
     assert(publicationCount >= 5, 'Transformer publication view should render recovered nodes')
+    await verifyZoomAndSelection(browser)
     await panCanvas(browser)
     const movedPosition = await captureRepeatPosition(browser)
+    await (await browser.$('button[aria-label="Undo visual edit"]')).click()
+    assert.deepEqual(await canvasPosition(await browser.$('.node-repeat_group')), movedPosition.before, 'one drag must be undone as one history item')
+    await (await browser.$('button[aria-label="Redo visual edit"]')).click()
+    assert.deepEqual(await canvasPosition(await browser.$('.node-repeat_group')), movedPosition.after, 'redo must restore the completed drag')
+    const repeat = await browser.$('.node-repeat_group')
+    await repeat.doubleClick()
+    assert.match(await repeat.getText(), /Detail open/, 'double-click must expand a repeat group visually')
     await (await browser.$('button=Save visual document')).click()
     await browser.pause(250)
     await browser.deleteSession()
@@ -162,8 +196,8 @@ async function run() {
     restarted = await waitForDriver(driver, driverLog)
     await openProject(restarted)
     const restored = await canvasPosition(await restarted.$('.node-repeat_group'))
-    assert.equal(restored.x, movedPosition.x, 'restart must restore the saved canvas x position')
-    assert.equal(restored.y, movedPosition.y, 'restart must restore the saved canvas y position')
+    assert.equal(restored.x, movedPosition.after.x, 'restart must restore the saved canvas x position')
+    assert.equal(restored.y, movedPosition.after.y, 'restart must restore the saved canvas y position')
     await (await restarted.$('button=Exact Architecture')).click()
     await restarted.waitUntil(
       async () => (await restarted.$('[data-id="node:encodermodel.layers"]')).isExisting(),

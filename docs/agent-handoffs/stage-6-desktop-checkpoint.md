@@ -51,10 +51,29 @@ drag/save/restart path; it continues to assert source bytes are unchanged. The T
 normalizes the transport's camelCase/wrapped IPC representation to the strict snake_case Engine
 envelope before Python validation, without relaxing the Engine protocol.
 
-This records D1-D3 foundation work only. Token contract checks, native interaction coverage and
-the local browser visual inspection pass, but visual screenshot baselines at all required viewports
-and D4/D5 evidence for approved Transformer and time-series projects are still required. This is
-not a Stage 6 exit record under the revised plan.
+## Continued Evidence
+
+The revised Canvas implementation now has deterministic screenshot baselines at 1440x900 and
+1280x800. The token contract, desktop build/lint, Rust format/check, Playwright screenshot suite
+and expanded native Tauri E2E all pass locally. The native path covers pointer-anchored zoom,
+single and multi-selection, middle-mouse pan, preview-only drag, undo/redo, visual repeat expansion,
+save/restart/replay, Exact/Publication separation, and source SHA-256 preservation.
+
+The Engine protocol now accepts and persists an approved scalar `resolved_config` snapshot. It is
+passed to the static adapter only to select provable task branches and repetition counts. Without a
+snapshot, task branches remain unresolved and do not contribute confirmed topology. The companion
+observation [stage-6-tfb-observation.json](stage-6-tfb-observation.json) records source revision,
+approved root, provenance, config, Exact flow, publication SVG digest and source-unchanged checks
+for the read-only TFB Transformer and TimesNet forecast paths.
+
+This remains **not a Stage 6 exit record**. D4 is now implemented through source-mapped
+Publication miniatures: deterministic schematics are visibly disclosed, and runtime/tensor previews
+require their declared evidence. D5 is still incomplete. The full 460-relation TFB machine preflight
+in [stage-6-tfb-publication-preflight-observation.json](stage-6-tfb-publication-preflight-observation.json)
+has generated Publication/SVG evidence for 101 fully static entries and 42 entries with visible
+parameter-provenance gaps, without modifying TFB; the other 296 records remain explicitly present
+and unassessed. The complete census still needs approved resolved configuration, manual
+overview/detail review and the DUET, TimesNet and Transformer deep-semantic contracts.
 
 The GitHub Actions `test-desktop-native` job installs `webkit2gtk-driver` and runs the same command
 on Ubuntu 24.04. Its first hosted run is still required as remote CI evidence. No Article source or
@@ -77,7 +96,6 @@ ARCHCANVAS_WEBKIT_DRIVER=/path/to/WebKitWebDriver \
 npm run test:e2e:tauri
 ```
 
-All listed local commands passed for the original Stage 6 MVP. Section 25 was added afterwards;
-the revised Canvas implementation, visual regression evidence and Article D5 validation must be
-recorded separately before this checkpoint can be treated as Stage 6 exit evidence. Hosted CI has
-not yet produced a remote run record.
+All listed local commands passed for the original Stage 6 MVP. The continued validation adds
+`npm run test:visual` and a fresh successful native E2E run. Hosted CI has not yet produced a
+remote run record.

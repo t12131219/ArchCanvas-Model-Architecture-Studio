@@ -268,3 +268,48 @@ def test_engine_resolves_only_analysis_backed_source_locations(tmp_path: Path) -
     assert unavailable.status == "rejected"
     assert unavailable.error is not None
     assert unavailable.error.code == "SOURCE_ANCHOR_OUTSIDE_APPROVED_ROOT"
+
+
+def test_engine_persists_the_approved_resolved_config_for_static_analysis(tmp_path: Path) -> None:
+    project_root = tmp_path / "config-project"
+    project_root.mkdir()
+    source_path = project_root / "model.py"
+    source_before = b'''import torch.nn as nn
+
+class TaskModel(nn.Module):
+    def __init__(self, configs):
+        super().__init__()
+        self.task_name = configs.task_name
+        self.embedding = nn.Linear(2, 2)
+        if self.task_name == "forecast":
+            self.head = nn.Linear(2, 1)
+
+    def forecast(self, x):
+        return self.head(self.embedding(x))
+
+    def forward(self, x):
+        if self.task_name == "forecast":
+            return self.forecast(x)
+        return x
+'''
+    source_path.write_bytes(source_before)
+    engine = ArchCanvasEngine(tmp_path / "cache")
+    command = OpenProjectCommand(
+        project_id="project:engine-config-task",
+        approved_root=str(project_root),
+        entrypoint="model.py:TaskModel",
+        environment=EngineEnvironment(python_executable=sys.executable, environment_name="TFB_py311"),
+        resolved_config={"task_name": "forecast"},
+    )
+
+    opened = engine.open_project(command)
+    analysis = engine.analyze_project(opened.project_id)
+
+    assert opened.resolved_config == {"task_name": "forecast"}
+    assert analysis.architecture.metadata["resolved_config"] == {"task_name": "forecast"}
+    assert [(edge.source_node_id, edge.target_node_id) for edge in analysis.architecture.edges] == [
+        ("node:taskmodel.embedding", "node:taskmodel.head"),
+        ("node:taskmodel.head", "node:output"),
+        ("node:input", "node:taskmodel.embedding"),
+    ]
+    assert source_path.read_bytes() == source_before

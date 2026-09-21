@@ -6,7 +6,14 @@ from pathlib import Path
 import pytest
 
 from archcanvas_core.models.architecture import ArchitectureIR, NodeKind
-from archcanvas_core.models.publication import PublicationIR, VisualScene
+from archcanvas_core.models.publication import (
+    MiniatureDisclosure,
+    MiniatureEvidenceKind,
+    PublicationIR,
+    PublicationMiniature,
+    PublicationMiniatureKind,
+    VisualScene,
+)
 from archcanvas_core.publication_validation import validate_publication_semantics
 from archcanvas_publication import PublicationCompiler, StageLayout
 from archcanvas_pytorch.static import PyTorchStaticAdapter
@@ -49,8 +56,86 @@ def test_transformer_is_reduced_to_a_collapsed_repeat_group() -> None:
     assert group.member_node_ids == ["node:encodermodel.layers"]
     assert group.collapsed is True
     assert publication.annotations[0].text == "Repeated depth times"
+    assert [(item.kind.value, item.disclosure.value) for item in publication.miniatures] == [
+        ("signal_preview", "illustrative"),
+        ("equation_note", "evidence"),
+        ("inset_callout", "evidence"),
+    ]
     assert publication.omitted_exact_edge_ids == []
     assert validate_publication_semantics(publication, exact) == []
+
+
+def test_scientific_miniature_requires_permitted_evidence_and_disclosure() -> None:
+    with pytest.raises(ValueError, match="miniature kind is not supported"):
+        PublicationMiniature(
+            miniature_id="miniature:invalid-distribution",
+            target_node_id="publication-node:input",
+            kind=PublicationMiniatureKind.DISTRIBUTION_PREVIEW,
+            evidence_kind=MiniatureEvidenceKind.DETERMINISTIC_SCHEMATIC,
+            disclosure=MiniatureDisclosure.ILLUSTRATIVE,
+            label="Invented distribution",
+            member_node_ids=["node:input"],
+        )
+    with pytest.raises(ValueError, match="requires exactly one trace_id"):
+        PublicationMiniature(
+            miniature_id="miniature:missing-runtime-trace",
+            target_node_id="publication-node:input",
+            kind=PublicationMiniatureKind.SIGNAL_PREVIEW,
+            evidence_kind=MiniatureEvidenceKind.RUNTIME_SUMMARY,
+            disclosure=MiniatureDisclosure.EVIDENCE,
+            label="Observed signal summary",
+            member_node_ids=["node:input"],
+        )
+
+
+def test_svg_renders_each_supported_scientific_miniature_with_disclosure() -> None:
+    exact = _exact(FIXTURES[0][0], FIXTURES[0][2], FIXTURES[0][3])
+    publication = PublicationCompiler().compile(exact)
+    input_node = next(node for node in publication.nodes if node.kind.value == "input")
+    miniatures = [
+        PublicationMiniature(
+            miniature_id="miniature:tensor", target_node_id=input_node.node_id,
+            kind=PublicationMiniatureKind.TENSOR_STRIP,
+            evidence_kind=MiniatureEvidenceKind.STATIC_TENSOR_SPEC,
+            disclosure=MiniatureDisclosure.EVIDENCE, label="Static tensor specification",
+            member_node_ids=input_node.member_node_ids,
+        ),
+        PublicationMiniature(
+            miniature_id="miniature:signal", target_node_id=input_node.node_id,
+            kind=PublicationMiniatureKind.SIGNAL_PREVIEW,
+            evidence_kind=MiniatureEvidenceKind.RUNTIME_SUMMARY,
+            disclosure=MiniatureDisclosure.EVIDENCE, label="Runtime signal summary",
+            member_node_ids=input_node.member_node_ids, trace_id="trace:fixture",
+        ),
+        PublicationMiniature(
+            miniature_id="miniature:distribution", target_node_id=input_node.node_id,
+            kind=PublicationMiniatureKind.DISTRIBUTION_PREVIEW,
+            evidence_kind=MiniatureEvidenceKind.RUNTIME_SUMMARY,
+            disclosure=MiniatureDisclosure.EVIDENCE, label="Runtime distribution summary",
+            member_node_ids=input_node.member_node_ids, trace_id="trace:fixture",
+        ),
+        PublicationMiniature(
+            miniature_id="miniature:equation", target_node_id=input_node.node_id,
+            kind=PublicationMiniatureKind.EQUATION_NOTE,
+            evidence_kind=MiniatureEvidenceKind.PUBLICATION_ANNOTATION,
+            disclosure=MiniatureDisclosure.EVIDENCE, label="Source-backed equation annotation",
+            member_node_ids=input_node.member_node_ids,
+        ),
+        PublicationMiniature(
+            miniature_id="miniature:inset", target_node_id=input_node.node_id,
+            kind=PublicationMiniatureKind.INSET_CALLOUT,
+            evidence_kind=MiniatureEvidenceKind.PUBLICATION_ANNOTATION,
+            disclosure=MiniatureDisclosure.EVIDENCE, label="Source-backed detail callout",
+            member_node_ids=input_node.member_node_ids,
+        ),
+    ]
+    enriched = publication.model_copy(update={"miniatures": miniatures})
+    svg = render_svg(enriched, StageLayout().layout(enriched))
+
+    for kind in PublicationMiniatureKind:
+        assert f'data-miniature-kind="{kind.value}"' in svg
+    assert svg.count('data-disclosure="evidence"') == 5
+    assert publication_preflight(enriched, StageLayout().layout(enriched), svg).blocking is False
 
 
 def test_resnet_is_reduced_to_a_residual_stage_with_a_skip_edge() -> None:

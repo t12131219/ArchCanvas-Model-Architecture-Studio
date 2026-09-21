@@ -16,6 +16,7 @@ import {
 
 import './App.css'
 import { CanvasStage, type CanvasPoint, type CanvasStageNode } from './canvas/CanvasStage'
+import { appendHistory } from './canvas/history'
 import { createEngineClient } from './engine/client'
 import type { ArchitectureEdge, CanvasDocument, DesktopSnapshot, ProjectOpenInput } from './engine/types'
 
@@ -153,13 +154,14 @@ function App() {
   const selectedId = selectedIds.at(-1) ?? null
   const selected = (view === 'exact' ? snapshot?.exactNodes : snapshot?.nodes)?.find((node) => node.id === selectedId) ?? null
   const selectedVisual = snapshot?.document.nodes.find((node) => node.publication_node_id === selectedId) ?? null
+  const selectedMiniatures = snapshot?.miniatures.filter((miniature) => miniature.targetId === selectedId) ?? []
   const canvasSelectedIds = selectedIds.filter((nodeId) => nodes.some((node) => node.id === nodeId))
 
   function record(document: CanvasDocument) {
     const nextIndex = historyIndexRef.current + 1
     historyIndexRef.current = nextIndex
     setSnapshot((current) => (current ? { ...current, document } : current))
-    setHistory((current) => [...current.slice(0, nextIndex), document])
+    setHistory((current) => appendHistory({ entries: current, index: nextIndex - 1 }, document).entries)
     setHistoryIndex(nextIndex)
   }
 
@@ -253,6 +255,7 @@ function App() {
             key={view}
             editable={view === 'publication'}
             edges={edges}
+            miniatures={view === 'publication' ? snapshot?.miniatures ?? [] : []}
             nodes={nodes}
             selectedIds={canvasSelectedIds}
             viewport={snapshot?.document.viewport ?? { x: 0, y: 0, zoom: 1 }}
@@ -268,6 +271,7 @@ function App() {
           {selected ? <div className="inspector-content">
             <div className="node-kind">{selected.kind.replace('_', ' ')}</div><h1>{selected.label}</h1>
             <dl className="metadata"><dt>Members</dt><dd>{selected.members}</dd>{selectedVisual && <><dt>Position</dt><dd>{Math.round(selectedVisual.x)}, {Math.round(selectedVisual.y)}</dd></>}<dt>Evidence</dt><dd>{selected.anchor}</dd></dl>
+            {selectedMiniatures.length > 0 && <div className="miniature-evidence"><span>Visual evidence</span>{selectedMiniatures.map((miniature) => <div key={miniature.id}><strong>{miniature.label}</strong><em>{miniature.disclosure}</em></div>)}</div>}
             <button type="button" className="source-link" onClick={() => void engine.requestSourceJump(selected.anchorId, selected.anchor).then(setNotice)}><FileCode2 size={15} />View source evidence</button>
             {selectedVisual && view === 'publication' && <div className="inspector-actions">
               <button type="button" onClick={() => toggleVisual(selectedVisual.publication_node_id, 'locked')}>{selectedVisual.locked ? <Unlock size={15} /> : <Lock size={15} />}{selectedVisual.locked ? 'Unlock placement' : 'Lock placement'}</button>

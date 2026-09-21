@@ -11,13 +11,18 @@ from archcanvas_core.models.architecture import (
     NodeKind,
 )
 from archcanvas_core.models.publication import (
+    MiniatureDisclosure,
+    MiniatureEvidenceKind,
     PublicationAnnotation,
     PublicationEdge,
     PublicationEdgeKind,
     PublicationIR,
+    PublicationMiniature,
+    PublicationMiniatureKind,
     PublicationNode,
     PublicationNodeKind,
 )
+from archcanvas_publication.patterns import PatternConfidence, PublicationPatternRegistry
 
 _IMPLEMENTATION_DETAIL_OPS = {
     "torch.reshape",
@@ -64,6 +69,15 @@ class PublicationCompiler:
     def compile(self, exact: ArchitectureIR) -> PublicationIR:
         visible = [node for node in exact.nodes if not _is_hidden(node)]
         omitted = [node.node_id for node in exact.nodes if _is_hidden(node)]
+        pattern_matches = PublicationPatternRegistry().match(exact)
+        timesnet_match = next(
+            (
+                match
+                for match in pattern_matches
+                if match.pattern_id == "timesnet_v1" and match.confidence is PatternConfidence.CONFIRMED
+            ),
+            None,
+        )
         transformer_repeat = next(
             (
                 repeat
@@ -95,6 +109,35 @@ class PublicationCompiler:
                     annotation_id="annotation:transformer-encoder-repeat",
                     target_node_id=group.node_id,
                     text=f"Repeated {count} times",
+                    kind="repeat",
+                )
+            )
+        elif timesnet_match is not None:
+            group_members = set(timesnet_match.member_node_ids)
+            group = PublicationNode(
+                node_id="publication-node:timesnet-blocks",
+                kind=PublicationNodeKind.REPEAT_GROUP,
+                label="TimesBlock",
+                member_node_ids=timesnet_match.member_node_ids,
+                collapsed=True,
+            )
+            repeat = next(
+                (
+                    candidate
+                    for candidate in exact.repeats
+                    if set(timesnet_match.member_node_ids) <= set(candidate.member_node_ids)
+                ),
+                None,
+            )
+            count = (
+                str(repeat.count) if repeat is not None and repeat.count is not None
+                else repeat.count_symbol if repeat is not None else "N"
+            )
+            annotations.append(
+                PublicationAnnotation(
+                    annotation_id="annotation:timesnet-block-repeat",
+                    target_node_id=group.node_id,
+                    text=f"TimesBlock repeated {count} times",
                     kind="repeat",
                 )
             )
@@ -167,6 +210,73 @@ class PublicationCompiler:
             )
             for (source, target, kind), member_edge_ids in sorted(grouped_edges.items())
         ]
+        miniatures: list[PublicationMiniature] = []
+        input_node = next(
+            (node for node in publication_nodes if node.kind is PublicationNodeKind.INPUT),
+            None,
+        )
+        if input_node is not None:
+            miniatures.append(
+                PublicationMiniature(
+                    miniature_id="miniature:input-flow-schematic",
+                    target_node_id=input_node.node_id,
+                    kind=PublicationMiniatureKind.SIGNAL_PREVIEW,
+                    evidence_kind=MiniatureEvidenceKind.DETERMINISTIC_SCHEMATIC,
+                    disclosure=MiniatureDisclosure.ILLUSTRATIVE,
+                    label="Illustrative input flow (not runtime data)",
+                    member_node_ids=input_node.member_node_ids,
+                )
+            )
+        if (
+            group is not None
+            and group.kind is PublicationNodeKind.REPEAT_GROUP
+            and timesnet_match is None
+        ):
+            miniatures.extend(
+                [
+                    PublicationMiniature(
+                        miniature_id="miniature:transformer-repeat-equation",
+                        target_node_id=group.node_id,
+                        kind=PublicationMiniatureKind.EQUATION_NOTE,
+                        evidence_kind=MiniatureEvidenceKind.PUBLICATION_ANNOTATION,
+                        disclosure=MiniatureDisclosure.EVIDENCE,
+                        label="N x repeated encoder block",
+                        member_node_ids=group.member_node_ids,
+                    ),
+                    PublicationMiniature(
+                        miniature_id="miniature:transformer-repeat-inset",
+                        target_node_id=group.node_id,
+                        kind=PublicationMiniatureKind.INSET_CALLOUT,
+                        evidence_kind=MiniatureEvidenceKind.PUBLICATION_ANNOTATION,
+                        disclosure=MiniatureDisclosure.EVIDENCE,
+                        label="Open repeated-block detail",
+                        member_node_ids=group.member_node_ids,
+                    ),
+                ]
+            )
+        if timesnet_match is not None and group is not None:
+            miniatures.extend(
+                [
+                    PublicationMiniature(
+                        miniature_id="miniature:timesnet-period-schematic",
+                        target_node_id=group.node_id,
+                        kind=PublicationMiniatureKind.SIGNAL_PREVIEW,
+                        evidence_kind=MiniatureEvidenceKind.DETERMINISTIC_SCHEMATIC,
+                        disclosure=MiniatureDisclosure.ILLUSTRATIVE,
+                        label="Schematic period discovery (not runtime periods)",
+                        member_node_ids=group.member_node_ids,
+                    ),
+                    PublicationMiniature(
+                        miniature_id="miniature:timesnet-detail-inset",
+                        target_node_id=group.node_id,
+                        kind=PublicationMiniatureKind.INSET_CALLOUT,
+                        evidence_kind=MiniatureEvidenceKind.PUBLICATION_ANNOTATION,
+                        disclosure=MiniatureDisclosure.EVIDENCE,
+                        label="FFT, period paths, aggregation, and residual are source-backed",
+                        member_node_ids=group.member_node_ids,
+                    ),
+                ]
+            )
         return PublicationIR(
             publication_id=f"publication:{exact.ir_id.removeprefix('ir:')}",
             exact_ir_id=exact.ir_id,
@@ -175,6 +285,7 @@ class PublicationCompiler:
             nodes=publication_nodes,
             edges=publication_edges,
             annotations=annotations,
+            miniatures=miniatures,
             omitted_exact_node_ids=omitted,
             omitted_exact_edge_ids=sorted(omitted_edges),
         )

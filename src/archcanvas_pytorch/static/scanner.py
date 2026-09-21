@@ -51,6 +51,11 @@ class EdgeDiscovery:
     source: str
     target: str
     kind: str = "data"
+    line: int | None = None
+    column: int | None = None
+    end_line: int | None = None
+    end_column: int | None = None
+    function_name: str | None = None
 
 
 @dataclass(frozen=True)
@@ -199,6 +204,16 @@ _SUPPORTED_FUNCTIONS = {
     "torch.nn.functional.layer_norm",
 }
 
+_PASSTHROUGH_TENSOR_FUNCTIONS = {
+    "torch.abs",
+    "torch.exp",
+    "torch.log",
+    "torch.mean",
+    "torch.sqrt",
+    "torch.sum",
+    "torch.var",
+}
+
 
 def _is_functional_namespace(value: str | None) -> bool:
     return value is not None and (
@@ -257,10 +272,13 @@ class _ModuleClassScanner(ast.NodeVisitor):
         imports: _ImportIndex,
         constants: dict[str, ast.expr],
         selected_model_class: str | None = None,
+        resolved_config: Mapping[str, object] | None = None,
     ) -> None:
         self.imports = imports
         self.constants = constants
         self.selected_model_class = selected_model_class
+        self.resolved_config = dict(resolved_config or {})
+        self.resolved_self_attributes: dict[str, object] = {}
         self.model_classes: list[str] = []
         self.modules: list[ModuleDiscovery] = []
         self.edges: list[EdgeDiscovery] = []
@@ -281,7 +299,39 @@ class _ModuleClassScanner(ast.NodeVisitor):
             self._scan_constructor(init)
         forward = methods.get("forward")
         if forward:
-            self._scan_forward(forward)
+            self._scan_forward(forward, methods)
+
+    def _resolved_expression(self, expression: ast.expr) -> object | None:
+        literal = _json_literal(expression)
+        if literal is not _NOT_LITERAL:
+            return literal
+        dotted = _dotted(expression)
+        if dotted is None:
+            return None
+        if dotted.startswith("self."):
+            return self.resolved_self_attributes.get(dotted.removeprefix("self."))
+        if dotted.startswith(("config.", "configs.")):
+            return self.resolved_config.get(dotted.partition(".")[2])
+        return None
+
+    def _resolved_condition(self, expression: ast.expr) -> bool | None:
+        if isinstance(expression, ast.BoolOp):
+            values = [self._resolved_condition(item) for item in expression.values]
+            if any(value is None for value in values):
+                return None
+            return all(values) if isinstance(expression.op, ast.And) else any(values)
+        if (
+            isinstance(expression, ast.Compare)
+            and len(expression.ops) == 1
+            and len(expression.comparators) == 1
+            and isinstance(expression.ops[0], (ast.Eq, ast.NotEq))
+        ):
+            left = self._resolved_expression(expression.left)
+            right = self._resolved_expression(expression.comparators[0])
+            if left is None or right is None:
+                return None
+            return left == right if isinstance(expression.ops[0], ast.Eq) else left != right
+        return None
 
     def _scan_constructor(self, method: ast.FunctionDef) -> None:
         constructor_arguments = {
@@ -293,7 +343,18 @@ class _ModuleClassScanner(ast.NodeVisitor):
         }
         def scan_statements(statements: list[ast.stmt]) -> None:
             for node in statements:
-                if isinstance(node, (ast.If, ast.For, ast.While, ast.Try, ast.With, ast.Match)):
+                if isinstance(node, ast.If):
+                    condition = self._resolved_condition(node.test)
+                    if condition is not None:
+                        scan_statements(node.body if condition else node.orelse)
+                        continue
+                    self.unresolved.append(
+                        UnresolvedDiscovery(
+                            "DYNAMIC_CONSTRUCTOR_CONTROL_FLOW", node.lineno, "if in __init__"
+                        )
+                    )
+                    continue
+                if isinstance(node, (ast.For, ast.While, ast.Try, ast.With, ast.Match)):
                     self.unresolved.append(
                         UnresolvedDiscovery(
                             "DYNAMIC_CONSTRUCTOR_CONTROL_FLOW",
@@ -303,6 +364,15 @@ class _ModuleClassScanner(ast.NodeVisitor):
                     )
                     continue
                 if isinstance(node, ast.Assign):
+                    if (
+                        len(node.targets) == 1
+                        and isinstance(node.targets[0], ast.Attribute)
+                        and isinstance(node.targets[0].value, ast.Name)
+                        and node.targets[0].value.id == "self"
+                    ):
+                        value = self._resolved_expression(node.value)
+                        if value is not None:
+                            self.resolved_self_attributes[node.targets[0].attr] = value
                     self._scan_constructor_assignment(node, constructor_arguments)
 
         scan_statements(method.body)
@@ -508,6 +578,13 @@ class _ModuleClassScanner(ast.NodeVisitor):
             return literal, None
         if isinstance(count, ast.Name):
             return None, count.id
+        dotted = _dotted(count)
+        if dotted and dotted.startswith(("config.", "configs.")):
+            symbol = dotted.partition(".")[2]
+            resolved = self.resolved_config.get(symbol)
+            if isinstance(resolved, int) and not isinstance(resolved, bool) and resolved >= 1:
+                return resolved, None
+            return None, dotted
         self.unresolved.append(
             UnresolvedDiscovery("UNRESOLVED_REPEAT_COUNT", count.lineno, "ModuleList range"))
         return None, None
@@ -603,19 +680,106 @@ class _ModuleClassScanner(ast.NodeVisitor):
             origin_end_column=origin_node.end_col_offset,
         )
 
-    def _scan_forward(self, method: ast.FunctionDef) -> None:
+    def _scan_forward(
+        self, method: ast.FunctionDef, methods: Mapping[str, ast.FunctionDef]
+    ) -> None:
+        self._scan_method(
+            method,
+            methods,
+            initial_origin="input",
+            emit_output=True,
+            active_helpers=set(),
+        )
+
+    def _scan_method(
+        self,
+        method: ast.FunctionDef,
+        methods: Mapping[str, ast.FunctionDef],
+        *,
+        initial_origin: str,
+        emit_output: bool,
+        active_helpers: set[str],
+    ) -> str | None:
         value_origin: dict[str, str] = {}
         loop_modules: dict[str, str] = {}
         arguments = [argument.arg for argument in method.args.args if argument.arg != "self"]
         if arguments:
-            value_origin[arguments[0]] = "input"
+            value_origin[arguments[0]] = initial_origin
+        returned_value: str | None = None
 
-        def record_module_call(source: str, module: str) -> str:
+        def source_for(expression: ast.expr | None) -> str | None:
+            if expression is None:
+                return None
+            dotted = _dotted(expression)
+            if dotted is not None:
+                return value_origin.get(dotted)
+            if isinstance(expression, ast.BinOp) and isinstance(
+                expression.op,
+                (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.FloorDiv, ast.Mod, ast.Pow),
+            ):
+                left = source_for(expression.left)
+                right = source_for(expression.right)
+                # Normalization math may depend on an input-derived scalar while preserving the
+                # left-to-right model data flow. It is not a separately recovered module.
+                if left is not None and right is not None:
+                    return left
+                if left is not None and left == right:
+                    return left
+                if left is not None and _json_literal(expression.right) is not _NOT_LITERAL:
+                    return left
+                if right is not None and _json_literal(expression.left) is not _NOT_LITERAL:
+                    return right
+                return None
+            if isinstance(expression, ast.Call):
+                operation = self.imports.resolve(expression.func)
+                if operation in _PASSTHROUGH_TENSOR_FUNCTIONS:
+                    source = source_for(expression.args[0] if expression.args else None)
+                    if source is not None:
+                        return source
+                module = module_target(expression.func)
+                source = source_for(expression.args[0] if expression.args else None) or initial_origin
+                if module is not None:
+                    if module in methods and module != "forward":
+                        if module in active_helpers:
+                            self.unresolved.append(
+                                UnresolvedDiscovery("RECURSIVE_HELPER_CALL", expression.lineno, module)
+                            )
+                            return None
+                        return self._scan_method(
+                            methods[module], methods, initial_origin=source, emit_output=False,
+                            active_helpers={*active_helpers, module},
+                        )
+                    return record_module_call(source, module, expression)
+                if isinstance(expression.func, ast.Attribute):
+                    return source_for(expression.func.value)
+            if isinstance(expression, ast.Subscript):
+                return source_for(expression.value)
+            return None
+
+        def module_target(expression: ast.expr) -> str | None:
+            dotted = _dotted(expression)
+            if dotted and dotted.startswith("self."):
+                return dotted.removeprefix("self.")
+            if isinstance(expression, ast.Subscript) and isinstance(expression.value, ast.Attribute):
+                container = _dotted(expression.value)
+                if container and container.startswith("self."):
+                    return container.removeprefix("self.")
+            return None
+
+        def record_module_call(source: str, module: str, call: ast.Call) -> str:
             members = self.container_members.get(module)
             if members:
-                self.edges.append(EdgeDiscovery(source, members[0]))
+                self.edges.append(
+                    EdgeDiscovery(source, members[0], line=call.lineno, column=call.col_offset,
+                                  end_line=call.end_lineno, end_column=call.end_col_offset,
+                                  function_name=method.name)
+                )
                 return members[-1]
-            self.edges.append(EdgeDiscovery(source, module))
+            self.edges.append(
+                EdgeDiscovery(source, module, line=call.lineno, column=call.col_offset,
+                              end_line=call.end_lineno, end_column=call.end_col_offset,
+                              function_name=method.name)
+            )
             return module
 
         def record_function_call(
@@ -633,45 +797,61 @@ class _ModuleClassScanner(ast.NodeVisitor):
                     call.end_col_offset,
                 )
             )
-            self.edges.append(EdgeDiscovery(source, function_name))
+            self.edges.append(
+                EdgeDiscovery(source, function_name, line=call.lineno, column=call.col_offset,
+                              end_line=call.end_lineno, end_column=call.end_col_offset,
+                              function_name=method.name)
+            )
             return function_name
 
-        def scan_statements(statements: list[ast.stmt]) -> None:
+        def scan_statements(statements: list[ast.stmt]) -> bool:
+            nonlocal returned_value
             for node in statements:
                 if isinstance(node, ast.For) and isinstance(node.target, ast.Name):
                     iterable = _dotted(node.iter)
                     if iterable and iterable.startswith("self."):
                         loop_modules[node.target.id] = iterable.removeprefix("self.")
-                    scan_statements(node.body)
+                    if scan_statements(node.body):
+                        return True
                     continue
                 if isinstance(node, ast.If):
+                    condition = self._resolved_condition(node.test)
+                    if condition is not None:
+                        if scan_statements(node.body if condition else node.orelse):
+                            return True
+                        continue
                     self.unresolved.append(
-                        UnresolvedDiscovery("DYNAMIC_CONTROL_FLOW", node.lineno, "if in forward")
+                        UnresolvedDiscovery("DYNAMIC_CONTROL_FLOW", node.lineno, f"if in {method.name}")
                     )
-                    continue
+                    # A later return may be reachable only on a different task branch.  Do not
+                    # turn it into a confirmed output path once branch selection is unknown.
+                    return True
                 if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
                     called = _dotted(node.value.func)
                     if called in {"eval", "exec"}:
                         self.unresolved.append(UnresolvedDiscovery("DYNAMIC_EXECUTION", node.lineno, called))
                     continue
-                if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
-                    target = node.targets[0].id
-                    alias_source = value_origin.get(_dotted(node.value) or "")
-                    if alias_source is not None:
-                        value_origin[target] = alias_source
+                if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], (ast.Name, ast.Tuple)):
+                    target_node = node.targets[0]
+                    target = target_node.id if isinstance(target_node, ast.Name) else next(
+                        (item.id for item in target_node.elts if isinstance(item, ast.Name)), None
+                    )
+                    if target is None:
                         continue
                     if isinstance(node.value, ast.BinOp) and isinstance(node.value.op, ast.Add):
-                        left_name = _dotted(node.value.left)
-                        right_name = _dotted(node.value.right)
-                        left = value_origin.get(left_name or "")
-                        right = value_origin.get(right_name or "")
+                        left = source_for(node.value.left)
+                        right = source_for(node.value.right)
                         if left is not None and right is not None:
-                            self.edges.append(EdgeDiscovery(right, left, "residual"))
+                            self.edges.append(EdgeDiscovery(right, left, "residual", node.lineno, node.col_offset, node.end_lineno, node.end_col_offset, method.name))
                             value_origin[target] = left
                         else:
                             self.unresolved.append(
                                 UnresolvedDiscovery("UNRESOLVED_RESIDUAL", node.lineno, "add operands")
                             )
+                        continue
+                    alias_source = source_for(node.value)
+                    if alias_source is not None:
+                        value_origin[target] = alias_source
                         continue
                     if isinstance(node.value, ast.Call):
                         operation = self.imports.resolve(node.value.func)
@@ -687,12 +867,16 @@ class _ModuleClassScanner(ast.NodeVisitor):
                             merge_name = f"merge:{target}"
                             concrete_inputs = [value for value in inputs if value is not None]
                             self.merges.append(MergeDiscovery(merge_name, operation, concrete_inputs, node.lineno))
-                            self.edges.extend(EdgeDiscovery(source, merge_name) for source in concrete_inputs)
+                            self.edges.extend(
+                                EdgeDiscovery(source, merge_name, line=node.value.lineno, column=node.value.col_offset,
+                                              end_line=node.value.end_lineno, end_column=node.value.end_col_offset,
+                                              function_name=method.name)
+                                for source in concrete_inputs
+                            )
                             value_origin[target] = merge_name
                             continue
                         if operation in _SUPPORTED_FUNCTIONS:
-                            source_name = _dotted(node.value.args[0]) if node.value.args else None
-                            source = value_origin.get(source_name or "")
+                            source = source_for(node.value.args[0] if node.value.args else None)
                             if source is None:
                                 self.unresolved.append(
                                     UnresolvedDiscovery(
@@ -712,23 +896,36 @@ class _ModuleClassScanner(ast.NodeVisitor):
                             )
                             continue
                         called = _dotted(node.value.func)
-                        if called and called.startswith("self."):
-                            module = called.removeprefix("self.")
-                        elif called in loop_modules:
+                        module = module_target(node.value.func)
+                        if module is None and called in loop_modules:
                             module = loop_modules[called]
-                        else:
+                        if module is None:
                             continue
-                        source_name = _dotted(node.value.args[0]) if node.value.args else None
-                        value_origin[target] = record_module_call(
-                            value_origin.get(source_name or "", "input"), module
-                        )
+                        source = source_for(node.value.args[0] if node.value.args else None) or initial_origin
+                        if module in methods and module != "forward":
+                            if module in active_helpers:
+                                self.unresolved.append(
+                                    UnresolvedDiscovery("RECURSIVE_HELPER_CALL", node.lineno, module)
+                                )
+                                continue
+                            helper_result = self._scan_method(
+                                methods[module], methods, initial_origin=source, emit_output=False,
+                                active_helpers={*active_helpers, module},
+                            )
+                            if helper_result is None:
+                                self.unresolved.append(
+                                    UnresolvedDiscovery("UNRESOLVED_HELPER_RETURN", node.lineno, module)
+                                )
+                                continue
+                            value_origin[target] = helper_result
+                            continue
+                        value_origin[target] = record_module_call(source, module, node.value)
                     continue
                 if isinstance(node, ast.Return):
                     if isinstance(node.value, ast.Call):
                         operation = self.imports.resolve(node.value.func)
                         if operation in _SUPPORTED_FUNCTIONS:
-                            source_name = _dotted(node.value.args[0]) if node.value.args else None
-                            source = value_origin.get(source_name or "")
+                            source = source_for(node.value.args[0] if node.value.args else None)
                             if source is None:
                                 self.unresolved.append(
                                     UnresolvedDiscovery(
@@ -739,8 +936,10 @@ class _ModuleClassScanner(ast.NodeVisitor):
                             output_function = record_function_call(
                                 source, operation, node.value, "return"
                             )
-                            self.edges.append(EdgeDiscovery(output_function, "output"))
-                            continue
+                            if emit_output:
+                                self.edges.append(EdgeDiscovery(output_function, "output", line=node.value.lineno, column=node.value.col_offset, end_line=node.value.end_lineno, end_column=node.value.end_col_offset, function_name=method.name))
+                            returned_value = output_function
+                            return True
                         if _is_functional_namespace(operation):
                             self.unresolved.append(
                                 UnresolvedDiscovery(
@@ -748,20 +947,67 @@ class _ModuleClassScanner(ast.NodeVisitor):
                                 )
                             )
                             continue
-                        called = _dotted(node.value.func)
-                        if called and called.startswith("self."):
-                            module = called.removeprefix("self.")
-                            source_name = _dotted(node.value.args[0]) if node.value.args else None
-                            output_module = record_module_call(
-                                value_origin.get(source_name or "", "input"), module
+                        module = module_target(node.value.func)
+                        if module is not None:
+                            source = source_for(node.value.args[0] if node.value.args else None) or initial_origin
+                            if module in methods and module != "forward":
+                                if module in active_helpers:
+                                    self.unresolved.append(UnresolvedDiscovery("RECURSIVE_HELPER_CALL", node.lineno, module))
+                                    continue
+                                output_module = self._scan_method(
+                                    methods[module], methods, initial_origin=source, emit_output=False,
+                                    active_helpers={*active_helpers, module},
+                                )
+                            else:
+                                output_module = record_module_call(source, module, node.value)
+                            if output_module is not None and emit_output:
+                                self.edges.append(EdgeDiscovery(output_module, "output", line=node.value.lineno, column=node.value.col_offset, end_line=node.value.end_lineno, end_column=node.value.end_col_offset, function_name=method.name))
+                            returned_value = output_module
+                            return True
+                    if isinstance(node.value, ast.BinOp) and isinstance(node.value.op, ast.Add):
+                        left = source_for(node.value.left)
+                        right = source_for(node.value.right)
+                        if left is not None and right is not None:
+                            self.edges.append(
+                                EdgeDiscovery(
+                                    right,
+                                    left,
+                                    "residual",
+                                    node.lineno,
+                                    node.col_offset,
+                                    node.end_lineno,
+                                    node.end_col_offset,
+                                    method.name,
+                                )
                             )
-                            self.edges.append(EdgeDiscovery(output_module, "output"))
-                            continue
-                    returned_value = value_origin.get(_dotted(node.value) or "")
-                    if returned_value is not None:
-                        self.edges.append(EdgeDiscovery(returned_value, "output"))
+                            if emit_output:
+                                self.edges.append(
+                                    EdgeDiscovery(
+                                        left,
+                                        "output",
+                                        line=node.lineno,
+                                        column=node.col_offset,
+                                        end_line=node.end_lineno,
+                                        end_column=node.end_col_offset,
+                                        function_name=method.name,
+                                    )
+                                )
+                            returned_value = left
+                            return True
+                        self.unresolved.append(
+                            UnresolvedDiscovery("UNRESOLVED_RESIDUAL", node.lineno, "add operands")
+                        )
+                        continue
+                    result = source_for(node.value)
+                    if result is not None:
+                        if emit_output:
+                            self.edges.append(EdgeDiscovery(result, "output", line=node.lineno, column=node.col_offset, end_line=node.end_lineno, end_column=node.end_col_offset, function_name=method.name))
+                        returned_value = result
+                        return True
+            return False
 
         scan_statements(method.body)
+        return returned_value
 
 
 class PyTorchStaticScanner:
@@ -771,6 +1017,7 @@ class PyTorchStaticScanner:
         *,
         local_module_aliases: Mapping[str, str] | None = None,
         selected_model_class: str | None = None,
+        resolved_config: Mapping[str, object] | None = None,
     ) -> StaticRecoveryResult:
         try:
             module = ast.parse(raw_source.decode("utf-8"))
@@ -786,12 +1033,27 @@ class PyTorchStaticScanner:
             and isinstance(target := node.targets[0], ast.Name)
             and _json_literal(node.value) is not _NOT_LITERAL
         }
-        scanner = _ModuleClassScanner(imports, constants, selected_model_class)
+        scanner = _ModuleClassScanner(imports, constants, selected_model_class, resolved_config)
         scanner.visit(module)
+        # Exact IR v1 has one identity per semantic source/target/kind relation. Repeated visits
+        # through a bounded loop can observe that same relation more than once; retain the first
+        # deterministic call span instead of emitting duplicate edge IDs downstream.
+        canonical_edges: dict[tuple[str, str, str], EdgeDiscovery] = {}
+        for edge in sorted(
+            scanner.edges,
+            key=lambda item: (
+                item.source,
+                item.target,
+                item.kind,
+                item.line if item.line is not None else -1,
+                item.column if item.column is not None else -1,
+            ),
+        ):
+            canonical_edges.setdefault((edge.source, edge.target, edge.kind), edge)
         return StaticRecoveryResult(
             model_classes=scanner.model_classes,
             modules=sorted(scanner.modules, key=lambda item: (item.line, item.attribute_path)),
-            edges=sorted(set(scanner.edges), key=lambda item: (item.source, item.target, item.kind)),
+            edges=list(canonical_edges.values()),
             merges=sorted(scanner.merges, key=lambda item: (item.line, item.name)),
             functions=sorted(scanner.functions, key=lambda item: (item.line, item.name)),
             unresolved=sorted(scanner.unresolved, key=lambda item: (item.line, item.code)),

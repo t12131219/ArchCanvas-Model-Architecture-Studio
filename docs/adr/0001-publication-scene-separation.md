@@ -20,6 +20,11 @@ Exact IR would let a presentation choice look like a source fact or a code-edit 
   repeat group IDs and stores that choice only as `SceneNode.expanded`.
 - Expanded SVG layer previews are visual grammar. They do not create Exact nodes, alter member
   mappings, change Publication IR, create a patch, or write user source.
+- Scientific miniatures are read-only `PublicationIR` children, never implicit nodes, edges,
+  tensors, runtime observations or source edits. Each one maps only to Exact members already
+  owned by its target publication node, declares an allowed evidence kind, and exposes either an
+  `evidence` or `illustrative` disclosure. Runtime summaries require a trace ID; deterministic
+  schematics must remain visibly illustrative.
 - Unknown/non-repeat expansion requests and expanded non-repeat scene nodes fail closed.
 
 ## Consequences

@@ -82,6 +82,7 @@ class ArchCanvasEngine:
             framework="pytorch",
             entrypoint=command.entrypoint,
             environment=environment,
+            resolved_config=command.resolved_config,
             source_revision=source_snapshot_revision({source_path.relative_to(root).as_posix(): revision}),
             file_revisions={source_path.relative_to(root).as_posix(): revision},
         )
@@ -142,6 +143,7 @@ class ArchCanvasEngine:
             root,
             project_id=manifest.project_id,
             entrypoint=manifest.entrypoint,
+            resolved_config=manifest.resolved_config,
         )
         publication = self._compiler.compile(architecture)
         scene = self._layout.layout(publication)

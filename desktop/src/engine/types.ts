@@ -46,6 +46,15 @@ export type ArchitectureNode = {
 
 export type ArchitectureEdge = { id: string; source: string; target: string; residual?: boolean }
 
+export type ScientificMiniature = {
+  id: string
+  targetId: string
+  kind: 'tensor_strip' | 'signal_preview' | 'distribution_preview' | 'equation_note' | 'inset_callout'
+  evidenceKind: 'static_tensor_spec' | 'runtime_summary' | 'deterministic_schematic' | 'publication_annotation'
+  disclosure: 'evidence' | 'illustrative'
+  label: string
+}
+
 export type DesktopSnapshot = {
   mode: 'fixture-read-only' | 'engine'
   projectName: string
@@ -55,6 +64,7 @@ export type DesktopSnapshot = {
   sourceLabel: string
   nodes: ArchitectureNode[]
   edges: ArchitectureEdge[]
+  miniatures: ScientificMiniature[]
   exactNodes: ArchitectureNode[]
   exactEdges: ArchitectureEdge[]
   document: CanvasDocument

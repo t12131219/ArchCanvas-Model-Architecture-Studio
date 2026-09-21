@@ -1,47 +1,30 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type WheelEvent } from 'react'
 import { Maximize, Minus, MousePointer2, Plus, Scan, Undo2 } from 'lucide-react'
 
-import type { ArchitectureEdge, ArchitectureNode, CanvasNodeState } from '../engine/types'
+import type { ArchitectureEdge, ArchitectureNode, CanvasNodeState, ScientificMiniature } from '../engine/types'
+import { clientToViewportPoint, screenToWorld, type CanvasPoint, type CanvasViewport } from './coordinates'
+import type { CanvasGesture, MarqueeGesture } from './interactions'
+import { marqueeSelection, selectionAfter } from './selection'
+import { snapPosition, type CanvasGuide } from './snapping'
+import { clampZoom, fitViewport, zoomAtPoint } from './viewport'
 import './CanvasStage.css'
 
-export type CanvasPoint = { x: number; y: number }
+export type { CanvasPoint } from './coordinates'
 
 export type CanvasStageNode = ArchitectureNode & CanvasNodeState
 
 type CanvasStageProps = {
   editable: boolean
   edges: ArchitectureEdge[]
+  miniatures: ScientificMiniature[]
   nodes: CanvasStageNode[]
   selectedIds: string[]
-  viewport: { x: number; y: number; zoom: number }
+  viewport: CanvasViewport
   onCommitMove: (positions: Record<string, CanvasPoint>) => void
-  onCommitViewport: (viewport: { x: number; y: number; zoom: number }) => void
+  onCommitViewport: (viewport: CanvasViewport) => void
   onSelectionChange: (ids: string[]) => void
   onToggleCollapse: (nodeId: string) => void
   onGestureChange: (active: boolean) => void
-}
-
-type Guide = { axis: 'x' | 'y'; value: number }
-type DragGesture = { kind: 'drag'; start: CanvasPoint; positions: Record<string, CanvasPoint>; selected: string[] }
-type PanGesture = { kind: 'pan'; start: CanvasPoint; viewport: CanvasStageProps['viewport'] }
-type MarqueeGesture = { kind: 'marquee'; start: CanvasPoint; current: CanvasPoint }
-type Gesture = DragGesture | PanGesture | MarqueeGesture
-
-const GRID = 16
-const MIN_ZOOM = 0.35
-const MAX_ZOOM = 2.2
-
-function clamp(value: number, low: number, high: number) {
-  return Math.min(Math.max(value, low), high)
-}
-
-function clientPoint(event: { clientX: number; clientY: number }, stage: HTMLDivElement) {
-  const bounds = stage.getBoundingClientRect()
-  return { x: event.clientX - bounds.left, y: event.clientY - bounds.top }
-}
-
-function screenToWorld(point: CanvasPoint, viewport: CanvasStageProps['viewport']) {
-  return { x: (point.x - viewport.x) / viewport.zoom, y: (point.y - viewport.y) / viewport.zoom }
 }
 
 function nodeStyle(node: CanvasStageNode) {
@@ -50,15 +33,31 @@ function nodeStyle(node: CanvasStageNode) {
 }
 
 function nodeLabel(node: CanvasStageNode) {
-  if (node.kind === 'repeat_group') return `${node.label} ${node.members > 1 ? `x ${node.members}` : ''}`.trim()
+  if (node.kind === 'repeat_group') {
+    const alreadyIncludesCount = /(?:x|times)\s+\d+/i.test(node.label)
+    return `${node.label}${node.members > 1 && !alreadyIncludesCount ? ` x ${node.members}` : ''}`
+  }
   return node.label
 }
 
-function selectedAfter(event: PointerEvent, nodeId: string, selected: string[]) {
-  if (event.shiftKey || event.metaKey || event.ctrlKey) {
-    return selected.includes(nodeId) ? selected.filter((id) => id !== nodeId) : [...selected, nodeId]
-  }
-  return selected.includes(nodeId) ? selected : [nodeId]
+function ScientificMiniaturePreview({ miniatures }: { miniatures: ScientificMiniature[] }) {
+  if (!miniatures.length) return null
+  return <span className="scientific-miniatures" aria-label="Scientific visual previews">
+    {miniatures.map((miniature) => <span
+      key={miniature.id}
+      className={`scientific-miniature miniature-${miniature.kind}`}
+      data-disclosure={miniature.disclosure}
+      data-miniature-kind={miniature.kind}
+      title={`${miniature.label} (${miniature.disclosure})`}
+    >
+      {miniature.kind === 'signal_preview' && <svg viewBox="0 0 64 18" aria-hidden="true"><path d="M1 10 C8 1 14 17 22 9 S36 1 43 9 S55 17 63 7" /></svg>}
+      {miniature.kind === 'tensor_strip' && <i className="tensor-cells" aria-hidden="true"><b /><b /><b /><b /></i>}
+      {miniature.kind === 'distribution_preview' && <svg viewBox="0 0 64 18" aria-hidden="true"><path d="M1 15 C15 15 17 2 32 2 S49 15 63 15" /></svg>}
+      {miniature.kind === 'equation_note' && <strong aria-hidden="true">N x</strong>}
+      {miniature.kind === 'inset_callout' && <i className="inset-frame" aria-hidden="true" />}
+      <em>{miniature.disclosure === 'illustrative' ? 'schematic' : 'evidence'}</em>
+    </span>)}
+  </span>
 }
 
 function edgePath(source: CanvasStageNode, target: CanvasStageNode, residual: boolean) {
@@ -77,6 +76,7 @@ function edgePath(source: CanvasStageNode, target: CanvasStageNode, residual: bo
 export function CanvasStage({
   editable,
   edges,
+  miniatures,
   nodes,
   selectedIds,
   viewport,
@@ -87,11 +87,11 @@ export function CanvasStage({
   onGestureChange,
 }: CanvasStageProps) {
   const stageRef = useRef<HTMLDivElement>(null)
-  const gestureRef = useRef<Gesture | null>(null)
+  const gestureRef = useRef<CanvasGesture | null>(null)
   const wheelTimer = useRef<number | null>(null)
   const [previewPositions, setPreviewPositions] = useState<Record<string, CanvasPoint>>({})
   const [localViewport, setLocalViewport] = useState(viewport)
-  const [guides, setGuides] = useState<Guide[]>([])
+  const [guides, setGuides] = useState<CanvasGuide[]>([])
   const [marquee, setMarquee] = useState<MarqueeGesture | null>(null)
   const [fitMode, setFitMode] = useState(true)
   const spaceHeld = useRef(false)
@@ -106,8 +106,13 @@ export function CanvasStage({
   )
 
   const nodeById = useMemo(() => new Map(displayedNodes.map((node) => [node.id, node])), [displayedNodes])
+  const miniaturesByTarget = useMemo(() => {
+    const grouped = new Map<string, ScientificMiniature[]>()
+    for (const miniature of miniatures) grouped.set(miniature.targetId, [...(grouped.get(miniature.targetId) ?? []), miniature])
+    return grouped
+  }, [miniatures])
 
-  function commitViewport(next: CanvasStageProps['viewport']) {
+  function commitViewport(next: CanvasViewport) {
     setLocalViewport(next)
     onCommitViewport(next)
   }
@@ -115,15 +120,8 @@ export function CanvasStage({
   function fit() {
     const stage = stageRef.current
     if (!stage || !nodes.length) return
-    const width = stage.clientWidth
-    const height = stage.clientHeight
-    const left = Math.min(...nodes.map((node) => node.x))
-    const top = Math.min(...nodes.map((node) => node.y))
-    const right = Math.max(...nodes.map((node) => node.x + node.width))
-    const bottom = Math.max(...nodes.map((node) => node.y + node.height))
-    const padding = 92
-    const zoom = clamp(Math.min((width - padding * 2) / (right - left), (height - padding * 2) / (bottom - top)), MIN_ZOOM, 1)
-    const next = { x: (width - (right - left) * zoom) / 2 - left * zoom, y: (height - (bottom - top) * zoom) / 2 - top * zoom, zoom }
+    const next = fitViewport(nodes, stage.clientWidth, stage.clientHeight)
+    if (!next) return
     setLocalViewport(next)
     onCommitViewport(next)
   }
@@ -165,31 +163,6 @@ export function CanvasStage({
     }
   })
 
-  function snap(position: CanvasPoint, movingId: string, bypass: boolean) {
-    if (bypass) return { position, guides: [] as Guide[] }
-    const snapped = { x: Math.round(position.x / GRID) * GRID, y: Math.round(position.y / GRID) * GRID }
-    const moving = nodes.find((node) => node.id === movingId)
-    if (!moving) return { position: snapped, guides: [] as Guide[] }
-    const threshold = 7 / localViewport.zoom
-    const nextGuides: Guide[] = []
-    for (const candidate of nodes) {
-      if (candidate.id === movingId || selectedIds.includes(candidate.id)) continue
-      for (const [axis, own, other] of [
-        ['x', snapped.x, candidate.x],
-        ['x', snapped.x + moving.width / 2, candidate.x + candidate.width / 2],
-        ['y', snapped.y, candidate.y],
-        ['y', snapped.y + moving.height / 2, candidate.y + candidate.height / 2],
-      ] as const) {
-        if (Math.abs(own - other) <= threshold) {
-          if (axis === 'x') snapped.x += other - own
-          else snapped.y += other - own
-          nextGuides.push({ axis, value: other })
-        }
-      }
-    }
-    return { position: snapped, guides: nextGuides }
-  }
-
   function finishGesture() {
     const gesture = gestureRef.current
     gestureRef.current = null
@@ -211,10 +184,7 @@ export function CanvasStage({
       const right = Math.max(worldStart.x, worldEnd.x)
       const top = Math.min(worldStart.y, worldEnd.y)
       const bottom = Math.max(worldStart.y, worldEnd.y)
-      const contained = displayedNodes
-        .filter((node) => node.x >= left && node.y >= top && node.x + node.width <= right && node.y + node.height <= bottom)
-        .map((node) => node.id)
-      onSelectionChange(contained)
+      onSelectionChange(marqueeSelection(displayedNodes, { x: left, y: top }, { x: right, y: bottom }))
     }
   }
 
@@ -230,7 +200,7 @@ export function CanvasStage({
     const gesture = gestureRef.current
     const stage = stageRef.current
     if (!gesture || !stage) return
-    const point = clientPoint(event, stage)
+    const point = clientToViewportPoint(event, stage)
     if (gesture.kind === 'pan') {
       setLocalViewport({ ...gesture.viewport, x: gesture.viewport.x + point.x - gesture.start.x, y: gesture.viewport.y + point.y - gesture.start.y })
       return
@@ -243,10 +213,10 @@ export function CanvasStage({
     }
     const delta = { x: (point.x - gesture.start.x) / localViewport.zoom, y: (point.y - gesture.start.y) / localViewport.zoom }
     const next: Record<string, CanvasPoint> = {}
-    let activeGuides: Guide[] = []
+    let activeGuides: CanvasGuide[] = []
     for (const id of gesture.selected) {
       const initial = gesture.positions[id]
-      const result = snap({ x: initial.x + delta.x, y: initial.y + delta.y }, id, event.altKey)
+      const result = snapPosition({ x: initial.x + delta.x, y: initial.y + delta.y }, nodes.find((node) => node.id === id), nodes, selectedIds, localViewport.zoom, event.altKey)
       next[id] = result.position
       activeGuides = [...activeGuides, ...result.guides]
     }
@@ -257,7 +227,7 @@ export function CanvasStage({
   function onStagePointerDown(event: PointerEvent<HTMLDivElement>) {
     const stage = stageRef.current
     if (!stage || (event.target instanceof Element && event.target.closest('.architecture-node, .canvas-controls'))) return
-    const point = clientPoint(event, stage)
+    const point = clientToViewportPoint(event, stage)
     if (event.button === 1 || spaceHeld.current) {
       event.preventDefault()
       setFitMode(false)
@@ -277,7 +247,7 @@ export function CanvasStage({
   function onNodePointerDown(event: PointerEvent<HTMLButtonElement>, node: CanvasStageNode) {
     if (event.button !== 0) return
     event.stopPropagation()
-    const nextSelection = selectedAfter(event, node.id, selectedIds)
+    const nextSelection = selectionAfter(event, node.id, selectedIds)
     onSelectionChange(nextSelection)
     if (!editable || node.locked || !nextSelection.includes(node.id)) return
     const stage = stageRef.current
@@ -287,7 +257,7 @@ export function CanvasStage({
     )
     if (!Object.keys(positions).length) return
     setFitMode(false)
-    gestureRef.current = { kind: 'drag', start: clientPoint(event, stage), positions, selected: Object.keys(positions) }
+    gestureRef.current = { kind: 'drag', start: clientToViewportPoint(event, stage), positions, selected: Object.keys(positions) }
     onGestureChange(true)
     stage.setPointerCapture(event.pointerId)
   }
@@ -296,10 +266,8 @@ export function CanvasStage({
     event.preventDefault()
     const stage = stageRef.current
     if (!stage) return
-    const point = clientPoint(event, stage)
-    const world = screenToWorld(point, localViewport)
-    const zoom = clamp(localViewport.zoom * Math.exp(-event.deltaY * 0.0015), MIN_ZOOM, MAX_ZOOM)
-    const next = { x: point.x - world.x * zoom, y: point.y - world.y * zoom, zoom }
+    const point = clientToViewportPoint(event, stage)
+    const next = zoomAtPoint(localViewport, point, event.deltaY)
     setFitMode(false)
     setLocalViewport(next)
     if (wheelTimer.current !== null) window.clearTimeout(wheelTimer.current)
@@ -349,9 +317,9 @@ export function CanvasStage({
     >
       <div className="canvas-chrome" aria-hidden="true"><span>Publication canvas</span><span>{editable ? 'Visual edits only' : 'Evidence view'}</span></div>
       <div className="canvas-controls" role="toolbar" aria-label="Canvas viewport controls">
-        <button type="button" title="Zoom out" onClick={() => { setFitMode(false); commitViewport({ ...localViewport, zoom: clamp(localViewport.zoom - 0.1, MIN_ZOOM, MAX_ZOOM) }) }}><Minus size={15} /></button>
+        <button type="button" title="Zoom out" onClick={() => { setFitMode(false); commitViewport({ ...localViewport, zoom: clampZoom(localViewport.zoom - 0.1) }) }}><Minus size={15} /></button>
         <button type="button" title="Fit canvas" onClick={() => { setFitMode(true); fit() }}><Scan size={15} /></button>
-        <button type="button" title="Zoom in" onClick={() => { setFitMode(false); commitViewport({ ...localViewport, zoom: clamp(localViewport.zoom + 0.1, MIN_ZOOM, MAX_ZOOM) }) }}><Plus size={15} /></button>
+        <button type="button" title="Zoom in" onClick={() => { setFitMode(false); commitViewport({ ...localViewport, zoom: clampZoom(localViewport.zoom + 0.1) }) }}><Plus size={15} /></button>
         <span className="zoom-readout">{Math.round(localViewport.zoom * 100)}%</span>
       </div>
       <div className="canvas-tool-hint" aria-hidden="true"><MousePointer2 size={13} />Drag to move <span>Space to pan</span></div>
@@ -383,6 +351,7 @@ export function CanvasStage({
             <span className="node-eyebrow">{node.kind === 'repeat_group' ? `${node.members || 1}x repeated block` : node.kind === 'input' || node.kind === 'output' ? 'data terminal' : 'model operation'}</span>
             <span className="node-label">{nodeLabel(node)}</span>
             {node.kind === 'repeat_group' && <span className="repeat-hint">{node.collapsed ? 'Double-click for detail' : 'Detail open'}</span>}
+            <ScientificMiniaturePreview miniatures={miniaturesByTarget.get(node.id) ?? []} />
           </button>
         ))}
       </div>

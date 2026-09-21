@@ -247,6 +247,33 @@ def test_scanner_marks_residual_addition_without_guessing_merge_node() -> None:
     ]
 
 
+def test_scanner_recovers_a_residual_through_proven_input_tensor_derivations() -> None:
+    source = b'''\
+import torch
+import torch.nn as nn
+
+class NormalizedResidual(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.proj = nn.Linear(2, 2)
+
+    def forward(self, x):
+        mean = x.mean(1, keepdim=True)
+        scale = torch.sqrt(torch.var(x, dim=1, keepdim=True) + 1e-5)
+        value = self.proj(x)
+        return value * scale + mean
+'''
+
+    result = PyTorchStaticScanner().scan(source)
+
+    assert [(edge.source, edge.target, edge.kind) for edge in result.edges] == [
+        ("input", "proj", "data"),
+        ("input", "proj", "residual"),
+        ("proj", "output", "data"),
+    ]
+    assert result.unresolved == []
+
+
 def test_scanner_recovers_bounded_functional_calls_with_known_producers() -> None:
     source = b'''import torch
 import torch.nn as nn
@@ -310,4 +337,25 @@ class FunctionalModel(nn.Module):
         ("function:x.6", "function:x.7"),
         ("function:x.7", "function:return.8"),
         ("input", "function:x.6"),
+    ]
+
+
+def test_scanner_collapses_repeated_observations_of_the_same_semantic_edge() -> None:
+    source = b'''import torch.nn as nn
+
+class ReusedModule(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.proj = nn.Linear(2, 2)
+
+    def forward(self, x):
+        _first = self.proj(x)
+        second = self.proj(x)
+        return second
+'''
+    result = PyTorchStaticScanner().scan(source)
+
+    assert [(edge.source, edge.target) for edge in result.edges] == [
+        ("input", "proj"),
+        ("proj", "output"),
     ]

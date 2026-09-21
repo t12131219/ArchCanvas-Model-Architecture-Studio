@@ -288,3 +288,115 @@ class FunctionalModel(nn.Module):
         ("node:input", "node:functionalmodel.proj"),
         ("node:functionalmodel.proj", "node:function.functionalmodel.x.11"),
     ]
+
+
+def test_adapter_recovers_a_config_selected_helper_with_call_anchors() -> None:
+    source = b'''import torch.nn as nn
+
+class TaskModel(nn.Module):
+    def __init__(self, configs):
+        super().__init__()
+        self.task_name = configs.task_name
+        self.embedding = nn.Linear(2, 2)
+        if self.task_name == "forecast":
+            self.head = nn.Linear(2, 1)
+
+    def forecast(self, x):
+        encoded = self.embedding(x)
+        return self.head(encoded)
+
+    def forward(self, x):
+        if self.task_name == "forecast":
+            return self.forecast(x)
+        return x
+'''
+    identity, ir = PyTorchStaticAdapter().analyze(
+        source,
+        project_id="project:config-selected-helper",
+        relative_file="model.py",
+        entrypoint="model.py:TaskModel",
+        resolved_config={"task_name": "forecast"},
+    )
+
+    assert validate_architecture_semantics(ir, identity) == []
+    assert [node.display_name for node in ir.nodes] == ["Input", "embedding", "head", "Output"]
+    assert [(edge.source_node_id, edge.target_node_id) for edge in ir.edges] == [
+        ("node:taskmodel.embedding", "node:taskmodel.head"),
+        ("node:taskmodel.head", "node:output"),
+        ("node:input", "node:taskmodel.embedding"),
+    ]
+    edge_anchor_ids = [edge.evidence[0].anchor_id for edge in ir.edges]
+    assert all(anchor_id is not None for anchor_id in edge_anchor_ids)
+    anchors = {anchor.anchor_id: anchor for anchor in identity.anchors}
+    assert {anchors[anchor_id].symbol_path for anchor_id in edge_anchor_ids if anchor_id} == {
+        "TaskModel.forecast",
+        "TaskModel.forward",
+    }
+    assert ir.unresolved == []
+    assert ir.metadata["resolved_config"] == {"task_name": "forecast"}
+
+
+def test_adapter_keeps_task_helpers_unconfirmed_without_resolved_config() -> None:
+    source = b'''import torch.nn as nn
+
+class TaskModel(nn.Module):
+    def __init__(self, configs):
+        super().__init__()
+        self.task_name = configs.task_name
+        self.embedding = nn.Linear(2, 2)
+        if self.task_name == "forecast":
+            self.head = nn.Linear(2, 1)
+
+    def forecast(self, x):
+        return self.head(self.embedding(x))
+
+    def forward(self, x):
+        if self.task_name == "forecast":
+            return self.forecast(x)
+        return x
+'''
+    _, ir = PyTorchStaticAdapter().analyze(
+        source,
+        project_id="project:unresolved-task-helper",
+        relative_file="model.py",
+        entrypoint="model.py:TaskModel",
+    )
+
+    assert [node.display_name for node in ir.nodes] == ["Input", "embedding", "Output"]
+    assert ir.edges == []
+    assert [item.code for item in ir.unresolved] == [
+        "DYNAMIC_CONSTRUCTOR_CONTROL_FLOW",
+        "DYNAMIC_CONTROL_FLOW",
+    ]
+
+
+def test_adapter_recovers_a_config_resolved_module_list_member_inside_a_nested_call() -> None:
+    source = b'''import torch.nn as nn
+
+class RepeatedModel(nn.Module):
+    def __init__(self, configs):
+        super().__init__()
+        self.layer = configs.depth
+        self.blocks = nn.ModuleList([nn.Linear(2, 2) for _ in range(configs.depth)])
+        self.norm = nn.LayerNorm(2)
+
+    def forward(self, x):
+        for i in range(self.layer):
+            x = self.norm(self.blocks[i](x))
+        return x
+'''
+    identity, ir = PyTorchStaticAdapter().analyze(
+        source,
+        project_id="project:config-module-list",
+        relative_file="model.py",
+        entrypoint="model.py:RepeatedModel",
+        resolved_config={"depth": 3},
+    )
+
+    assert validate_architecture_semantics(ir, identity) == []
+    assert [(item.count, item.count_symbol) for item in ir.repeats] == [(3, None)]
+    assert [(edge.source_node_id, edge.target_node_id) for edge in ir.edges] == [
+        ("node:repeatedmodel.blocks", "node:repeatedmodel.norm"),
+        ("node:input", "node:repeatedmodel.blocks"),
+        ("node:repeatedmodel.norm", "node:output"),
+    ]

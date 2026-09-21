@@ -16,6 +16,7 @@
     { "command": "conda run -n TFB_py311 python -m ruff check src tests tools", "exit_code": 0 },
     { "command": "conda run -n TFB_py311 python -m compileall -q src tools tests", "exit_code": 0 },
     { "command": "conda run -n TFB_py311 python tools/export_schemas.py", "exit_code": 0 },
+    { "command": "PYTHONPATH=src conda run -n TFB_py311 python tools/generate_pytorch_model_census.py <approved-tfb-root>/ts_benchmark --project-id project:tfb-census --output <cache-or-acceptance-root>/tfb-model-census.json --quiet", "exit_code": 0 },
     { "command": "npm run build && npm run lint", "exit_code": 0 },
     { "command": "cargo fmt --check", "exit_code": 0 },
     { "command": "git diff --check", "exit_code": 0 },
@@ -30,12 +31,15 @@
     "observed": ["Engine project open", "Publication node drag", "CanvasDocument save", "native restart", "CanvasDocument replay", "Exact source-backed ModuleList node", "source SHA-256 unchanged"],
     "webdriver_protocol": "classic"
   },
-  "blocking": false,
+  "blocking": true,
   "sidecar": {
     "status": "passed",
     "observed": ["typed JSONL dispatch", "process restart", "cached analysis load", "CanvasDocument replay", "source bytes unchanged"]
   },
-  "blockers": [],
+  "blockers": [
+    "D5 requires approved resolved-config snapshots for every applicable TFB entrypoint, then a repeatable full-census Publication preflight and manual overview/detail review. The current 143 generated evidence directories are recorded separately and are not acceptance.",
+    "The TimesNet, DUET and Transformer deep semantic overview/detail golden cases remain required after the full-census gates."
+  ],
   "pending_external_acceptance": [
     "The configured GitHub Actions Ubuntu 24.04 native desktop job has not yet produced its first hosted CI result."
   ]

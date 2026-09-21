@@ -8,6 +8,7 @@ import type {
   EngineClient,
   ProjectOpenInput,
   SaveOutcome,
+  ScientificMiniature,
 } from './types'
 
 const STORAGE_KEY = 'archcanvas.stage6.fixture.canvas.v1'
@@ -29,6 +30,22 @@ const fixtureEdges: ArchitectureEdge[] = fixtureNodes.slice(1).map((node, index)
   source: fixtureNodes[index].id,
   target: node.id,
 }))
+
+const fixtureMiniatures: ScientificMiniature[] = [
+  {
+    id: 'miniature:input-flow-schematic', targetId: 'publication-node:input', kind: 'signal_preview',
+    evidenceKind: 'deterministic_schematic', disclosure: 'illustrative',
+    label: 'Illustrative input flow (not runtime data)',
+  },
+  {
+    id: 'miniature:transformer-repeat-equation', targetId: 'publication-node:transformer-encoder', kind: 'equation_note',
+    evidenceKind: 'publication_annotation', disclosure: 'evidence', label: 'N x repeated encoder block',
+  },
+  {
+    id: 'miniature:transformer-repeat-inset', targetId: 'publication-node:transformer-encoder', kind: 'inset_callout',
+    evidenceKind: 'publication_annotation', disclosure: 'evidence', label: 'Open repeated-block detail',
+  },
+]
 
 const exactNodes: ArchitectureNode[] = [
   { id: 'exact-node:input', label: 'input_ids', kind: 'input', anchor: 'model.py:18', members: 1 },
@@ -65,7 +82,7 @@ function fixtureSnapshot(document: CanvasDocument): DesktopSnapshot {
   return {
     mode: 'fixture-read-only', projectName: 'Transformer publication fixture', projectId, publicationId,
     sourceRevision, sourceLabel: 'fixtures/transformer_static_v1/source/model.py', nodes: fixtureNodes,
-    edges: fixtureEdges, exactNodes, exactEdges, document,
+    edges: fixtureEdges, miniatures: fixtureMiniatures, exactNodes, exactEdges, document,
     validation: { status: 'ready', message: 'Read-only fixture. Visual state is isolated from source bytes.' },
   }
 }
@@ -111,6 +128,14 @@ type EngineAnalysis = {
     publication_id: string
     nodes: Array<{ node_id: string; label: string; kind: string; member_node_ids: string[]; collapsed: boolean }>
     edges: Array<{ edge_id: string; source_node_id: string; target_node_id: string; kind: string }>
+    miniatures?: Array<{
+      miniature_id: string
+      target_node_id: string
+      kind: ScientificMiniature['kind']
+      evidence_kind: ScientificMiniature['evidenceKind']
+      disclosure: ScientificMiniature['disclosure']
+      label: string
+    }>
   }
   scene: { nodes: Array<{ publication_node_id: string; x: number; y: number; width: number; height: number }> }
 }
@@ -166,6 +191,14 @@ function snapshotFromAnalysis(analysis: EngineAnalysis, document?: CanvasDocumen
     publicationId: analysis.publication.publication_id, sourceRevision: analysis.manifest.source_revision,
     sourceLabel: analysis.manifest.entrypoint, nodes: publicationNodes,
     edges: analysis.publication.edges.map((edge) => ({ id: edge.edge_id, source: edge.source_node_id, target: edge.target_node_id, residual: edge.kind === 'residual' })),
+    miniatures: (analysis.publication.miniatures ?? []).map((miniature) => ({
+      id: miniature.miniature_id,
+      targetId: miniature.target_node_id,
+      kind: miniature.kind,
+      evidenceKind: miniature.evidence_kind,
+      disclosure: miniature.disclosure,
+      label: miniature.label,
+    })),
     exactNodes: analysis.architecture.nodes.map((node) => ({
       id: node.node_id, label: node.display_name, kind: node.kind,
       anchor: node.source_anchor_ids.map((anchor) => anchors.get(anchor)).find(Boolean) ?? 'unresolved source anchor', anchorId: node.source_anchor_ids[0], members: 1,

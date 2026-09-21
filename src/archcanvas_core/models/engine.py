@@ -17,6 +17,7 @@ ProjectId = Annotated[str, Field(pattern=r"^project:[A-Za-z0-9._-]+$")]
 VisualPatchId = Annotated[str, Field(pattern=r"^visual-patch:[A-Za-z0-9._-]+$")]
 EngineRequestId = Annotated[str, Field(pattern=r"^engine-request:[A-Za-z0-9._-]+$")]
 EngineEventId = Annotated[str, Field(pattern=r"^engine-event:[A-Za-z0-9._-]+$")]
+ResolvedConfigValue = str | int | float | bool | None
 
 
 class ProjectSourceStatus(str, Enum):
@@ -37,6 +38,7 @@ class ProjectManifest(StrictModel):
     framework: Literal["pytorch"]
     entrypoint: str = Field(pattern=r"^[A-Za-z0-9_./-]+\.py:[A-Za-z_][A-Za-z0-9_]*$")
     environment: EngineEnvironment
+    resolved_config: dict[str, ResolvedConfigValue] = Field(default_factory=dict)
     source_revision: Sha256
     file_revisions: dict[str, Sha256] = Field(min_length=1)
     source_status: ProjectSourceStatus = ProjectSourceStatus.READY
@@ -93,6 +95,7 @@ class OpenProjectCommand(StrictModel):
     approved_root: str = Field(min_length=1)
     entrypoint: str = Field(pattern=r"^[A-Za-z0-9_./-]+\.py:[A-Za-z_][A-Za-z0-9_]*$")
     environment: EngineEnvironment
+    resolved_config: dict[str, ResolvedConfigValue] = Field(default_factory=dict)
 
 
 class ProjectCommand(StrictModel):

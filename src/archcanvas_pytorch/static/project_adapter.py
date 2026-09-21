@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+from collections.abc import Mapping
 from hashlib import sha256
 from pathlib import Path
 
@@ -20,6 +21,7 @@ from archcanvas_python.source_revision import file_revision
 
 from .adapter import PyTorchStaticAdapter
 from .project import PyTorchProjectScanner
+from .semantic_patterns import collect_semantic_pattern_evidence
 from .symbols import EntrypointSymbolResolution, LocalModuleBinding, PyTorchProjectSymbolTable
 
 
@@ -110,6 +112,7 @@ class PyTorchProjectStaticAdapter:
         *,
         project_id: str,
         previous_source: SourceIdentityDocument | None = None,
+        resolved_config: Mapping[str, object] | None = None,
     ) -> tuple[SourceIdentityDocument, ArchitectureIR]:
         raw_source = (root / resolution.relative_file).read_bytes()
         return self._adapter.analyze(
@@ -119,6 +122,7 @@ class PyTorchProjectStaticAdapter:
             entrypoint=f"{resolution.relative_file}:{resolution.model_class}",
             previous_source=previous_source,
             local_module_aliases=self._aliases(resolution),
+            resolved_config=resolved_config,
         )
 
     def _collect_transitive_evidence(
@@ -212,18 +216,87 @@ class PyTorchProjectStaticAdapter:
         project_id: str,
         entrypoint: str,
         previous_source: SourceIdentityDocument | None = None,
+        resolved_config: Mapping[str, object] | None = None,
     ) -> tuple[SourceIdentityDocument, ArchitectureIR]:
         """Return an Exact IR for an approved root and selected direct-import entrypoint."""
 
         resolved_root = root.resolve(strict=True)
         symbols = self._project_scanner.build_symbol_table(resolved_root)
+        return self.analyze_with_symbol_table(
+            resolved_root,
+            symbols=symbols,
+            project_id=project_id,
+            entrypoint=entrypoint,
+            previous_source=previous_source,
+            resolved_config=resolved_config,
+        )
+
+    def analyze_with_symbol_table(
+        self,
+        root: Path,
+        *,
+        symbols: PyTorchProjectSymbolTable,
+        project_id: str,
+        entrypoint: str,
+        previous_source: SourceIdentityDocument | None = None,
+        resolved_config: Mapping[str, object] | None = None,
+    ) -> tuple[SourceIdentityDocument, ArchitectureIR]:
+        """Analyze one entrypoint with a caller-supplied symbol table for corpus-scale scans."""
+
+        resolved_root = root.resolve(strict=True)
+        if Path(symbols.root).resolve(strict=True) != resolved_root:
+            raise ValueError("symbol table root must match the approved project root")
         resolution = symbols.resolve_entrypoint(entrypoint)
         source, ir = self._analyze_entrypoint(
             resolved_root,
             resolution,
             project_id=project_id,
             previous_source=previous_source,
+            resolved_config=resolved_config,
         )
+
+        # Semantic pattern signatures are collected here, while source is under the approved
+        # read-only root.  The Publication compiler receives only this Exact-IR metadata and
+        # never examines project files itself.
+        root_raw_source = (resolved_root / resolution.relative_file).read_bytes()
+        root_revision = file_revision(root_raw_source)
+        semantic_evidence, semantic_anchors = collect_semantic_pattern_evidence(
+            root_raw_source,
+            relative_file=resolution.relative_file,
+            revision=root_revision,
+        )
+        local_nodes_by_class: dict[str, list[str]] = {}
+        local_type_prefix = f"local:{resolution.relative_file}:"
+        for node in ir.nodes:
+            if node.op_type.startswith(local_type_prefix):
+                local_nodes_by_class.setdefault(node.op_type.removeprefix(local_type_prefix), []).append(node.node_id)
+        evidence_records: list[dict[str, object]] = []
+        anchors_by_node_id: dict[str, list[str]] = {}
+        for evidence in semantic_evidence:
+            node_ids = sorted(local_nodes_by_class.get(evidence.class_name, []))
+            if evidence.pattern_id == "transformer_encoder_layer_v1":
+                node_ids = sorted(
+                    node.node_id
+                    for node in ir.nodes
+                    if node.op_type == "torch.nn.TransformerEncoderLayer"
+                )
+            if not node_ids:
+                continue
+            for node_id in node_ids:
+                anchors_by_node_id[node_id] = evidence.source_anchor_ids
+            evidence_records.append(
+                {
+                    "pattern_id": evidence.pattern_id,
+                    "root_node_ids": node_ids,
+                    "source_anchor_ids": evidence.source_anchor_ids,
+                    "markers": evidence.markers,
+                    "resolved_parameters": {
+                        key: value
+                        for key, value in sorted((resolved_config or {}).items())
+                        if key in {"e_layers", "top_k", "num_kernels", "task_name"}
+                    },
+                }
+            )
 
         # A local-call node is only valid against both the call-site and imported-class revisions.
         file_revisions = dict(source.file_revisions)
@@ -252,6 +325,19 @@ class PyTorchProjectStaticAdapter:
             else node
             for node in ir.nodes
         ]
+        nodes = [
+            node.model_copy(
+                update={
+                    "source_anchor_ids": [
+                        *node.source_anchor_ids,
+                        *anchors_by_node_id.get(node.node_id, []),
+                    ]
+                }
+            )
+            if anchors_by_node_id.get(node.node_id)
+            else node
+            for node in nodes
+        ]
         identity_anchor_ids = {
             node.identity_id: node.source_anchor_ids for node in nodes if node.op_type in target_anchors
         }
@@ -274,7 +360,12 @@ class PyTorchProjectStaticAdapter:
         revision = source_snapshot_revision(file_revisions)
         combined_anchors = {
             anchor.anchor_id: anchor
-            for anchor in [*source.anchors, *target_anchors.values(), *transitive_anchors.values()]
+            for anchor in [
+                *source.anchors,
+                *target_anchors.values(),
+                *transitive_anchors.values(),
+                *semantic_anchors,
+            ]
         }
         source = source.model_copy(
             update={
@@ -294,6 +385,7 @@ class PyTorchProjectStaticAdapter:
                     "direct_local_binding_count": len(resolution.local_module_bindings),
                     "transitive_local_call_evidence": transitive_evidence,
                     "transitive_local_call_evidence_depth": self._max_transitive_evidence_depth,
+                    "publication_pattern_evidence": evidence_records,
                 },
             }
         )

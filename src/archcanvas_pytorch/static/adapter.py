@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 from collections.abc import Mapping
 from hashlib import sha256
 
@@ -37,11 +38,25 @@ from archcanvas_core.models.source_identity import (
 )
 from archcanvas_python.source_revision import file_revision
 
-from .scanner import FunctionDiscovery, ParameterDiscovery, PyTorchStaticScanner
+from .scanner import EdgeDiscovery, FunctionDiscovery, ParameterDiscovery, PyTorchStaticScanner
 
 
 def _digest(text: str) -> str:
     return "sha256:" + sha256(text.encode("utf-8")).hexdigest()
+
+
+def _same_file_module_aliases(raw_source: bytes, relative_file: str) -> dict[str, str]:
+    """Name only plainly declared nn.Module classes as local constructor targets."""
+
+    module = ast.parse(raw_source.decode("utf-8"))
+    aliases: dict[str, str] = {}
+    for node in module.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        base_names = {ast.unparse(base) for base in node.bases}
+        if base_names & {"nn.Module", "torch.nn.Module", "Module"}:
+            aliases[node.name] = f"local:{relative_file}:{node.name}"
+    return aliases
 
 
 def _node_id(model_class: str, attribute: str) -> str:
@@ -70,6 +85,63 @@ def _span_text(lines: list[str], *, line: int, column: int, end_line: int, end_c
 
 def _parameter_anchor_id(model_class: str, attribute: str, source_name: str) -> str:
     return f"anchor:{model_class.lower()}.{attribute}.parameter.{source_name}"
+
+
+def _edge_anchor(
+    edge: EdgeDiscovery,
+    *,
+    model_class: str,
+    relative_file: str,
+    revision: str,
+    lines: list[str],
+) -> SourceAnchor | None:
+    """Return a source call anchor when recovery retained an exact call span."""
+
+    if None in {edge.line, edge.column, edge.end_line, edge.end_column}:
+        return None
+    assert edge.line is not None
+    assert edge.column is not None
+    assert edge.end_line is not None
+    assert edge.end_column is not None
+    function_name = edge.function_name or "forward"
+    anchor_id = (
+        f"anchor:{model_class.lower()}.{function_name}.edge."
+        f"{edge.line}.{edge.column}.{edge.source.replace(':', '.')}.{edge.target.replace(':', '.')}"
+    )
+    content = _span_text(
+        lines,
+        line=edge.line,
+        column=edge.column,
+        end_line=edge.end_line,
+        end_column=edge.end_column,
+    )
+    return SourceAnchor(
+        anchor_id=anchor_id,
+        relative_file=relative_file,
+        symbol_path=f"{model_class}.{function_name}",
+        semantic_path=(
+            f"{model_class.lower()}.{function_name}.edge."
+            f"{edge.source.replace(':', '.')}.{edge.target.replace(':', '.')}"
+        ),
+        kind=AnchorKind.CALL,
+        cst_node_type="Call",
+        span=SourceSpan(
+            start=SourcePosition(line=edge.line, column=edge.column),
+            end=SourcePosition(line=edge.end_line, column=edge.end_column),
+        ),
+        locator=AnchorLocator(
+            class_name=model_class,
+            function_name=function_name,
+            assignment_target=None,
+            callee_text=None,
+            qualified_callee=None,
+            argument_name=None,
+            occurrence=0,
+        ),
+        structural_fingerprint=_digest(f"{edge.kind}:{edge.source}->{edge.target}"),
+        content_fingerprint=_digest(content),
+        file_revision=revision,
+    )
 
 
 def _function_anchor_id(model_class: str, name: str) -> str:
@@ -303,6 +375,7 @@ class PyTorchStaticAdapter:
         entrypoint: str,
         previous_source: SourceIdentityDocument | None = None,
         local_module_aliases: Mapping[str, str] | None = None,
+        resolved_config: Mapping[str, object] | None = None,
     ) -> tuple[SourceIdentityDocument, ArchitectureIR]:
         try:
             entrypoint_file, model_class = entrypoint.split(":", maxsplit=1)
@@ -312,8 +385,12 @@ class PyTorchStaticAdapter:
             raise ValueError("entrypoint must match relative_file and name a model class")
         recovery = self._scanner.scan(
             raw_source,
-            local_module_aliases=local_module_aliases,
+            local_module_aliases={
+                **_same_file_module_aliases(raw_source, relative_file),
+                **dict(local_module_aliases or {}),
+            },
             selected_model_class=model_class,
+            resolved_config=resolved_config,
         )
         if recovery.model_classes != [model_class]:
             raise ValueError("selected entrypoint is not an nn.Module class in relative_file")
@@ -465,7 +542,18 @@ class PyTorchStaticAdapter:
             source, target = node_lookup.get(edge.source), node_lookup.get(edge.target)
             if source is None or target is None:
                 continue
-            edges.append(ArchitectureEdge(edge_id=f"edge:{edge.source}->{edge.target}:{edge.kind}", source_node_id=source.node_id, source_port_id=source.output_ports[0].port_id if source.output_ports else None, target_node_id=target.node_id, target_port_id=target.input_ports[0].port_id if target.input_ports else None, kind=EdgeKind(edge.kind), tensor=None, semantic_role=None, evidence=[Evidence(source=EvidenceSource.STATIC_AST, confidence=Confidence.CONFIRMED, description="Forward data flow", anchor_id=None, trace_id=None)], metadata={}))
+            edge_anchor = _edge_anchor(
+                edge,
+                model_class=model_class,
+                relative_file=relative_file,
+                revision=revision,
+                lines=lines,
+            )
+            if edge_anchor is not None and all(
+                anchor.anchor_id != edge_anchor.anchor_id for anchor in anchors
+            ):
+                anchors.append(edge_anchor)
+            edges.append(ArchitectureEdge(edge_id=f"edge:{edge.source}->{edge.target}:{edge.kind}", source_node_id=source.node_id, source_port_id=source.output_ports[0].port_id if source.output_ports else None, target_node_id=target.node_id, target_port_id=target.input_ports[0].port_id if target.input_ports else None, kind=EdgeKind(edge.kind), tensor=None, semantic_role=None, evidence=[Evidence(source=EvidenceSource.STATIC_AST, confidence=Confidence.CONFIRMED, description="Forward data flow", anchor_id=edge_anchor.anchor_id if edge_anchor is not None else None, trace_id=None)], metadata={}))
         reconciliations, identity_unresolved = _reconcile_identities(identities, previous_source)
         source = SourceIdentityDocument(
             project_id=project_id,
@@ -492,6 +580,9 @@ class PyTorchStaticAdapter:
                 for item in recovery.unresolved
             ]
             + identity_unresolved,
-            metadata={"adapter": "pytorch-static-v1"},
+            metadata={
+                "adapter": "pytorch-static-v1",
+                "resolved_config": dict(resolved_config or {}),
+            },
         )
         return source, ir

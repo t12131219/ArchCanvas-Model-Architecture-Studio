@@ -30,18 +30,21 @@ fn normalize_request(value: Value) -> Value {
                 .into_iter()
                 .map(|(key, value)| (snake_case(&key), normalize_request(value)))
                 .collect();
-            let is_transport_wrapper = normalized.len() == 1
-                && normalized.get("request").is_some_and(|request| {
-                    request.as_object().is_some_and(|envelope| {
-                        envelope.contains_key("schema_version")
-                            && envelope.contains_key("request_id")
-                            && envelope.contains_key("command")
-                    })
-                });
-            if is_transport_wrapper {
-                normalized
-                    .remove("request")
-                    .expect("checked request wrapper")
+            if let Some(request) = normalized.remove("request") {
+                if let Value::Object(envelope) = request {
+                    if envelope.contains_key("schema_version")
+                        && envelope.contains_key("request_id")
+                        && envelope.contains_key("command")
+                    {
+                        Value::Object(envelope)
+                    } else {
+                        normalized.insert("request".into(), Value::Object(envelope));
+                        Value::Object(normalized)
+                    }
+                } else {
+                    normalized.insert("request".into(), request);
+                    Value::Object(normalized)
+                }
             } else {
                 Value::Object(normalized)
             }

@@ -1,0 +1,59 @@
+{
+  "stage": "stage-6",
+  "status": "machine-preflight-observed-not-d5-accepted",
+  "environment": {"conda": "TFB_py311", "python": "3.11.x"},
+  "command": "PYTHONPATH=src conda run -n TFB_py311 python tools/generate_pytorch_model_census.py <approved-tfb-root>/ts_benchmark --project-id project:tfb-d5-configured-preflight --resolved-config-file docs/acceptance/tfb-resolved-configs-v1.json --assess-publication --publication-artifact-root <external-evidence-root> --output <external-evidence-root>/tfb-model-census.json --quiet",
+  "input_provenance": {
+    "approved_root": "Benchmark model reference/TFB-master/ts_benchmark",
+    "access": "read-only AST/static recovery and Publication preflight",
+    "excluded_inputs": ["Article/", "paper PDFs", "reference images"],
+    "source_imported": false,
+    "source_executed": false,
+    "dependencies_installed": false,
+    "source_written": false
+  },
+  "observed_census": {
+    "report_sha256": "sha256:1e5e12278fc4d0eed4371496900dc6cb73d3f624909a0db5a44bcb109d5d27fa",
+    "python_files_scanned": 263,
+    "source_files_observed_count": 263,
+    "source_files_unchanged": true,
+    "discovered_entrypoint_count": 460,
+    "assessed_entrypoint_count": 439,
+    "explicit_alias_count": 21,
+    "status_counts": {"supported": 101, "unresolved": 266, "unsupported": 72, "blocked": 0},
+    "publication_status_counts": {"publication_svg_ready": 101, "publication_svg_ready_with_unresolved_parameter_provenance": 42, "publication_not_assessed": 296},
+    "deep_semantic_patterns": {
+      "timesnet_v1": {
+        "status": "source-backed-pattern-fixture-and-real-tfb-preflight",
+        "required_signature": ["FFT/rFFT", "Top-K", "period loop", "1D-2D reshape", "Inception path", "adaptive aggregation", "residual"],
+        "real_tfb_publication_nodes": 7,
+        "real_tfb_publication_svg_sha256": "sha256:4f8b8f3b971a12513fa7c32d4cc5481cd44da99f228d83ea1087208bc910166a",
+        "parameter_provenance": "unresolved and visible"
+      },
+      "transformer_encoder_layer_v1": {
+        "fixture_status": "confirmed",
+        "fixture_required_signature": ["TransformerEncoderLayer ModuleList", "repeat loop", "LayerNorm", "forecast head"],
+        "real_tfb_status": "not_matched",
+        "real_tfb_reason": "cross-file custom EncoderLayer/DecoderLayer attention and residual order still lacks complete source-backed evidence"
+      }
+    },
+    "external_publication_evidence": {
+      "entrypoint_directories": 143,
+      "files": 858,
+      "contents_per_ready_entrypoint": ["publication.json", "scene-overview.json", "scene-detail.json", "overview.svg", "detail.svg", "publication-checklist.json"],
+      "machine_preflight": "passed",
+      "manual_review": "pending"
+    }
+  },
+  "interpretation": [
+    "A publication_svg_ready result proves only deterministic Publication/SVG preflight for a static-supported entrypoint. It is not publication_supported and does not satisfy the Section 26.8 manual, screenshot or deep-semantic acceptance gates.",
+    "The 296 publication_not_assessed records remain in the census. Their unsupported, unresolved or missing-config states are ArchCanvas conversion/configuration backlog under Section 26.8.1, not grounds to reduce the TFB corpus.",
+    "The checked-in V1 ledger supplied the recorded Transformer and TimesNet forecast configurations. Both now have source-mapped Publication/SVG preflight evidence; their remaining parameter-provenance facts remain visible and do not become confirmed parameter facts.",
+    "TimesNet now requires a complete source-backed timesnet_v1 signature before the compiler uses TimesBlock terminology or scientific miniatures; incomplete signatures fail closed to the neutral Publication view."
+  ],
+  "remaining_d5_work": [
+    "Add approved resolved-config snapshots for every applicable TFB entrypoint and rerun the same full census.",
+    "Complete manual Publication checklist, overview/detail screenshot regression and source-evidence traversal for every publication candidate.",
+    "Complete TimesNet, DUET and Transformer deep-semantic overview/detail contracts required by Section 26.8."
+  ]
+}

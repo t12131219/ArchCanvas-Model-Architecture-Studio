@@ -1,0 +1,63 @@
+{
+  "stage": "stage-6",
+  "status": "observed_not_d5_accepted",
+  "environment": {"conda": "TFB_py311", "python": "3.11.x"},
+  "input_provenance": {
+    "approved_root": "../TFB-master",
+    "access": "read-only source analysis; Engine cache written only to a temporary directory",
+    "repository_revision": null,
+    "repository_revision_status": "No Git metadata was available in the approved local working tree. File SHA-256 revisions below are the reproducibility identity.",
+    "excluded_inputs": ["Article/", "paper PDFs", "reference images"]
+  },
+  "cases": [
+    {
+      "name": "Transformer forecast",
+      "entrypoint": "ts_benchmark/baselines/time_series_library/models/Transformer.py:Transformer",
+      "resolved_config": {"task_name": "long_term_forecast", "e_layers": 2, "d_layers": 1},
+      "source_revision": "sha256:a5b045c4a5013a9cc36228b2558ee70ffec802ddb679364c04ebe9c144423cd7",
+      "file_revisions": {
+        "ts_benchmark/baselines/time_series_library/layers/Embed.py": "sha256:7e49caeb63ceabcbd7ca6b8122cf59553bb5f18e54f771b846db9ac5a44274a3",
+        "ts_benchmark/baselines/time_series_library/layers/SelfAttention_Family.py": "sha256:aa7ecc50c907ff12265c420d9bac2db2c7002129125910de638d997d1bac04af",
+        "ts_benchmark/baselines/time_series_library/layers/Transformer_EncDec.py": "sha256:cb24a9a94eadff626d826463b28e3a89aa37aba1b724a3f460526c263118b336",
+        "ts_benchmark/baselines/time_series_library/models/Transformer.py": "sha256:b23b111d857273cc2e5d0c01d598e751cc7c8914dcd0870f0430fc2aaf816b22"
+      },
+      "exact_ir": {
+        "node_count": 6,
+        "edge_count": 5,
+        "confirmed_flow": ["Input -> enc_embedding -> encoder", "Input -> dec_embedding -> decoder -> Output"],
+        "helper_call_anchors": ["Transformer.forecast:111", "Transformer.forecast:112", "Transformer.forecast:114", "Transformer.forecast:115"],
+        "unresolved_fact_count": 15,
+        "unresolved_categories": ["UNRESOLVED_PARAMETER_PROVENANCE"]
+      },
+      "publication": {"node_count": 6, "edge_count": 5, "svg_sha256": "sha256:cea60a58aedbba69d65136d5422b3d6cd0cb8d83dc22f2cd6a47c0a5e8199876"},
+      "source_sha256_unchanged_before_after": true
+    },
+    {
+      "name": "TimesNet forecast",
+      "entrypoint": "ts_benchmark/baselines/time_series_library/models/TimesNet.py:TimesNet",
+      "resolved_config": {"task_name": "long_term_forecast", "e_layers": 2},
+      "source_revision": "sha256:8f93a15321cd5e7cbc4ddffed3adf6d0d1268b13fe184f25222d7c2274feee5c",
+      "file_revisions": {
+        "ts_benchmark/baselines/time_series_library/layers/Conv_Blocks.py": "sha256:e7b13cb38557718338e041b535deafc6a4e870f23f3a599a895d2ae26c99e7de",
+        "ts_benchmark/baselines/time_series_library/layers/Embed.py": "sha256:7e49caeb63ceabcbd7ca6b8122cf59553bb5f18e54f771b846db9ac5a44274a3",
+        "ts_benchmark/baselines/time_series_library/models/TimesNet.py": "sha256:d13f132a4bb0782bdc78b3ab42a14adb31e5582121bc0c2719b0ef6dbe99e6e6"
+      },
+      "exact_ir": {
+        "node_count": 7,
+        "edge_count": 6,
+        "repeat": "TimesBlock x 2",
+        "confirmed_flow": ["Input -> enc_embedding -> predict_linear -> model -> layer_norm -> projection -> Output"],
+        "helper_call_anchors": ["TimesNet.forecast:128", "TimesNet.forecast:129", "TimesNet.forecast:134", "TimesNet.forecast:136"],
+        "unresolved_fact_count": 11,
+        "unresolved_categories": ["UNRESOLVED_PARAMETER_PROVENANCE", "UNRESOLVED_RESIDUAL"]
+      },
+      "publication": {"node_count": 7, "edge_count": 6, "svg_sha256": "sha256:b42cb839b34db60cf4dc216d1a4b3da7e47e619ca27871bb3e6e1969ac6d3013"},
+      "source_sha256_unchanged_before_after": true
+    }
+  ],
+  "not_accepted": [
+    "This is not the Section 26.8 three-model overview/detail golden acceptance set.",
+    "DUET, resolved full parameter snapshots, runtime miniatures, TimesNet residual/adaptive-aggregation pattern mapping, and paper-style detail scenes remain unimplemented.",
+    "The generic Publication compiler output is source-backed but is not yet a claim of complete Transformer or TimesNet paper-diagram fidelity."
+  ]
+}

@@ -1122,6 +1122,25 @@
       "title": "LoadedAnalysisResult",
       "type": "object"
     },
+    "MiniatureDisclosure": {
+      "enum": [
+        "evidence",
+        "illustrative"
+      ],
+      "title": "MiniatureDisclosure",
+      "type": "string"
+    },
+    "MiniatureEvidenceKind": {
+      "description": "The permitted provenance for a scientific miniature.",
+      "enum": [
+        "static_tensor_spec",
+        "runtime_summary",
+        "deterministic_schematic",
+        "publication_annotation"
+      ],
+      "title": "MiniatureEvidenceKind",
+      "type": "string"
+    },
     "ModelDescriptor": {
       "additionalProperties": false,
       "properties": {
@@ -1342,6 +1361,29 @@
           "title": "Project Id",
           "type": "string"
         },
+        "resolved_config": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Resolved Config",
+          "type": "object"
+        },
         "schema_version": {
           "const": "1.0",
           "default": "1.0",
@@ -1505,6 +1547,13 @@
           "title": "Exact Ir Id",
           "type": "string"
         },
+        "miniatures": {
+          "items": {
+            "$ref": "#/$defs/PublicationMiniature"
+          },
+          "title": "Miniatures",
+          "type": "array"
+        },
         "nodes": {
           "items": {
             "$ref": "#/$defs/PublicationNode"
@@ -1564,6 +1613,83 @@
       ],
       "title": "PublicationIR",
       "type": "object"
+    },
+    "PublicationMiniature": {
+      "additionalProperties": false,
+      "description": "A source-mapped visual preview with explicit evidence or schematic disclosure.",
+      "properties": {
+        "disclosure": {
+          "$ref": "#/$defs/MiniatureDisclosure"
+        },
+        "evidence_kind": {
+          "$ref": "#/$defs/MiniatureEvidenceKind"
+        },
+        "kind": {
+          "$ref": "#/$defs/PublicationMiniatureKind"
+        },
+        "label": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "member_node_ids": {
+          "items": {
+            "pattern": "^node:[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Member Node Ids",
+          "type": "array"
+        },
+        "miniature_id": {
+          "pattern": "^miniature:[A-Za-z0-9._-]+$",
+          "title": "Miniature Id",
+          "type": "string"
+        },
+        "target_node_id": {
+          "pattern": "^publication-node:[A-Za-z0-9._-]+$",
+          "title": "Target Node Id",
+          "type": "string"
+        },
+        "trace_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Trace Id"
+        }
+      },
+      "required": [
+        "miniature_id",
+        "target_node_id",
+        "kind",
+        "evidence_kind",
+        "disclosure",
+        "label",
+        "member_node_ids"
+      ],
+      "title": "PublicationMiniature",
+      "type": "object"
+    },
+    "PublicationMiniatureKind": {
+      "description": "Read-only scientific visual grammars, never additional architecture nodes.",
+      "enum": [
+        "tensor_strip",
+        "signal_preview",
+        "distribution_preview",
+        "equation_note",
+        "inset_callout"
+      ],
+      "title": "PublicationMiniatureKind",
+      "type": "string"
     },
     "PublicationNode": {
       "additionalProperties": false,
