@@ -1,19 +1,18 @@
 from __future__ import annotations
 
+import os
+import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass
 from difflib import unified_diff
-import os
 from pathlib import Path
-import tempfile
-from typing import Callable
 
 import libcst as cst
 
 from archcanvas_core.graph_delta import GraphDeltaValidator, architecture_diff
 from archcanvas_core.models.architecture import ArchitectureIR
 from archcanvas_core.models.patch import PatchSet
-from archcanvas_core.models.source_identity import SourceIdentityDocument
-from archcanvas_core.models.source_identity import ReconciliationDecision
+from archcanvas_core.models.source_identity import ReconciliationDecision, SourceIdentityDocument
 from archcanvas_core.models.validation import ObservedGraphDelta, ValidationReport
 from archcanvas_core.semantic_validation import validate_architecture_semantics
 

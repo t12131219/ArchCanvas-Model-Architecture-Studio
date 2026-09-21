@@ -8,7 +8,6 @@ from pathlib import Path
 
 from archcanvas_pytorch.static import PyTorchStaticAdapter
 
-
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = (
     ("transformer_static_v1", "fixture:transformer_static_v1", "model.py:EncoderModel"),

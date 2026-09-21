@@ -8,7 +8,6 @@ from pydantic import Field, model_validator
 
 from .common import StrictModel
 
-
 Sha256 = Annotated[str, Field(pattern=r"^sha256:[0-9a-f]{64}$")]
 AnchorId = Annotated[str, Field(pattern=r"^anchor:[A-Za-z0-9._-]+$")]
 IdentityId = Annotated[str, Field(pattern=r"^identity:[A-Za-z0-9._-]+$")]
@@ -40,7 +39,7 @@ class SourceSpan(StrictModel):
     end: SourcePosition
 
     @model_validator(mode="after")
-    def end_is_after_start(self) -> "SourceSpan":
+    def end_is_after_start(self) -> SourceSpan:
         if (self.end.line, self.end.column) <= (self.start.line, self.start.column):
             raise ValueError("source span must be non-empty and half-open")
         return self
@@ -70,7 +69,7 @@ class SourceAnchor(StrictModel):
     file_revision: Sha256
 
     @model_validator(mode="after")
-    def validate_relative_path(self) -> "SourceAnchor":
+    def validate_relative_path(self) -> SourceAnchor:
         path = PurePosixPath(self.relative_file)
         if (
             not self.relative_file
@@ -97,7 +96,7 @@ class NodeIdentity(StrictModel):
     created_revision: Sha256
 
     @model_validator(mode="after")
-    def source_backed_identity_has_anchor(self) -> "NodeIdentity":
+    def source_backed_identity_has_anchor(self) -> NodeIdentity:
         if self.relative_file is not None and not self.anchor_ids:
             raise ValueError("source-backed identity requires at least one anchor")
         return self
@@ -119,7 +118,7 @@ class IdentityReconciliation(StrictModel):
     reasons: list[str] = Field(min_length=1)
 
     @model_validator(mode="after")
-    def decision_has_consistent_identifiers(self) -> "IdentityReconciliation":
+    def decision_has_consistent_identifiers(self) -> IdentityReconciliation:
         resolved = self.resolved_identity_id is not None
         old = self.old_identity_id is not None
         if self.decision in {ReconciliationDecision.EXACT, ReconciliationDecision.RECONCILED}:
@@ -143,7 +142,7 @@ class SourceIdentityDocument(StrictModel):
     reconciliations: list[IdentityReconciliation]
 
     @model_validator(mode="after")
-    def source_document_is_consistent(self) -> "SourceIdentityDocument":
+    def source_document_is_consistent(self) -> SourceIdentityDocument:
         anchor_ids = [anchor.anchor_id for anchor in self.anchors]
         identity_ids = [identity.identity_id for identity in self.identities]
         if len(anchor_ids) != len(set(anchor_ids)):

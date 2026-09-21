@@ -1,0 +1,197 @@
+{
+  "$defs": {
+    "JsonValue": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "type": "array"
+        },
+        {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "NetworkPolicy": {
+      "enum": [
+        "deny",
+        "inherit"
+      ],
+      "title": "NetworkPolicy",
+      "type": "string"
+    },
+    "RuntimeProviderId": {
+      "enum": [
+        "torch_fx",
+        "torch_export"
+      ],
+      "title": "RuntimeProviderId",
+      "type": "string"
+    },
+    "RuntimeTensorInput": {
+      "additionalProperties": false,
+      "properties": {
+        "dtype": {
+          "enum": [
+            "float32",
+            "float64",
+            "int64",
+            "int32",
+            "bool"
+          ],
+          "title": "Dtype",
+          "type": "string"
+        },
+        "kind": {
+          "const": "tensor",
+          "default": "tensor",
+          "title": "Kind",
+          "type": "string"
+        },
+        "shape": {
+          "items": {
+            "type": "integer"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "title": "Shape",
+          "type": "array"
+        }
+      },
+      "required": [
+        "shape",
+        "dtype"
+      ],
+      "title": "RuntimeTensorInput",
+      "type": "object"
+    }
+  },
+  "$id": "https://archcanvas.dev/schemas/runtime-trace-request-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "An explicit opt-in request that permits a worker to execute selected project code.",
+  "properties": {
+    "constructor_kwargs": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Constructor Kwargs",
+      "type": "object"
+    },
+    "dependency_lockfile": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Dependency Lockfile"
+    },
+    "entrypoint": {
+      "pattern": "^[A-Za-z0-9_./-]+\\.py:[A-Za-z_][A-Za-z0-9_]*$",
+      "title": "Entrypoint",
+      "type": "string"
+    },
+    "entrypoint_file_revision": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Entrypoint File Revision",
+      "type": "string"
+    },
+    "environment_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Environment Name"
+    },
+    "inputs": {
+      "items": {
+        "$ref": "#/$defs/RuntimeTensorInput"
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "title": "Inputs",
+      "type": "array"
+    },
+    "memory_limit_mb": {
+      "maximum": 16384,
+      "minimum": 128,
+      "title": "Memory Limit Mb",
+      "type": "integer"
+    },
+    "network_policy": {
+      "$ref": "#/$defs/NetworkPolicy",
+      "default": "deny"
+    },
+    "project_root": {
+      "minLength": 1,
+      "title": "Project Root",
+      "type": "string"
+    },
+    "provider": {
+      "$ref": "#/$defs/RuntimeProviderId"
+    },
+    "python_executable": {
+      "minLength": 1,
+      "title": "Python Executable",
+      "type": "string"
+    },
+    "request_id": {
+      "pattern": "^trace-request:[A-Za-z0-9._-]+$",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "source_revision": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Source Revision",
+      "type": "string"
+    },
+    "timeout_seconds": {
+      "maximum": 120,
+      "minimum": 1,
+      "title": "Timeout Seconds",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "request_id",
+    "project_root",
+    "python_executable",
+    "entrypoint",
+    "entrypoint_file_revision",
+    "source_revision",
+    "inputs",
+    "provider",
+    "timeout_seconds",
+    "memory_limit_mb"
+  ],
+  "title": "TraceRequest",
+  "type": "object"
+}

@@ -9,7 +9,6 @@ from .architecture import NodeId
 from .common import StrictModel
 from .source_identity import AnchorId, Sha256
 
-
 Scalar: TypeAlias = None | bool | int | float | str
 PatchId = Annotated[str, Field(pattern=r"^patch:[A-Za-z0-9._-]+$")]
 PatchSetId = Annotated[str, Field(pattern=r"^patchset:[A-Za-z0-9._-]+$")]
@@ -26,7 +25,7 @@ class ParameterChange(StrictModel):
     after: Scalar
 
     @model_validator(mode="after")
-    def value_changes(self) -> "ParameterChange":
+    def value_changes(self) -> ParameterChange:
         if _same_scalar(self.before, self.after):
             raise ValueError("parameter change must change value and type")
         return self
@@ -60,7 +59,7 @@ class SetParameterPatch(StrictModel):
     expected_delta: ExpectedGraphDelta
 
     @model_validator(mode="after")
-    def expected_delta_matches_payload(self) -> "SetParameterPatch":
+    def expected_delta_matches_payload(self) -> SetParameterPatch:
         expected = ParameterChange(
             node_id=self.target.node_id,
             parameter=self.target.parameter,
@@ -82,7 +81,7 @@ class PatchSet(StrictModel):
     patches: list[SetParameterPatch] = Field(min_length=1, max_length=1)
 
     @model_validator(mode="after")
-    def unique_patch_ids(self) -> "PatchSet":
+    def unique_patch_ids(self) -> PatchSet:
         if len({patch.patch_id for patch in self.patches}) != len(self.patches):
             raise ValueError("patch_id values must be unique")
         return self

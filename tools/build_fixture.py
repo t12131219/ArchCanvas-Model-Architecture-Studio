@@ -2,15 +2,24 @@
 
 from __future__ import annotations
 
-import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from archcanvas_core.graph_delta import GraphDeltaValidator, architecture_diff
 from archcanvas_core.models.common import canonical_json
-from archcanvas_core.models.patch import ExpectedGraphDelta, ParameterChange, PatchSet, PatchTarget, SetParameterPatch
-from archcanvas_python.fixture_analyzer import PROJECT_ID, TARGET_ANCHOR_ID, TARGET_NODE_ID, analyze_transformer_fixture
-
+from archcanvas_core.models.patch import (
+    ExpectedGraphDelta,
+    ParameterChange,
+    PatchSet,
+    PatchTarget,
+    SetParameterPatch,
+)
+from archcanvas_python.fixture_analyzer import (
+    PROJECT_ID,
+    TARGET_ANCHOR_ID,
+    TARGET_NODE_ID,
+    analyze_transformer_fixture,
+)
 
 ROOT = Path(__file__).resolve().parents[1] / "fixtures" / "transformer_set_parameter_v1"
 
@@ -40,7 +49,7 @@ def main() -> None:
         patch_set_id="patchset:set-num-heads-16",
         project_id=PROJECT_ID,
         base_source_revision=anchor.file_revision,
-        created_at=datetime(2026, 9, 20, 8, 0, tzinfo=timezone.utc),
+        created_at=datetime(2026, 9, 20, 8, 0, tzinfo=UTC),
         created_by="user",
         patches=[
             SetParameterPatch(

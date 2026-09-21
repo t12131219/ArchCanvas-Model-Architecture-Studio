@@ -1,11 +1,12 @@
 # ArchCanvas Model Architecture Studio
 
-The initial implementation freezes the exact architecture protocols and the first safe
-source round-trip: a PyTorch `nhead` literal can be changed through a validated
-`set_parameter` patch without rewriting unrelated source formatting.
+The current implementation covers the first four fixture-backed stages: strict source and
+architecture protocols, a safe `nhead` source round-trip, conservative PyTorch static recovery,
+isolated runtime evidence, and a separate deterministic publication SVG pipeline.
 
-The current scope intentionally excludes the desktop canvas, publication compiler, and
-structural graph edits. Those layers consume the protocols established here.
+The static and publication paths remain intentionally bounded to declared PyTorch patterns and
+repository fixtures. Engine/RPC, persisted visual state, desktop canvas, general parameter UI,
+structural edits, MCP transport, and release hardening remain future stages.
 
 The current executable path is deliberately fixture-scoped while the general PyTorch adapter
 is not yet complete. It never writes by default:
@@ -22,7 +23,8 @@ requires source bytes matching the fixture's analyzed revision and rejects stale
 ## Development
 
 ```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -e '.[dev]'
-.venv/bin/python -m pytest
+conda run -n TFB_py311 python -m pip install -e '.[dev]'
+conda run -n TFB_py311 python -m pytest -q
+conda run -n TFB_py311 python tools/generate_static_goldens.py
+conda run -n TFB_py311 python tools/generate_publication_goldens.py
 ```

@@ -7,8 +7,9 @@ import pytest
 
 from archcanvas_core.models.architecture import ArchitectureIR
 from archcanvas_core.models.patch import PatchSet
+from archcanvas_core.models.publication import PublicationIR, VisualScene
+from archcanvas_core.models.runtime import RuntimeTraceResult, TraceRequest
 from archcanvas_core.models.source_identity import SourceIdentityDocument
-
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -19,6 +20,10 @@ ROOT = Path(__file__).resolve().parents[2]
         ("architecture-ir-v1.schema.json", ArchitectureIR),
         ("patch-protocol-v1.schema.json", PatchSet),
         ("source-identity-v1.schema.json", SourceIdentityDocument),
+        ("runtime-trace-request-v1.schema.json", TraceRequest),
+        ("runtime-trace-result-v1.schema.json", RuntimeTraceResult),
+        ("publication-ir-v1.schema.json", PublicationIR),
+        ("visual-scene-v1.schema.json", VisualScene),
     ],
 )
 def test_committed_schema_matches_validation_model(filename, model) -> None:

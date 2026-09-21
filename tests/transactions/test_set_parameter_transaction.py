@@ -7,8 +7,8 @@ import pytest
 
 from archcanvas_core.models.source_identity import IdentityReconciliation, ReconciliationDecision
 from archcanvas_python.analyzers import AnalyzerUnavailable, fixture_analyzer_registry
-from archcanvas_python.fixture_analyzer import analyze_transformer_fixture
 from archcanvas_python.cli import main
+from archcanvas_python.fixture_analyzer import analyze_transformer_fixture
 from archcanvas_python.transactions.set_parameter import (
     TransactionRejected,
     commit_candidate,

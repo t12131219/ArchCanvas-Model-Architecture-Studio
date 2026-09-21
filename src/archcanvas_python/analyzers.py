@@ -13,7 +13,6 @@ from archcanvas_core.models.source_identity import SourceIdentityDocument
 
 from .fixture_analyzer import PROJECT_ID, analyze_transformer_fixture
 
-
 Analyzer = Callable[[bytes], tuple[SourceIdentityDocument, ArchitectureIR]]
 
 

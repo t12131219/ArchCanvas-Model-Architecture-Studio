@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated, Literal, TypeAlias, Union
+from typing import Annotated, Literal, TypeAlias
 
 from pydantic import Field, model_validator
 from typing_extensions import TypeAliasType
@@ -9,10 +9,9 @@ from typing_extensions import TypeAliasType
 from .common import StrictModel
 from .source_identity import AnchorId, Framework, IdentityId, Sha256
 
-
 JsonValue: TypeAlias = TypeAliasType(
     "JsonValue",
-    Union[None, bool, int, float, str, list["JsonValue"], dict[str, "JsonValue"]],
+    None | bool | int | float | str | list["JsonValue"] | dict[str, "JsonValue"],
 )
 NodeId = Annotated[str, Field(pattern=r"^node:[A-Za-z0-9._:-]+$")]
 EdgeId = Annotated[str, Field(pattern=r"^edge:[A-Za-z0-9._:>-]+$")]
@@ -67,7 +66,7 @@ class SymbolicDim(StrictModel):
     upper_bound: int | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
-    def bounds_are_ordered(self) -> "SymbolicDim":
+    def bounds_are_ordered(self) -> SymbolicDim:
         if self.lower_bound is not None and self.upper_bound is not None and self.lower_bound > self.upper_bound:
             raise ValueError("lower_bound must not exceed upper_bound")
         return self
@@ -84,7 +83,7 @@ class TensorSpec(StrictModel):
     semantic_axes: list[str | None]
 
     @model_validator(mode="after")
-    def axes_match_rank(self) -> "TensorSpec":
+    def axes_match_rank(self) -> TensorSpec:
         if self.semantic_axes and len(self.semantic_axes) != len(self.shape):
             raise ValueError("semantic_axes must be empty or match tensor rank")
         return self
@@ -121,7 +120,7 @@ class ArchitectureParameter(StrictModel):
     evidence: list[Evidence] = Field(min_length=1)
 
     @model_validator(mode="after")
-    def validate_origin_form(self) -> "ArchitectureParameter":
+    def validate_origin_form(self) -> ArchitectureParameter:
         if self.origin.kind is ParameterOriginKind.LITERAL:
             if self.expression is not None or self.source_name is None:
                 raise ValueError("literal parameter requires source_name and no expression")
@@ -152,7 +151,7 @@ class ArchitectureNode(StrictModel):
     metadata: dict[str, JsonValue]
 
     @model_validator(mode="after")
-    def validate_local_uniqueness(self) -> "ArchitectureNode":
+    def validate_local_uniqueness(self) -> ArchitectureNode:
         names = [parameter.name for parameter in self.parameters]
         ports = self.input_ports + self.output_ports
         if len(names) != len(set(names)) or len(ports) != len({port.port_id for port in ports}):
@@ -185,7 +184,7 @@ class RepeatSpec(StrictModel):
     source_anchor_ids: list[AnchorId]
 
     @model_validator(mode="after")
-    def exactly_one_count_form(self) -> "RepeatSpec":
+    def exactly_one_count_form(self) -> RepeatSpec:
         if (self.count is None) == (self.count_symbol is None):
             raise ValueError("exactly one of count and count_symbol is required")
         return self

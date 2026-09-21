@@ -14,7 +14,11 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e .[dev]
+      - run: python -m ruff check src tests tools
       - run: python -m pytest
-      - run: python -m compileall -q src
+      - run: python -m compileall -q src tools tests
       - run: python tools/export_schemas.py
-      - run: git diff --exit-code -- schemas
+      - run: python tools/generate_static_goldens.py
+      - run: python tools/generate_publication_goldens.py
+      - run: git diff --check
+      - run: git diff --exit-code

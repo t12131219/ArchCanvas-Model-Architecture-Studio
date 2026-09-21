@@ -4,19 +4,23 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Type
 
 from pydantic import BaseModel
 
 from archcanvas_core.models.architecture import ArchitectureIR
 from archcanvas_core.models.patch import PatchSet
+from archcanvas_core.models.publication import PublicationIR, VisualScene
+from archcanvas_core.models.runtime import RuntimeTraceResult, TraceRequest
 from archcanvas_core.models.source_identity import SourceIdentityDocument
 
-
-SCHEMAS: tuple[tuple[str, Type[BaseModel]], ...] = (
+SCHEMAS: tuple[tuple[str, type[BaseModel]], ...] = (
     ("architecture-ir-v1.schema.json", ArchitectureIR),
     ("patch-protocol-v1.schema.json", PatchSet),
     ("source-identity-v1.schema.json", SourceIdentityDocument),
+    ("runtime-trace-request-v1.schema.json", TraceRequest),
+    ("runtime-trace-result-v1.schema.json", RuntimeTraceResult),
+    ("publication-ir-v1.schema.json", PublicationIR),
+    ("visual-scene-v1.schema.json", VisualScene),
 )
 
 

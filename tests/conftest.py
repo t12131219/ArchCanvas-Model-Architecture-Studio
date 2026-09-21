@@ -8,7 +8,6 @@ from archcanvas_core.models.architecture import ArchitectureIR
 from archcanvas_core.models.patch import PatchSet
 from archcanvas_core.models.source_identity import SourceIdentityDocument
 
-
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "fixtures" / "transformer_set_parameter_v1"
 

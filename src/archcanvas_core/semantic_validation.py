@@ -43,12 +43,18 @@ def validate_architecture_semantics(
             errors.append(f"UNKNOWN_EDGE_SOURCE:{edge.edge_id}")
         if target is None:
             errors.append(f"UNKNOWN_EDGE_TARGET:{edge.edge_id}")
-        if source is not None and edge.source_port_id is not None:
-            if edge.source_port_id not in {port.port_id for port in source.output_ports}:
-                errors.append(f"UNKNOWN_SOURCE_PORT:{edge.edge_id}")
-        if target is not None and edge.target_port_id is not None:
-            if edge.target_port_id not in {port.port_id for port in target.input_ports}:
-                errors.append(f"UNKNOWN_TARGET_PORT:{edge.edge_id}")
+        if (
+            source is not None
+            and edge.source_port_id is not None
+            and edge.source_port_id not in {port.port_id for port in source.output_ports}
+        ):
+            errors.append(f"UNKNOWN_SOURCE_PORT:{edge.edge_id}")
+        if (
+            target is not None
+            and edge.target_port_id is not None
+            and edge.target_port_id not in {port.port_id for port in target.input_ports}
+        ):
+            errors.append(f"UNKNOWN_TARGET_PORT:{edge.edge_id}")
 
     for repeat in ir.repeats:
         for node_id in repeat.member_node_ids:

@@ -7,6 +7,7 @@ general PyTorch adapter is a later milestone, not an implicit promise of this mo
 from __future__ import annotations
 
 import ast
+from itertools import pairwise
 
 import libcst as cst
 from libcst.metadata import MetadataWrapper, PositionProvider
@@ -42,7 +43,6 @@ from archcanvas_core.models.source_identity import (
 from .fingerprints import content_fingerprint, structural_fingerprint
 from .source_revision import file_revision
 from .transforms.set_parameter import dotted_name
-
 
 PROJECT_ID = "fixture:transformer_set_parameter_v1"
 RELATIVE_FILE = "model.py"
@@ -220,7 +220,7 @@ def analyze_transformer_fixture(raw_source: bytes) -> tuple[SourceIdentityDocume
     ]
     source = source.model_copy(update={"identities": identities})
     edges = []
-    for left, right in zip(nodes, nodes[1:]):
+    for left, right in pairwise(nodes):
         edges.append(
             ArchitectureEdge(
                 edge_id=f"edge:{left.node_id.removeprefix('node:')}->{right.node_id.removeprefix('node:')}",

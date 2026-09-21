@@ -1,0 +1,80 @@
+{
+  "annotations": [
+    {
+      "annotation_id": "annotation:residual-stage-skip",
+      "kind": "residual",
+      "target_node_id": "publication-node:residual-stage",
+      "text": "Residual connection"
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "publication-edge:input--residual-stage--data",
+      "kind": "data",
+      "member_edge_ids": [
+        "edge:input->conv1:data"
+      ],
+      "source_node_id": "publication-node:input",
+      "target_node_id": "publication-node:residual-stage"
+    },
+    {
+      "edge_id": "publication-edge:residual-stage--output--data",
+      "kind": "data",
+      "member_edge_ids": [
+        "edge:relu->output:data"
+      ],
+      "source_node_id": "publication-node:residual-stage",
+      "target_node_id": "publication-node:output"
+    },
+    {
+      "edge_id": "publication-edge:residual-stage--residual-stage--residual",
+      "kind": "residual",
+      "member_edge_ids": [
+        "edge:conv1->conv2:residual"
+      ],
+      "source_node_id": "publication-node:residual-stage",
+      "target_node_id": "publication-node:residual-stage"
+    }
+  ],
+  "exact_ir_id": "ir:fixture-resnet_static_v1",
+  "nodes": [
+    {
+      "collapsed": false,
+      "kind": "input",
+      "label": "Input",
+      "member_node_ids": [
+        "node:input"
+      ],
+      "node_id": "publication-node:input"
+    },
+    {
+      "collapsed": true,
+      "kind": "residual_block",
+      "label": "Residual stage",
+      "member_node_ids": [
+        "node:residualblock.conv1",
+        "node:residualblock.conv2",
+        "node:residualblock.relu"
+      ],
+      "node_id": "publication-node:residual-stage"
+    },
+    {
+      "collapsed": false,
+      "kind": "output",
+      "label": "Output",
+      "member_node_ids": [
+        "node:output"
+      ],
+      "node_id": "publication-node:output"
+    }
+  ],
+  "omitted_exact_edge_ids": [
+    "edge:conv1->conv2:data",
+    "edge:conv2->relu:data"
+  ],
+  "omitted_exact_node_ids": [],
+  "project_id": "fixture:resnet_static_v1",
+  "publication_id": "publication:fixture-resnet_static_v1",
+  "schema_version": "1.0",
+  "source_revision": "sha256:e2240eb4b1ca2d09206fb69b0a4c93814499b53677255bcfd663a4f428aa23a1"
+}

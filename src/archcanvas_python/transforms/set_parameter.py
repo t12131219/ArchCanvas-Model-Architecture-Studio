@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass
+from math import isfinite
 from typing import Any
 
 import libcst as cst
@@ -43,7 +44,7 @@ def literal_expression(value: Any) -> cst.BaseExpression:
     if type(value) is int:
         return cst.Integer(str(value))
     if type(value) is float:
-        if value != value or value in {float("inf"), float("-inf")}:
+        if not isfinite(value):
             raise TransformRejected("NON_JSON_FLOAT", "NaN and infinity are not JSON scalars")
         return cst.Float(repr(value))
     if type(value) is str:

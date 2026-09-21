@@ -2,54 +2,35 @@
 
 ## Current State
 
-The repository is in Stage 2 static recovery. It contains strict Pydantic v2 models,
-committed v1 schemas, schema drift tests, Source Identity, a Transformer fixture analyzer,
-candidate-only LibCST `set_parameter` transform, ArchitectureDiffer, GraphDeltaValidator, and a
-fixture-scoped CLI with atomic `--commit`. The current `TFB_py311` suite has passed 56 tests.
+The repository has completed fixture-backed implementations for Stages 1 through 4. It is not a
+complete ArchCanvas product: Engine/RPC, persistence, desktop interaction, structural editing,
+MCP transport and release hardening have not started.
 
-The fixture analyzer is intentionally narrow. It is evidence for the source -> identity -> IR
-pipeline; it is not a general PyTorch static analyzer.
+## Completed In Current Worktree
 
-## In Progress
+- Stage 1: strict Source Identity, Exact Architecture IR and Patch Protocol schemas; a
+  candidate-first, atomic, fixture-scoped `set_parameter` transaction with fail-closed negatives.
+- Stage 2: bounded read-only PyTorch AST recovery, project discovery, source anchors, identity
+  reconciliation, module containers, common flow patterns, capabilities and fixture goldens.
+- Stage 3: explicit opt-in isolated FX/export workers, revision-bound runtime evidence, coverage
+  gaps and shape validation. Runtime evidence cannot replace source anchors.
+- Stage 4: Publication IR and VisualScene protocols, conservative Transformer repeat and residual
+  stage reductions, node/edge omission ledger, deterministic SVG, preflight, and fixture goldens.
+  A repeat group has a default collapsed scene and an explicit visual-only expanded scene; neither
+  state changes Publication IR, Exact IR or source bytes.
 
-- Stage 2 static foundation: a conservative AST scanner and strict PyTorch adapter recover the
-  Transformer, ResNet residual, and concat fixtures' module topology into Source Identity and
-  Architecture IR. Constructor parameters retain literal, argument, constant, config-attribute,
-  or unresolved-computed provenance with source anchors; `ModuleList(range(...))` produces a
-  repeat record; identity refresh records new, exact, or ambiguous reconciliation outcomes.
-- Stage 2 fixture corpus: committed Source Identity and Exact IR goldens cover Transformer and
-  ResNet and are checked deterministically by `python tools/generate_static_goldens.py`.
-- Stage 2 project discovery: a bounded, read-only project scanner finds `nn.Module` candidates
-  without importing user code, skips unsafe/oversized files, and emits machine-readable issues.
-  Direct `from torch.nn import Linear, Module` imports are resolved alongside `torch.nn` aliases.
-- Stage 2 local symbols: selected entrypoints can resolve direct local imports to discovered
-  `nn.Module` classes without executing source. A branch-free direct constructor call becomes one
-  local-module node with both a call-site and target-class declaration anchor, and records both
-  revisions; it does not flatten the imported implementation. Constructor control flow fails
-  closed, and direct-call or literal `OrderedDict` `Sequential` expressions, plus literal
-  `ModuleList` expressions, materialize each member in source order. `ModuleList(range(...))`
-  remains a conservative repeat record; dynamic members are unresolved.
-- Stage 2 transitive evidence: bounded traversal of confirmed direct local calls records nested
-  call-site/class declaration anchors and file revisions in metadata, with `expanded`,
-  `depth_limit`, `duplicate`, or `cycle` traversal status. It deliberately does not flatten target
-  implementations into root IR nodes or edges.
-- Stage 2 remaining work: transitive cross-file topology, dynamic/non-literal container members,
-  common functional-op records, broader container/branch corpus, and an
-  ambiguity-to-transaction policy before this stage can be declared complete.
-- T-01 engineering maturity foundation: project routing rules, acceptance taxonomy, interface
-  reservations, and an eventual user-facing Skill contract.
+## Scope Boundaries
 
-## Not Started
-
-- General PyTorch project static recovery and broader compatibility corpus (Stage 2).
-- Isolated runtime evidence and shape validation (Stage 3).
-- Publication compiler, VisualScene, SVG renderer (Stage 4).
-- Engine RPC, cache/history, desktop shell/canvas, parameter UI, structural edits, MCP,
-  packaging, and release matrix (Stages 5-10).
+- Static and runtime validation evidence currently cover repository fixtures. Article projects are
+  read-only observations until separately approved A0-A6 evidence exists.
+- Publication reduction supports declared Transformer repeat and residual-stage patterns. It does
+  not claim a complete paper diagram for arbitrary Python or arbitrary PyTorch code.
+- The current CLI is fixture-scoped. It is not an Engine API and must not be represented as a
+  general project editing workflow.
 
 ## Next Entry Criteria
 
-The next implementation task should extend only an explicitly bounded static subset, beginning
-with transitive local-call evidence or additional container forms. It must preserve the current
-fail-closed rule: a conditionally constructed local module, including PatchTST's backbone path,
-cannot appear as confirmed topology.
+Before Stage 5 starts, commit the reviewed Stage 3/4 schemas, source, tests and goldens from a
+clean worktree. Stage 5 then owns the only policy entrypoint: approved project manifests,
+environment selection, cache/history, refresh orchestration and typed Engine RPC integration
+tests. Desktop, MCP and visual persistence must remain clients of that Engine.

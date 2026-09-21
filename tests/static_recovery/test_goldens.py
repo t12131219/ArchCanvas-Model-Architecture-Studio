@@ -10,7 +10,6 @@ from archcanvas_core.models.source_identity import SourceIdentityDocument
 from archcanvas_core.semantic_validation import validate_architecture_semantics
 from archcanvas_pytorch.static import PyTorchStaticAdapter
 
-
 ROOT = Path(__file__).resolve().parents[2]
 
 

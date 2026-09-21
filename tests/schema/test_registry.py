@@ -6,7 +6,6 @@ import pytest
 
 from archcanvas_core.schema_registry import SchemaRegistry, SchemaValidationError
 
-
 ROOT = Path(__file__).resolve().parents[2]
 
 

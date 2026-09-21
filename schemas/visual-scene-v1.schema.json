@@ -1,0 +1,165 @@
+{
+  "$defs": {
+    "SceneEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "points": {
+          "items": {
+            "$ref": "#/$defs/ScenePoint"
+          },
+          "minItems": 2,
+          "title": "Points",
+          "type": "array"
+        },
+        "publication_edge_id": {
+          "pattern": "^publication-edge:[A-Za-z0-9._-]+$",
+          "title": "Publication Edge Id",
+          "type": "string"
+        },
+        "scene_edge_id": {
+          "pattern": "^scene-edge:[A-Za-z0-9._-]+$",
+          "title": "Scene Edge Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "scene_edge_id",
+        "publication_edge_id",
+        "points"
+      ],
+      "title": "SceneEdge",
+      "type": "object"
+    },
+    "SceneNode": {
+      "additionalProperties": false,
+      "properties": {
+        "expanded": {
+          "default": false,
+          "title": "Expanded",
+          "type": "boolean"
+        },
+        "height": {
+          "maximum": 320,
+          "minimum": 32,
+          "title": "Height",
+          "type": "integer"
+        },
+        "publication_node_id": {
+          "pattern": "^publication-node:[A-Za-z0-9._-]+$",
+          "title": "Publication Node Id",
+          "type": "string"
+        },
+        "scene_node_id": {
+          "pattern": "^scene-node:[A-Za-z0-9._-]+$",
+          "title": "Scene Node Id",
+          "type": "string"
+        },
+        "width": {
+          "maximum": 640,
+          "minimum": 40,
+          "title": "Width",
+          "type": "integer"
+        },
+        "x": {
+          "minimum": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "minimum": 0,
+          "title": "Y",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "scene_node_id",
+        "publication_node_id",
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "title": "SceneNode",
+      "type": "object"
+    },
+    "ScenePoint": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "minimum": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "minimum": 0,
+          "title": "Y",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "ScenePoint",
+      "type": "object"
+    }
+  },
+  "$id": "https://archcanvas.dev/schemas/visual-scene-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "edges": {
+      "items": {
+        "$ref": "#/$defs/SceneEdge"
+      },
+      "title": "Edges",
+      "type": "array"
+    },
+    "height": {
+      "maximum": 20000,
+      "minimum": 120,
+      "title": "Height",
+      "type": "integer"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/SceneNode"
+      },
+      "minItems": 2,
+      "title": "Nodes",
+      "type": "array"
+    },
+    "publication_id": {
+      "pattern": "^publication:[A-Za-z0-9._-]+$",
+      "title": "Publication Id",
+      "type": "string"
+    },
+    "scene_id": {
+      "pattern": "^scene:[A-Za-z0-9._-]+$",
+      "title": "Scene Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "width": {
+      "maximum": 20000,
+      "minimum": 200,
+      "title": "Width",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "scene_id",
+    "publication_id",
+    "width",
+    "height",
+    "nodes",
+    "edges"
+  ],
+  "title": "VisualScene",
+  "type": "object"
+}
