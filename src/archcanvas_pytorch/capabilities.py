@@ -42,6 +42,7 @@ def static_capability_report() -> StaticCapabilityReport:
             "direct return through self module",
             "add residual edges with known operands",
             "torch.cat and torch.stack with known list/tuple inputs",
+            "bounded common torch and torch.nn.functional calls with known producers",
         ),
         unresolved=(
             "dynamic if control flow",
@@ -49,6 +50,7 @@ def static_capability_report() -> StaticCapabilityReport:
             "dynamic or non-literal Sequential and ModuleList members",
             "eval or exec in forward",
             "residual or merge inputs without known producers",
+            "unsupported functional operations or function inputs without known producers",
         ),
         excluded=(
             "arbitrary Python metaprogramming",

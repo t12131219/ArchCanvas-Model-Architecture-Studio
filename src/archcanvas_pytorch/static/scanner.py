@@ -62,6 +62,19 @@ class MergeDiscovery:
 
 
 @dataclass(frozen=True)
+class FunctionDiscovery:
+    """A statically resolved functional tensor operation in ``forward``."""
+
+    name: str
+    operation: str
+    input: str
+    line: int
+    column: int
+    end_line: int
+    end_column: int
+
+
+@dataclass(frozen=True)
 class UnresolvedDiscovery:
     code: str
     line: int
@@ -74,6 +87,7 @@ class StaticRecoveryResult:
     modules: list[ModuleDiscovery]
     edges: list[EdgeDiscovery]
     merges: list[MergeDiscovery] = field(default_factory=list)
+    functions: list[FunctionDiscovery] = field(default_factory=list)
     unresolved: list[UnresolvedDiscovery] = field(default_factory=list)
 
 
@@ -174,6 +188,25 @@ def _is_supported_module_type(value: str) -> bool:
     return value.startswith(("torch.nn.", "local:"))
 
 
+_SUPPORTED_FUNCTIONS = {
+    "torch.relu",
+    "torch.sigmoid",
+    "torch.tanh",
+    "torch.nn.functional.relu",
+    "torch.nn.functional.gelu",
+    "torch.nn.functional.silu",
+    "torch.nn.functional.dropout",
+    "torch.nn.functional.layer_norm",
+}
+
+
+def _is_functional_namespace(value: str | None) -> bool:
+    return value is not None and (
+        value.startswith("torch.nn.functional.")
+        or value in {"torch.relu", "torch.sigmoid", "torch.tanh"}
+    )
+
+
 class _ImportIndex(ast.NodeVisitor):
     def __init__(self, local_module_aliases: Mapping[str, str] | None = None) -> None:
         self.aliases = dict(local_module_aliases or {})
@@ -184,6 +217,9 @@ class _ImportIndex(ast.NodeVisitor):
                 self.aliases[item.asname or "torch"] = item.name
             if item.name == "torch.nn":
                 self.aliases[item.asname or "torch"] = item.name
+            if item.name == "torch.nn.functional":
+                # ``import torch.nn.functional`` binds ``torch``; an alias binds the alias.
+                self.aliases[item.asname or "torch"] = item.name if item.asname else "torch"
             if item.name == "collections":
                 self.aliases[item.asname or "collections"] = item.name
 
@@ -196,6 +232,10 @@ class _ImportIndex(ast.NodeVisitor):
             for item in node.names:
                 if item.name != "*":
                     self.aliases[item.asname or item.name] = f"torch.nn.{item.name}"
+        if node.module == "torch.nn.functional":
+            for item in node.names:
+                if item.name != "*":
+                    self.aliases[item.asname or item.name] = f"torch.nn.functional.{item.name}"
         if node.module == "collections":
             for item in node.names:
                 if item.name == "OrderedDict":
@@ -225,6 +265,7 @@ class _ModuleClassScanner(ast.NodeVisitor):
         self.modules: list[ModuleDiscovery] = []
         self.edges: list[EdgeDiscovery] = []
         self.merges: list[MergeDiscovery] = []
+        self.functions: list[FunctionDiscovery] = []
         self.unresolved: list[UnresolvedDiscovery] = []
         self.container_members: dict[str, list[str]] = {}
 
@@ -577,6 +618,24 @@ class _ModuleClassScanner(ast.NodeVisitor):
             self.edges.append(EdgeDiscovery(source, module))
             return module
 
+        def record_function_call(
+            source: str, operation: str, call: ast.Call, name: str
+        ) -> str:
+            function_name = f"function:{name}.{call.lineno}"
+            self.functions.append(
+                FunctionDiscovery(
+                    function_name,
+                    operation,
+                    source,
+                    call.lineno,
+                    call.col_offset,
+                    call.end_lineno,
+                    call.end_col_offset,
+                )
+            )
+            self.edges.append(EdgeDiscovery(source, function_name))
+            return function_name
+
         def scan_statements(statements: list[ast.stmt]) -> None:
             for node in statements:
                 if isinstance(node, ast.For) and isinstance(node.target, ast.Name):
@@ -631,6 +690,27 @@ class _ModuleClassScanner(ast.NodeVisitor):
                             self.edges.extend(EdgeDiscovery(source, merge_name) for source in concrete_inputs)
                             value_origin[target] = merge_name
                             continue
+                        if operation in _SUPPORTED_FUNCTIONS:
+                            source_name = _dotted(node.value.args[0]) if node.value.args else None
+                            source = value_origin.get(source_name or "")
+                            if source is None:
+                                self.unresolved.append(
+                                    UnresolvedDiscovery(
+                                        "UNRESOLVED_FUNCTION_INPUT", node.lineno, operation
+                                    )
+                                )
+                                continue
+                            value_origin[target] = record_function_call(
+                                source, operation, node.value, target
+                            )
+                            continue
+                        if _is_functional_namespace(operation):
+                            self.unresolved.append(
+                                UnresolvedDiscovery(
+                                    "UNSUPPORTED_FUNCTIONAL_OP", node.lineno, operation
+                                )
+                            )
+                            continue
                         called = _dotted(node.value.func)
                         if called and called.startswith("self."):
                             module = called.removeprefix("self.")
@@ -645,6 +725,29 @@ class _ModuleClassScanner(ast.NodeVisitor):
                     continue
                 if isinstance(node, ast.Return):
                     if isinstance(node.value, ast.Call):
+                        operation = self.imports.resolve(node.value.func)
+                        if operation in _SUPPORTED_FUNCTIONS:
+                            source_name = _dotted(node.value.args[0]) if node.value.args else None
+                            source = value_origin.get(source_name or "")
+                            if source is None:
+                                self.unresolved.append(
+                                    UnresolvedDiscovery(
+                                        "UNRESOLVED_FUNCTION_INPUT", node.lineno, operation
+                                    )
+                                )
+                                continue
+                            output_function = record_function_call(
+                                source, operation, node.value, "return"
+                            )
+                            self.edges.append(EdgeDiscovery(output_function, "output"))
+                            continue
+                        if _is_functional_namespace(operation):
+                            self.unresolved.append(
+                                UnresolvedDiscovery(
+                                    "UNSUPPORTED_FUNCTIONAL_OP", node.lineno, operation
+                                )
+                            )
+                            continue
                         called = _dotted(node.value.func)
                         if called and called.startswith("self."):
                             module = called.removeprefix("self.")
@@ -690,5 +793,6 @@ class PyTorchStaticScanner:
             modules=sorted(scanner.modules, key=lambda item: (item.line, item.attribute_path)),
             edges=sorted(set(scanner.edges), key=lambda item: (item.source, item.target, item.kind)),
             merges=sorted(scanner.merges, key=lambda item: (item.line, item.name)),
+            functions=sorted(scanner.functions, key=lambda item: (item.line, item.name)),
             unresolved=sorted(scanner.unresolved, key=lambda item: (item.line, item.code)),
         )

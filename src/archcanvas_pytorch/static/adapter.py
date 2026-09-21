@@ -37,7 +37,7 @@ from archcanvas_core.models.source_identity import (
 )
 from archcanvas_python.source_revision import file_revision
 
-from .scanner import ParameterDiscovery, PyTorchStaticScanner
+from .scanner import FunctionDiscovery, ParameterDiscovery, PyTorchStaticScanner
 
 
 def _digest(text: str) -> str:
@@ -70,6 +70,89 @@ def _span_text(lines: list[str], *, line: int, column: int, end_line: int, end_c
 
 def _parameter_anchor_id(model_class: str, attribute: str, source_name: str) -> str:
     return f"anchor:{model_class.lower()}.{attribute}.parameter.{source_name}"
+
+
+def _function_anchor_id(model_class: str, name: str) -> str:
+    return f"anchor:{model_class.lower()}.{name.removeprefix('function:')}.forward"
+
+
+def _function_node_id(model_class: str, name: str) -> str:
+    return f"node:function.{model_class.lower()}.{name.removeprefix('function:')}"
+
+
+def _function_identity_id(model_class: str, name: str) -> str:
+    return f"identity:function.{model_class.lower()}.{name.removeprefix('function:')}"
+
+
+def _function_node(
+    discovery: FunctionDiscovery,
+    *,
+    model_class: str,
+    relative_file: str,
+    revision: str,
+    lines: list[str],
+) -> tuple[SourceAnchor, NodeIdentity, ArchitectureNode]:
+    anchor_id = _function_anchor_id(model_class, discovery.name)
+    content = _span_text(
+        lines,
+        line=discovery.line,
+        column=discovery.column,
+        end_line=discovery.end_line,
+        end_column=discovery.end_column,
+    )
+    anchor = SourceAnchor(
+        anchor_id=anchor_id,
+        relative_file=relative_file,
+        symbol_path=f"{model_class}.forward",
+        semantic_path=f"{model_class.lower()}.{discovery.name}.forward",
+        kind=AnchorKind.CALL,
+        cst_node_type="Call",
+        span=SourceSpan(
+            start=SourcePosition(line=discovery.line, column=discovery.column),
+            end=SourcePosition(line=discovery.end_line, column=discovery.end_column),
+        ),
+        locator=AnchorLocator(
+            class_name=model_class,
+            function_name="forward",
+            assignment_target=discovery.name.removeprefix("function:"),
+            callee_text=None,
+            qualified_callee=discovery.operation,
+            argument_name=None,
+            occurrence=0,
+        ),
+        structural_fingerprint=_digest(discovery.operation),
+        content_fingerprint=_digest(content),
+        file_revision=revision,
+    )
+    node_id = _function_node_id(model_class, discovery.name)
+    identity_id = _function_identity_id(model_class, discovery.name)
+    identity = NodeIdentity(
+        identity_id=identity_id,
+        framework=Framework.PYTORCH,
+        module_path=discovery.operation,
+        relative_file=relative_file,
+        qualified_symbol=f"{model_class}.forward",
+        attribute_path=discovery.name.removeprefix("function:"),
+        semantic_role="function",
+        structural_fingerprint=anchor.structural_fingerprint,
+        anchor_ids=[anchor_id],
+        created_revision=revision,
+    )
+    node = ArchitectureNode(
+        node_id=node_id,
+        identity_id=identity_id,
+        kind=NodeKind.FUNCTION,
+        op_type=discovery.operation,
+        display_name=discovery.name.removeprefix("function:"),
+        parent_id=None,
+        parameters=[],
+        input_ports=[_port(node_id, "input")],
+        output_ports=[_port(node_id, "output")],
+        semantic_role="function",
+        source_anchor_ids=[anchor_id],
+        metadata={},
+    )
+    return anchor, identity, node
 
 
 def _provenance_coordinate(value: int | None, fallback: int) -> int:
@@ -329,6 +412,18 @@ class PyTorchStaticAdapter:
             identity_id = f"identity:merge.{merge.name.removeprefix('merge:')}"
             identities.append(NodeIdentity(identity_id=identity_id, framework=Framework.PYTORCH, module_path=None, relative_file=None, qualified_symbol=None, attribute_path=None, semantic_role="merge", structural_fingerprint=_digest(merge.operation), anchor_ids=[], created_revision=revision))
             merge_nodes.append(ArchitectureNode(node_id=node_id, identity_id=identity_id, kind=NodeKind.MERGE, op_type=merge.operation, display_name=merge.operation.removeprefix("torch."), parent_id=None, parameters=[], input_ports=[_port(node_id, "input")], output_ports=[_port(node_id, "output")], semantic_role="merge", source_anchor_ids=[], metadata={"input_count": len(merge.inputs)}))
+        function_nodes: list[ArchitectureNode] = []
+        for function in recovery.functions:
+            anchor, identity, node = _function_node(
+                function,
+                model_class=model_class,
+                relative_file=relative_file,
+                revision=revision,
+                lines=lines,
+            )
+            anchors.append(anchor)
+            identities.append(identity)
+            function_nodes.append(node)
         input_node = ArchitectureNode(
             node_id="node:input",
             identity_id="identity:input",
@@ -363,8 +458,8 @@ class PyTorchStaticAdapter:
                 NodeIdentity(identity_id="identity:output", framework=Framework.PYTORCH, module_path=None, relative_file=None, qualified_symbol=None, attribute_path=None, semantic_role="output", structural_fingerprint=_digest("output"), anchor_ids=[], created_revision=revision),
             ]
         )
-        nodes = [input_node, *modules, *merge_nodes, output_node]
-        node_lookup = {"input": input_node, "output": output_node, **{item.display_name: item for item in modules}, **{f"merge:{item.node_id.removeprefix('node:merge.')}": item for item in merge_nodes}}
+        nodes = [input_node, *modules, *merge_nodes, *function_nodes, output_node]
+        node_lookup = {"input": input_node, "output": output_node, **{item.display_name: item for item in modules}, **{f"merge:{item.node_id.removeprefix('node:merge.')}": item for item in merge_nodes}, **{f"function:{item.display_name}": item for item in function_nodes}}
         edges: list[ArchitectureEdge] = []
         for edge in recovery.edges:
             source, target = node_lookup.get(edge.source), node_lookup.get(edge.target)

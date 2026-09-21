@@ -245,3 +245,69 @@ def test_scanner_marks_residual_addition_without_guessing_merge_node() -> None:
         ("input", "conv1", "data"),
         ("relu", "output", "data"),
     ]
+
+
+def test_scanner_recovers_bounded_functional_calls_with_known_producers() -> None:
+    source = b'''import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class FunctionalModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.proj = nn.Linear(2, 2)
+
+    def forward(self, x):
+        x = self.proj(x)
+        x = F.gelu(x)
+        return x
+'''
+    result = PyTorchStaticScanner().scan(source)
+    assert [(item.name, item.operation, item.input) for item in result.functions] == [
+        ("function:x.12", "torch.nn.functional.gelu", "proj"),
+    ]
+    assert [(edge.source, edge.target) for edge in result.edges] == [
+        ("function:x.12", "output"),
+        ("input", "proj"),
+        ("proj", "function:x.12"),
+    ]
+
+
+def test_scanner_does_not_confirm_functional_call_without_a_known_producer() -> None:
+    source = b'''import torch.nn as nn
+import torch.nn.functional as F
+
+class FunctionalModel(nn.Module):
+    def forward(self, x):
+        unknown = F.relu(y)
+        return unknown
+'''
+    result = PyTorchStaticScanner().scan(source)
+    assert result.functions == []
+    assert [(item.code, item.message) for item in result.unresolved] == [
+        ("UNRESOLVED_FUNCTION_INPUT", "torch.nn.functional.relu")
+    ]
+
+
+def test_scanner_recovers_functional_return_and_distinct_repeated_assignments() -> None:
+    source = b'''import torch.nn as nn
+import torch.nn.functional as F
+
+class FunctionalModel(nn.Module):
+    def forward(self, x):
+        x = F.relu(x)
+        x = F.gelu(x)
+        return F.silu(x)
+'''
+    result = PyTorchStaticScanner().scan(source)
+    assert [(item.name, item.operation, item.input) for item in result.functions] == [
+        ("function:x.6", "torch.nn.functional.relu", "input"),
+        ("function:x.7", "torch.nn.functional.gelu", "function:x.6"),
+        ("function:return.8", "torch.nn.functional.silu", "function:x.7"),
+    ]
+    assert [(edge.source, edge.target) for edge in result.edges] == [
+        ("function:return.8", "output"),
+        ("function:x.6", "function:x.7"),
+        ("function:x.7", "function:return.8"),
+        ("input", "function:x.6"),
+    ]

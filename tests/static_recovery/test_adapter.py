@@ -254,3 +254,37 @@ class Target(nn.Module):
         "node:target.selected",
         "node:output",
     ]
+
+
+def test_adapter_emits_source_backed_function_node() -> None:
+    source = b'''import torch.nn as nn
+from torch.nn import functional as F
+
+class FunctionalModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.proj = nn.Linear(2, 2)
+
+    def forward(self, x):
+        x = self.proj(x)
+        x = F.gelu(x)
+        return x
+'''
+    identity, ir = PyTorchStaticAdapter().analyze(
+        source,
+        project_id="project:functional",
+        relative_file="model.py",
+        entrypoint="model.py:FunctionalModel",
+    )
+    assert validate_architecture_semantics(ir, identity) == []
+    function = ir.node("node:function.functionalmodel.x.11")
+    assert function.kind.value == "function"
+    assert function.op_type == "torch.nn.functional.gelu"
+    assert function.source_anchor_ids == ["anchor:functionalmodel.x.11.forward"]
+    anchor = next(anchor for anchor in identity.anchors if anchor.anchor_id == function.source_anchor_ids[0])
+    assert anchor.symbol_path == "FunctionalModel.forward"
+    assert [(edge.source_node_id, edge.target_node_id) for edge in ir.edges] == [
+        ("node:function.functionalmodel.x.11", "node:output"),
+        ("node:input", "node:functionalmodel.proj"),
+        ("node:functionalmodel.proj", "node:function.functionalmodel.x.11"),
+    ]
