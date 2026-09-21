@@ -7,6 +7,49 @@ use serde_json::{json, Value};
 
 const MAX_REQUEST_BYTES: usize = 1_000_000;
 
+fn snake_case(key: &str) -> String {
+    let mut result = String::with_capacity(key.len());
+    for character in key.chars() {
+        if character.is_ascii_uppercase() {
+            result.push('_');
+            result.push(character.to_ascii_lowercase());
+        } else {
+            result.push(character);
+        }
+    }
+    result
+}
+
+// Tauri's IPC serializers may camel-case nested JavaScript object keys. The Engine protocol is
+// deliberately snake_case, so normalize the transport representation before strict validation.
+fn normalize_request(value: Value) -> Value {
+    match value {
+        Value::Array(items) => Value::Array(items.into_iter().map(normalize_request).collect()),
+        Value::Object(items) => {
+            let mut normalized: serde_json::Map<String, Value> = items
+                .into_iter()
+                .map(|(key, value)| (snake_case(&key), normalize_request(value)))
+                .collect();
+            let is_transport_wrapper = normalized.len() == 1
+                && normalized.get("request").is_some_and(|request| {
+                    request.as_object().is_some_and(|envelope| {
+                        envelope.contains_key("schema_version")
+                            && envelope.contains_key("request_id")
+                            && envelope.contains_key("command")
+                    })
+                });
+            if is_transport_wrapper {
+                normalized
+                    .remove("request")
+                    .expect("checked request wrapper")
+            } else {
+                Value::Object(normalized)
+            }
+        }
+        value => value,
+    }
+}
+
 fn request_id(request: &Value) -> Value {
     request
         .get("request_id")
@@ -50,6 +93,7 @@ fn sidecar_configuration(request: &Value) -> Result<(String, String), Value> {
 /// paths, read source, or implement any project mutation.
 #[tauri::command]
 fn engine_rpc(request: Value) -> Value {
+    let request = normalize_request(request);
     let request_bytes = match serde_json::to_vec(&request) {
         Ok(bytes) if bytes.len() <= MAX_REQUEST_BYTES => bytes,
         Ok(_) => return rejected(&request, "REQUEST_TOO_LARGE", "request exceeds byte limit"),

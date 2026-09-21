@@ -1,8 +1,11 @@
 # ArchCanvas Desktop
 
-Stage 6 provides a React Flow canvas client and a minimal Tauri 2 shell. The browser experience
-starts in an explicitly labelled read-only Transformer fixture mode, where visual state is stored
-only in browser storage and the fixture source is never read or written.
+Stage 6 provides an independent ArchCanvas world/SVG/HTML canvas and a minimal Tauri 2 shell.
+The canvas uses the shared warm-white/near-black/blue design tokens, pointer-anchored zoom,
+middle-mouse or Space pan, selection, marquee selection, preview-only node dragging and visual-only
+snapping. The browser experience starts in an explicitly labelled read-only Transformer fixture
+mode, where visual state is stored only in browser storage and the fixture source is never read or
+written.
 
 The Tauri client calls the `engine_rpc` command with typed Engine envelopes. The bridge starts one
 JSONL `archcanvas_engine.stdio` sidecar per request and returns its typed response. It does not

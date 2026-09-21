@@ -3,11 +3,13 @@
 ## Current State
 
 The repository has completed fixture-backed implementations for Stages 1 through 4, Stage 5's
-Engine lifecycle, and Stage 6's desktop canvas MVP. Native Linux Tauri E2E now opens an
+Engine lifecycle, and the original Stage 6 desktop canvas MVP. Native Linux Tauri E2E now opens an
 Engine-approved Transformer fixture, persists a visual drag across a native restart, verifies the
 Exact/Publication view boundary, and confirms source bytes remain unchanged. The same test is
-configured in Linux CI; its first remote run remains an external acceptance observation. Semantic
-editing, structural editing, MCP transport and release hardening have not started.
+configured in Linux CI; its first remote run remains an external acceptance observation. Section 25
+of the updated plan supersedes the prior Stage 6 presentation and interaction scope: the revised
+Stage 6 remains in progress. Semantic editing, structural editing, MCP transport and release
+hardening have not started.
 
 ## Completed In Current Worktree
 
@@ -25,10 +27,12 @@ editing, structural editing, MCP transport and release hardening have not starte
   repository, polling source freshness, revision history, visual patch persistence/orphan replay,
   and typed Engine request/response/event schemas. The Engine opens, analyzes, caches and reloads
   the Transformer fixture without writing its source.
-- Stage 6: a strict `CanvasDocument` schema for visual state only; Engine persistence, restart
-  replay, stale-revision rejection and typed RPC coverage; React Flow Publication and Exact
-  Architecture canvases; inspector, source-jump request, SVG export, layout reset, undo/redo,
-  visual lock/collapse controls and an explicit browser-only read-only fixture client. The Tauri 2
+- Stage 6 (revised scope in progress): a strict `CanvasDocument` schema for visual state only;
+  Engine persistence, restart replay, stale-revision rejection and typed RPC coverage; an
+  independent world/SVG/HTML `CanvasStage` replacing the React Flow interaction surface;
+  pointer-anchored zoom, middle-mouse/space pan, fit mode, selection, marquee, multi-drag preview,
+  grid/object snapping, gesture-level undo protection, visual lock/collapse controls and LOD.
+  The warm-white/near-black/blue token system is now the only desktop UI token source. The Tauri 2
   shell forwards typed JSONL requests to a host-configured Engine sidecar instead of reading
   project source directly. Native E2E covers Engine open, drag/save/restart/replay, Exact view
   selection and byte-identical source. Open Project and source-location queries remain Engine RPC.
@@ -49,9 +53,10 @@ editing, structural editing, MCP transport and release hardening have not starte
 - The Tauri bridge requires `ARCHCANVAS_ENGINE_PYTHON` and `ARCHCANVAS_ENGINE_CACHE_ROOT`; when
   either is absent it fails closed. It does not offer a direct filesystem fallback.
 
-## Stage 6 Exit Criteria
+## Revised Stage 6 Exit Criteria
 
-The local exit evidence is complete: native E2E opens an Engine-approved Transformer fixture,
-moves a node, restarts the desktop, restores its `CanvasDocument`, distinguishes Exact from
-Publication nodes and asserts byte-identical source. The Linux CI job now executes the same test;
-its first successful hosted run is the remaining external observation before Stage 7 is entered.
+The earlier MVP evidence remains valid for Engine persistence and source immutability, but it is not
+sufficient for the updated Section 25 contract. The revised implementation still requires visual
+regression at the specified desktop viewports, contrast/token-drift checks, native E2E evidence for
+the full interaction set, and D5 validation against approved Transformer and time-series projects.
+Stage 7 must not be entered until those requirements pass.

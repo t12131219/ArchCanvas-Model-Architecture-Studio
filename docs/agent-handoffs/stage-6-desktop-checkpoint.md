@@ -8,8 +8,9 @@
 - Engine validates the current source revision and Publication node set before atomically saving a
   canvas document under the cache root. Restart replay returns matching documents and suppresses
   stale documents as orphaned. The operation is available through typed Engine RPC.
-- `desktop/` contains a Tauri 2 + React + TypeScript shell and a React Flow UI. Publication view
-  is visually editable; Exact Architecture view is source-backed and read-only. The browser
+- `desktop/` contains a Tauri 2 + React + TypeScript shell and an independent ArchCanvas
+  world/SVG/HTML canvas. Publication view is visually editable; Exact Architecture view is
+  source-backed and read-only. The browser
   transport is prominently labelled `READ-ONLY FIXTURE`, stores only its CanvasDocument locally,
   and cannot access project paths.
 - The Tauri command starts one host-configured `archcanvas_engine.stdio` JSONL sidecar per typed
@@ -41,6 +42,20 @@ the native desktop, replayed the same `CanvasDocument` position, selected the so
 ModuleList node, and verified the fixture source SHA-256 stayed byte-identical. The test forces
 classic WebDriver because the installed WebKitGTK driver does not expose WebDriver BiDi.
 
+## Section 25 Revision
+
+The original React Flow renderer has been replaced with an independently implemented
+world/SVG/HTML `CanvasStage`. Its visual system has one frozen warm-white, near-black and blue
+token source. The Stage 6 E2E now also verifies middle-mouse panning before the existing visual
+drag/save/restart path; it continues to assert source bytes are unchanged. The Tauri bridge
+normalizes the transport's camelCase/wrapped IPC representation to the strict snake_case Engine
+envelope before Python validation, without relaxing the Engine protocol.
+
+This records D1-D3 foundation work only. Token contract checks, native interaction coverage and
+the local browser visual inspection pass, but visual screenshot baselines at all required viewports
+and D4/D5 evidence for approved Transformer and time-series projects are still required. This is
+not a Stage 6 exit record under the revised plan.
+
 The GitHub Actions `test-desktop-native` job installs `webkit2gtk-driver` and runs the same command
 on Ubuntu 24.04. Its first hosted run is still required as remote CI evidence. No Article source or
 PDF was opened, executed, or modified during this work.
@@ -62,5 +77,7 @@ ARCHCANVAS_WEBKIT_DRIVER=/path/to/WebKitWebDriver \
 npm run test:e2e:tauri
 ```
 
-All listed local commands pass. Hosted CI has been configured but has not yet produced a remote
-run record.
+All listed local commands passed for the original Stage 6 MVP. Section 25 was added afterwards;
+the revised Canvas implementation, visual regression evidence and Article D5 validation must be
+recorded separately before this checkpoint can be treated as Stage 6 exit evidence. Hosted CI has
+not yet produced a remote run record.

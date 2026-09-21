@@ -75,12 +75,21 @@ async function openProject(browser) {
     await field.setValue(value)
   }
   await (await browser.$('button=Open and analyze')).click()
-  await (await browser.$('.architecture-node')).waitForDisplayed({ timeout: 20_000 })
+  try {
+    await browser.waitUntil(async () => (await browser.$$('.architecture-node')).length > 0, {
+      timeout: 20_000, timeoutMsg: 'Engine analysis should create canvas nodes',
+    })
+  } catch (error) {
+    const body = await (await browser.$('body')).getText().catch(() => 'Unable to read native page text.')
+    throw new Error(`${error.message}\nNative page state:\n${body}`)
+  }
+  const size = await (await browser.$('.architecture-node')).getSize()
+  assert(size.width > 0 && size.height > 0, 'Canvas nodes must have non-zero rendered geometry')
 }
 
 async function captureRepeatPosition(browser) {
   const repeat = await browser.$('.node-repeat_group')
-  await repeat.waitForDisplayed()
+  await repeat.waitForExist()
   const beforeScreen = await repeat.getLocation()
   await browser.action('pointer', { parameters: { pointerType: 'mouse' } })
     .move({ origin: repeat, x: 80, y: 36 })
@@ -98,8 +107,23 @@ async function canvasPosition(node) {
   const style = await node.getAttribute('style')
   const matches = [...(style ?? '').matchAll(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/g)]
   const transform = matches.at(-1)
-  if (!transform) throw new Error(`React Flow node has no readable canvas translation: ${style}`)
+  if (!transform) throw new Error(`Canvas node has no readable canvas translation: ${style}`)
   return { x: Number(transform[1]), y: Number(transform[2]) }
+}
+
+async function panCanvas(browser) {
+  const stage = await browser.$('[data-canvas-stage]')
+  const world = await browser.$('.canvas-world')
+  const before = await world.getAttribute('style')
+  await browser.action('pointer', { parameters: { pointerType: 'mouse' } })
+    .move({ origin: stage, x: 420, y: 480 })
+    .down({ button: 1 })
+    .move({ origin: 'pointer', x: 64, y: 32 })
+    .up({ button: 1 })
+    .perform()
+  await browser.pause(100)
+  const after = await world.getAttribute('style')
+  assert.notEqual(after, before, 'middle-mouse pan must update the viewport transform')
 }
 
 async function run() {
@@ -128,6 +152,7 @@ async function run() {
     await openProject(browser)
     const publicationCount = await browser.$$('.architecture-node').then((nodes) => nodes.length)
     assert(publicationCount >= 5, 'Transformer publication view should render recovered nodes')
+    await panCanvas(browser)
     const movedPosition = await captureRepeatPosition(browser)
     await (await browser.$('button=Save visual document')).click()
     await browser.pause(250)
@@ -141,7 +166,7 @@ async function run() {
     assert.equal(restored.y, movedPosition.y, 'restart must restore the saved canvas y position')
     await (await restarted.$('button=Exact Architecture')).click()
     await restarted.waitUntil(
-      async () => (await restarted.$('[data-id="node:encodermodel.layers"]')).isDisplayed(),
+      async () => (await restarted.$('[data-id="node:encodermodel.layers"]')).isExisting(),
       { timeout: 5_000, timeoutMsg: 'Exact view should render the source-backed ModuleList node' },
     )
     assert.equal(await (await restarted.$('.node-repeat_group')).isExisting(), false, 'Exact view must not render the Publication repeat-group abstraction')

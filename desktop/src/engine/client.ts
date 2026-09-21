@@ -119,6 +119,10 @@ function requestId(prefix: string) {
   return `engine-request:${prefix}-${Date.now()}`
 }
 
+function rpcFailure(response: RpcResponse, fallback: string) {
+  return response.error ? `${response.error.code}: ${response.error.message}` : fallback
+}
+
 function anchorLabels(analysis: EngineAnalysis) {
   return new Map(analysis.source.anchors.map((anchor) => [anchor.anchor_id, `${anchor.relative_file}:${anchor.span.start.line}`]))
 }
@@ -179,7 +183,7 @@ class TauriEngineClient implements EngineClient {
 
   private async analysis(projectId: string): Promise<EngineAnalysis> {
     const response = await this.rpc({ operation: 'load_analysis', project_id: projectId }, 'load-analysis')
-    if (response.status !== 'succeeded' || !response.result) throw new Error(response.error?.message ?? 'Engine analysis is unavailable.')
+    if (response.status !== 'succeeded' || !response.result) throw new Error(rpcFailure(response, 'Engine analysis is unavailable.'))
     return response.result as unknown as EngineAnalysis
   }
 
@@ -198,9 +202,9 @@ class TauriEngineClient implements EngineClient {
       entrypoint: input.entrypoint,
       environment: { python_executable: input.pythonExecutable, environment_name: input.environmentName ?? null },
     }, 'open-project')
-    if (opened.status !== 'succeeded') throw new Error(opened.error?.message ?? 'Engine rejected the project.')
+    if (opened.status !== 'succeeded') throw new Error(rpcFailure(opened, 'Engine rejected the project.'))
     const analyzed = await this.rpc({ operation: 'analyze_project', project_id: input.projectId }, 'analyze-project')
-    if (analyzed.status !== 'succeeded' || !analyzed.result) throw new Error(analyzed.error?.message ?? 'Engine analysis failed.')
+    if (analyzed.status !== 'succeeded' || !analyzed.result) throw new Error(rpcFailure(analyzed, 'Engine analysis failed.'))
     window.localStorage.setItem(ENGINE_PROJECT_KEY, input.projectId)
     const analysis = analyzed.result as unknown as EngineAnalysis
     const replay = await this.rpc({ operation: 'replay_canvas_documents', project_id: input.projectId }, 'replay-canvas')
@@ -210,7 +214,7 @@ class TauriEngineClient implements EngineClient {
 
   async saveCanvas(document: CanvasDocument): Promise<SaveOutcome> {
     const response = await this.rpc({ operation: 'save_canvas_document', canvas_document: document }, 'canvas')
-    if (response.status !== 'succeeded') return { ok: false, code: response.error?.code ?? 'ENGINE_RPC_FAILED', message: response.error?.message ?? 'The Engine rejected the visual document.' }
+    if (response.status !== 'succeeded') return { ok: false, code: response.error?.code ?? 'ENGINE_RPC_FAILED', message: rpcFailure(response, 'The Engine rejected the visual document.') }
     const saved = (response.result?.canvas_documents as CanvasDocument[] | undefined)?.[0]
     return saved ? { ok: true, document: saved, message: 'Visual state saved by Engine RPC.' } : { ok: false, code: 'ENGINE_RPC_INVALID_RESPONSE', message: 'Engine returned no CanvasDocument.' }
   }
@@ -218,7 +222,7 @@ class TauriEngineClient implements EngineClient {
   async requestSourceJump(anchorId: string | undefined, label: string): Promise<string> {
     if (!anchorId) return `No Engine-backed source anchor is available for ${label}.`
     const response = await this.rpc({ operation: 'resolve_source_anchor', project_id: window.localStorage.getItem(ENGINE_PROJECT_KEY), anchor_id: anchorId }, 'source-jump')
-    if (response.status !== 'succeeded' || !response.result) return response.error?.message ?? 'Engine could not resolve the source location.'
+    if (response.status !== 'succeeded' || !response.result) return rpcFailure(response, 'Engine could not resolve the source location.')
     const location = response.result as { relative_file: string; line: number; column: number }
     return `Engine resolved ${location.relative_file}:${location.line}:${location.column}.`
   }
