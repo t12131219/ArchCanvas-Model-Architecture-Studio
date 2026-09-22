@@ -17,11 +17,17 @@ import {
 import './App.css'
 import { CanvasStage, type CanvasPoint, type CanvasStageNode } from './canvas/CanvasStage'
 import { appendHistory } from './canvas/history'
-import { createEngineClient } from './engine/client'
-import type { ArchitectureEdge, CanvasDocument, DesktopSnapshot, ProjectOpenInput } from './engine/types'
+import { createEngineClient, createParameterPatchSet } from './engine/client'
+import type { ArchitectureEdge, ArchitectureNode, CanvasDocument, DesktopSnapshot, ProjectOpenInput, PatchResult, PatchSet } from './engine/types'
 
 const engine = createEngineClient()
 const isTauri = '__TAURI_INTERNALS__' in window
+
+const EDITABLE_PARAMETER_LABELS: Record<string, string> = {
+  num_heads: 'Number of attention heads',
+  dropout: 'Dropout probability',
+  activation: 'Activation',
+}
 
 const EXPORT_PALETTE = {
   ink: '#1b1b18',
@@ -131,6 +137,10 @@ function App() {
   const [view, setView] = useState<'publication' | 'exact'>('publication')
   const [openProject, setOpenProject] = useState(false)
   const [opening, setOpening] = useState(false)
+  const [patchBusy, setPatchBusy] = useState(false)
+  const [patchSet, setPatchSet] = useState<PatchSet | null>(null)
+  const [patchResult, setPatchResult] = useState<PatchResult | null>(null)
+  const [parameterDrafts, setParameterDrafts] = useState<Record<string, string>>({})
   const [projectInput, setProjectInput] = useState<ProjectOpenInput>({
     projectId: 'project:desktop-model', approvedRoot: '', entrypoint: 'model.py:Model',
     pythonExecutable: '', environmentName: 'TFB_py311',
@@ -156,6 +166,59 @@ function App() {
   const selectedVisual = snapshot?.document.nodes.find((node) => node.publication_node_id === selectedId) ?? null
   const selectedMiniatures = snapshot?.miniatures.filter((miniature) => miniature.targetId === selectedId) ?? []
   const canvasSelectedIds = selectedIds.filter((nodeId) => nodes.some((node) => node.id === nodeId))
+
+  function parseParameterValue(raw: string, before: unknown): unknown {
+    if (typeof before === 'number') return Number(raw)
+    if (typeof before === 'boolean') return raw === 'true'
+    return raw
+  }
+
+  async function planParameterPatch(parameter: NonNullable<ArchitectureNode['parameters']>[number]) {
+    if (!snapshot || !selected || snapshot.mode !== 'engine' || typeof parameter.value === 'undefined') return
+    try {
+      const next = parseParameterValue(parameterDrafts[parameter.name] ?? String(parameter.value), parameter.value)
+      const candidate = createParameterPatchSet(snapshot, selected, parameter, next)
+      setPatchBusy(true)
+      const planned = await engine.planPatch(snapshot.projectId, candidate)
+      if (!planned.ok) { setNotice(`${planned.code}: ${planned.message}`); return }
+      const validated = await engine.validatePatch(snapshot.projectId, candidate)
+      if (validated.ok) {
+        setPatchSet(candidate)
+        setPatchResult(validated.result)
+        setNotice('Candidate patch validated. Source bytes are unchanged; explicit commit is still required.')
+      } else {
+        setPatchResult(planned.result)
+        setNotice(`${validated.code}: ${validated.message}`)
+      }
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Patch planning failed.') }
+    finally { setPatchBusy(false) }
+  }
+
+  function cancelParameterPatch() {
+    setPatchSet(null)
+    setPatchResult(null)
+    setNotice('Candidate patch cancelled. Source bytes are unchanged.')
+  }
+
+  async function commitParameterPatch() {
+    if (!snapshot || !patchSet) return
+    if (!patchResult || patchResult.kind !== 'patch_validated' || !patchResult.confirmation_id) {
+      setNotice('Validate the candidate before committing it.')
+      return
+    }
+    setPatchBusy(true)
+    try {
+      const outcome = await engine.commitPatch(snapshot.projectId, patchSet, patchResult.confirmation_id)
+      if (!outcome.ok) setNotice(`${outcome.code}: ${outcome.message}`)
+      else {
+        const refreshed = await engine.load()
+        setSnapshot(refreshed)
+        setPatchSet(null)
+        setPatchResult(null)
+        setNotice('Source patch committed by Engine and analysis refreshed.')
+      }
+    } finally { setPatchBusy(false) }
+  }
 
   function record(document: CanvasDocument) {
     const nextIndex = historyIndexRef.current + 1
@@ -273,6 +336,27 @@ function App() {
             <dl className="metadata"><dt>Members</dt><dd>{selected.members}</dd>{selectedVisual && <><dt>Position</dt><dd>{Math.round(selectedVisual.x)}, {Math.round(selectedVisual.y)}</dd></>}<dt>Evidence</dt><dd>{selected.anchor}</dd></dl>
             {selectedMiniatures.length > 0 && <div className="miniature-evidence"><span>Visual evidence</span>{selectedMiniatures.map((miniature) => <div key={miniature.id}><strong>{miniature.label}</strong><em>{miniature.disclosure}</em></div>)}</div>}
             <button type="button" className="source-link" onClick={() => void engine.requestSourceJump(selected.anchorId, selected.anchor).then(setNotice)}><FileCode2 size={15} />View source evidence</button>
+            {snapshot?.mode === 'engine' && (selected.parameters ?? []).filter((parameter) => (
+              parameter.origin === 'literal'
+              && parameter.name in EDITABLE_PARAMETER_LABELS
+              && snapshot.patchableParameters.includes(parameter.name)
+            )).map((parameter) => (
+              <div className="parameter-editor" key={parameter.name}>
+                <label htmlFor={`parameter-${parameter.name}`}>{EDITABLE_PARAMETER_LABELS[parameter.name]}</label>
+                <input id={`parameter-${parameter.name}`} value={parameterDrafts[parameter.name] ?? String(parameter.value)} onChange={(event) => setParameterDrafts({ ...parameterDrafts, [parameter.name]: event.target.value })} />
+                <button type="button" onClick={() => void planParameterPatch(parameter)} disabled={patchBusy}>Plan source patch</button>
+              </div>
+            ))}
+            {patchResult && <div className="patch-review">
+              <div className="node-kind">{patchResult.kind.replace('_', ' ')}</div>
+              <pre>{patchResult.candidate_diff}</pre>
+              <p>{patchResult.validation.blocking ? 'Validation is blocking; commit is unavailable.' : `Risk: ${patchResult.risk.level}. ${patchResult.risk.reasons.join(' ')}`}</p>
+              {patchResult.runtime_validation && <p>Runtime validation: {patchResult.runtime_validation.status} ({patchResult.runtime_validation.trace_id})</p>}
+              <div className="inspector-actions">
+                <button type="button" onClick={cancelParameterPatch} disabled={patchBusy}>Cancel</button>
+                {patchSet && patchResult.kind === 'patch_validated' && <button type="button" onClick={() => void commitParameterPatch()} disabled={patchBusy || patchResult.blocking}>Commit source patch</button>}
+              </div>
+            </div>}
             {selectedVisual && view === 'publication' && <div className="inspector-actions">
               <button type="button" onClick={() => toggleVisual(selectedVisual.publication_node_id, 'locked')}>{selectedVisual.locked ? <Unlock size={15} /> : <Lock size={15} />}{selectedVisual.locked ? 'Unlock placement' : 'Lock placement'}</button>
               {selected.kind === 'repeat_group' && <button type="button" onClick={() => toggleVisual(selectedVisual.publication_node_id, 'collapsed')}><Maximize2 size={15} />{selectedVisual.collapsed ? 'Expand visual group' : 'Collapse visual group'}</button>}

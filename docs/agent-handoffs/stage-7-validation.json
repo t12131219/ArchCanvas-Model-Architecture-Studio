@@ -1,0 +1,68 @@
+{
+  "stage": "stage-7",
+  "base_revision": "working-tree",
+  "environment": {"conda": "TFB_py311", "python": "3.11", "node": "24.19.0"},
+  "protocol_versions": ["engine-rpc:1.0", "patch-protocol:1.0"],
+  "status": "implementation-complete-stage-6-gate-blocked",
+  "stage_6_gate": "pending",
+  "commands": [
+    {"command": "PYTHONPATH=src:. conda run -n TFB_py311 pytest -q", "exit_code": 0, "observed": "152 passed"},
+    {"command": "PYTHONPATH=src:. conda run -n TFB_py311 ruff check src tests tools", "exit_code": 0},
+    {"command": "PYTHONPATH=src:. conda run -n TFB_py311 python -m compileall -q src tools tests", "exit_code": 0},
+    {"command": "PYTHONPATH=src:. conda run -n TFB_py311 python tools/export_schemas.py", "exit_code": 0},
+    {"command": "npm run build && npm run lint", "exit_code": 0},
+    {"command": "git diff --check", "exit_code": 0}
+  ],
+  "fixtures": [{"name": "transformer_set_parameter_v1", "status": "passed"}],
+  "implemented": [
+    "Engine-owned plan_patch/validate_patch/commit_patch RPCs",
+    "candidate-first atomic literal parameter transaction",
+    "source revision and anchor fingerprint checks",
+    "structured analyzer-unavailable, stale-source and validation rejection",
+    "post-commit re-analysis with source, manifest and analysis-cache rollback",
+    "desktop inspector candidate diff, risk, cancel and Engine-only commit flow",
+    "Engine-issued one-time confirmation capability with no restart or validation bypass",
+    "registered num_heads, dropout and activation round-trip candidates",
+    "hidden-size candidates gated by an Engine-registered PatchRuntimeProfile",
+    "isolated candidate-root runtime validation with deny-network, bounded resources and symlink rejection",
+    "persisted patch planned, validated, committed, rolled-back and rejected audit events",
+    "Engine manifest capability list consumed by the Desktop inspector"
+  ],
+  "supported_parameter_labels": ["num_heads", "dropout", "hidden_size", "hidden_dim", "d_model", "dim_feedforward", "activation"],
+  "transform_registry": {
+    "num_heads": ["num_heads"],
+    "dropout": ["dropout"],
+    "hidden_size": ["hidden_size", "hidden_dim", "d_model", "dim_feedforward"],
+    "activation": ["activation"]
+  },
+  "value_contracts": {
+    "num_heads": "positive integer and divides a visible model dimension",
+    "dropout": "finite number in [0, 1]",
+    "hidden_size": "positive integer",
+    "activation": "reviewed string: relu or gelu"
+  },
+  "analyzer_policy": "Only explicitly registered project analyzers may plan source patches; no fixture fallback is used for arbitrary benchmarks.",
+  "automated_tests": [
+    "tests/engine/test_engine_patch.py",
+    "tests/transactions/test_set_parameter_transaction.py",
+    "tests/transactions/test_registered_parameter_transforms.py",
+    "tests/transforms/test_parameter_registry.py"
+  ],
+  "remaining_stage_7": [],
+  "blocking": true,
+  "known_limitations": [
+    "Only explicitly registered project analyzers can produce source candidates.",
+    "Each non-fixture project needs an explicitly approved analyzer and, when required, PatchRuntimeProfile; no benchmark-specific analyzer or runtime command is inferred.",
+    "Structural edits and MCP/agent workflow are later stages.",
+    "Static adapter v1 constructor fingerprints use an explicit legacy compatibility path bounded by source span, callee and content fingerprint."
+  ],
+  "stage_6_blockers_unchanged": [
+    "approved immutable config snapshots including DUET enc_in",
+    "manual Publication overview/detail/evidence/screenshot review",
+    "first hosted Ubuntu 24.04 CI acceptance"
+  ],
+  "stage_8_entry": {
+    "status": "blocked",
+    "reason": "Stage 8 requires Stage 3 and Stage 7 to have passed; Stage 7 has completed implementation but cannot formally pass while the Stage 6 prerequisite remains pending."
+  }
+}

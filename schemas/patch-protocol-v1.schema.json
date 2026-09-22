@@ -53,22 +53,94 @@
           "items": {
             "$ref": "#/$defs/ParameterChange"
           },
-          "minItems": 1,
           "title": "Required Parameter Changes",
           "type": "array"
         }
       },
       "required": [
-        "required_parameter_changes",
-        "allowed_node_additions",
-        "allowed_node_removals",
-        "allowed_node_modifications",
-        "allowed_edge_additions",
-        "allowed_edge_removals",
-        "allowed_edge_modifications",
         "require_identity_retention"
       ],
       "title": "ExpectedGraphDelta",
+      "type": "object"
+    },
+    "InsertLayerNormPatch": {
+      "additionalProperties": false,
+      "description": "Stage 8's first structural operation: splice one LayerNorm into a proven data edge.",
+      "properties": {
+        "attribute_name": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Attribute Name",
+          "type": "string"
+        },
+        "constructor_anchor_content_fingerprint": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Constructor Anchor Content Fingerprint",
+          "type": "string"
+        },
+        "constructor_anchor_id": {
+          "pattern": "^anchor:[A-Za-z0-9._-]+$",
+          "title": "Constructor Anchor Id",
+          "type": "string"
+        },
+        "expected_delta": {
+          "$ref": "#/$defs/ExpectedGraphDelta"
+        },
+        "forward_anchor_content_fingerprint": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Forward Anchor Content Fingerprint",
+          "type": "string"
+        },
+        "forward_anchor_id": {
+          "pattern": "^anchor:[A-Za-z0-9._-]+$",
+          "title": "Forward Anchor Id",
+          "type": "string"
+        },
+        "normalized_shape": {
+          "minimum": 1,
+          "title": "Normalized Shape",
+          "type": "integer"
+        },
+        "operation": {
+          "const": "insert_layer_norm",
+          "default": "insert_layer_norm",
+          "title": "Operation",
+          "type": "string"
+        },
+        "patch_id": {
+          "pattern": "^patch:[A-Za-z0-9._-]+$",
+          "title": "Patch Id",
+          "type": "string"
+        },
+        "scope": {
+          "const": "architecture",
+          "default": "architecture",
+          "title": "Scope",
+          "type": "string"
+        },
+        "source_node_id": {
+          "pattern": "^node:[A-Za-z0-9._:-]+$",
+          "title": "Source Node Id",
+          "type": "string"
+        },
+        "target_node_id": {
+          "pattern": "^node:[A-Za-z0-9._:-]+$",
+          "title": "Target Node Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "patch_id",
+        "source_node_id",
+        "target_node_id",
+        "constructor_anchor_id",
+        "forward_anchor_id",
+        "attribute_name",
+        "normalized_shape",
+        "constructor_anchor_content_fingerprint",
+        "forward_anchor_content_fingerprint",
+        "expected_delta"
+      ],
+      "title": "InsertLayerNormPatch",
       "type": "object"
     },
     "ParameterChange": {
@@ -275,7 +347,14 @@
     },
     "patches": {
       "items": {
-        "$ref": "#/$defs/SetParameterPatch"
+        "anyOf": [
+          {
+            "$ref": "#/$defs/SetParameterPatch"
+          },
+          {
+            "$ref": "#/$defs/InsertLayerNormPatch"
+          }
+        ]
       },
       "maxItems": 1,
       "minItems": 1,

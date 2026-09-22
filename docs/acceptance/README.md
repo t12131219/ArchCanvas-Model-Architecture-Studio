@@ -10,6 +10,7 @@ transaction, an MCP policy, or a release artifact.
 | Static compatibility corpus | `fixtures/transformer_static_v1`, `fixtures/resnet_static_v1` | Stage 2 | known source patterns produce supported topology or explicit unresolved facts |
 | Runtime | `tests/runtime`, `fixtures/runtime_trace_v1` | Stage 3 | worker isolation, coverage, failure code, and shape evidence |
 | Engine integration | `tests/engine` | Stage 5 | typed request/response, persistence, refresh, and stale-state behavior |
+| Semantic patch lifecycle | `tests/engine/test_engine_patch.py`, `tests/transactions` | Stage 7 | candidate diff, provenance/risk, validation, atomic commit, stale rejection and post-commit re-analysis |
 | Scientific miniature | `tests/publication` | Stage 6 D4 | source-member mapping, evidence/disclosure contract, deterministic SVG and negative provenance cases |
 | Desktop E2E | `desktop/tests`, `tests/e2e` | Stages 6-8 | actual interaction, persistence, source hash, and validation display |
 | MCP policy | `tests/mcp` | Stage 9 | capability advertisement, root authority, candidate-first commit policy |
@@ -142,3 +143,33 @@ MMPretrain and SpeechBrain can be added with the same explicit scope and registr
 --pytorch-entrypoint-registry-file 04:docs/acceptance/mmpretrain-entrypoints-v1.json \
 --pytorch-entrypoint-registry-file 11:docs/acceptance/speechbrain-entrypoints-v1.json
 ```
+
+## Stage 7 Patch Boundary
+
+Stage 7 source editing is Engine-owned. Desktop clients submit a typed `PatchSet` through
+`plan_patch`, `validate_patch` and `commit_patch`; they never write approved project files. Only
+an explicitly registered project analyzer may produce a candidate. Projects without one are
+rejected with `PATCH_ANALYZER_UNAVAILABLE`, which keeps benchmark reference code useful for
+compatibility evidence without treating any single benchmark or fixture analyzer as universal.
+The desktop inspector exposes only source-backed literal parameter controls and must show the
+candidate diff and validation/risk metadata before commit. Validation issues an Engine-owned,
+one-time confirmation capability; a commit without the matching live candidate and capability is
+rejected, including after an Engine restart. A cancelled candidate has no source side effect, and a
+successful commit is followed by Engine re-analysis. If post-commit analysis fails, original bytes
+are atomically restored only when the candidate revision is still current; a concurrent change is
+reported as a rollback conflict and is never overwritten.
+Where a project requires runtime evidence, the Engine administrator must explicitly register a
+`PatchRuntimeProfile`; it specifies tensor inputs, constructor arguments, trace provider, timeout,
+memory limit and network policy. The candidate is written only into a temporary copy of the approved
+root and executed by the existing isolated worker. RPC clients cannot provide an arbitrary command,
+script, environment or test payload. A failed runtime result rejects validation without confirmation
+or an approved-source write. Symlinked candidate trees are rejected before worker execution so an
+import cannot escape the approved temporary copy.
+The registry currently covers `num_heads`, `dropout`, `activation`, and hidden-size aliases
+(`hidden_size`, `hidden_dim`, `d_model`, `dim_feedforward`); names such as `batch_first` remain
+unregistered and are rejected even when their source value is literal. Registry value contracts
+also reject non-positive dimensions, out-of-range dropout values, unsupported activation values and
+head counts that do not divide a visible model dimension. Hidden-size transforms are registered but
+not currently commit-capable without a registered `PatchRuntimeProfile`: the Engine rejects them
+before candidate creation and the Desktop does not offer a control for them. With such a profile,
+they remain candidate-first and must complete the isolated runtime gate before confirmation.

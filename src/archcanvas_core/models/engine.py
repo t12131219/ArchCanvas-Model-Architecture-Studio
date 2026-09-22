@@ -7,11 +7,14 @@ from typing import Annotated, Literal
 
 from pydantic import Field, model_validator
 
-from .architecture import ArchitectureIR
+from .architecture import ArchitectureIR, JsonValue
 from .canvas import CanvasDocument, CanvasDocumentId
 from .common import StrictModel
+from .patch import PatchSet
 from .publication import PublicationIR, PublicationNodeId, VisualScene
+from .runtime import NetworkPolicy, RuntimeProviderId, RuntimeTensorInput, RuntimeTraceResult
 from .source_identity import AnchorId, Sha256, SourceIdentityDocument
+from .validation import ObservedGraphDelta, ValidationReport
 
 ProjectId = Annotated[str, Field(pattern=r"^project:[A-Za-z0-9._-]+$")]
 VisualPatchId = Annotated[str, Field(pattern=r"^visual-patch:[A-Za-z0-9._-]+$")]
@@ -39,6 +42,7 @@ class ProjectManifest(StrictModel):
     entrypoint: str = Field(pattern=r"^[A-Za-z0-9_./-]+\.py:[A-Za-z_][A-Za-z0-9_]*$")
     environment: EngineEnvironment
     resolved_config: dict[str, ResolvedConfigValue] = Field(default_factory=dict)
+    patch_parameter_names: list[str] = Field(default_factory=list)
     source_revision: Sha256
     file_revisions: dict[str, Sha256] = Field(min_length=1)
     source_status: ProjectSourceStatus = ProjectSourceStatus.READY
@@ -83,6 +87,9 @@ class EngineOperation(str, Enum):
     REPLAY_CANVAS_DOCUMENTS = "replay_canvas_documents"
     LOAD_ANALYSIS = "load_analysis"
     RESOLVE_SOURCE_ANCHOR = "resolve_source_anchor"
+    PLAN_PATCH = "plan_patch"
+    VALIDATE_PATCH = "validate_patch"
+    COMMIT_PATCH = "commit_patch"
 
 
 class HealthCommand(StrictModel):
@@ -125,13 +132,38 @@ class ResolveSourceAnchorCommand(StrictModel):
     anchor_id: AnchorId
 
 
+class PatchCommand(StrictModel):
+    operation: Literal[
+        EngineOperation.PLAN_PATCH,
+        EngineOperation.VALIDATE_PATCH,
+        EngineOperation.COMMIT_PATCH,
+    ]
+    project_id: ProjectId
+    patch_set: PatchSet
+    # Issued only after Engine validation.  The Engine treats it as a one-time
+    # confirmation capability rather than trusting a client-side "validated" flag.
+    confirmation_id: str | None = Field(default=None, pattern=r"^confirmation:[A-Za-z0-9_-]+$")
+
+
+class PatchRuntimeProfile(StrictModel):
+    """Engine-registered, bounded runtime validation for a candidate patch."""
+
+    constructor_kwargs: dict[str, JsonValue] = Field(default_factory=dict)
+    inputs: list[RuntimeTensorInput] = Field(min_length=1, max_length=8)
+    provider: RuntimeProviderId
+    timeout_seconds: int = Field(default=30, ge=1, le=120)
+    memory_limit_mb: int = Field(default=2_048, ge=128, le=16_384)
+    network_policy: NetworkPolicy = NetworkPolicy.DENY
+
+
 EngineCommand = Annotated[
     HealthCommand
     | OpenProjectCommand
     | ProjectCommand
     | SaveVisualPatchCommand
     | SaveCanvasDocumentCommand
-    | ResolveSourceAnchorCommand,
+    | ResolveSourceAnchorCommand
+    | PatchCommand,
     Field(discriminator="operation"),
 ]
 
@@ -204,6 +236,40 @@ class CanvasDocumentResult(StrictModel):
     orphaned_canvas_document_ids: list[CanvasDocumentId]
 
 
+class PatchProvenance(StrictModel):
+    analyzer: str = Field(min_length=1)
+    transform_id: str = Field(min_length=1)
+    relative_file: str = Field(min_length=1)
+    anchor_id: AnchorId
+    node_id: str = Field(min_length=1)
+    parameter: str = Field(min_length=1)
+    origin: str = Field(min_length=1)
+    evidence: list[str] = Field(default_factory=list)
+
+
+class PatchRisk(StrictModel):
+    level: Literal["low", "medium", "high"]
+    reasons: list[str] = Field(min_length=1)
+
+
+class PatchResult(StrictModel):
+    kind: Literal["patch_planned", "patch_validated", "patch_committed"]
+    project_id: ProjectId
+    patch_set_id: str = Field(min_length=1)
+    patch_id: str = Field(min_length=1)
+    candidate_diff: str = ""
+    before_source_revision: Sha256
+    after_source_revision: Sha256
+    observed_delta: ObservedGraphDelta
+    validation: ValidationReport
+    provenance: PatchProvenance
+    risk: PatchRisk
+    blocking: bool
+    confirmation_id: str | None = None
+    runtime_validation: RuntimeTraceResult | None = None
+    analysis: AnalysisResult | None = None
+
+
 class HealthResult(StrictModel):
     kind: Literal["health"] = "health"
     capabilities: list[str]
@@ -217,7 +283,8 @@ EngineResult = Annotated[
     | SourceLocationResult
     | RefreshResult
     | VisualPatchResult
-    | CanvasDocumentResult,
+    | CanvasDocumentResult
+    | PatchResult,
     Field(discriminator="kind"),
 ]
 
@@ -254,6 +321,11 @@ class EngineEvent(StrictModel):
         "source_stale",
         "visual_patch_saved",
         "canvas_document_saved",
+        "patch_planned",
+        "patch_validated",
+        "patch_committed",
+        "patch_rolled_back",
+        "patch_rejected",
     ]
     project_id: ProjectId
     source_revision: Sha256

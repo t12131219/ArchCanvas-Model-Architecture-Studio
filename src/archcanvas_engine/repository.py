@@ -113,3 +113,9 @@ class EngineRepository:
         events = [] if not path.is_file() else json.loads(path.read_text(encoding="utf-8"))
         events.append(event.model_dump(mode="json"))
         self._write(path, (json.dumps(events, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8"))
+
+    def load_events(self, project_id: str) -> list[EngineEvent]:
+        path = self._project_dir(project_id) / "history.json"
+        if not path.is_file():
+            return []
+        return [EngineEvent.model_validate(item) for item in json.loads(path.read_text(encoding="utf-8"))]

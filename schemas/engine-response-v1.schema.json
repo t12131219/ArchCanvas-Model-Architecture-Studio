@@ -990,6 +990,30 @@
       "title": "HealthResult",
       "type": "object"
     },
+    "IdentityChange": {
+      "additionalProperties": false,
+      "properties": {
+        "after_identity_id": {
+          "title": "After Identity Id",
+          "type": "string"
+        },
+        "before_identity_id": {
+          "title": "Before Identity Id",
+          "type": "string"
+        },
+        "node_id": {
+          "title": "Node Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "node_id",
+        "before_identity_id",
+        "after_identity_id"
+      ],
+      "title": "IdentityChange",
+      "type": "object"
+    },
     "IdentityReconciliation": {
       "additionalProperties": false,
       "properties": {
@@ -1172,6 +1196,14 @@
       "title": "ModelDescriptor",
       "type": "object"
     },
+    "NetworkPolicy": {
+      "enum": [
+        "deny",
+        "inherit"
+      ],
+      "title": "NetworkPolicy",
+      "type": "string"
+    },
     "NodeIdentity": {
       "additionalProperties": false,
       "properties": {
@@ -1286,6 +1318,103 @@
       "title": "NodeKind",
       "type": "string"
     },
+    "ObservedGraphDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "added_edge_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Added Edge Ids",
+          "type": "array"
+        },
+        "added_node_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Added Node Ids",
+          "type": "array"
+        },
+        "identity_changes": {
+          "items": {
+            "$ref": "#/$defs/IdentityChange"
+          },
+          "title": "Identity Changes",
+          "type": "array"
+        },
+        "modified_edge_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Modified Edge Ids",
+          "type": "array"
+        },
+        "modified_node_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Modified Node Ids",
+          "type": "array"
+        },
+        "modified_repeat_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Modified Repeat Ids",
+          "type": "array"
+        },
+        "parameter_changes": {
+          "items": {
+            "$ref": "#/$defs/ObservedParameterChange"
+          },
+          "title": "Parameter Changes",
+          "type": "array"
+        },
+        "removed_edge_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Removed Edge Ids",
+          "type": "array"
+        },
+        "removed_node_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Removed Node Ids",
+          "type": "array"
+        }
+      },
+      "title": "ObservedGraphDelta",
+      "type": "object"
+    },
+    "ObservedParameterChange": {
+      "additionalProperties": false,
+      "properties": {
+        "after": {
+          "title": "After"
+        },
+        "before": {
+          "title": "Before"
+        },
+        "node_id": {
+          "title": "Node Id",
+          "type": "string"
+        },
+        "parameter": {
+          "title": "Parameter",
+          "type": "string"
+        }
+      },
+      "required": [
+        "node_id",
+        "parameter",
+        "before",
+        "after"
+      ],
+      "title": "ObservedParameterChange",
+      "type": "object"
+    },
     "ParameterOrigin": {
       "additionalProperties": false,
       "properties": {
@@ -1319,6 +1448,201 @@
       ],
       "title": "ParameterOriginKind",
       "type": "string"
+    },
+    "PatchProvenance": {
+      "additionalProperties": false,
+      "properties": {
+        "analyzer": {
+          "minLength": 1,
+          "title": "Analyzer",
+          "type": "string"
+        },
+        "anchor_id": {
+          "pattern": "^anchor:[A-Za-z0-9._-]+$",
+          "title": "Anchor Id",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "node_id": {
+          "minLength": 1,
+          "title": "Node Id",
+          "type": "string"
+        },
+        "origin": {
+          "minLength": 1,
+          "title": "Origin",
+          "type": "string"
+        },
+        "parameter": {
+          "minLength": 1,
+          "title": "Parameter",
+          "type": "string"
+        },
+        "relative_file": {
+          "minLength": 1,
+          "title": "Relative File",
+          "type": "string"
+        },
+        "transform_id": {
+          "minLength": 1,
+          "title": "Transform Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "analyzer",
+        "transform_id",
+        "relative_file",
+        "anchor_id",
+        "node_id",
+        "parameter",
+        "origin"
+      ],
+      "title": "PatchProvenance",
+      "type": "object"
+    },
+    "PatchResult": {
+      "additionalProperties": false,
+      "properties": {
+        "after_source_revision": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "After Source Revision",
+          "type": "string"
+        },
+        "analysis": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AnalysisResult"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "before_source_revision": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Before Source Revision",
+          "type": "string"
+        },
+        "blocking": {
+          "title": "Blocking",
+          "type": "boolean"
+        },
+        "candidate_diff": {
+          "default": "",
+          "title": "Candidate Diff",
+          "type": "string"
+        },
+        "confirmation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmation Id"
+        },
+        "kind": {
+          "enum": [
+            "patch_planned",
+            "patch_validated",
+            "patch_committed"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "observed_delta": {
+          "$ref": "#/$defs/ObservedGraphDelta"
+        },
+        "patch_id": {
+          "minLength": 1,
+          "title": "Patch Id",
+          "type": "string"
+        },
+        "patch_set_id": {
+          "minLength": 1,
+          "title": "Patch Set Id",
+          "type": "string"
+        },
+        "project_id": {
+          "pattern": "^project:[A-Za-z0-9._-]+$",
+          "title": "Project Id",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/PatchProvenance"
+        },
+        "risk": {
+          "$ref": "#/$defs/PatchRisk"
+        },
+        "runtime_validation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuntimeTraceResult"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "validation": {
+          "$ref": "#/$defs/ValidationReport"
+        }
+      },
+      "required": [
+        "kind",
+        "project_id",
+        "patch_set_id",
+        "patch_id",
+        "before_source_revision",
+        "after_source_revision",
+        "observed_delta",
+        "validation",
+        "provenance",
+        "risk",
+        "blocking"
+      ],
+      "title": "PatchResult",
+      "type": "object"
+    },
+    "PatchRisk": {
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "title": "Level",
+          "type": "string"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "level",
+        "reasons"
+      ],
+      "title": "PatchRisk",
+      "type": "object"
     },
     "ProjectManifest": {
       "additionalProperties": false,
@@ -1355,6 +1679,13 @@
           "const": "pytorch",
           "title": "Framework",
           "type": "string"
+        },
+        "patch_parameter_names": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Patch Parameter Names",
+          "type": "array"
         },
         "project_id": {
           "pattern": "^project:[A-Za-z0-9._-]+$",
@@ -1846,6 +2177,278 @@
       "title": "RepeatSpec",
       "type": "object"
     },
+    "RuntimeEnvironment": {
+      "additionalProperties": false,
+      "properties": {
+        "cuda_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Cuda Version"
+        },
+        "dependency_lockfile": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dependency Lockfile"
+        },
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Device"
+        },
+        "environment_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Environment Name"
+        },
+        "network_enforcement": {
+          "enum": [
+            "best_effort",
+            "not_requested"
+          ],
+          "title": "Network Enforcement",
+          "type": "string"
+        },
+        "network_policy": {
+          "$ref": "#/$defs/NetworkPolicy"
+        },
+        "python_executable": {
+          "title": "Python Executable",
+          "type": "string"
+        },
+        "python_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Python Version"
+        },
+        "torch_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Torch Version"
+        }
+      },
+      "required": [
+        "python_executable",
+        "python_version",
+        "torch_version",
+        "cuda_version",
+        "device",
+        "network_policy",
+        "network_enforcement",
+        "environment_name",
+        "dependency_lockfile"
+      ],
+      "title": "RuntimeEnvironment",
+      "type": "object"
+    },
+    "RuntimeNodeObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "input_tensor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TensorSpec"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "operation": {
+          "title": "Operation",
+          "type": "string"
+        },
+        "output_tensor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TensorSpec"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "target": {
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "target",
+        "operation",
+        "input_tensor",
+        "output_tensor"
+      ],
+      "title": "RuntimeNodeObservation",
+      "type": "object"
+    },
+    "RuntimeProviderId": {
+      "enum": [
+        "torch_fx",
+        "torch_export"
+      ],
+      "title": "RuntimeProviderId",
+      "type": "string"
+    },
+    "RuntimeTraceResult": {
+      "additionalProperties": false,
+      "properties": {
+        "coverage_gaps": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Coverage Gaps",
+          "type": "array"
+        },
+        "elapsed_ms": {
+          "minimum": 0,
+          "title": "Elapsed Ms",
+          "type": "integer"
+        },
+        "environment": {
+          "$ref": "#/$defs/RuntimeEnvironment"
+        },
+        "failure_code": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TraceFailureCode"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Message"
+        },
+        "observations": {
+          "items": {
+            "$ref": "#/$defs/RuntimeNodeObservation"
+          },
+          "title": "Observations",
+          "type": "array"
+        },
+        "peak_memory_bytes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Peak Memory Bytes"
+        },
+        "provider": {
+          "$ref": "#/$defs/RuntimeProviderId"
+        },
+        "request_id": {
+          "pattern": "^trace-request:[A-Za-z0-9._-]+$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "source_revision": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Source Revision",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/TraceStatus"
+        },
+        "stderr": {
+          "title": "Stderr",
+          "type": "string"
+        },
+        "stderr_truncated": {
+          "title": "Stderr Truncated",
+          "type": "boolean"
+        },
+        "stdout": {
+          "title": "Stdout",
+          "type": "string"
+        },
+        "trace_id": {
+          "pattern": "^trace:[A-Za-z0-9._-]+$",
+          "title": "Trace Id",
+          "type": "string"
+        },
+        "worker_exit_code": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Worker Exit Code"
+        }
+      },
+      "required": [
+        "trace_id",
+        "request_id",
+        "provider",
+        "source_revision",
+        "status",
+        "failure_code",
+        "message",
+        "environment",
+        "observations",
+        "coverage_gaps",
+        "elapsed_ms",
+        "worker_exit_code",
+        "stdout",
+        "stderr",
+        "stderr_truncated"
+      ],
+      "title": "RuntimeTraceResult",
+      "type": "object"
+    },
     "SceneEdge": {
       "additionalProperties": false,
       "properties": {
@@ -1948,6 +2551,15 @@
       ],
       "title": "ScenePoint",
       "type": "object"
+    },
+    "Severity": {
+      "enum": [
+        "info",
+        "warning",
+        "error"
+      ],
+      "title": "Severity",
+      "type": "string"
     },
     "SourceAnchor": {
       "additionalProperties": false,
@@ -2293,6 +2905,33 @@
       "title": "TensorSpec",
       "type": "object"
     },
+    "TraceFailureCode": {
+      "enum": [
+        "INVALID_REQUEST",
+        "STALE_ENTRYPOINT_REVISION",
+        "ENTRYPOINT_NOT_FOUND",
+        "MODEL_IMPORT_FAILED",
+        "MODEL_CONSTRUCTION_FAILED",
+        "INPUT_CONSTRUCTION_FAILED",
+        "PROVIDER_UNAVAILABLE",
+        "TRACE_UNSUPPORTED",
+        "WORKER_TIMEOUT",
+        "WORKER_PROTOCOL_ERROR",
+        "WORKER_EXITED"
+      ],
+      "title": "TraceFailureCode",
+      "type": "string"
+    },
+    "TraceStatus": {
+      "enum": [
+        "succeeded",
+        "failed",
+        "timed_out",
+        "rejected"
+      ],
+      "title": "TraceStatus",
+      "type": "string"
+    },
     "UnresolvedFact": {
       "additionalProperties": false,
       "properties": {
@@ -2326,6 +2965,75 @@
         "blocking"
       ],
       "title": "UnresolvedFact",
+      "type": "object"
+    },
+    "ValidationIssue": {
+      "additionalProperties": false,
+      "properties": {
+        "blocking": {
+          "title": "Blocking",
+          "type": "boolean"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "edge_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Edge Ids",
+          "type": "array"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "node_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Node Ids",
+          "type": "array"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        }
+      },
+      "required": [
+        "severity",
+        "code",
+        "message",
+        "blocking"
+      ],
+      "title": "ValidationIssue",
+      "type": "object"
+    },
+    "ValidationReport": {
+      "additionalProperties": false,
+      "properties": {
+        "blocking": {
+          "title": "Blocking",
+          "type": "boolean"
+        },
+        "issues": {
+          "items": {
+            "$ref": "#/$defs/ValidationIssue"
+          },
+          "title": "Issues",
+          "type": "array"
+        },
+        "validator": {
+          "default": "graph_delta_v1",
+          "title": "Validator",
+          "type": "string"
+        }
+      },
+      "required": [
+        "blocking",
+        "issues"
+      ],
+      "title": "ValidationReport",
       "type": "object"
     },
     "VisualAnnotation": {
@@ -2535,6 +3243,9 @@
               "canvas_document_saved": "#/$defs/CanvasDocumentResult",
               "canvas_documents_replayed": "#/$defs/CanvasDocumentResult",
               "health": "#/$defs/HealthResult",
+              "patch_committed": "#/$defs/PatchResult",
+              "patch_planned": "#/$defs/PatchResult",
+              "patch_validated": "#/$defs/PatchResult",
               "project_opened": "#/$defs/ProjectOpenedResult",
               "project_refreshed": "#/$defs/RefreshResult",
               "source_location": "#/$defs/SourceLocationResult",
@@ -2567,6 +3278,9 @@
             },
             {
               "$ref": "#/$defs/CanvasDocumentResult"
+            },
+            {
+              "$ref": "#/$defs/PatchResult"
             }
           ]
         },

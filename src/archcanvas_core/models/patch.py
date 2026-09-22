@@ -32,13 +32,13 @@ class ParameterChange(StrictModel):
 
 
 class ExpectedGraphDelta(StrictModel):
-    required_parameter_changes: list[ParameterChange] = Field(min_length=1)
-    allowed_node_additions: list[str]
-    allowed_node_removals: list[str]
-    allowed_node_modifications: list[str]
-    allowed_edge_additions: list[str]
-    allowed_edge_removals: list[str]
-    allowed_edge_modifications: list[str]
+    required_parameter_changes: list[ParameterChange] = Field(default_factory=list)
+    allowed_node_additions: list[str] = Field(default_factory=list)
+    allowed_node_removals: list[str] = Field(default_factory=list)
+    allowed_node_modifications: list[str] = Field(default_factory=list)
+    allowed_edge_additions: list[str] = Field(default_factory=list)
+    allowed_edge_removals: list[str] = Field(default_factory=list)
+    allowed_edge_modifications: list[str] = Field(default_factory=list)
     require_identity_retention: bool
 
 
@@ -71,6 +71,40 @@ class SetParameterPatch(StrictModel):
         return self
 
 
+class InsertLayerNormPatch(StrictModel):
+    """Stage 8's first structural operation: splice one LayerNorm into a proven data edge."""
+
+    patch_id: PatchId
+    scope: Literal["architecture"] = "architecture"
+    operation: Literal["insert_layer_norm"] = "insert_layer_norm"
+    source_node_id: NodeId
+    target_node_id: NodeId
+    constructor_anchor_id: AnchorId
+    forward_anchor_id: AnchorId
+    attribute_name: str = Field(pattern=r"^[A-Za-z_][A-Za-z0-9_]*$")
+    normalized_shape: int = Field(ge=1)
+    constructor_anchor_content_fingerprint: Sha256
+    forward_anchor_content_fingerprint: Sha256
+    expected_delta: ExpectedGraphDelta
+
+    @model_validator(mode="after")
+    def splice_is_non_degenerate(self) -> InsertLayerNormPatch:
+        if self.source_node_id == self.target_node_id:
+            raise ValueError("insert_layer_norm source and target must differ")
+        if self.constructor_anchor_id == self.forward_anchor_id:
+            raise ValueError("insert_layer_norm requires distinct constructor and forward anchors")
+        if self.expected_delta.required_parameter_changes:
+            raise ValueError("insert_layer_norm cannot declare parameter changes")
+        if not self.expected_delta.allowed_node_additions:
+            raise ValueError("insert_layer_norm must declare its added node")
+        return self
+
+
+# Keep v1 payloads valid: ``set_parameter`` historically relied on its default operation field.
+# The two strict shapes have disjoint required fields, so Pydantic can safely select their union.
+Patch = SetParameterPatch | InsertLayerNormPatch
+
+
 class PatchSet(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     patch_set_id: PatchSetId
@@ -78,7 +112,7 @@ class PatchSet(StrictModel):
     base_source_revision: Sha256
     created_at: datetime
     created_by: Literal["user", "agent", "system"]
-    patches: list[SetParameterPatch] = Field(min_length=1, max_length=1)
+    patches: list[Patch] = Field(min_length=1, max_length=1)
 
     @model_validator(mode="after")
     def unique_patch_ids(self) -> PatchSet:

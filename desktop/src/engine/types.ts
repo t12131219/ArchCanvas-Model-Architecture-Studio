@@ -37,11 +37,19 @@ export type CanvasDocument = {
 
 export type ArchitectureNode = {
   id: string
+  sourceNodeId?: string
   label: string
   kind: string
   anchor: string
   anchorId?: string
   members: number
+  parameters?: Array<{
+    name: string
+    value: unknown
+    sourceName?: string | null
+    origin: string
+    anchorId?: string
+  }>
 }
 
 export type ArchitectureEdge = { id: string; source: string; target: string; residual?: boolean }
@@ -62,6 +70,8 @@ export type DesktopSnapshot = {
   publicationId: string
   sourceRevision: string
   sourceLabel: string
+  patchableParameters: string[]
+  sourceAnchors: Record<string, { relativeFile: string; fileRevision: string; contentFingerprint: string }>
   nodes: ArchitectureNode[]
   edges: ArchitectureEdge[]
   miniatures: ScientificMiniature[]
@@ -73,6 +83,30 @@ export type DesktopSnapshot = {
 
 export type SaveOutcome =
   | { ok: true; document: CanvasDocument; message: string }
+  | { ok: false; code: string; message: string }
+
+export type PatchSet = Record<string, unknown>
+
+export type PatchResult = {
+  kind: 'patch_planned' | 'patch_validated' | 'patch_committed'
+  project_id: string
+  patch_set_id: string
+  patch_id: string
+  candidate_diff: string
+  before_source_revision: string
+  after_source_revision: string
+  observed_delta: Record<string, unknown>
+  validation: { blocking: boolean; issues: Array<Record<string, unknown>> }
+  provenance: Record<string, unknown>
+  risk: { level: 'low' | 'medium' | 'high'; reasons: string[] }
+  blocking: boolean
+  confirmation_id?: string | null
+  runtime_validation?: { status: string; message?: string | null; trace_id: string } | null
+  analysis?: Record<string, unknown> | null
+}
+
+export type PatchOutcome =
+  | { ok: true; result: PatchResult; message: string }
   | { ok: false; code: string; message: string }
 
 export type ProjectOpenInput = {
@@ -87,5 +121,8 @@ export interface EngineClient {
   load(): Promise<DesktopSnapshot>
   openProject(input: ProjectOpenInput): Promise<DesktopSnapshot>
   saveCanvas(document: CanvasDocument): Promise<SaveOutcome>
+  planPatch(projectId: string, patchSet: PatchSet): Promise<PatchOutcome>
+  validatePatch(projectId: string, patchSet: PatchSet): Promise<PatchOutcome>
+  commitPatch(projectId: string, patchSet: PatchSet, confirmationId: string): Promise<PatchOutcome>
   requestSourceJump(anchorId: string | undefined, label: string): Promise<string>
 }

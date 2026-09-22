@@ -9,8 +9,16 @@ exercises the full interaction path, persists a visual drag across a native rest
 Exact/Publication view boundary and confirms source bytes remain unchanged. The same test is
 configured in Linux CI, whose first remote run remains external acceptance evidence.
 Section 25 of the updated plan supersedes the prior Stage 6 presentation and interaction scope: the
-revised Stage 6 remains in progress. Semantic editing, structural editing, MCP transport and release
-hardening have not started.
+revised Stage 6 remains in progress. Structural editing, MCP transport and release hardening have
+not started; the first Engine-owned semantic editing slice is tracked below as Stage 7 development.
+
+Stage 7 implementation is complete while the revised Stage 6 acceptance gate remains pending. The
+first safe semantic-editing slice is Engine-owned literal parameter patching: `plan_patch`,
+`validate_patch` and `commit_patch` are strict RPCs backed by the candidate-first atomic
+transaction. Explicitly registered project analyzers are required; unregistered projects fail
+closed with `PATCH_ANALYZER_UNAVAILABLE`. The desktop inspector previews source-backed candidate
+diffs and validation/risk metadata, cancels without writing, or commits only through Engine RPC
+followed by mandatory re-analysis. This is development evidence, not Stage 6 gate approval.
 
 ## Completed In Current Worktree
 
@@ -102,6 +110,34 @@ hardening have not started.
   cover representative components only, while dynamic/config-driven and unresolved entries remain
   explicitly visible.
 
+- Stage 7 (implementation complete, formal gate pending): Engine patch lifecycle RPCs expose candidate diff,
+  source revisions, observed graph delta, validation report, provenance and risk. Literal
+  `num_heads`, `dropout`, `activation` and hidden-size aliases (`hidden_size`, `hidden_dim`,
+  `d_model`, `dim_feedforward`) are governed by an explicit transform registry. Only a planned,
+  validated in-memory candidate accompanied by Engine-issued one-time confirmation capability can
+  commit; restart, missing plan, missing validation and invalid confirmation are structured
+  rejections. Commit atomically writes then re-analyzes; a post-commit analysis failure restores the
+  original bytes only when no competing writer intervened. `num_heads` requires a visible compatible
+  model dimension and activation is restricted to reviewed values. Hidden-size aliases remain
+  registered but deliberately unavailable unless an Engine-registered `PatchRuntimeProfile` exists.
+  A profile supplies bounded constructor inputs, trace provider, timeout, memory and deny-network
+  policy; Engine copies the approved root to a temporary candidate project and runs its isolated
+  worker there before issuing confirmation. Runtime failure does not write the approved root or issue
+  a confirmation capability. Engine persists the allowed parameter names in the project manifest;
+  the Inspector consumes that list, so it does not expose hidden-size controls until project
+  capability/profile registration is available. Benchmark-specific analyzers and profiles remain
+  explicit per-project approval/configuration artifacts rather than hidden generic fallbacks.
+  Structural edits remain Stage 8 work.
+
+- Stage 8 (development started): Patch Protocol v2 now defines a restricted
+  `insert_layer_norm` operation. Its CST planner may only splice a single `nn.LayerNorm` into one
+  source-proven, same-file forward edge, using distinct constructor and forward content anchors.
+  The candidate requires exactly two textual hunks and must produce the declared node/edge delta
+  while retaining existing identities. Engine now runs the candidate through the registered isolated
+  runtime profile and `RuntimeShapeValidator` before it can issue confirmation or commit. Missing
+  profiles, failed traces and coverage/shape gaps reject validation without writing source. This
+  implementation does not yet cover removal, rewire, residual or structural Inspector authoring.
+
 ## Scope Boundaries
 
 - Static and runtime validation evidence currently cover repository fixtures. Article projects are
@@ -130,5 +166,7 @@ read-only TFB preflight (`460 = 439 + 21`, 147 external evidence directories and
   but Stage 6 still cannot exit: every generated checklist needs manual overview/detail,
   evidence-traversal and screenshot approval; applicable entrypoints still need approved immutable
   config snapshots (including DUET `enc_in`); and the first hosted CI acceptance remains outstanding.
-  The local Native Tauri E2E and specified desktop visual regression now pass. Stage 7 must not be
-  entered until the remaining D5 and hosted CI conditions pass.
+  The local Native Tauri E2E and specified desktop visual regression now pass. Stage 7 development
+  may proceed in parallel with these pending acceptance items, but Stage 6 is not considered exited
+  and the Stage 7 gate is not claimed until the revised D5/manual/hosted-CI conditions are actually
+  satisfied.

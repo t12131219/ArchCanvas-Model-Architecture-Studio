@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass
+from hashlib import sha256
 from math import isfinite
 from typing import Any
 
@@ -72,6 +73,27 @@ def same_range(position: CodeRange, anchor: SourceAnchor) -> bool:
     )
 
 
+def _structural_fingerprint_matches(node: cst.Call, anchor: SourceAnchor) -> bool:
+    actual = structural_fingerprint(node)
+    if actual == anchor.structural_fingerprint:
+        return True
+    # Static adapter v1 recorded the qualified operation type as its structural fingerprint.
+    # Keep this explicit compatibility path bounded by span, qualified callee and content checks.
+    qualified_callee = anchor.locator.qualified_callee
+    legacy = None if qualified_callee is None else "sha256:" + sha256(qualified_callee.encode("utf-8")).hexdigest()
+    return anchor.locator.callee_text is None and legacy == anchor.structural_fingerprint
+
+
+def _content_fingerprint_matches(module: cst.Module, node: cst.Call, anchor: SourceAnchor) -> bool:
+    if content_fingerprint(node) == anchor.content_fingerprint:
+        return True
+    # Static adapter v1 hashed the complete source lines covered by the constructor span.
+    lines = module.code.splitlines(keepends=True)
+    segment = "".join(lines[anchor.span.start.line - 1 : anchor.span.end.line])
+    legacy = "sha256:" + sha256(segment.encode("utf-8")).hexdigest()
+    return anchor.locator.callee_text is None and legacy == anchor.content_fingerprint
+
+
 @dataclass(frozen=True)
 class TransformResult:
     output_bytes: bytes
@@ -101,9 +123,11 @@ class _SetParameterTransformer(cst.CSTTransformer):
         if not same_range(position, self.anchor):
             return updated_node
         self.matched_calls += 1
-        if structural_fingerprint(original_node) != self.anchor.structural_fingerprint:
+        if not _structural_fingerprint_matches(original_node, self.anchor):
             raise TransformRejected("ANCHOR_STRUCTURE_MISMATCH", self.anchor.anchor_id)
-        if content_fingerprint(original_node) != self.patch.anchor_content_fingerprint:
+        if not _content_fingerprint_matches(self.module, original_node, self.anchor):
+            raise TransformRejected("ANCHOR_CONTENT_MISMATCH", self.anchor.anchor_id)
+        if self.patch.anchor_content_fingerprint != self.anchor.content_fingerprint:
             raise TransformRejected("ANCHOR_CONTENT_MISMATCH", self.anchor.anchor_id)
         if self.anchor.locator.callee_text is not None:
             actual_callee = dotted_name(original_node.func)
@@ -112,21 +136,39 @@ class _SetParameterTransformer(cst.CSTTransformer):
         source_name = self.parameter.source_name
         if source_name is None:
             raise TransformRejected("MISSING_SOURCE_NAME", self.parameter.name)
-        indexes = [
-            index
-            for index, argument in enumerate(original_node.args)
-            if argument.keyword is not None and argument.keyword.value == source_name
-        ]
-        if len(indexes) != 1:
-            raise TransformRejected("ARGUMENT_CARDINALITY", f"{source_name}: {len(indexes)}")
-        index = indexes[0]
-        current = parse_literal(self.module, original_node.args[index].value)
-        if not same_value(current, self.patch.before):
-            raise TransformRejected("BEFORE_VALUE_MISMATCH", repr(current))
-        arguments = list(updated_node.args)
-        arguments[index] = arguments[index].with_changes(value=literal_expression(self.patch.after))
+
+        class _NestedArgumentTransformer(cst.CSTTransformer):
+            def __init__(self, outer: _SetParameterTransformer) -> None:
+                self.outer = outer
+                self.matches = 0
+
+            def leave_Call(self, nested_original: cst.Call, nested_updated: cst.Call) -> cst.Call:
+                indexes = [
+                    index
+                    for index, argument in enumerate(nested_original.args)
+                    if argument.keyword is not None and argument.keyword.value == source_name
+                ]
+                if not indexes:
+                    return nested_updated
+                if len(indexes) != 1:
+                    raise TransformRejected("ARGUMENT_CARDINALITY", f"{source_name}: {len(indexes)}")
+                self.matches += 1
+                index = indexes[0]
+                current = parse_literal(self.outer.module, nested_original.args[index].value)
+                if not same_value(current, self.outer.patch.before):
+                    raise TransformRejected("BEFORE_VALUE_MISMATCH", repr(current))
+                arguments = list(nested_updated.args)
+                arguments[index] = arguments[index].with_changes(
+                    value=literal_expression(self.outer.patch.after)
+                )
+                return nested_updated.with_changes(args=tuple(arguments))
+
+        nested = _NestedArgumentTransformer(self)
+        updated = updated_node.visit(nested)
+        if nested.matches != 1:
+            raise TransformRejected("ARGUMENT_CARDINALITY", f"{source_name}: {nested.matches}")
         self.changed_arguments += 1
-        return updated_node.with_changes(args=tuple(arguments))
+        return updated
 
 
 def apply_set_parameter(

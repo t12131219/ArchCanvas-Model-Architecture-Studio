@@ -18,6 +18,7 @@ from archcanvas_core.semantic_validation import validate_architecture_semantics
 
 from ..fixture_analyzer import analyze_transformer_fixture
 from ..source_revision import file_revision
+from ..transforms.registry import resolve_parameter_transform
 from ..transforms.set_parameter import TransformRejected, apply_set_parameter
 
 
@@ -33,6 +34,7 @@ Analyzer = Callable[[bytes], tuple[SourceIdentityDocument, ArchitectureIR]]
 
 @dataclass(frozen=True)
 class CandidateTransaction:
+    before_bytes: bytes
     candidate_bytes: bytes
     diff: str
     before_source: SourceIdentityDocument
@@ -79,6 +81,7 @@ def plan_set_parameter(
     source: SourceIdentityDocument,
     ir: ArchitectureIR,
     analyzer: Analyzer = analyze_transformer_fixture,
+    runtime_validation_available: bool = False,
 ) -> CandidateTransaction:
     """Create and validate a candidate without modifying any file."""
 
@@ -93,6 +96,33 @@ def plan_set_parameter(
         parameter = ir.parameter(patch.target.node_id, patch.target.parameter)
     except StopIteration as error:
         raise TransactionRejected("PATCH_TARGET_NOT_FOUND", patch.target.anchor_id) from error
+    transform = resolve_parameter_transform(patch.target.parameter)
+    if transform is None:
+        raise TransactionRejected("UNREGISTERED_PARAMETER_TRANSFORM", patch.target.parameter)
+    value_error = transform.validate_values(patch.before, patch.after)
+    if value_error is not None:
+        raise TransactionRejected("PARAMETER_VALUE_INVALID", f"{patch.target.parameter}: {value_error}")
+    if transform.runtime_validation_required and not runtime_validation_available:
+        raise TransactionRejected(
+            "PATCH_RUNTIME_VALIDATION_REQUIRED",
+            f"{patch.target.parameter} requires cross-module runtime and shape validation",
+        )
+    if transform.transform_id == "num_heads":
+        node = ir.node(patch.target.node_id)
+        model_dimension = next(
+            (
+                item.value
+                for item in node.parameters
+                if item.name in {"d_model", "hidden_size", "hidden_dim"}
+                and type(item.value) is int
+            ),
+            None,
+        )
+        if model_dimension is not None and model_dimension % patch.after != 0:
+            raise TransactionRejected(
+                "PARAMETER_RELATION_INVALID",
+                f"d_model {model_dimension} must be divisible by num_heads {patch.after}",
+            )
     if patch_set.base_source_revision != source.file_revisions.get(anchor.relative_file):
         raise TransactionRejected("PATCH_SOURCE_REVISION_MISMATCH", anchor.relative_file)
     try:
@@ -113,6 +143,7 @@ def plan_set_parameter(
     if validation.blocking:
         raise TransactionRejected("GRAPH_DELTA_BLOCKING", validation.model_dump_json())
     return CandidateTransaction(
+        before_bytes=raw_source,
         candidate_bytes=transformed.output_bytes,
         diff=diff,
         before_source=source,
@@ -161,3 +192,32 @@ def commit_candidate(path: Path, candidate: CandidateTransaction) -> str:
         temporary.unlink(missing_ok=True)
         raise
     return file_revision(candidate.candidate_bytes)
+
+
+def rollback_candidate(path: Path, candidate: CandidateTransaction) -> bool:
+    """Restore the candidate's original bytes only when no later writer intervened."""
+
+    if file_revision(path.read_bytes()) != file_revision(candidate.candidate_bytes):
+        return False
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".rollback.tmp", dir=path.parent)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(candidate.before_bytes)
+            handle.flush()
+            os.fsync(handle.fileno())
+        # Do not overwrite an external change made while preparing the rollback.
+        if file_revision(path.read_bytes()) != file_revision(candidate.candidate_bytes):
+            return False
+        os.replace(temporary, path)
+        try:
+            directory_fd = os.open(path.parent, os.O_RDONLY)
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
+        except OSError:
+            pass
+        return True
+    finally:
+        temporary.unlink(missing_ok=True)

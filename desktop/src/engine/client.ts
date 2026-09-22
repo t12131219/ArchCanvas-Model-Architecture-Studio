@@ -6,6 +6,9 @@ import type {
   CanvasDocument,
   DesktopSnapshot,
   EngineClient,
+  PatchOutcome,
+  PatchResult,
+  PatchSet,
   ProjectOpenInput,
   SaveOutcome,
   ScientificMiniature,
@@ -81,7 +84,7 @@ function defaultDocument(): CanvasDocument {
 function fixtureSnapshot(document: CanvasDocument): DesktopSnapshot {
   return {
     mode: 'fixture-read-only', projectName: 'Transformer publication fixture', projectId, publicationId,
-    sourceRevision, sourceLabel: 'fixtures/transformer_static_v1/source/model.py', nodes: fixtureNodes,
+    sourceRevision, sourceLabel: 'fixtures/transformer_static_v1/source/model.py', patchableParameters: [], sourceAnchors: {}, nodes: fixtureNodes,
     edges: fixtureEdges, miniatures: fixtureMiniatures, exactNodes, exactEdges, document,
     validation: { status: 'ready', message: 'Read-only fixture. Visual state is isolated from source bytes.' },
   }
@@ -101,6 +104,18 @@ class ReadOnlyFixtureClient implements EngineClient {
     return { ok: true, document, message: 'Fixture visual state saved locally; source remains read-only.' }
   }
 
+  async planPatch(_projectId: string, _patchSet: PatchSet): Promise<PatchOutcome> {
+    return { ok: false, code: 'PATCH_READ_ONLY_FIXTURE', message: 'Fixture mode never edits source.' }
+  }
+
+  async validatePatch(_projectId: string, _patchSet: PatchSet): Promise<PatchOutcome> {
+    return { ok: false, code: 'PATCH_READ_ONLY_FIXTURE', message: 'Fixture mode never edits source.' }
+  }
+
+  async commitPatch(_projectId: string, _patchSet: PatchSet, _confirmationId: string): Promise<PatchOutcome> {
+    return { ok: false, code: 'PATCH_READ_ONLY_FIXTURE', message: 'Fixture mode never edits source.' }
+  }
+
   async openProject(_input: ProjectOpenInput): Promise<DesktopSnapshot> {
     return fixtureSnapshot(defaultDocument())
   }
@@ -118,10 +133,10 @@ type RpcResponse = {
 
 type EngineAnalysis = {
   kind: 'analysis_completed' | 'analysis_loaded'
-  manifest: { project_id: string; source_revision: string; entrypoint: string }
-  source: { anchors: Array<{ anchor_id: string; relative_file: string; span: { start: { line: number } } }> }
+  manifest: { project_id: string; source_revision: string; entrypoint: string; patch_parameter_names?: string[] }
+  source: { anchors: Array<{ anchor_id: string; relative_file: string; file_revision: string; content_fingerprint: string; span: { start: { line: number } } }> }
   architecture: {
-    nodes: Array<{ node_id: string; display_name: string; kind: string; op_type: string; source_anchor_ids: string[] }>
+    nodes: Array<{ node_id: string; display_name: string; kind: string; op_type: string; source_anchor_ids: string[]; parameters: Array<{ name: string; value: unknown; source_name?: string | null; origin: { kind: string; anchor_ids: string[] } }> }>
     edges: Array<{ edge_id: string; source_node_id: string; target_node_id: string; kind: string }>
   }
   publication: {
@@ -181,15 +196,24 @@ function snapshotFromAnalysis(analysis: EngineAnalysis, document?: CanvasDocumen
     const member = architectureById.get(node.member_node_ids[0])
     const anchorId = member?.source_anchor_ids[0]
     return {
-      id: node.node_id, label: node.label, kind: node.kind,
+      id: node.node_id, sourceNodeId: member?.node_id, label: node.label, kind: node.kind,
       anchor: member?.source_anchor_ids.map((anchor) => anchors.get(anchor)).find(Boolean) ?? 'unresolved source anchor', anchorId,
       members: node.member_node_ids.length,
+      parameters: member?.parameters.map((parameter) => ({
+        name: parameter.name, value: parameter.value, sourceName: parameter.source_name,
+        origin: parameter.origin.kind, anchorId: parameter.origin.anchor_ids[0],
+      })) ?? [],
     }
   })
   return {
     mode: 'engine', projectName: analysis.manifest.entrypoint, projectId: analysis.manifest.project_id,
     publicationId: analysis.publication.publication_id, sourceRevision: analysis.manifest.source_revision,
-    sourceLabel: analysis.manifest.entrypoint, nodes: publicationNodes,
+    sourceLabel: analysis.manifest.entrypoint,
+    patchableParameters: analysis.manifest.patch_parameter_names ?? [],
+    sourceAnchors: Object.fromEntries(analysis.source.anchors.map((anchor) => [anchor.anchor_id, {
+      relativeFile: anchor.relative_file, fileRevision: anchor.file_revision, contentFingerprint: anchor.content_fingerprint,
+    }])),
+    nodes: publicationNodes,
     edges: analysis.publication.edges.map((edge) => ({ id: edge.edge_id, source: edge.source_node_id, target: edge.target_node_id, residual: edge.kind === 'residual' })),
     miniatures: (analysis.publication.miniatures ?? []).map((miniature) => ({
       id: miniature.miniature_id,
@@ -200,12 +224,52 @@ function snapshotFromAnalysis(analysis: EngineAnalysis, document?: CanvasDocumen
       label: miniature.label,
     })),
     exactNodes: analysis.architecture.nodes.map((node) => ({
-      id: node.node_id, label: node.display_name, kind: node.kind,
+      id: node.node_id, sourceNodeId: node.node_id, label: node.display_name, kind: node.kind,
       anchor: node.source_anchor_ids.map((anchor) => anchors.get(anchor)).find(Boolean) ?? 'unresolved source anchor', anchorId: node.source_anchor_ids[0], members: 1,
+      parameters: node.parameters.map((parameter) => ({
+        name: parameter.name, value: parameter.value, sourceName: parameter.source_name,
+        origin: parameter.origin.kind, anchorId: parameter.origin.anchor_ids[0],
+      })),
     })),
     exactEdges: analysis.architecture.edges.map((edge) => ({ id: edge.edge_id, source: edge.source_node_id, target: edge.target_node_id, residual: edge.kind === 'residual' })),
     document: document ?? defaultEngineDocument(analysis),
     validation: { status: 'ready', message: 'Engine-backed analysis loaded. Visual saves re-check the source revision.' },
+  }
+}
+
+export function createParameterPatchSet(
+  snapshot: DesktopSnapshot,
+  node: ArchitectureNode,
+  parameter: NonNullable<ArchitectureNode['parameters']>[number],
+  after: unknown,
+): PatchSet {
+  const sourceNodeId = node.sourceNodeId ?? node.id
+  const anchorId = node.anchorId
+  const anchor = anchorId ? snapshot.sourceAnchors[anchorId] : undefined
+  if (!anchorId || !anchor || typeof parameter.value === 'undefined') {
+    throw new Error('Selected parameter has no complete source provenance.')
+  }
+  const patchId = `patch:desktop-${Date.now()}`
+  return {
+    schema_version: '1.0',
+    patch_set_id: `patchset:desktop-${Date.now()}`,
+    project_id: snapshot.projectId,
+    base_source_revision: anchor.fileRevision,
+    created_at: new Date().toISOString(),
+    created_by: 'user',
+    patches: [{
+      patch_id: patchId,
+      scope: 'architecture', operation: 'set_parameter',
+      target: { node_id: sourceNodeId, parameter: parameter.name, anchor_id: anchorId },
+      before: parameter.value, after,
+      anchor_content_fingerprint: anchor.contentFingerprint,
+      expected_delta: {
+        required_parameter_changes: [{ node_id: sourceNodeId, parameter: parameter.name, before: parameter.value, after }],
+        allowed_node_additions: [], allowed_node_removals: [], allowed_node_modifications: [],
+        allowed_edge_additions: [], allowed_edge_removals: [], allowed_edge_modifications: [],
+        require_identity_retention: true,
+      },
+    }],
   }
 }
 
@@ -250,6 +314,34 @@ class TauriEngineClient implements EngineClient {
     if (response.status !== 'succeeded') return { ok: false, code: response.error?.code ?? 'ENGINE_RPC_FAILED', message: rpcFailure(response, 'The Engine rejected the visual document.') }
     const saved = (response.result?.canvas_documents as CanvasDocument[] | undefined)?.[0]
     return saved ? { ok: true, document: saved, message: 'Visual state saved by Engine RPC.' } : { ok: false, code: 'ENGINE_RPC_INVALID_RESPONSE', message: 'Engine returned no CanvasDocument.' }
+  }
+
+  private async patch(
+    operation: 'plan_patch' | 'validate_patch' | 'commit_patch',
+    projectId: string,
+    patchSet: PatchSet,
+    confirmationId?: string,
+  ): Promise<PatchOutcome> {
+    const response = await this.rpc({
+      operation, project_id: projectId, patch_set: patchSet,
+      ...(confirmationId ? { confirmation_id: confirmationId } : {}),
+    }, operation)
+    if (response.status !== 'succeeded' || !response.result) {
+      return { ok: false, code: response.error?.code ?? 'ENGINE_RPC_FAILED', message: rpcFailure(response, 'Engine rejected the source patch.') }
+    }
+    return { ok: true, result: response.result as unknown as PatchResult, message: `${operation} completed through Engine RPC.` }
+  }
+
+  async planPatch(projectId: string, patchSet: PatchSet): Promise<PatchOutcome> {
+    return this.patch('plan_patch', projectId, patchSet)
+  }
+
+  async validatePatch(projectId: string, patchSet: PatchSet): Promise<PatchOutcome> {
+    return this.patch('validate_patch', projectId, patchSet)
+  }
+
+  async commitPatch(projectId: string, patchSet: PatchSet, confirmationId: string): Promise<PatchOutcome> {
+    return this.patch('commit_patch', projectId, patchSet, confirmationId)
   }
 
   async requestSourceJump(anchorId: string | undefined, label: string): Promise<string> {
