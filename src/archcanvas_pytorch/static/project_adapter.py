@@ -21,7 +21,12 @@ from archcanvas_python.source_revision import file_revision
 
 from .adapter import PyTorchStaticAdapter
 from .project import PyTorchProjectScanner
-from .semantic_patterns import collect_semantic_pattern_evidence
+from .semantic_patterns import (
+    SemanticSourceFile,
+    collect_cross_file_multibranch_evidence,
+    collect_cross_file_transformer_evidence,
+    collect_semantic_pattern_evidence,
+)
 from .symbols import EntrypointSymbolResolution, LocalModuleBinding, PyTorchProjectSymbolTable
 
 
@@ -265,6 +270,91 @@ class PyTorchProjectStaticAdapter:
             relative_file=resolution.relative_file,
             revision=root_revision,
         )
+        direct_sources: dict[str, SemanticSourceFile] = {}
+        direct_aliases: dict[str, str] = {}
+        ambiguous_direct_classes: set[str] = set()
+        for binding in resolution.local_module_bindings:
+            target_raw_source = (resolved_root / binding.target_relative_file).read_bytes()
+            target = SemanticSourceFile(
+                relative_file=binding.target_relative_file,
+                raw_source=target_raw_source,
+                revision=file_revision(target_raw_source),
+            )
+            existing = direct_sources.get(binding.target_class_name)
+            if existing is not None and existing.relative_file != target.relative_file:
+                ambiguous_direct_classes.add(binding.target_class_name)
+                continue
+            direct_sources[binding.target_class_name] = target
+            direct_aliases[binding.target_class_name] = binding.local_name
+        for class_name in ambiguous_direct_classes:
+            direct_sources.pop(class_name, None)
+            direct_aliases.pop(class_name, None)
+        # Pattern evidence may follow a small, declared local-import chain (for example
+        # a router -> expert -> series decomposition).  This is source declaration
+        # evidence only: imported implementation topology is still not merged into Exact IR.
+        semantic_sources = dict(direct_sources)
+        semantic_aliases = dict(direct_aliases)
+        ambiguous_semantic_classes = set(ambiguous_direct_classes)
+        pending = [(binding, 1) for binding in resolution.local_module_bindings]
+        visited_entrypoints: set[str] = set()
+        while pending:
+            binding, depth = pending.pop()
+            entrypoint = f"{binding.target_relative_file}:{binding.target_class_name}"
+            if entrypoint in visited_entrypoints or depth > 3:
+                continue
+            visited_entrypoints.add(entrypoint)
+            try:
+                nested_resolution = symbols.resolve_entrypoint(entrypoint)
+            except ValueError:
+                continue
+            for nested_binding in nested_resolution.local_module_bindings:
+                nested_raw_source = (resolved_root / nested_binding.target_relative_file).read_bytes()
+                nested_source = SemanticSourceFile(
+                    relative_file=nested_binding.target_relative_file,
+                    raw_source=nested_raw_source,
+                    revision=file_revision(nested_raw_source),
+                )
+                existing = semantic_sources.get(nested_binding.target_class_name)
+                if existing is not None and existing.relative_file != nested_source.relative_file:
+                    ambiguous_semantic_classes.add(nested_binding.target_class_name)
+                elif nested_binding.target_class_name not in ambiguous_semantic_classes:
+                    semantic_sources[nested_binding.target_class_name] = nested_source
+                    existing_alias = semantic_aliases.get(nested_binding.target_class_name)
+                    if existing_alias is None:
+                        semantic_aliases[nested_binding.target_class_name] = nested_binding.local_name
+                    elif existing_alias != nested_binding.local_name:
+                        ambiguous_semantic_classes.add(nested_binding.target_class_name)
+                pending.append((nested_binding, depth + 1))
+        for class_name in ambiguous_semantic_classes:
+            semantic_sources.pop(class_name, None)
+        cross_file_evidence, cross_file_anchors = collect_cross_file_transformer_evidence(
+            SemanticSourceFile(
+                relative_file=resolution.relative_file,
+                raw_source=root_raw_source,
+                revision=root_revision,
+            ),
+            root_class_name=resolution.model_class,
+            imported_sources=semantic_sources,
+            imported_aliases=semantic_aliases,
+        )
+        multibranch_evidence, multibranch_anchors = collect_cross_file_multibranch_evidence(
+            SemanticSourceFile(
+                relative_file=resolution.relative_file,
+                raw_source=root_raw_source,
+                revision=root_revision,
+            ),
+            root_class_name=resolution.model_class,
+            imported_sources=semantic_sources,
+            imported_aliases=semantic_aliases,
+        )
+        semantic_evidence.extend([*cross_file_evidence, *multibranch_evidence])
+        semantic_anchors.extend([*cross_file_anchors, *multibranch_anchors])
+        semantic_component_revisions = {
+            relative_file: semantic_sources[class_name].revision
+            for evidence in [*cross_file_evidence, *multibranch_evidence]
+            for class_name, relative_file in evidence.component_files.items()
+            if class_name in semantic_sources and semantic_sources[class_name].relative_file == relative_file
+        }
         local_nodes_by_class: dict[str, list[str]] = {}
         local_type_prefix = f"local:{resolution.relative_file}:"
         for node in ir.nodes:
@@ -273,8 +363,16 @@ class PyTorchProjectStaticAdapter:
         evidence_records: list[dict[str, object]] = []
         anchors_by_node_id: dict[str, list[str]] = {}
         for evidence in semantic_evidence:
-            node_ids = sorted(local_nodes_by_class.get(evidence.class_name, []))
-            if evidence.pattern_id == "transformer_encoder_layer_v1":
+            if evidence.member_class_names:
+                member_types = {
+                    f"local:{binding.target_relative_file}:{binding.target_class_name}"
+                    for binding in resolution.local_module_bindings
+                    if binding.target_class_name in evidence.member_class_names
+                }
+                node_ids = sorted(node.node_id for node in ir.nodes if node.op_type in member_types)
+            else:
+                node_ids = sorted(local_nodes_by_class.get(evidence.class_name, []))
+            if evidence.pattern_id == "encoder_attention_stack_v1" and not evidence.member_class_names:
                 node_ids = sorted(
                     node.node_id
                     for node in ir.nodes
@@ -283,7 +381,7 @@ class PyTorchProjectStaticAdapter:
             if not node_ids:
                 continue
             for node_id in node_ids:
-                anchors_by_node_id[node_id] = evidence.source_anchor_ids
+                anchors_by_node_id.setdefault(node_id, []).extend(evidence.source_anchor_ids)
             evidence_records.append(
                 {
                     "pattern_id": evidence.pattern_id,
@@ -293,13 +391,16 @@ class PyTorchProjectStaticAdapter:
                     "resolved_parameters": {
                         key: value
                         for key, value in sorted((resolved_config or {}).items())
-                        if key in {"e_layers", "top_k", "num_kernels", "task_name"}
+                        if isinstance(key, str)
+                        and (value is None or isinstance(value, str | int | float | bool))
                     },
+                    "component_files": dict(sorted(evidence.component_files.items())),
                 }
             )
 
         # A local-call node is only valid against both the call-site and imported-class revisions.
         file_revisions = dict(source.file_revisions)
+        file_revisions.update(semantic_component_revisions)
         target_anchors: dict[str, SourceAnchor] = {}
         local_node_types = {node.op_type for node in ir.nodes if node.op_type.startswith("local:")}
         for binding in resolution.local_module_bindings:
@@ -316,8 +417,9 @@ class PyTorchProjectStaticAdapter:
             node.model_copy(
                 update={
                     "source_anchor_ids": [
-                        *node.source_anchor_ids,
-                        target_anchors[node.op_type].anchor_id,
+                        *dict.fromkeys(
+                            [*node.source_anchor_ids, target_anchors[node.op_type].anchor_id]
+                        ),
                     ]
                 }
             )
@@ -329,8 +431,9 @@ class PyTorchProjectStaticAdapter:
             node.model_copy(
                 update={
                     "source_anchor_ids": [
-                        *node.source_anchor_ids,
-                        *anchors_by_node_id.get(node.node_id, []),
+                        *dict.fromkeys(
+                            [*node.source_anchor_ids, *anchors_by_node_id.get(node.node_id, [])]
+                        ),
                     ]
                 }
             )

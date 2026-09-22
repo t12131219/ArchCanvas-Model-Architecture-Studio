@@ -37,10 +37,34 @@
     "observed": ["typed JSONL dispatch", "process restart", "cached analysis load", "CanvasDocument replay", "source bytes unchanged"]
   },
   "blockers": [
-    "D5 requires approved resolved-config snapshots for every applicable TFB entrypoint, then a repeatable full-census Publication preflight and manual overview/detail review. The current 143 generated evidence directories are recorded separately and are not acceptance.",
+    "D5 requires approved resolved-config snapshots for every applicable TFB entrypoint, then a repeatable full-census Publication preflight and manual overview/detail review. The current 147 generated evidence directories are recorded separately and are not acceptance.",
     "The TimesNet, DUET and Transformer deep semantic overview/detail golden cases remain required after the full-census gates."
   ],
   "pending_external_acceptance": [
     "The configured GitHub Actions Ubuntu 24.04 native desktop job has not yet produced its first hosted CI result."
-  ]
+  ],
+  "continued_validation": {
+    "base_revision": "main worktree after cross-file Transformer and DUET semantic publication recovery",
+    "commands": [
+      {"command": "PYTHONPATH=src conda run -n TFB_py311 python -m pytest", "exit_code": 0, "observed": "124 passed"},
+      {"command": "PYTHONPATH=src conda run -n TFB_py311 ruff check src tests tools", "exit_code": 0},
+      {"command": "PYTHONPATH=src conda run -n TFB_py311 python -m compileall -q src tools tests", "exit_code": 0},
+      {"command": "npm run test:tokens && npm run build && npm run lint", "exit_code": 0},
+      {"command": "npm run test:visual", "exit_code": 0, "observed": "3 passed at 1440x900 and 1280x800"},
+      {"command": "cargo fmt --check", "exit_code": 0},
+      {"command": "PYTHONPATH=src conda run -n TFB_py311 python tools/generate_pytorch_model_census.py <approved-tfb-root>/ts_benchmark --resolved-config-file docs/acceptance/tfb-resolved-configs-v1.json --assess-publication ...", "exit_code": 0, "observed": "460 relations; source files unchanged"}
+    ],
+    "native_e2e": {
+      "status": "passed",
+      "command": "ARCHCANVAS_ENGINE_PYTHON=/home/fzg/anaconda3/envs/TFB_py311/bin/python ARCHCANVAS_ENGINE_CACHE_ROOT=/tmp/archcanvas-stage6-tauri-final ARCHCANVAS_WEBKIT_DRIVER=/usr/bin/WebKitWebDriver npm run test:e2e:tauri",
+      "observed": ["Engine project open", "Publication node drag", "middle-mouse pan", "zoom", "single and multi-selection", "gesture undo/redo", "visual save", "native restart and replay", "Exact/Publication boundary", "source SHA-256 unchanged"],
+      "webdriver_protocol": "classic"
+    },
+    "stage_6_exit": "not-achieved",
+    "remaining_blockers": [
+      "Obtain approved resolved-config snapshots for every applicable TFB entrypoint, including DUET enc_in, and repeat the complete D5 census/preflight.",
+      "Complete the pending manual overview/detail, evidence-traversal and screenshot review for every publication-ready entrypoint.",
+      "Obtain the first hosted Ubuntu 24.04 CI acceptance result."
+    ]
+  }
 }

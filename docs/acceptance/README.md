@@ -67,3 +67,78 @@ PYTHONPATH=src conda run -n TFB_py311 python tools/generate_pytorch_model_census
 preflight passed. It is still below `publication_supported`: each artifact directory carries a
 pending manual checklist, and Section 26.8 still requires screenshots, evidence traversal and the
 deep-semantic examples before D5 can pass.
+
+During visual styling work, a machine-preflight artifact may carry
+`visual_iteration_status: "provisional_visual_iteration"`. This permits repeatable layout and
+token iteration without claiming that a reviewer approved the architecture depiction. It must
+remain `manual_review: "pending"` until the actual overview/detail, evidence traversal and
+reference comparison are performed.
+
+Validate the saved census and its external artifacts separately. This validator checks accounting,
+source immutability and machine preflight evidence, but deliberately does not convert a pending
+manual checklist into an approval:
+
+```bash
+PYTHONPATH=src conda run -n TFB_py311 python tools/validate_d5_census.py \
+  /cache-or-acceptance/tfb-model-census.json \
+  --publication-artifact-root /cache-or-acceptance/tfb-publication-evidence \
+  --output /cache-or-acceptance/d5-validation.json
+```
+
+Add `--require-stage6-exit-ready` only in an exit gate: it returns nonzero while any manual
+checklist remains pending, even when the machine ledger itself is coherent.
+
+## Benchmark Model Reference Ledger
+
+`Benchmark model reference/BENCHMARK_MODEL_INDEX.md` is a generic regression corpus, not a TFB
+product interface. Generate the L0 catalog from a user-approved root and keep the result outside
+that root:
+
+```bash
+PYTHONPATH=src conda run -n TFB_py311 python tools/generate_benchmark_catalog.py \
+  /approved/Benchmark-model-reference \
+  --output /cache-or-acceptance/benchmark-catalog.json
+```
+
+The unified ledger retains every catalog record. A framework adapter is invoked only for an
+explicitly selected, root-relative project scope; all other local-model records remain visible as
+adapter-level `unsupported`, while `benchmark_only` remains `no_local_model`.
+
+```bash
+PYTHONPATH=src conda run -n TFB_py311 python tools/generate_benchmark_census.py \
+  /approved/Benchmark-model-reference \
+  --output /cache-or-acceptance/benchmark-census.json \
+  --pytorch-project 01:TFB-master/ts_benchmark \
+  --pytorch-resolved-config-file 01:docs/acceptance/tfb-resolved-configs-v1.json \
+  --pytorch-entrypoint-registry-file 01:docs/acceptance/tfb-entrypoints-v1.json
+```
+
+The project selector is an approval boundary, not a model-name convention. It must identify a
+directory below the approved benchmark root. The report stores only that relative path and the
+adapter's relative census; it does not execute, import, install into, or write to benchmark source.
+An entrypoint registry is supplementary: every listed entry must still be discovered by the static
+adapter, and missing entries remain an explicit unresolved result. The current TFB registry is a
+three-entry deep-semantic seed, not a reduction of the 460-entry census.
+
+The same generic path can be exercised against the first heterogeneous Python/PyTorch slices:
+
+```bash
+PYTHONPATH=src conda run -n TFB_py311 python tools/generate_benchmark_census.py \
+  /approved/Benchmark-model-reference \
+  --output /cache-or-acceptance/python-pytorch-slices.json \
+  --pytorch-project 06:06-semantic-segmentation-ADE20K/mit_semseg/models \
+  --pytorch-project 12:12-recommendation-RecBole/recbole/model \
+  --pytorch-project 13:13-GNN-OGB/examples \
+  --pytorch-entrypoint-registry-file 06:docs/acceptance/ade20k-entrypoints-v1.json \
+  --pytorch-entrypoint-registry-file 12:docs/acceptance/recbole-entrypoints-v1.json \
+  --pytorch-entrypoint-registry-file 13:docs/acceptance/ogb-entrypoints-v1.json
+```
+
+MMPretrain and SpeechBrain can be added with the same explicit scope and registry contract:
+
+```bash
+--pytorch-project 04:04-image-classification-mmpretrain/mmpretrain/models \
+--pytorch-project 11:11-speech-audio-speechbrain/speechbrain/lobes/models \
+--pytorch-entrypoint-registry-file 04:docs/acceptance/mmpretrain-entrypoints-v1.json \
+--pytorch-entrypoint-registry-file 11:docs/acceptance/speechbrain-entrypoints-v1.json
+```

@@ -77,6 +77,35 @@ def test_project_scanner_resolves_direct_local_module_import_for_selected_entryp
     assert resolution.issues == []
 
 
+def test_project_scanner_resolves_the_approved_root_package_name_as_local(tmp_path: Path) -> None:
+    root = tmp_path / "projectpkg"
+    root.mkdir()
+    (root / "layers.py").write_text(
+        "from torch import nn\n\n"
+        "class Backbone(nn.Module):\n"
+        "    def forward(self, x):\n"
+        "        return x\n",
+        encoding="utf-8",
+    )
+    (root / "model.py").write_text(
+        "from torch import nn\n"
+        "from projectpkg.layers import Backbone\n\n"
+        "class Model(nn.Module):\n"
+        "    def __init__(self):\n"
+        "        super().__init__()\n"
+        "        self.backbone = Backbone()\n"
+        "    def forward(self, x):\n"
+        "        return self.backbone(x)\n",
+        encoding="utf-8",
+    )
+
+    resolution = PyTorchProjectScanner().build_symbol_table(root).resolve_entrypoint("model.py:Model")
+
+    assert [(item.local_name, item.target_relative_file, item.target_class_name) for item in resolution.local_module_bindings] == [
+        ("Backbone", "layers.py", "Backbone")
+    ]
+
+
 def test_project_scanner_reports_unresolved_relative_import_for_selected_entrypoint(tmp_path: Path) -> None:
     (tmp_path / "model.py").write_text(
         "from torch import nn\n"

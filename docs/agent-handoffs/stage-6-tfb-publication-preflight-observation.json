@@ -13,15 +13,15 @@
     "source_written": false
   },
   "observed_census": {
-    "report_sha256": "sha256:1e5e12278fc4d0eed4371496900dc6cb73d3f624909a0db5a44bcb109d5d27fa",
+    "report_sha256": "sha256:5f2b8a873c741fccaa2fe6b3f03c2fe9cb0b7f44b1c7e55c3d4681e8fb67ca70",
     "python_files_scanned": 263,
     "source_files_observed_count": 263,
     "source_files_unchanged": true,
     "discovered_entrypoint_count": 460,
     "assessed_entrypoint_count": 439,
     "explicit_alias_count": 21,
-    "status_counts": {"supported": 101, "unresolved": 266, "unsupported": 72, "blocked": 0},
-    "publication_status_counts": {"publication_svg_ready": 101, "publication_svg_ready_with_unresolved_parameter_provenance": 42, "publication_not_assessed": 296},
+    "status_counts": {"supported": 102, "unresolved": 265, "unsupported": 72, "blocked": 0},
+    "publication_status_counts": {"publication_svg_ready": 102, "publication_svg_ready_with_unresolved_parameter_provenance": 45, "publication_not_assessed": 292},
     "deep_semantic_patterns": {
       "timesnet_v1": {
         "status": "source-backed-pattern-fixture-and-real-tfb-preflight",
@@ -31,15 +31,30 @@
         "parameter_provenance": "unresolved and visible"
       },
       "transformer_encoder_layer_v1": {
-        "fixture_status": "confirmed",
-        "fixture_required_signature": ["TransformerEncoderLayer ModuleList", "repeat loop", "LayerNorm", "forecast head"],
-        "real_tfb_status": "not_matched",
-        "real_tfb_reason": "cross-file custom EncoderLayer/DecoderLayer attention and residual order still lacks complete source-backed evidence"
+        "status": "source-backed-cross-file-match-and-publication-preflight",
+        "required_signature": ["Encoder ModuleList", "repeat loop", "LayerNorm", "self-attention residual/norm order", "feed-forward residual/norm order", "forecast dispatch"],
+        "real_tfb_publication_node": "Transformer Encoder",
+        "real_tfb_publication_svg_sha256": "sha256:5767cf84da146592642443923a17f2c187f424ab1fc5e5f250253abce5f394f5",
+        "parameter_provenance": "unresolved and visible"
+      },
+      "transformer_decoder_layer_v1": {
+        "status": "source-backed-cross-file-match-and-publication-preflight",
+        "required_signature": ["Decoder ModuleList", "repeat loop", "LayerNorm", "masked self-attention", "cross-attention", "three residual/norm stages", "forecast projection"],
+        "real_tfb_publication_node": "Transformer Decoder",
+        "real_tfb_publication_svg_sha256": "sha256:5767cf84da146592642443923a17f2c187f424ab1fc5e5f250253abce5f394f5",
+        "parameter_provenance": "unresolved and visible"
+      },
+      "duet_v1": {
+        "status": "source-backed-four-pattern-direct-publication-probe",
+        "patterns": ["sparse_expert_router_v1", "series_decomposition_linear_v1", "frequency_channel_mask_v1", "masked_channel_encoder_v1"],
+        "real_tfb_publication_nodes": ["Temporal Pattern Module", "Channel Mask Generator", "Temporal-Channel Fusion"],
+        "full_census_status": "publication_not_assessed",
+        "full_census_reason": "The approved snapshot has no enc_in value, so the self.n_vars > 1 channel branch remains unresolved and is not relaxed for D5."
       }
     },
     "external_publication_evidence": {
-      "entrypoint_directories": 143,
-      "files": 858,
+      "entrypoint_directories": 147,
+      "files": 882,
       "contents_per_ready_entrypoint": ["publication.json", "scene-overview.json", "scene-detail.json", "overview.svg", "detail.svg", "publication-checklist.json"],
       "machine_preflight": "passed",
       "manual_review": "pending"
@@ -48,11 +63,11 @@
   "interpretation": [
     "A publication_svg_ready result proves only deterministic Publication/SVG preflight for a static-supported entrypoint. It is not publication_supported and does not satisfy the Section 26.8 manual, screenshot or deep-semantic acceptance gates.",
     "The 296 publication_not_assessed records remain in the census. Their unsupported, unresolved or missing-config states are ArchCanvas conversion/configuration backlog under Section 26.8.1, not grounds to reduce the TFB corpus.",
-    "The checked-in V1 ledger supplied the recorded Transformer and TimesNet forecast configurations. Both now have source-mapped Publication/SVG preflight evidence; their remaining parameter-provenance facts remain visible and do not become confirmed parameter facts.",
+    "The checked-in V1 ledger supplied the recorded Transformer, TimesNet and DUET configurations. Transformer and TimesNet have source-mapped Publication/SVG preflight evidence; their remaining parameter-provenance facts remain visible and do not become confirmed parameter facts.",
     "TimesNet now requires a complete source-backed timesnet_v1 signature before the compiler uses TimesBlock terminology or scientific miniatures; incomplete signatures fail closed to the neutral Publication view."
   ],
   "remaining_d5_work": [
-    "Add approved resolved-config snapshots for every applicable TFB entrypoint and rerun the same full census.",
+    "Add approved resolved-config snapshots for every applicable TFB entrypoint, including DUET enc_in, and rerun the same full census.",
     "Complete manual Publication checklist, overview/detail screenshot regression and source-evidence traversal for every publication candidate.",
     "Complete TimesNet, DUET and Transformer deep-semantic overview/detail contracts required by Section 26.8."
   ]

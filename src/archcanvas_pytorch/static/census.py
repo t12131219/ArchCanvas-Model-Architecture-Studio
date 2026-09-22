@@ -353,6 +353,7 @@ class PyTorchModelCensus:
             "overview_svg_sha256": svg_sha256,
             "machine_preflight": "passed",
             "manual_review": "pending",
+            "visual_iteration_status": "provisional_visual_iteration",
             "manual_review_requirements": [
                 "Verify the primary data flow is understandable without source paths.",
                 "Verify every displayed scientific miniature has the intended disclosure.",

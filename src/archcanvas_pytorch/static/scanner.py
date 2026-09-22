@@ -320,6 +320,9 @@ class _ModuleClassScanner(ast.NodeVisitor):
             if any(value is None for value in values):
                 return None
             return all(values) if isinstance(expression.op, ast.And) else any(values)
+        resolved = self._resolved_expression(expression)
+        if isinstance(resolved, bool):
+            return resolved
         if (
             isinstance(expression, ast.Compare)
             and len(expression.ops) == 1

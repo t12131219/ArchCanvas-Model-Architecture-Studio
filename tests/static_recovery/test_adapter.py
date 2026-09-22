@@ -336,6 +336,37 @@ class TaskModel(nn.Module):
     assert ir.metadata["resolved_config"] == {"task_name": "forecast"}
 
 
+def test_adapter_resolves_a_direct_boolean_condition_from_the_config_snapshot() -> None:
+    source = b'''import torch.nn as nn
+
+class BooleanTaskModel(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.enabled = config.enabled
+        self.left = nn.Linear(2, 2)
+        self.right = nn.Linear(2, 2)
+
+    def forward(self, x):
+        if self.enabled:
+            return self.left(x)
+        return self.right(x)
+'''
+
+    _, ir = PyTorchStaticAdapter().analyze(
+        source,
+        project_id="project:boolean-config-branch",
+        relative_file="model.py",
+        entrypoint="model.py:BooleanTaskModel",
+        resolved_config={"enabled": True},
+    )
+
+    assert [(edge.source_node_id, edge.target_node_id) for edge in ir.edges] == [
+        ("node:input", "node:booleantaskmodel.left"),
+        ("node:booleantaskmodel.left", "node:output"),
+    ]
+    assert ir.unresolved == []
+
+
 def test_adapter_keeps_task_helpers_unconfirmed_without_resolved_config() -> None:
     source = b'''import torch.nn as nn
 

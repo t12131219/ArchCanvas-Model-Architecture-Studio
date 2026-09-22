@@ -115,6 +115,7 @@ def test_census_writes_publication_evidence_only_outside_the_inspected_project(t
     checklist = json.loads((artifact_directories[0] / "publication-checklist.json").read_text())
     assert checklist["machine_preflight"] == "passed"
     assert checklist["manual_review"] == "pending"
+    assert checklist["visual_iteration_status"] == "provisional_visual_iteration"
     assert report.source_files_unchanged is True
 
     with pytest.raises(ValueError, match="must not be written under"):

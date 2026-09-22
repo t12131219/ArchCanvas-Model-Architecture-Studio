@@ -163,12 +163,21 @@ def _resolve_import_target(
             base = base.parent
         is_local = True
     else:
-        module_head = (module or "").split(".", maxsplit=1)[0]
-        is_local = (root / module_head).exists() or (root / f"{module_head}.py").exists()
+        module_parts = (module or "").split(".")
+        module_head = module_parts[0]
+        # A project may be opened at its package root while source uses fully-qualified
+        # imports such as ``ts_benchmark.baselines...``.  Treat only that exact root
+        # package name as local; unrelated absolute imports remain external.
+        if module_head == root.name:
+            module_parts = module_parts[1:]
+            is_local = bool(module_parts)
+            base = root
+        else:
+            is_local = (root / module_head).exists() or (root / f"{module_head}.py").exists()
+            base = root
         if not is_local:
             return None, False
-        base = root
-    module_path = base.joinpath(*(module or "").split("."))
+    module_path = base.joinpath(*(module_parts if not level else (module or "").split(".")))
     candidates = [module_path.with_suffix(".py"), module_path / "__init__.py"]
     for candidate in candidates:
         if candidate.is_file() and candidate.resolve().is_relative_to(root):
