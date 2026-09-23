@@ -60,6 +60,8 @@ class SourceSnapshot(StrictModel):
     framework: str = Field(min_length=1)
     adapter_version: str = Field(min_length=1)
     config_digest: Sha256
+    config_path: str | None = None
+    resolved_config: dict[str, Any] = Field(default_factory=dict)
     source_files: list[SourceFile] = Field(min_length=1)
 
 
@@ -70,6 +72,7 @@ class EvidenceRecord(StrictModel):
     path: str | None = None
     symbol: str | None = None
     span: SourceSpan | None = None
+    file_sha256: Sha256 | None = None
     revision: str = Field(min_length=1)
     claim: str = Field(min_length=1)
     confidence: Confidence
@@ -77,8 +80,10 @@ class EvidenceRecord(StrictModel):
 
     @model_validator(mode="after")
     def source_has_location(self) -> EvidenceRecord:
-        if self.kind is EvidenceKind.SOURCE and not (self.path and self.symbol and self.span):
-            raise ValueError("source evidence requires path, symbol, and span")
+        if self.kind is EvidenceKind.SOURCE and not (
+            self.path and self.symbol and self.span and self.file_sha256
+        ):
+            raise ValueError("source evidence requires path, symbol, span, and file_sha256")
         if self.confidence is Confidence.REFERENCE_ONLY and self.kind is not EvidenceKind.REFERENCE:
             raise ValueError("reference-only confidence requires reference evidence")
         return self
@@ -87,10 +92,15 @@ class EvidenceRecord(StrictModel):
 class NodeKind(str, Enum):
     MODULE_CONTAINER = "module_container"
     OPERATOR = "operator"
+    TENSOR_VALUE = "tensor_value"
     MERGE_EVENT = "merge_event"
+    FANOUT_RELATION = "fanout_relation"
     CONDITION_CONTROL = "condition_control"
     STATE = "state"
+    REPEAT = "repeat"
+    PARAMETER_SHARE = "parameter_share"
     INPUT_OUTPUT = "input_output"
+    REFERENCE_ONLY = "reference_only"
 
 
 class EdgeType(str, Enum):
@@ -120,14 +130,33 @@ class Port(StrictModel):
     role: str = Field(min_length=1)
 
 
+class ParameterOrigin(str, Enum):
+    LITERAL = "literal"
+    CONSTRUCTOR_DEFAULT = "constructor-default"
+    CONFIG = "config"
+    COMPUTED = "computed"
+    UNRESOLVED = "unresolved"
+
+
+class ArchitectureParameter(StrictModel):
+    name: str = Field(min_length=1)
+    source_expression: str = Field(min_length=1)
+    value: Any = None
+    origin: ParameterOrigin
+    evidence_ids: list[Identifier] = Field(min_length=1)
+
+
 class ArchitectureNode(StrictModel):
     node_id: Identifier
     kind: NodeKind
     semantic_name: str = Field(min_length=1)
     source_symbol: str | None = None
     parent_id: Identifier | None = None
+    children: list[Identifier] = Field(default_factory=list)
     input_ports: list[Port] = Field(default_factory=list)
     output_ports: list[Port] = Field(default_factory=list)
+    parameters: list[ArchitectureParameter] = Field(default_factory=list)
+    repeat_id: Identifier | None = None
     parameter_identity: str = Field(default="not-applicable", min_length=1)
     execution_predicate: str = Field(min_length=1)
     evidence_ids: list[Identifier] = Field(default_factory=list)
@@ -176,6 +205,14 @@ class ArchitectureEdge(StrictModel):
     execution_predicate: str = Field(min_length=1)
 
 
+class FanoutRelation(StrictModel):
+    relation_id: Identifier
+    tensor_id: Identifier
+    producer_id: Identifier
+    consumer_ids: list[Identifier] = Field(min_length=2)
+    evidence_ids: list[Identifier] = Field(min_length=1)
+
+
 class Repeat(StrictModel):
     repeat_id: Identifier
     kind: RepeatKind
@@ -208,6 +245,7 @@ class ArchitectureIR(StrictModel):
     nodes: list[ArchitectureNode] = Field(min_length=1)
     tensors: list[TensorValue] = Field(default_factory=list)
     edges: list[ArchitectureEdge] = Field(default_factory=list)
+    fanouts: list[FanoutRelation] = Field(default_factory=list)
     repeats: list[Repeat] = Field(default_factory=list)
     unresolved: list[UnresolvedFact] = Field(default_factory=list)
 
@@ -277,4 +315,3 @@ SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "canvas-document-v1.schema.json": CanvasDocument,
     "command-receipt-v1.schema.json": CommandReceipt,
 }
-

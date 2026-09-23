@@ -27,7 +27,7 @@ archcanvas validate build/transformer/architecture.json --json
 | --- | --- |
 | Doctor and environment receipt | Available |
 | Python entrypoint discovery | Available |
-| Static module/call recovery | Initial subset |
+| Static module/call recovery | Transformer L3 subset |
 | Evidence ledger and Exact IR | Available |
 | Semantic validation | Available |
 | Publication compiler / Studio | Planned |

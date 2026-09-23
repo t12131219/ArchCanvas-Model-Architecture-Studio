@@ -9,9 +9,17 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
-from archcanvas_core.models import ArchitectureIR, CommandReceipt, Diagnostic, GateResult, SCHEMA_MODELS
+from archcanvas_core.models import (
+    SCHEMA_MODELS,
+    ArchitectureIR,
+    CommandReceipt,
+    Diagnostic,
+    EvidenceRecord,
+    GateResult,
+    SourceSnapshot,
+)
 from archcanvas_core.validation import validate_architecture
 from archcanvas_python import AnalysisError, analyze_project
 
@@ -39,7 +47,9 @@ def _emit(receipt: CommandReceipt) -> int:
 def _write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     data = _compact(value) + "\n"
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", dir=path.parent, delete=False
+    ) as handle:
         handle.write(data)
         temporary = Path(handle.name)
     temporary.replace(path)
@@ -84,7 +94,9 @@ def doctor() -> CommandReceipt:
         if source_schema_dir.is_dir()
         else SOURCE_PACKAGE_ROOT / "archcanvas_core" / "schemas"
     )
-    missing_schemas = [filename for filename in SCHEMA_MODELS if not (schema_dir / filename).is_file()]
+    missing_schemas = [
+        filename for filename in SCHEMA_MODELS if not (schema_dir / filename).is_file()
+    ]
     diagnostics = [
         Diagnostic(
             code="DEPENDENCY_MISSING",
@@ -111,7 +123,9 @@ def doctor() -> CommandReceipt:
             GateResult(
                 gate="A-environment",
                 status="failed" if diagnostics else "passed",
-                message="Required local protocol dependencies and schemas are present." if not diagnostics else "Environment is incomplete.",
+                message="Required local protocol dependencies and schemas are present."
+                if not diagnostics
+                else "Environment is incomplete.",
             )
         ],
         diagnostics=diagnostics,
@@ -121,7 +135,7 @@ def doctor() -> CommandReceipt:
             "packages": packages,
             "network_required": False,
             "capabilities": {
-                "static_analysis": "available-initial-subset",
+                "static_analysis": "available-transformer-l3",
                 "semantic_validation": "available",
                 "publication_render": "unavailable",
                 "studio": "unavailable",
@@ -135,8 +149,19 @@ def doctor() -> CommandReceipt:
 def analyze(args: argparse.Namespace) -> CommandReceipt:
     project = args.project.resolve()
     config_bytes = args.config.read_bytes() if args.config else b"{}"
-    bundle = analyze_project(project, args.entry, args.task, args.mode, config_bytes)
-    gates, diagnostics = validate_architecture(bundle.architecture)
+    bundle = analyze_project(
+        project,
+        args.entry,
+        args.task,
+        args.mode,
+        config_bytes,
+        args.config,
+    )
+    gates, diagnostics = validate_architecture(
+        bundle.architecture,
+        bundle.evidence,
+        bundle.snapshot,
+    )
     out = args.out.resolve()
     artifacts = {
         "source_snapshot": str(out / "source-snapshot.json"),
@@ -170,9 +195,10 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
         Path(artifacts["capability_report"]),
         {
             "schema_version": "1.0",
-            "adapter": "python-ast-pytorch-initial-subset",
+            "adapter": "python-ast-pytorch-transformer-l3",
             "static_analysis": True,
             "runtime_evidence": False,
+            "supported_profiles": ["transformer-l3"],
             "semantic_transforms": [],
         },
     )
@@ -189,6 +215,7 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
             "node_count": len(bundle.architecture.nodes),
             "tensor_count": len(bundle.architecture.tensors),
             "edge_count": len(bundle.architecture.edges),
+            "fanout_count": len(bundle.architecture.fanouts),
             "unresolved_count": len(bundle.architecture.unresolved),
         },
     )
@@ -199,7 +226,19 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
 def validate(args: argparse.Namespace) -> CommandReceipt:
     raw = args.artifact.read_text(encoding="utf-8")
     ir = ArchitectureIR.model_validate_json(raw)
-    gates, diagnostics = validate_architecture(ir)
+    snapshot_path = args.artifact.parent / "source-snapshot.json"
+    evidence_path = args.artifact.parent / "evidence-ledger.json"
+    snapshot = (
+        SourceSnapshot.model_validate_json(snapshot_path.read_text(encoding="utf-8"))
+        if snapshot_path.is_file()
+        else None
+    )
+    evidence = (
+        TypeAdapter(list[EvidenceRecord]).validate_json(evidence_path.read_text(encoding="utf-8"))
+        if evidence_path.is_file()
+        else None
+    )
+    gates, diagnostics = validate_architecture(ir, evidence, snapshot)
     failed = any(gate.status == "failed" for gate in gates)
     return CommandReceipt(
         command="validate",
@@ -208,7 +247,11 @@ def validate(args: argparse.Namespace) -> CommandReceipt:
         artifacts={"architecture": str(args.artifact.resolve())},
         gates=gates,
         diagnostics=diagnostics,
-        details={"quality": args.quality, "publication_gates_available": False},
+        details={
+            "quality": args.quality,
+            "publication_gates_available": False,
+            "evidence_binding_loaded": snapshot is not None and evidence is not None,
+        },
     )
 
 
@@ -253,7 +296,7 @@ def main(argv: list[str] | None = None) -> int:
         return _emit(_invalid(args.command, error.code, str(error)))
     except (OSError, ValidationError, ValueError, json.JSONDecodeError) as error:
         return _emit(_invalid(args.command, "INPUT_INVALID", str(error)))
-    except Exception as error:  # pragma: no cover - final receipt boundary
+    except Exception as error:  # noqa: BLE001  # pragma: no cover - final receipt boundary
         print(f"archcanvas internal error: {error}", file=sys.stderr)
         return _emit(
             CommandReceipt(

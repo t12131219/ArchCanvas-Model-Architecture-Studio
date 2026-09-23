@@ -5,7 +5,6 @@ from pathlib import Path
 
 from archcanvas_engine.cli import main
 
-
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "fixtures" / "tier_a" / "transformer"
 
@@ -40,9 +39,32 @@ def test_analyze_writes_versioned_artifacts(tmp_path, capsys) -> None:
     receipt = json.loads(capsys.readouterr().out)
     assert exit_code == 0
     assert receipt["details"]["source_execution"] is False
-    assert (tmp_path / "architecture.json").is_file()
-    assert (tmp_path / "evidence-ledger.json").is_file()
+    for filename in (
+        "architecture.json",
+        "module-ledger.json",
+        "tensor-ledger.json",
+        "edge-ledger.json",
+        "evidence-ledger.json",
+        "discrepancy-ledger.json",
+        "omission-ledger.json",
+    ):
+        assert (tmp_path / filename).is_file()
     assert json.loads((tmp_path / "architecture.json").read_text())["schema_version"] == "1.0"
+    assert (
+        next(gate for gate in receipt["gates"] if gate["gate"] == "B-transformer-l3")["status"]
+        == "passed"
+    )
+
+    validate_exit = main(["validate", str(tmp_path / "architecture.json"), "--json"])
+    validate_receipt = json.loads(capsys.readouterr().out)
+    assert validate_exit == 0
+    assert validate_receipt["details"]["evidence_binding_loaded"] is True
+    assert (
+        next(gate for gate in validate_receipt["gates"] if gate["gate"] == "A-source-identity")[
+            "status"
+        ]
+        == "passed"
+    )
 
 
 def test_unavailable_command_is_explicit(capsys) -> None:

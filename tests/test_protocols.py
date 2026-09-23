@@ -46,4 +46,3 @@ def test_visual_patch_preserves_source_digest() -> None:
     )
     assert changed.source_digest == digest
     assert changed.visual_patches[0].target_id == "node:q"
-
