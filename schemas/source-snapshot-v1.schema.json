@@ -1,0 +1,104 @@
+{
+  "$defs": {
+    "SourceFile": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "title": "SourceFile",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "adapter_version": {
+      "minLength": 1,
+      "title": "Adapter Version",
+      "type": "string"
+    },
+    "config_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Config Digest",
+      "type": "string"
+    },
+    "entrypoint": {
+      "minLength": 3,
+      "title": "Entrypoint",
+      "type": "string"
+    },
+    "execution_mode": {
+      "enum": [
+        "eval",
+        "train"
+      ],
+      "title": "Execution Mode",
+      "type": "string"
+    },
+    "framework": {
+      "minLength": 1,
+      "title": "Framework",
+      "type": "string"
+    },
+    "project_root": {
+      "minLength": 1,
+      "title": "Project Root",
+      "type": "string"
+    },
+    "revision": {
+      "minLength": 1,
+      "title": "Revision",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "snapshot_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Snapshot Id",
+      "type": "string"
+    },
+    "source_files": {
+      "items": {
+        "$ref": "#/$defs/SourceFile"
+      },
+      "minItems": 1,
+      "title": "Source Files",
+      "type": "array"
+    },
+    "task": {
+      "minLength": 1,
+      "title": "Task",
+      "type": "string"
+    }
+  },
+  "required": [
+    "snapshot_id",
+    "project_root",
+    "revision",
+    "entrypoint",
+    "task",
+    "execution_mode",
+    "framework",
+    "adapter_version",
+    "config_digest",
+    "source_files"
+  ],
+  "title": "SourceSnapshot",
+  "type": "object"
+}

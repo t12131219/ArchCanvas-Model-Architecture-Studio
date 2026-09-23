@@ -1,1 +1,17 @@
-"""Framework-neutral protocol models and validation services."""
+"""Versioned protocol models and deterministic validation for ArchCanvas."""
+
+from .models import (
+    ArchitectureIR,
+    CanvasDocument,
+    CommandReceipt,
+    EvidenceRecord,
+    SourceSnapshot,
+)
+
+__all__ = [
+    "ArchitectureIR",
+    "CanvasDocument",
+    "CommandReceipt",
+    "EvidenceRecord",
+    "SourceSnapshot",
+]

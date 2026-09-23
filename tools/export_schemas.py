@@ -1,57 +1,39 @@
-"""Regenerate committed protocol schemas after a deliberate model change."""
-
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
-from pydantic import BaseModel
-
-from archcanvas_core.models.architecture import ArchitectureIR
-from archcanvas_core.models.canvas import CanvasDocument
-from archcanvas_core.models.engine import (
-    EngineEvent,
-    EngineRequest,
-    EngineResponse,
-    ProjectManifest,
-    VisualPatch,
-)
-from archcanvas_core.models.patch import PatchSet
-from archcanvas_core.models.publication import PublicationIR, VisualScene
-from archcanvas_core.models.runtime import RuntimeTraceResult, TraceRequest
-from archcanvas_core.models.source_identity import SourceIdentityDocument
-from archcanvas_core.models.visual_spec import VisualSpec
-
-SCHEMAS: tuple[tuple[str, type[BaseModel]], ...] = (
-    ("architecture-ir-v1.schema.json", ArchitectureIR),
-    ("patch-protocol-v1.schema.json", PatchSet),
-    ("source-identity-v1.schema.json", SourceIdentityDocument),
-    ("runtime-trace-request-v1.schema.json", TraceRequest),
-    ("runtime-trace-result-v1.schema.json", RuntimeTraceResult),
-    ("publication-ir-v1.schema.json", PublicationIR),
-    ("visual-scene-v1.schema.json", VisualScene),
-    ("visual-spec-v1.schema.json", VisualSpec),
-    ("canvas-document-v1.schema.json", CanvasDocument),
-    ("project-manifest-v1.schema.json", ProjectManifest),
-    ("visual-patch-v1.schema.json", VisualPatch),
-    ("engine-request-v1.schema.json", EngineRequest),
-    ("engine-response-v1.schema.json", EngineResponse),
-    ("engine-event-v1.schema.json", EngineEvent),
-)
+from archcanvas_core.models import SCHEMA_MODELS
 
 
-def main() -> None:
-    schema_dir = Path(__file__).resolve().parents[1] / "schemas"
-    schema_dir.mkdir(exist_ok=True)
-    for filename, model in SCHEMAS:
-        schema = model.model_json_schema(mode="validation")
-        schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
-        schema["$id"] = f"https://archcanvas.dev/schemas/{filename}"
-        (schema_dir / filename).write_text(
-            json.dumps(schema, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
+def schema_text(model: type) -> str:
+    return json.dumps(model.model_json_schema(), indent=2, sort_keys=True) + "\n"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--check", action="store_true")
+    args = parser.parse_args()
+    root = Path(__file__).resolve().parents[1]
+    schema_dirs = [root / "schemas", root / "src" / "archcanvas_core" / "schemas"]
+    for schema_dir in schema_dirs:
+        schema_dir.mkdir(exist_ok=True)
+    stale: list[str] = []
+    for filename, model in SCHEMA_MODELS.items():
+        expected = schema_text(model)
+        for schema_dir in schema_dirs:
+            path = schema_dir / filename
+            if args.check:
+                if not path.exists() or path.read_text(encoding="utf-8") != expected:
+                    stale.append(str(path.relative_to(root)))
+            else:
+                path.write_text(expected, encoding="utf-8")
+    if stale:
+        print("stale schemas: " + ", ".join(stale))
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

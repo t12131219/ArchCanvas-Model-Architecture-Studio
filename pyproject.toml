@@ -1,11 +1,11 @@
 [build-system]
-requires = ["hatchling>=1.25"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=65.5"]
+build-backend = "setuptools.build_meta"
 
 [project]
-name = "archcanvas-model-architecture-studio"
+name = "archcanvas"
 version = "0.1.0"
-description = "Source-aware architecture recovery and safe parameter round-tripping."
+description = "Source-grounded model architecture analysis and review tooling."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -15,21 +15,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<9"]
+dev = ["pytest>=8,<9", "ruff>=0.8,<1"]
 
 [project.scripts]
-archcanvas-fixture-transaction = "archcanvas_python.cli:main"
-archcanvas-engine-rpc = "archcanvas_engine.stdio:main"
+archcanvas = "archcanvas_engine.cli:main"
 
-[tool.hatch.build.targets.wheel]
-packages = [
-  "src/archcanvas_core",
-  "src/archcanvas_python",
-  "src/archcanvas_pytorch",
-  "src/archcanvas_publication",
-  "src/archcanvas_renderer",
-  "src/archcanvas_engine",
-]
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["archcanvas_core*", "archcanvas_engine*", "archcanvas_python*"]
+
+[tool.setuptools.package-data]
+archcanvas_core = ["schemas/*.json"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

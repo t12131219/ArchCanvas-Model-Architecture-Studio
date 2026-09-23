@@ -1,30 +1,37 @@
-# ArchCanvas Model Architecture Studio
+# ArchCanvas
 
-The current implementation covers the first four fixture-backed stages: strict source and
-architecture protocols, a safe `nhead` source round-trip, conservative PyTorch static recovery,
-isolated runtime evidence, and a separate deterministic publication SVG pipeline.
+ArchCanvas is a source-grounded model architecture studio. The current rewrite baseline provides the protocol boundary, a short agent skill, deterministic Python source discovery, an Exact Architecture IR, and structured validation receipts.
 
-The static and publication paths remain intentionally bounded to declared PyTorch patterns and
-repository fixtures. Engine/RPC, persisted visual state, desktop canvas, general parameter UI,
-structural edits, MCP transport, and release hardening remain future stages.
+This repository is intentionally rebuilding from the source-truth boundary outward. The interactive Studio and source transactions are not claimed as available until their quality gates exist.
 
-The current executable path is deliberately fixture-scoped while the general PyTorch adapter
-is not yet complete. It never writes by default:
+## Quick start
 
 ```bash
-conda run -n TFB_py311 archcanvas-fixture-transaction \
-  --fixture-dir fixtures/transformer_set_parameter_v1 \
-  --source-file /absolute/path/to/model.py
+python -m pip install -e .[dev]
+archcanvas doctor --json
+archcanvas analyze \
+  --project fixtures/tier_a/transformer \
+  --entry model:Transformer \
+  --task inference \
+  --mode eval \
+  --out build/transformer \
+  --json
+archcanvas validate build/transformer/architecture.json --json
 ```
 
-Add `--commit` only after inspecting the JSON candidate diff and validation result. The command
-requires source bytes matching the fixture's analyzed revision and rejects stale input.
+`analyze` never imports the target project. It reads Python source, records file digests and source spans, and emits unresolved facts whenever the static subset cannot prove a claim.
 
-## Development
+## Current support
 
-```bash
-conda run -n TFB_py311 python -m pip install -e '.[dev]'
-conda run -n TFB_py311 python -m pytest -q
-conda run -n TFB_py311 python tools/generate_static_goldens.py
-conda run -n TFB_py311 python tools/generate_publication_goldens.py
-```
+| Capability | Status |
+| --- | --- |
+| Doctor and environment receipt | Available |
+| Python entrypoint discovery | Available |
+| Static module/call recovery | Initial subset |
+| Evidence ledger and Exact IR | Available |
+| Semantic validation | Available |
+| Publication compiler / Studio | Planned |
+| Runtime tracing | Planned, opt-in only |
+| Source transactions | Planned, never direct-write |
+
+See [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md), and [docs/contracts/protocols.md](docs/contracts/protocols.md).

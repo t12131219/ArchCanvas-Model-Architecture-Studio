@@ -1,36 +1,25 @@
 ---
-name: archcanvas-model-architecture
-description: Analyze supported PyTorch model source into a source-aware architecture view, create publication-ready architecture artifacts, or plan a validated model-architecture edit. Use when a user asks to inspect, diagram, export, or safely change a neural-network architecture with ArchCanvas.
+name: archcanvas
+description: Analyze real model source into evidence-backed architecture IR, validate architecture artifacts, and prepare publication or editing workflows. Use for model architecture recovery, source-to-diagram work, architecture explanation, visual-only diagram edits, or reviewed semantic model changes; do not use as a generic flowchart tool.
 ---
 
-# ArchCanvas Model Architecture
+# ArchCanvas
 
-Architecture semantics come from user source and re-analysis. The canvas is a view; it is
-never a substitute for source code or an authorization to modify it.
+Start read-only. Resolve the repository, entrypoint, task branch, configuration, and execution mode before claiming an exact architecture.
 
-## Availability
+## Workflow
 
-When ArchCanvas MCP is available, call `archcanvas_health` once at the start of the
-conversation and use only the capabilities it reports. Do not install, upgrade, provision,
-or fabricate unavailable tools. If the required analysis or commit capability is unavailable,
-state that clearly and stop before claiming an artifact, validation result, or source change.
+1. Run `archcanvas doctor --json` when environment support is unknown.
+2. For analyze, draw, or explain requests, run `archcanvas analyze` before any rendering step.
+3. Treat source and replayable runtime evidence as truth. Treat papers, READMEs, comments, names, and reference images as secondary evidence.
+4. Preserve uncertainty as `unresolved`; never fill missing execution facts from a familiar model name.
+5. Run `archcanvas validate` on generated Exact IR and report the receipt and artifact paths.
 
-## Route By Request
+Read [references/evidence-contract.md](references/evidence-contract.md) when resolving conflicts, reviewing provenance, or adding an adapter.
 
-| User intent | Read |
-| --- | --- |
-| Inspect a supported PyTorch project or create a diagram | `references/architecture-contract.md` |
-| Export a publication architecture figure | `references/architecture-contract.md` |
-| Change a model parameter or structure | `references/architecture-contract.md` |
-| Tool, project-root, or commit failure | `references/architecture-contract.md` |
+## Editing boundary
 
-## Core Constraints
-
-- Treat a project path suggested by the model as a candidate, not authority. Use only an
-  approved root reported by the host or engine.
-- Keep Exact Architecture IR, Publication IR, and CanvasDocument separate.
-- Visual edits persist as visual patches only. They must not enter a source transaction.
-- Source edits follow `analyze -> plan -> candidate diff -> validate -> explicit commit ->
-  re-analyze`. Never fold commit into analysis, rendering, plan, or validation.
-- Report unresolved or unsupported code honestly. Do not infer confirmed architecture facts
-  from a visually plausible diagram.
+- Visual requests may change only CanvasDocument or VisualSpec state.
+- Model changes require a semantic proposal, isolated prepare/verify phases, source diff, expected and observed graph delta, and explicit user commit.
+- A request to draw or drag does not authorize source writes.
+- If a requested capability is unavailable, return the structured capability error and do not improvise a direct source edit.

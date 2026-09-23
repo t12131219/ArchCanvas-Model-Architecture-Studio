@@ -1,0 +1,141 @@
+{
+  "$defs": {
+    "Confidence": {
+      "enum": [
+        "exact",
+        "runtime-confirmed",
+        "equivalent",
+        "inferred",
+        "unresolved",
+        "reference-only",
+        "contradicted"
+      ],
+      "title": "Confidence",
+      "type": "string"
+    },
+    "EvidenceKind": {
+      "enum": [
+        "source",
+        "config",
+        "runtime",
+        "checkpoint",
+        "reference"
+      ],
+      "title": "EvidenceKind",
+      "type": "string"
+    },
+    "SourceSpan": {
+      "additionalProperties": false,
+      "properties": {
+        "end_column": {
+          "default": 0,
+          "minimum": 0,
+          "title": "End Column",
+          "type": "integer"
+        },
+        "end_line": {
+          "minimum": 1,
+          "title": "End Line",
+          "type": "integer"
+        },
+        "start_column": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Start Column",
+          "type": "integer"
+        },
+        "start_line": {
+          "minimum": 1,
+          "title": "Start Line",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start_line",
+        "end_line"
+      ],
+      "title": "SourceSpan",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "claim": {
+      "minLength": 1,
+      "title": "Claim",
+      "type": "string"
+    },
+    "confidence": {
+      "$ref": "#/$defs/Confidence"
+    },
+    "evidence_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Evidence Id",
+      "type": "string"
+    },
+    "execution_predicate": {
+      "minLength": 1,
+      "title": "Execution Predicate",
+      "type": "string"
+    },
+    "kind": {
+      "$ref": "#/$defs/EvidenceKind"
+    },
+    "path": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path"
+    },
+    "revision": {
+      "minLength": 1,
+      "title": "Revision",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "span": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SourceSpan"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "symbol": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Symbol"
+    }
+  },
+  "required": [
+    "evidence_id",
+    "kind",
+    "revision",
+    "claim",
+    "confidence",
+    "execution_predicate"
+  ],
+  "title": "EvidenceRecord",
+  "type": "object"
+}
