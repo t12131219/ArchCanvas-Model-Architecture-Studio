@@ -1,0 +1,582 @@
+[
+  {
+    "id": "src",
+    "label": "Source tokens",
+    "parent": null,
+    "lane": "encoder",
+    "role": "input",
+    "shape": "[B,S]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "src_embed",
+    "label": "Input embedding",
+    "parent": null,
+    "lane": "encoder",
+    "role": "embedding",
+    "shape": "[B,S,D]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "src_pos",
+    "label": "Sinusoidal position",
+    "parent": null,
+    "lane": "encoder",
+    "role": "embedding",
+    "shape": "",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "encoder",
+    "label": "Encoder layers",
+    "parent": null,
+    "lane": "encoder",
+    "role": "repeat",
+    "shape": "",
+    "level": 1,
+    "repeat": "2 x"
+  },
+  {
+    "id": "enc_layer_in",
+    "label": "Layer input",
+    "parent": "encoder",
+    "lane": "encoder",
+    "role": "data",
+    "shape": "[B,S,128]",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "enc_attn",
+    "label": "Self-attention",
+    "parent": "encoder",
+    "lane": "encoder",
+    "role": "attention",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "enc_add1",
+    "label": "Add + LayerNorm",
+    "parent": "encoder",
+    "lane": "encoder",
+    "role": "merge",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "enc_ffn",
+    "label": "Feed forward",
+    "parent": "encoder",
+    "lane": "encoder",
+    "role": "ffn",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "enc_add2",
+    "label": "Add + LayerNorm",
+    "parent": "encoder",
+    "lane": "encoder",
+    "role": "merge",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "memory",
+    "label": "Encoder memory",
+    "parent": null,
+    "lane": "encoder",
+    "role": "data",
+    "shape": "[B,S,D]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "tgt",
+    "label": "Target prefix tokens",
+    "parent": null,
+    "lane": "decoder",
+    "role": "input",
+    "shape": "[B,T]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "tgt_embed",
+    "label": "Output embedding",
+    "parent": null,
+    "lane": "decoder",
+    "role": "embedding",
+    "shape": "[B,T,D]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "tgt_pos",
+    "label": "Sinusoidal position",
+    "parent": null,
+    "lane": "decoder",
+    "role": "embedding",
+    "shape": "",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "decoder",
+    "label": "Decoder layers",
+    "parent": null,
+    "lane": "decoder",
+    "role": "repeat",
+    "shape": "",
+    "level": 1,
+    "repeat": "2 x"
+  },
+  {
+    "id": "dec_layer_in",
+    "label": "Layer input",
+    "parent": "decoder",
+    "lane": "decoder",
+    "role": "data",
+    "shape": "[B,T,128]",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "dec_self",
+    "label": "Masked self-attention",
+    "parent": "decoder",
+    "lane": "decoder",
+    "role": "attention",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "dec_add1",
+    "label": "Add + LayerNorm",
+    "parent": "decoder",
+    "lane": "decoder",
+    "role": "merge",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "dec_cross",
+    "label": "Cross-attention",
+    "parent": "decoder",
+    "lane": "decoder",
+    "role": "attention",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "dec_add2",
+    "label": "Add + LayerNorm",
+    "parent": "decoder",
+    "lane": "decoder",
+    "role": "merge",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "dec_ffn",
+    "label": "Feed forward",
+    "parent": "decoder",
+    "lane": "decoder",
+    "role": "ffn",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "dec_add3",
+    "label": "Add + LayerNorm",
+    "parent": "decoder",
+    "lane": "decoder",
+    "role": "merge",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "head",
+    "label": "Vocabulary linear",
+    "parent": null,
+    "lane": "decoder",
+    "role": "head",
+    "shape": "[B,T,V]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "logits",
+    "label": "Output logits",
+    "parent": null,
+    "lane": "decoder",
+    "role": "output",
+    "shape": "[B,T,V]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "e_q",
+    "label": "Q projection",
+    "parent": "enc_attn",
+    "lane": "encoder",
+    "role": "projection",
+    "shape": "[B,H,S,16]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "e_k",
+    "label": "K projection",
+    "parent": "enc_attn",
+    "lane": "encoder",
+    "role": "projection",
+    "shape": "[B,H,S,16]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "e_v",
+    "label": "V projection",
+    "parent": "enc_attn",
+    "lane": "encoder",
+    "role": "projection",
+    "shape": "[B,H,S,16]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "e_score",
+    "label": "Q x K transpose",
+    "parent": "enc_attn",
+    "lane": "encoder",
+    "role": "attention",
+    "shape": "[B,8,S,S]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "e_scale",
+    "label": "Scale 1/sqrt(Dh)",
+    "parent": "enc_attn",
+    "lane": "encoder",
+    "role": "projection",
+    "shape": "[B,8,S,S]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "e_softmax",
+    "label": "Softmax weights",
+    "parent": "enc_attn",
+    "lane": "encoder",
+    "role": "attention",
+    "shape": "[B,8,S,S]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "e_weighted",
+    "label": "Weights x V",
+    "parent": "enc_attn",
+    "lane": "encoder",
+    "role": "attention",
+    "shape": "[B,8,S,16]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "e_combine",
+    "label": "Combine heads",
+    "parent": "enc_attn",
+    "lane": "encoder",
+    "role": "projection",
+    "shape": "[B,S,128]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "e_out",
+    "label": "W^O output",
+    "parent": "enc_attn",
+    "lane": "encoder",
+    "role": "projection",
+    "shape": "[B,S,128]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "s_q",
+    "label": "Q projection",
+    "parent": "dec_self",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,H,T,16]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "s_k",
+    "label": "K projection",
+    "parent": "dec_self",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,H,T,16]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "s_v",
+    "label": "V projection",
+    "parent": "dec_self",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,H,T,16]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "s_score",
+    "label": "Q x K transpose",
+    "parent": "dec_self",
+    "lane": "decoder",
+    "role": "attention",
+    "shape": "[B,8,T,T]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "s_scale",
+    "label": "Scale 1/sqrt(Dh)",
+    "parent": "dec_self",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,8,T,T]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "s_mask",
+    "label": "Causal mask",
+    "parent": "dec_self",
+    "lane": "decoder",
+    "role": "condition",
+    "shape": "[T,T]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "s_apply_mask",
+    "label": "Apply causal mask",
+    "parent": "dec_self",
+    "lane": "decoder",
+    "role": "condition",
+    "shape": "[B,8,T,T]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "s_softmax",
+    "label": "Softmax weights",
+    "parent": "dec_self",
+    "lane": "decoder",
+    "role": "attention",
+    "shape": "[B,8,T,T]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "s_weighted",
+    "label": "Weights x V",
+    "parent": "dec_self",
+    "lane": "decoder",
+    "role": "attention",
+    "shape": "[B,8,T,16]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "s_combine",
+    "label": "Combine heads",
+    "parent": "dec_self",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,T,128]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "s_out",
+    "label": "W^O output",
+    "parent": "dec_self",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,T,128]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "c_q",
+    "label": "Q projection",
+    "parent": "dec_cross",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,H,T,16]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "c_k",
+    "label": "K projection",
+    "parent": "dec_cross",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,H,S,16]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "c_v",
+    "label": "V projection",
+    "parent": "dec_cross",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,H,S,16]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "c_score",
+    "label": "Q x K transpose",
+    "parent": "dec_cross",
+    "lane": "decoder",
+    "role": "attention",
+    "shape": "[B,8,T,S]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "c_scale",
+    "label": "Scale 1/sqrt(Dh)",
+    "parent": "dec_cross",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,8,T,S]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "c_softmax",
+    "label": "Softmax weights",
+    "parent": "dec_cross",
+    "lane": "decoder",
+    "role": "attention",
+    "shape": "[B,8,T,S]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "c_weighted",
+    "label": "Weights x V",
+    "parent": "dec_cross",
+    "lane": "decoder",
+    "role": "attention",
+    "shape": "[B,8,T,16]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "c_combine",
+    "label": "Combine heads",
+    "parent": "dec_cross",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,T,128]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "c_out",
+    "label": "W^O output",
+    "parent": "dec_cross",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,T,128]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "ef_linear1",
+    "label": "Linear D -> F",
+    "parent": "enc_ffn",
+    "lane": "encoder",
+    "role": "ffn",
+    "shape": "[B,S,512]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "ef_relu",
+    "label": "ReLU",
+    "parent": "enc_ffn",
+    "lane": "encoder",
+    "role": "ffn",
+    "shape": "",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "ef_linear2",
+    "label": "Linear F -> D",
+    "parent": "enc_ffn",
+    "lane": "encoder",
+    "role": "ffn",
+    "shape": "[B,S,128]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "df_linear1",
+    "label": "Linear D -> F",
+    "parent": "dec_ffn",
+    "lane": "decoder",
+    "role": "ffn",
+    "shape": "[B,T,512]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "df_relu",
+    "label": "ReLU",
+    "parent": "dec_ffn",
+    "lane": "decoder",
+    "role": "ffn",
+    "shape": "",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "df_linear2",
+    "label": "Linear F -> D",
+    "parent": "dec_ffn",
+    "lane": "decoder",
+    "role": "ffn",
+    "shape": "[B,T,128]",
+    "level": 3,
+    "repeat": ""
+  }
+]

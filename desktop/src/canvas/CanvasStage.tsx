@@ -259,7 +259,7 @@ export function CanvasStage({
     setFitMode(false)
     gestureRef.current = { kind: 'drag', start: clientToViewportPoint(event, stage), positions, selected: Object.keys(positions) }
     onGestureChange(true)
-    stage.setPointerCapture(event.pointerId)
+    event.currentTarget.setPointerCapture(event.pointerId)
   }
 
   function onWheel(event: WheelEvent<HTMLDivElement>) {
@@ -342,7 +342,15 @@ export function CanvasStage({
             className={`architecture-node node-${node.kind}${selectedIds.includes(node.id) ? ' is-selected' : ''}${node.locked ? ' is-locked' : ''}`}
             data-id={node.id}
             data-canvas-node={node.id}
+            aria-expanded={node.kind === 'repeat_group' ? !node.collapsed : undefined}
             onDoubleClick={() => editable && node.kind === 'repeat_group' && onToggleCollapse(node.id)}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter' && event.key !== ' ') return
+              event.preventDefault()
+              event.stopPropagation()
+              onSelectionChange(selectionAfter(event, node.id, selectedIds))
+              if (event.key === 'Enter' && editable && node.kind === 'repeat_group') onToggleCollapse(node.id)
+            }}
             onPointerDown={(event) => onNodePointerDown(event, node)}
             style={{ ...nodeStyle(node), height: node.height, transform: `translate(${node.x}px, ${node.y}px)`, width: node.width }}
             type="button"

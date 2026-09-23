@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = (
     ("transformer_static_v1", "fixture:transformer_static_v1", "model.py:EncoderModel"),
     ("resnet_static_v1", "fixture:resnet_static_v1", "model.py:ResidualBlock"),
+    ("structural_embedding_encoder_v1", "fixture:structural_embedding_encoder_v1", "model.py:ChainModel"),
 )
 
 

@@ -40,8 +40,10 @@ export type ArchitectureNode = {
   sourceNodeId?: string
   label: string
   kind: string
+  opType?: string
   anchor: string
   anchorId?: string
+  sourceAnchorIds?: string[]
   members: number
   parameters?: Array<{
     name: string
@@ -52,7 +54,13 @@ export type ArchitectureNode = {
   }>
 }
 
-export type ArchitectureEdge = { id: string; source: string; target: string; residual?: boolean }
+export type ArchitectureEdge = {
+  id: string
+  source: string
+  target: string
+  residual?: boolean
+  evidenceAnchorIds?: string[]
+}
 
 export type ScientificMiniature = {
   id: string
@@ -71,6 +79,7 @@ export type DesktopSnapshot = {
   sourceRevision: string
   sourceLabel: string
   patchableParameters: string[]
+  structuralPatchOperations: Array<'insert_layer_norm' | 'remove_layer_norm'>
   sourceAnchors: Record<string, { relativeFile: string; fileRevision: string; contentFingerprint: string }>
   nodes: ArchitectureNode[]
   edges: ArchitectureEdge[]

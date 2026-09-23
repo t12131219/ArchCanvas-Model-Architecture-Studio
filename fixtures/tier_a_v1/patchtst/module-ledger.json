@@ -1,0 +1,272 @@
+[
+  {
+    "id": "input",
+    "label": "Input time series",
+    "parent": null,
+    "lane": "main",
+    "role": "input",
+    "shape": "[B,L,C]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "channel",
+    "label": "Channel-first axes",
+    "parent": null,
+    "lane": "main",
+    "role": "transform",
+    "shape": "[B,C,L]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "revin",
+    "label": "RevIN normalization",
+    "parent": null,
+    "lane": "main",
+    "role": "normalization",
+    "shape": "",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "patch",
+    "label": "Unfold / patching",
+    "parent": null,
+    "lane": "main",
+    "role": "embedding",
+    "shape": "[B,C,Np,P]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "embed",
+    "label": "Per-patch projection",
+    "parent": null,
+    "lane": "main",
+    "role": "embedding",
+    "shape": "[B,C,Np,D]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "position",
+    "label": "Learned position encoding",
+    "parent": null,
+    "lane": "main",
+    "role": "embedding",
+    "shape": "",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "encoder",
+    "label": "Channel-independent encoder",
+    "parent": null,
+    "lane": "main",
+    "role": "repeat",
+    "shape": "",
+    "level": 1,
+    "repeat": "3 x"
+  },
+  {
+    "id": "attention",
+    "label": "Multi-head self-attention",
+    "parent": "encoder",
+    "lane": "main",
+    "role": "attention",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "norm1",
+    "label": "Residual + BatchNorm",
+    "parent": "encoder",
+    "lane": "main",
+    "role": "merge",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "ffn",
+    "label": "GELU feed forward",
+    "parent": "encoder",
+    "lane": "main",
+    "role": "ffn",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "norm2",
+    "label": "Residual + BatchNorm",
+    "parent": "encoder",
+    "lane": "main",
+    "role": "merge",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "flatten",
+    "label": "Flatten D x Np",
+    "parent": null,
+    "lane": "main",
+    "role": "transform",
+    "shape": "[B,C,D*Np]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "head",
+    "label": "Forecast linear head",
+    "parent": null,
+    "lane": "main",
+    "role": "head",
+    "shape": "[B,C,H]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "denorm",
+    "label": "RevIN denormalization",
+    "parent": null,
+    "lane": "main",
+    "role": "normalization",
+    "shape": "",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "output",
+    "label": "Forecast",
+    "parent": null,
+    "lane": "main",
+    "role": "output",
+    "shape": "[B,H,C]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "q",
+    "label": "Q projection + split",
+    "parent": "attention",
+    "lane": "main",
+    "role": "projection",
+    "shape": "[B*C,16,Np,8]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "k",
+    "label": "K projection + split",
+    "parent": "attention",
+    "lane": "main",
+    "role": "projection",
+    "shape": "[B*C,16,Np,8]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "v",
+    "label": "V projection + split",
+    "parent": "attention",
+    "lane": "main",
+    "role": "projection",
+    "shape": "[B*C,16,Np,8]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "scores",
+    "label": "Scaled QK scores",
+    "parent": "attention",
+    "lane": "main",
+    "role": "attention",
+    "shape": "[B*C,16,Np,Np]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "prev",
+    "label": "Previous-layer score residual",
+    "parent": "attention",
+    "lane": "main",
+    "role": "merge",
+    "shape": "[B*C,16,Np,Np]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "softmax",
+    "label": "Softmax weights",
+    "parent": "attention",
+    "lane": "main",
+    "role": "attention",
+    "shape": "[B*C,16,Np,Np]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "weighted",
+    "label": "Weights x V",
+    "parent": "attention",
+    "lane": "main",
+    "role": "attention",
+    "shape": "[B*C,16,Np,8]",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "combine",
+    "label": "Combine heads",
+    "parent": "attention",
+    "lane": "main",
+    "role": "transform",
+    "shape": "[B*C,Np,128]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "out",
+    "label": "Output projection",
+    "parent": "attention",
+    "lane": "main",
+    "role": "projection",
+    "shape": "[B*C,Np,128]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "ffn_in",
+    "label": "Linear D -> F",
+    "parent": "ffn",
+    "lane": "main",
+    "role": "ffn",
+    "shape": "",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "ffn_gelu",
+    "label": "GELU",
+    "parent": "ffn",
+    "lane": "main",
+    "role": "ffn",
+    "shape": "",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "ffn_out",
+    "label": "Linear F -> D",
+    "parent": "ffn",
+    "lane": "main",
+    "role": "ffn",
+    "shape": "",
+    "level": 3,
+    "repeat": ""
+  }
+]

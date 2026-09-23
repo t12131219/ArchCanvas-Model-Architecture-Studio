@@ -84,7 +84,7 @@ function defaultDocument(): CanvasDocument {
 function fixtureSnapshot(document: CanvasDocument): DesktopSnapshot {
   return {
     mode: 'fixture-read-only', projectName: 'Transformer publication fixture', projectId, publicationId,
-    sourceRevision, sourceLabel: 'fixtures/transformer_static_v1/source/model.py', patchableParameters: [], sourceAnchors: {}, nodes: fixtureNodes,
+    sourceRevision, sourceLabel: 'fixtures/transformer_static_v1/source/model.py', patchableParameters: [], structuralPatchOperations: [], sourceAnchors: {}, nodes: fixtureNodes,
     edges: fixtureEdges, miniatures: fixtureMiniatures, exactNodes, exactEdges, document,
     validation: { status: 'ready', message: 'Read-only fixture. Visual state is isolated from source bytes.' },
   }
@@ -133,11 +133,23 @@ type RpcResponse = {
 
 type EngineAnalysis = {
   kind: 'analysis_completed' | 'analysis_loaded'
-  manifest: { project_id: string; source_revision: string; entrypoint: string; patch_parameter_names?: string[] }
+  manifest: {
+    project_id: string
+    source_revision: string
+    entrypoint: string
+    patch_parameter_names?: string[]
+    patch_structural_operations?: Array<'insert_layer_norm' | 'remove_layer_norm'>
+  }
   source: { anchors: Array<{ anchor_id: string; relative_file: string; file_revision: string; content_fingerprint: string; span: { start: { line: number } } }> }
   architecture: {
     nodes: Array<{ node_id: string; display_name: string; kind: string; op_type: string; source_anchor_ids: string[]; parameters: Array<{ name: string; value: unknown; source_name?: string | null; origin: { kind: string; anchor_ids: string[] } }> }>
-    edges: Array<{ edge_id: string; source_node_id: string; target_node_id: string; kind: string }>
+    edges: Array<{
+      edge_id: string
+      source_node_id: string
+      target_node_id: string
+      kind: string
+      evidence: Array<{ anchor_id?: string | null }>
+    }>
   }
   publication: {
     publication_id: string
@@ -198,6 +210,7 @@ function snapshotFromAnalysis(analysis: EngineAnalysis, document?: CanvasDocumen
     return {
       id: node.node_id, sourceNodeId: member?.node_id, label: node.label, kind: node.kind,
       anchor: member?.source_anchor_ids.map((anchor) => anchors.get(anchor)).find(Boolean) ?? 'unresolved source anchor', anchorId,
+      sourceAnchorIds: member?.source_anchor_ids,
       members: node.member_node_ids.length,
       parameters: member?.parameters.map((parameter) => ({
         name: parameter.name, value: parameter.value, sourceName: parameter.source_name,
@@ -210,6 +223,7 @@ function snapshotFromAnalysis(analysis: EngineAnalysis, document?: CanvasDocumen
     publicationId: analysis.publication.publication_id, sourceRevision: analysis.manifest.source_revision,
     sourceLabel: analysis.manifest.entrypoint,
     patchableParameters: analysis.manifest.patch_parameter_names ?? [],
+    structuralPatchOperations: analysis.manifest.patch_structural_operations ?? [],
     sourceAnchors: Object.fromEntries(analysis.source.anchors.map((anchor) => [anchor.anchor_id, {
       relativeFile: anchor.relative_file, fileRevision: anchor.file_revision, contentFingerprint: anchor.content_fingerprint,
     }])),
@@ -224,14 +238,20 @@ function snapshotFromAnalysis(analysis: EngineAnalysis, document?: CanvasDocumen
       label: miniature.label,
     })),
     exactNodes: analysis.architecture.nodes.map((node) => ({
-      id: node.node_id, sourceNodeId: node.node_id, label: node.display_name, kind: node.kind,
-      anchor: node.source_anchor_ids.map((anchor) => anchors.get(anchor)).find(Boolean) ?? 'unresolved source anchor', anchorId: node.source_anchor_ids[0], members: 1,
+      id: node.node_id, sourceNodeId: node.node_id, label: node.display_name, kind: node.kind, opType: node.op_type,
+      anchor: node.source_anchor_ids.map((anchor) => anchors.get(anchor)).find(Boolean) ?? 'unresolved source anchor', anchorId: node.source_anchor_ids[0], sourceAnchorIds: node.source_anchor_ids, members: 1,
       parameters: node.parameters.map((parameter) => ({
         name: parameter.name, value: parameter.value, sourceName: parameter.source_name,
         origin: parameter.origin.kind, anchorId: parameter.origin.anchor_ids[0],
       })),
     })),
-    exactEdges: analysis.architecture.edges.map((edge) => ({ id: edge.edge_id, source: edge.source_node_id, target: edge.target_node_id, residual: edge.kind === 'residual' })),
+    exactEdges: analysis.architecture.edges.map((edge) => ({
+      id: edge.edge_id,
+      source: edge.source_node_id,
+      target: edge.target_node_id,
+      residual: edge.kind === 'residual',
+      evidenceAnchorIds: edge.evidence.flatMap((evidence) => evidence.anchor_id ? [evidence.anchor_id] : []),
+    })),
     document: document ?? defaultEngineDocument(analysis),
     validation: { status: 'ready', message: 'Engine-backed analysis loaded. Visual saves re-check the source revision.' },
   }
@@ -267,6 +287,147 @@ export function createParameterPatchSet(
         required_parameter_changes: [{ node_id: sourceNodeId, parameter: parameter.name, before: parameter.value, after }],
         allowed_node_additions: [], allowed_node_removals: [], allowed_node_modifications: [],
         allowed_edge_additions: [], allowed_edge_removals: [], allowed_edge_modifications: [],
+        require_identity_retention: true,
+      },
+    }],
+  }
+}
+
+export function createInsertLayerNormPatchSet(
+  snapshot: DesktopSnapshot,
+  source: ArchitectureNode,
+  target: ArchitectureNode,
+  edge: ArchitectureEdge,
+  attributeName: string,
+  normalizedShape: number,
+): PatchSet {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(attributeName)) {
+    throw new Error('LayerNorm attribute name is invalid.')
+  }
+  if (!Number.isSafeInteger(normalizedShape) || normalizedShape < 1) {
+    throw new Error('LayerNorm normalized shape must be a positive integer.')
+  }
+  const sourceNodeId = source.sourceNodeId ?? source.id
+  const targetNodeId = target.sourceNodeId ?? target.id
+  const targetPrefix = targetNodeId.match(/^node:([A-Za-z0-9._:-]+)\.[A-Za-z_][A-Za-z0-9_]*$/)?.[1]
+  const sourcePrefix = sourceNodeId.match(/^node:([A-Za-z0-9._:-]+)\.[A-Za-z_][A-Za-z0-9_]*$/)?.[1]
+  const expectedEdgeId = `edge:${source.label}->${target.label}:data`
+  const constructorId = target.sourceAnchorIds?.find((anchorId) => anchorId.endsWith('.constructor'))
+  const forwardId = edge.evidenceAnchorIds?.[0]
+  const constructor = constructorId ? snapshot.sourceAnchors[constructorId] : undefined
+  const forward = forwardId ? snapshot.sourceAnchors[forwardId] : undefined
+  if (
+    !targetPrefix
+    || targetPrefix !== sourcePrefix
+    || edge.id !== expectedEdgeId
+    || edge.residual
+    || !constructorId
+    || !forwardId
+    || !constructor
+    || !forward
+    || constructor.relativeFile !== forward.relativeFile
+    || constructor.fileRevision !== forward.fileRevision
+  ) {
+    throw new Error('Selected edge is not eligible for the restricted structural splice.')
+  }
+  const patchId = `patch:desktop-structural-${Date.now()}`
+  const insertedNodeId = `node:${targetPrefix}.${attributeName}`
+  return {
+    schema_version: '1.0',
+    patch_set_id: `patchset:desktop-structural-${Date.now()}`,
+    project_id: snapshot.projectId,
+    base_source_revision: constructor.fileRevision,
+    created_at: new Date().toISOString(),
+    created_by: 'user',
+    patches: [{
+      patch_id: patchId,
+      scope: 'architecture',
+      operation: 'insert_layer_norm',
+      source_node_id: sourceNodeId,
+      target_node_id: targetNodeId,
+      constructor_anchor_id: constructorId,
+      forward_anchor_id: forwardId,
+      attribute_name: attributeName,
+      normalized_shape: normalizedShape,
+      constructor_anchor_content_fingerprint: constructor.contentFingerprint,
+      forward_anchor_content_fingerprint: forward.contentFingerprint,
+      expected_delta: {
+        required_parameter_changes: [],
+        allowed_node_additions: [insertedNodeId],
+        allowed_node_removals: [],
+        allowed_node_modifications: [],
+        allowed_edge_additions: [
+          `edge:${source.label}->${attributeName}:data`,
+          `edge:${attributeName}->${target.label}:data`,
+        ],
+        allowed_edge_removals: [edge.id],
+        allowed_edge_modifications: [],
+        require_identity_retention: true,
+      },
+    }],
+  }
+}
+
+export function createRemoveLayerNormPatchSet(
+  snapshot: DesktopSnapshot,
+  source: ArchitectureNode,
+  removed: ArchitectureNode,
+  target: ArchitectureNode,
+  sourceEdge: ArchitectureEdge,
+  targetEdge: ArchitectureEdge,
+): PatchSet {
+  const sourceNodeId = source.sourceNodeId ?? source.id
+  const removedNodeId = removed.sourceNodeId ?? removed.id
+  const targetNodeId = target.sourceNodeId ?? target.id
+  const constructorId = removed.sourceAnchorIds?.find((anchorId) => anchorId.endsWith('.constructor'))
+  const forwardId = sourceEdge.evidenceAnchorIds?.[0]
+  const constructor = constructorId ? snapshot.sourceAnchors[constructorId] : undefined
+  const forward = forwardId ? snapshot.sourceAnchors[forwardId] : undefined
+  const expectedSourceEdge = `edge:${source.label}->${removed.label}:data`
+  const expectedTargetEdge = `edge:${removed.label}->${target.label}:data`
+  if (
+    removed.opType !== 'nn.LayerNorm'
+    || sourceEdge.id !== expectedSourceEdge
+    || targetEdge.id !== expectedTargetEdge
+    || sourceEdge.residual
+    || targetEdge.residual
+    || !constructorId
+    || !forwardId
+    || !constructor
+    || !forward
+    || constructor.relativeFile !== forward.relativeFile
+    || constructor.fileRevision !== forward.fileRevision
+  ) {
+    throw new Error('Selected LayerNorm is not eligible for the restricted structural removal.')
+  }
+  const patchId = `patch:desktop-structural-remove-${Date.now()}`
+  return {
+    schema_version: '1.0',
+    patch_set_id: `patchset:desktop-structural-remove-${Date.now()}`,
+    project_id: snapshot.projectId,
+    base_source_revision: constructor.fileRevision,
+    created_at: new Date().toISOString(),
+    created_by: 'user',
+    patches: [{
+      patch_id: patchId,
+      scope: 'architecture',
+      operation: 'remove_layer_norm',
+      source_node_id: sourceNodeId,
+      target_node_id: targetNodeId,
+      removed_node_id: removedNodeId,
+      constructor_anchor_id: constructorId,
+      forward_anchor_id: forwardId,
+      attribute_name: removed.label,
+      constructor_anchor_content_fingerprint: constructor.contentFingerprint,
+      forward_anchor_content_fingerprint: forward.contentFingerprint,
+      expected_delta: {
+        required_parameter_changes: [],
+        allowed_node_additions: [],
+        allowed_node_removals: [removedNodeId],
+        allowed_node_modifications: [],
+        allowed_edge_additions: [`edge:${source.label}->${target.label}:data`],
+        allowed_edge_removals: [sourceEdge.id, targetEdge.id],
+        allowed_edge_modifications: [],
         require_identity_retention: true,
       },
     }],

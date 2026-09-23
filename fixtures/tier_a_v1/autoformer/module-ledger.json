@@ -1,0 +1,392 @@
+[
+  {
+    "id": "input",
+    "label": "Input series",
+    "parent": null,
+    "lane": "main",
+    "role": "input",
+    "shape": "[B,L,N]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "decomp",
+    "label": "Series decomposition",
+    "parent": null,
+    "lane": "main",
+    "role": "decomposition",
+    "shape": "",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "enc_embed",
+    "label": "Value + temporal embedding",
+    "parent": null,
+    "lane": "encoder",
+    "role": "embedding",
+    "shape": "",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "encoder",
+    "label": "Encoder AutoCorrelation",
+    "parent": null,
+    "lane": "encoder",
+    "role": "repeat",
+    "shape": "",
+    "level": 1,
+    "repeat": "2 x"
+  },
+  {
+    "id": "enc_corr",
+    "label": "AutoCorrelation + residual",
+    "parent": "encoder",
+    "lane": "encoder",
+    "role": "attention",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "enc_decomp1",
+    "label": "Progressive decomposition",
+    "parent": "encoder",
+    "lane": "encoder",
+    "role": "decomposition",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "enc_ffn",
+    "label": "Conv1d feed forward",
+    "parent": "encoder",
+    "lane": "encoder",
+    "role": "ffn",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "enc_decomp2",
+    "label": "Progressive decomposition",
+    "parent": "encoder",
+    "lane": "encoder",
+    "role": "decomposition",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "memory",
+    "label": "Encoder memory",
+    "parent": null,
+    "lane": "encoder",
+    "role": "data",
+    "shape": "",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "dec_init",
+    "label": "Seasonal + trend initialization",
+    "parent": null,
+    "lane": "decoder",
+    "role": "decomposition",
+    "shape": "",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "dec_embed",
+    "label": "Value + temporal embedding",
+    "parent": null,
+    "lane": "decoder",
+    "role": "embedding",
+    "shape": "",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "decoder",
+    "label": "Decoder AutoCorrelation",
+    "parent": null,
+    "lane": "decoder",
+    "role": "repeat",
+    "shape": "",
+    "level": 1,
+    "repeat": "1 x"
+  },
+  {
+    "id": "self_corr",
+    "label": "Self AutoCorrelation",
+    "parent": "decoder",
+    "lane": "decoder",
+    "role": "attention",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "dec_decomp1",
+    "label": "Progressive decomposition",
+    "parent": "decoder",
+    "lane": "decoder",
+    "role": "decomposition",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "cross_corr",
+    "label": "Cross AutoCorrelation",
+    "parent": "decoder",
+    "lane": "decoder",
+    "role": "attention",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "dec_decomp2",
+    "label": "Progressive decomposition",
+    "parent": "decoder",
+    "lane": "decoder",
+    "role": "decomposition",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "dec_ffn",
+    "label": "Conv1d feed forward",
+    "parent": "decoder",
+    "lane": "decoder",
+    "role": "ffn",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "dec_decomp3",
+    "label": "Progressive decomposition",
+    "parent": "decoder",
+    "lane": "decoder",
+    "role": "decomposition",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "trend",
+    "label": "Accumulate residual trend",
+    "parent": "decoder",
+    "lane": "decoder",
+    "role": "decomposition",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "result",
+    "label": "Seasonal + trend",
+    "parent": null,
+    "lane": "decoder",
+    "role": "merge",
+    "shape": "",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "output",
+    "label": "Forecast",
+    "parent": null,
+    "lane": "decoder",
+    "role": "output",
+    "shape": "[B,H,N]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "e_q",
+    "label": "Q projection",
+    "parent": "enc_corr",
+    "lane": "encoder",
+    "role": "projection",
+    "shape": "[B,Lq,8,64]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "e_k",
+    "label": "K projection",
+    "parent": "enc_corr",
+    "lane": "encoder",
+    "role": "projection",
+    "shape": "[B,Lk,8,64]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "e_v",
+    "label": "V projection",
+    "parent": "enc_corr",
+    "lane": "encoder",
+    "role": "projection",
+    "shape": "[B,Lv,8,64]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "e_fft",
+    "label": "FFT correlation",
+    "parent": "enc_corr",
+    "lane": "encoder",
+    "role": "attention",
+    "shape": "",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "e_delay",
+    "label": "Top-k delays",
+    "parent": "enc_corr",
+    "lane": "encoder",
+    "role": "attention",
+    "shape": "",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "e_aggregate",
+    "label": "Time-delay aggregation",
+    "parent": "enc_corr",
+    "lane": "encoder",
+    "role": "attention",
+    "shape": "",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "d_q",
+    "label": "Q projection",
+    "parent": "self_corr",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,Lq,8,64]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "d_k",
+    "label": "K projection",
+    "parent": "self_corr",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,Lk,8,64]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "d_v",
+    "label": "V projection",
+    "parent": "self_corr",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,Lv,8,64]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "d_fft",
+    "label": "FFT correlation",
+    "parent": "self_corr",
+    "lane": "decoder",
+    "role": "attention",
+    "shape": "",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "d_delay",
+    "label": "Top-k delays",
+    "parent": "self_corr",
+    "lane": "decoder",
+    "role": "attention",
+    "shape": "",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "d_aggregate",
+    "label": "Time-delay aggregation",
+    "parent": "self_corr",
+    "lane": "decoder",
+    "role": "attention",
+    "shape": "",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "c_q",
+    "label": "Q projection",
+    "parent": "cross_corr",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,Lq,8,64]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "c_k",
+    "label": "K projection",
+    "parent": "cross_corr",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,Lk,8,64]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "c_v",
+    "label": "V projection",
+    "parent": "cross_corr",
+    "lane": "decoder",
+    "role": "projection",
+    "shape": "[B,Lv,8,64]",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "c_fft",
+    "label": "FFT correlation",
+    "parent": "cross_corr",
+    "lane": "decoder",
+    "role": "attention",
+    "shape": "",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "c_delay",
+    "label": "Top-k delays",
+    "parent": "cross_corr",
+    "lane": "decoder",
+    "role": "attention",
+    "shape": "",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "c_aggregate",
+    "label": "Time-delay aggregation",
+    "parent": "cross_corr",
+    "lane": "decoder",
+    "role": "attention",
+    "shape": "",
+    "level": 4,
+    "repeat": ""
+  }
+]

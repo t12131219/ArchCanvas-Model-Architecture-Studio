@@ -1,0 +1,362 @@
+{
+  "edges": [
+    {
+      "edge_id": "edge:embedding->encoder:data",
+      "evidence": [
+        {
+          "anchor_id": "anchor:chainmodel.forward.edge.20.12.embedding.encoder",
+          "confidence": "confirmed",
+          "description": "Forward data flow",
+          "source": "static_ast",
+          "trace_id": null
+        }
+      ],
+      "kind": "data",
+      "metadata": {},
+      "semantic_role": null,
+      "source_node_id": "node:chainmodel.embedding",
+      "source_port_id": "port:chainmodel.embedding:out",
+      "target_node_id": "node:chainmodel.encoder",
+      "target_port_id": "port:chainmodel.encoder:in",
+      "tensor": null
+    },
+    {
+      "edge_id": "edge:encoder->head:data",
+      "evidence": [
+        {
+          "anchor_id": "anchor:chainmodel.forward.edge.21.15.encoder.head",
+          "confidence": "confirmed",
+          "description": "Forward data flow",
+          "source": "static_ast",
+          "trace_id": null
+        }
+      ],
+      "kind": "data",
+      "metadata": {},
+      "semantic_role": null,
+      "source_node_id": "node:chainmodel.encoder",
+      "source_port_id": "port:chainmodel.encoder:out",
+      "target_node_id": "node:chainmodel.head",
+      "target_port_id": "port:chainmodel.head:in",
+      "tensor": null
+    },
+    {
+      "edge_id": "edge:head->output:data",
+      "evidence": [
+        {
+          "anchor_id": "anchor:chainmodel.forward.edge.21.15.head.output",
+          "confidence": "confirmed",
+          "description": "Forward data flow",
+          "source": "static_ast",
+          "trace_id": null
+        }
+      ],
+      "kind": "data",
+      "metadata": {},
+      "semantic_role": null,
+      "source_node_id": "node:chainmodel.head",
+      "source_port_id": "port:chainmodel.head:out",
+      "target_node_id": "node:output",
+      "target_port_id": "port:output:in",
+      "tensor": null
+    },
+    {
+      "edge_id": "edge:input->embedding:data",
+      "evidence": [
+        {
+          "anchor_id": "anchor:chainmodel.forward.edge.19.12.input.embedding",
+          "confidence": "confirmed",
+          "description": "Forward data flow",
+          "source": "static_ast",
+          "trace_id": null
+        }
+      ],
+      "kind": "data",
+      "metadata": {},
+      "semantic_role": null,
+      "source_node_id": "node:input",
+      "source_port_id": "port:input:out",
+      "target_node_id": "node:chainmodel.embedding",
+      "target_port_id": "port:chainmodel.embedding:in",
+      "tensor": null
+    }
+  ],
+  "ir_id": "ir:fixture-structural_embedding_encoder_v1",
+  "metadata": {
+    "adapter": "pytorch-static-v1",
+    "resolved_config": {}
+  },
+  "model": {
+    "entrypoint": "model.py:ChainModel",
+    "framework": "pytorch",
+    "model_class": "ChainModel"
+  },
+  "nodes": [
+    {
+      "display_name": "Input",
+      "identity_id": "identity:input",
+      "input_ports": [],
+      "kind": "input",
+      "metadata": {},
+      "node_id": "node:input",
+      "op_type": "input",
+      "output_ports": [
+        {
+          "direction": "output",
+          "name": null,
+          "port_id": "port:input:out",
+          "tensor": null
+        }
+      ],
+      "parameters": [],
+      "parent_id": null,
+      "semantic_role": "input",
+      "source_anchor_ids": []
+    },
+    {
+      "display_name": "embedding",
+      "identity_id": "identity:chainmodel.embedding",
+      "input_ports": [
+        {
+          "direction": "input",
+          "name": null,
+          "port_id": "port:chainmodel.embedding:in",
+          "tensor": null
+        }
+      ],
+      "kind": "module",
+      "metadata": {},
+      "node_id": "node:chainmodel.embedding",
+      "op_type": "torch.nn.Embedding",
+      "output_ports": [
+        {
+          "direction": "output",
+          "name": null,
+          "port_id": "port:chainmodel.embedding:out",
+          "tensor": null
+        }
+      ],
+      "parameters": [
+        {
+          "evidence": [
+            {
+              "anchor_id": "anchor:chainmodel.embedding.parameter.num_embeddings",
+              "confidence": "confirmed",
+              "description": "Constructor parameter provenance: literal",
+              "source": "static_ast",
+              "trace_id": null
+            }
+          ],
+          "expression": null,
+          "name": "num_embeddings",
+          "origin": {
+            "anchor_ids": [
+              "anchor:chainmodel.embedding.parameter.num_embeddings"
+            ],
+            "kind": "literal"
+          },
+          "source_name": "num_embeddings",
+          "value": 32
+        },
+        {
+          "evidence": [
+            {
+              "anchor_id": "anchor:chainmodel.embedding.parameter.embedding_dim",
+              "confidence": "confirmed",
+              "description": "Constructor parameter provenance: literal",
+              "source": "static_ast",
+              "trace_id": null
+            }
+          ],
+          "expression": null,
+          "name": "embedding_dim",
+          "origin": {
+            "anchor_ids": [
+              "anchor:chainmodel.embedding.parameter.embedding_dim"
+            ],
+            "kind": "literal"
+          },
+          "source_name": "embedding_dim",
+          "value": 16
+        }
+      ],
+      "parent_id": null,
+      "semantic_role": null,
+      "source_anchor_ids": [
+        "anchor:chainmodel.embedding.constructor"
+      ]
+    },
+    {
+      "display_name": "encoder",
+      "identity_id": "identity:chainmodel.encoder",
+      "input_ports": [
+        {
+          "direction": "input",
+          "name": null,
+          "port_id": "port:chainmodel.encoder:in",
+          "tensor": null
+        }
+      ],
+      "kind": "module",
+      "metadata": {},
+      "node_id": "node:chainmodel.encoder",
+      "op_type": "torch.nn.Linear",
+      "output_ports": [
+        {
+          "direction": "output",
+          "name": null,
+          "port_id": "port:chainmodel.encoder:out",
+          "tensor": null
+        }
+      ],
+      "parameters": [
+        {
+          "evidence": [
+            {
+              "anchor_id": "anchor:chainmodel.encoder.parameter.in_features",
+              "confidence": "confirmed",
+              "description": "Constructor parameter provenance: literal",
+              "source": "static_ast",
+              "trace_id": null
+            }
+          ],
+          "expression": null,
+          "name": "in_features",
+          "origin": {
+            "anchor_ids": [
+              "anchor:chainmodel.encoder.parameter.in_features"
+            ],
+            "kind": "literal"
+          },
+          "source_name": "in_features",
+          "value": 16
+        },
+        {
+          "evidence": [
+            {
+              "anchor_id": "anchor:chainmodel.encoder.parameter.out_features",
+              "confidence": "confirmed",
+              "description": "Constructor parameter provenance: literal",
+              "source": "static_ast",
+              "trace_id": null
+            }
+          ],
+          "expression": null,
+          "name": "out_features",
+          "origin": {
+            "anchor_ids": [
+              "anchor:chainmodel.encoder.parameter.out_features"
+            ],
+            "kind": "literal"
+          },
+          "source_name": "out_features",
+          "value": 16
+        }
+      ],
+      "parent_id": null,
+      "semantic_role": null,
+      "source_anchor_ids": [
+        "anchor:chainmodel.encoder.constructor"
+      ]
+    },
+    {
+      "display_name": "head",
+      "identity_id": "identity:chainmodel.head",
+      "input_ports": [
+        {
+          "direction": "input",
+          "name": null,
+          "port_id": "port:chainmodel.head:in",
+          "tensor": null
+        }
+      ],
+      "kind": "module",
+      "metadata": {},
+      "node_id": "node:chainmodel.head",
+      "op_type": "torch.nn.Linear",
+      "output_ports": [
+        {
+          "direction": "output",
+          "name": null,
+          "port_id": "port:chainmodel.head:out",
+          "tensor": null
+        }
+      ],
+      "parameters": [
+        {
+          "evidence": [
+            {
+              "anchor_id": "anchor:chainmodel.head.parameter.in_features",
+              "confidence": "confirmed",
+              "description": "Constructor parameter provenance: literal",
+              "source": "static_ast",
+              "trace_id": null
+            }
+          ],
+          "expression": null,
+          "name": "in_features",
+          "origin": {
+            "anchor_ids": [
+              "anchor:chainmodel.head.parameter.in_features"
+            ],
+            "kind": "literal"
+          },
+          "source_name": "in_features",
+          "value": 16
+        },
+        {
+          "evidence": [
+            {
+              "anchor_id": "anchor:chainmodel.head.parameter.out_features",
+              "confidence": "confirmed",
+              "description": "Constructor parameter provenance: literal",
+              "source": "static_ast",
+              "trace_id": null
+            }
+          ],
+          "expression": null,
+          "name": "out_features",
+          "origin": {
+            "anchor_ids": [
+              "anchor:chainmodel.head.parameter.out_features"
+            ],
+            "kind": "literal"
+          },
+          "source_name": "out_features",
+          "value": 2
+        }
+      ],
+      "parent_id": null,
+      "semantic_role": null,
+      "source_anchor_ids": [
+        "anchor:chainmodel.head.constructor"
+      ]
+    },
+    {
+      "display_name": "Output",
+      "identity_id": "identity:output",
+      "input_ports": [
+        {
+          "direction": "input",
+          "name": null,
+          "port_id": "port:output:in",
+          "tensor": null
+        }
+      ],
+      "kind": "output",
+      "metadata": {},
+      "node_id": "node:output",
+      "op_type": "output",
+      "output_ports": [],
+      "parameters": [],
+      "parent_id": null,
+      "semantic_role": "output",
+      "source_anchor_ids": []
+    }
+  ],
+  "project_id": "fixture:structural_embedding_encoder_v1",
+  "repeats": [],
+  "schema_version": "1.0",
+  "source_revision": "sha256:665020b42619af6c1e4d732d5dffd8557b73bf11b5e103b9dd5115d85c6da028",
+  "unresolved": []
+}

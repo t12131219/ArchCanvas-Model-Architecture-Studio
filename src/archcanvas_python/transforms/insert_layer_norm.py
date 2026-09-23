@@ -66,8 +66,12 @@ class _InsertLayerNormTransformer(cst.CSTTransformer):
             return updated_node
         call = original_assign.value
         if _call_matches_anchor(self, call, self.constructor_anchor, self.module):
-            if dotted_name(call.func) != "nn.LayerNorm":
-                raise TransformRejected("INSERT_CONSTRUCTOR_CALLEE_MISMATCH", self.constructor_anchor.anchor_id)
+            target_name = self.patch.target_node_id.rsplit(".", maxsplit=1)[-1]
+            if (
+                len(original_assign.targets) != 1
+                or dotted_name(original_assign.targets[0].target) != f"self.{target_name}"
+            ):
+                raise TransformRejected("INSERT_CONSTRUCTOR_TARGET_MISMATCH", self.constructor_anchor.anchor_id)
             inserted = cst.parse_statement(
                 f"self.{self.patch.attribute_name} = nn.LayerNorm({self.patch.normalized_shape})\n"
             )

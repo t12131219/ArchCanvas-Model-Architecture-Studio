@@ -7,13 +7,20 @@ from difflib import unified_diff
 import libcst as cst
 
 from archcanvas_core.graph_delta import GraphDeltaValidator, architecture_diff
-from archcanvas_core.models.architecture import ArchitectureIR
+from archcanvas_core.models.architecture import (
+    ArchitectureIR,
+    Confidence,
+    EdgeKind,
+    EvidenceSource,
+    NodeKind,
+)
 from archcanvas_core.models.patch import InsertLayerNormPatch, PatchSet
 from archcanvas_core.models.source_identity import SourceIdentityDocument
 
 from ..analyzers import Analyzer
 from ..transforms.insert_layer_norm import apply_insert_layer_norm
 from .set_parameter import CandidateTransaction, TransactionRejected, _assert_semantics
+from .structural_delta import require_exact_structural_delta
 
 
 def _two_hunk_diff(before: bytes, after: bytes, relative_file: str) -> str:
@@ -55,11 +62,19 @@ def plan_insert_layer_norm(
         raise TransactionRejected("PATCH_SOURCE_REVISION_MISMATCH", constructor.relative_file)
     if constructor.anchor_id not in target_node.source_anchor_ids:
         raise TransactionRejected("INSERT_CONSTRUCTOR_TARGET_MISMATCH", target_node.node_id)
-    if not any(
-        edge.source_node_id == source_node.node_id
+    direct_edges = [
+        edge for edge in ir.edges
+        if edge.source_node_id == source_node.node_id
         and edge.target_node_id == target_node.node_id
-        and any(evidence.anchor_id == forward.anchor_id for evidence in edge.evidence)
-        for edge in ir.edges
+        and edge.kind is EdgeKind.DATA
+    ]
+    if source_node.kind is not NodeKind.MODULE or target_node.kind is not NodeKind.MODULE or len(direct_edges) != 1:
+        raise TransactionRejected("INSERT_DIRECT_EDGE_NOT_UNIQUE", patch.source_node_id)
+    if not any(
+        evidence.anchor_id == forward.anchor_id
+        and evidence.confidence is Confidence.CONFIRMED
+        and evidence.source in {EvidenceSource.STATIC_AST, EvidenceSource.STATIC_CST}
+        for evidence in direct_edges[0].evidence
     ):
         raise TransactionRejected("INSERT_FORWARD_EDGE_MISMATCH", forward.anchor_id)
     if any(node.display_name == patch.attribute_name for node in ir.nodes):
@@ -80,6 +95,11 @@ def plan_insert_layer_norm(
     after_source, after_ir = analyzer(transformed.output_bytes)
     _assert_semantics(after_ir, after_source, "AFTER")
     observed = architecture_diff(ir, after_ir)
+    require_exact_structural_delta(
+        patch.expected_delta, observed,
+        added_node_id=f"node:{patch.target_node_id.removeprefix('node:').rsplit('.', 1)[0]}.{patch.attribute_name}",
+        edge_additions=2, edge_removals=1,
+    )
     validation = GraphDeltaValidator().validate(patch.expected_delta, observed)
     if validation.blocking:
         raise TransactionRejected("GRAPH_DELTA_BLOCKING", validation.model_dump_json())

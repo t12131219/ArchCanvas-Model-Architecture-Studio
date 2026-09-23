@@ -1,0 +1,712 @@
+{
+  "model": "itransformer",
+  "archive": "iTransformer.zip",
+  "archive_sha256": "e76d8a408568db102e1c0a227e7aa1d2c0e0433a4ba7fff784e4ba752448c1fa",
+  "entrypoint": "model/iTransformer.py:Model.forecast",
+  "task_branch": "long_term_forecast",
+  "config": {
+    "seq_len": 96,
+    "pred_len": 96,
+    "enc_in": 7,
+    "d_model": 512,
+    "n_heads": 8,
+    "d_ff": 2048,
+    "e_layers": 2,
+    "factor": 1,
+    "embed": "timeF",
+    "freq": "h",
+    "activation": "gelu",
+    "dropout": 0.1,
+    "use_norm": true,
+    "output_attention": false,
+    "class_strategy": "projection",
+    "x_mark_enc": null
+  },
+  "selection_status": "implementation_selected_pending_human_review",
+  "nodes": [
+    {
+      "id": "input",
+      "label": "Input time series",
+      "parent": null,
+      "lane": "main",
+      "role": "input",
+      "shape": "[B,L,N]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/model/iTransformer.py",
+        "line": 50,
+        "expression": "_, _, N = x_enc.shape",
+        "file_sha256": "6f34777a5a12c253a293f79e7e1fd5b6f79ac100b443951e051e269e7e2542db",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "norm",
+      "label": "Series normalization",
+      "parent": null,
+      "lane": "main",
+      "role": "normalization",
+      "shape": "",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/model/iTransformer.py",
+        "line": 43,
+        "expression": "if self.use_norm:",
+        "file_sha256": "6f34777a5a12c253a293f79e7e1fd5b6f79ac100b443951e051e269e7e2542db",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "invert",
+      "label": "Invert time / variable axes",
+      "parent": null,
+      "lane": "main",
+      "role": "transform",
+      "shape": "[B,N,L]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/layers/Embed.py",
+        "line": 134,
+        "expression": "x.permute(0, 2, 1)",
+        "file_sha256": "2de7e5049a696d320a23a8bdb6e08e823cf7fa3f246a0a49555fcd729c5c8398",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "embed",
+      "label": "Variable-token projection",
+      "parent": null,
+      "lane": "main",
+      "role": "embedding",
+      "shape": "[B,N,D]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/layers/Embed.py",
+        "line": 137,
+        "expression": "self.value_embedding(x)",
+        "file_sha256": "2de7e5049a696d320a23a8bdb6e08e823cf7fa3f246a0a49555fcd729c5c8398",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "encoder",
+      "label": "Variable-token encoder",
+      "parent": null,
+      "lane": "main",
+      "role": "repeat",
+      "shape": "",
+      "level": 1,
+      "repeat": "2 x",
+      "evidence": {
+        "file": "iTransformer/model/iTransformer.py",
+        "line": 36,
+        "expression": "for l in range(configs.e_layers)",
+        "file_sha256": "6f34777a5a12c253a293f79e7e1fd5b6f79ac100b443951e051e269e7e2542db",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "attention",
+      "label": "Self-attention over variables",
+      "parent": "encoder",
+      "lane": "main",
+      "role": "attention",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/layers/Transformer_EncDec.py",
+        "line": 39,
+        "expression": "self.attention(",
+        "file_sha256": "985c31f4ae187b08afaa9663dc960a40544b2ec33ab55389ceab3930edc1ce02",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "add1",
+      "label": "Residual + LayerNorm",
+      "parent": "encoder",
+      "lane": "main",
+      "role": "merge",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/layers/Transformer_EncDec.py",
+        "line": 46,
+        "expression": "self.norm1(",
+        "file_sha256": "985c31f4ae187b08afaa9663dc960a40544b2ec33ab55389ceab3930edc1ce02",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "ffn",
+      "label": "1x1 Conv feed forward",
+      "parent": "encoder",
+      "lane": "main",
+      "role": "ffn",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/layers/Transformer_EncDec.py",
+        "line": 47,
+        "expression": "self.conv1(",
+        "file_sha256": "985c31f4ae187b08afaa9663dc960a40544b2ec33ab55389ceab3930edc1ce02",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "add2",
+      "label": "Residual + LayerNorm",
+      "parent": "encoder",
+      "lane": "main",
+      "role": "merge",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/layers/Transformer_EncDec.py",
+        "line": 50,
+        "expression": "self.norm2(",
+        "file_sha256": "985c31f4ae187b08afaa9663dc960a40544b2ec33ab55389ceab3930edc1ce02",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "project",
+      "label": "Project D -> horizon",
+      "parent": null,
+      "lane": "main",
+      "role": "head",
+      "shape": "[B,N,H]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/model/iTransformer.py",
+        "line": 64,
+        "expression": "self.projector(enc_out).permute(0, 2, 1)",
+        "file_sha256": "6f34777a5a12c253a293f79e7e1fd5b6f79ac100b443951e051e269e7e2542db",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "restore",
+      "label": "Restore forecast axes",
+      "parent": null,
+      "lane": "main",
+      "role": "transform",
+      "shape": "[B,H,N]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/model/iTransformer.py",
+        "line": 64,
+        "expression": ".permute(0, 2, 1)[:, :, :N]",
+        "file_sha256": "6f34777a5a12c253a293f79e7e1fd5b6f79ac100b443951e051e269e7e2542db",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "denorm",
+      "label": "De-normalization",
+      "parent": null,
+      "lane": "main",
+      "role": "normalization",
+      "shape": "",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/model/iTransformer.py",
+        "line": 68,
+        "expression": "dec_out = dec_out * (stdev",
+        "file_sha256": "6f34777a5a12c253a293f79e7e1fd5b6f79ac100b443951e051e269e7e2542db",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "output",
+      "label": "Forecast",
+      "parent": null,
+      "lane": "main",
+      "role": "output",
+      "shape": "[B,H,N]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/model/iTransformer.py",
+        "line": 80,
+        "expression": "return dec_out[:, -self.pred_len:, :]  # [B, L, D]",
+        "file_sha256": "6f34777a5a12c253a293f79e7e1fd5b6f79ac100b443951e051e269e7e2542db",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "q",
+      "label": "Q projection",
+      "parent": "attention",
+      "lane": "main",
+      "role": "attention",
+      "shape": "[B,N,8,64]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/layers/SelfAttention_Family.py",
+        "line": 286,
+        "expression": "queries = self.query_projection(queries).view(",
+        "file_sha256": "38ac67428d528b8e145e4944ca059b40629a8446c891142602d5aaadc38dfd9e",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "k",
+      "label": "K projection",
+      "parent": "attention",
+      "lane": "main",
+      "role": "attention",
+      "shape": "[B,N,8,64]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/layers/SelfAttention_Family.py",
+        "line": 287,
+        "expression": "keys = self.key_projection(keys).view(",
+        "file_sha256": "38ac67428d528b8e145e4944ca059b40629a8446c891142602d5aaadc38dfd9e",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "v",
+      "label": "V projection",
+      "parent": "attention",
+      "lane": "main",
+      "role": "attention",
+      "shape": "[B,N,8,64]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/layers/SelfAttention_Family.py",
+        "line": 288,
+        "expression": "values = self.value_projection(values).view(",
+        "file_sha256": "38ac67428d528b8e145e4944ca059b40629a8446c891142602d5aaadc38dfd9e",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "score",
+      "label": "Variable attention scores",
+      "parent": "attention",
+      "lane": "main",
+      "role": "attention",
+      "shape": "[B,8,N,N]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/layers/SelfAttention_Family.py",
+        "line": 147,
+        "expression": "scores = torch.einsum(\"blhe,bshe->bhls\", queries, keys)",
+        "file_sha256": "38ac67428d528b8e145e4944ca059b40629a8446c891142602d5aaadc38dfd9e",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "softmax",
+      "label": "Softmax weights",
+      "parent": "attention",
+      "lane": "main",
+      "role": "attention",
+      "shape": "[B,8,N,N]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/layers/SelfAttention_Family.py",
+        "line": 155,
+        "expression": "A = self.dropout(torch.softmax(scale * scores, dim=-1))",
+        "file_sha256": "38ac67428d528b8e145e4944ca059b40629a8446c891142602d5aaadc38dfd9e",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "context",
+      "label": "Weighted values",
+      "parent": "attention",
+      "lane": "main",
+      "role": "attention",
+      "shape": "[B,N,8,64]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/layers/SelfAttention_Family.py",
+        "line": 156,
+        "expression": "V = torch.einsum(\"bhls,bshd->blhd\", A, values)",
+        "file_sha256": "38ac67428d528b8e145e4944ca059b40629a8446c891142602d5aaadc38dfd9e",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "conv1",
+      "label": "1x1 Conv D -> F",
+      "parent": "ffn",
+      "lane": "main",
+      "role": "ffn",
+      "shape": "",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/layers/Transformer_EncDec.py",
+        "line": 47,
+        "expression": "self.conv1(y.transpose(-1, 1))",
+        "file_sha256": "985c31f4ae187b08afaa9663dc960a40544b2ec33ab55389ceab3930edc1ce02",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "gelu",
+      "label": "GELU",
+      "parent": "ffn",
+      "lane": "main",
+      "role": "ffn",
+      "shape": "",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/layers/Transformer_EncDec.py",
+        "line": 47,
+        "expression": "self.activation(self.conv1(",
+        "file_sha256": "985c31f4ae187b08afaa9663dc960a40544b2ec33ab55389ceab3930edc1ce02",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "conv2",
+      "label": "1x1 Conv F -> D",
+      "parent": "ffn",
+      "lane": "main",
+      "role": "ffn",
+      "shape": "",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "iTransformer/layers/Transformer_EncDec.py",
+        "line": 48,
+        "expression": "self.conv2(y).transpose(-1, 1)",
+        "file_sha256": "985c31f4ae187b08afaa9663dc960a40544b2ec33ab55389ceab3930edc1ce02",
+        "grade": "E1"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "input",
+      "target": "norm",
+      "kind": "main",
+      "evidence": {
+        "file": "iTransformer/model/iTransformer.py",
+        "line": 43,
+        "expression": "if self.use_norm:",
+        "file_sha256": "6f34777a5a12c253a293f79e7e1fd5b6f79ac100b443951e051e269e7e2542db",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.000",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "norm",
+      "target": "invert",
+      "kind": "main",
+      "evidence": {
+        "file": "iTransformer/layers/Embed.py",
+        "line": 134,
+        "expression": "x.permute(0, 2, 1)",
+        "file_sha256": "2de7e5049a696d320a23a8bdb6e08e823cf7fa3f246a0a49555fcd729c5c8398",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.001",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "invert",
+      "target": "embed",
+      "kind": "main",
+      "evidence": {
+        "file": "iTransformer/layers/Embed.py",
+        "line": 137,
+        "expression": "self.value_embedding(x)",
+        "file_sha256": "2de7e5049a696d320a23a8bdb6e08e823cf7fa3f246a0a49555fcd729c5c8398",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.002",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "embed",
+      "target": "encoder",
+      "kind": "main",
+      "evidence": {
+        "file": "iTransformer/model/iTransformer.py",
+        "line": 36,
+        "expression": "for l in range(configs.e_layers)",
+        "file_sha256": "6f34777a5a12c253a293f79e7e1fd5b6f79ac100b443951e051e269e7e2542db",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.003",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "encoder",
+      "target": "project",
+      "kind": "main",
+      "evidence": {
+        "file": "iTransformer/model/iTransformer.py",
+        "line": 64,
+        "expression": "self.projector(enc_out).permute(0, 2, 1)",
+        "file_sha256": "6f34777a5a12c253a293f79e7e1fd5b6f79ac100b443951e051e269e7e2542db",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.004",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "project",
+      "target": "restore",
+      "kind": "main",
+      "evidence": {
+        "file": "iTransformer/model/iTransformer.py",
+        "line": 64,
+        "expression": ".permute(0, 2, 1)[:, :, :N]",
+        "file_sha256": "6f34777a5a12c253a293f79e7e1fd5b6f79ac100b443951e051e269e7e2542db",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.005",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "restore",
+      "target": "denorm",
+      "kind": "main",
+      "evidence": {
+        "file": "iTransformer/model/iTransformer.py",
+        "line": 68,
+        "expression": "dec_out = dec_out * (stdev",
+        "file_sha256": "6f34777a5a12c253a293f79e7e1fd5b6f79ac100b443951e051e269e7e2542db",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.006",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "denorm",
+      "target": "output",
+      "kind": "main",
+      "evidence": {
+        "file": "iTransformer/model/iTransformer.py",
+        "line": 80,
+        "expression": "return dec_out[:, -self.pred_len:, :]  # [B, L, D]",
+        "file_sha256": "6f34777a5a12c253a293f79e7e1fd5b6f79ac100b443951e051e269e7e2542db",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.007",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "attention",
+      "target": "add1",
+      "kind": "main",
+      "evidence": {
+        "file": "iTransformer/layers/Transformer_EncDec.py",
+        "line": 46,
+        "expression": "self.norm1(",
+        "file_sha256": "985c31f4ae187b08afaa9663dc960a40544b2ec33ab55389ceab3930edc1ce02",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.008",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "add1",
+      "target": "ffn",
+      "kind": "main",
+      "evidence": {
+        "file": "iTransformer/layers/Transformer_EncDec.py",
+        "line": 47,
+        "expression": "self.conv1(",
+        "file_sha256": "985c31f4ae187b08afaa9663dc960a40544b2ec33ab55389ceab3930edc1ce02",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.009",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "ffn",
+      "target": "add2",
+      "kind": "main",
+      "evidence": {
+        "file": "iTransformer/layers/Transformer_EncDec.py",
+        "line": 50,
+        "expression": "self.norm2(",
+        "file_sha256": "985c31f4ae187b08afaa9663dc960a40544b2ec33ab55389ceab3930edc1ce02",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.010",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "q",
+      "target": "score",
+      "kind": "main",
+      "evidence": {
+        "file": "iTransformer/layers/SelfAttention_Family.py",
+        "line": 147,
+        "expression": "scores = torch.einsum(\"blhe,bshe->bhls\", queries, keys)",
+        "file_sha256": "38ac67428d528b8e145e4944ca059b40629a8446c891142602d5aaadc38dfd9e",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.011",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "score",
+      "target": "softmax",
+      "kind": "main",
+      "evidence": {
+        "file": "iTransformer/layers/SelfAttention_Family.py",
+        "line": 155,
+        "expression": "A = self.dropout(torch.softmax(scale * scores, dim=-1))",
+        "file_sha256": "38ac67428d528b8e145e4944ca059b40629a8446c891142602d5aaadc38dfd9e",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.012",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "softmax",
+      "target": "context",
+      "kind": "main",
+      "evidence": {
+        "file": "iTransformer/layers/SelfAttention_Family.py",
+        "line": 156,
+        "expression": "V = torch.einsum(\"bhls,bshd->blhd\", A, values)",
+        "file_sha256": "38ac67428d528b8e145e4944ca059b40629a8446c891142602d5aaadc38dfd9e",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.013",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "k",
+      "target": "score",
+      "kind": "main",
+      "target_port": "K_in",
+      "evidence": {
+        "file": "iTransformer/layers/SelfAttention_Family.py",
+        "line": 147,
+        "expression": "scores = torch.einsum(\"blhe,bshe->bhls\", queries, keys)",
+        "file_sha256": "38ac67428d528b8e145e4944ca059b40629a8446c891142602d5aaadc38dfd9e",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.014",
+      "source_port": "out"
+    },
+    {
+      "source": "v",
+      "target": "context",
+      "kind": "main",
+      "target_port": "V_in",
+      "evidence": {
+        "file": "iTransformer/layers/SelfAttention_Family.py",
+        "line": 156,
+        "expression": "V = torch.einsum(\"bhls,bshd->blhd\", A, values)",
+        "file_sha256": "38ac67428d528b8e145e4944ca059b40629a8446c891142602d5aaadc38dfd9e",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.015",
+      "source_port": "out"
+    },
+    {
+      "source": "conv1",
+      "target": "gelu",
+      "kind": "main",
+      "evidence": {
+        "file": "iTransformer/layers/Transformer_EncDec.py",
+        "line": 47,
+        "expression": "self.activation(self.conv1(",
+        "file_sha256": "985c31f4ae187b08afaa9663dc960a40544b2ec33ab55389ceab3930edc1ce02",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.016",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "gelu",
+      "target": "conv2",
+      "kind": "main",
+      "evidence": {
+        "file": "iTransformer/layers/Transformer_EncDec.py",
+        "line": 48,
+        "expression": "self.conv2(y).transpose(-1, 1)",
+        "file_sha256": "985c31f4ae187b08afaa9663dc960a40544b2ec33ab55389ceab3930edc1ce02",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "itransformer.edge.017",
+      "source_port": "out",
+      "target_port": "in"
+    }
+  ],
+  "discrepancies": [
+    {
+      "reference": "Itransformer.png",
+      "reference_sha256": {
+        "Itransformer.png": "44e44083ed73cad915dac01b0ccf1e5a20fba458cdcbfa5cd2370a7d0aecdd34"
+      },
+      "element": "Permute before embedding",
+      "resolution": "permutation is inside DataEmbedding_inverted",
+      "status": "review_pending"
+    },
+    {
+      "reference": "Itransformer.png",
+      "reference_sha256": {
+        "Itransformer.png": "44e44083ed73cad915dac01b0ccf1e5a20fba458cdcbfa5cd2370a7d0aecdd34"
+      },
+      "element": "optional normalization",
+      "resolution": "selected use_norm=True",
+      "status": "review_pending"
+    }
+  ]
+}

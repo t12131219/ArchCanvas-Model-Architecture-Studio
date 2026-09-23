@@ -1,0 +1,895 @@
+{
+  "model": "patchtst",
+  "archive": "PatchTST.zip",
+  "archive_sha256": "a8b1ac71c7f239201b2124fec41b186d19ff71d5d3b5047d369bd5e274f8c845",
+  "entrypoint": "PatchTST_supervised/models/PatchTST.py:Model.forward",
+  "task_branch": "long-term forecast",
+  "config": {
+    "seq_len": 336,
+    "pred_len": 96,
+    "enc_in": 7,
+    "e_layers": 3,
+    "n_heads": 16,
+    "d_model": 128,
+    "d_ff": 256,
+    "dropout": 0.2,
+    "fc_dropout": 0.2,
+    "head_dropout": 0,
+    "individual": false,
+    "patch_len": 16,
+    "stride": 8,
+    "padding_patch": "end",
+    "revin": true,
+    "affine": false,
+    "subtract_last": false,
+    "decomposition": false,
+    "kernel_size": 25,
+    "norm": "BatchNorm",
+    "act": "gelu",
+    "res_attention": true,
+    "pre_norm": false,
+    "pe": "zeros",
+    "learn_pe": true
+  },
+  "selection_status": "implementation_selected_pending_human_review",
+  "nodes": [
+    {
+      "id": "input",
+      "label": "Input time series",
+      "parent": null,
+      "lane": "main",
+      "role": "input",
+      "shape": "[B,L,C]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/models/PatchTST.py",
+        "line": 80,
+        "expression": "def forward(self, x):",
+        "file_sha256": "49d8bb865e1226d6338842f4b33c4bc6992cefb048dc2a4a5a8c410ca708586b",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "channel",
+      "label": "Channel-first axes",
+      "parent": null,
+      "lane": "main",
+      "role": "transform",
+      "shape": "[B,C,L]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/models/PatchTST.py",
+        "line": 91,
+        "expression": "x = x.permute(0,2,1)",
+        "file_sha256": "49d8bb865e1226d6338842f4b33c4bc6992cefb048dc2a4a5a8c410ca708586b",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "revin",
+      "label": "RevIN normalization",
+      "parent": null,
+      "lane": "main",
+      "role": "normalization",
+      "shape": "",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 64,
+        "expression": "self.revin_layer(z, 'norm')",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "patch",
+      "label": "Unfold / patching",
+      "parent": null,
+      "lane": "main",
+      "role": "embedding",
+      "shape": "[B,C,Np,P]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 70,
+        "expression": ".unfold(dimension=-1",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "embed",
+      "label": "Per-patch projection",
+      "parent": null,
+      "lane": "main",
+      "role": "embedding",
+      "shape": "[B,C,Np,D]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 162,
+        "expression": "self.W_P(",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "position",
+      "label": "Learned position encoding",
+      "parent": null,
+      "lane": "main",
+      "role": "embedding",
+      "shape": "",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 165,
+        "expression": "self.dropout(u + self.W_pos)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "encoder",
+      "label": "Channel-independent encoder",
+      "parent": null,
+      "lane": "main",
+      "role": "repeat",
+      "shape": "",
+      "level": 1,
+      "repeat": "3 x",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 168,
+        "expression": "self.encoder(",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "attention",
+      "label": "Multi-head self-attention",
+      "parent": "encoder",
+      "lane": "main",
+      "role": "attention",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 244,
+        "expression": "self.self_attn(",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "norm1",
+      "label": "Residual + BatchNorm",
+      "parent": "encoder",
+      "lane": "main",
+      "role": "merge",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 252,
+        "expression": "self.norm_attn(",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "ffn",
+      "label": "GELU feed forward",
+      "parent": "encoder",
+      "lane": "main",
+      "role": "ffn",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 258,
+        "expression": "self.ff(",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "norm2",
+      "label": "Residual + BatchNorm",
+      "parent": "encoder",
+      "lane": "main",
+      "role": "merge",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 262,
+        "expression": "self.norm_ffn(",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "flatten",
+      "label": "Flatten D x Np",
+      "parent": null,
+      "lane": "main",
+      "role": "transform",
+      "shape": "[B,C,D*Np]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 120,
+        "expression": "x = self.flatten(x)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "head",
+      "label": "Forecast linear head",
+      "parent": null,
+      "lane": "main",
+      "role": "head",
+      "shape": "[B,C,H]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 121,
+        "expression": "x = self.linear(x)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "denorm",
+      "label": "RevIN denormalization",
+      "parent": null,
+      "lane": "main",
+      "role": "normalization",
+      "shape": "",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 80,
+        "expression": "self.revin_layer(z, 'denorm')",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "output",
+      "label": "Forecast",
+      "parent": null,
+      "lane": "main",
+      "role": "output",
+      "shape": "[B,H,C]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/models/PatchTST.py",
+        "line": 92,
+        "expression": "return x",
+        "file_sha256": "49d8bb865e1226d6338842f4b33c4bc6992cefb048dc2a4a5a8c410ca708586b",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "q",
+      "label": "Q projection + split",
+      "parent": "attention",
+      "lane": "main",
+      "role": "projection",
+      "shape": "[B*C,16,Np,8]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 306,
+        "expression": "q_s = self.W_Q(Q).view(",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "k",
+      "label": "K projection + split",
+      "parent": "attention",
+      "lane": "main",
+      "role": "projection",
+      "shape": "[B*C,16,Np,8]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 307,
+        "expression": "k_s = self.W_K(K).view(",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "v",
+      "label": "V projection + split",
+      "parent": "attention",
+      "lane": "main",
+      "role": "projection",
+      "shape": "[B*C,16,Np,8]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 308,
+        "expression": "v_s = self.W_V(V).view(",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "scores",
+      "label": "Scaled QK scores",
+      "parent": "attention",
+      "lane": "main",
+      "role": "attention",
+      "shape": "[B*C,16,Np,Np]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 354,
+        "expression": "attn_scores = torch.matmul(q, k) * self.scale",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "prev",
+      "label": "Previous-layer score residual",
+      "parent": "attention",
+      "lane": "main",
+      "role": "merge",
+      "shape": "[B*C,16,Np,Np]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 357,
+        "expression": "attn_scores = attn_scores + prev",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "softmax",
+      "label": "Softmax weights",
+      "parent": "attention",
+      "lane": "main",
+      "role": "attention",
+      "shape": "[B*C,16,Np,Np]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 371,
+        "expression": "attn_weights = F.softmax(attn_scores, dim=-1)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "weighted",
+      "label": "Weights x V",
+      "parent": "attention",
+      "lane": "main",
+      "role": "attention",
+      "shape": "[B*C,16,Np,8]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 375,
+        "expression": "output = torch.matmul(attn_weights, v)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "combine",
+      "label": "Combine heads",
+      "parent": "attention",
+      "lane": "main",
+      "role": "transform",
+      "shape": "[B*C,Np,128]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 318,
+        "expression": "output = output.transpose(1, 2).contiguous().view(",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "out",
+      "label": "Output projection",
+      "parent": "attention",
+      "lane": "main",
+      "role": "projection",
+      "shape": "[B*C,Np,128]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 319,
+        "expression": "output = self.to_out(output)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "ffn_in",
+      "label": "Linear D -> F",
+      "parent": "ffn",
+      "lane": "main",
+      "role": "ffn",
+      "shape": "",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 221,
+        "expression": "nn.Linear(d_model, d_ff, bias=bias)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "ffn_gelu",
+      "label": "GELU",
+      "parent": "ffn",
+      "lane": "main",
+      "role": "ffn",
+      "shape": "",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 222,
+        "expression": "get_activation_fn(activation)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "ffn_out",
+      "label": "Linear F -> D",
+      "parent": "ffn",
+      "lane": "main",
+      "role": "ffn",
+      "shape": "",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 224,
+        "expression": "nn.Linear(d_ff, d_model, bias=bias)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E1"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "input",
+      "target": "channel",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/models/PatchTST.py",
+        "line": 91,
+        "expression": "x = x.permute(0,2,1)",
+        "file_sha256": "49d8bb865e1226d6338842f4b33c4bc6992cefb048dc2a4a5a8c410ca708586b",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.000",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "channel",
+      "target": "revin",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 64,
+        "expression": "self.revin_layer(z, 'norm')",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.001",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "revin",
+      "target": "patch",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 70,
+        "expression": ".unfold(dimension=-1",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.002",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "patch",
+      "target": "embed",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 162,
+        "expression": "self.W_P(",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.003",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "embed",
+      "target": "position",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 165,
+        "expression": "self.dropout(u + self.W_pos)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.004",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "position",
+      "target": "encoder",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 168,
+        "expression": "self.encoder(",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.005",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "encoder",
+      "target": "flatten",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 120,
+        "expression": "x = self.flatten(x)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.006",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "flatten",
+      "target": "head",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 121,
+        "expression": "x = self.linear(x)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.007",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "head",
+      "target": "denorm",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 80,
+        "expression": "self.revin_layer(z, 'denorm')",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.008",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "denorm",
+      "target": "output",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/models/PatchTST.py",
+        "line": 92,
+        "expression": "return x",
+        "file_sha256": "49d8bb865e1226d6338842f4b33c4bc6992cefb048dc2a4a5a8c410ca708586b",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.009",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "attention",
+      "target": "norm1",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 252,
+        "expression": "self.norm_attn(",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.010",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "norm1",
+      "target": "ffn",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 258,
+        "expression": "self.ff(",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.011",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "ffn",
+      "target": "norm2",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 262,
+        "expression": "self.norm_ffn(",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.012",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "q",
+      "target": "scores",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 354,
+        "expression": "attn_scores = torch.matmul(q, k) * self.scale",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.013",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "scores",
+      "target": "prev",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 357,
+        "expression": "attn_scores = attn_scores + prev",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.014",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "prev",
+      "target": "softmax",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 371,
+        "expression": "attn_weights = F.softmax(attn_scores, dim=-1)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.015",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "softmax",
+      "target": "weighted",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 375,
+        "expression": "output = torch.matmul(attn_weights, v)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.016",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "weighted",
+      "target": "combine",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 318,
+        "expression": "output = output.transpose(1, 2).contiguous().view(",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.017",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "combine",
+      "target": "out",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 319,
+        "expression": "output = self.to_out(output)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.018",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "k",
+      "target": "scores",
+      "kind": "main",
+      "target_port": "K_in",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 354,
+        "expression": "attn_scores = torch.matmul(q, k) * self.scale",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.019",
+      "source_port": "out"
+    },
+    {
+      "source": "v",
+      "target": "weighted",
+      "kind": "main",
+      "target_port": "V_in",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 375,
+        "expression": "output = torch.matmul(attn_weights, v)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.020",
+      "source_port": "out"
+    },
+    {
+      "source": "ffn_in",
+      "target": "ffn_gelu",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 222,
+        "expression": "get_activation_fn(activation)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.021",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "ffn_gelu",
+      "target": "ffn_out",
+      "kind": "main",
+      "evidence": {
+        "file": "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py",
+        "line": 224,
+        "expression": "nn.Linear(d_ff, d_model, bias=bias)",
+        "file_sha256": "df67173153787c2356bdfb6491159cd754332ef7382986efe879e1fbea8ebf26",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "patchtst.edge.022",
+      "source_port": "out",
+      "target_port": "in"
+    }
+  ],
+  "discrepancies": [
+    {
+      "reference": "PatchTST.png",
+      "reference_sha256": {
+        "PatchTST.png": "6508881df102edd04b5eb53a1081961fe91a26d6aaa8606f4ac9b5a9406a3651"
+      },
+      "element": "Linear D -> pred_len",
+      "resolution": "flatten D*Np before head projection",
+      "status": "review_pending"
+    },
+    {
+      "reference": "PatchTST.png",
+      "reference_sha256": {
+        "PatchTST.png": "6508881df102edd04b5eb53a1081961fe91a26d6aaa8606f4ac9b5a9406a3651"
+      },
+      "element": "LayerNorm",
+      "resolution": "selected norm is BatchNorm",
+      "status": "review_pending"
+    },
+    {
+      "reference": "PatchTST.png",
+      "reference_sha256": {
+        "PatchTST.png": "6508881df102edd04b5eb53a1081961fe91a26d6aaa8606f4ac9b5a9406a3651"
+      },
+      "element": "decomposition",
+      "resolution": "selected decomposition=False",
+      "status": "review_pending"
+    }
+  ]
+}

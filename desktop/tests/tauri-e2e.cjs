@@ -127,7 +127,7 @@ async function panCanvas(browser) {
   const world = await browser.$('.canvas-world')
   const before = await world.getAttribute('style')
   await browser.action('pointer', { parameters: { pointerType: 'mouse' } })
-    .move({ origin: stage, x: 420, y: 480 })
+    .move({ origin: stage, x: 0, y: 0 })
     .down({ button: 1 })
     .move({ origin: 'pointer', x: 64, y: 32 })
     .up({ button: 1 })
@@ -139,17 +139,23 @@ async function panCanvas(browser) {
 
 async function verifyZoomAndSelection(browser) {
   const readout = await browser.$('.zoom-readout')
+  await browser.pause(200)
   const beforeZoom = await readout.getText()
   await (await browser.$('button[title="Zoom in"]')).click()
-  assert.notEqual(await readout.getText(), beforeZoom, 'zoom control must update the viewport readout')
+  await browser.waitUntil(async () => await readout.getText() !== beforeZoom, {
+    timeout: 3_000, timeoutMsg: 'zoom control must update the viewport readout',
+  })
   await (await browser.$('button[title="Zoom out"]')).click()
 
-  const embedding = await browser.$('[data-id="publication-node:embedding"]')
-  const head = await browser.$('[data-id="publication-node:head"]')
+  const embedding = await browser.$('[data-id="publication-node:encodermodel-embedding"]')
+  const head = await browser.$('[data-id="publication-node:encodermodel-head"]')
   await embedding.click()
   assert.equal(await (await browser.$('.inspector-content h1')).getText(), 'Token embedding', 'single selection must update the inspector')
-  await head.click({ modifiers: ['Shift'] })
-  assert.equal(await (await browser.$('.selection-summary')).getText(), '2 selected', 'Shift-click must create a multi-selection')
+  await browser.action('key').down('\uE008').perform(true)
+  try { await head.click() }
+  finally { await browser.action('key').up('\uE008').perform() }
+  const selected = await browser.execute(() => [...document.querySelectorAll('.architecture-node.is-selected')].map((node) => node.getAttribute('data-id')))
+  assert.deepEqual(selected.sort(), ['publication-node:encodermodel-embedding', 'publication-node:encodermodel-head'].sort(), 'Shift-click must create a multi-selection')
 }
 
 async function run() {
@@ -175,6 +181,15 @@ async function run() {
   let restarted
   try {
     browser = await waitForDriver(driver, driverLog)
+    await browser.waitUntil(async () => (await browser.$('[data-canonical-id="encoder"]')).isExisting(), {
+      timeout: 8_000, timeoutMsg: 'Bundled Tier A Transformer graph should load in native Tauri',
+    })
+    await (await browser.$('button=Open full')).click()
+    await browser.waitUntil(async () => (await browser.$('[data-canonical-id="s_apply_mask"]')).isExisting(), {
+      timeout: 5_000, timeoutMsg: 'Native Tier A direct-full should show the causal-mask operator',
+    })
+    assert.equal(await (await browser.$('[data-target-port="K_in"].tier-a-memory')).isExisting(), true)
+    assert.equal(await (await browser.$('[data-target-port="V_in"].tier-a-memory')).isExisting(), true)
     await openProject(browser)
     const publicationCount = await browser.$$('.architecture-node').then((nodes) => nodes.length)
     assert(publicationCount >= 5, 'Transformer publication view should render recovered nodes')
@@ -185,9 +200,29 @@ async function run() {
     assert.deepEqual(await canvasPosition(await browser.$('.node-repeat_group')), movedPosition.before, 'one drag must be undone as one history item')
     await (await browser.$('button[aria-label="Redo visual edit"]')).click()
     assert.deepEqual(await canvasPosition(await browser.$('.node-repeat_group')), movedPosition.after, 'redo must restore the completed drag')
+    await (await browser.$('button[title="Fit canvas"]')).click()
     const repeat = await browser.$('.node-repeat_group')
-    await repeat.doubleClick()
-    assert.match(await repeat.getText(), /Detail open/, 'double-click must expand a repeat group visually')
+    await browser.execute(() => document.querySelector('.node-repeat_group')?.focus())
+    await browser.keys(' ')
+    await browser.execute(() => {
+      const button = [...document.querySelectorAll('.inspector-content button')]
+        .find((candidate) => candidate.textContent?.includes('Expand visual group'))
+      if (!(button instanceof HTMLButtonElement)) throw new Error('Inspector expansion command missing')
+      button.click()
+    })
+    try {
+      await browser.waitUntil(async () => await repeat.getAttribute('aria-expanded') === 'true', {
+        timeout: 3_000, timeoutMsg: 'Inspector command must expand the visual repeat group',
+      })
+    } catch (error) {
+      const state = await browser.execute(() => ({
+        expanded: document.querySelector('.node-repeat_group')?.getAttribute('aria-expanded'),
+        inspector: document.querySelector('.inspector-content h1')?.textContent,
+        buttons: [...document.querySelectorAll('.inspector-content button')].map((button) => button.textContent),
+        notice: document.querySelector('.notice')?.textContent,
+      }))
+      throw new Error(`${error.message}: ${JSON.stringify(state)}`)
+    }
     await (await browser.$('button=Save visual document')).click()
     await browser.pause(250)
     await browser.deleteSession()
@@ -204,6 +239,12 @@ async function run() {
       { timeout: 5_000, timeoutMsg: 'Exact view should render the source-backed ModuleList node' },
     )
     assert.equal(await (await restarted.$('.node-repeat_group')).isExisting(), false, 'Exact view must not render the Publication repeat-group abstraction')
+    await (await restarted.$('[data-id="node:encodermodel.norm"]')).click()
+    assert.equal(
+      await (await restarted.$('button=Plan LayerNorm insertion')).isExisting(),
+      false,
+      'unregistered projects must not expose structural authoring controls',
+    )
     assert.equal(sha256(fixtureSource), sourceBefore, 'visual E2E must leave source bytes identical')
   } finally {
     await restarted?.deleteSession().catch(() => {})

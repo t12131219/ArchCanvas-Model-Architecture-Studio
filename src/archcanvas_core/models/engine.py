@@ -43,6 +43,9 @@ class ProjectManifest(StrictModel):
     environment: EngineEnvironment
     resolved_config: dict[str, ResolvedConfigValue] = Field(default_factory=dict)
     patch_parameter_names: list[str] = Field(default_factory=list)
+    patch_structural_operations: list[Literal["insert_layer_norm", "remove_layer_norm"]] = Field(
+        default_factory=list
+    )
     source_revision: Sha256
     file_revisions: dict[str, Sha256] = Field(min_length=1)
     source_status: ProjectSourceStatus = ProjectSourceStatus.READY

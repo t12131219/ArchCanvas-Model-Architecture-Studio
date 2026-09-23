@@ -129,14 +129,31 @@ followed by mandatory re-analysis. This is development evidence, not Stage 6 gat
   explicit per-project approval/configuration artifacts rather than hidden generic fallbacks.
   Structural edits remain Stage 8 work.
 
+  V3 follow-up: Tauri now keeps one Engine JSONL process per desktop window instead of
+  restarting it per RPC. A broken request is rejected without replay; restarting Engine
+  still invalidates in-memory candidates and confirmations. Default projects remain
+  read-only without registered analyzers/runtime profiles. Visual saves are serialized
+  so an older response cannot replace newer canvas state.
+
 - Stage 8 (development started): Patch Protocol v2 now defines a restricted
   `insert_layer_norm` operation. Its CST planner may only splice a single `nn.LayerNorm` into one
   source-proven, same-file forward edge, using distinct constructor and forward content anchors.
   The candidate requires exactly two textual hunks and must produce the declared node/edge delta
   while retaining existing identities. Engine now runs the candidate through the registered isolated
   runtime profile and `RuntimeShapeValidator` before it can issue confirmation or commit. Missing
-  profiles, failed traces and coverage/shape gaps reject validation without writing source. This
-  implementation does not yet cover removal, rewire, residual or structural Inspector authoring.
+  profiles, failed traces and coverage/shape gaps reject validation without writing source. The
+  inverse `remove_layer_norm` follows the same source/edge/runtime gates and is covered by a
+  round-trip Transformer corpus that restores the original source. The dedicated
+  `structural_embedding_encoder_v1` corpus proves the acceptance-path splice from Embedding to a
+  direct Encoder call through Engine plan, isolated runtime coverage/shape validation, explicit
+  confirmation and commit. The Exact Architecture Inspector can draft only those insert/remove
+  patches for Engine-advertised structural capabilities and source-proven direct edges; it cannot
+  write source or author generic rewire/residual edits. The default desktop sidecar does not
+  register a project patch analyzer/profile, so it remains read-only until an explicit approved
+  registration is supplied.
+  The structural planners now require unique confirmed data edges, exclusive remove
+  consumers and an exact 1-to-2 or 2-to-1 declared graph delta; an overbroad allowed
+  delta cannot authorize an additional structural change.
 
 ## Scope Boundaries
 

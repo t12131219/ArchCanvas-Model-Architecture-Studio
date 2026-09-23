@@ -14,7 +14,7 @@ from archcanvas_core.models.engine import (
     PatchCommand,
     PatchRuntimeProfile,
 )
-from archcanvas_core.models.patch import InsertLayerNormPatch, PatchSet
+from archcanvas_core.models.patch import InsertLayerNormPatch, PatchSet, RemoveLayerNormPatch
 from archcanvas_core.models.runtime import (
     RuntimeEnvironment,
     RuntimeNodeObservation,
@@ -27,9 +27,11 @@ from archcanvas_core.models.runtime import (
 )
 from archcanvas_engine.service import ArchCanvasEngine
 from archcanvas_python.fixture_analyzer import analyze_transformer_fixture
+from archcanvas_python.transforms.insert_layer_norm import apply_insert_layer_norm
 from archcanvas_pytorch.static import PyTorchStaticAdapter
 
 ROOT = Path(__file__).resolve().parents[2]
+CHAIN_FIXTURE = ROOT / "fixtures/structural_embedding_encoder_v1/source/model.py"
 
 
 def _project_copy(tmp_path: Path) -> Path:
@@ -54,6 +56,17 @@ def _open(root: Path) -> OpenProjectCommand:
         project_id="project:stage7-fixture",
         approved_root=str(root),
         entrypoint="model.py:EncoderModel",
+        environment=EngineEnvironment(python_executable=sys.executable, environment_name="TFB_py311"),
+    )
+
+
+def _open_chain(root: Path) -> OpenProjectCommand:
+    import sys
+
+    return OpenProjectCommand(
+        project_id="project:stage8-chain",
+        approved_root=str(root),
+        entrypoint="model.py:ChainModel",
         environment=EngineEnvironment(python_executable=sys.executable, environment_name="TFB_py311"),
     )
 
@@ -164,10 +177,27 @@ def _successful_structural_runtime_result(request: TraceRequest) -> RuntimeTrace
     })
 
 
+def _successful_chain_runtime_result(request: TraceRequest) -> RuntimeTraceResult:
+    result = _successful_runtime_result(request)
+    return result.model_copy(update={
+        "observations": [
+            RuntimeNodeObservation(target=target, operation="call_module", input_tensor=None, output_tensor=None)
+            for target in ("embedding", "insert_norm", "encoder", "head")
+        ]
+    })
+
+
 def _structural_project_copy(tmp_path: Path) -> Path:
     root = tmp_path / "structural-project"
     root.mkdir()
     shutil.copyfile(ROOT / "fixtures/transformer_static_v1/source/model.py", root / "model.py")
+    return root
+
+
+def _chain_project_copy(tmp_path: Path) -> Path:
+    root = tmp_path / "chain-project"
+    root.mkdir()
+    shutil.copyfile(CHAIN_FIXTURE, root / "model.py")
     return root
 
 
@@ -177,6 +207,15 @@ def _structural_analyzer(raw: bytes):
         project_id="project:stage8-fixture",
         relative_file="model.py",
         entrypoint="model.py:EncoderModel",
+    )
+
+
+def _chain_analyzer(raw: bytes):
+    return PyTorchStaticAdapter().analyze(
+        raw,
+        project_id="project:stage8-chain",
+        relative_file="model.py",
+        entrypoint="model.py:ChainModel",
     )
 
 
@@ -205,6 +244,87 @@ def _structural_patch_set(source, architecture) -> PatchSet:
     )
     return PatchSet(
         patch_set_id="patchset:stage8-insert-norm",
+        project_id="project:stage8-fixture",
+        base_source_revision=source.file_revisions["model.py"],
+        created_at=datetime(2026, 9, 22, tzinfo=UTC),
+        created_by="user",
+        patches=[patch],
+    )
+
+
+def _chain_patch_set(source, architecture) -> PatchSet:
+    source_node = next(node for node in architecture.nodes if node.display_name == "embedding")
+    target_node = next(node for node in architecture.nodes if node.display_name == "encoder")
+    constructor = next(anchor for anchor in source.anchors if anchor.anchor_id.endswith(".encoder.constructor"))
+    forward = next(anchor for anchor in source.anchors if anchor.anchor_id.endswith(".embedding.encoder"))
+    patch = InsertLayerNormPatch(
+        patch_id="patch:stage8-chain-insert-norm",
+        source_node_id=source_node.node_id,
+        target_node_id=target_node.node_id,
+        constructor_anchor_id=constructor.anchor_id,
+        forward_anchor_id=forward.anchor_id,
+        attribute_name="insert_norm",
+        normalized_shape=16,
+        constructor_anchor_content_fingerprint=constructor.content_fingerprint,
+        forward_anchor_content_fingerprint=forward.content_fingerprint,
+        expected_delta={
+            "allowed_node_additions": ["node:chainmodel.insert_norm"],
+            "allowed_node_removals": [],
+            "allowed_node_modifications": [],
+            "allowed_edge_additions": [
+                "edge:embedding->insert_norm:data",
+                "edge:insert_norm->encoder:data",
+            ],
+            "allowed_edge_removals": ["edge:embedding->encoder:data"],
+            "allowed_edge_modifications": [],
+            "require_identity_retention": True,
+        },
+    )
+    return PatchSet(
+        patch_set_id="patchset:stage8-chain-insert-norm",
+        project_id="project:stage8-chain",
+        base_source_revision=source.file_revisions["model.py"],
+        created_at=datetime(2026, 9, 22, tzinfo=UTC),
+        created_by="user",
+        patches=[patch],
+    )
+
+
+def _structural_remove_patch_set(source, architecture) -> PatchSet:
+    removed = next(node for node in architecture.nodes if node.display_name == "insert_norm")
+    constructor = next(
+        anchor for anchor in source.anchors if anchor.anchor_id.endswith(".insert_norm.constructor")
+    )
+    forward = next(
+        anchor
+        for anchor in source.anchors
+        if ".forward.edge." in anchor.anchor_id and anchor.anchor_id.endswith(".insert_norm")
+    )
+    patch = RemoveLayerNormPatch(
+        patch_id="patch:stage8-remove-norm",
+        source_node_id="node:encodermodel.layers",
+        target_node_id="node:encodermodel.norm",
+        removed_node_id=removed.node_id,
+        constructor_anchor_id=constructor.anchor_id,
+        forward_anchor_id=forward.anchor_id,
+        attribute_name="insert_norm",
+        constructor_anchor_content_fingerprint=constructor.content_fingerprint,
+        forward_anchor_content_fingerprint=forward.content_fingerprint,
+        expected_delta={
+            "allowed_node_additions": [],
+            "allowed_node_removals": [removed.node_id],
+            "allowed_node_modifications": [],
+            "allowed_edge_additions": ["edge:layers->norm:data"],
+            "allowed_edge_removals": [
+                "edge:layers->insert_norm:data",
+                "edge:insert_norm->norm:data",
+            ],
+            "allowed_edge_modifications": [],
+            "require_identity_retention": True,
+        },
+    )
+    return PatchSet(
+        patch_set_id="patchset:stage8-remove-norm",
         project_id="project:stage8-fixture",
         base_source_revision=source.file_revisions["model.py"],
         created_at=datetime(2026, 9, 22, tzinfo=UTC),
@@ -543,6 +663,7 @@ def test_engine_structural_splice_requires_runtime_profile_and_commits_after_sha
         runtime_worker=_successful_structural_runtime_result,
     )
     opened = engine.open_project(_open(root).model_copy(update={"project_id": "project:stage8-fixture"}))
+    assert opened.patch_structural_operations == ["insert_layer_norm", "remove_layer_norm"]
     analysis = engine.analyze_project(opened.project_id)
     source, architecture = _structural_analyzer(source_before)
     engine._repository.save_analysis(analysis.manifest, source, architecture, analysis.publication, analysis.scene, "<svg/>")
@@ -578,12 +699,160 @@ def test_engine_structural_splice_requires_runtime_profile_and_commits_after_sha
     assert b"x = self.insert_norm(x)" in source_path.read_bytes()
 
 
+def test_engine_structural_splice_commits_the_embedding_to_encoder_fixture_path(
+    tmp_path: Path,
+) -> None:
+    root = _chain_project_copy(tmp_path)
+    source_path = root / "model.py"
+    source_before = source_path.read_bytes()
+    profile = PatchRuntimeProfile(
+        inputs=[RuntimeTensorInput(shape=[2, 4], dtype="int64")],
+        provider=RuntimeProviderId.TORCH_FX,
+    )
+    engine = ArchCanvasEngine(
+        tmp_path / "cache",
+        patch_analyzers={"project:stage8-chain": _chain_analyzer},
+        patch_runtime_profiles={"project:stage8-chain": profile},
+        runtime_worker=_successful_chain_runtime_result,
+    )
+    opened = engine.open_project(_open_chain(root))
+    assert opened.patch_structural_operations == ["insert_layer_norm", "remove_layer_norm"]
+    analysis = engine.analyze_project(opened.project_id)
+    source, architecture = _chain_analyzer(source_before)
+    engine._repository.save_analysis(
+        analysis.manifest,
+        source,
+        architecture,
+        analysis.publication,
+        analysis.scene,
+        "<svg/>",
+    )
+    command = PatchCommand(
+        operation=EngineOperation.PLAN_PATCH,
+        project_id=opened.project_id,
+        patch_set=_chain_patch_set(source, architecture),
+    )
+
+    planned = engine.dispatch(EngineRequest(request_id="engine-request:stage8-chain-plan", command=command))
+    assert planned.status == "succeeded", planned.error
+    assert planned.result is not None and planned.result.candidate_diff.count("@@ ") == 2
+
+    validated = engine.dispatch(
+        EngineRequest(
+            request_id="engine-request:stage8-chain-validate",
+            command=command.model_copy(update={"operation": EngineOperation.VALIDATE_PATCH}),
+        )
+    )
+    assert validated.status == "succeeded", validated.error
+    assert validated.result is not None and validated.result.confirmation_id is not None
+    assert validated.result.runtime_validation is not None
+
+    committed = engine.dispatch(
+        EngineRequest(
+            request_id="engine-request:stage8-chain-commit",
+            command=command.model_copy(
+                update={
+                    "operation": EngineOperation.COMMIT_PATCH,
+                    "confirmation_id": validated.result.confirmation_id,
+                }
+            ),
+        )
+    )
+    assert committed.status == "succeeded", committed.error
+    assert b"self.insert_norm = nn.LayerNorm(16)" in source_path.read_bytes()
+    assert source_path.read_bytes() != source_before
+
+
+def test_engine_structural_remove_reverses_a_verified_splice_after_shape_validation(
+    tmp_path: Path,
+) -> None:
+    root = _structural_project_copy(tmp_path)
+    source_path = root / "model.py"
+    source_before = source_path.read_bytes()
+    source, architecture = _structural_analyzer(source_before)
+    insert_patch = _structural_patch_set(source, architecture).patches[0]
+    assert isinstance(insert_patch, InsertLayerNormPatch)
+    constructor = next(anchor for anchor in source.anchors if anchor.anchor_id == insert_patch.constructor_anchor_id)
+    forward = next(anchor for anchor in source.anchors if anchor.anchor_id == insert_patch.forward_anchor_id)
+    inserted = apply_insert_layer_norm(
+        source_before,
+        insert_patch,
+        constructor,
+        forward,
+        source.file_revisions["model.py"],
+    )
+    source_path.write_bytes(inserted.output_bytes)
+    inserted_source, inserted_architecture = _structural_analyzer(inserted.output_bytes)
+    profile = PatchRuntimeProfile(
+        inputs=[RuntimeTensorInput(shape=[2, 4], dtype="int64")],
+        provider=RuntimeProviderId.TORCH_FX,
+    )
+
+    def runtime_worker(request: TraceRequest) -> RuntimeTraceResult:
+        worker_root = Path(request.project_root)
+        assert b"self.insert_norm" not in (worker_root / "model.py").read_bytes()
+        return _successful_structural_runtime_result(request)
+
+    engine = ArchCanvasEngine(
+        tmp_path / "cache",
+        patch_analyzers={"project:stage8-fixture": _structural_analyzer},
+        patch_runtime_profiles={"project:stage8-fixture": profile},
+        runtime_worker=runtime_worker,
+    )
+    opened = engine.open_project(_open(root).model_copy(update={"project_id": "project:stage8-fixture"}))
+    assert opened.patch_structural_operations == ["insert_layer_norm", "remove_layer_norm"]
+    analysis = engine.analyze_project(opened.project_id)
+    engine._repository.save_analysis(
+        analysis.manifest,
+        inserted_source,
+        inserted_architecture,
+        analysis.publication,
+        analysis.scene,
+        "<svg/>",
+    )
+    patch_set = _structural_remove_patch_set(inserted_source, inserted_architecture)
+    command = PatchCommand(
+        operation=EngineOperation.PLAN_PATCH,
+        project_id=opened.project_id,
+        patch_set=patch_set,
+    )
+
+    planned = engine.dispatch(EngineRequest(request_id="engine-request:stage8-remove-plan", command=command))
+    assert planned.status == "succeeded", planned.error
+    assert planned.result is not None and planned.result.candidate_diff.count("@@ ") == 2
+
+    validated = engine.dispatch(
+        EngineRequest(
+            request_id="engine-request:stage8-remove-validate",
+            command=command.model_copy(update={"operation": EngineOperation.VALIDATE_PATCH}),
+        )
+    )
+    assert validated.status == "succeeded", validated.error
+    assert validated.result is not None and validated.result.confirmation_id is not None
+    assert validated.result.runtime_validation is not None
+
+    committed = engine.dispatch(
+        EngineRequest(
+            request_id="engine-request:stage8-remove-commit",
+            command=command.model_copy(
+                update={
+                    "operation": EngineOperation.COMMIT_PATCH,
+                    "confirmation_id": validated.result.confirmation_id,
+                }
+            ),
+        )
+    )
+    assert committed.status == "succeeded", committed.error
+    assert source_path.read_bytes() == source_before
+
+
 def test_engine_structural_splice_rejects_validation_without_runtime_profile(tmp_path: Path) -> None:
     root = _structural_project_copy(tmp_path)
     source_path = root / "model.py"
     source_before = source_path.read_bytes()
     engine = ArchCanvasEngine(tmp_path / "cache", patch_analyzers={"project:stage8-fixture": _structural_analyzer})
     opened = engine.open_project(_open(root).model_copy(update={"project_id": "project:stage8-fixture"}))
+    assert opened.patch_structural_operations == []
     analysis = engine.analyze_project(opened.project_id)
     source, architecture = _structural_analyzer(source_before)
     engine._repository.save_analysis(analysis.manifest, source, architecture, analysis.publication, analysis.scene, "<svg/>")

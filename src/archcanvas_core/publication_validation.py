@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from .models.architecture import ArchitectureIR
 from .models.publication import PublicationIR, VisualScene
+from .models.visual_spec import VisualSpec
 
 
 def validate_publication_semantics(publication: PublicationIR, exact: ArchitectureIR) -> list[str]:
@@ -63,4 +64,33 @@ def validate_scene_semantics(scene: VisualScene, publication: PublicationIR) -> 
     publication_edges = {edge.edge_id for edge in publication.edges}
     if scene_edges != publication_edges:
         errors.append("SCENE_EDGE_MAPPING_INCOMPLETE")
+    return sorted(set(errors))
+
+
+def validate_visual_spec_semantics(spec: VisualSpec, publication: PublicationIR) -> list[str]:
+    errors: list[str] = []
+    if spec.publication_id != publication.publication_id:
+        errors.append("VISUAL_SPEC_PUBLICATION_ID_MISMATCH")
+    if spec.source_revision != publication.source_revision:
+        errors.append("VISUAL_SPEC_SOURCE_REVISION_MISMATCH")
+    nodes = {node.node_id: node for node in publication.nodes}
+    edges = {edge.edge_id: edge for edge in publication.edges}
+    if {node.canonical_id for node in spec.nodes} != set(nodes):
+        errors.append("VISUAL_SPEC_NODE_MAPPING_INCOMPLETE")
+    for node in spec.nodes:
+        original = nodes.get(node.canonical_id)
+        if original is not None and (node.label != original.label or node.visual_class != original.kind):
+            errors.append("VISUAL_SPEC_NODE_FACT_MISMATCH")
+    if {edge.canonical_id for edge in spec.edges} != set(edges):
+        errors.append("VISUAL_SPEC_EDGE_MAPPING_INCOMPLETE")
+    for edge in spec.edges:
+        original = edges.get(edge.canonical_id)
+        if original is not None and (
+            edge.source_node_id != original.source_node_id
+            or edge.target_node_id != original.target_node_id
+            or edge.edge_type != (
+                "residual" if original.kind.value == "residual" else "main"
+            )
+        ):
+            errors.append("VISUAL_SPEC_EDGE_FACT_MISMATCH")
     return sorted(set(errors))

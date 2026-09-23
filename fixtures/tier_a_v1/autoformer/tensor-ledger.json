@@ -1,0 +1,165 @@
+[
+  {
+    "producer": "input",
+    "shape": "[B,L,N]",
+    "dtype": "unresolved",
+    "consumer_ids": [
+      "decomp"
+    ],
+    "evidence": {
+      "file": "Autoformer-main/models/Autoformer.py",
+      "line": 79,
+      "expression": "seasonal_init, trend_init = self.decomp(x_enc)",
+      "file_sha256": "f18e9e82844ed8c4dc26e00c3c2f0b7c278ac8ea8427c4fab7331939bf69829d",
+      "grade": "E1"
+    }
+  },
+  {
+    "producer": "output",
+    "shape": "[B,H,N]",
+    "dtype": "unresolved",
+    "consumer_ids": [],
+    "evidence": {
+      "file": "Autoformer-main/models/Autoformer.py",
+      "line": 96,
+      "expression": "return dec_out[:, -self.pred_len:, :]  # [B, L, D]",
+      "file_sha256": "f18e9e82844ed8c4dc26e00c3c2f0b7c278ac8ea8427c4fab7331939bf69829d",
+      "grade": "E1"
+    }
+  },
+  {
+    "producer": "e_q",
+    "shape": "[B,Lq,8,64]",
+    "dtype": "unresolved",
+    "consumer_ids": [
+      "e_fft"
+    ],
+    "evidence": {
+      "file": "Autoformer-main/layers/AutoCorrelation.py",
+      "line": 147,
+      "expression": "queries = self.query_projection(queries).view(",
+      "file_sha256": "dddbc3cc533f9640bbee0e624a49532efe4ee99735101f51a4b03e105772af01",
+      "grade": "E1"
+    }
+  },
+  {
+    "producer": "e_k",
+    "shape": "[B,Lk,8,64]",
+    "dtype": "unresolved",
+    "consumer_ids": [
+      "e_fft"
+    ],
+    "evidence": {
+      "file": "Autoformer-main/layers/AutoCorrelation.py",
+      "line": 148,
+      "expression": "keys = self.key_projection(keys).view(",
+      "file_sha256": "dddbc3cc533f9640bbee0e624a49532efe4ee99735101f51a4b03e105772af01",
+      "grade": "E1"
+    }
+  },
+  {
+    "producer": "e_v",
+    "shape": "[B,Lv,8,64]",
+    "dtype": "unresolved",
+    "consumer_ids": [
+      "e_aggregate"
+    ],
+    "evidence": {
+      "file": "Autoformer-main/layers/AutoCorrelation.py",
+      "line": 149,
+      "expression": "values = self.value_projection(values).view(",
+      "file_sha256": "dddbc3cc533f9640bbee0e624a49532efe4ee99735101f51a4b03e105772af01",
+      "grade": "E1"
+    }
+  },
+  {
+    "producer": "d_q",
+    "shape": "[B,Lq,8,64]",
+    "dtype": "unresolved",
+    "consumer_ids": [
+      "d_fft"
+    ],
+    "evidence": {
+      "file": "Autoformer-main/layers/AutoCorrelation.py",
+      "line": 147,
+      "expression": "queries = self.query_projection(queries).view(",
+      "file_sha256": "dddbc3cc533f9640bbee0e624a49532efe4ee99735101f51a4b03e105772af01",
+      "grade": "E1"
+    }
+  },
+  {
+    "producer": "d_k",
+    "shape": "[B,Lk,8,64]",
+    "dtype": "unresolved",
+    "consumer_ids": [
+      "d_fft"
+    ],
+    "evidence": {
+      "file": "Autoformer-main/layers/AutoCorrelation.py",
+      "line": 148,
+      "expression": "keys = self.key_projection(keys).view(",
+      "file_sha256": "dddbc3cc533f9640bbee0e624a49532efe4ee99735101f51a4b03e105772af01",
+      "grade": "E1"
+    }
+  },
+  {
+    "producer": "d_v",
+    "shape": "[B,Lv,8,64]",
+    "dtype": "unresolved",
+    "consumer_ids": [
+      "d_aggregate"
+    ],
+    "evidence": {
+      "file": "Autoformer-main/layers/AutoCorrelation.py",
+      "line": 149,
+      "expression": "values = self.value_projection(values).view(",
+      "file_sha256": "dddbc3cc533f9640bbee0e624a49532efe4ee99735101f51a4b03e105772af01",
+      "grade": "E1"
+    }
+  },
+  {
+    "producer": "c_q",
+    "shape": "[B,Lq,8,64]",
+    "dtype": "unresolved",
+    "consumer_ids": [
+      "c_fft"
+    ],
+    "evidence": {
+      "file": "Autoformer-main/layers/AutoCorrelation.py",
+      "line": 147,
+      "expression": "queries = self.query_projection(queries).view(",
+      "file_sha256": "dddbc3cc533f9640bbee0e624a49532efe4ee99735101f51a4b03e105772af01",
+      "grade": "E1"
+    }
+  },
+  {
+    "producer": "c_k",
+    "shape": "[B,Lk,8,64]",
+    "dtype": "unresolved",
+    "consumer_ids": [
+      "c_fft"
+    ],
+    "evidence": {
+      "file": "Autoformer-main/layers/AutoCorrelation.py",
+      "line": 148,
+      "expression": "keys = self.key_projection(keys).view(",
+      "file_sha256": "dddbc3cc533f9640bbee0e624a49532efe4ee99735101f51a4b03e105772af01",
+      "grade": "E1"
+    }
+  },
+  {
+    "producer": "c_v",
+    "shape": "[B,Lv,8,64]",
+    "dtype": "unresolved",
+    "consumer_ids": [
+      "c_aggregate"
+    ],
+    "evidence": {
+      "file": "Autoformer-main/layers/AutoCorrelation.py",
+      "line": 149,
+      "expression": "values = self.value_projection(values).view(",
+      "file_sha256": "dddbc3cc533f9640bbee0e624a49532efe4ee99735101f51a4b03e105772af01",
+      "grade": "E1"
+    }
+  }
+]

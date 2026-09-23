@@ -1,0 +1,123 @@
+{
+  "canvas": {
+    "composition_mode": "integrated",
+    "default_detail_level": "L1",
+    "opening_policy": "overview",
+    "reading_direction": "left_to_right"
+  },
+  "constraints": [
+    {
+      "kind": "before",
+      "source_node_id": "publication-node:input",
+      "target_node_id": "publication-node:residual-stage"
+    },
+    {
+      "kind": "before",
+      "source_node_id": "publication-node:residual-stage",
+      "target_node_id": "publication-node:output"
+    }
+  ],
+  "edges": [
+    {
+      "canonical_id": "publication-edge:input--residual-stage--data",
+      "edge_type": "main",
+      "route_preference": "orthogonal",
+      "source_node_id": "publication-node:input",
+      "source_port_id": "port:input:out",
+      "target_node_id": "publication-node:residual-stage",
+      "target_port_id": "port:residualblock.conv1:in"
+    },
+    {
+      "canonical_id": "publication-edge:residual-stage--output--data",
+      "edge_type": "main",
+      "route_preference": "orthogonal",
+      "source_node_id": "publication-node:residual-stage",
+      "source_port_id": "port:residualblock.relu:out",
+      "target_node_id": "publication-node:output",
+      "target_port_id": "port:output:in"
+    },
+    {
+      "canonical_id": "publication-edge:residual-stage--residual-stage--residual",
+      "edge_type": "residual",
+      "route_preference": "orthogonal",
+      "source_node_id": "publication-node:residual-stage",
+      "source_port_id": "port:residualblock.conv1:out",
+      "target_node_id": "publication-node:residual-stage",
+      "target_port_id": "port:residualblock.conv2:in"
+    }
+  ],
+  "nodes": [
+    {
+      "canonical_id": "publication-node:input",
+      "children": [],
+      "detail_level": "L1",
+      "inline_expand": false,
+      "label": "Input",
+      "parent_id": null,
+      "ports": [
+        {
+          "direction": "output",
+          "port_id": "port:input:out"
+        }
+      ],
+      "visual_class": "input"
+    },
+    {
+      "canonical_id": "publication-node:residual-stage",
+      "children": [],
+      "detail_level": "L1",
+      "inline_expand": false,
+      "label": "Residual stage",
+      "parent_id": null,
+      "ports": [
+        {
+          "direction": "input",
+          "port_id": "port:residualblock.conv1:in"
+        },
+        {
+          "direction": "output",
+          "port_id": "port:residualblock.conv1:out"
+        },
+        {
+          "direction": "input",
+          "port_id": "port:residualblock.conv2:in"
+        },
+        {
+          "direction": "output",
+          "port_id": "port:residualblock.conv2:out"
+        },
+        {
+          "direction": "input",
+          "port_id": "port:residualblock.relu:in"
+        },
+        {
+          "direction": "output",
+          "port_id": "port:residualblock.relu:out"
+        }
+      ],
+      "visual_class": "residual_block"
+    },
+    {
+      "canonical_id": "publication-node:output",
+      "children": [],
+      "detail_level": "L1",
+      "inline_expand": false,
+      "label": "Output",
+      "parent_id": null,
+      "ports": [
+        {
+          "direction": "input",
+          "port_id": "port:output:in"
+        }
+      ],
+      "visual_class": "output"
+    }
+  ],
+  "publication_id": "publication:fixture-resnet_static_v1",
+  "schema_version": "1.0",
+  "source_revision": "sha256:e2240eb4b1ca2d09206fb69b0a4c93814499b53677255bcfd663a4f428aa23a1",
+  "spec_id": "visual-spec:fixture-resnet_static_v1",
+  "view_policy": {
+    "direct_full_detail_supported": false
+  }
+}

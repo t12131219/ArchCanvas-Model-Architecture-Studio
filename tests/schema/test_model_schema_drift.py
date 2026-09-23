@@ -18,6 +18,7 @@ from archcanvas_core.models.patch import PatchSet
 from archcanvas_core.models.publication import PublicationIR, VisualScene
 from archcanvas_core.models.runtime import RuntimeTraceResult, TraceRequest
 from archcanvas_core.models.source_identity import SourceIdentityDocument
+from archcanvas_core.models.visual_spec import VisualSpec
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -32,6 +33,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("runtime-trace-result-v1.schema.json", RuntimeTraceResult),
         ("publication-ir-v1.schema.json", PublicationIR),
         ("visual-scene-v1.schema.json", VisualScene),
+        ("visual-spec-v1.schema.json", VisualSpec),
         ("canvas-document-v1.schema.json", CanvasDocument),
         ("project-manifest-v1.schema.json", ProjectManifest),
         ("visual-patch-v1.schema.json", VisualPatch),

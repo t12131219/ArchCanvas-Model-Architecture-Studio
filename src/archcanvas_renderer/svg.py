@@ -34,17 +34,20 @@ def _expanded_repeat_preview(x: int, y: int, width: int, stroke: str) -> list[st
 
     preview_x = x + 16
     preview_width = width - 32
-    parts: list[str] = []
+    parts: list[str] = [
+        '<g data-non-executable-duplicate="true"><title>Illustrative repetition; not additional computation nodes</title>'
+    ]
     for index, preview_y in enumerate((y + 38, y + 66), start=1):
         parts.append(
             f'<rect data-repeat-preview="{index}" x="{preview_x}" y="{preview_y}" width="{preview_width}" height="20" rx="3" fill="#ffffff" stroke="{stroke}" stroke-width="1"/>'
         )
         parts.append(
-            f'<text x="{x + width // 2}" y="{preview_y + 14}" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#0f172a">Encoder layer</text>'
+            f'<text x="{x + width // 2}" y="{preview_y + 14}" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#0f172a">Repeated unit</text>'
         )
     parts.append(
         f'<text x="{x + width // 2}" y="{y + 110}" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#475569">...</text>'
     )
+    parts.append("</g>")
     return parts
 
 

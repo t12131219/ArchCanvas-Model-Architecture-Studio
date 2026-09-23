@@ -40,3 +40,16 @@ test('publication miniatures appear only at detail zoom with provenance disclosu
   await expect(page.getByText('Visual evidence')).toBeVisible()
   await expect(page.getByText('N x repeated encoder block')).toBeVisible()
 })
+
+test('repeat disclosure handles double-click and keyboard without changing node identity', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/')
+  const repeat = page.locator('[data-canvas-node="publication-node:transformer-encoder"]')
+  await expect(repeat).toHaveAttribute('aria-expanded', 'false')
+  await repeat.dblclick()
+  await expect(repeat).toHaveAttribute('aria-expanded', 'true')
+  await repeat.focus()
+  await page.keyboard.press('Enter')
+  await expect(repeat).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.locator('[data-canvas-node="publication-node:transformer-encoder"]')).toHaveCount(1)
+})

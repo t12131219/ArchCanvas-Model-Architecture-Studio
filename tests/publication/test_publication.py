@@ -197,6 +197,8 @@ def test_transformer_repeat_can_expand_as_a_visual_only_scene_state() -> None:
     )
     assert expanded.height > collapsed.height
     assert svg.count('data-repeat-preview=') == 2
+    assert 'data-non-executable-duplicate="true"' in svg
+    assert "Encoder layer" not in svg
     assert publication_preflight(publication, expanded, svg).blocking is False
     assert expanded == layout.layout(publication, expanded_node_ids={group.node_id})
     assert svg == render_svg(publication, expanded)

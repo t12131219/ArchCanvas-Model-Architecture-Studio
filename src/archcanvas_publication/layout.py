@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Collection
+from heapq import heappop, heappush
 
 from archcanvas_core.models.publication import (
     PublicationEdgeKind,
@@ -13,6 +14,8 @@ from archcanvas_core.models.publication import (
     ScenePoint,
     VisualScene,
 )
+from archcanvas_core.models.visual_spec import VisualSpec
+from archcanvas_core.publication_validation import validate_visual_spec_semantics
 
 
 class StageLayout:
@@ -27,12 +30,42 @@ class StageLayout:
         publication: PublicationIR,
         *,
         expanded_node_ids: Collection[str] = (),
+        visual_spec: VisualSpec | None = None,
     ) -> VisualScene:
         """Lay out a publication view with optional visual-only repeat expansion.
 
         Expansion never changes the Publication IR or introduces additional Exact-node mappings.
         It reserves extra scene space for a deterministic preview of a repeat group's layers.
         """
+
+        ordered_nodes = publication.nodes
+        if visual_spec is not None:
+            errors = validate_visual_spec_semantics(visual_spec, publication)
+            if errors:
+                raise ValueError(f"invalid visual spec: {errors}")
+            by_id = {node.node_id: node for node in publication.nodes}
+            rank = {node.node_id: index for index, node in enumerate(publication.nodes)}
+            successors: dict[str, set[str]] = {node_id: set() for node_id in by_id}
+            indegree = {node_id: 0 for node_id in by_id}
+            for constraint in visual_spec.constraints:
+                source, target = constraint.source_node_id, constraint.target_node_id
+                if target not in successors[source]:
+                    successors[source].add(target)
+                    indegree[target] += 1
+            ready: list[tuple[int, str]] = []
+            for node_id, degree in indegree.items():
+                if degree == 0:
+                    heappush(ready, (rank[node_id], node_id))
+            ordered_nodes = []
+            while ready:
+                _, node_id = heappop(ready)
+                ordered_nodes.append(by_id[node_id])
+                for target in successors[node_id]:
+                    indegree[target] -= 1
+                    if indegree[target] == 0:
+                        heappush(ready, (rank[target], target))
+            if len(ordered_nodes) != len(by_id):
+                raise ValueError("visual spec order constraints contain a cycle")
 
         requested_expansion = frozenset(expanded_node_ids)
         publication_nodes = {node.node_id: node for node in publication.nodes}
@@ -68,7 +101,7 @@ class StageLayout:
                     else self.node_height
                 ),
             )
-            for index, node in enumerate(publication.nodes)
+            for index, node in enumerate(ordered_nodes)
         ]
         positions = {node.publication_node_id: node for node in nodes}
         edges: list[SceneEdge] = []

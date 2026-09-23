@@ -1,0 +1,2037 @@
+{
+  "model": "transformer",
+  "archive": "pytorch_transformer_original.zip",
+  "archive_sha256": "7b450cd08737e14b4e9ad33cb240a53be08bf5882986b3d43fa5988d644ae552",
+  "entrypoint": "transformer.py:Transformer.forward",
+  "task_branch": "translation / teacher forcing",
+  "config": {
+    "src_vocab_size": 100,
+    "tgt_vocab_size": 120,
+    "d_model": 128,
+    "num_heads": 8,
+    "num_encoder_layers": 2,
+    "num_decoder_layers": 2,
+    "d_ff": 512,
+    "dropout": 0.1,
+    "tie_tgt_embedding_and_generator": false,
+    "src_len": 7,
+    "tgt_len": 5,
+    "causal_mask": true
+  },
+  "selection_status": "implementation_selected_pending_human_review",
+  "nodes": [
+    {
+      "id": "src",
+      "label": "Source tokens",
+      "parent": null,
+      "lane": "encoder",
+      "role": "input",
+      "shape": "[B,S]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 480,
+        "expression": "src: [B, S]",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "src_embed",
+      "label": "Input embedding",
+      "parent": null,
+      "lane": "encoder",
+      "role": "embedding",
+      "shape": "[B,S,D]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 450,
+        "expression": "self.src_embedding(src)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "src_pos",
+      "label": "Sinusoidal position",
+      "parent": null,
+      "lane": "encoder",
+      "role": "embedding",
+      "shape": "",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 450,
+        "expression": "self.position(self.src_embedding(src))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "encoder",
+      "label": "Encoder layers",
+      "parent": null,
+      "lane": "encoder",
+      "role": "repeat",
+      "shape": "",
+      "level": 1,
+      "repeat": "2 x",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 294,
+        "expression": "self.layers = clones(layer, num_layers)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "enc_layer_in",
+      "label": "Layer input",
+      "parent": "encoder",
+      "lane": "encoder",
+      "role": "data",
+      "shape": "[B,S,128]",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 279,
+        "expression": "query=x,",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "enc_attn",
+      "label": "Self-attention",
+      "parent": "encoder",
+      "lane": "encoder",
+      "role": "attention",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 264,
+        "expression": "self.self_attn = MultiHeadAttention",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "enc_add1",
+      "label": "Add + LayerNorm",
+      "parent": "encoder",
+      "lane": "encoder",
+      "role": "merge",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 284,
+        "expression": "x = self.norm1(x + self.dropout1(attn_out))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "enc_ffn",
+      "label": "Feed forward",
+      "parent": "encoder",
+      "lane": "encoder",
+      "role": "ffn",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 265,
+        "expression": "self.ffn = PositionwiseFeedForward",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "enc_add2",
+      "label": "Add + LayerNorm",
+      "parent": "encoder",
+      "lane": "encoder",
+      "role": "merge",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 287,
+        "expression": "x = self.norm2(x + self.dropout2(ffn_out))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "memory",
+      "label": "Encoder memory",
+      "parent": null,
+      "lane": "encoder",
+      "role": "data",
+      "shape": "[B,S,D]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 489,
+        "expression": "memory = self.encode(src, src_key_padding_mask)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "tgt",
+      "label": "Target prefix tokens",
+      "parent": null,
+      "lane": "decoder",
+      "role": "input",
+      "shape": "[B,T]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 481,
+        "expression": "tgt: [B, T]",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "tgt_embed",
+      "label": "Output embedding",
+      "parent": null,
+      "lane": "decoder",
+      "role": "embedding",
+      "shape": "[B,T,D]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 461,
+        "expression": "self.tgt_embedding(tgt)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "tgt_pos",
+      "label": "Sinusoidal position",
+      "parent": null,
+      "lane": "decoder",
+      "role": "embedding",
+      "shape": "",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 461,
+        "expression": "self.position(self.tgt_embedding(tgt))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "decoder",
+      "label": "Decoder layers",
+      "parent": null,
+      "lane": "decoder",
+      "role": "repeat",
+      "shape": "",
+      "level": 1,
+      "repeat": "2 x",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 372,
+        "expression": "self.layers = clones(layer, num_layers)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "dec_layer_in",
+      "label": "Layer input",
+      "parent": "decoder",
+      "lane": "decoder",
+      "role": "data",
+      "shape": "[B,T,128]",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 346,
+        "expression": "query=x,",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "dec_self",
+      "label": "Masked self-attention",
+      "parent": "decoder",
+      "lane": "decoder",
+      "role": "attention",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 345,
+        "expression": "self_attn_out = self.self_attn(",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "dec_add1",
+      "label": "Add + LayerNorm",
+      "parent": "decoder",
+      "lane": "decoder",
+      "role": "merge",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 352,
+        "expression": "x = self.norm1(x + self.dropout1(self_attn_out))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "dec_cross",
+      "label": "Cross-attention",
+      "parent": "decoder",
+      "lane": "decoder",
+      "role": "attention",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 355,
+        "expression": "cross_attn_out = self.cross_attn(",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "dec_add2",
+      "label": "Add + LayerNorm",
+      "parent": "decoder",
+      "lane": "decoder",
+      "role": "merge",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 361,
+        "expression": "x = self.norm2(x + self.dropout2(cross_attn_out))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "dec_ffn",
+      "label": "Feed forward",
+      "parent": "decoder",
+      "lane": "decoder",
+      "role": "ffn",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 364,
+        "expression": "ffn_out = self.ffn(x)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "dec_add3",
+      "label": "Add + LayerNorm",
+      "parent": "decoder",
+      "lane": "decoder",
+      "role": "merge",
+      "shape": "",
+      "level": 2,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 365,
+        "expression": "x = self.norm3(x + self.dropout3(ffn_out))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "head",
+      "label": "Vocabulary linear",
+      "parent": null,
+      "lane": "decoder",
+      "role": "head",
+      "shape": "[B,T,V]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 499,
+        "expression": "return self.generator(decoder_out)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "logits",
+      "label": "Output logits",
+      "parent": null,
+      "lane": "decoder",
+      "role": "output",
+      "shape": "[B,T,V]",
+      "level": 1,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 487,
+        "expression": "logits: [B, T, tgt_vocab_size]",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "e_q",
+      "label": "Q projection",
+      "parent": "enc_attn",
+      "lane": "encoder",
+      "role": "projection",
+      "shape": "[B,H,S,16]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 156,
+        "expression": "self.w_q(query)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "e_k",
+      "label": "K projection",
+      "parent": "enc_attn",
+      "lane": "encoder",
+      "role": "projection",
+      "shape": "[B,H,S,16]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 157,
+        "expression": "self.w_k(key)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "e_v",
+      "label": "V projection",
+      "parent": "enc_attn",
+      "lane": "encoder",
+      "role": "projection",
+      "shape": "[B,H,S,16]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 158,
+        "expression": "self.w_v(value)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "e_score",
+      "label": "Q x K transpose",
+      "parent": "enc_attn",
+      "lane": "encoder",
+      "role": "attention",
+      "shape": "[B,8,S,S]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 70,
+        "expression": "torch.matmul(q, k.transpose(-2, -1))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "e_scale",
+      "label": "Scale 1/sqrt(Dh)",
+      "parent": "enc_attn",
+      "lane": "encoder",
+      "role": "projection",
+      "shape": "[B,8,S,S]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 70,
+        "expression": "/ math.sqrt(d_k)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "e_softmax",
+      "label": "Softmax weights",
+      "parent": "enc_attn",
+      "lane": "encoder",
+      "role": "attention",
+      "shape": "[B,8,S,S]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 92,
+        "expression": "torch.softmax(scores, dim=-1)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "e_weighted",
+      "label": "Weights x V",
+      "parent": "enc_attn",
+      "lane": "encoder",
+      "role": "attention",
+      "shape": "[B,8,S,16]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 100,
+        "expression": "torch.matmul(attention_weights, v)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "e_combine",
+      "label": "Combine heads",
+      "parent": "enc_attn",
+      "lane": "encoder",
+      "role": "projection",
+      "shape": "[B,S,128]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 169,
+        "expression": "self._combine_heads(x)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "e_out",
+      "label": "W^O output",
+      "parent": "enc_attn",
+      "lane": "encoder",
+      "role": "projection",
+      "shape": "[B,S,128]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 170,
+        "expression": "self.w_o(x)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "s_q",
+      "label": "Q projection",
+      "parent": "dec_self",
+      "lane": "decoder",
+      "role": "projection",
+      "shape": "[B,H,T,16]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 156,
+        "expression": "self.w_q(query)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "s_k",
+      "label": "K projection",
+      "parent": "dec_self",
+      "lane": "decoder",
+      "role": "projection",
+      "shape": "[B,H,T,16]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 157,
+        "expression": "self.w_k(key)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "s_v",
+      "label": "V projection",
+      "parent": "dec_self",
+      "lane": "decoder",
+      "role": "projection",
+      "shape": "[B,H,T,16]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 158,
+        "expression": "self.w_v(value)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "s_score",
+      "label": "Q x K transpose",
+      "parent": "dec_self",
+      "lane": "decoder",
+      "role": "attention",
+      "shape": "[B,8,T,T]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 70,
+        "expression": "torch.matmul(q, k.transpose(-2, -1))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "s_scale",
+      "label": "Scale 1/sqrt(Dh)",
+      "parent": "dec_self",
+      "lane": "decoder",
+      "role": "projection",
+      "shape": "[B,8,T,T]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 70,
+        "expression": "/ math.sqrt(d_k)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "s_mask",
+      "label": "Causal mask",
+      "parent": "dec_self",
+      "lane": "decoder",
+      "role": "condition",
+      "shape": "[T,T]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 349,
+        "expression": "attn_mask=tgt_mask",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "s_apply_mask",
+      "label": "Apply causal mask",
+      "parent": "dec_self",
+      "lane": "decoder",
+      "role": "condition",
+      "shape": "[B,8,T,T]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 82,
+        "expression": "scores = scores.masked_fill(attn_mask, float(\"-inf\"))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "s_softmax",
+      "label": "Softmax weights",
+      "parent": "dec_self",
+      "lane": "decoder",
+      "role": "attention",
+      "shape": "[B,8,T,T]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 92,
+        "expression": "torch.softmax(scores, dim=-1)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "s_weighted",
+      "label": "Weights x V",
+      "parent": "dec_self",
+      "lane": "decoder",
+      "role": "attention",
+      "shape": "[B,8,T,16]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 100,
+        "expression": "torch.matmul(attention_weights, v)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "s_combine",
+      "label": "Combine heads",
+      "parent": "dec_self",
+      "lane": "decoder",
+      "role": "projection",
+      "shape": "[B,T,128]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 169,
+        "expression": "self._combine_heads(x)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "s_out",
+      "label": "W^O output",
+      "parent": "dec_self",
+      "lane": "decoder",
+      "role": "projection",
+      "shape": "[B,T,128]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 170,
+        "expression": "self.w_o(x)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "c_q",
+      "label": "Q projection",
+      "parent": "dec_cross",
+      "lane": "decoder",
+      "role": "projection",
+      "shape": "[B,H,T,16]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 156,
+        "expression": "self.w_q(query)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "c_k",
+      "label": "K projection",
+      "parent": "dec_cross",
+      "lane": "decoder",
+      "role": "projection",
+      "shape": "[B,H,S,16]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 157,
+        "expression": "self.w_k(key)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "c_v",
+      "label": "V projection",
+      "parent": "dec_cross",
+      "lane": "decoder",
+      "role": "projection",
+      "shape": "[B,H,S,16]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 158,
+        "expression": "self.w_v(value)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "c_score",
+      "label": "Q x K transpose",
+      "parent": "dec_cross",
+      "lane": "decoder",
+      "role": "attention",
+      "shape": "[B,8,T,S]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 70,
+        "expression": "torch.matmul(q, k.transpose(-2, -1))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "c_scale",
+      "label": "Scale 1/sqrt(Dh)",
+      "parent": "dec_cross",
+      "lane": "decoder",
+      "role": "projection",
+      "shape": "[B,8,T,S]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 70,
+        "expression": "/ math.sqrt(d_k)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "c_softmax",
+      "label": "Softmax weights",
+      "parent": "dec_cross",
+      "lane": "decoder",
+      "role": "attention",
+      "shape": "[B,8,T,S]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 92,
+        "expression": "torch.softmax(scores, dim=-1)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "c_weighted",
+      "label": "Weights x V",
+      "parent": "dec_cross",
+      "lane": "decoder",
+      "role": "attention",
+      "shape": "[B,8,T,16]",
+      "level": 4,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 100,
+        "expression": "torch.matmul(attention_weights, v)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "c_combine",
+      "label": "Combine heads",
+      "parent": "dec_cross",
+      "lane": "decoder",
+      "role": "projection",
+      "shape": "[B,T,128]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 169,
+        "expression": "self._combine_heads(x)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "c_out",
+      "label": "W^O output",
+      "parent": "dec_cross",
+      "lane": "decoder",
+      "role": "projection",
+      "shape": "[B,T,128]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 170,
+        "expression": "self.w_o(x)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "ef_linear1",
+      "label": "Linear D -> F",
+      "parent": "enc_ffn",
+      "lane": "encoder",
+      "role": "ffn",
+      "shape": "[B,S,512]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 194,
+        "expression": "self.linear1(x)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "ef_relu",
+      "label": "ReLU",
+      "parent": "enc_ffn",
+      "lane": "encoder",
+      "role": "ffn",
+      "shape": "",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 194,
+        "expression": "self.activation(self.linear1(x))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "ef_linear2",
+      "label": "Linear F -> D",
+      "parent": "enc_ffn",
+      "lane": "encoder",
+      "role": "ffn",
+      "shape": "[B,S,128]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 194,
+        "expression": "self.linear2(self.dropout(",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "df_linear1",
+      "label": "Linear D -> F",
+      "parent": "dec_ffn",
+      "lane": "decoder",
+      "role": "ffn",
+      "shape": "[B,T,512]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 194,
+        "expression": "self.linear1(x)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "df_relu",
+      "label": "ReLU",
+      "parent": "dec_ffn",
+      "lane": "decoder",
+      "role": "ffn",
+      "shape": "",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 194,
+        "expression": "self.activation(self.linear1(x))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    },
+    {
+      "id": "df_linear2",
+      "label": "Linear F -> D",
+      "parent": "dec_ffn",
+      "lane": "decoder",
+      "role": "ffn",
+      "shape": "[B,T,128]",
+      "level": 3,
+      "repeat": "",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 194,
+        "expression": "self.linear2(self.dropout(",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E1"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "src",
+      "target": "src_embed",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 450,
+        "expression": "self.src_embedding(src)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.000",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "src_embed",
+      "target": "src_pos",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 450,
+        "expression": "self.position(self.src_embedding(src))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.001",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "src_pos",
+      "target": "encoder",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 294,
+        "expression": "self.layers = clones(layer, num_layers)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.002",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "encoder",
+      "target": "memory",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 489,
+        "expression": "memory = self.encode(src, src_key_padding_mask)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.003",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "tgt",
+      "target": "tgt_embed",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 461,
+        "expression": "self.tgt_embedding(tgt)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.004",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "tgt_embed",
+      "target": "tgt_pos",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 461,
+        "expression": "self.position(self.tgt_embedding(tgt))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.005",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "tgt_pos",
+      "target": "decoder",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 372,
+        "expression": "self.layers = clones(layer, num_layers)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.006",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "decoder",
+      "target": "head",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 499,
+        "expression": "return self.generator(decoder_out)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.007",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "head",
+      "target": "logits",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 487,
+        "expression": "logits: [B, T, tgt_vocab_size]",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.008",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "enc_layer_in",
+      "target": "enc_attn",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 264,
+        "expression": "self.self_attn = MultiHeadAttention",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.009",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "enc_attn",
+      "target": "enc_add1",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 284,
+        "expression": "x = self.norm1(x + self.dropout1(attn_out))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.010",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "enc_add1",
+      "target": "enc_ffn",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 265,
+        "expression": "self.ffn = PositionwiseFeedForward",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.011",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "enc_ffn",
+      "target": "enc_add2",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 287,
+        "expression": "x = self.norm2(x + self.dropout2(ffn_out))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.012",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "dec_layer_in",
+      "target": "dec_self",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 345,
+        "expression": "self_attn_out = self.self_attn(",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.013",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "dec_self",
+      "target": "dec_add1",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 352,
+        "expression": "x = self.norm1(x + self.dropout1(self_attn_out))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.014",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "dec_add1",
+      "target": "dec_cross",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 355,
+        "expression": "cross_attn_out = self.cross_attn(",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.015",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "dec_cross",
+      "target": "dec_add2",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 361,
+        "expression": "x = self.norm2(x + self.dropout2(cross_attn_out))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.016",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "dec_add2",
+      "target": "dec_ffn",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 364,
+        "expression": "ffn_out = self.ffn(x)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.017",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "dec_ffn",
+      "target": "dec_add3",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 365,
+        "expression": "x = self.norm3(x + self.dropout3(ffn_out))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.018",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "memory",
+      "target": "c_k",
+      "kind": "memory",
+      "source_port": "memory_out",
+      "target_port": "K_in",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 157,
+        "expression": "self.w_k(key)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.019"
+    },
+    {
+      "source": "memory",
+      "target": "c_v",
+      "kind": "memory",
+      "source_port": "memory_out",
+      "target_port": "V_in",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 158,
+        "expression": "self.w_v(value)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.020"
+    },
+    {
+      "source": "dec_add1",
+      "target": "c_q",
+      "kind": "main",
+      "source_port": "hidden_out",
+      "target_port": "Q_in",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 156,
+        "expression": "self.w_q(query)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.021"
+    },
+    {
+      "source": "e_q",
+      "target": "e_score",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 70,
+        "expression": "torch.matmul(q, k.transpose(-2, -1))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.022",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "e_score",
+      "target": "e_scale",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 70,
+        "expression": "/ math.sqrt(d_k)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.023",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "e_scale",
+      "target": "e_softmax",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 92,
+        "expression": "torch.softmax(scores, dim=-1)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.024",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "e_softmax",
+      "target": "e_weighted",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 100,
+        "expression": "torch.matmul(attention_weights, v)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.025",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "e_weighted",
+      "target": "e_combine",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 169,
+        "expression": "self._combine_heads(x)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.026",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "e_combine",
+      "target": "e_out",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 170,
+        "expression": "self.w_o(x)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.027",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "e_k",
+      "target": "e_score",
+      "kind": "main",
+      "target_port": "K_in",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 70,
+        "expression": "torch.matmul(q, k.transpose(-2, -1))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.028",
+      "source_port": "out"
+    },
+    {
+      "source": "e_v",
+      "target": "e_weighted",
+      "kind": "main",
+      "target_port": "V_in",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 100,
+        "expression": "torch.matmul(attention_weights, v)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.029",
+      "source_port": "out"
+    },
+    {
+      "source": "enc_layer_in",
+      "target": "e_q",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 156,
+        "expression": "self.w_q(query)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.030",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "enc_layer_in",
+      "target": "e_k",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 157,
+        "expression": "self.w_k(key)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.031",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "enc_layer_in",
+      "target": "e_v",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 158,
+        "expression": "self.w_v(value)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.032",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "s_q",
+      "target": "s_score",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 70,
+        "expression": "torch.matmul(q, k.transpose(-2, -1))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.033",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "s_score",
+      "target": "s_scale",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 70,
+        "expression": "/ math.sqrt(d_k)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.034",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "s_scale",
+      "target": "s_apply_mask",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 82,
+        "expression": "scores = scores.masked_fill(attn_mask, float(\"-inf\"))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.035",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "s_apply_mask",
+      "target": "s_softmax",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 92,
+        "expression": "torch.softmax(scores, dim=-1)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.036",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "s_softmax",
+      "target": "s_weighted",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 100,
+        "expression": "torch.matmul(attention_weights, v)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.037",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "s_weighted",
+      "target": "s_combine",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 169,
+        "expression": "self._combine_heads(x)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.038",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "s_combine",
+      "target": "s_out",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 170,
+        "expression": "self.w_o(x)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.039",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "s_k",
+      "target": "s_score",
+      "kind": "main",
+      "target_port": "K_in",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 70,
+        "expression": "torch.matmul(q, k.transpose(-2, -1))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.040",
+      "source_port": "out"
+    },
+    {
+      "source": "s_v",
+      "target": "s_weighted",
+      "kind": "main",
+      "target_port": "V_in",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 100,
+        "expression": "torch.matmul(attention_weights, v)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.041",
+      "source_port": "out"
+    },
+    {
+      "source": "dec_layer_in",
+      "target": "s_q",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 156,
+        "expression": "self.w_q(query)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.042",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "dec_layer_in",
+      "target": "s_k",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 157,
+        "expression": "self.w_k(key)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.043",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "dec_layer_in",
+      "target": "s_v",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 158,
+        "expression": "self.w_v(value)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.044",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "c_q",
+      "target": "c_score",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 70,
+        "expression": "torch.matmul(q, k.transpose(-2, -1))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.045",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "c_score",
+      "target": "c_scale",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 70,
+        "expression": "/ math.sqrt(d_k)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.046",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "c_scale",
+      "target": "c_softmax",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 92,
+        "expression": "torch.softmax(scores, dim=-1)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.047",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "c_softmax",
+      "target": "c_weighted",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 100,
+        "expression": "torch.matmul(attention_weights, v)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.048",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "c_weighted",
+      "target": "c_combine",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 169,
+        "expression": "self._combine_heads(x)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.049",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "c_combine",
+      "target": "c_out",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 170,
+        "expression": "self.w_o(x)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.050",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "c_k",
+      "target": "c_score",
+      "kind": "main",
+      "target_port": "K_in",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 70,
+        "expression": "torch.matmul(q, k.transpose(-2, -1))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.051",
+      "source_port": "out"
+    },
+    {
+      "source": "c_v",
+      "target": "c_weighted",
+      "kind": "main",
+      "target_port": "V_in",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 100,
+        "expression": "torch.matmul(attention_weights, v)",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.052",
+      "source_port": "out"
+    },
+    {
+      "source": "s_mask",
+      "target": "s_apply_mask",
+      "kind": "condition",
+      "target_port": "condition_in",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 82,
+        "expression": "scores = scores.masked_fill(attn_mask, float(\"-inf\"))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.053",
+      "source_port": "out"
+    },
+    {
+      "source": "ef_linear1",
+      "target": "ef_relu",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 194,
+        "expression": "self.activation(self.linear1(x))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.054",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "ef_relu",
+      "target": "ef_linear2",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 194,
+        "expression": "self.linear2(self.dropout(",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.055",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "df_linear1",
+      "target": "df_relu",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 194,
+        "expression": "self.activation(self.linear1(x))",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.056",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "df_relu",
+      "target": "df_linear2",
+      "kind": "main",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 194,
+        "expression": "self.linear2(self.dropout(",
+        "file_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+        "grade": "E3",
+        "basis": "target_call_site; route_requires_human_review"
+      },
+      "id": "transformer.edge.057",
+      "source_port": "out",
+      "target_port": "in"
+    },
+    {
+      "source": "enc_layer_in",
+      "target": "enc_add1",
+      "kind": "residual",
+      "source_port": "skip_out",
+      "target_port": "skip_in",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 284,
+        "expression": "x = self.norm1(x + self.dropout1(attn_out))",
+        "grade": "E1",
+        "basis": "direct_residual_expression"
+      },
+      "id": "transformer.edge.058"
+    },
+    {
+      "source": "enc_add1",
+      "target": "enc_add2",
+      "kind": "residual",
+      "source_port": "skip_out",
+      "target_port": "skip_in",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 287,
+        "expression": "x = self.norm2(x + self.dropout2(ffn_out))",
+        "grade": "E1",
+        "basis": "direct_residual_expression"
+      },
+      "id": "transformer.edge.059"
+    },
+    {
+      "source": "dec_layer_in",
+      "target": "dec_add1",
+      "kind": "residual",
+      "source_port": "skip_out",
+      "target_port": "skip_in",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 352,
+        "expression": "x = self.norm1(x + self.dropout1(self_attn_out))",
+        "grade": "E1",
+        "basis": "direct_residual_expression"
+      },
+      "id": "transformer.edge.060"
+    },
+    {
+      "source": "dec_add1",
+      "target": "dec_add2",
+      "kind": "residual",
+      "source_port": "skip_out",
+      "target_port": "skip_in",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 361,
+        "expression": "x = self.norm2(x + self.dropout2(cross_attn_out))",
+        "grade": "E1",
+        "basis": "direct_residual_expression"
+      },
+      "id": "transformer.edge.061"
+    },
+    {
+      "source": "dec_add2",
+      "target": "dec_add3",
+      "kind": "residual",
+      "source_port": "skip_out",
+      "target_port": "skip_in",
+      "evidence": {
+        "file": "pytorch_transformer_original/transformer.py",
+        "line": 365,
+        "expression": "x = self.norm3(x + self.dropout3(ffn_out))",
+        "grade": "E1",
+        "basis": "direct_residual_expression"
+      },
+      "id": "transformer.edge.062"
+    }
+  ],
+  "discrepancies": [
+    {
+      "reference": "图1/2/3.png",
+      "reference_sha256": {
+        "图1.png": "8291a8b723aaa79c3ea34cb9c54460fdd8ed26919f098258190839a040d9ffa9",
+        "图2.png": "9159c6a608b524438050068ea0bd35b9b8678c3840114d6f6a4fea9eb42ac9ad",
+        "图3.png": "6002f1ea5c49869935e36a1fc6dc3e7867766a1585915315f37d41cff3071e27"
+      },
+      "element": "Softmax probabilities",
+      "resolution": "forward returns logits; no output Softmax node",
+      "status": "review_pending"
+    },
+    {
+      "reference": "图1.png",
+      "reference_sha256": {
+        "图1.png": "8291a8b723aaa79c3ea34cb9c54460fdd8ed26919f098258190839a040d9ffa9"
+      },
+      "element": "N x 6",
+      "resolution": "example.py selects two independent encoder/decoder layers",
+      "status": "review_pending"
+    }
+  ]
+}

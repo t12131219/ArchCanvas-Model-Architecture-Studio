@@ -100,9 +100,36 @@ class InsertLayerNormPatch(StrictModel):
         return self
 
 
+class RemoveLayerNormPatch(StrictModel):
+    """Stage 8's inverse splice: remove one source-proven LayerNorm from a linear edge."""
+
+    patch_id: PatchId
+    scope: Literal["architecture"] = "architecture"
+    operation: Literal["remove_layer_norm"] = "remove_layer_norm"
+    source_node_id: NodeId
+    target_node_id: NodeId
+    removed_node_id: NodeId
+    constructor_anchor_id: AnchorId
+    forward_anchor_id: AnchorId
+    attribute_name: str = Field(pattern=r"^[A-Za-z_][A-Za-z0-9_]*$")
+    constructor_anchor_content_fingerprint: Sha256
+    forward_anchor_content_fingerprint: Sha256
+    expected_delta: ExpectedGraphDelta
+
+    @model_validator(mode="after")
+    def removal_is_non_degenerate(self) -> RemoveLayerNormPatch:
+        if len({self.source_node_id, self.target_node_id, self.removed_node_id}) != 3:
+            raise ValueError("remove_layer_norm requires three distinct nodes")
+        if self.expected_delta.required_parameter_changes:
+            raise ValueError("remove_layer_norm cannot declare parameter changes")
+        if self.removed_node_id not in self.expected_delta.allowed_node_removals:
+            raise ValueError("remove_layer_norm must declare its removed node")
+        return self
+
+
 # Keep v1 payloads valid: ``set_parameter`` historically relied on its default operation field.
 # The two strict shapes have disjoint required fields, so Pydantic can safely select their union.
-Patch = SetParameterPatch | InsertLayerNormPatch
+Patch = SetParameterPatch | InsertLayerNormPatch | RemoveLayerNormPatch
 
 
 class PatchSet(StrictModel):

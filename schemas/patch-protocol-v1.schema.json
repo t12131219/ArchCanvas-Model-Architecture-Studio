@@ -233,6 +233,86 @@
       "title": "PatchTarget",
       "type": "object"
     },
+    "RemoveLayerNormPatch": {
+      "additionalProperties": false,
+      "description": "Stage 8's inverse splice: remove one source-proven LayerNorm from a linear edge.",
+      "properties": {
+        "attribute_name": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Attribute Name",
+          "type": "string"
+        },
+        "constructor_anchor_content_fingerprint": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Constructor Anchor Content Fingerprint",
+          "type": "string"
+        },
+        "constructor_anchor_id": {
+          "pattern": "^anchor:[A-Za-z0-9._-]+$",
+          "title": "Constructor Anchor Id",
+          "type": "string"
+        },
+        "expected_delta": {
+          "$ref": "#/$defs/ExpectedGraphDelta"
+        },
+        "forward_anchor_content_fingerprint": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Forward Anchor Content Fingerprint",
+          "type": "string"
+        },
+        "forward_anchor_id": {
+          "pattern": "^anchor:[A-Za-z0-9._-]+$",
+          "title": "Forward Anchor Id",
+          "type": "string"
+        },
+        "operation": {
+          "const": "remove_layer_norm",
+          "default": "remove_layer_norm",
+          "title": "Operation",
+          "type": "string"
+        },
+        "patch_id": {
+          "pattern": "^patch:[A-Za-z0-9._-]+$",
+          "title": "Patch Id",
+          "type": "string"
+        },
+        "removed_node_id": {
+          "pattern": "^node:[A-Za-z0-9._:-]+$",
+          "title": "Removed Node Id",
+          "type": "string"
+        },
+        "scope": {
+          "const": "architecture",
+          "default": "architecture",
+          "title": "Scope",
+          "type": "string"
+        },
+        "source_node_id": {
+          "pattern": "^node:[A-Za-z0-9._:-]+$",
+          "title": "Source Node Id",
+          "type": "string"
+        },
+        "target_node_id": {
+          "pattern": "^node:[A-Za-z0-9._:-]+$",
+          "title": "Target Node Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "patch_id",
+        "source_node_id",
+        "target_node_id",
+        "removed_node_id",
+        "constructor_anchor_id",
+        "forward_anchor_id",
+        "attribute_name",
+        "constructor_anchor_content_fingerprint",
+        "forward_anchor_content_fingerprint",
+        "expected_delta"
+      ],
+      "title": "RemoveLayerNormPatch",
+      "type": "object"
+    },
     "SetParameterPatch": {
       "additionalProperties": false,
       "properties": {
@@ -353,6 +433,9 @@
           },
           {
             "$ref": "#/$defs/InsertLayerNormPatch"
+          },
+          {
+            "$ref": "#/$defs/RemoveLayerNormPatch"
           }
         ]
       },

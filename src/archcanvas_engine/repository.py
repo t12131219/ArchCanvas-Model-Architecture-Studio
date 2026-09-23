@@ -11,6 +11,7 @@ from archcanvas_core.models.canvas import CanvasDocument
 from archcanvas_core.models.engine import EngineEvent, ProjectManifest, VisualPatch
 from archcanvas_core.models.publication import PublicationIR, VisualScene
 from archcanvas_core.models.source_identity import SourceIdentityDocument
+from archcanvas_core.models.visual_spec import VisualSpec
 
 
 def _json_bytes(document: object) -> bytes:
@@ -56,11 +57,17 @@ class EngineRepository:
         publication: PublicationIR,
         scene: VisualScene,
         svg: str,
+        *,
+        visual_spec: VisualSpec | None = None,
     ) -> str:
         root = self._project_dir(manifest.project_id) / "analysis"
         self._write(root / "source-identity.json", _json_bytes(source))
         self._write(root / "architecture.json", _json_bytes(architecture))
         self._write(root / "publication.json", _json_bytes(publication))
+        if visual_spec is not None:
+            self._write(root / "visual-spec.json", _json_bytes(visual_spec))
+        else:
+            (root / "visual-spec.json").unlink(missing_ok=True)
         self._write(root / "scene.json", _json_bytes(scene))
         self._write(root / "scene.svg", svg.encode("utf-8"))
         return "analysis/scene.svg"

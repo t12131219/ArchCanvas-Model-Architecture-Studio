@@ -1,0 +1,182 @@
+[
+  {
+    "id": "input",
+    "label": "Input time series",
+    "parent": null,
+    "lane": "main",
+    "role": "input",
+    "shape": "[B,L,N]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "pyramid",
+    "label": "Average-pool scale pyramid",
+    "parent": null,
+    "lane": "main",
+    "role": "decomposition",
+    "shape": "[96,48,24,12] x N",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "normalize",
+    "label": "Per-scale normalization",
+    "parent": null,
+    "lane": "main",
+    "role": "normalization",
+    "shape": "",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "embedding",
+    "label": "Per-scale value + temporal embedding",
+    "parent": null,
+    "lane": "main",
+    "role": "embedding",
+    "shape": "",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "blocks",
+    "label": "Past-decomposable mixing",
+    "parent": null,
+    "lane": "main",
+    "role": "repeat",
+    "shape": "",
+    "level": 1,
+    "repeat": "2 x"
+  },
+  {
+    "id": "decomp",
+    "label": "Per-scale moving-average decomposition",
+    "parent": "blocks",
+    "lane": "main",
+    "role": "decomposition",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "season",
+    "label": "Seasonal bottom-up mixing",
+    "parent": "blocks",
+    "lane": "main",
+    "role": "decomposition",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "trend",
+    "label": "Trend top-down mixing",
+    "parent": "blocks",
+    "lane": "main",
+    "role": "decomposition",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "merge",
+    "label": "Season + trend / residual",
+    "parent": "blocks",
+    "lane": "main",
+    "role": "merge",
+    "shape": "",
+    "level": 2,
+    "repeat": ""
+  },
+  {
+    "id": "predict",
+    "label": "Per-scale prediction",
+    "parent": null,
+    "lane": "main",
+    "role": "head",
+    "shape": "",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "aggregate",
+    "label": "Sum scale forecasts",
+    "parent": null,
+    "lane": "main",
+    "role": "merge",
+    "shape": "[B,H,N]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "denorm",
+    "label": "De-normalization",
+    "parent": null,
+    "lane": "main",
+    "role": "normalization",
+    "shape": "",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "output",
+    "label": "Forecast",
+    "parent": null,
+    "lane": "main",
+    "role": "output",
+    "shape": "[B,H,N]",
+    "level": 1,
+    "repeat": ""
+  },
+  {
+    "id": "moving_avg",
+    "label": "Moving average",
+    "parent": "decomp",
+    "lane": "main",
+    "role": "decomposition",
+    "shape": "",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "season_low",
+    "label": "Linear high -> low",
+    "parent": "season",
+    "lane": "main",
+    "role": "decomposition",
+    "shape": "",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "season_add",
+    "label": "Low-scale residual add",
+    "parent": "season",
+    "lane": "main",
+    "role": "merge",
+    "shape": "",
+    "level": 4,
+    "repeat": ""
+  },
+  {
+    "id": "trend_high",
+    "label": "Linear low -> high",
+    "parent": "trend",
+    "lane": "main",
+    "role": "decomposition",
+    "shape": "",
+    "level": 3,
+    "repeat": ""
+  },
+  {
+    "id": "trend_add",
+    "label": "High-scale residual add",
+    "parent": "trend",
+    "lane": "main",
+    "role": "merge",
+    "shape": "",
+    "level": 4,
+    "repeat": ""
+  }
+]

@@ -22,6 +22,7 @@ from archcanvas_core.models.engine import (
     SaveCanvasDocumentCommand,
     VisualPatch,
 )
+from archcanvas_core.models.visual_spec import VisualSpec
 from archcanvas_engine import ArchCanvasEngine
 from archcanvas_engine.service_errors import EngineRejected
 
@@ -87,6 +88,12 @@ def test_engine_open_analyze_cache_reload_and_visual_patch_are_source_read_only(
 
     assert analysis.architecture.project_id == opened.project_id
     assert analysis.svg.relative_path == "analysis/scene.svg"
+    spec = VisualSpec.model_validate_json(
+        engine._repository.artifact_bytes(opened.project_id, "analysis/visual-spec.json")
+    )
+    assert spec.publication_id == analysis.publication.publication_id
+    assert {node.canonical_id for node in spec.nodes} == {node.node_id for node in analysis.publication.nodes}
+    assert spec.view_policy.direct_full_detail_supported is False
     assert saved.visual_patches == [patch]
     assert source_path.read_bytes() == source_before
 

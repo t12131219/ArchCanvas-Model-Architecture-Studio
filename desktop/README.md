@@ -7,9 +7,11 @@ snapping. The browser experience starts in an explicitly labelled read-only Tran
 mode, where visual state is stored only in browser storage and the fixture source is never read or
 written.
 
-The Tauri client calls the `engine_rpc` command with typed Engine envelopes. The bridge starts one
-JSONL `archcanvas_engine.stdio` sidecar per request and returns its typed response. It does not
-read source paths or emulate source access. `CanvasDocument` data is limited to visual state.
+The Tauri client calls the `engine_rpc` command with typed Engine envelopes. One JSONL
+`archcanvas_engine.stdio` sidecar remains alive for the window session, so validated in-memory
+patch confirmations survive separate RPC calls but not a desktop/Engine restart. A broken session
+fails its current request without replaying it; the next request starts a fresh Engine. The bridge
+does not read source paths or emulate source access. `CanvasDocument` is visual-only.
 
 For a native development session, configure a Python environment where ArchCanvas is installed and
 an Engine-owned cache directory. These values are host configuration, never UI-controlled paths.
@@ -43,3 +45,14 @@ ARCHCANVAS_ENGINE_CACHE_ROOT=/absolute/path/to/archcanvas-cache \
 ARCHCANVAS_WEBKIT_DRIVER=/path/to/WebKitWebDriver \
 npm run test:e2e:tauri
 ```
+
+## Tier A source-map samples
+
+The read-only bundled models can be opened from the Tier A list in Tauri or at
+`/?tierA=transformer` in a browser preview (also `autoformer`, `itransformer`,
+`patchtst`, `timemixer`). L1-L4, a selected module's inline disclosure and
+`Open full` all use the same sample graph; the toolbar exports the visible SVG.
+Regenerate the checked source spans, archive hashes and ledgers with
+`conda run -n TFB_py311 python tools/build_tier_a.py` from the repository root.
+The samples are implementation-selected and pending human approval. They do not
+authorize source edits or imply V3 Stage 4/6 acceptance.

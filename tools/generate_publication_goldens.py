@@ -6,7 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
-from archcanvas_publication import PublicationCompiler, StageLayout
+from archcanvas_publication import PublicationCompiler, StageLayout, VisualSpecCompiler
 from archcanvas_pytorch.static import PyTorchStaticAdapter
 from archcanvas_renderer import render_svg
 
@@ -46,9 +46,11 @@ def expected_documents() -> dict[Path, bytes]:
             entrypoint=entrypoint,
         )
         publication = compiler.compile(exact)
-        scene = layout.layout(publication)
+        visual_spec = VisualSpecCompiler().compile(publication, exact)
+        scene = layout.layout(publication, visual_spec=visual_spec)
         expected_root = ROOT / "fixtures" / publication_fixture / "expected"
         documents[expected_root / "publication.json"] = _document_bytes(publication)
+        documents[expected_root / "visual-spec.json"] = _document_bytes(visual_spec)
         documents[expected_root / "scene.json"] = _document_bytes(scene)
         documents[expected_root / "scene.svg"] = render_svg(publication, scene).encode("utf-8")
         repeat_groups = [node for node in publication.nodes if node.kind.value == "repeat_group"]

@@ -41,12 +41,19 @@ from archcanvas_core.models.engine import (
     VisualPatch,
     VisualPatchResult,
 )
-from archcanvas_core.models.patch import InsertLayerNormPatch, PatchSet, SetParameterPatch
+from archcanvas_core.models.patch import (
+    InsertLayerNormPatch,
+    PatchSet,
+    RemoveLayerNormPatch,
+    SetParameterPatch,
+)
 from archcanvas_core.models.runtime import RuntimeTraceResult, TraceRequest, TraceStatus
-from archcanvas_publication import PublicationCompiler, StageLayout
+from archcanvas_core.models.visual_spec import VisualSpec
+from archcanvas_publication import PublicationCompiler, StageLayout, VisualSpecCompiler
 from archcanvas_python.analyzers import Analyzer
 from archcanvas_python.source_revision import file_revision
 from archcanvas_python.transactions.insert_layer_norm import plan_insert_layer_norm
+from archcanvas_python.transactions.remove_layer_norm import plan_remove_layer_norm
 from archcanvas_python.transactions.set_parameter import (
     CandidateTransaction,
     TransactionRejected,
@@ -131,6 +138,11 @@ class ArchCanvasEngine:
             available_parameter_names(runtime_validation_available=project_id in self._patch_runtime_profiles)
         )
 
+    def _patch_structural_operations(self, project_id: str) -> list[str]:
+        if project_id not in self._patch_analyzers or project_id not in self._patch_runtime_profiles:
+            return []
+        return ["insert_layer_norm", "remove_layer_norm"]
+
     def _refresh_patch_capabilities(self, project_id: str) -> None:
         """Persist newly registered transaction capabilities for an already open project."""
 
@@ -139,7 +151,12 @@ class ArchCanvasEngine:
         except FileNotFoundError:
             return
         self._repository.save_manifest(
-            manifest.model_copy(update={"patch_parameter_names": self._patch_parameter_names(project_id)})
+            manifest.model_copy(
+                update={
+                    "patch_parameter_names": self._patch_parameter_names(project_id),
+                    "patch_structural_operations": self._patch_structural_operations(project_id),
+                }
+            )
         )
 
     def _record_patch_event(
@@ -193,6 +210,7 @@ class ArchCanvasEngine:
             environment=environment,
             resolved_config=command.resolved_config,
             patch_parameter_names=self._patch_parameter_names(command.project_id),
+            patch_structural_operations=self._patch_structural_operations(command.project_id),
             source_revision=source_snapshot_revision({source_path.relative_to(root).as_posix(): revision}),
             file_revisions={source_path.relative_to(root).as_posix(): revision},
         )
@@ -256,7 +274,8 @@ class ArchCanvasEngine:
             resolved_config=manifest.resolved_config,
         )
         publication = self._compiler.compile(architecture)
-        scene = self._layout.layout(publication)
+        visual_spec = VisualSpecCompiler().compile(publication, architecture)
+        scene = self._layout.layout(publication, visual_spec=visual_spec)
         svg = render_svg(publication, scene)
         report = publication_preflight(publication, scene, svg)
         if report.blocking:
@@ -271,7 +290,8 @@ class ArchCanvasEngine:
         )
         self._repository.save_manifest(refreshed)
         relative_svg = self._repository.save_analysis(
-            refreshed, source, architecture, publication, scene, svg
+            refreshed, source, architecture, publication, scene, svg,
+            visual_spec=visual_spec,
         )
         self._repository.append_event(
             EngineEvent(
@@ -574,8 +594,12 @@ class ArchCanvasEngine:
                     analyzer=analyzer,
                     runtime_validation_available=command.project_id in self._patch_runtime_profiles,
                 )
-            else:
+            elif isinstance(command.patch_set.patches[0], InsertLayerNormPatch):
                 candidate = plan_insert_layer_norm(
+                    path.read_bytes(), command.patch_set, source, architecture, analyzer=analyzer
+                )
+            else:
+                candidate = plan_remove_layer_norm(
                     path.read_bytes(), command.patch_set, source, architecture, analyzer=analyzer
                 )
         except TransactionRejected as error:
@@ -597,7 +621,7 @@ class ArchCanvasEngine:
         else:
             provenance = PatchProvenance(
                 analyzer=getattr(analyzer, "__name__", analyzer.__class__.__name__),
-                transform_id="insert_layer_norm_v1",
+                transform_id=f"{patch.operation}_v1",
                 relative_file=relative_file,
                 anchor_id=patch.forward_anchor_id,
                 node_id=patch.source_node_id,
@@ -641,7 +665,9 @@ class ArchCanvasEngine:
         runtime_validation = self._validate_candidate_runtime(
             self._manifest(command.project_id),
             planned,
-            structural_change=isinstance(command.patch_set.patches[0], InsertLayerNormPatch),
+            structural_change=isinstance(
+                command.patch_set.patches[0], (InsertLayerNormPatch, RemoveLayerNormPatch)
+            ),
         )
         planned = replace(
             planned,
@@ -682,6 +708,12 @@ class ArchCanvasEngine:
                 command.project_id
             )
             previous_svg = self._repository.artifact_bytes(command.project_id, "analysis/scene.svg").decode("utf-8")
+            try:
+                previous_visual_spec = VisualSpec.model_validate_json(
+                    self._repository.artifact_bytes(command.project_id, "analysis/visual-spec.json")
+                )
+            except FileNotFoundError:
+                previous_visual_spec = None
         except (FileNotFoundError, UnicodeDecodeError) as error:
             raise EngineRejected("ANALYSIS_ARTIFACT_NOT_AVAILABLE", command.project_id) from error
         observed_revision, _ = self._observe_revision(manifest)
@@ -710,6 +742,7 @@ class ArchCanvasEngine:
                         previous_publication,
                         previous_scene,
                         previous_svg,
+                        visual_spec=previous_visual_spec,
                     )
                 except OSError as cache_error:
                     raise EngineRejected(
