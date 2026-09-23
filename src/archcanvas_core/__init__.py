@@ -5,7 +5,13 @@ from .models import (
     CanvasDocument,
     CommandReceipt,
     EvidenceRecord,
+    RuntimeCapabilityReport,
+    RuntimeInputSpec,
+    RuntimeTrace,
+    SemanticParameterPatch,
     SourceSnapshot,
+    SourceTransaction,
+    TransactionReceipt,
 )
 
 __all__ = [
@@ -13,5 +19,11 @@ __all__ = [
     "CanvasDocument",
     "CommandReceipt",
     "EvidenceRecord",
+    "RuntimeCapabilityReport",
+    "RuntimeInputSpec",
+    "RuntimeTrace",
+    "SemanticParameterPatch",
     "SourceSnapshot",
+    "SourceTransaction",
+    "TransactionReceipt",
 ]

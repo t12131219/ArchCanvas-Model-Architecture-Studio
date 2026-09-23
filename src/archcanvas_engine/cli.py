@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.metadata
 import json
 import platform
@@ -18,10 +19,29 @@ from archcanvas_core.models import (
     Diagnostic,
     EvidenceRecord,
     GateResult,
+    SemanticParameterPatch,
     SourceSnapshot,
 )
 from archcanvas_core.validation import validate_architecture
+from archcanvas_publication import (
+    build_scene,
+    build_visual_spec,
+    compile_views,
+    render_html,
+    render_svg,
+    validate_geometry,
+    validate_publication,
+)
 from archcanvas_python import AnalysisError, analyze_project
+from archcanvas_runtime import RuntimeTraceError, trace_runtime
+from archcanvas_studio import StudioBundle, prepare_studio_bundle, source_binding_digest
+from archcanvas_studio.server import create_studio_server
+from archcanvas_transactions import (
+    commit_transaction,
+    discard_transaction,
+    prepare_transaction,
+    verify_transaction,
+)
 
 SOURCE_PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY_ROOT = SOURCE_PACKAGE_ROOT.parent
@@ -40,7 +60,7 @@ def _compact(value: Any) -> str:
 
 
 def _emit(receipt: CommandReceipt) -> int:
-    print(_compact(receipt))
+    print(_compact(receipt), flush=True)
     return receipt.exit_code
 
 
@@ -51,6 +71,16 @@ def _write_json(path: Path, value: Any) -> None:
         "w", encoding="utf-8", dir=path.parent, delete=False
     ) as handle:
         handle.write(data)
+        temporary = Path(handle.name)
+    temporary.replace(path)
+
+
+def _write_text(path: Path, value: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", dir=path.parent, delete=False
+    ) as handle:
+        handle.write(value)
         temporary = Path(handle.name)
     temporary.replace(path)
 
@@ -114,6 +144,10 @@ def doctor() -> CommandReceipt:
                 message="Missing exported schemas: " + ", ".join(missing_schemas),
             )
         )
+    try:
+        torch_version = importlib.metadata.version("torch")
+    except importlib.metadata.PackageNotFoundError:
+        torch_version = None
     status = "invalid" if diagnostics else "ok"
     return CommandReceipt(
         command="doctor",
@@ -135,13 +169,16 @@ def doctor() -> CommandReceipt:
             "packages": packages,
             "network_required": False,
             "capabilities": {
-                "static_analysis": "available-transformer-l3",
+                "static_analysis": "available-generic+five-tier-a-profiles",
                 "semantic_validation": "available",
-                "publication_render": "unavailable",
-                "studio": "unavailable",
-                "runtime_trace": "unavailable",
-                "source_transactions": "unavailable",
+                "publication_render": "available-svg+html-l1-l4",
+                "studio": "available-visual-editing",
+                "runtime_trace": (
+                    "available-opt-in-pytorch" if torch_version else "unavailable-missing-torch"
+                ),
+                "source_transactions": "available-set-parameter",
             },
+            "runtime_packages": {"torch": torch_version},
         },
     )
 
@@ -156,6 +193,7 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
         args.mode,
         config_bytes,
         args.config,
+        pattern_packs_enabled=not args.no_pattern_packs,
     )
     gates, diagnostics = validate_architecture(
         bundle.architecture,
@@ -163,6 +201,13 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
         bundle.snapshot,
     )
     out = args.out.resolve()
+    profile = "generic" if args.no_pattern_packs else bundle.snapshot.resolved_config.get(
+        "architecture_profile"
+    ) or (
+        "transformer-l3"
+        if bundle.architecture.entrypoint.rsplit(":", 1)[-1].lower() == "transformer"
+        else "generic"
+    )
     artifacts = {
         "source_snapshot": str(out / "source-snapshot.json"),
         "evidence_ledger": str(out / "evidence-ledger.json"),
@@ -172,6 +217,10 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
         "discrepancy_ledger": str(out / "discrepancy-ledger.json"),
         "omission_ledger": str(out / "omission-ledger.json"),
         "capability_report": str(out / "capability-report.json"),
+        "semantic_overlay": str(out / "semantic-annotation-overlay.json"),
+        "pattern_receipt": str(out / "pattern-pack-receipt.json"),
+        "source_correction_report": str(out / "source-correction-report.json"),
+        "runtime_receipt": str(out / "runtime-receipt.json"),
         "architecture": str(out / "architecture.json"),
     }
     blocking = any(item.severity == "blocking" for item in diagnostics)
@@ -189,17 +238,82 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
     _write_json(Path(artifacts["module_ledger"]), bundle.architecture.nodes)
     _write_json(Path(artifacts["tensor_ledger"]), bundle.architecture.tensors)
     _write_json(Path(artifacts["edge_ledger"]), bundle.architecture.edges)
-    _write_json(Path(artifacts["discrepancy_ledger"]), [])
+    _write_json(Path(artifacts["discrepancy_ledger"]), bundle.discrepancies)
     _write_json(Path(artifacts["omission_ledger"]), bundle.architecture.unresolved)
     _write_json(
         Path(artifacts["capability_report"]),
         {
             "schema_version": "1.0",
-            "adapter": "python-ast-pytorch-transformer-l3",
+            "adapter": f"python-ast-pytorch-{profile}",
             "static_analysis": True,
-            "runtime_evidence": False,
-            "supported_profiles": ["transformer-l3"],
-            "semantic_transforms": [],
+            "runtime_evidence": "available-opt-in",
+            "supported_profiles": [
+                "generic",
+                "transformer-l3",
+                "autoformer",
+                "itransformer",
+                "patchtst",
+                "timemixer",
+            ],
+            "semantic_transforms": ["set_parameter"],
+        },
+    )
+    _write_json(
+        Path(artifacts["semantic_overlay"]),
+        {
+            "schema_version": "1.0",
+            "architecture_id": bundle.architecture.architecture_id,
+            "profile": profile,
+            "annotations": []
+            if args.no_pattern_packs
+            else [
+                {
+                    "node_id": node.node_id,
+                    "semantic_name": node.semantic_name,
+                    "evidence_ids": node.evidence_ids,
+                }
+                for node in bundle.architecture.nodes
+            ],
+        },
+    )
+    _write_json(
+        Path(artifacts["pattern_receipt"]),
+        {
+            "schema_version": "1.0",
+            "profile": profile,
+            "status": "disabled" if args.no_pattern_packs else "matched",
+            "source_execution": False,
+            "loaded_packs": [] if args.no_pattern_packs else [profile],
+            "exact_ir_digest_before": hashlib.sha256(
+                _compact(bundle.architecture).encode()
+            ).hexdigest(),
+            "exact_ir_digest_after": hashlib.sha256(
+                _compact(bundle.architecture).encode()
+            ).hexdigest(),
+        },
+    )
+    _write_json(
+        Path(artifacts["source_correction_report"]),
+        {
+            "schema_version": "1.0",
+            "profile": profile,
+            "discrepancies": bundle.discrepancies,
+        },
+    )
+    _write_json(
+        Path(artifacts["runtime_receipt"]),
+        {
+            "schema_version": "1.0",
+            "status": "skipped",
+            "source_execution": False,
+            "reason": "Run archcanvas trace with an explicit input spec to opt in.",
+            "gates": [
+                GateResult(
+                    gate="G-runtime-authorization",
+                    status="skipped",
+                    message="Static analysis did not receive runtime execution authorization.",
+                )
+            ],
         },
     )
     _write_json(Path(artifacts["architecture"]), bundle.architecture)
@@ -212,6 +326,8 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
         diagnostics=diagnostics,
         details={
             "source_execution": False,
+            "profile": profile,
+            "pattern_packs_enabled": not args.no_pattern_packs,
             "node_count": len(bundle.architecture.nodes),
             "tensor_count": len(bundle.architecture.tensors),
             "edge_count": len(bundle.architecture.edges),
@@ -239,6 +355,21 @@ def validate(args: argparse.Namespace) -> CommandReceipt:
         else None
     )
     gates, diagnostics = validate_architecture(ir, evidence, snapshot)
+    publication_available = args.quality == "publication"
+    if publication_available:
+        gates = [gate for gate in gates if gate.gate != "C-publication-compilation"]
+        views = compile_views(ir)
+        publication_gates, publication_diagnostics = validate_publication(ir, views)
+        gates.extend(publication_gates)
+        diagnostics.extend(publication_diagnostics)
+        for view in views:
+            spec = build_visual_spec(view)
+            scene = build_scene(view, spec)
+            geometry_gate, geometry_diagnostics = validate_geometry(scene)
+            gates.append(
+                geometry_gate.model_copy(update={"gate": f"D-geometry-{view.level}"})
+            )
+            diagnostics.extend(geometry_diagnostics)
     failed = any(gate.status == "failed" for gate in gates)
     return CommandReceipt(
         command="validate",
@@ -249,8 +380,204 @@ def validate(args: argparse.Namespace) -> CommandReceipt:
         diagnostics=diagnostics,
         details={
             "quality": args.quality,
-            "publication_gates_available": False,
+            "publication_gates_available": publication_available,
             "evidence_binding_loaded": snapshot is not None and evidence is not None,
+        },
+    )
+
+
+VIEW_ALIASES = {
+    "paper-overview": "L1",
+    "overview": "L1",
+    "l1": "L1",
+    "module": "L2",
+    "l2": "L2",
+    "semantic": "L3",
+    "l3": "L3",
+    "operator": "L4",
+    "full": "L4",
+    "l4": "L4",
+}
+
+
+def render(args: argparse.Namespace) -> CommandReceipt:
+    ir = ArchitectureIR.model_validate_json(args.artifact.read_text(encoding="utf-8"))
+    views = compile_views(ir)
+    publication_gates, diagnostics = validate_publication(ir, views)
+    if args.view == "all":
+        selected = views
+    else:
+        selected_level = VIEW_ALIASES[args.view.lower()]
+        selected = [view for view in views if view.level == selected_level]
+    compiled: list[tuple[Any, Any, Any]] = []
+    geometry_gates: list[GateResult] = []
+    for view in selected:
+        spec = build_visual_spec(view)
+        scene = build_scene(view, spec)
+        geometry_gate, geometry_diagnostics = validate_geometry(scene)
+        geometry_gates.append(
+            geometry_gate.model_copy(
+                update={"gate": f"D-geometry-{view.level}" if args.view == "all" else "D-geometry"}
+            )
+        )
+        diagnostics.extend(geometry_diagnostics)
+        compiled.append((view, spec, scene))
+    gates = [
+        *publication_gates,
+        *geometry_gates,
+        GateResult(
+            gate="E-visual-review",
+            status="skipped",
+            message="Visual review is recorded separately after inspecting rendered artifacts.",
+        ),
+    ]
+    if any(gate.status == "failed" for gate in gates):
+        return CommandReceipt(
+            command="render",
+            status="invalid",
+            exit_code=2,
+            gates=gates,
+            diagnostics=diagnostics,
+            details={"writes_performed": False, "view": args.view},
+        )
+
+    out = args.out.resolve()
+    artifacts: dict[str, str] = {"architecture": str(args.artifact.resolve())}
+    for view, spec, scene in compiled:
+        target = out / view.level.lower() if args.view == "all" else out
+        paths = {
+            "publication_view": target / "publication-view.json",
+            "visual_spec": target / "visual-spec.json",
+            "visual_scene": target / "visual-scene.json",
+            "svg": target / "scene.svg",
+            "html": target / "view.html",
+        }
+        prefix = f"{view.level.lower()}_" if args.view == "all" else ""
+        artifacts.update({f"{prefix}{key}": str(path) for key, path in paths.items()})
+        _write_json(paths["publication_view"], view)
+        _write_json(paths["visual_spec"], spec)
+        _write_json(paths["visual_scene"], scene)
+        _write_text(paths["svg"], render_svg(scene))
+        _write_text(paths["html"], render_html(scene, view, spec))
+    artifacts["render_receipt"] = str(out / "render-receipt.json")
+    receipt = CommandReceipt(
+        command="render",
+        status="ok",
+        exit_code=0,
+        artifacts=artifacts,
+        gates=gates,
+        diagnostics=diagnostics,
+        details={
+            "view": args.view,
+            "levels": [view.level for view, _, _ in compiled],
+            "layout_families": {view.level: view.layout_family for view, _, _ in compiled},
+            "canonical_surface": "svg",
+            "html_self_contained": True,
+            "png": "unavailable",
+            "pdf": "unavailable",
+            "runtime_evidence": "skipped",
+            "visual_review": "skipped",
+        },
+    )
+    _write_json(Path(artifacts["render_receipt"]), receipt)
+    return receipt
+
+
+def studio(args: argparse.Namespace) -> tuple[CommandReceipt, StudioBundle | None]:
+    workspace = (
+        args.workspace.resolve()
+        if args.workspace is not None
+        else (args.artifact.parent / ".archcanvas").resolve()
+    )
+    bundle = prepare_studio_bundle(args.artifact, workspace)
+    gates: list[GateResult] = []
+    diagnostics: list[Diagnostic] = []
+    for level, scene in bundle.materialized_scenes().items():
+        gate, scene_diagnostics = validate_geometry(scene)
+        gates.append(gate.model_copy(update={"gate": f"D-geometry-{level}"}))
+        diagnostics.extend(scene_diagnostics)
+    source_digest_matches = bundle.document.source_digest == source_binding_digest(bundle.snapshot)
+    gates.append(
+        GateResult(
+            gate="F-visual-source-invariance",
+            status="passed" if source_digest_matches else "failed",
+            message=(
+                "CanvasDocument remains bound to the exact source snapshot digest."
+                if source_digest_matches
+                else "CanvasDocument source binding is stale."
+            ),
+        )
+    )
+    failed = any(gate.status == "failed" for gate in gates)
+    artifacts = {
+        "studio_html": str(bundle.static_dir / "index.html"),
+        "studio_state": str(bundle.static_dir / "studio-state.json"),
+        "canvas_document": str(bundle.document_path),
+        "workspace": str(bundle.workspace),
+    }
+    receipt = CommandReceipt(
+        command="studio",
+        status="invalid" if failed else "ok",
+        exit_code=2 if failed else 0,
+        artifacts=artifacts,
+        gates=gates,
+        diagnostics=diagnostics,
+        details={
+            "serve": args.serve,
+            "url": f"http://{args.host}:{args.port}/" if args.serve else None,
+            "source_writes": False,
+            "visual_patch_count": len(bundle.document.visual_patches),
+            "redo_patch_count": len(bundle.document.redo_patches),
+            "modes": ["explore", "layout", "model"],
+            "source_editing": "available-set-parameter-transaction",
+        },
+    )
+    return receipt, bundle
+
+
+def trace(args: argparse.Namespace) -> CommandReceipt:
+    return trace_runtime(args.artifact, args.input_spec, args.out)
+
+
+def patch(args: argparse.Namespace) -> CommandReceipt:
+    if args.patch_command == "prepare":
+        request = SemanticParameterPatch.model_validate_json(
+            args.request.read_text(encoding="utf-8")
+        )
+        transaction, receipt = prepare_transaction(request, args.workspace)
+        directory = Path(transaction.workspace) / "transactions" / transaction.transaction_id
+    elif args.patch_command == "verify":
+        transaction, receipt = verify_transaction(args.transaction)
+        directory = Path(transaction.workspace) / "transactions" / transaction.transaction_id
+    elif args.patch_command == "commit":
+        transaction, receipt = commit_transaction(args.transaction)
+        directory = Path(transaction.workspace) / "transactions" / transaction.transaction_id
+    elif args.patch_command == "discard":
+        transaction, receipt = discard_transaction(args.transaction)
+        directory = Path(transaction.workspace) / "transactions" / transaction.transaction_id
+    else:  # pragma: no cover - argparse enforces the subcommand
+        raise ValueError(f"unknown patch command: {args.patch_command}")
+    status = "ok" if receipt.status == "ok" else "invalid"
+    return CommandReceipt(
+        command=f"patch {args.patch_command}",
+        status=status,
+        exit_code=0 if status == "ok" else 2,
+        artifacts={
+            "transaction": str(directory / "transaction.json"),
+            "source_diff": str(directory / "source.diff"),
+        },
+        gates=receipt.gates,
+        diagnostics=receipt.diagnostics,
+        details={
+            "transaction_id": transaction.transaction_id,
+            "transaction_state": transaction.state.value,
+            "source_writes": receipt.source_writes,
+            "expected_delta": transaction.expected_delta.model_dump(mode="json"),
+            "observed_delta": (
+                transaction.observed_delta.model_dump(mode="json")
+                if transaction.observed_delta is not None
+                else None
+            ),
         },
     )
 
@@ -267,15 +594,43 @@ def build_parser() -> argparse.ArgumentParser:
     analyze_parser.add_argument("--task", required=True)
     analyze_parser.add_argument("--mode", choices=("eval", "train"), required=True)
     analyze_parser.add_argument("--out", type=Path, required=True)
+    analyze_parser.add_argument("--no-pattern-packs", action="store_true")
     analyze_parser.add_argument("--json", action="store_true")
     validate_parser = subparsers.add_parser("validate")
     validate_parser.add_argument("artifact", type=Path)
-    validate_parser.add_argument("--quality", default="semantic")
+    validate_parser.add_argument("--quality", choices=("semantic", "publication"), default="semantic")
     validate_parser.add_argument("--json", action="store_true")
-    for command in ("render", "studio", "patch"):
-        unavailable = subparsers.add_parser(command)
-        unavailable.add_argument("arguments", nargs="*")
-        unavailable.add_argument("--json", action="store_true")
+    render_parser = subparsers.add_parser("render")
+    render_parser.add_argument("artifact", type=Path)
+    render_parser.add_argument(
+        "--view",
+        choices=(*VIEW_ALIASES, "all"),
+        default="paper-overview",
+    )
+    render_parser.add_argument("--out", type=Path, required=True)
+    render_parser.add_argument("--json", action="store_true")
+    studio_parser = subparsers.add_parser("studio")
+    studio_parser.add_argument("artifact", type=Path)
+    studio_parser.add_argument("--workspace", type=Path)
+    studio_parser.add_argument("--serve", action="store_true")
+    studio_parser.add_argument("--host", default="127.0.0.1")
+    studio_parser.add_argument("--port", type=int, default=4310)
+    studio_parser.add_argument("--json", action="store_true")
+    trace_parser = subparsers.add_parser("trace")
+    trace_parser.add_argument("artifact", type=Path)
+    trace_parser.add_argument("--input-spec", type=Path, required=True)
+    trace_parser.add_argument("--out", type=Path, required=True)
+    trace_parser.add_argument("--json", action="store_true")
+    patch_parser = subparsers.add_parser("patch")
+    patch_subparsers = patch_parser.add_subparsers(dest="patch_command", required=True)
+    prepare_parser = patch_subparsers.add_parser("prepare")
+    prepare_parser.add_argument("request", type=Path)
+    prepare_parser.add_argument("--workspace", type=Path, required=True)
+    prepare_parser.add_argument("--json", action="store_true")
+    for command in ("verify", "commit", "discard"):
+        transaction_parser = patch_subparsers.add_parser(command)
+        transaction_parser.add_argument("transaction", type=Path)
+        transaction_parser.add_argument("--json", action="store_true")
     return parser
 
 
@@ -289,11 +644,31 @@ def main(argv: list[str] | None = None) -> int:
             receipt = analyze(args)
         elif args.command == "validate":
             receipt = validate(args)
+        elif args.command == "render":
+            receipt = render(args)
+        elif args.command == "studio":
+            receipt, bundle = studio(args)
+            exit_code = _emit(receipt)
+            if args.serve and bundle is not None:
+                server = create_studio_server(bundle, args.host, args.port)
+                try:
+                    server.serve_forever()
+                except KeyboardInterrupt:
+                    pass
+                finally:
+                    server.server_close()
+            return exit_code
+        elif args.command == "trace":
+            receipt = trace(args)
+        elif args.command == "patch":
+            receipt = patch(args)
         else:
             receipt = _unavailable(args.command, args.command)
         return _emit(receipt)
     except AnalysisError as error:
         return _emit(_invalid(args.command, error.code, str(error)))
+    except RuntimeTraceError as error:
+        return _emit(_invalid(args.command, "RUNTIME_REQUEST_INVALID", str(error)))
     except (OSError, ValidationError, ValueError, json.JSONDecodeError) as error:
         return _emit(_invalid(args.command, "INPUT_INVALID", str(error)))
     except Exception as error:  # noqa: BLE001  # pragma: no cover - final receipt boundary

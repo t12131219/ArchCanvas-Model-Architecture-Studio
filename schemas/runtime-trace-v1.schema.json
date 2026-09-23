@@ -1,0 +1,479 @@
+{
+  "$defs": {
+    "RuntimeBoundaryViolation": {
+      "additionalProperties": false,
+      "properties": {
+        "operation": {
+          "enum": [
+            "network",
+            "process",
+            "write"
+          ],
+          "title": "Operation",
+          "type": "string"
+        },
+        "target": {
+          "minLength": 1,
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "operation",
+        "target"
+      ],
+      "title": "RuntimeBoundaryViolation",
+      "type": "object"
+    },
+    "RuntimeEnvironment": {
+      "additionalProperties": false,
+      "properties": {
+        "cuda_available": {
+          "title": "Cuda Available",
+          "type": "boolean"
+        },
+        "cuda_build": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cuda Build"
+        },
+        "deterministic_algorithms": {
+          "title": "Deterministic Algorithms",
+          "type": "boolean"
+        },
+        "platform": {
+          "minLength": 1,
+          "title": "Platform",
+          "type": "string"
+        },
+        "python_version": {
+          "minLength": 1,
+          "title": "Python Version",
+          "type": "string"
+        },
+        "selected_device": {
+          "minLength": 1,
+          "title": "Selected Device",
+          "type": "string"
+        },
+        "torch_version": {
+          "minLength": 1,
+          "title": "Torch Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "python_version",
+        "platform",
+        "torch_version",
+        "cuda_available",
+        "selected_device",
+        "deterministic_algorithms"
+      ],
+      "title": "RuntimeEnvironment",
+      "type": "object"
+    },
+    "RuntimeInput": {
+      "additionalProperties": false,
+      "properties": {
+        "dtype": {
+          "default": "float32",
+          "enum": [
+            "float16",
+            "float32",
+            "float64",
+            "bfloat16",
+            "int32",
+            "int64",
+            "bool"
+          ],
+          "title": "Dtype",
+          "type": "string"
+        },
+        "generator": {
+          "default": "normal",
+          "enum": [
+            "zeros",
+            "ones",
+            "normal",
+            "uniform",
+            "randint"
+          ],
+          "title": "Generator",
+          "type": "string"
+        },
+        "high": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "High"
+        },
+        "low": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Low"
+        },
+        "name": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "shape": {
+          "items": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "minItems": 1,
+          "title": "Shape",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "shape"
+      ],
+      "title": "RuntimeInput",
+      "type": "object"
+    },
+    "RuntimeInputSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "constructor_kwargs": {
+          "additionalProperties": true,
+          "title": "Constructor Kwargs",
+          "type": "object"
+        },
+        "cpu_limit_seconds": {
+          "default": 20,
+          "maximum": 300,
+          "minimum": 1,
+          "title": "Cpu Limit Seconds",
+          "type": "integer"
+        },
+        "device": {
+          "default": "cpu",
+          "enum": [
+            "cpu",
+            "cuda",
+            "auto"
+          ],
+          "title": "Device",
+          "type": "string"
+        },
+        "forward_kwargs": {
+          "additionalProperties": true,
+          "title": "Forward Kwargs",
+          "type": "object"
+        },
+        "inputs": {
+          "items": {
+            "$ref": "#/$defs/RuntimeInput"
+          },
+          "minItems": 1,
+          "title": "Inputs",
+          "type": "array"
+        },
+        "memory_limit_mb": {
+          "default": 8192,
+          "maximum": 65536,
+          "minimum": 512,
+          "title": "Memory Limit Mb",
+          "type": "integer"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "seed": {
+          "default": 0,
+          "maximum": 9223372036854775807,
+          "minimum": 0,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "default": 30,
+          "maximum": 300,
+          "minimum": 1,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "inputs"
+      ],
+      "title": "RuntimeInputSpec",
+      "type": "object"
+    },
+    "RuntimeIsolation": {
+      "additionalProperties": false,
+      "properties": {
+        "child_processes": {
+          "const": "python-process-deny",
+          "default": "python-process-deny",
+          "title": "Child Processes",
+          "type": "string"
+        },
+        "cpu_limit_seconds": {
+          "minimum": 1,
+          "title": "Cpu Limit Seconds",
+          "type": "integer"
+        },
+        "environment": {
+          "const": "allowlisted",
+          "default": "allowlisted",
+          "title": "Environment",
+          "type": "string"
+        },
+        "memory_limit_mb": {
+          "minimum": 512,
+          "title": "Memory Limit Mb",
+          "type": "integer"
+        },
+        "network": {
+          "const": "python-socket-deny",
+          "default": "python-socket-deny",
+          "title": "Network",
+          "type": "string"
+        },
+        "process": {
+          "const": "isolated-subprocess",
+          "default": "isolated-subprocess",
+          "title": "Process",
+          "type": "string"
+        },
+        "timeout_seconds": {
+          "minimum": 1,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        },
+        "violations": {
+          "items": {
+            "$ref": "#/$defs/RuntimeBoundaryViolation"
+          },
+          "title": "Violations",
+          "type": "array"
+        },
+        "working_directory": {
+          "const": "temporary-sandbox",
+          "default": "temporary-sandbox",
+          "title": "Working Directory",
+          "type": "string"
+        },
+        "writes": {
+          "const": "sandbox-only",
+          "default": "sandbox-only",
+          "title": "Writes",
+          "type": "string"
+        }
+      },
+      "required": [
+        "timeout_seconds",
+        "cpu_limit_seconds",
+        "memory_limit_mb"
+      ],
+      "title": "RuntimeIsolation",
+      "type": "object"
+    },
+    "RuntimeObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "input_tensors": {
+          "items": {
+            "$ref": "#/$defs/RuntimeTensorObservation"
+          },
+          "title": "Input Tensors",
+          "type": "array"
+        },
+        "matched_node_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Matched Node Ids",
+          "type": "array"
+        },
+        "module_path": {
+          "minLength": 1,
+          "title": "Module Path",
+          "type": "string"
+        },
+        "module_type": {
+          "minLength": 1,
+          "title": "Module Type",
+          "type": "string"
+        },
+        "observation_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Observation Id",
+          "type": "string"
+        },
+        "output_tensors": {
+          "items": {
+            "$ref": "#/$defs/RuntimeTensorObservation"
+          },
+          "title": "Output Tensors",
+          "type": "array"
+        },
+        "sequence": {
+          "minimum": 0,
+          "title": "Sequence",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "observation_id",
+        "sequence",
+        "module_path",
+        "module_type"
+      ],
+      "title": "RuntimeObservation",
+      "type": "object"
+    },
+    "RuntimeTensorObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "device": {
+          "minLength": 1,
+          "title": "Device",
+          "type": "string"
+        },
+        "dtype": {
+          "minLength": 1,
+          "title": "Dtype",
+          "type": "string"
+        },
+        "requires_grad": {
+          "title": "Requires Grad",
+          "type": "boolean"
+        },
+        "shape": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Shape",
+          "type": "array"
+        }
+      },
+      "required": [
+        "shape",
+        "dtype",
+        "device",
+        "requires_grad"
+      ],
+      "title": "RuntimeTensorObservation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "architecture_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Architecture Id",
+      "type": "string"
+    },
+    "entrypoint": {
+      "minLength": 3,
+      "title": "Entrypoint",
+      "type": "string"
+    },
+    "environment": {
+      "$ref": "#/$defs/RuntimeEnvironment"
+    },
+    "input_spec": {
+      "$ref": "#/$defs/RuntimeInputSpec"
+    },
+    "input_spec_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Input Spec Digest",
+      "type": "string"
+    },
+    "isolation": {
+      "$ref": "#/$defs/RuntimeIsolation"
+    },
+    "observations": {
+      "items": {
+        "$ref": "#/$defs/RuntimeObservation"
+      },
+      "minItems": 1,
+      "title": "Observations",
+      "type": "array"
+    },
+    "output_tensors": {
+      "items": {
+        "$ref": "#/$defs/RuntimeTensorObservation"
+      },
+      "title": "Output Tensors",
+      "type": "array"
+    },
+    "replay_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Replay Digest",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_revision": {
+      "minLength": 1,
+      "title": "Source Revision",
+      "type": "string"
+    },
+    "source_snapshot_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Source Snapshot Id",
+      "type": "string"
+    },
+    "trace_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Trace Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "trace_id",
+    "architecture_id",
+    "source_snapshot_id",
+    "source_revision",
+    "entrypoint",
+    "input_spec",
+    "input_spec_digest",
+    "replay_digest",
+    "observations",
+    "environment",
+    "isolation"
+  ],
+  "title": "RuntimeTrace",
+  "type": "object"
+}

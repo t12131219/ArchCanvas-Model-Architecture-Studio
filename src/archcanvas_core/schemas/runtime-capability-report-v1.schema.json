@@ -1,0 +1,191 @@
+{
+  "$defs": {
+    "RuntimeBoundaryViolation": {
+      "additionalProperties": false,
+      "properties": {
+        "operation": {
+          "enum": [
+            "network",
+            "process",
+            "write"
+          ],
+          "title": "Operation",
+          "type": "string"
+        },
+        "target": {
+          "minLength": 1,
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "operation",
+        "target"
+      ],
+      "title": "RuntimeBoundaryViolation",
+      "type": "object"
+    },
+    "RuntimeIsolation": {
+      "additionalProperties": false,
+      "properties": {
+        "child_processes": {
+          "const": "python-process-deny",
+          "default": "python-process-deny",
+          "title": "Child Processes",
+          "type": "string"
+        },
+        "cpu_limit_seconds": {
+          "minimum": 1,
+          "title": "Cpu Limit Seconds",
+          "type": "integer"
+        },
+        "environment": {
+          "const": "allowlisted",
+          "default": "allowlisted",
+          "title": "Environment",
+          "type": "string"
+        },
+        "memory_limit_mb": {
+          "minimum": 512,
+          "title": "Memory Limit Mb",
+          "type": "integer"
+        },
+        "network": {
+          "const": "python-socket-deny",
+          "default": "python-socket-deny",
+          "title": "Network",
+          "type": "string"
+        },
+        "process": {
+          "const": "isolated-subprocess",
+          "default": "isolated-subprocess",
+          "title": "Process",
+          "type": "string"
+        },
+        "timeout_seconds": {
+          "minimum": 1,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        },
+        "violations": {
+          "items": {
+            "$ref": "#/$defs/RuntimeBoundaryViolation"
+          },
+          "title": "Violations",
+          "type": "array"
+        },
+        "working_directory": {
+          "const": "temporary-sandbox",
+          "default": "temporary-sandbox",
+          "title": "Working Directory",
+          "type": "string"
+        },
+        "writes": {
+          "const": "sandbox-only",
+          "default": "sandbox-only",
+          "title": "Writes",
+          "type": "string"
+        }
+      },
+      "required": [
+        "timeout_seconds",
+        "cpu_limit_seconds",
+        "memory_limit_mb"
+      ],
+      "title": "RuntimeIsolation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "adapter": {
+      "const": "pytorch-hooks-v1",
+      "default": "pytorch-hooks-v1",
+      "title": "Adapter",
+      "type": "string"
+    },
+    "cuda_available": {
+      "title": "Cuda Available",
+      "type": "boolean"
+    },
+    "cuda_build": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Cuda Build"
+    },
+    "dtype_trace": {
+      "default": true,
+      "title": "Dtype Trace",
+      "type": "boolean"
+    },
+    "isolation": {
+      "$ref": "#/$defs/RuntimeIsolation"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "replay_check": {
+      "default": true,
+      "title": "Replay Check",
+      "type": "boolean"
+    },
+    "runtime_available": {
+      "title": "Runtime Available",
+      "type": "boolean"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "shape_trace": {
+      "default": true,
+      "title": "Shape Trace",
+      "type": "boolean"
+    },
+    "supported_devices": {
+      "items": {
+        "enum": [
+          "cpu",
+          "cuda"
+        ],
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Supported Devices",
+      "type": "array"
+    },
+    "torch_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Torch Version"
+    }
+  },
+  "required": [
+    "runtime_available",
+    "cuda_available",
+    "supported_devices",
+    "isolation"
+  ],
+  "title": "RuntimeCapabilityReport",
+  "type": "object"
+}

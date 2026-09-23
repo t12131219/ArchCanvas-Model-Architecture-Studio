@@ -15,6 +15,7 @@ from archcanvas_core.models import (
     ArchitectureNode,
     ArchitectureParameter,
     Confidence,
+    DiscrepancyRecord,
     EdgeType,
     EvidenceKind,
     EvidenceRecord,
@@ -29,7 +30,7 @@ from archcanvas_core.models import (
     UnresolvedFact,
 )
 
-ANALYZER_VERSION = "0.2.0"
+ANALYZER_VERSION = "0.3.0"
 
 
 class AnalysisError(ValueError):
@@ -43,6 +44,7 @@ class AnalysisBundle:
     snapshot: SourceSnapshot
     evidence: list[EvidenceRecord]
     architecture: ArchitectureIR
+    discrepancies: list[DiscrepancyRecord] = field(default_factory=list)
 
 
 @dataclass
@@ -452,6 +454,8 @@ def analyze_project(
     execution_mode: str,
     config_bytes: bytes = b"{}",
     config_path: Path | None = None,
+    *,
+    pattern_packs_enabled: bool = True,
 ) -> AnalysisBundle:
     project = project.resolve()
     if ":" not in entrypoint:
@@ -461,6 +465,54 @@ def analyze_project(
     if not source_path.is_file() or not source_path.resolve().is_relative_to(project):
         raise AnalysisError("ENTRYPOINT_NOT_FOUND", f"source module not found: {source_path}")
     config = _parse_config(config_bytes)
+    if pattern_packs_enabled and config.get("architecture_profile") == "autoformer":
+        from .autoformer import analyze_autoformer
+
+        return analyze_autoformer(
+            project,
+            entrypoint,
+            task,
+            execution_mode,
+            config,
+            config_bytes,
+            config_path,
+        )
+    if pattern_packs_enabled and config.get("architecture_profile") == "itransformer":
+        from .itransformer import analyze_itransformer
+
+        return analyze_itransformer(
+            project,
+            entrypoint,
+            task,
+            execution_mode,
+            config,
+            config_bytes,
+            config_path,
+        )
+    if pattern_packs_enabled and config.get("architecture_profile") == "patchtst":
+        from .patchtst import analyze_patchtst
+
+        return analyze_patchtst(
+            project,
+            entrypoint,
+            task,
+            execution_mode,
+            config,
+            config_bytes,
+            config_path,
+        )
+    if pattern_packs_enabled and config.get("architecture_profile") == "timemixer":
+        from .timemixer import analyze_timemixer
+
+        return analyze_timemixer(
+            project,
+            entrypoint,
+            task,
+            execution_mode,
+            config,
+            config_bytes,
+            config_path,
+        )
     source_bytes = source_path.read_bytes()
     source_digest = _sha256(source_bytes)
     config_digest = _sha256(config_bytes)
@@ -545,7 +597,15 @@ def analyze_project(
         source_symbol=class_name,
         line=class_node.lineno,
         end_line=getattr(class_node, "end_lineno", class_node.lineno),
-        attributes={"model_class": class_name},
+        attributes={
+            "model_class": class_name,
+            "architecture_profile": (
+                "transformer-l3"
+                if pattern_packs_enabled and class_name.lower() == "transformer"
+                else "generic"
+            ),
+            "pattern_packs_enabled": pattern_packs_enabled,
+        },
     )
     drafts.append(container)
 
@@ -570,6 +630,8 @@ def analyze_project(
 
     unresolved: list[UnresolvedFact] = []
     used_node_ids: set[str] = {draft.node_id for draft in drafts}
+    output_created = False
+    return_boundary: _NodeDraft | None = None
     for statement in forward.body:
         target: str | None = None
         expression: ast.AST | None = None
@@ -599,8 +661,45 @@ def analyze_project(
                     attributes={"io": "output", "assigned_symbol": "model_output"},
                 )
             )
+            output_created = True
             continue
         elif isinstance(statement, (ast.If, ast.For, ast.While, ast.Try, ast.Match)):
+            statement_names = [
+                name for name in _loaded_names(statement) if name in variable_producer
+            ]
+            contains_return = any(isinstance(node, ast.Return) for node in ast.walk(statement))
+            if not pattern_packs_enabled:
+                boundary_index = len(unresolved) + 1
+                boundary_id = f"node:opaque.control.{boundary_index}"
+                dependencies = [
+                    (name, variable_producer[name])
+                    for name in dict.fromkeys([*forward_args, *statement_names])
+                    if name in variable_producer
+                ]
+                boundary = _NodeDraft(
+                    node_id=boundary_id,
+                    kind=NodeKind.OPAQUE_COMPOSITE,
+                    semantic_name=f"Unresolved {type(statement).__name__} boundary",
+                    source_symbol=f"{class_name}.forward",
+                    line=statement.lineno,
+                    end_line=getattr(statement, "end_lineno", statement.lineno),
+                    target=f"opaque_control_{boundary_index}",
+                    dependencies=dependencies,
+                    attributes={
+                        "implementation_status": "boundary-only",
+                        "semantic_status": "unnamed",
+                        "execution_status": "unresolved",
+                        "unresolved_reason": "static_control_flow_not_expanded",
+                        "capabilities": ["inspect_boundary", "edit_visual"],
+                        "contains_return": contains_return,
+                    },
+                )
+                drafts.append(boundary)
+                used_node_ids.add(boundary_id)
+                variable_producer[boundary.target] = boundary.node_id
+                shapes[boundary.target] = "[?]"
+                if contains_return:
+                    return_boundary = boundary
             unresolved.append(
                 UnresolvedFact(
                     code="CONTROL_FLOW_NOT_EXPANDED",
@@ -627,6 +726,59 @@ def analyze_project(
             for name in _loaded_names(expression)
             if name in variable_producer
         ]
+        if not pattern_packs_enabled and kind is NodeKind.MERGE_EVENT and len(dependencies) < 2:
+            kind = NodeKind.OPAQUE_COMPOSITE
+            attributes.update(
+                {
+                    "implementation_status": "boundary-only",
+                    "semantic_status": "unnamed",
+                    "execution_status": "static-active",
+                    "unresolved_reason": "merge_inputs_not_fully_resolved",
+                    "capabilities": ["inspect_boundary", "edit_visual"],
+                }
+            )
+            unresolved.append(
+                UnresolvedFact(
+                    code="MERGE_INPUTS_NOT_EXPANDED",
+                    message=(
+                        f"Generic recovery could not prove every input to {target} "
+                        f"at line {statement.lineno}."
+                    ),
+                    blocking=False,
+                )
+            )
+        primitive_module_suffixes = (
+            "Linear",
+            "Conv1d",
+            "Conv2d",
+            "Conv3d",
+            "LayerNorm",
+            "BatchNorm1d",
+            "BatchNorm2d",
+            "Embedding",
+            "Dropout",
+            "GELU",
+            "ReLU",
+            "SiLU",
+            "Softmax",
+            "MaxPool1d",
+            "AvgPool1d",
+        )
+        if (
+            not pattern_packs_enabled
+            and module is not None
+            and not module.op_type.endswith(primitive_module_suffixes)
+        ):
+            kind = NodeKind.OPAQUE_COMPOSITE
+            attributes.update(
+                {
+                    "implementation_status": "boundary-only",
+                    "semantic_status": "unnamed",
+                    "execution_status": "static-active",
+                    "unresolved_reason": "callee_implementation_not_expanded",
+                    "capabilities": ["inspect_boundary", "edit_visual"],
+                }
+            )
         draft = _NodeDraft(
             node_id=node_id,
             kind=kind,
@@ -646,6 +798,24 @@ def analyze_project(
         drafts.append(draft)
         variable_producer[target] = node_id
         shapes[target] = _infer_shape(target, expression, module, dependencies, shapes, config)
+
+    if not output_created and return_boundary is not None:
+        drafts.append(
+            _NodeDraft(
+                node_id="node:output.model",
+                kind=NodeKind.INPUT_OUTPUT,
+                semantic_name="Model output",
+                source_symbol=f"{class_name}.forward",
+                line=return_boundary.line,
+                end_line=return_boundary.end_line,
+                dependencies=[(return_boundary.target or "output", return_boundary.node_id)],
+                attributes={
+                    "io": "output",
+                    "assigned_symbol": "model_output",
+                    "implementation_status": "boundary-only",
+                },
+            )
+        )
 
     evidence_by_node: dict[str, list[str]] = {}
 
@@ -836,8 +1006,10 @@ def analyze_project(
         for tensor in tensors.values()
         if len(tensor.consumer_ids) > 1
     ]
+    recovery_mode = "pattern-packs" if pattern_packs_enabled else "generic"
+    architecture_seed = snapshot_seed + f":{recovery_mode}".encode()
     architecture = ArchitectureIR(
-        architecture_id=f"architecture:{_sha256(snapshot_seed)[:16]}",
+        architecture_id=f"architecture:{_sha256(architecture_seed)[:16]}",
         source_snapshot_id=snapshot.snapshot_id,
         framework="pytorch",
         entrypoint=entrypoint,

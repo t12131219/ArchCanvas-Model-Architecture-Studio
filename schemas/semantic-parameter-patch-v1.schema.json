@@ -1,0 +1,71 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "artifact_path": {
+      "minLength": 1,
+      "title": "Artifact Path",
+      "type": "string"
+    },
+    "new_value": {
+      "title": "New Value"
+    },
+    "operation": {
+      "const": "set_parameter",
+      "default": "set_parameter",
+      "title": "Operation",
+      "type": "string"
+    },
+    "parameter_name": {
+      "minLength": 1,
+      "title": "Parameter Name",
+      "type": "string"
+    },
+    "patch_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Patch Id",
+      "type": "string"
+    },
+    "runtime_input_spec": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Runtime Input Spec"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "target_node_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Target Node Id",
+      "type": "string"
+    },
+    "targeted_tests": {
+      "items": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "title": "Targeted Tests",
+      "type": "array"
+    }
+  },
+  "required": [
+    "patch_id",
+    "artifact_path",
+    "target_node_id",
+    "parameter_name",
+    "new_value"
+  ],
+  "title": "SemanticParameterPatch",
+  "type": "object"
+}

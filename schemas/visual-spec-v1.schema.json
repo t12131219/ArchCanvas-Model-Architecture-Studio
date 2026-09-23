@@ -1,0 +1,161 @@
+{
+  "$defs": {
+    "VisualEdgeStyle": {
+      "additionalProperties": false,
+      "properties": {
+        "dash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dash"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "stroke": {
+          "minLength": 1,
+          "title": "Stroke",
+          "type": "string"
+        },
+        "view_edge_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "View Edge Id",
+          "type": "string"
+        },
+        "width": {
+          "default": 1.5,
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "number"
+        }
+      },
+      "required": [
+        "view_edge_id",
+        "stroke",
+        "label"
+      ],
+      "title": "VisualEdgeStyle",
+      "type": "object"
+    },
+    "VisualNodeStyle": {
+      "additionalProperties": false,
+      "properties": {
+        "fill": {
+          "minLength": 1,
+          "title": "Fill",
+          "type": "string"
+        },
+        "glyph": {
+          "enum": [
+            "container",
+            "operator",
+            "tensor",
+            "merge",
+            "io",
+            "state",
+            "opaque"
+          ],
+          "title": "Glyph",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "secondary_label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Secondary Label"
+        },
+        "stroke": {
+          "minLength": 1,
+          "title": "Stroke",
+          "type": "string"
+        },
+        "view_node_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "View Node Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "view_node_id",
+        "glyph",
+        "fill",
+        "stroke",
+        "label"
+      ],
+      "title": "VisualNodeStyle",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "edge_styles": {
+      "items": {
+        "$ref": "#/$defs/VisualEdgeStyle"
+      },
+      "title": "Edge Styles",
+      "type": "array"
+    },
+    "font_family": {
+      "minLength": 1,
+      "title": "Font Family",
+      "type": "string"
+    },
+    "node_styles": {
+      "items": {
+        "$ref": "#/$defs/VisualNodeStyle"
+      },
+      "minItems": 1,
+      "title": "Node Styles",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "spec_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Spec Id",
+      "type": "string"
+    },
+    "theme": {
+      "const": "paper-light",
+      "default": "paper-light",
+      "title": "Theme",
+      "type": "string"
+    },
+    "view_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "View Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "spec_id",
+    "view_id",
+    "font_family",
+    "node_styles"
+  ],
+  "title": "VisualSpec",
+  "type": "object"
+}

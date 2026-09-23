@@ -1,0 +1,186 @@
+{
+  "$defs": {
+    "ParameterDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "after": {
+          "title": "After"
+        },
+        "before": {
+          "title": "Before"
+        },
+        "node_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Node Id",
+          "type": "string"
+        },
+        "parameter_name": {
+          "minLength": 1,
+          "title": "Parameter Name",
+          "type": "string"
+        },
+        "source_expression": {
+          "minLength": 1,
+          "title": "Source Expression",
+          "type": "string"
+        }
+      },
+      "required": [
+        "node_id",
+        "parameter_name",
+        "before",
+        "after",
+        "source_expression"
+      ],
+      "title": "ParameterDelta",
+      "type": "object"
+    },
+    "ShapeDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "after": {
+          "minLength": 1,
+          "title": "After",
+          "type": "string"
+        },
+        "before": {
+          "minLength": 1,
+          "title": "Before",
+          "type": "string"
+        },
+        "subject_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Subject Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject_id",
+        "before",
+        "after"
+      ],
+      "title": "ShapeDelta",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "added_edges": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Added Edges",
+      "type": "array"
+    },
+    "added_nodes": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Added Nodes",
+      "type": "array"
+    },
+    "changed_edges": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Changed Edges",
+      "type": "array"
+    },
+    "changed_nodes": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Changed Nodes",
+      "type": "array"
+    },
+    "changed_parameters": {
+      "items": {
+        "$ref": "#/$defs/ParameterDelta"
+      },
+      "title": "Changed Parameters",
+      "type": "array"
+    },
+    "changed_ports": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Changed Ports",
+      "type": "array"
+    },
+    "changed_repeats": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Changed Repeats",
+      "type": "array"
+    },
+    "changed_shapes": {
+      "items": {
+        "$ref": "#/$defs/ShapeDelta"
+      },
+      "title": "Changed Shapes",
+      "type": "array"
+    },
+    "changed_sharing": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Changed Sharing",
+      "type": "array"
+    },
+    "changed_tensors": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Changed Tensors",
+      "type": "array"
+    },
+    "evidence_anchor_changes": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Evidence Anchor Changes",
+      "type": "array"
+    },
+    "removed_edges": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Removed Edges",
+      "type": "array"
+    },
+    "removed_nodes": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Removed Nodes",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "unresolved_changes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Unresolved Changes",
+      "type": "array"
+    }
+  },
+  "title": "GraphDelta",
+  "type": "object"
+}

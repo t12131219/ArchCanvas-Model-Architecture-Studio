@@ -1,0 +1,60 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "discrepancy_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Discrepancy Id",
+      "type": "string"
+    },
+    "evidence_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Evidence Ids",
+      "type": "array"
+    },
+    "reference_claim": {
+      "minLength": 1,
+      "title": "Reference Claim",
+      "type": "string"
+    },
+    "resolution": {
+      "enum": [
+        "exclude-from-executable-graph",
+        "include-source-behavior",
+        "mark-conditional",
+        "mark-unresolved"
+      ],
+      "title": "Resolution",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_finding": {
+      "minLength": 1,
+      "title": "Source Finding",
+      "type": "string"
+    },
+    "subject": {
+      "minLength": 1,
+      "title": "Subject",
+      "type": "string"
+    }
+  },
+  "required": [
+    "discrepancy_id",
+    "subject",
+    "reference_claim",
+    "source_finding",
+    "resolution",
+    "evidence_ids"
+  ],
+  "title": "DiscrepancyRecord",
+  "type": "object"
+}

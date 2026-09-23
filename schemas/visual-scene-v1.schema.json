@@ -1,0 +1,333 @@
+{
+  "$defs": {
+    "EdgeType": {
+      "enum": [
+        "main",
+        "residual",
+        "skip",
+        "memory",
+        "state",
+        "condition",
+        "routing",
+        "parameter-share",
+        "training-only"
+      ],
+      "title": "EdgeType",
+      "type": "string"
+    },
+    "SceneEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "canonical_edge_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Canonical Edge Ids",
+          "type": "array"
+        },
+        "dash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dash"
+        },
+        "edge_type": {
+          "$ref": "#/$defs/EdgeType"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "points": {
+          "items": {
+            "$ref": "#/$defs/ScenePoint"
+          },
+          "minItems": 2,
+          "title": "Points",
+          "type": "array"
+        },
+        "role": {
+          "minLength": 1,
+          "title": "Role",
+          "type": "string"
+        },
+        "scene_edge_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Scene Edge Id",
+          "type": "string"
+        },
+        "source_scene_node_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Source Scene Node Id",
+          "type": "string"
+        },
+        "stroke": {
+          "minLength": 1,
+          "title": "Stroke",
+          "type": "string"
+        },
+        "target_scene_node_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Target Scene Node Id",
+          "type": "string"
+        },
+        "view_edge_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "View Edge Id",
+          "type": "string"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "number"
+        }
+      },
+      "required": [
+        "scene_edge_id",
+        "view_edge_id",
+        "canonical_edge_ids",
+        "source_scene_node_id",
+        "target_scene_node_id",
+        "points",
+        "role",
+        "edge_type",
+        "stroke",
+        "width",
+        "label"
+      ],
+      "title": "SceneEdge",
+      "type": "object"
+    },
+    "SceneNode": {
+      "additionalProperties": false,
+      "properties": {
+        "bounds": {
+          "$ref": "#/$defs/SceneRect"
+        },
+        "canonical_node_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Canonical Node Ids",
+          "type": "array"
+        },
+        "evidence_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "fill": {
+          "minLength": 1,
+          "title": "Fill",
+          "type": "string"
+        },
+        "label_lines": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Label Lines",
+          "type": "array"
+        },
+        "parent_scene_node_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Scene Node Id"
+        },
+        "scene_node_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Scene Node Id",
+          "type": "string"
+        },
+        "secondary_label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Secondary Label"
+        },
+        "shape": {
+          "enum": [
+            "container",
+            "rect",
+            "merge",
+            "io",
+            "state",
+            "opaque"
+          ],
+          "title": "Shape",
+          "type": "string"
+        },
+        "stroke": {
+          "minLength": 1,
+          "title": "Stroke",
+          "type": "string"
+        },
+        "view_node_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "View Node Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "scene_node_id",
+        "view_node_id",
+        "canonical_node_ids",
+        "bounds",
+        "shape",
+        "label_lines",
+        "fill",
+        "stroke"
+      ],
+      "title": "SceneNode",
+      "type": "object"
+    },
+    "ScenePoint": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "minimum": 0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "minimum": 0,
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "ScenePoint",
+      "type": "object"
+    },
+    "SceneRect": {
+      "additionalProperties": false,
+      "properties": {
+        "height": {
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "number"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "number"
+        },
+        "x": {
+          "minimum": 0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "minimum": 0,
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "title": "SceneRect",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "edges": {
+      "items": {
+        "$ref": "#/$defs/SceneEdge"
+      },
+      "title": "Edges",
+      "type": "array"
+    },
+    "layout_family": {
+      "minLength": 1,
+      "title": "Layout Family",
+      "type": "string"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/SceneNode"
+      },
+      "minItems": 1,
+      "title": "Nodes",
+      "type": "array"
+    },
+    "paper_height": {
+      "exclusiveMinimum": 0,
+      "title": "Paper Height",
+      "type": "number"
+    },
+    "paper_width": {
+      "exclusiveMinimum": 0,
+      "title": "Paper Width",
+      "type": "number"
+    },
+    "scene_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Scene Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "spec_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Spec Id",
+      "type": "string"
+    },
+    "view_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "View Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "scene_id",
+    "view_id",
+    "spec_id",
+    "layout_family",
+    "paper_width",
+    "paper_height",
+    "nodes"
+  ],
+  "title": "VisualScene",
+  "type": "object"
+}

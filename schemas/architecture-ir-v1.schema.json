@@ -259,6 +259,49 @@
       "title": "Confidence",
       "type": "string"
     },
+    "ConfigPredicate": {
+      "additionalProperties": false,
+      "properties": {
+        "affected_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Affected Ids",
+          "type": "array"
+        },
+        "evidence_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "expression": {
+          "minLength": 1,
+          "title": "Expression",
+          "type": "string"
+        },
+        "predicate_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Predicate Id",
+          "type": "string"
+        },
+        "resolved_value": {
+          "title": "Resolved Value"
+        }
+      },
+      "required": [
+        "predicate_id",
+        "expression",
+        "resolved_value",
+        "evidence_ids"
+      ],
+      "title": "ConfigPredicate",
+      "type": "object"
+    },
     "EdgeType": {
       "enum": [
         "main",
@@ -325,6 +368,7 @@
       "enum": [
         "module_container",
         "operator",
+        "opaque_composite",
         "tensor_value",
         "merge_event",
         "fanout_relation",
@@ -584,6 +628,13 @@
       "pattern": "^[a-z][a-z0-9._:-]*$",
       "title": "Architecture Id",
       "type": "string"
+    },
+    "config_predicates": {
+      "items": {
+        "$ref": "#/$defs/ConfigPredicate"
+      },
+      "title": "Config Predicates",
+      "type": "array"
     },
     "edges": {
       "items": {

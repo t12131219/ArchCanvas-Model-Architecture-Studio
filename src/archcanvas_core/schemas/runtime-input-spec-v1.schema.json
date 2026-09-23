@@ -1,0 +1,155 @@
+{
+  "$defs": {
+    "RuntimeInput": {
+      "additionalProperties": false,
+      "properties": {
+        "dtype": {
+          "default": "float32",
+          "enum": [
+            "float16",
+            "float32",
+            "float64",
+            "bfloat16",
+            "int32",
+            "int64",
+            "bool"
+          ],
+          "title": "Dtype",
+          "type": "string"
+        },
+        "generator": {
+          "default": "normal",
+          "enum": [
+            "zeros",
+            "ones",
+            "normal",
+            "uniform",
+            "randint"
+          ],
+          "title": "Generator",
+          "type": "string"
+        },
+        "high": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "High"
+        },
+        "low": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Low"
+        },
+        "name": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "shape": {
+          "items": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "minItems": 1,
+          "title": "Shape",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "shape"
+      ],
+      "title": "RuntimeInput",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "constructor_kwargs": {
+      "additionalProperties": true,
+      "title": "Constructor Kwargs",
+      "type": "object"
+    },
+    "cpu_limit_seconds": {
+      "default": 20,
+      "maximum": 300,
+      "minimum": 1,
+      "title": "Cpu Limit Seconds",
+      "type": "integer"
+    },
+    "device": {
+      "default": "cpu",
+      "enum": [
+        "cpu",
+        "cuda",
+        "auto"
+      ],
+      "title": "Device",
+      "type": "string"
+    },
+    "forward_kwargs": {
+      "additionalProperties": true,
+      "title": "Forward Kwargs",
+      "type": "object"
+    },
+    "inputs": {
+      "items": {
+        "$ref": "#/$defs/RuntimeInput"
+      },
+      "minItems": 1,
+      "title": "Inputs",
+      "type": "array"
+    },
+    "memory_limit_mb": {
+      "default": 8192,
+      "maximum": 65536,
+      "minimum": 512,
+      "title": "Memory Limit Mb",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "seed": {
+      "default": 0,
+      "maximum": 9223372036854775807,
+      "minimum": 0,
+      "title": "Seed",
+      "type": "integer"
+    },
+    "timeout_seconds": {
+      "default": 30,
+      "maximum": 300,
+      "minimum": 1,
+      "title": "Timeout Seconds",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "inputs"
+  ],
+  "title": "RuntimeInputSpec",
+  "type": "object"
+}

@@ -17,7 +17,38 @@ from .models import (
 
 def apply_visual_patch(document: CanvasDocument, patch: VisualPatch) -> CanvasDocument:
     """Append visual history without changing the source binding."""
-    return document.model_copy(update={"visual_patches": [*document.visual_patches, patch]})
+    return document.model_copy(
+        update={
+            "visual_patches": [*document.visual_patches, patch],
+            "redo_patches": [],
+        }
+    )
+
+
+def undo_visual_patch(document: CanvasDocument) -> CanvasDocument:
+    """Move the latest visual patch to the redo stack."""
+    if not document.visual_patches:
+        return document
+    patch = document.visual_patches[-1]
+    return document.model_copy(
+        update={
+            "visual_patches": document.visual_patches[:-1],
+            "redo_patches": [patch, *document.redo_patches],
+        }
+    )
+
+
+def redo_visual_patch(document: CanvasDocument) -> CanvasDocument:
+    """Restore the next visual patch without changing the source binding."""
+    if not document.redo_patches:
+        return document
+    patch = document.redo_patches[0]
+    return document.model_copy(
+        update={
+            "visual_patches": [*document.visual_patches, patch],
+            "redo_patches": document.redo_patches[1:],
+        }
+    )
 
 
 def _diagnostic(code: str, message: str, *target_ids: str) -> Diagnostic:
@@ -195,6 +226,42 @@ def _structural_diagnostics(ir: ArchitectureIR) -> list[Diagnostic]:
                 )
             )
 
+    repeat_ids = {repeat.repeat_id for repeat in ir.repeats}
+    if len(repeat_ids) != len(ir.repeats):
+        diagnostics.append(_diagnostic("DUPLICATE_REPEAT_ID", "Repeat identifiers must be unique"))
+    for repeat in ir.repeats:
+        if any(member_id not in nodes for member_id in repeat.member_node_ids):
+            diagnostics.append(
+                _diagnostic(
+                    "REPEAT_MEMBER_MISSING",
+                    f"Repeat {repeat.repeat_id} references a missing member",
+                    repeat.repeat_id,
+                )
+            )
+        if not repeat.evidence_ids:
+            diagnostics.append(
+                _diagnostic(
+                    "REPEAT_WITHOUT_EVIDENCE",
+                    f"Repeat {repeat.repeat_id} has no evidence",
+                    repeat.repeat_id,
+                )
+            )
+
+    predicate_ids = {predicate.predicate_id for predicate in ir.config_predicates}
+    if len(predicate_ids) != len(ir.config_predicates):
+        diagnostics.append(
+            _diagnostic("DUPLICATE_PREDICATE_ID", "Config predicate identifiers must be unique")
+        )
+    for predicate in ir.config_predicates:
+        if any(target_id not in nodes for target_id in predicate.affected_ids):
+            diagnostics.append(
+                _diagnostic(
+                    "PREDICATE_TARGET_MISSING",
+                    f"Config predicate {predicate.predicate_id} has a missing target",
+                    predicate.predicate_id,
+                )
+            )
+
     for node in ir.nodes:
         if node.kind is NodeKind.MERGE_EVENT:
             incoming = sum(1 for edge in ir.edges if edge.consumer_id == node.node_id)
@@ -257,6 +324,12 @@ def _evidence_diagnostics(
         | {evidence_id for tensor in ir.tensors for evidence_id in tensor.evidence_ids}
         | {evidence_id for edge in ir.edges for evidence_id in edge.evidence_ids}
         | {evidence_id for relation in ir.fanouts for evidence_id in relation.evidence_ids}
+        | {evidence_id for repeat in ir.repeats for evidence_id in repeat.evidence_ids}
+        | {
+            evidence_id
+            for predicate in ir.config_predicates
+            for evidence_id in predicate.evidence_ids
+        }
         | {
             evidence_id
             for node in ir.nodes
@@ -564,6 +637,752 @@ def _transformer_l3_diagnostics(ir: ArchitectureIR) -> list[Diagnostic]:
     return diagnostics
 
 
+def _autoformer_diagnostics(ir: ArchitectureIR) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    nodes = {node.node_id: node for node in ir.nodes}
+    incoming: dict[str, set[str]] = defaultdict(set)
+    for edge in ir.edges:
+        incoming[edge.consumer_id].add(edge.producer_id)
+
+    required = {
+        "node:enc_embedding",
+        "node:dec_embedding",
+        "node:encoder.q_projection",
+        "node:encoder.k_projection",
+        "node:encoder.v_projection",
+        "node:encoder.q_fft",
+        "node:encoder.k_fft",
+        "node:encoder.spectral_product",
+        "node:encoder.irfft",
+        "node:encoder.top_k",
+        "node:encoder.delay_aggregate",
+        "node:encoder.decomp1",
+        "node:encoder.decomp2",
+        "node:decoder.self_q_projection",
+        "node:decoder.self_k_projection",
+        "node:decoder.self_v_projection",
+        "node:decoder.cross_q_projection",
+        "node:decoder.cross_k_projection",
+        "node:decoder.cross_v_projection",
+        "node:decoder.decomp1",
+        "node:decoder.decomp2",
+        "node:decoder.decomp3",
+        "node:decoder.trend_residual_sum",
+        "node:decoder.trend_accumulate",
+        "node:final_add",
+        "node:output.forecast",
+    }
+    for node_id in sorted(required - nodes.keys()):
+        diagnostics.append(
+            _diagnostic(
+                "AUTOFORMER_NODE_MISSING",
+                f"Autoformer source contract requires {node_id}",
+            )
+        )
+    if diagnostics:
+        return diagnostics
+
+    for embedding_id in ("node:enc_embedding", "node:dec_embedding"):
+        if nodes[embedding_id].attributes.get("position_embedding_used") is not False:
+            diagnostics.append(
+                _diagnostic(
+                    "AUTOFORMER_POSITION_EMBEDDING_INVALID",
+                    f"{embedding_id} must use DataEmbedding_wo_pos without a position term",
+                    embedding_id,
+                )
+            )
+
+    def require_inputs(target: str, expected: set[str], code: str) -> None:
+        if not expected <= incoming[target]:
+            diagnostics.append(
+                _diagnostic(
+                    code,
+                    f"{target} must consume {', '.join(sorted(expected))}",
+                    target,
+                )
+            )
+
+    require_inputs(
+        "node:encoder.spectral_product",
+        {"node:encoder.q_fft", "node:encoder.k_fft"},
+        "AUTOFORMER_FFT_CORRELATION_INVALID",
+    )
+    require_inputs(
+        "node:encoder.irfft",
+        {"node:encoder.spectral_product"},
+        "AUTOFORMER_FFT_CORRELATION_INVALID",
+    )
+    require_inputs(
+        "node:encoder.delay_aggregate",
+        {"node:encoder.top_k", "node:encoder.v_projection", "node:encoder.irfft"},
+        "AUTOFORMER_DELAY_AGGREGATION_INVALID",
+    )
+    require_inputs(
+        "node:encoder.decomp1",
+        {"node:encoder.residual1"},
+        "AUTOFORMER_ENCODER_DECOMPOSITION_INVALID",
+    )
+    require_inputs(
+        "node:encoder.decomp2",
+        {"node:encoder.residual2"},
+        "AUTOFORMER_ENCODER_DECOMPOSITION_INVALID",
+    )
+
+    memory_edges = [
+        edge
+        for edge in ir.edges
+        if edge.edge_type.value == "memory" and edge.producer_id == "node:encoder.decomp2"
+    ]
+    if {edge.consumer_id for edge in memory_edges} != {
+        "node:decoder.cross_k_projection",
+        "node:decoder.cross_v_projection",
+    }:
+        diagnostics.append(
+            _diagnostic(
+                "AUTOFORMER_CROSS_MEMORY_INVALID",
+                "Decoder cross K/V must both come from encoder memory",
+            )
+        )
+    require_inputs(
+        "node:decoder.cross_q_projection",
+        {"node:decoder.decomp1"},
+        "AUTOFORMER_CROSS_QUERY_INVALID",
+    )
+
+    require_inputs(
+        "node:decoder.trend_residual_sum",
+        {"node:decoder.decomp1", "node:decoder.decomp2", "node:decoder.decomp3"},
+        "AUTOFORMER_TREND_SUM_INVALID",
+    )
+    require_inputs(
+        "node:decoder.trend_accumulate",
+        {"node:trend_seed", "node:decoder.trend_projection"},
+        "AUTOFORMER_TREND_ACCUMULATION_INVALID",
+    )
+    require_inputs(
+        "node:final_add",
+        {"node:decoder.seasonal_projection", "node:decoder.trend_accumulate"},
+        "AUTOFORMER_FINAL_MERGE_INVALID",
+    )
+
+    condition_edges = [edge for edge in ir.edges if edge.edge_type.value == "condition"]
+    if condition_edges:
+        diagnostics.append(
+            _diagnostic(
+                "AUTOFORMER_MASK_SEMANTICS_INVALID",
+                "This source revision does not consume masks inside AutoCorrelation",
+                *(edge.edge_id for edge in condition_edges),
+            )
+        )
+
+    output_tensor = next((tensor for tensor in ir.tensors if tensor.role == "forecast"), None)
+    if output_tensor is None or output_tensor.symbolic_shape != "[B,P,C]":
+        diagnostics.append(
+            _diagnostic(
+                "AUTOFORMER_OUTPUT_SHAPE_INVALID",
+                "Autoformer forecast must have symbolic shape [B,P,C]",
+            )
+        )
+    repeat_by_id = {repeat.repeat_id: repeat for repeat in ir.repeats}
+    for repeat_id in ("repeat:encoder.layers", "repeat:decoder.layers"):
+        if repeat_id not in repeat_by_id:
+            diagnostics.append(
+                _diagnostic(
+                    "AUTOFORMER_REPEAT_MISSING",
+                    f"Autoformer requires {repeat_id}",
+                )
+            )
+    return diagnostics
+
+
+def _itransformer_diagnostics(ir: ArchitectureIR) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    nodes = {node.node_id: node for node in ir.nodes}
+    incoming: dict[str, set[str]] = defaultdict(set)
+    for edge in ir.edges:
+        incoming[edge.consumer_id].add(edge.producer_id)
+    predicates = {predicate.predicate_id: predicate for predicate in ir.config_predicates}
+    required = {
+        "node:input.x_enc",
+        "node:embedding.permute",
+        "node:embedding.projection",
+        "node:encoder.stack",
+        "node:forecast.projector",
+        "node:forecast.permute",
+        "node:output.forecast",
+    }
+    for node_id in sorted(required - nodes.keys()):
+        diagnostics.append(
+            _diagnostic(
+                "ITRANSFORMER_NODE_MISSING",
+                f"iTransformer source contract requires {node_id}",
+            )
+        )
+    for predicate_id in ("predicate:use_norm", "predicate:use_covariates"):
+        if predicate_id not in predicates:
+            diagnostics.append(
+                _diagnostic(
+                    "ITRANSFORMER_PREDICATE_MISSING",
+                    f"iTransformer requires {predicate_id}",
+                )
+            )
+    if diagnostics:
+        return diagnostics
+
+    permute = nodes["node:embedding.permute"]
+    if (
+        permute.attributes.get("internal_axis_transform") is not True
+        or permute.attributes.get("external_learnable_module") is not False
+        or permute.attributes.get("transform") != "[B,L,N] -> [B,N,L]"
+    ):
+        diagnostics.append(
+            _diagnostic(
+                "ITRANSFORMER_INTERNAL_PERMUTE_INVALID",
+                "DataEmbedding_inverted permute must remain an internal non-learnable axis transform",
+                permute.node_id,
+            )
+        )
+    projection = nodes["node:embedding.projection"]
+    if projection.attributes.get("in_axis") != "L" or projection.attributes.get("out_axis") != "D":
+        diagnostics.append(
+            _diagnostic(
+                "ITRANSFORMER_TOKEN_PROJECTION_INVALID",
+                "The inverted embedding must project temporal axis L to model depth D",
+                projection.node_id,
+            )
+        )
+    forecast_projection = nodes["node:forecast.projector"]
+    if (
+        forecast_projection.attributes.get("in_axis") != "D"
+        or forecast_projection.attributes.get("out_axis") != "S"
+    ):
+        diagnostics.append(
+            _diagnostic(
+                "ITRANSFORMER_FORECAST_PROJECTION_INVALID",
+                "The forecast projector must map D to prediction length S",
+                forecast_projection.node_id,
+            )
+        )
+    if any("decoder" in node.node_id or "decoder" in node.semantic_name.lower() for node in ir.nodes):
+        diagnostics.append(
+            _diagnostic(
+                "ITRANSFORMER_ENCODER_ONLY_INVALID",
+                "iTransformer must remain encoder-only",
+            )
+        )
+
+    def require_input(target: str, source: str, code: str) -> None:
+        if source not in incoming[target]:
+            diagnostics.append(
+                _diagnostic(code, f"{target} must consume {source}", target)
+            )
+
+    require_input(
+        "node:embedding.projection",
+        "node:covariate.concat"
+        if predicates["predicate:use_covariates"].resolved_value
+        else "node:embedding.permute",
+        "ITRANSFORMER_TOKEN_FLOW_INVALID",
+    )
+    require_input(
+        "node:encoder.stack",
+        "node:embedding.projection",
+        "ITRANSFORMER_ENCODER_FLOW_INVALID",
+    )
+    require_input(
+        "node:forecast.projector",
+        "node:encoder.stack",
+        "ITRANSFORMER_FORECAST_FLOW_INVALID",
+    )
+    require_input(
+        "node:forecast.permute",
+        "node:forecast.projector",
+        "ITRANSFORMER_OUTPUT_PERMUTE_INVALID",
+    )
+
+    use_covariates = bool(predicates["predicate:use_covariates"].resolved_value)
+    covariate_nodes = {
+        "node:covariate.permute",
+        "node:covariate.concat",
+        "node:forecast.trim_covariates",
+    }
+    if use_covariates:
+        missing = covariate_nodes - nodes.keys()
+        if missing:
+            diagnostics.append(
+                _diagnostic(
+                    "ITRANSFORMER_COVARIATE_PATH_INVALID",
+                    f"Active covariate path is missing {sorted(missing)}",
+                )
+            )
+        elif "node:forecast.permute" not in incoming["node:forecast.trim_covariates"]:
+            diagnostics.append(
+                _diagnostic(
+                    "ITRANSFORMER_COVARIATE_TRIM_INVALID",
+                    "Forecast covariate tokens must be trimmed after output permutation",
+                    "node:forecast.trim_covariates",
+                )
+            )
+    elif covariate_nodes & nodes.keys():
+        diagnostics.append(
+            _diagnostic(
+                "ITRANSFORMER_COVARIATE_PREDICATE_INVALID",
+                "Inactive covariate config must not produce an active covariate path",
+            )
+        )
+
+    use_norm = bool(predicates["predicate:use_norm"].resolved_value)
+    norm_nodes = {"node:normalize", "node:denormalize"}
+    if use_norm and not norm_nodes <= nodes.keys():
+        diagnostics.append(
+            _diagnostic(
+                "ITRANSFORMER_NORMALIZATION_PATH_INVALID",
+                "use_norm requires both normalization and denormalization",
+            )
+        )
+    if not use_norm and norm_nodes & nodes.keys():
+        diagnostics.append(
+            _diagnostic(
+                "ITRANSFORMER_NORMALIZATION_PREDICATE_INVALID",
+                "Inactive use_norm must not produce an active normalization path",
+            )
+        )
+    output_tensor = next((tensor for tensor in ir.tensors if tensor.role == "forecast"), None)
+    if output_tensor is None or output_tensor.symbolic_shape != "[B,S,N]":
+        diagnostics.append(
+            _diagnostic(
+                "ITRANSFORMER_OUTPUT_SHAPE_INVALID",
+                "iTransformer forecast must have symbolic shape [B,S,N]",
+            )
+        )
+    if not any(repeat.repeat_id == "repeat:encoder.layers" for repeat in ir.repeats):
+        diagnostics.append(
+            _diagnostic(
+                "ITRANSFORMER_REPEAT_MISSING",
+                "iTransformer requires its encoder layer repeat",
+            )
+        )
+    return diagnostics
+
+
+def _patchtst_diagnostics(ir: ArchitectureIR) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    nodes = {node.node_id: node for node in ir.nodes}
+    incoming: dict[str, set[str]] = defaultdict(set)
+    for edge in ir.edges:
+        incoming[edge.consumer_id].add(edge.producer_id)
+    predicates = {predicate.predicate_id: predicate for predicate in ir.config_predicates}
+    required_predicates = {
+        "predicate:decomposition",
+        "predicate:revin",
+        "predicate:padding-patch",
+        "predicate:individual",
+        "predicate:res-attention",
+        "predicate:norm",
+    }
+    for predicate_id in sorted(required_predicates - predicates.keys()):
+        diagnostics.append(
+            _diagnostic(
+                "PATCHTST_PREDICATE_MISSING",
+                f"PatchTST requires {predicate_id}",
+            )
+        )
+    required = {"node:input.x", "node:output_permute", "node:output.forecast"}
+    for node_id in sorted(required - nodes.keys()):
+        diagnostics.append(
+            _diagnostic("PATCHTST_NODE_MISSING", f"PatchTST requires {node_id}")
+        )
+    if diagnostics:
+        return diagnostics
+
+    decomposition = bool(predicates["predicate:decomposition"].resolved_value)
+    revin = bool(predicates["predicate:revin"].resolved_value)
+    end_padding = predicates["predicate:padding-patch"].resolved_value == "end"
+    residual_attention = bool(predicates["predicate:res-attention"].resolved_value)
+    norm = predicates["predicate:norm"].resolved_value
+    lanes = ["residual", "trend"] if decomposition else ["main"]
+
+    def require_input(target: str, source: str, code: str) -> None:
+        if target not in incoming or source not in incoming[target]:
+            diagnostics.append(_diagnostic(code, f"{target} must consume {source}", target))
+
+    if decomposition:
+        for node_id in ("node:decomposition", "node:decomposition_add"):
+            if node_id not in nodes:
+                diagnostics.append(
+                    _diagnostic(
+                        "PATCHTST_DECOMPOSITION_PATH_INVALID",
+                        f"decomposition=true requires {node_id}",
+                    )
+                )
+    elif "node:decomposition" in nodes or "node:decomposition_add" in nodes:
+        diagnostics.append(
+            _diagnostic(
+                "PATCHTST_DECOMPOSITION_PREDICATE_INVALID",
+                "decomposition=false must use a single backbone",
+            )
+        )
+
+    for lane in lanes:
+        prefix = f"node:{lane}"
+        lane_required = {
+            f"{prefix}.unfold",
+            f"{prefix}.patch_projection",
+            f"{prefix}.channel_reshape",
+            f"{prefix}.position",
+            f"{prefix}.position_add",
+            f"{prefix}.encoder",
+            f"{prefix}.restore_channels",
+            f"{prefix}.flatten",
+            f"{prefix}.head_linear",
+        }
+        for node_id in sorted(lane_required - nodes.keys()):
+            diagnostics.append(
+                _diagnostic("PATCHTST_LANE_NODE_MISSING", f"{lane} lane requires {node_id}")
+            )
+        if lane_required - nodes.keys():
+            continue
+        patch_projection = nodes[f"{prefix}.patch_projection"]
+        if (
+            patch_projection.attributes.get("in_axis") != "P"
+            or patch_projection.attributes.get("out_axis") != "D"
+        ):
+            diagnostics.append(
+                _diagnostic(
+                    "PATCHTST_PATCH_PROJECTION_INVALID",
+                    "Patch projection must map patch length P to model depth D",
+                    patch_projection.node_id,
+                )
+            )
+        reshape = nodes[f"{prefix}.channel_reshape"]
+        if reshape.attributes.get("transform") != "[B,C,Np,D] -> [BC,Np,D]":
+            diagnostics.append(
+                _diagnostic(
+                    "PATCHTST_CHANNEL_INDEPENDENCE_INVALID",
+                    "PatchTST must fold batch and channel before its shared encoder",
+                    reshape.node_id,
+                )
+            )
+        flatten = nodes[f"{prefix}.flatten"]
+        head = nodes[f"{prefix}.head_linear"]
+        if flatten.attributes.get("transform") != "[B,C,D,Np] -> [B,C,D*Np]":
+            diagnostics.append(
+                _diagnostic(
+                    "PATCHTST_HEAD_FLATTEN_INVALID",
+                    "PatchTST head must flatten D times Np",
+                    flatten.node_id,
+                )
+            )
+        if head.attributes.get("in_axis") != "D*Np" or head.attributes.get("out_axis") != "S":
+            diagnostics.append(
+                _diagnostic(
+                    "PATCHTST_HEAD_LINEAR_INVALID",
+                    "PatchTST head Linear must map D*Np to prediction length S",
+                    head.node_id,
+                )
+            )
+        encoder = nodes[f"{prefix}.encoder"]
+        if encoder.attributes.get("residual_attention") is not residual_attention:
+            diagnostics.append(
+                _diagnostic(
+                    "PATCHTST_RESIDUAL_ATTENTION_INVALID",
+                    "Encoder residual attention must follow its resolved predicate",
+                    encoder.node_id,
+                )
+            )
+        if encoder.attributes.get("norm") != norm:
+            diagnostics.append(
+                _diagnostic(
+                    "PATCHTST_NORM_INVALID",
+                    "Encoder norm must match the resolved constructor value",
+                    encoder.node_id,
+                )
+            )
+        require_input(
+            f"{prefix}.patch_projection",
+            f"{prefix}.unfold",
+            "PATCHTST_PATCH_FLOW_INVALID",
+        )
+        require_input(
+            f"{prefix}.channel_reshape",
+            f"{prefix}.patch_projection",
+            "PATCHTST_CHANNEL_FLOW_INVALID",
+        )
+        require_input(
+            f"{prefix}.position_add",
+            f"{prefix}.position",
+            "PATCHTST_POSITION_ENCODING_INVALID",
+        )
+        require_input(
+            f"{prefix}.position_add",
+            f"{prefix}.channel_reshape",
+            "PATCHTST_POSITION_ENCODING_INVALID",
+        )
+        require_input(
+            f"{prefix}.head_linear",
+            f"{prefix}.flatten",
+            "PATCHTST_HEAD_FLOW_INVALID",
+        )
+        revin_nodes = {f"{prefix}.revin_norm", f"{prefix}.revin_denorm"}
+        if revin and not revin_nodes <= nodes.keys():
+            diagnostics.append(
+                _diagnostic(
+                    "PATCHTST_REVIN_PATH_INVALID",
+                    f"{lane} lane requires RevIN norm and denorm",
+                )
+            )
+        if not revin and revin_nodes & nodes.keys():
+            diagnostics.append(
+                _diagnostic(
+                    "PATCHTST_REVIN_PREDICATE_INVALID",
+                    f"{lane} lane has an inactive RevIN path",
+                )
+            )
+        padding_node = f"{prefix}.end_padding"
+        if end_padding != (padding_node in nodes):
+            diagnostics.append(
+                _diagnostic(
+                    "PATCHTST_PADDING_PREDICATE_INVALID",
+                    f"{lane} end padding must follow padding_patch",
+                )
+            )
+        if not any(repeat.repeat_id == f"repeat:{lane}.encoder-layers" for repeat in ir.repeats):
+            diagnostics.append(
+                _diagnostic(
+                    "PATCHTST_REPEAT_MISSING",
+                    f"{lane} encoder layer repeat is missing",
+                )
+            )
+
+    if decomposition and "node:decomposition_add" in nodes:
+        for lane in lanes:
+            producer = (
+                f"node:{lane}.revin_denorm" if revin else f"node:{lane}.head_linear"
+            )
+            require_input(
+                "node:decomposition_add",
+                producer,
+                "PATCHTST_DECOMPOSITION_MERGE_INVALID",
+            )
+    output_tensor = next((tensor for tensor in ir.tensors if tensor.role == "forecast"), None)
+    if output_tensor is None or output_tensor.symbolic_shape != "[B,S,C]":
+        diagnostics.append(
+            _diagnostic(
+                "PATCHTST_OUTPUT_SHAPE_INVALID",
+                "PatchTST forecast must have symbolic shape [B,S,C]",
+            )
+        )
+    return diagnostics
+
+
+def _timemixer_diagnostics(ir: ArchitectureIR) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    nodes = {node.node_id: node for node in ir.nodes}
+    incoming: dict[str, set[str]] = defaultdict(set)
+    for edge in ir.edges:
+        incoming[edge.consumer_id].add(edge.producer_id)
+    predicates = {predicate.predicate_id: predicate for predicate in ir.config_predicates}
+    required_predicates = {
+        "predicate:down-sampling-layers",
+        "predicate:down-sampling-method",
+        "predicate:channel-independence",
+        "predicate:decomp-method",
+        "predicate:use-norm",
+    }
+    for predicate_id in sorted(required_predicates - predicates.keys()):
+        diagnostics.append(
+            _diagnostic(
+                "TIMEMIXER_PREDICATE_MISSING",
+                f"TimeMixer requires {predicate_id}",
+            )
+        )
+    required = {
+        "node:input.x_enc",
+        "node:season.bottom_up",
+        "node:trend.top_down",
+        "node:forecast.stack",
+        "node:forecast.sum",
+        "node:denormalize",
+        "node:output.forecast",
+    }
+    for node_id in sorted(required - nodes.keys()):
+        diagnostics.append(
+            _diagnostic("TIMEMIXER_NODE_MISSING", f"TimeMixer requires {node_id}")
+        )
+    if diagnostics:
+        return diagnostics
+
+    scale_count = int(predicates["predicate:down-sampling-layers"].resolved_value) + 1
+    channel_independent = (
+        int(predicates["predicate:channel-independence"].resolved_value) == 1
+    )
+    decomp_method = predicates["predicate:decomp-method"].resolved_value
+    season = nodes["node:season.bottom_up"]
+    trend = nodes["node:trend.top_down"]
+    if season.attributes.get("direction") != "high-resolution-to-low-resolution":
+        diagnostics.append(
+            _diagnostic(
+                "TIMEMIXER_SEASON_DIRECTION_INVALID",
+                "Seasonal mixing must proceed from high to low resolution",
+                season.node_id,
+            )
+        )
+    if trend.attributes.get("direction") != "low-resolution-to-high-resolution":
+        diagnostics.append(
+            _diagnostic(
+                "TIMEMIXER_TREND_DIRECTION_INVALID",
+                "Trend mixing must proceed from low to high resolution",
+                trend.node_id,
+            )
+        )
+    if any(
+        "conv" in node.semantic_name.lower()
+        and any(label in node.semantic_name.lower() for label in ("short", "mid", "long"))
+        for node in ir.nodes
+    ):
+        diagnostics.append(
+            _diagnostic(
+                "TIMEMIXER_FICTIONAL_BRANCH_INVALID",
+                "The selected source has no short/mid/long Conv mixer branches",
+            )
+        )
+
+    def require_input(target: str, source: str, code: str) -> None:
+        if target not in incoming or source not in incoming[target]:
+            diagnostics.append(_diagnostic(code, f"{target} must consume {source}", target))
+
+    for scale in range(scale_count):
+        prefix = f"node:scale.{scale}"
+        required_scale = {
+            f"{prefix}.normalize",
+            f"{prefix}.embedding",
+            f"{prefix}.decomposition",
+            f"{prefix}.mix_add",
+            f"{prefix}.predictor",
+            f"{prefix}.projection",
+        }
+        if channel_independent:
+            required_scale.add(f"{prefix}.channel_reshape")
+            required_scale.add(f"{prefix}.mark_repeat")
+            required_scale.add(f"{prefix}.restore_forecast")
+        for node_id in sorted(required_scale - nodes.keys()):
+            diagnostics.append(
+                _diagnostic(
+                    "TIMEMIXER_SCALE_NODE_MISSING",
+                    f"Scale {scale} requires {node_id}",
+                )
+            )
+        if required_scale - nodes.keys():
+            continue
+        embedding = nodes[f"{prefix}.embedding"]
+        if embedding.attributes.get("position_embedding_used") is not False:
+            diagnostics.append(
+                _diagnostic(
+                    "TIMEMIXER_POSITION_EMBEDDING_INVALID",
+                    "TimeMixer must use DataEmbedding_wo_pos",
+                    embedding.node_id,
+                )
+            )
+        decomposition = nodes[f"{prefix}.decomposition"]
+        if decomposition.attributes.get("method") != decomp_method:
+            diagnostics.append(
+                _diagnostic(
+                    "TIMEMIXER_DECOMPOSITION_INVALID",
+                    "Every scale decomposition must follow decomp_method",
+                    decomposition.node_id,
+                )
+            )
+        require_input(
+            "node:season.bottom_up",
+            f"{prefix}.decomposition",
+            "TIMEMIXER_SEASON_INPUT_INVALID",
+        )
+        require_input(
+            "node:trend.top_down",
+            f"{prefix}.decomposition",
+            "TIMEMIXER_TREND_INPUT_INVALID",
+        )
+        require_input(
+            f"{prefix}.mix_add",
+            "node:season.bottom_up",
+            "TIMEMIXER_SCALE_MERGE_INVALID",
+        )
+        require_input(
+            f"{prefix}.mix_add",
+            "node:trend.top_down",
+            "TIMEMIXER_SCALE_MERGE_INVALID",
+        )
+        require_input(
+            f"{prefix}.predictor",
+            f"{prefix}.mix_add",
+            "TIMEMIXER_PREDICTOR_INVALID",
+        )
+        require_input(
+            f"{prefix}.projection",
+            f"{prefix}.predictor",
+            "TIMEMIXER_PROJECTION_INVALID",
+        )
+        forecast_source = f"{prefix}.projection"
+        if channel_independent:
+            require_input(
+                f"{prefix}.embedding",
+                f"{prefix}.mark_repeat",
+                "TIMEMIXER_TEMPORAL_FEATURE_REPEAT_INVALID",
+            )
+            require_input(
+                f"{prefix}.restore_forecast",
+                f"{prefix}.projection",
+                "TIMEMIXER_CHANNEL_RESTORE_INVALID",
+            )
+            forecast_source = f"{prefix}.restore_forecast"
+        require_input(
+            "node:forecast.stack",
+            forecast_source,
+            "TIMEMIXER_SCALE_FORECAST_MISSING",
+        )
+    for scale in range(1, scale_count):
+        if f"node:scale.{scale}.downsample" not in nodes:
+            diagnostics.append(
+                _diagnostic(
+                    "TIMEMIXER_DOWNSAMPLING_INVALID",
+                    f"Scale {scale} downsampling node is missing",
+                )
+            )
+    require_input(
+        "node:forecast.sum",
+        "node:forecast.stack",
+        "TIMEMIXER_FORECAST_REDUCTION_INVALID",
+    )
+    require_input(
+        "node:denormalize",
+        "node:forecast.sum",
+        "TIMEMIXER_DENORMALIZATION_INVALID",
+    )
+    if not any(repeat.repeat_id == "repeat:pdm-blocks" for repeat in ir.repeats):
+        diagnostics.append(
+            _diagnostic("TIMEMIXER_PDM_REPEAT_MISSING", "PDM block repeat is missing")
+        )
+    if not any(
+        repeat.repeat_id == "repeat:scales" and repeat.count == scale_count
+        for repeat in ir.repeats
+    ):
+        diagnostics.append(
+            _diagnostic(
+                "TIMEMIXER_SCALE_REPEAT_INVALID",
+                "Scale repeat count must match the downsampling list",
+            )
+        )
+    output_tensor = next((tensor for tensor in ir.tensors if tensor.role == "forecast"), None)
+    if output_tensor is None or output_tensor.symbolic_shape != "[B,S,C]":
+        diagnostics.append(
+            _diagnostic(
+                "TIMEMIXER_OUTPUT_SHAPE_INVALID",
+                "TimeMixer forecast must have symbolic shape [B,S,C]",
+            )
+        )
+    return diagnostics
+
+
 def validate_architecture(
     ir: ArchitectureIR,
     evidence: list[EvidenceRecord] | None = None,
@@ -574,9 +1393,35 @@ def validate_architecture(
     if evidence is not None and snapshot is not None:
         evidence_diagnostics = _evidence_diagnostics(ir, evidence, snapshot)
 
-    is_transformer = ir.entrypoint.rsplit(":", 1)[-1].lower() == "transformer"
+    is_transformer = any(
+        node.attributes.get("architecture_profile") == "transformer-l3" for node in ir.nodes
+    )
     transformer = _transformer_l3_diagnostics(ir) if is_transformer else []
-    diagnostics = [*structural, *evidence_diagnostics, *transformer]
+    is_autoformer = any(
+        node.attributes.get("architecture_profile") == "autoformer" for node in ir.nodes
+    )
+    autoformer = _autoformer_diagnostics(ir) if is_autoformer else []
+    is_itransformer = any(
+        node.attributes.get("architecture_profile") == "itransformer" for node in ir.nodes
+    )
+    itransformer = _itransformer_diagnostics(ir) if is_itransformer else []
+    is_patchtst = any(
+        node.attributes.get("architecture_profile") == "patchtst" for node in ir.nodes
+    )
+    patchtst = _patchtst_diagnostics(ir) if is_patchtst else []
+    is_timemixer = any(
+        node.attributes.get("architecture_profile") == "timemixer" for node in ir.nodes
+    )
+    timemixer = _timemixer_diagnostics(ir) if is_timemixer else []
+    diagnostics = [
+        *structural,
+        *evidence_diagnostics,
+        *transformer,
+        *autoformer,
+        *itransformer,
+        *patchtst,
+        *timemixer,
+    ]
     gates = [
         GateResult(
             gate="A-source-identity",
@@ -617,11 +1462,59 @@ def validate_architecture(
                 ),
             )
         )
+    if is_autoformer:
+        gates.append(
+            GateResult(
+                gate="B-autoformer",
+                status="failed" if autoformer else "passed",
+                message=(
+                    f"{len(autoformer)} Autoformer source contract issue(s)."
+                    if autoformer
+                    else "Embedding, AutoCorrelation, decomposition, trend/season, and mask semantics are source-backed."
+                ),
+            )
+        )
+    if is_itransformer:
+        gates.append(
+            GateResult(
+                gate="B-itransformer",
+                status="failed" if itransformer else "passed",
+                message=(
+                    f"{len(itransformer)} iTransformer source contract issue(s)."
+                    if itransformer
+                    else "Inverted tokens, encoder-only flow, predicates, covariate trimming, and forecast shape are source-backed."
+                ),
+            )
+        )
+    if is_patchtst:
+        gates.append(
+            GateResult(
+                gate="B-patchtst",
+                status="failed" if patchtst else "passed",
+                message=(
+                    f"{len(patchtst)} PatchTST source contract issue(s)."
+                    if patchtst
+                    else "Patching, channel independence, positional encoding, predicates, true head, and decomposition are source-backed."
+                ),
+            )
+        )
+    if is_timemixer:
+        gates.append(
+            GateResult(
+                gate="B-timemixer",
+                status="failed" if timemixer else "passed",
+                message=(
+                    f"{len(timemixer)} TimeMixer source contract issue(s)."
+                    if timemixer
+                    else "Multiscale normalization, decomposition, bidirectional mixing, per-scale forecasts, and reduction are source-backed."
+                ),
+            )
+        )
     gates.append(
         GateResult(
             gate="C-publication-compilation",
             status="skipped",
-            message="Publication compiler is not part of Stage 1.",
+            message="Run render or validate --quality publication to execute publication gates.",
         )
     )
     return gates, diagnostics

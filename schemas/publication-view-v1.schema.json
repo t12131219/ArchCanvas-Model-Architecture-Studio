@@ -1,0 +1,288 @@
+{
+  "$defs": {
+    "EdgeType": {
+      "enum": [
+        "main",
+        "residual",
+        "skip",
+        "memory",
+        "state",
+        "condition",
+        "routing",
+        "parameter-share",
+        "training-only"
+      ],
+      "title": "EdgeType",
+      "type": "string"
+    },
+    "NodeKind": {
+      "enum": [
+        "module_container",
+        "operator",
+        "opaque_composite",
+        "tensor_value",
+        "merge_event",
+        "fanout_relation",
+        "condition_control",
+        "state",
+        "repeat",
+        "parameter_share",
+        "input_output",
+        "reference_only"
+      ],
+      "title": "NodeKind",
+      "type": "string"
+    },
+    "PublicationEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "canonical_edge_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Canonical Edge Ids",
+          "type": "array"
+        },
+        "edge_type": {
+          "$ref": "#/$defs/EdgeType"
+        },
+        "evidence_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "role": {
+          "minLength": 1,
+          "title": "Role",
+          "type": "string"
+        },
+        "source_view_node_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Source View Node Id",
+          "type": "string"
+        },
+        "symbolic_shape": {
+          "minLength": 1,
+          "title": "Symbolic Shape",
+          "type": "string"
+        },
+        "target_view_node_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Target View Node Id",
+          "type": "string"
+        },
+        "view_edge_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "View Edge Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "view_edge_id",
+        "canonical_edge_ids",
+        "source_view_node_id",
+        "target_view_node_id",
+        "role",
+        "edge_type",
+        "symbolic_shape"
+      ],
+      "title": "PublicationEdge",
+      "type": "object"
+    },
+    "PublicationNode": {
+      "additionalProperties": false,
+      "properties": {
+        "attributes": {
+          "additionalProperties": true,
+          "title": "Attributes",
+          "type": "object"
+        },
+        "boundary_roles": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Boundary Roles",
+          "type": "array"
+        },
+        "canonical_node_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Canonical Node Ids",
+          "type": "array"
+        },
+        "collapsed": {
+          "title": "Collapsed",
+          "type": "boolean"
+        },
+        "evidence_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "kind": {
+          "$ref": "#/$defs/NodeKind"
+        },
+        "parent_view_node_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent View Node Id"
+        },
+        "semantic_name": {
+          "minLength": 1,
+          "title": "Semantic Name",
+          "type": "string"
+        },
+        "view_node_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "View Node Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "view_node_id",
+        "canonical_node_ids",
+        "semantic_name",
+        "kind",
+        "collapsed"
+      ],
+      "title": "PublicationNode",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "architecture_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Architecture Id",
+      "type": "string"
+    },
+    "canonical_edge_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Canonical Edge Ids",
+      "type": "array"
+    },
+    "canonical_node_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Canonical Node Ids",
+      "type": "array"
+    },
+    "canonical_port_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Canonical Port Ids",
+      "type": "array"
+    },
+    "canonical_tensor_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Canonical Tensor Ids",
+      "type": "array"
+    },
+    "collapsed_edge_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Collapsed Edge Ids",
+      "type": "array"
+    },
+    "edges": {
+      "items": {
+        "$ref": "#/$defs/PublicationEdge"
+      },
+      "title": "Edges",
+      "type": "array"
+    },
+    "layout_family": {
+      "enum": [
+        "dual-lane",
+        "single-lane",
+        "dual-backbone",
+        "multiscale-ladder",
+        "generic-dag"
+      ],
+      "title": "Layout Family",
+      "type": "string"
+    },
+    "level": {
+      "enum": [
+        "L1",
+        "L2",
+        "L3",
+        "L4"
+      ],
+      "title": "Level",
+      "type": "string"
+    },
+    "name": {
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/PublicationNode"
+      },
+      "minItems": 1,
+      "title": "Nodes",
+      "type": "array"
+    },
+    "non_executable_duplicates": {
+      "default": false,
+      "title": "Non Executable Duplicates",
+      "type": "boolean"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "view_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "View Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "view_id",
+    "architecture_id",
+    "level",
+    "name",
+    "layout_family",
+    "nodes",
+    "canonical_node_ids"
+  ],
+  "title": "PublicationView",
+  "type": "object"
+}

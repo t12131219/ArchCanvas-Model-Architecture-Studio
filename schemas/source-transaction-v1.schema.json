@@ -1,0 +1,516 @@
+{
+  "$defs": {
+    "Diagnostic": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "pattern": "^[A-Z][A-Z0-9_]+$",
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "blocking",
+            "warning",
+            "unresolved",
+            "suggestion"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "target_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Target Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code",
+        "severity",
+        "message"
+      ],
+      "title": "Diagnostic",
+      "type": "object"
+    },
+    "FileChange": {
+      "additionalProperties": false,
+      "properties": {
+        "after_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "After Sha256",
+          "type": "string"
+        },
+        "before_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Before Sha256",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "python",
+            "json"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "path": {
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "kind",
+        "before_sha256",
+        "after_sha256"
+      ],
+      "title": "FileChange",
+      "type": "object"
+    },
+    "GateResult": {
+      "additionalProperties": false,
+      "properties": {
+        "gate": {
+          "pattern": "^[A-Z][A-Za-z0-9_-]+$",
+          "title": "Gate",
+          "type": "string"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "failed",
+            "skipped"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "gate",
+        "status",
+        "message"
+      ],
+      "title": "GateResult",
+      "type": "object"
+    },
+    "GraphDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "added_edges": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Added Edges",
+          "type": "array"
+        },
+        "added_nodes": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Added Nodes",
+          "type": "array"
+        },
+        "changed_edges": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Changed Edges",
+          "type": "array"
+        },
+        "changed_nodes": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Changed Nodes",
+          "type": "array"
+        },
+        "changed_parameters": {
+          "items": {
+            "$ref": "#/$defs/ParameterDelta"
+          },
+          "title": "Changed Parameters",
+          "type": "array"
+        },
+        "changed_ports": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Changed Ports",
+          "type": "array"
+        },
+        "changed_repeats": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Changed Repeats",
+          "type": "array"
+        },
+        "changed_shapes": {
+          "items": {
+            "$ref": "#/$defs/ShapeDelta"
+          },
+          "title": "Changed Shapes",
+          "type": "array"
+        },
+        "changed_sharing": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Changed Sharing",
+          "type": "array"
+        },
+        "changed_tensors": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Changed Tensors",
+          "type": "array"
+        },
+        "evidence_anchor_changes": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Evidence Anchor Changes",
+          "type": "array"
+        },
+        "removed_edges": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Removed Edges",
+          "type": "array"
+        },
+        "removed_nodes": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Removed Nodes",
+          "type": "array"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "unresolved_changes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unresolved Changes",
+          "type": "array"
+        }
+      },
+      "title": "GraphDelta",
+      "type": "object"
+    },
+    "ParameterDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "after": {
+          "title": "After"
+        },
+        "before": {
+          "title": "Before"
+        },
+        "node_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Node Id",
+          "type": "string"
+        },
+        "parameter_name": {
+          "minLength": 1,
+          "title": "Parameter Name",
+          "type": "string"
+        },
+        "source_expression": {
+          "minLength": 1,
+          "title": "Source Expression",
+          "type": "string"
+        }
+      },
+      "required": [
+        "node_id",
+        "parameter_name",
+        "before",
+        "after",
+        "source_expression"
+      ],
+      "title": "ParameterDelta",
+      "type": "object"
+    },
+    "SemanticParameterPatch": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_path": {
+          "minLength": 1,
+          "title": "Artifact Path",
+          "type": "string"
+        },
+        "new_value": {
+          "title": "New Value"
+        },
+        "operation": {
+          "const": "set_parameter",
+          "default": "set_parameter",
+          "title": "Operation",
+          "type": "string"
+        },
+        "parameter_name": {
+          "minLength": 1,
+          "title": "Parameter Name",
+          "type": "string"
+        },
+        "patch_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Patch Id",
+          "type": "string"
+        },
+        "runtime_input_spec": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Runtime Input Spec"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "target_node_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Target Node Id",
+          "type": "string"
+        },
+        "targeted_tests": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Targeted Tests",
+          "type": "array"
+        }
+      },
+      "required": [
+        "patch_id",
+        "artifact_path",
+        "target_node_id",
+        "parameter_name",
+        "new_value"
+      ],
+      "title": "SemanticParameterPatch",
+      "type": "object"
+    },
+    "ShapeDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "after": {
+          "minLength": 1,
+          "title": "After",
+          "type": "string"
+        },
+        "before": {
+          "minLength": 1,
+          "title": "Before",
+          "type": "string"
+        },
+        "subject_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Subject Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject_id",
+        "before",
+        "after"
+      ],
+      "title": "ShapeDelta",
+      "type": "object"
+    },
+    "TransactionState": {
+      "enum": [
+        "draft",
+        "planned",
+        "prepared",
+        "source-validated",
+        "reanalyzed",
+        "graph-delta-validated",
+        "tests-passed",
+        "review-ready",
+        "committed",
+        "discarded",
+        "failed"
+      ],
+      "title": "TransactionState",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "anchor_fingerprint": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Anchor Fingerprint",
+      "type": "string"
+    },
+    "artifact_path": {
+      "minLength": 1,
+      "title": "Artifact Path",
+      "type": "string"
+    },
+    "base_revision": {
+      "minLength": 1,
+      "title": "Base Revision",
+      "type": "string"
+    },
+    "created_at": {
+      "minLength": 1,
+      "title": "Created At",
+      "type": "string"
+    },
+    "diagnostics": {
+      "items": {
+        "$ref": "#/$defs/Diagnostic"
+      },
+      "title": "Diagnostics",
+      "type": "array"
+    },
+    "expected_delta": {
+      "$ref": "#/$defs/GraphDelta"
+    },
+    "file_changes": {
+      "items": {
+        "$ref": "#/$defs/FileChange"
+      },
+      "minItems": 1,
+      "title": "File Changes",
+      "type": "array"
+    },
+    "gates": {
+      "items": {
+        "$ref": "#/$defs/GateResult"
+      },
+      "title": "Gates",
+      "type": "array"
+    },
+    "observed_delta": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GraphDelta"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "original_project_root": {
+      "minLength": 1,
+      "title": "Original Project Root",
+      "type": "string"
+    },
+    "request": {
+      "$ref": "#/$defs/SemanticParameterPatch"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_diff": {
+      "title": "Source Diff",
+      "type": "string"
+    },
+    "source_snapshot_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Source Snapshot Id",
+      "type": "string"
+    },
+    "state": {
+      "$ref": "#/$defs/TransactionState"
+    },
+    "state_history": {
+      "items": {
+        "$ref": "#/$defs/TransactionState"
+      },
+      "title": "State History",
+      "type": "array"
+    },
+    "temporary_project_root": {
+      "minLength": 1,
+      "title": "Temporary Project Root",
+      "type": "string"
+    },
+    "test_results": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Test Results",
+      "type": "array"
+    },
+    "transaction_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Transaction Id",
+      "type": "string"
+    },
+    "workspace": {
+      "minLength": 1,
+      "title": "Workspace",
+      "type": "string"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "state",
+    "request",
+    "created_at",
+    "workspace",
+    "original_project_root",
+    "temporary_project_root",
+    "artifact_path",
+    "source_snapshot_id",
+    "base_revision",
+    "anchor_fingerprint",
+    "file_changes",
+    "source_diff",
+    "expected_delta"
+  ],
+  "title": "SourceTransaction",
+  "type": "object"
+}
