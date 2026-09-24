@@ -15,6 +15,7 @@ import {
   Grip,
   History,
   Layers3,
+  Link2,
   LockKeyhole,
   Maximize2,
   Moon,
@@ -26,6 +27,7 @@ import {
   PinOff,
   Redo2,
   Search,
+  ShieldCheck,
   Sun,
   Undo2,
   X,
@@ -126,6 +128,13 @@ interface ArchitectureParameter {
   evidence_ids: string[];
 }
 
+interface ArchitecturePort {
+  port_id: string;
+  name: string;
+  direction: "input" | "output";
+  role: string;
+}
+
 interface GraphDelta {
   added_nodes: string[];
   removed_nodes: string[];
@@ -133,6 +142,18 @@ interface GraphDelta {
   added_edges: string[];
   removed_edges: string[];
   changed_edges: string[];
+  added_ports: string[];
+  removed_ports: string[];
+  changed_ports: string[];
+  added_tensors: string[];
+  removed_tensors: string[];
+  changed_tensors: string[];
+  added_fanouts: string[];
+  removed_fanouts: string[];
+  changed_fanouts: string[];
+  added_config_predicates: string[];
+  removed_config_predicates: string[];
+  changed_config_predicates: string[];
   changed_parameters: Array<{
     node_id: string;
     parameter_name: string;
@@ -146,12 +167,27 @@ interface GraphDelta {
 interface SourceTransaction {
   transaction_id: string;
   state: string;
-  request: { target_node_id: string; parameter_name: string; new_value: unknown };
+  request: {
+    target_node_id: string;
+    operation: "set_parameter" | "replace_activation" | "insert_layer_norm";
+    parameter_name?: string;
+    new_value?: unknown;
+    parameters?: Record<string, unknown>;
+  };
   source_diff: string;
   expected_delta: GraphDelta;
   observed_delta?: GraphDelta;
   gates: Array<{ gate: string; status: string; message: string }>;
   diagnostics: Diagnostic[];
+}
+
+interface AgentProposal {
+  proposal_id: string;
+  status: "handoff-required";
+  reason_code: string;
+  summary: string;
+  source_context: Record<string, unknown>;
+  permissions: { shell: false; network: false; source_write: false };
 }
 
 interface StudioState {
@@ -164,6 +200,8 @@ interface StudioState {
       parent_id?: string;
       attributes: Record<string, unknown>;
       parameters: ArchitectureParameter[];
+      input_ports: ArchitecturePort[];
+      output_ports: ArchitecturePort[];
     }>;
     tensors: Array<{ tensor_id: string; role: string; symbolic_shape: string }>;
   };
@@ -192,10 +230,13 @@ interface StudioState {
   };
   diagnostics: Diagnostic[];
   transaction: SourceTransaction | null;
+  proposal: AgentProposal | null;
   capabilities: {
     visual_editing: boolean;
     source_editing: boolean;
     runtime_evidence: boolean;
+    semantic_transforms: string[];
+    proposed_connection: boolean;
   };
 }
 
@@ -360,6 +401,37 @@ function App() {
       `Prepared ${architectureNode.node_id}.${parameterName}`,
     );
     setBottomTab("diff");
+  }
+
+  async function prepareStructural(operation: string, parameters: Record<string, unknown>) {
+    if (!architectureNode) return;
+    await mutate(
+      "/api/transaction/prepare-structural",
+      {
+        patch_id: patchId(operation.replaceAll("_", "-")),
+        operation,
+        target_node_id: architectureNode.node_id,
+        parameters,
+      },
+      `Prepared ${operation} on ${architectureNode.node_id}`,
+    );
+    setBottomTab("diff");
+  }
+
+  async function proposeConnection(sourcePortId: string, targetNodeId: string, targetPortId: string) {
+    if (!architectureNode) return;
+    await mutate(
+      "/api/proposal/connection",
+      {
+        proposal_id: patchId("connection").replace("patch:", "proposal:"),
+        source_node_id: architectureNode.node_id,
+        source_port_id: sourcePortId,
+        target_node_id: targetNodeId,
+        target_port_id: targetPortId,
+        role: "main",
+      },
+      `Proposed ${architectureNode.node_id} → ${targetNodeId}`,
+    );
   }
 
   function persistCamera(next: [number, number, number, number], currentScene: Scene) {
@@ -629,7 +701,7 @@ function App() {
           {!selectedNode || !selectedViewNode ? <div className="empty-state"><Focus size={20} /><span>No selection</span></div> : <div className="inspector-content">
             {inspectorTab === "inspect" && <><h2>{selectedViewNode.semantic_name}</h2><div className="status-row"><span>Exact IR</span><b>{selectedNode.canonical_node_ids.length} canonical</b></div><Field label="Shape" value={selectedNode.secondary_label ?? "Semantic proxy"} mono /><Field label="Source symbol" value={architectureNode?.semantic_name ?? selectedCanonical ?? "—"} /><Field label="Confidence" value={selectedEvidence[0]?.confidence ?? "exact"} /><div className="resolution"><div className="section-label">Resolution</div><dl><dt>Implementation</dt><dd>{String(selectedViewNode.attributes.resolution ? "resolved" : "exact")}</dd><dt>Semantics</dt><dd>{selectedViewNode.collapsed ? "grouped" : "expanded"}</dd><dt>Execution</dt><dd>authored</dd></dl></div></>}
             {inspectorTab === "visual" && <VisualInspector node={selectedNode} pinned={pinned.has(selectedNode.scene_node_id)} onPatch={submit} />}
-            {inspectorTab === "model" && <ModelInspector node={architectureNode} transaction={data.transaction} onPrepare={prepareParameter} onCommit={() => mutate("/api/transaction/commit", {}, "Committed source transaction")} onDiscard={() => mutate("/api/transaction/discard", {}, "Discarded source transaction")} />}
+            {inspectorTab === "model" && <ModelInspector node={architectureNode} nodes={data.architecture.nodes} transaction={data.transaction} proposal={data.proposal} onPrepareParameter={prepareParameter} onPrepareStructural={prepareStructural} onProposeConnection={proposeConnection} onCommit={() => mutate("/api/transaction/commit", {}, "Committed source transaction")} onDiscard={() => mutate("/api/transaction/discard", {}, "Discarded source transaction")} />}
             {inspectorTab === "evidence" && <div className="evidence-list">{selectedEvidence.length ? selectedEvidence.map((record) => <section key={record.evidence_id}><div><FileCode2 size={14} /><strong>{record.kind}</strong><span>{record.confidence}</span></div><code>{record.path ?? record.evidence_id}{record.span ? `:${record.span.start_line}` : ""}</code><p>{record.claim}</p></section>) : <div className="empty-state">No linked evidence</div>}</div>}
           </div>}
         </aside>
@@ -637,7 +709,7 @@ function App() {
 
       <section className="bottom-panel">
         <div className="bottom-tabs"><PanelBottom size={14} />{(["problems", "diff", "validation", "activity"] as const).map((tab) => <button key={tab} className={bottomTab === tab ? "active" : ""} onClick={() => setBottomTab(tab)}>{tab === "diff" ? "Source Diff" : tab[0].toUpperCase() + tab.slice(1)}{tab === "problems" && <span>{data.diagnostics.length}</span>}</button>)}</div>
-        <div className="bottom-content">{bottomTab === "problems" && (data.diagnostics.length ? data.diagnostics.map((item) => <button key={item.code} onClick={() => choose(item.target_ids[0] ?? null)}><AlertTriangle size={13} /><b>{item.severity}</b><span>{item.message}</span></button>) : <div className="ok-line"><CircleDot size={13} /> No geometry problems</div>)}{bottomTab === "diff" && (data.transaction ? <TransactionReview transaction={data.transaction} onCommit={() => mutate("/api/transaction/commit", {}, "Committed source transaction")} onDiscard={() => mutate("/api/transaction/discard", {}, "Discarded source transaction")} /> : <div className="ok-line"><LockKeyhole size={13} /> Source digest {sourceDigest} unchanged</div>)}{bottomTab === "validation" && <div className="validation-line"><CircleDot size={13} /> CanvasDocument valid · {data.document.visual_patches.length} visual patches · {data.runtime ? `${data.runtime.trace.observations.length} runtime observations` : "runtime not loaded"} · set_parameter transactions available</div>}{bottomTab === "activity" && <div className="activity-list">{activity.map((item, index) => <span key={`${item}-${index}`}><History size={12} />{item}</span>)}</div>}</div>
+        <div className="bottom-content">{bottomTab === "problems" && (data.diagnostics.length ? data.diagnostics.map((item) => <button key={item.code} onClick={() => choose(item.target_ids[0] ?? null)}><AlertTriangle size={13} /><b>{item.severity}</b><span>{item.message}</span></button>) : <div className="ok-line"><CircleDot size={13} /> No geometry problems</div>)}{bottomTab === "diff" && (data.transaction ? <TransactionReview transaction={data.transaction} onCommit={() => mutate("/api/transaction/commit", {}, "Committed source transaction")} onDiscard={() => mutate("/api/transaction/discard", {}, "Discarded source transaction")} /> : <div className="ok-line"><LockKeyhole size={13} /> Source digest {sourceDigest} unchanged</div>)}{bottomTab === "validation" && <div className="validation-line"><CircleDot size={13} /> CanvasDocument valid · {data.document.visual_patches.length} visual patches · {data.runtime ? `${data.runtime.trace.observations.length} runtime observations` : "runtime not loaded"} · registered structural transactions available</div>}{bottomTab === "activity" && <div className="activity-list">{activity.map((item, index) => <span key={`${item}-${index}`}><History size={12} />{item}</span>)}</div>}</div>
       </section>
 
       <button className="theme-toggle icon-button" title="Toggle theme" aria-label="Toggle theme" onClick={() => { const next = !dark; setDark(next); void submit("set-theme", undefined, { theme: next ? "studio-dark" : "paper-light" }); }}>{dark ? <Sun /> : <Moon />}</button>
@@ -661,48 +733,68 @@ function parseValue(value: string): unknown {
   }
 }
 
-function ModelInspector({ node, transaction, onPrepare, onCommit, onDiscard }: {
+function ModelInspector({ node, nodes, transaction, proposal, onPrepareParameter, onPrepareStructural, onProposeConnection, onCommit, onDiscard }: {
   node?: StudioState["architecture"]["nodes"][number];
+  nodes: StudioState["architecture"]["nodes"];
   transaction: SourceTransaction | null;
-  onPrepare: (parameterName: string, newValue: unknown) => Promise<void>;
+  proposal: AgentProposal | null;
+  onPrepareParameter: (parameterName: string, newValue: unknown) => Promise<void>;
+  onPrepareStructural: (operation: string, parameters: Record<string, unknown>) => Promise<void>;
+  onProposeConnection: (sourcePortId: string, targetNodeId: string, targetPortId: string) => Promise<void>;
   onCommit: () => Promise<void>;
   onDiscard: () => Promise<void>;
 }) {
   const parameters = node?.parameters ?? [];
+  const parameterRequest = transaction?.request.operation === "set_parameter" ? transaction.request : null;
   const activeForNode = Boolean(transaction && transaction.request.target_node_id === node?.node_id);
-  const initialName = activeForNode ? transaction?.request.parameter_name : parameters[0]?.name;
+  const initialName = activeForNode && parameterRequest ? parameterRequest.parameter_name : parameters[0]?.name;
   const [name, setName] = useState(initialName ?? "");
   const parameter = parameters.find((item) => item.name === name) ?? parameters[0];
   const [value, setValue] = useState(
-    activeForNode ? displayValue(transaction?.request.new_value) : parameter ? displayValue(parameter.value) : "",
+    activeForNode && parameterRequest ? displayValue(parameterRequest.new_value) : parameter ? displayValue(parameter.value) : "",
   );
+  const currentActivation = String(node?.attributes.op_type ?? "").replace("nn.", "");
+  const [replacement, setReplacement] = useState(currentActivation === "ReLU" ? "GELU" : "ReLU");
+  const [moduleName, setModuleName] = useState(`${String(node?.attributes.module_path ?? "layer").replace("self.", "")}_norm`);
+  const [normalizedShape, setNormalizedShape] = useState("d_model");
+  const targetOptions = nodes.filter((item) => item.node_id !== node?.node_id && item.input_ports.length);
+  const [targetNodeId, setTargetNodeId] = useState(targetOptions[0]?.node_id ?? "");
+  const targetNode = targetOptions.find((item) => item.node_id === targetNodeId) ?? targetOptions[0];
+  const [sourcePortId, setSourcePortId] = useState(node?.output_ports[0]?.port_id ?? "");
+  const [targetPortId, setTargetPortId] = useState(targetNode?.input_ports[0]?.port_id ?? "");
   useEffect(() => {
-    const transactionName = transaction?.request.parameter_name;
-    const transactionParameter = transaction?.request.target_node_id === node?.node_id && transactionName
+    const transactionName = parameterRequest?.parameter_name;
+    const transactionParameter = parameterRequest?.target_node_id === node?.node_id && transactionName
       ? node?.parameters.find((item) => item.name === transactionName)
       : undefined;
     const next = transactionParameter ?? node?.parameters[0];
     setName(next?.name ?? "");
-    setValue(transactionParameter ? displayValue(transaction?.request.new_value) : next ? displayValue(next.value) : "");
+    setValue(transactionParameter ? displayValue(parameterRequest?.new_value) : next ? displayValue(next.value) : "");
+    const activation = String(node?.attributes.op_type ?? "").replace("nn.", "");
+    setReplacement(activation === "ReLU" ? "GELU" : "ReLU");
+    setModuleName(`${String(node?.attributes.module_path ?? "layer").replace("self.", "")}_norm`);
+    setSourcePortId(node?.output_ports[0]?.port_id ?? "");
   }, [node?.node_id, transaction?.transaction_id]);
   useEffect(() => {
     if (parameter && !activeForNode) setValue(displayValue(parameter.value));
   }, [parameter?.name]);
-  if (!node || !parameter) {
-    return <div className="empty-state"><Braces size={20} /><span>No editable parameter</span></div>;
+  useEffect(() => {
+    setTargetPortId(targetNode?.input_ports[0]?.port_id ?? "");
+  }, [targetNode?.node_id]);
+  if (!node) {
+    return <div className="empty-state"><Braces size={20} /><span>No canonical node selected</span></div>;
   }
   const active = transaction && transaction.request.target_node_id === node.node_id;
   const affected = active ? transaction.expected_delta.changed_nodes.length : 0;
+  const transactionLocked = Boolean(transaction && !["discarded", "committed", "failed"].includes(transaction.state));
+  const activationSupported = ["GELU", "ReLU", "SiLU"].includes(currentActivation);
   return <>
     <div className="transaction-banner"><GitBranch size={15} /> Safe source transaction</div>
-    <label className="model-field"><span>Parameter</span><select value={parameter.name} onChange={(event) => setName(event.target.value)}>{parameters.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></label>
-    <Field label="Current value" value={displayValue(parameter.value)} mono />
-    <Field label="Provenance" value={`${parameter.origin} · ${parameter.source_expression}`} mono />
-    <label className="model-field"><span>Target value</span><input value={value} onChange={(event) => setValue(event.target.value)} /></label>
-    <Field label="Modification type" value="set_parameter" mono />
+    {parameter ? <section className="model-operation"><div className="section-heading">Parameter</div><label className="model-field"><span>Parameter</span><select value={parameter.name} onChange={(event) => setName(event.target.value)}>{parameters.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></label><Field label="Current / provenance" value={`${displayValue(parameter.value)} · ${parameter.origin}`} mono /><label className="model-field"><span>Target value</span><input value={value} onChange={(event) => setValue(event.target.value)} /></label><button className="prepare-button" disabled={transactionLocked || value === displayValue(parameter.value)} onClick={() => void onPrepareParameter(parameter.name, parseValue(value))}><GitBranch size={14} /> Prepare parameter</button></section> : <div className="operation-unavailable">No exact editable parameter on this node.</div>}
+    <section className="model-operation"><div className="section-heading">Registered transforms</div>{activationSupported && <><label className="model-field"><span>Activation</span><select value={replacement} onChange={(event) => setReplacement(event.target.value)}>{["GELU", "ReLU", "SiLU"].filter((item) => item !== currentActivation).map((item) => <option key={item}>{item}</option>)}</select></label><button className="prepare-button" disabled={transactionLocked} onClick={() => void onPrepareStructural("replace_activation", { replacement })}><GitBranch size={14} /> Replace activation</button></>}<label className="model-field"><span>LayerNorm module</span><input value={moduleName} onChange={(event) => setModuleName(event.target.value)} /></label><label className="model-field"><span>Normalized shape</span><input value={normalizedShape} onChange={(event) => setNormalizedShape(event.target.value)} /></label><button className="prepare-button" disabled={transactionLocked || !moduleName || !normalizedShape} onClick={() => void onPrepareStructural("insert_layer_norm", { module_name: moduleName, normalized_shape: parseValue(normalizedShape) })}><GitBranch size={14} /> Insert LayerNorm</button></section>
+    <section className="model-operation"><div className="section-heading">Proposed connection</div>{node.output_ports.length && targetNode ? <><label className="model-field"><span>Source output</span><select value={sourcePortId} onChange={(event) => setSourcePortId(event.target.value)}>{node.output_ports.map((port) => <option key={port.port_id} value={port.port_id}>{port.role} · {port.port_id}</option>)}</select></label><label className="model-field"><span>Target node</span><select value={targetNode.node_id} onChange={(event) => setTargetNodeId(event.target.value)}>{targetOptions.map((item) => <option key={item.node_id} value={item.node_id}>{item.semantic_name}</option>)}</select></label><label className="model-field"><span>Target input</span><select value={targetPortId} onChange={(event) => setTargetPortId(event.target.value)}>{targetNode.input_ports.map((port) => <option key={port.port_id} value={port.port_id}>{port.role} · {port.port_id}</option>)}</select></label><button className="prepare-button" onClick={() => void onProposeConnection(sourcePortId, targetNode.node_id, targetPortId)}><Link2 size={14} /> Create handoff</button></> : <div className="operation-unavailable">Select a node with an authored output port.</div>}</section>
+    {proposal && <div className="proposal-card"><div><ShieldCheck size={15} /><strong>Agent handoff</strong><code>{proposal.reason_code}</code></div><p>{proposal.summary}</p><dl><dt>Shell</dt><dd>Denied</dd><dt>Network</dt><dd>Denied</dd><dt>Source write</dt><dd>Denied</dd></dl></div>}
     <Field label="Expected affected nodes / edges" value={active ? `${affected} / ${transaction.expected_delta.changed_edges.length}` : "Calculated during prepare"} />
-    <Field label="Risk" value={parameter.origin === "config" ? "Shared config value · exact delta required" : "Local source literal · exact anchor required"} />
-    <button className="prepare-button" disabled={Boolean(transaction && !["discarded", "committed", "failed"].includes(transaction.state)) || value === displayValue(parameter.value)} onClick={() => void onPrepare(parameter.name, parseValue(value))}><GitBranch size={14} /> Prepare change</button>
     {active && <div className={`transaction-state ${transaction.state}`}>{transaction.state}</div>}
     {active && transaction.state === "review-ready" && <div className="transaction-actions"><button className="commit-button" onClick={() => void onCommit()}><CircleDot size={14} /> Commit to source</button><button onClick={() => void onDiscard()}><X size={14} /> Discard</button></div>}
     {active && transaction.state === "failed" && <div className="transaction-actions"><button disabled title="Agent handoff arrives with structural transforms"><Braces size={14} /> Fix with Agent</button><button onClick={() => void onDiscard()}><X size={14} /> Discard</button></div>}
@@ -711,7 +803,9 @@ function ModelInspector({ node, transaction, onPrepare, onCommit, onDiscard }: {
 
 function deltaSummary(delta?: GraphDelta): string {
   if (!delta) return "Not available";
-  return `${delta.changed_parameters.length} parameters · ${delta.changed_nodes.length} nodes · ${delta.changed_edges.length} edges · ${delta.changed_shapes.length} shapes`;
+  const nodes = delta.added_nodes.length + delta.removed_nodes.length + delta.changed_nodes.length;
+  const edges = delta.added_edges.length + delta.removed_edges.length + delta.changed_edges.length;
+  return `${delta.changed_parameters.length} parameters · ${nodes} nodes · ${edges} edges · ${delta.changed_shapes.length} shapes`;
 }
 
 function TransactionReview({ transaction, onCommit, onDiscard }: { transaction: SourceTransaction; onCommit: () => Promise<void>; onDiscard: () => Promise<void> }) {

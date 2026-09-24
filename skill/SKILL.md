@@ -21,5 +21,6 @@ Read [references/evidence-contract.md](references/evidence-contract.md) when res
 
 - Visual requests may change only CanvasDocument or VisualSpec state.
 - Model changes require a semantic proposal, isolated prepare/verify phases, source diff, expected and observed graph delta, and explicit user commit.
+- Only registered structural transforms may enter a source transaction. Route connections, branches, rank/merge changes, complex control flow, and unknown refactors to an AgentProposal with no shell, network, or source-write permission.
 - A request to draw or drag does not authorize source writes.
 - If a requested capability is unavailable, return the structured capability error and do not improvise a direct source edit.

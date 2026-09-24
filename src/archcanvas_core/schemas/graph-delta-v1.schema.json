@@ -1,5 +1,62 @@
 {
   "$defs": {
+    "FactDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "after_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "After Sha256"
+        },
+        "before_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Before Sha256"
+        },
+        "kind": {
+          "enum": [
+            "node",
+            "edge",
+            "tensor",
+            "port",
+            "fanout",
+            "repeat",
+            "config-predicate",
+            "evidence",
+            "unresolved"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "subject_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Subject Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject_id",
+        "kind"
+      ],
+      "title": "FactDelta",
+      "type": "object"
+    },
     "ParameterDelta": {
       "additionalProperties": false,
       "properties": {
@@ -65,12 +122,28 @@
   },
   "additionalProperties": false,
   "properties": {
+    "added_config_predicates": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Added Config Predicates",
+      "type": "array"
+    },
     "added_edges": {
       "items": {
         "pattern": "^[a-z][a-z0-9._:-]*$",
         "type": "string"
       },
       "title": "Added Edges",
+      "type": "array"
+    },
+    "added_fanouts": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Added Fanouts",
       "type": "array"
     },
     "added_nodes": {
@@ -81,12 +154,44 @@
       "title": "Added Nodes",
       "type": "array"
     },
+    "added_ports": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Added Ports",
+      "type": "array"
+    },
+    "added_tensors": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Added Tensors",
+      "type": "array"
+    },
+    "changed_config_predicates": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Changed Config Predicates",
+      "type": "array"
+    },
     "changed_edges": {
       "items": {
         "pattern": "^[a-z][a-z0-9._:-]*$",
         "type": "string"
       },
       "title": "Changed Edges",
+      "type": "array"
+    },
+    "changed_fanouts": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Changed Fanouts",
       "type": "array"
     },
     "changed_nodes": {
@@ -151,6 +256,21 @@
       "title": "Evidence Anchor Changes",
       "type": "array"
     },
+    "fact_changes": {
+      "items": {
+        "$ref": "#/$defs/FactDelta"
+      },
+      "title": "Fact Changes",
+      "type": "array"
+    },
+    "removed_config_predicates": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Removed Config Predicates",
+      "type": "array"
+    },
     "removed_edges": {
       "items": {
         "pattern": "^[a-z][a-z0-9._:-]*$",
@@ -159,12 +279,36 @@
       "title": "Removed Edges",
       "type": "array"
     },
+    "removed_fanouts": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Removed Fanouts",
+      "type": "array"
+    },
     "removed_nodes": {
       "items": {
         "pattern": "^[a-z][a-z0-9._:-]*$",
         "type": "string"
       },
       "title": "Removed Nodes",
+      "type": "array"
+    },
+    "removed_ports": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Removed Ports",
+      "type": "array"
+    },
+    "removed_tensors": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Removed Tensors",
       "type": "array"
     },
     "schema_version": {

@@ -14,12 +14,17 @@ All persisted documents use a `schema_version` with major/minor semantics. A rea
    and never overwrites static Evidence or Exact IR.
 6. `CanvasDocument` stores only visual patches and selection-independent view state.
 7. `SemanticParameterPatch` identifies one canonical node parameter, target value, artifact binding,
-   and optional targeted tests/runtime replay.
-8. `GraphDelta` records exact node, edge, parameter, port, tensor, shape, repeat, sharing, evidence,
-   and unresolved changes without using renderer geometry as semantic evidence.
-9. `SourceTransaction` persists the original revision and hashes, exact anchor fingerprint, isolated
+   and optional targeted tests/runtime replay. `SemanticStructuralPatch` is restricted to a named,
+   versioned transform in the trusted registry.
+8. `ProposedConnection` describes authored source/target ports without changing source.
+   `AgentProposal` carries the unsupported intent, compatibility finding, and handoff context while
+   requiring shell, network, and source-write permissions to remain false.
+9. `GraphDelta` records exact node, edge, parameter, port, tensor, shape, fanout, repeat,
+   configuration-predicate, sharing, evidence, and unresolved changes without using renderer
+   geometry as semantic evidence.
+10. `SourceTransaction` persists the original revision and hashes, exact anchor fingerprint, isolated
    project copy, unified diff, expected/observed deltas, gates, diagnostics, and state.
-10. `CommandReceipt` and `TransactionReceipt` report command status, artifacts, gates, structured
+11. `CommandReceipt` and `TransactionReceipt` report command status, artifacts, gates, structured
    diagnostics, and whether a source write occurred.
 
 Canonical identifiers derive from source symbol, callsite, logical path, repeat/branch identity, and sharing identity. Renderer coordinates and list ordering are never identity inputs.
@@ -50,3 +55,22 @@ recompilation. A failed gate transitions to `failed`; unexecuted gates are never
 the target file hash, rejects concurrent changes without fuzzy merge, uses same-directory atomic
 replacement, and reruns analysis. Any commit failure restores original bytes. `patch discard`
 removes the private project copy while retaining the audit manifest.
+
+## Structural registry and proposal boundary
+
+The Stage 7 registry contains two deliberately narrow transforms:
+
+- `replace_activation` replaces a zero-argument, directly registered `nn.GELU`, `nn.ReLU`, or
+  `nn.SiLU` constructor without changing topology.
+- `insert_layer_norm` inserts one directly registered `nn.LayerNorm` after a module output that has
+  exactly one authored downstream consumer, then rewires only that consumer.
+
+Every prepare and verify phase runs the transform-specific semantic oracle in addition to requiring
+model-equal Expected and Observed Graph Delta. The delta includes canonical fact digests so a
+different activation, extra edge, changed tensor, or other same-category mutation cannot pass by
+matching only aggregate changed IDs.
+
+Arbitrary connections, new branches, cross-attention, skip/loss paths, tensor-rank changes, merge
+changes, complex control flow, and unknown multi-factory refactors are not transactions. Use
+`archcanvas propose REQUEST --out agent-proposal.json --json`; the output is context for Agent
+review and grants no execution or write authority.

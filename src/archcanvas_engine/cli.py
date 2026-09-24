@@ -19,7 +19,9 @@ from archcanvas_core.models import (
     Diagnostic,
     EvidenceRecord,
     GateResult,
+    ProposedConnection,
     SemanticParameterPatch,
+    SemanticStructuralPatch,
     SourceSnapshot,
 )
 from archcanvas_core.validation import validate_architecture
@@ -37,9 +39,12 @@ from archcanvas_runtime import RuntimeTraceError, trace_runtime
 from archcanvas_studio import StudioBundle, prepare_studio_bundle, source_binding_digest
 from archcanvas_studio.server import create_studio_server
 from archcanvas_transactions import (
+    TRANSFORM_REGISTRY,
     commit_transaction,
     discard_transaction,
+    plan_connection,
     prepare_transaction,
+    unsupported_intent_proposal,
     verify_transaction,
 )
 
@@ -176,7 +181,9 @@ def doctor() -> CommandReceipt:
                 "runtime_trace": (
                     "available-opt-in-pytorch" if torch_version else "unavailable-missing-torch"
                 ),
-                "source_transactions": "available-set-parameter",
+                "source_transactions": "available-parameter+registered-structural",
+                "structural_transforms": sorted(TRANSFORM_REGISTRY),
+                "agent_proposal": "available-no-execution-permissions",
             },
             "runtime_packages": {"torch": torch_version},
         },
@@ -255,7 +262,7 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
                 "patchtst",
                 "timemixer",
             ],
-            "semantic_transforms": ["set_parameter"],
+            "semantic_transforms": ["set_parameter", *sorted(TRANSFORM_REGISTRY)],
         },
     )
     _write_json(
@@ -529,7 +536,9 @@ def studio(args: argparse.Namespace) -> tuple[CommandReceipt, StudioBundle | Non
             "visual_patch_count": len(bundle.document.visual_patches),
             "redo_patch_count": len(bundle.document.redo_patches),
             "modes": ["explore", "layout", "model"],
-            "source_editing": "available-set-parameter-transaction",
+            "source_editing": "available-registered-transaction",
+            "structural_transforms": sorted(TRANSFORM_REGISTRY),
+            "agent_proposal": "available-no-execution-permissions",
         },
     )
     return receipt, bundle
@@ -541,9 +550,12 @@ def trace(args: argparse.Namespace) -> CommandReceipt:
 
 def patch(args: argparse.Namespace) -> CommandReceipt:
     if args.patch_command == "prepare":
-        request = SemanticParameterPatch.model_validate_json(
-            args.request.read_text(encoding="utf-8")
-        )
+        payload = json.loads(args.request.read_text(encoding="utf-8"))
+        operation = payload.get("operation") if isinstance(payload, dict) else None
+        if operation == "set_parameter":
+            request = SemanticParameterPatch.model_validate(payload)
+        else:
+            request = SemanticStructuralPatch.model_validate(payload)
         transaction, receipt = prepare_transaction(request, args.workspace)
         directory = Path(transaction.workspace) / "transactions" / transaction.transaction_id
     elif args.patch_command == "verify":
@@ -578,6 +590,41 @@ def patch(args: argparse.Namespace) -> CommandReceipt:
                 if transaction.observed_delta is not None
                 else None
             ),
+        },
+    )
+
+
+def propose(args: argparse.Namespace) -> CommandReceipt:
+    payload = json.loads(args.request.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise TypeError("proposal request must be a JSON object")
+    if payload.get("kind") == "proposed_connection":
+        request = ProposedConnection.model_validate(payload)
+        architecture = ArchitectureIR.model_validate_json(
+            Path(request.artifact_path).read_text(encoding="utf-8")
+        )
+        proposal = plan_connection(request, architecture)
+    else:
+        proposal = unsupported_intent_proposal(payload)
+    output = args.out.resolve()
+    _write_json(output, proposal)
+    return CommandReceipt(
+        command="propose",
+        status="ok",
+        exit_code=0,
+        artifacts={"agent_proposal": str(output)},
+        gates=[
+            GateResult(
+                gate="F-proposal-boundary",
+                status="passed",
+                message="Unsupported structural intent was routed to a no-permission handoff.",
+            )
+        ],
+        details={
+            "proposal_id": proposal.proposal_id,
+            "reason_code": proposal.reason_code,
+            "permissions": proposal.permissions,
+            "source_writes": False,
         },
     )
 
@@ -631,6 +678,10 @@ def build_parser() -> argparse.ArgumentParser:
         transaction_parser = patch_subparsers.add_parser(command)
         transaction_parser.add_argument("transaction", type=Path)
         transaction_parser.add_argument("--json", action="store_true")
+    propose_parser = subparsers.add_parser("propose")
+    propose_parser.add_argument("request", type=Path)
+    propose_parser.add_argument("--out", type=Path, required=True)
+    propose_parser.add_argument("--json", action="store_true")
     return parser
 
 
@@ -662,6 +713,8 @@ def main(argv: list[str] | None = None) -> int:
             receipt = trace(args)
         elif args.command == "patch":
             receipt = patch(args)
+        elif args.command == "propose":
+            receipt = propose(args)
         else:
             receipt = _unavailable(args.command, args.command)
         return _emit(receipt)
@@ -669,7 +722,7 @@ def main(argv: list[str] | None = None) -> int:
         return _emit(_invalid(args.command, error.code, str(error)))
     except RuntimeTraceError as error:
         return _emit(_invalid(args.command, "RUNTIME_REQUEST_INVALID", str(error)))
-    except (OSError, ValidationError, ValueError, json.JSONDecodeError) as error:
+    except (OSError, TypeError, ValidationError, ValueError, json.JSONDecodeError) as error:
         return _emit(_invalid(args.command, "INPUT_INVALID", str(error)))
     except Exception as error:  # noqa: BLE001  # pragma: no cover - final receipt boundary
         print(f"archcanvas internal error: {error}", file=sys.stderr)

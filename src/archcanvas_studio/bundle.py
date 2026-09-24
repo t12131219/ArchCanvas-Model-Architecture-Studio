@@ -8,13 +8,16 @@ from pathlib import Path
 from pydantic import TypeAdapter
 
 from archcanvas_core.models import (
+    AgentProposal,
     ArchitectureIR,
     CanvasDocument,
     Diagnostic,
     EvidenceRecord,
+    ProposedConnection,
     PublicationView,
     RuntimeTrace,
     SemanticParameterPatch,
+    SemanticStructuralPatch,
     SourceSnapshot,
     SourceTransaction,
     VisualScene,
@@ -30,6 +33,7 @@ from archcanvas_publication import (
 from archcanvas_transactions import (
     commit_transaction,
     discard_transaction,
+    plan_connection,
     prepare_transaction,
     verify_transaction,
 )
@@ -72,6 +76,7 @@ class StudioBundle:
     base_scenes: dict[str, VisualScene]
     document: CanvasDocument
     active_transaction: SourceTransaction | None = None
+    active_proposal: AgentProposal | None = None
 
     def materialized_scenes(self) -> dict[str, VisualScene]:
         return {
@@ -118,10 +123,20 @@ class StudioBundle:
                 if self.active_transaction is not None
                 else None
             ),
+            "proposal": (
+                self.active_proposal.model_dump(mode="json")
+                if self.active_proposal is not None
+                else None
+            ),
             "capabilities": {
                 "visual_editing": True,
                 "source_editing": True,
-                "semantic_transforms": ["set_parameter"],
+                "semantic_transforms": [
+                    "set_parameter",
+                    "replace_activation",
+                    "insert_layer_norm",
+                ],
+                "proposed_connection": True,
                 "runtime_evidence": self.runtime_trace is not None,
             },
         }
@@ -141,6 +156,35 @@ class StudioBundle:
             self.workspace / "transactions" / transaction.transaction_id
         )
         self.active_transaction = transaction
+
+    def prepare_structural(self, payload: dict[str, object]) -> None:
+        request = SemanticStructuralPatch(
+            patch_id=str(payload["patch_id"]),
+            operation=str(payload["operation"]),
+            artifact_path=str(self.artifact_path),
+            target_node_id=str(payload["target_node_id"]),
+            parameters=payload.get("parameters", {}),
+            targeted_tests=payload.get("targeted_tests", []),
+            runtime_input_spec=payload.get("runtime_input_spec"),
+        )
+        transaction, _ = prepare_transaction(request, self.workspace)
+        transaction, _ = verify_transaction(
+            self.workspace / "transactions" / transaction.transaction_id
+        )
+        self.active_transaction = transaction
+        self.active_proposal = None
+
+    def propose_connection(self, payload: dict[str, object]) -> None:
+        request = ProposedConnection(
+            proposal_id=str(payload["proposal_id"]),
+            artifact_path=str(self.artifact_path),
+            source_node_id=str(payload["source_node_id"]),
+            source_port_id=str(payload["source_port_id"]),
+            target_node_id=str(payload["target_node_id"]),
+            target_port_id=str(payload["target_port_id"]),
+            role=str(payload.get("role", "main")),
+        )
+        self.active_proposal = plan_connection(request, self.architecture)
 
     def commit_parameter(self) -> None:
         if self.active_transaction is None:

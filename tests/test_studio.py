@@ -339,3 +339,76 @@ def test_studio_server_prepares_review_ready_parameter_transaction(tmp_path: Pat
         server.shutdown()
         server.server_close()
         thread.join(timeout=3)
+
+
+def test_studio_server_prepares_structural_transaction_and_connection_proposal(
+    tmp_path: Path,
+) -> None:
+    project = tmp_path / "project"
+    shutil.copytree(FIXTURE, project)
+    analysis = tmp_path / "analysis"
+    analyzed = analyze_project(
+        project,
+        "model:Transformer",
+        "inference",
+        "eval",
+        (project / "config.json").read_bytes(),
+        project / "config.json",
+    )
+    analysis.mkdir()
+    (analysis / "architecture.json").write_text(analyzed.architecture.model_dump_json())
+    (analysis / "source-snapshot.json").write_text(analyzed.snapshot.model_dump_json())
+    (analysis / "evidence-ledger.json").write_text(
+        json.dumps([item.model_dump(mode="json") for item in analyzed.evidence])
+    )
+    studio = prepare_studio_bundle(analysis / "architecture.json", tmp_path / ".archcanvas")
+    before = (project / "model.py").read_bytes()
+    try:
+        server = create_studio_server(studio, "127.0.0.1", 0)
+    except PermissionError:
+        pytest.skip("local sockets are disabled by the test sandbox")
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    base_url = f"http://127.0.0.1:{server.server_address[1]}"
+    try:
+        request = Request(
+            f"{base_url}/api/transaction/prepare-structural",
+            data=json.dumps(
+                {
+                    "patch_id": "patch:studio-activation",
+                    "operation": "replace_activation",
+                    "target_node_id": "node:activation",
+                    "parameters": {"replacement": "ReLU"},
+                }
+            ).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        state = json.loads(urlopen(request).read())
+        assert state["transaction"]["state"] == "review-ready"
+        assert state["transaction"]["request"]["operation"] == "replace_activation"
+        assert (project / "model.py").read_bytes() == before
+
+        edge = analyzed.architecture.edges[0]
+        request = Request(
+            f"{base_url}/api/proposal/connection",
+            data=json.dumps(
+                {
+                    "proposal_id": "proposal:studio-connection",
+                    "source_node_id": edge.producer_id,
+                    "source_port_id": edge.producer_port,
+                    "target_node_id": edge.consumer_id,
+                    "target_port_id": edge.consumer_port,
+                }
+            ).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        state = json.loads(urlopen(request).read())
+        assert state["proposal"]["status"] == "handoff-required"
+        assert not any(state["proposal"]["permissions"].values())
+        assert (project / "model.py").read_bytes() == before
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)

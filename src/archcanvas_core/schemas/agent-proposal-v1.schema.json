@@ -1,0 +1,75 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "const": "agent_proposal",
+      "default": "agent_proposal",
+      "title": "Kind",
+      "type": "string"
+    },
+    "permissions": {
+      "additionalProperties": {
+        "type": "boolean"
+      },
+      "propertyNames": {
+        "enum": [
+          "shell",
+          "network",
+          "source_write"
+        ]
+      },
+      "title": "Permissions",
+      "type": "object"
+    },
+    "proposal_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Proposal Id",
+      "type": "string"
+    },
+    "reason_code": {
+      "enum": [
+        "UNSUPPORTED_CONNECTION_TRANSFORM",
+        "INCOMPATIBLE_PORTS",
+        "UNRESOLVED_TENSOR_COMPATIBILITY",
+        "UNSUPPORTED_STRUCTURAL_INTENT"
+      ],
+      "title": "Reason Code",
+      "type": "string"
+    },
+    "requested_intent": {
+      "additionalProperties": true,
+      "title": "Requested Intent",
+      "type": "object"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_context": {
+      "additionalProperties": true,
+      "title": "Source Context",
+      "type": "object"
+    },
+    "status": {
+      "const": "handoff-required",
+      "default": "handoff-required",
+      "title": "Status",
+      "type": "string"
+    },
+    "summary": {
+      "minLength": 1,
+      "title": "Summary",
+      "type": "string"
+    }
+  },
+  "required": [
+    "proposal_id",
+    "reason_code",
+    "summary",
+    "requested_intent"
+  ],
+  "title": "AgentProposal",
+  "type": "object"
+}

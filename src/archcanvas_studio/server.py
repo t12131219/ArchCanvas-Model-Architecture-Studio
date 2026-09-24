@@ -84,6 +84,14 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                     self.server.bundle.prepare_parameter(payload)
                     self._json(self.server.bundle.state())
                     return
+                elif self.path == "/api/transaction/prepare-structural":
+                    self.server.bundle.prepare_structural(payload)
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/proposal/connection":
+                    self.server.bundle.propose_connection(payload)
+                    self._json(self.server.bundle.state())
+                    return
                 elif self.path == "/api/transaction/commit":
                     self.server.bundle.commit_parameter()
                     self._json(self.server.bundle.state())
@@ -97,7 +105,7 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                     return
                 self.server.bundle.save_document(changed)
                 self._json(self.server.bundle.state())
-        except (TypeError, ValueError, json.JSONDecodeError) as error:
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
             self._error(error)
 
 

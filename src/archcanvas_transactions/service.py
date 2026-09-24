@@ -23,6 +23,7 @@ from archcanvas_core.models import (
     FileChange,
     GateResult,
     SemanticParameterPatch,
+    SemanticStructuralPatch,
     SourceSnapshot,
     SourceTransaction,
     TransactionReceipt,
@@ -40,6 +41,7 @@ from archcanvas_python import analyze_project
 from archcanvas_runtime import trace_runtime
 
 from .delta import graph_delta
+from .registry import apply_structural_transform, validate_structural_oracle
 from .store import load_transaction, save_transaction
 from .transforms import set_json_value, set_python_parameter, write_prepared
 
@@ -145,6 +147,26 @@ def _anchor_fingerprint(
     return _sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode())
 
 
+def _structural_anchor_fingerprint(
+    snapshot: SourceSnapshot,
+    node: Any,
+    request: SemanticStructuralPatch,
+    evidence: list[EvidenceRecord],
+) -> str:
+    records = [
+        item.model_dump(mode="json")
+        for item in evidence
+        if item.evidence_id in node.evidence_ids
+    ]
+    payload = {
+        "revision": snapshot.revision,
+        "node": node.model_dump(mode="json"),
+        "request": request.model_dump(mode="json"),
+        "evidence": records,
+    }
+    return _sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode())
+
+
 def _copy_project(project: Path, target: Path, workspace: Path) -> None:
     ignored = {".git", ".archcanvas", "__pycache__", ".pytest_cache", ".ruff_cache", "build"}
     workspace = workspace.resolve()
@@ -195,7 +217,7 @@ def _unified_diff(relative: Path, before: bytes, after: bytes) -> str:
 
 
 def prepare_transaction(
-    request: SemanticParameterPatch,
+    request: SemanticParameterPatch | SemanticStructuralPatch,
     workspace: Path,
 ) -> tuple[SourceTransaction, TransactionReceipt]:
     artifact = Path(request.artifact_path).resolve()
@@ -205,12 +227,6 @@ def prepare_transaction(
     node = next((item for item in architecture.nodes if item.node_id == request.target_node_id), None)
     if node is None:
         raise ValueError(f"target node is not present in Exact IR: {request.target_node_id}")
-    parameter = next((item for item in node.parameters if item.name == request.parameter_name), None)
-    if parameter is None:
-        raise ValueError(f"target parameter is not present on {node.node_id}: {request.parameter_name}")
-    if parameter.value == request.new_value:
-        raise ValueError("new parameter value is identical to the current value")
-
     seed = json.dumps(request.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
     transaction_id = f"transaction:{_sha256((seed + datetime.now(UTC).isoformat()).encode())[:16]}"
     workspace = workspace.resolve()
@@ -219,50 +235,67 @@ def prepare_transaction(
     directory.mkdir(parents=True, exist_ok=False)
     _copy_project(project, temporary_project, workspace)
 
-    anchor = _anchor_fingerprint(snapshot, node, parameter, evidence)
-    if parameter.origin.value == "config":
-        relative = _relative_config(snapshot, project)
-        original_path = project / relative
-        config_records = [
-            item
-            for item in evidence
-            if item.evidence_id in parameter.evidence_ids and item.kind is EvidenceKind.CONFIG
-        ]
-        key = config_records[-1].symbol if config_records else parameter.source_expression
-        if not key:
-            raise ValueError("config-backed parameter has no exact config key anchor")
-        transformed = set_json_value(original_path.read_bytes(), key, request.new_value)
-        kind = "json"
-    elif parameter.origin.value == "literal":
-        source_records = [
-            item
-            for item in evidence
-            if item.evidence_id in parameter.evidence_ids
-            and item.kind is EvidenceKind.SOURCE
-            and item.span is not None
-            and item.path is not None
-        ]
-        definition = next((item for item in source_records if ".init." in item.evidence_id), None)
-        if definition is None or definition.path is None or definition.span is None:
-            raise ValueError("literal parameter has no exact module-definition anchor")
-        relative = Path(definition.path)
-        original_path = project / relative
-        module_path = str(node.attributes.get("module_path", ""))
-        if not module_path.startswith("self."):
-            raise ValueError("literal parameter is not attached to a supported module assignment")
-        transformed = set_python_parameter(
-            original_path.read_bytes(),
-            module_name=module_path.removeprefix("self."),
-            parameter_name=parameter.name,
-            source_expression=parameter.source_expression,
-            value=request.new_value,
-            expected_line=definition.span.start_line,
+    if isinstance(request, SemanticParameterPatch):
+        parameter = next(
+            (item for item in node.parameters if item.name == request.parameter_name), None
         )
-        kind = "python"
+        if parameter is None:
+            raise ValueError(
+                f"target parameter is not present on {node.node_id}: {request.parameter_name}"
+            )
+        if parameter.value == request.new_value:
+            raise ValueError("new parameter value is identical to the current value")
+        anchor = _anchor_fingerprint(snapshot, node, parameter, evidence)
+        if parameter.origin.value == "config":
+            relative = _relative_config(snapshot, project)
+            original_path = project / relative
+            config_records = [
+                item
+                for item in evidence
+                if item.evidence_id in parameter.evidence_ids and item.kind is EvidenceKind.CONFIG
+            ]
+            key = config_records[-1].symbol if config_records else parameter.source_expression
+            if not key:
+                raise ValueError("config-backed parameter has no exact config key anchor")
+            transformed = set_json_value(original_path.read_bytes(), key, request.new_value)
+            kind = "json"
+        elif parameter.origin.value == "literal":
+            source_records = [
+                item
+                for item in evidence
+                if item.evidence_id in parameter.evidence_ids
+                and item.kind is EvidenceKind.SOURCE
+                and item.span is not None
+                and item.path is not None
+            ]
+            definition = next((item for item in source_records if ".init." in item.evidence_id), None)
+            if definition is None or definition.path is None or definition.span is None:
+                raise ValueError("literal parameter has no exact module-definition anchor")
+            relative = Path(definition.path)
+            original_path = project / relative
+            module_path = str(node.attributes.get("module_path", ""))
+            if not module_path.startswith("self."):
+                raise ValueError("literal parameter is not attached to a supported module assignment")
+            transformed = set_python_parameter(
+                original_path.read_bytes(),
+                module_name=module_path.removeprefix("self."),
+                parameter_name=parameter.name,
+                source_expression=parameter.source_expression,
+                value=request.new_value,
+                expected_line=definition.span.start_line,
+            )
+            kind = "python"
+        else:
+            raise ValueError(
+                f"set_parameter does not have an exact transform for {parameter.origin.value} provenance"
+            )
     else:
-        raise ValueError(
-            f"set_parameter does not have an exact transform for {parameter.origin.value} provenance"
-        )
+        anchor = _structural_anchor_fingerprint(snapshot, node, request, evidence)
+        structural = apply_structural_transform(request, architecture, snapshot, evidence)
+        relative = structural.relative_path
+        original_path = project / relative
+        transformed = structural.transformed
+        kind = "python"
 
     before = original_path.read_bytes()
     prepared_path = temporary_project / relative
@@ -275,30 +308,50 @@ def prepare_transaction(
         evidence,
         prepared_bundle.evidence,
     )
-    target_change = next(
-        (
-            item
-            for item in expected.changed_parameters
-            if item.node_id == request.target_node_id
-            and item.parameter_name == request.parameter_name
-            and item.after == request.new_value
-        ),
-        None,
-    )
-    topology_changed = any(
-        (
-            expected.added_nodes,
-            expected.removed_nodes,
-            expected.added_edges,
-            expected.removed_edges,
-            expected.changed_ports,
-            expected.changed_repeats,
-            expected.changed_sharing,
-            expected.unresolved_changes,
+    if isinstance(request, SemanticParameterPatch):
+        target_change = next(
+            (
+                item
+                for item in expected.changed_parameters
+                if item.node_id == request.target_node_id
+                and item.parameter_name == request.parameter_name
+                and item.after == request.new_value
+            ),
+            None,
         )
-    )
-    if target_change is None or topology_changed:
-        raise ValueError("prepared set_parameter change does not produce the required bounded graph delta")
+        topology_changed = any(
+            (
+                expected.added_nodes,
+                expected.removed_nodes,
+                expected.added_edges,
+                expected.removed_edges,
+                expected.added_ports,
+                expected.removed_ports,
+                expected.changed_ports,
+                expected.added_tensors,
+                expected.removed_tensors,
+                expected.added_fanouts,
+                expected.removed_fanouts,
+                expected.changed_fanouts,
+                expected.changed_repeats,
+                expected.added_config_predicates,
+                expected.removed_config_predicates,
+                expected.changed_config_predicates,
+                expected.changed_sharing,
+                expected.unresolved_changes,
+            )
+        )
+        if target_change is None or topology_changed:
+            raise ValueError(
+                "prepared set_parameter change does not produce the required bounded graph delta"
+            )
+    else:
+        validate_structural_oracle(
+            request,
+            architecture,
+            prepared_bundle.architecture,
+            expected,
+        )
 
     transaction = SourceTransaction(
         transaction_id=transaction_id,
@@ -497,11 +550,33 @@ def verify_transaction(path: Path) -> tuple[SourceTransaction, TransactionReceip
             ),
             _diagnostic("GRAPH_DELTA_MISMATCH", "Expected and observed Graph Delta differ."),
         )
+    if isinstance(transaction.request, SemanticStructuralPatch):
+        try:
+            validate_structural_oracle(
+                transaction.request,
+                original,
+                observed_bundle.architecture,
+                observed,
+            )
+        except ValueError as error:
+            staged = transaction.model_copy(
+                update={"gates": gates, "observed_delta": observed, "state_history": history}
+            )
+            return _fail(
+                staged,
+                _gate(
+                    "F-graph-delta",
+                    False,
+                    "Structural oracle passed.",
+                    "Structural Graph Delta oracle failed.",
+                ),
+                _diagnostic("STRUCTURAL_DELTA_ORACLE_FAILED", str(error)),
+            )
     gates.append(
         _gate(
             "F-graph-delta",
             True,
-            "Expected and observed Graph Delta match exactly; topology is unchanged.",
+            "Expected and observed Graph Delta match exactly and the operation oracle passed.",
             "Graph Delta validation failed.",
         )
     )

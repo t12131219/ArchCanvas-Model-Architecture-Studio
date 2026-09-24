@@ -612,6 +612,73 @@ class SemanticParameterPatch(StrictModel):
         return self
 
 
+class SemanticStructuralPatch(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    patch_id: Identifier
+    operation: Literal["replace_activation", "insert_layer_norm"]
+    artifact_path: str = Field(min_length=1)
+    target_node_id: Identifier
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    targeted_tests: list[list[str]] = Field(default_factory=list)
+    runtime_input_spec: str | None = None
+
+    @model_validator(mode="after")
+    def commands_are_nonempty(self) -> SemanticStructuralPatch:
+        if any(not command or any(not argument for argument in command) for command in self.targeted_tests):
+            raise ValueError("targeted test commands must contain non-empty arguments")
+        if self.operation == "replace_activation":
+            if set(self.parameters) != {"replacement"} or self.parameters["replacement"] not in {
+                "GELU",
+                "ReLU",
+                "SiLU",
+            }:
+                raise ValueError("replace_activation requires exactly one GELU/ReLU/SiLU replacement")
+        elif set(self.parameters) != {"module_name", "normalized_shape"}:
+            raise ValueError(
+                "insert_layer_norm requires exactly module_name and normalized_shape parameters"
+            )
+        return self
+
+
+class ProposedConnection(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    proposal_id: Identifier
+    kind: Literal["proposed_connection"] = "proposed_connection"
+    artifact_path: str = Field(min_length=1)
+    source_node_id: Identifier
+    source_port_id: Identifier
+    target_node_id: Identifier
+    target_port_id: Identifier
+    role: str = Field(default="main", min_length=1)
+
+
+class AgentProposal(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    proposal_id: Identifier
+    kind: Literal["agent_proposal"] = "agent_proposal"
+    status: Literal["handoff-required"] = "handoff-required"
+    reason_code: Literal[
+        "UNSUPPORTED_CONNECTION_TRANSFORM",
+        "INCOMPATIBLE_PORTS",
+        "UNRESOLVED_TENSOR_COMPATIBILITY",
+        "UNSUPPORTED_STRUCTURAL_INTENT",
+    ]
+    summary: str = Field(min_length=1)
+    requested_intent: dict[str, Any]
+    source_context: dict[str, Any] = Field(default_factory=dict)
+    permissions: dict[Literal["shell", "network", "source_write"], bool] = Field(
+        default_factory=lambda: {"shell": False, "network": False, "source_write": False}
+    )
+
+    @model_validator(mode="after")
+    def grants_no_permissions(self) -> AgentProposal:
+        if set(self.permissions) != {"shell", "network", "source_write"} or any(
+            self.permissions.values()
+        ):
+            raise ValueError("AgentProposal cannot grant shell, network, or source-write permission")
+        return self
+
+
 class ParameterDelta(StrictModel):
     node_id: Identifier
     parameter_name: str = Field(min_length=1)
@@ -626,6 +693,29 @@ class ShapeDelta(StrictModel):
     after: str = Field(min_length=1)
 
 
+class FactDelta(StrictModel):
+    subject_id: Identifier
+    kind: Literal[
+        "node",
+        "edge",
+        "tensor",
+        "port",
+        "fanout",
+        "repeat",
+        "config-predicate",
+        "evidence",
+        "unresolved",
+    ]
+    before_sha256: Sha256 | None = None
+    after_sha256: Sha256 | None = None
+
+    @model_validator(mode="after")
+    def contains_a_change(self) -> FactDelta:
+        if self.before_sha256 == self.after_sha256:
+            raise ValueError("fact delta must change, add, or remove content")
+        return self
+
+
 class GraphDelta(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     added_nodes: list[Identifier] = Field(default_factory=list)
@@ -635,13 +725,24 @@ class GraphDelta(StrictModel):
     removed_edges: list[Identifier] = Field(default_factory=list)
     changed_edges: list[Identifier] = Field(default_factory=list)
     changed_parameters: list[ParameterDelta] = Field(default_factory=list)
+    added_ports: list[Identifier] = Field(default_factory=list)
+    removed_ports: list[Identifier] = Field(default_factory=list)
     changed_ports: list[Identifier] = Field(default_factory=list)
+    added_tensors: list[Identifier] = Field(default_factory=list)
+    removed_tensors: list[Identifier] = Field(default_factory=list)
     changed_tensors: list[Identifier] = Field(default_factory=list)
     changed_shapes: list[ShapeDelta] = Field(default_factory=list)
+    added_fanouts: list[Identifier] = Field(default_factory=list)
+    removed_fanouts: list[Identifier] = Field(default_factory=list)
+    changed_fanouts: list[Identifier] = Field(default_factory=list)
     changed_repeats: list[Identifier] = Field(default_factory=list)
+    added_config_predicates: list[Identifier] = Field(default_factory=list)
+    removed_config_predicates: list[Identifier] = Field(default_factory=list)
+    changed_config_predicates: list[Identifier] = Field(default_factory=list)
     changed_sharing: list[Identifier] = Field(default_factory=list)
     evidence_anchor_changes: list[Identifier] = Field(default_factory=list)
     unresolved_changes: list[str] = Field(default_factory=list)
+    fact_changes: list[FactDelta] = Field(default_factory=list)
 
 
 class FileChange(StrictModel):
@@ -656,7 +757,7 @@ class SourceTransaction(StrictModel):
     transaction_id: Identifier
     state: TransactionState
     state_history: list[TransactionState] = Field(default_factory=list)
-    request: SemanticParameterPatch
+    request: SemanticParameterPatch | SemanticStructuralPatch
     created_at: str = Field(min_length=1)
     workspace: str = Field(min_length=1)
     original_project_root: str = Field(min_length=1)
@@ -728,6 +829,9 @@ SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "visual-scene-v1.schema.json": VisualScene,
     "canvas-document-v1.schema.json": CanvasDocument,
     "semantic-parameter-patch-v1.schema.json": SemanticParameterPatch,
+    "semantic-structural-patch-v1.schema.json": SemanticStructuralPatch,
+    "proposed-connection-v1.schema.json": ProposedConnection,
+    "agent-proposal-v1.schema.json": AgentProposal,
     "graph-delta-v1.schema.json": GraphDelta,
     "source-transaction-v1.schema.json": SourceTransaction,
     "transaction-receipt-v1.schema.json": TransactionReceipt,

@@ -1,0 +1,69 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "artifact_path": {
+      "minLength": 1,
+      "title": "Artifact Path",
+      "type": "string"
+    },
+    "operation": {
+      "enum": [
+        "replace_activation",
+        "insert_layer_norm"
+      ],
+      "title": "Operation",
+      "type": "string"
+    },
+    "parameters": {
+      "additionalProperties": true,
+      "title": "Parameters",
+      "type": "object"
+    },
+    "patch_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Patch Id",
+      "type": "string"
+    },
+    "runtime_input_spec": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Runtime Input Spec"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "target_node_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Target Node Id",
+      "type": "string"
+    },
+    "targeted_tests": {
+      "items": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "title": "Targeted Tests",
+      "type": "array"
+    }
+  },
+  "required": [
+    "patch_id",
+    "operation",
+    "artifact_path",
+    "target_node_id"
+  ],
+  "title": "SemanticStructuralPatch",
+  "type": "object"
+}

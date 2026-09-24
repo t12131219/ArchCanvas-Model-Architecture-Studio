@@ -70,10 +70,14 @@ def test_analyze_writes_versioned_artifacts(tmp_path, capsys) -> None:
     )
 
 
-def test_doctor_reports_safe_parameter_transactions(capsys) -> None:
+def test_doctor_reports_registered_source_transactions(capsys) -> None:
     exit_code = main(["doctor", "--json"])
     receipt = json.loads(capsys.readouterr().out)
     assert exit_code == 0
     assert receipt["details"]["capabilities"]["source_transactions"] == (
-        "available-set-parameter"
+        "available-parameter+registered-structural"
     )
+    assert receipt["details"]["capabilities"]["structural_transforms"] == [
+        "insert_layer_norm",
+        "replace_activation",
+    ]

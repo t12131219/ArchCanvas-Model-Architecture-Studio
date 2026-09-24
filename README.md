@@ -4,7 +4,7 @@ ArchCanvas is a source-grounded model architecture studio. The current rewrite b
 
 This repository is intentionally rebuilding from the source-truth boundary outward. The Studio
 keeps visual patches separate from source truth and provides an explicit prepare, verify, review,
-and commit flow for exact `set_parameter` edits.
+and commit flow for exact parameter edits and a small registry of bounded structural transforms.
 
 ## Quick start
 
@@ -39,6 +39,16 @@ Prepare and verify a semantic parameter transaction from a versioned request:
 archcanvas patch prepare request.json --workspace build/transformer/.archcanvas --json
 archcanvas patch verify build/transformer/.archcanvas/transactions/<transaction-id> --json
 archcanvas patch commit build/transformer/.archcanvas/transactions/<transaction-id> --json
+```
+
+The same commands accept `SemanticStructuralPatch` requests for the registered
+`replace_activation` and `insert_layer_norm` transforms. Unsupported structural intent is routed
+to an `AgentProposal` instead of a source transaction:
+
+```bash
+archcanvas propose proposed-connection.json \
+  --out build/transformer/agent-proposal.json \
+  --json
 ```
 
 `prepare` writes only to an isolated transaction copy. `verify` reparses, statically resolves local
@@ -77,6 +87,7 @@ being filled with model-specific assumptions.
 | Runtime tracing | Available for PyTorch, explicit opt-in only |
 | Runtime shape/dtype evidence and replay | Available at module boundaries |
 | Safe parameter source transactions | Available for exact config and Python literal anchors |
-| Structural source transactions | Planned; unsupported intents cannot bypass proposal |
+| Structural source transactions | Activation replacement and sequential LayerNorm insertion |
+| Proposed Connection and AgentProposal | Available; handoff grants no shell, network, or source-write permission |
 
 See [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md), and [docs/contracts/protocols.md](docs/contracts/protocols.md).
