@@ -17,7 +17,15 @@ from archcanvas_core.models import (
     SourceSnapshot,
 )
 
-from .transforms import TransformResult, insert_layer_norm, replace_module_constructor
+from .transforms import (
+    TransformResult,
+    insert_keras_layer_norm,
+    insert_layer_norm,
+    replace_function_call,
+    replace_module_constructor,
+    set_functional_parameter,
+    set_python_parameter,
+)
 
 ACTIVATION_OPERATORS = {"nn.GELU", "nn.ReLU", "nn.SiLU"}
 TRANSFORM_REGISTRY: dict[str, dict[str, Any]] = {
@@ -54,7 +62,14 @@ def _source_records(node: Any, evidence: list[EvidenceRecord]) -> list[EvidenceR
 def _anchors(node: Any, evidence: list[EvidenceRecord]) -> tuple[EvidenceRecord, EvidenceRecord]:
     records = _source_records(node, evidence)
     definition = next((item for item in records if ".init." in item.evidence_id), None)
-    flow = next((item for item in records if ".forward." in item.evidence_id), None)
+    flow = next(
+        (
+            item
+            for item in records
+            if ".forward." in item.evidence_id or ".call." in item.evidence_id
+        ),
+        None,
+    )
     if definition is None or flow is None or definition.path != flow.path:
         raise ValueError("structural transform requires exact constructor and forward anchors")
     return definition, flow
@@ -73,7 +88,9 @@ def _validated_shape_expression(value: Any, snapshot: SourceSnapshot) -> str:
     raise ValueError("normalized_shape must be a positive integer or a positive config symbol")
 
 
-def _single_value_flow(source: bytes, class_name: str, variable: str) -> None:
+def _single_value_flow(
+    source: bytes, class_name: str, variable: str, method_name: str = "forward"
+) -> None:
     tree = ast.parse(source)
     class_node = next(
         (item for item in tree.body if isinstance(item, ast.ClassDef) and item.name == class_name),
@@ -83,12 +100,12 @@ def _single_value_flow(source: bytes, class_name: str, variable: str) -> None:
         (
             item
             for item in (class_node.body if class_node else [])
-            if isinstance(item, ast.FunctionDef) and item.name == "forward"
+            if isinstance(item, ast.FunctionDef) and item.name == method_name
         ),
         None,
     )
     if forward is None:
-        raise ValueError("forward source anchor is unavailable")
+        raise ValueError(f"{method_name} source anchor is unavailable")
     stores = [
         item
         for item in ast.walk(forward)
@@ -115,16 +132,117 @@ def apply_structural_transform(
     node = next((item for item in architecture.nodes if item.node_id == request.target_node_id), None)
     if node is None:
         raise ValueError(f"structural target is not present in Exact IR: {request.target_node_id}")
-    definition, flow = _anchors(node, evidence)
+    if architecture.framework == "jax":
+        records = _source_records(node, evidence)
+        flow = next(
+            (
+                item
+                for item in records
+                if ".call." in item.evidence_id
+                or ".id-__call__." in item.evidence_id
+                or (item.symbol or "").endswith(".__call__")
+            ),
+            None,
+        )
+        if flow is None:
+            raise ValueError("JAX structural transform requires one exact call anchor")
+        definition = flow
+    else:
+        definition, flow = _anchors(node, evidence)
     relative = Path(definition.path or "")
     source_path = (project / relative).resolve()
     if not source_path.is_relative_to(project) or not source_path.is_file():
         raise ValueError("structural source anchor escapes or is missing from the project")
     module_path = str(node.attributes.get("module_path", ""))
-    if not module_path.startswith("self."):
-        raise ValueError("structural target is not a directly registered module")
-    module_name = module_path.removeprefix("self.")
+    module_name = module_path.removeprefix("self.") if module_path.startswith("self.") else ""
     source = source_path.read_bytes()
+    if architecture.framework == "jax":
+        if request.operation != "replace_activation":
+            raise ValueError(f"{request.operation} has no registered JAX structural lowering")
+        original = str(node.attributes.get("op_type", ""))
+        if original not in {"nn.gelu", "nn.relu", "nn.silu"}:
+            raise ValueError("JAX activation replacement requires an explicit Flax nn activation")
+        replacement = f"nn.{str(request.parameters['replacement']).lower()}"
+        target_name = str(node.attributes.get("assigned_symbol", ""))
+        if not target_name:
+            raise ValueError("JAX activation output has no exact assignment anchor")
+        transformed = replace_function_call(
+            source,
+            target_name=target_name,
+            original_operator=original,
+            replacement_operator=replacement,
+            expected_line=flow.span.start_line,  # type: ignore[union-attr]
+        )
+        return StructuralTransformResult(relative_path=relative, transformed=transformed)
+    if architecture.framework == "keras":
+        if request.operation == "insert_layer_norm":
+            if not module_name or node.attributes.get("functional_anchor"):
+                raise ValueError(
+                    "Keras normalization insertion currently requires an exact subclass layer anchor"
+                )
+            outgoing = [edge for edge in architecture.edges if edge.producer_id == node.node_id]
+            if len(outgoing) != 1:
+                raise ValueError("Keras normalization insertion requires one downstream consumer")
+            normalized_shape = request.parameters.get("normalized_shape")
+            if not isinstance(normalized_shape, int) or normalized_shape <= 0:
+                raise ValueError("Keras normalized_shape proof requires a positive integer")
+            last_dimension = outgoing[0].symbolic_shape.removesuffix("]").split(",")[-1]
+            if last_dimension.isdigit() and int(last_dimension) != normalized_shape:
+                raise ValueError("Keras normalized_shape does not match the target tensor")
+            new_module = request.parameters.get("module_name")
+            if not isinstance(new_module, str) or not re.fullmatch(r"[a-z][a-z0-9_]*", new_module):
+                raise ValueError("Keras normalization module_name must be a lowercase identifier")
+            assigned_symbol = str(node.attributes.get("assigned_symbol", ""))
+            if not assigned_symbol:
+                raise ValueError("Keras target output has no exact assigned symbol")
+            _single_value_flow(
+                source,
+                snapshot.entrypoint.split(":", 1)[1],
+                assigned_symbol,
+                "call",
+            )
+            transformed = insert_keras_layer_norm(
+                source,
+                target_module=module_name,
+                new_module=new_module,
+                init_line=definition.span.start_line,  # type: ignore[union-attr]
+                call_line=flow.span.start_line,  # type: ignore[union-attr]
+            )
+            return StructuralTransformResult(relative_path=relative, transformed=transformed)
+        if node.attributes.get("op_type") != "layers.Activation":
+            raise ValueError("Keras activation replacement requires layers.Activation")
+        activation = next((item for item in node.parameters if item.name == "arg0"), None)
+        if activation is None or activation.value not in {"gelu", "relu", "silu"}:
+            raise ValueError("Keras activation must be an explicit gelu/relu/silu constructor value")
+        replacement = str(request.parameters["replacement"]).lower()
+        functional_anchor = node.attributes.get("functional_anchor")
+        if isinstance(functional_anchor, str):
+            transformed = set_functional_parameter(
+                source,
+                target_name=functional_anchor,
+                parameter_name="arg0",
+                source_expression=activation.source_expression,
+                value=replacement,
+                expected_line=definition.span.start_line,  # type: ignore[union-attr]
+            )
+        else:
+            if not module_name:
+                raise ValueError("Keras activation has no exact Functional or subclass anchor")
+            transformed = set_python_parameter(
+                source,
+                module_name=module_name,
+                parameter_name="arg0",
+                source_expression=activation.source_expression,
+                value=replacement,
+                expected_line=definition.span.start_line,  # type: ignore[union-attr]
+            )
+        return StructuralTransformResult(relative_path=relative, transformed=transformed)
+    if architecture.framework != "pytorch":
+        raise ValueError(
+            f"{request.operation} has no registered {architecture.framework} structural lowering"
+        )
+    if not module_name:
+        raise ValueError("structural target is not a directly registered module")
     if request.operation == "replace_activation":
         original = str(node.attributes.get("op_type", ""))
         replacement_name = request.parameters.get("replacement")
@@ -176,6 +294,117 @@ def validate_structural_oracle(
     after: ArchitectureIR,
     delta: GraphDelta,
 ) -> None:
+    if before.framework == "jax" and request.operation == "replace_activation":
+        replacement = f"nn.{str(request.parameters['replacement']).lower()}"
+        node = next(item for item in after.nodes if item.node_id == request.target_node_id)
+        if node.attributes.get("op_type") != replacement:
+            raise ValueError("JAX activation replacement is not reflected in Exact IR")
+        allowed_changed_nodes = {request.target_node_id}
+        if node.parent_id:
+            allowed_changed_nodes.add(node.parent_id)
+        forbidden = any(
+            (
+                delta.added_nodes,
+                delta.removed_nodes,
+                set(delta.changed_nodes) - allowed_changed_nodes,
+                delta.added_edges,
+                delta.removed_edges,
+                delta.changed_edges,
+                delta.added_ports,
+                delta.removed_ports,
+                delta.changed_ports,
+                delta.added_tensors,
+                delta.removed_tensors,
+                delta.changed_tensors,
+                delta.changed_shapes,
+                delta.changed_parameters,
+                delta.added_fanouts,
+                delta.removed_fanouts,
+                delta.changed_fanouts,
+                delta.changed_repeats,
+                delta.added_config_predicates,
+                delta.removed_config_predicates,
+                delta.changed_config_predicates,
+                delta.changed_sharing,
+                delta.unresolved_changes,
+            )
+        )
+        if forbidden:
+            raise ValueError("JAX activation replacement changed facts outside its exact anchor")
+        return
+    if before.framework == "keras" and request.operation == "insert_layer_norm":
+        new_node_id = f"node:{request.parameters['module_name']}"
+        added_node = next((item for item in after.nodes if item.node_id == new_node_id), None)
+        if added_node is None or added_node.attributes.get("op_type") != "layers.LayerNormalization":
+            raise ValueError("Keras normalization node is missing from reanalyzed Exact IR")
+        if added_node.attributes.get("module_path") != f"self.{request.parameters['module_name']}":
+            raise ValueError("Keras normalization node has the wrong module binding")
+        outgoing = [edge for edge in before.edges if edge.producer_id == request.target_node_id]
+        if len(outgoing) != 1:
+            raise ValueError("Keras normalization oracle requires one original outgoing edge")
+        original = outgoing[0]
+        added_edges = [edge for edge in after.edges if edge.edge_id in delta.added_edges]
+        if (
+            delta.added_nodes != [new_node_id]
+            or delta.removed_nodes
+            or delta.removed_edges != [original.edge_id]
+            or {(edge.producer_id, edge.consumer_id) for edge in added_edges}
+            != {
+                (request.target_node_id, new_node_id),
+                (new_node_id, original.consumer_id),
+            }
+            or delta.removed_tensors
+            or delta.changed_shapes
+            or delta.changed_parameters
+        ):
+            raise ValueError("Keras normalization insertion produced an unexpected Graph Delta")
+        produced = [tensor for tensor in after.tensors if tensor.producer_id == new_node_id]
+        if len(produced) != 1 or delta.added_tensors != [produced[0].tensor_id]:
+            raise ValueError("Keras normalization insertion must add one normalized tensor")
+        return
+    if before.framework == "keras" and request.operation == "replace_activation":
+        replacement = str(request.parameters["replacement"]).lower()
+        node = next(item for item in after.nodes if item.node_id == request.target_node_id)
+        activation = next((item for item in node.parameters if item.name == "arg0"), None)
+        if activation is None or activation.value != replacement:
+            raise ValueError("Keras activation replacement is not reflected in Exact IR")
+        allowed_changed_nodes = {request.target_node_id}
+        if node.parent_id:
+            allowed_changed_nodes.add(node.parent_id)
+        forbidden = any(
+            (
+                delta.added_nodes,
+                delta.removed_nodes,
+                set(delta.changed_nodes) - allowed_changed_nodes,
+                delta.added_edges,
+                delta.removed_edges,
+                delta.changed_edges,
+                delta.added_ports,
+                delta.removed_ports,
+                delta.changed_ports,
+                delta.added_tensors,
+                delta.removed_tensors,
+                delta.changed_tensors,
+                delta.changed_shapes,
+                delta.added_fanouts,
+                delta.removed_fanouts,
+                delta.changed_fanouts,
+                delta.changed_repeats,
+                delta.added_config_predicates,
+                delta.removed_config_predicates,
+                delta.changed_config_predicates,
+                delta.changed_sharing,
+                delta.unresolved_changes,
+            )
+        )
+        changes = [
+            item
+            for item in delta.changed_parameters
+            if item.node_id == request.target_node_id and item.parameter_name == "arg0"
+        ]
+        if forbidden or len(delta.changed_parameters) != 1 or len(changes) != 1:
+            raise ValueError("Keras activation replacement must change exactly one parameter fact")
+        return
     forbidden_common = any(
         (
             delta.changed_parameters,

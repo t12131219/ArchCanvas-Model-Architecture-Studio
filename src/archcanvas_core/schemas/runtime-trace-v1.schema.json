@@ -28,7 +28,46 @@
     "RuntimeEnvironment": {
       "additionalProperties": false,
       "properties": {
+        "adapter_id": {
+          "default": "runtime:pytorch-hooks-v1",
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Adapter Id",
+          "type": "string"
+        },
+        "available_targets": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Available Targets",
+          "type": "array"
+        },
+        "backend": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Backend"
+        },
+        "backend_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Backend Version"
+        },
         "cuda_available": {
+          "default": false,
           "title": "Cuda Available",
           "type": "boolean"
         },
@@ -44,9 +83,57 @@
           "default": null,
           "title": "Cuda Build"
         },
-        "deterministic_algorithms": {
-          "title": "Deterministic Algorithms",
+        "determinism_achieved": {
+          "default": true,
+          "title": "Determinism Achieved",
           "type": "boolean"
+        },
+        "determinism_limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Determinism Limitations",
+          "type": "array"
+        },
+        "determinism_requested": {
+          "default": true,
+          "title": "Determinism Requested",
+          "type": "boolean"
+        },
+        "deterministic_algorithms": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deterministic Algorithms"
+        },
+        "framework": {
+          "default": "pytorch",
+          "enum": [
+            "pytorch",
+            "keras",
+            "jax",
+            "onnx"
+          ],
+          "title": "Framework",
+          "type": "string"
+        },
+        "framework_version": {
+          "default": "unknown",
+          "minLength": 1,
+          "title": "Framework Version",
+          "type": "string"
+        },
+        "observation_mechanism": {
+          "default": "pytorch-hooks-v1",
+          "minLength": 1,
+          "title": "Observation Mechanism",
+          "type": "string"
         },
         "platform": {
           "minLength": 1,
@@ -59,23 +146,39 @@
           "type": "string"
         },
         "selected_device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Selected Device"
+        },
+        "selected_target": {
+          "default": "cpu",
           "minLength": 1,
-          "title": "Selected Device",
+          "title": "Selected Target",
           "type": "string"
         },
         "torch_version": {
-          "minLength": 1,
-          "title": "Torch Version",
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Torch Version"
         }
       },
       "required": [
         "python_version",
-        "platform",
-        "torch_version",
-        "cuda_available",
-        "selected_device",
-        "deterministic_algorithms"
+        "platform"
       ],
       "title": "RuntimeEnvironment",
       "type": "object"
@@ -206,6 +309,21 @@
           "title": "Memory Limit Mb",
           "type": "integer"
         },
+        "provider_options": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "title": "Provider Options",
+          "type": "object"
+        },
+        "runtime_state": {
+          "additionalProperties": true,
+          "title": "Runtime State",
+          "type": "object"
+        },
         "schema_version": {
           "const": "1.0",
           "default": "1.0",
@@ -218,6 +336,23 @@
           "minimum": 0,
           "title": "Seed",
           "type": "integer"
+        },
+        "selected_target": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Selected Target"
+        },
+        "static_args": {
+          "additionalProperties": true,
+          "title": "Static Args",
+          "type": "object"
         },
         "timeout_seconds": {
           "default": 30,
@@ -306,6 +441,11 @@
     "RuntimeObservation": {
       "additionalProperties": false,
       "properties": {
+        "attributes": {
+          "additionalProperties": true,
+          "title": "Attributes",
+          "type": "object"
+        },
         "input_tensors": {
           "items": {
             "$ref": "#/$defs/RuntimeTensorObservation"
@@ -361,6 +501,11 @@
     "RuntimeTensorObservation": {
       "additionalProperties": false,
       "properties": {
+        "attributes": {
+          "additionalProperties": true,
+          "title": "Attributes",
+          "type": "object"
+        },
         "device": {
           "minLength": 1,
           "title": "Device",
@@ -372,8 +517,16 @@
           "type": "string"
         },
         "requires_grad": {
-          "title": "Requires Grad",
-          "type": "boolean"
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Requires Grad"
         },
         "shape": {
           "items": {
@@ -381,13 +534,24 @@
           },
           "title": "Shape",
           "type": "array"
+        },
+        "trainable": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Trainable"
         }
       },
       "required": [
         "shape",
         "dtype",
-        "device",
-        "requires_grad"
+        "device"
       ],
       "title": "RuntimeTensorObservation",
       "type": "object"
@@ -395,10 +559,29 @@
   },
   "additionalProperties": false,
   "properties": {
+    "adapter_id": {
+      "default": "runtime:pytorch-hooks-v1",
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Adapter Id",
+      "type": "string"
+    },
     "architecture_id": {
       "pattern": "^[a-z][a-z0-9._:-]*$",
       "title": "Architecture Id",
       "type": "string"
+    },
+    "checkpoint_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Checkpoint Digest"
     },
     "entrypoint": {
       "minLength": 3,
@@ -407,6 +590,17 @@
     },
     "environment": {
       "$ref": "#/$defs/RuntimeEnvironment"
+    },
+    "framework": {
+      "default": "pytorch",
+      "enum": [
+        "pytorch",
+        "keras",
+        "jax",
+        "onnx"
+      ],
+      "title": "Framework",
+      "type": "string"
     },
     "input_spec": {
       "$ref": "#/$defs/RuntimeInputSpec"
@@ -418,6 +612,19 @@
     },
     "isolation": {
       "$ref": "#/$defs/RuntimeIsolation"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "observation_mechanism": {
+      "default": "pytorch-hooks-v1",
+      "minLength": 1,
+      "title": "Observation Mechanism",
+      "type": "string"
     },
     "observations": {
       "items": {
@@ -433,6 +640,19 @@
       },
       "title": "Output Tensors",
       "type": "array"
+    },
+    "params_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Params Digest"
     },
     "replay_digest": {
       "pattern": "^[a-f0-9]{64}$",
@@ -454,6 +674,19 @@
       "pattern": "^[a-z][a-z0-9._:-]*$",
       "title": "Source Snapshot Id",
       "type": "string"
+    },
+    "state_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "State Digest"
     },
     "trace_id": {
       "pattern": "^[a-z][a-z0-9._:-]*$",

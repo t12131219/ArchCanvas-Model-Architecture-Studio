@@ -34,7 +34,7 @@ archcanvas studio build/transformer/architecture.json \
   --json
 ```
 
-Static cross-framework analysis uses the same pipeline:
+Cross-framework static analysis and opt-in runtime tracing use the same pipeline:
 
 ```bash
 archcanvas analyze --framework keras --project my-project --entry model:MyModel ...
@@ -44,6 +44,10 @@ archcanvas analyze --framework onnx --project my-project --entry model.onnx ...
 
 Keras and JAX adapters parse source without importing those frameworks. ONNX uses the optional
 official parser declared by `.[cross-framework]`; no adapter executes the target during analysis.
+Install only the runtime adapters you need with `.[runtime-keras]`, `.[runtime-jax]`,
+`.[runtime-onnx]`, or use `.[runtime-all]` for CPU development. `trace` dispatches through the
+framework registry and records framework/backend versions, device or provider, parameter/state
+digests, observation mechanism, and two-run replay evidence.
 
 Prepare and verify a semantic parameter transaction from a versioned request:
 
@@ -76,6 +80,7 @@ inside an isolated subprocess with a temporary working directory, timeout, CPU/m
 network denial, and sandbox-only Python file writes. A seeded input spec is executed twice; only a
 matching structural replay digest can pass the runtime replay gate. CPU is the default. Request
 `"device": "cuda"` only when `doctor` and the runtime capability report confirm CUDA is available.
+Use `selected_target` for an ONNX Execution Provider or an explicit JAX platform.
 
 Use `--no-pattern-packs` to force source-only generic recovery. Unsupported control flow is
 preserved as an `opaque_composite` with explicit boundary ports and unresolved status instead of
@@ -120,16 +125,16 @@ archcanvas bundle verify build/model.archcanvas --json
 | Publication and geometry validation | Available |
 | Interactive visual-only Studio | Available |
 | CanvasDocument persistence and history | Available |
-| Runtime tracing | Available for PyTorch, explicit opt-in only |
-| Runtime shape/dtype evidence and replay | Available at module boundaries |
-| Safe parameter source transactions | Available for exact config and Python literal anchors |
-| Structural source transactions | Activation replacement and sequential LayerNorm insertion |
+| Runtime tracing | PyTorch verified; Keras/JAX/ONNX adapters available with per-form status |
+| Runtime shape/dtype evidence and replay | PyTorch hooks, Keras layer calls, JAXPR/eval-shape, ONNX graph outputs |
+| Safe parameter transactions | Python config/literal/Functional/Flax field and ONNX initializer/attribute anchors |
+| Structural transactions | PyTorch transforms; bounded Keras/JAX activation and Keras normalization; bounded ONNX node replacement |
 | Proposed Connection and AgentProposal | Available; handoff grants no shell, network, or source-write permission |
 | Declarative Pattern Packs | Builtin registry, digest-locked workspace packs, preview-only candidates |
 | Holdout generalization | Source-only residual forecaster passes semantic/publication/geometry gates |
-| Keras static adapter | Partial: subclassed `call` and Functional builder dataflow |
-| JAX static adapter | Partial: Flax-style `__call__` and pure functions |
-| ONNX adapter | ModelProto graph analysis when optional ONNX dependency is installed |
+| Keras adapter | Partial: Functional/subclass static + runtime; parameter and two bounded structural lowerings |
+| JAX adapter | Partial: pure function/Flax static + JAXPR runtime; config/field and bounded activation transactions |
+| ONNX adapter | Partial: ModelProto static/runtime; initializer, attribute and bounded node transactions |
 | Local skill installers | Codex verified; Claude Code filesystem installer tested |
 | Offline review bundle | Redacted L1-L4 JSON/SVG/HTML with digest verification |
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_serializer, model_validator
 
 Identifier = Annotated[str, Field(pattern=r"^[a-z][a-z0-9._:-]*$")]
 Sha256 = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
@@ -132,8 +132,12 @@ class RuntimeInputSpec(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     seed: int = Field(default=0, ge=0, le=2**63 - 1)
     device: Literal["cpu", "cuda", "auto"] = "cpu"
+    selected_target: str | None = None
+    provider_options: dict[str, dict[str, str]] = Field(default_factory=dict)
     constructor_kwargs: dict[str, Any] = Field(default_factory=dict)
     forward_kwargs: dict[str, Any] = Field(default_factory=dict)
+    static_args: dict[str, Any] = Field(default_factory=dict)
+    runtime_state: dict[str, Any] = Field(default_factory=dict)
     inputs: list[RuntimeInput] = Field(min_length=1)
     timeout_seconds: int = Field(default=30, ge=1, le=300)
     cpu_limit_seconds: int = Field(default=20, ge=1, le=300)
@@ -151,7 +155,18 @@ class RuntimeTensorObservation(StrictModel):
     shape: list[int]
     dtype: str = Field(min_length=1)
     device: str = Field(min_length=1)
-    requires_grad: bool
+    requires_grad: bool | None = None
+    trainable: bool | None = None
+    attributes: dict[str, Any] = Field(default_factory=dict)
+
+    @model_serializer(mode="wrap")
+    def omit_legacy_optional_defaults(self, handler: Any) -> dict[str, Any]:
+        data = handler(self)
+        if self.trainable is None or self.trainable == self.requires_grad:
+            data.pop("trainable", None)
+        if not self.attributes:
+            data.pop("attributes", None)
+        return data
 
 
 class RuntimeObservation(StrictModel):
@@ -162,6 +177,7 @@ class RuntimeObservation(StrictModel):
     input_tensors: list[RuntimeTensorObservation] = Field(default_factory=list)
     output_tensors: list[RuntimeTensorObservation] = Field(default_factory=list)
     matched_node_ids: list[Identifier] = Field(default_factory=list)
+    attributes: dict[str, Any] = Field(default_factory=dict)
 
 
 class RuntimeBoundaryViolation(StrictModel):
@@ -185,11 +201,22 @@ class RuntimeIsolation(StrictModel):
 class RuntimeEnvironment(StrictModel):
     python_version: str = Field(min_length=1)
     platform: str = Field(min_length=1)
-    torch_version: str = Field(min_length=1)
+    adapter_id: Identifier = "runtime:pytorch-hooks-v1"
+    framework: Literal["pytorch", "keras", "jax", "onnx"] = "pytorch"
+    framework_version: str = Field(default="unknown", min_length=1)
+    backend: str | None = None
+    backend_version: str | None = None
+    selected_target: str = Field(default="cpu", min_length=1)
+    available_targets: list[dict[str, Any]] = Field(default_factory=list)
+    observation_mechanism: str = Field(default="pytorch-hooks-v1", min_length=1)
+    determinism_requested: bool = True
+    determinism_achieved: bool = True
+    determinism_limitations: list[str] = Field(default_factory=list)
+    torch_version: str | None = None
     cuda_build: str | None = None
-    cuda_available: bool
-    selected_device: str = Field(min_length=1)
-    deterministic_algorithms: bool
+    cuda_available: bool = False
+    selected_device: str | None = None
+    deterministic_algorithms: bool | None = None
 
 
 class RuntimeTrace(StrictModel):
@@ -199,9 +226,16 @@ class RuntimeTrace(StrictModel):
     source_snapshot_id: Identifier
     source_revision: str = Field(min_length=1)
     entrypoint: str = Field(min_length=3)
+    adapter_id: Identifier = "runtime:pytorch-hooks-v1"
+    framework: Literal["pytorch", "keras", "jax", "onnx"] = "pytorch"
     input_spec: RuntimeInputSpec
     input_spec_digest: Sha256
     replay_digest: Sha256
+    params_digest: Sha256 | None = None
+    state_digest: Sha256 | None = None
+    checkpoint_digest: Sha256 | None = None
+    observation_mechanism: str = Field(default="pytorch-hooks-v1", min_length=1)
+    limitations: list[str] = Field(default_factory=list)
     observations: list[RuntimeObservation] = Field(min_length=1)
     output_tensors: list[RuntimeTensorObservation] = Field(default_factory=list)
     environment: RuntimeEnvironment
@@ -210,12 +244,19 @@ class RuntimeTrace(StrictModel):
 
 class RuntimeCapabilityReport(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
-    adapter: Literal["pytorch-hooks-v1"] = "pytorch-hooks-v1"
+    adapter: str = Field(default="pytorch-hooks-v1", min_length=1)
+    adapter_id: Identifier = "runtime:pytorch-hooks-v1"
+    framework: Literal["pytorch", "keras", "jax", "onnx"] = "pytorch"
+    framework_version: str | None = None
+    backend: str | None = None
+    backend_version: str | None = None
     runtime_available: bool
     torch_version: str | None = None
     cuda_build: str | None = None
-    cuda_available: bool
-    supported_devices: list[Literal["cpu", "cuda"]] = Field(min_length=1)
+    cuda_available: bool = False
+    supported_devices: list[Literal["cpu", "cuda"]] = Field(default_factory=lambda: ["cpu"])
+    available_targets: list[dict[str, Any]] = Field(default_factory=list)
+    observation_mechanism: str = Field(default="pytorch-hooks-v1", min_length=1)
     shape_trace: bool = True
     dtype_trace: bool = True
     replay_check: bool = True
@@ -228,10 +269,17 @@ class FrameworkAdapterCapability(StrictModel):
     adapter_id: Identifier
     framework: Literal["pytorch", "keras", "jax", "onnx"]
     adapter_version: str = Field(min_length=1)
-    status: Literal["supported", "partial", "unavailable"]
+    status: Literal["verified", "experimental", "partial", "unavailable", "supported"]
     static_analysis: bool
     runtime_evidence: bool
     source_transactions: bool
+    parameter_transactions: bool = False
+    structural_transactions: bool = False
+    artifact_commit: bool = False
+    capability_status: dict[str, Literal["verified", "experimental", "partial", "unavailable"]] = Field(
+        default_factory=dict
+    )
+    supported_targets: list[str] = Field(default_factory=list)
     supported_forms: list[str] = Field(default_factory=list)
     verified_fixtures: list[str] = Field(default_factory=list)
     required_packages: dict[str, str | None] = Field(default_factory=dict)
@@ -1004,7 +1052,7 @@ class GraphDelta(StrictModel):
 
 class FileChange(StrictModel):
     path: str = Field(min_length=1)
-    kind: Literal["python", "json"]
+    kind: Literal["python", "json", "onnx"]
     before_sha256: Sha256
     after_sha256: Sha256
 
@@ -1012,6 +1060,12 @@ class FileChange(StrictModel):
 class SourceTransaction(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     transaction_id: Identifier
+    framework: Literal["pytorch", "keras", "jax", "onnx"] = "pytorch"
+    transaction_adapter_id: Identifier = "transaction:pytorch-source-v1"
+    adapter_version: str = "0.1.0"
+    artifact_kind: Literal["source-artifact", "model-artifact"] = "source-artifact"
+    validators: list[str] = Field(default_factory=list)
+    reanalysis_route: str = "analyze_with_adapter"
     state: TransactionState
     state_history: list[TransactionState] = Field(default_factory=list)
     request: SemanticParameterPatch | SemanticStructuralPatch
@@ -1035,6 +1089,9 @@ class SourceTransaction(StrictModel):
 class TransactionReceipt(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     transaction_id: Identifier
+    framework: Literal["pytorch", "keras", "jax", "onnx"] = "pytorch"
+    transaction_adapter_id: Identifier = "transaction:pytorch-source-v1"
+    artifact_kind: Literal["source-artifact", "model-artifact"] = "source-artifact"
     state: TransactionState
     status: Literal["ok", "invalid", "failed"]
     gates: list[GateResult] = Field(default_factory=list)

@@ -10,11 +10,13 @@ from archcanvas_core.models import (
     ArchitectureEdge,
     ArchitectureIR,
     ArchitectureNode,
+    ArchitectureParameter,
     Confidence,
     EvidenceKind,
     EvidenceRecord,
     FanoutRelation,
     NodeKind,
+    ParameterOrigin,
     Port,
     SourceFile,
     SourceSnapshot,
@@ -133,6 +135,21 @@ def analyze_onnx(
     graph_name = model.graph.name or path.stem
     evidence: list[EvidenceRecord] = []
 
+    def parameter_value(attribute: Any) -> Any:
+        value = onnx.helper.get_attribute_value(attribute)
+        if isinstance(value, bytes):
+            return value.decode("utf-8", errors="replace")
+        if isinstance(value, tuple):
+            return list(value)
+        if hasattr(value, "tolist"):
+            return value.tolist()
+        if isinstance(value, list):
+            return [
+                item.decode("utf-8", errors="replace") if isinstance(item, bytes) else item
+                for item in value
+            ]
+        return value
+
     def add_evidence(subject: str, claim: str) -> str:
         evidence_id = f"evidence:onnx.{_identifier(subject)}"
         suffix = 2
@@ -199,6 +216,23 @@ def analyze_onnx(
                 "input_ports": [],
                 "output_ports": [Port(port_id=output_port, name="out", direction="output", role=initializer.name)],
                 "evidence_ids": evidence_ids,
+                "parameters": [
+                    ArchitectureParameter(
+                        name="value",
+                        source_expression=f"initializer:{initializer.name}",
+                        value=(
+                            onnx.numpy_helper.to_array(initializer).tolist()
+                            if initializer.data_location != onnx.TensorProto.EXTERNAL
+                            else None
+                        ),
+                        origin=(
+                            ParameterOrigin.LITERAL
+                            if initializer.data_location != onnx.TensorProto.EXTERNAL
+                            else ParameterOrigin.UNRESOLVED
+                        ),
+                        evidence_ids=evidence_ids,
+                    )
+                ],
                 "attributes": {"onnx_initializer": True, "data_type": int(initializer.data_type)},
             }
         )
@@ -250,9 +284,20 @@ def analyze_onnx(
                 "input_ports": inputs,
                 "output_ports": outputs,
                 "evidence_ids": evidence_ids,
+                "parameters": [
+                    ArchitectureParameter(
+                        name=attribute.name,
+                        source_expression=f"attribute:{attribute.name}",
+                        value=parameter_value(attribute),
+                        origin=ParameterOrigin.LITERAL,
+                        evidence_ids=evidence_ids,
+                    )
+                    for attribute in onnx_node.attribute
+                ],
                 "attributes": {
                     "op_type": onnx_node.op_type,
                     "domain": onnx_node.domain or "ai.onnx",
+                    "node_index": index,
                     "opset": next(
                         (
                             item.version
@@ -331,6 +376,7 @@ def analyze_onnx(
                 parent_id=root_id,
                 input_ports=record["input_ports"],
                 output_ports=record["output_ports"],
+                parameters=record.get("parameters", []),
                 execution_predicate=predicate,
                 evidence_ids=record["evidence_ids"],
                 confidence=Confidence.EXACT,

@@ -54,6 +54,8 @@ class _ParameterDraft:
     value: Any
     origin: ParameterOrigin
     config_names: list[str] = field(default_factory=list)
+    line: int | None = None
+    end_line: int | None = None
 
 
 @dataclass
@@ -77,6 +79,7 @@ class _NodeDraft:
     dependencies: list[tuple[str, str]] = field(default_factory=list)
     attributes: dict[str, Any] = field(default_factory=dict)
     module: _ModuleDraft | None = None
+    parameters: list[_ParameterDraft] = field(default_factory=list)
 
 
 def _sha256(data: bytes) -> str:
@@ -287,6 +290,91 @@ def _registered_modules(
                     parameters=[*positional, *keywords],
                 )
     return modules
+
+
+def _class_field_parameters(
+    class_node: ast.ClassDef | None,
+    config: dict[str, Any],
+) -> list[_ParameterDraft]:
+    if class_node is None:
+        return []
+    result: list[_ParameterDraft] = []
+    for statement in class_node.body:
+        if not isinstance(statement, ast.AnnAssign) or not isinstance(statement.target, ast.Name):
+            continue
+        if statement.value is None:
+            continue
+        name = statement.target.id
+        if name.startswith("_"):
+            continue
+        result.append(
+            _ParameterDraft(
+                name=name,
+                source_expression=ast.unparse(statement.value),
+                value=config.get(name, _resolve_expression(statement.value, {})),
+                origin=ParameterOrigin.CONFIG if name in config else ParameterOrigin.LITERAL,
+                config_names=[name] if name in config else [],
+                line=statement.lineno,
+                end_line=getattr(statement, "end_lineno", statement.lineno),
+            )
+        )
+    return result
+
+
+def _inline_module(
+    expression: ast.AST,
+    target: str,
+    values: dict[str, Any],
+    origins: dict[str, ParameterOrigin],
+    config: dict[str, Any],
+) -> _ModuleDraft | None:
+    if not (
+        isinstance(expression, ast.Call)
+        and isinstance(expression.func, ast.Call)
+    ):
+        return None
+    constructor = expression.func
+    op_type = _call_name(constructor.func)
+    names = _parameter_names(op_type, len(constructor.args))
+    positional = [
+        _ParameterDraft(
+            name=names[index],
+            source_expression=ast.unparse(argument),
+            value=_resolve_expression(argument, values),
+            origin=(
+                origins.get(argument.id, ParameterOrigin.UNRESOLVED)
+                if isinstance(argument, ast.Name)
+                else ParameterOrigin.COMPUTED
+                if _config_names(argument, config)
+                else ParameterOrigin.LITERAL
+            ),
+            config_names=_config_names(argument, config),
+        )
+        for index, argument in enumerate(constructor.args)
+    ]
+    keywords = [
+        _ParameterDraft(
+            name=keyword.arg or "**kwargs",
+            source_expression=ast.unparse(keyword.value),
+            value=_resolve_expression(keyword.value, values),
+            origin=(
+                origins.get(keyword.value.id, ParameterOrigin.UNRESOLVED)
+                if isinstance(keyword.value, ast.Name)
+                else ParameterOrigin.COMPUTED
+                if _config_names(keyword.value, config)
+                else ParameterOrigin.LITERAL
+            ),
+            config_names=_config_names(keyword.value, config),
+        )
+        for keyword in constructor.keywords
+    ]
+    return _ModuleDraft(
+        module_name=target,
+        op_type=op_type,
+        line=expression.lineno,
+        end_line=getattr(expression, "end_lineno", expression.lineno),
+        parameters=[*positional, *keywords],
+    )
 
 
 def _operation(
@@ -644,6 +732,7 @@ def analyze_project(
             ),
             "pattern_packs_enabled": pattern_packs_enabled,
         },
+        parameters=_class_field_parameters(class_node, config),
     )
     drafts.append(container)
 
@@ -751,6 +840,17 @@ def analyze_project(
         if not target or expression is None:
             continue
         semantic_name, kind, module, attributes = _operation(expression, target, modules)
+        if module is None:
+            module = _inline_module(
+                expression,
+                target,
+                constructor_values,
+                constructor_origins,
+                config,
+            )
+            if module is not None:
+                attributes["op_type"] = module.op_type
+                attributes["functional_anchor"] = target
         canonical = module.module_name if module else target
         base_node_id = f"node:{_identifier(canonical)}"
         node_id = base_node_id
@@ -903,6 +1003,20 @@ def analyze_project(
                 f"self.{draft.module.module_name} is constructed as {draft.module.op_type}",
             )
             evidence_by_node[draft.node_id].append(definition_id)
+        for parameter in draft.parameters:
+            if parameter.line is None:
+                continue
+            field_id = (
+                f"evidence:{_identifier(class_name)}.field.{_identifier(parameter.name)}"
+            )
+            add_source_evidence(
+                field_id,
+                f"{class_name}.{parameter.name}",
+                parameter.line,
+                parameter.end_line or parameter.line,
+                f"{parameter.name} is declared as a framework module field",
+            )
+            evidence_by_node[draft.node_id].append(field_id)
 
     input_ports: dict[str, list[Port]] = {draft.node_id: [] for draft in drafts}
     output_ports: dict[str, list[Port]] = {draft.node_id: [] for draft in drafts}
@@ -994,9 +1108,10 @@ def analyze_project(
     nodes: list[ArchitectureNode] = []
     for draft in drafts:
         parameter_models: list[ArchitectureParameter] = []
-        if draft.module:
+        parameter_drafts = [*draft.parameters, *(draft.module.parameters if draft.module else [])]
+        if parameter_drafts:
             definition_ids = evidence_by_node[draft.node_id]
-            for parameter in draft.module.parameters:
+            for parameter in parameter_drafts:
                 parameter_evidence = list(
                     dict.fromkeys(
                         [
@@ -1026,7 +1141,11 @@ def analyze_project(
                 output_ports=output_ports[draft.node_id],
                 parameters=parameter_models,
                 parameter_identity=(
-                    "independent-module-parameters" if draft.module else "not-applicable"
+                    "independent-module-parameters"
+                    if draft.module
+                    else "module-fields"
+                    if draft.parameters
+                    else "not-applicable"
                 ),
                 execution_predicate=predicate,
                 evidence_ids=evidence_by_node[draft.node_id],

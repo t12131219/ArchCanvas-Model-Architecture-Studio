@@ -10,6 +10,7 @@ class TemporalGate(Model):
         self.input_projection = layers.Dense(width)
         self.gate_projection = layers.Dense(width)
         self.normalization = layers.LayerNormalization()
+        self.activation = layers.Activation("gelu")
         self.output_projection = layers.Dense(width)
 
     def call(self, signal, context):
@@ -18,5 +19,6 @@ class TemporalGate(Model):
         gated = projected * gate
         residual = signal + gated
         normalized = self.normalization(residual)
-        output = self.output_projection(normalized)
+        activated = self.activation(normalized)
+        output = self.output_projection(activated)
         return output

@@ -155,9 +155,15 @@ def test_installer_refuses_overwrite_and_support_matrix_is_honest(tmp_path: Path
     assert hosts["claude.ai"].status == "unsupported"
     adapters = {item.framework: item for item in matrix.adapters}
     assert adapters["pytorch"].runtime_evidence is True
-    assert adapters["keras"].runtime_evidence is False
-    assert adapters["jax"].source_transactions is False
+    assert adapters["keras"].runtime_evidence is True
+    assert adapters["keras"].capability_status["runtime"] == "experimental"
+    assert adapters["keras"].capability_status["structural_transaction"] == "partial"
+    assert adapters["jax"].source_transactions is True
+    assert adapters["jax"].capability_status["parameter_transaction"] == "partial"
     assert adapters["onnx"].source_transactions is False
+    assert adapters["onnx"].capability_status["runtime"] == "experimental"
+    assert adapters["onnx"].artifact_commit is True
+    assert adapters["onnx"].capability_status["parameter_transaction"] == "partial"
 
 
 def test_skill_routing_eval_has_balanced_trigger_and_nontrigger_cases() -> None:

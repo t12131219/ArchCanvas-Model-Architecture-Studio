@@ -99,12 +99,51 @@
   "additionalProperties": false,
   "properties": {
     "adapter": {
-      "const": "pytorch-hooks-v1",
       "default": "pytorch-hooks-v1",
+      "minLength": 1,
       "title": "Adapter",
       "type": "string"
     },
+    "adapter_id": {
+      "default": "runtime:pytorch-hooks-v1",
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Adapter Id",
+      "type": "string"
+    },
+    "available_targets": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Available Targets",
+      "type": "array"
+    },
+    "backend": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Backend"
+    },
+    "backend_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Backend Version"
+    },
     "cuda_available": {
+      "default": false,
       "title": "Cuda Available",
       "type": "boolean"
     },
@@ -125,6 +164,29 @@
       "title": "Dtype Trace",
       "type": "boolean"
     },
+    "framework": {
+      "default": "pytorch",
+      "enum": [
+        "pytorch",
+        "keras",
+        "jax",
+        "onnx"
+      ],
+      "title": "Framework",
+      "type": "string"
+    },
+    "framework_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Framework Version"
+    },
     "isolation": {
       "$ref": "#/$defs/RuntimeIsolation"
     },
@@ -134,6 +196,12 @@
       },
       "title": "Limitations",
       "type": "array"
+    },
+    "observation_mechanism": {
+      "default": "pytorch-hooks-v1",
+      "minLength": 1,
+      "title": "Observation Mechanism",
+      "type": "string"
     },
     "replay_check": {
       "default": true,
@@ -163,7 +231,6 @@
         ],
         "type": "string"
       },
-      "minItems": 1,
       "title": "Supported Devices",
       "type": "array"
     },
@@ -182,8 +249,6 @@
   },
   "required": [
     "runtime_available",
-    "cuda_available",
-    "supported_devices",
     "isolation"
   ],
   "title": "RuntimeCapabilityReport",

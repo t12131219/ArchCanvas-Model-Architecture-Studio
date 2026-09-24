@@ -15,6 +15,14 @@ from typing import Any
 
 from pydantic import TypeAdapter
 
+from archcanvas_adapters import (
+    analyze_with_adapter,
+    apply_model_transaction,
+    transaction_adapter_id,
+    transaction_artifact_kind,
+    validate_model_artifact,
+    validate_model_transaction_delta,
+)
 from archcanvas_core.models import (
     ArchitectureIR,
     Diagnostic,
@@ -37,13 +45,18 @@ from archcanvas_publication import (
     validate_geometry,
     validate_publication,
 )
-from archcanvas_python import analyze_project
 from archcanvas_runtime import trace_runtime
 
 from .delta import graph_delta
 from .registry import apply_structural_transform, validate_structural_oracle
 from .store import load_transaction, save_transaction
-from .transforms import set_json_value, set_python_parameter, write_prepared
+from .transforms import (
+    set_class_field_parameter,
+    set_functional_parameter,
+    set_json_value,
+    set_python_parameter,
+    write_prepared,
+)
 
 
 def _sha256(content: bytes) -> str:
@@ -76,6 +89,9 @@ def _receipt(transaction: SourceTransaction, *, source_writes: bool = False) -> 
     }
     return TransactionReceipt(
         transaction_id=transaction.transaction_id,
+        framework=transaction.framework,
+        transaction_adapter_id=transaction.transaction_adapter_id,
+        artifact_kind=transaction.artifact_kind,
         state=transaction.state,
         status="ok" if ok else "invalid",
         gates=transaction.gates,
@@ -195,13 +211,15 @@ def _analyze_at(project: Path, snapshot: SourceSnapshot):
         )
         config_path = project / relative
         config_bytes = config_path.read_bytes()
-    return analyze_project(
+    return analyze_with_adapter(
         project,
         snapshot.entrypoint,
         snapshot.task,
         snapshot.execution_mode,
         config_bytes,
         config_path,
+        framework=snapshot.framework,
+        pattern_packs_enabled=True,
     )
 
 
@@ -222,8 +240,9 @@ def prepare_transaction(
 ) -> tuple[SourceTransaction, TransactionReceipt]:
     artifact = Path(request.artifact_path).resolve()
     architecture, snapshot, evidence = _load_artifact(artifact)
-    if architecture.framework != "pytorch" or snapshot.framework != "pytorch":
-        raise ValueError("source transactions are currently verified only for PyTorch artifacts")
+    if architecture.framework != snapshot.framework:
+        raise ValueError("architecture and snapshot framework bindings do not match")
+    artifact_kind = transaction_artifact_kind(architecture.framework)
     _validate_snapshot(snapshot)
     project = Path(snapshot.project_root).resolve()
     node = next((item for item in architecture.nodes if item.node_id == request.target_node_id), None)
@@ -237,7 +256,28 @@ def prepare_transaction(
     directory.mkdir(parents=True, exist_ok=False)
     _copy_project(project, temporary_project, workspace)
 
-    if isinstance(request, SemanticParameterPatch):
+    semantic_manifest: str | None = None
+    if artifact_kind == "model-artifact":
+        if isinstance(request, SemanticParameterPatch):
+            parameter = next(
+                (item for item in node.parameters if item.name == request.parameter_name), None
+            )
+            if parameter is None:
+                raise ValueError(
+                    f"target parameter is not present on {node.node_id}: {request.parameter_name}"
+                )
+            if parameter.value == request.new_value:
+                raise ValueError("new parameter value is identical to the current value")
+            anchor = _anchor_fingerprint(snapshot, node, parameter, evidence)
+        else:
+            anchor = _structural_anchor_fingerprint(snapshot, node, request, evidence)
+        model_transform = apply_model_transaction(request, architecture, snapshot)
+        relative = model_transform.relative_path
+        original_path = project / relative
+        transformed = model_transform
+        semantic_manifest = model_transform.semantic_manifest
+        kind = "onnx"
+    elif isinstance(request, SemanticParameterPatch):
         parameter = next(
             (item for item in node.parameters if item.name == request.parameter_name), None
         )
@@ -270,22 +310,52 @@ def prepare_transaction(
                 and item.span is not None
                 and item.path is not None
             ]
-            definition = next((item for item in source_records if ".init." in item.evidence_id), None)
+            definition = next(
+                (
+                    item
+                    for item in source_records
+                    if ".init." in item.evidence_id
+                    or f".field.{parameter.name}" in item.evidence_id
+                ),
+                None,
+            )
             if definition is None or definition.path is None or definition.span is None:
                 raise ValueError("literal parameter has no exact module-definition anchor")
             relative = Path(definition.path)
             original_path = project / relative
             module_path = str(node.attributes.get("module_path", ""))
-            if not module_path.startswith("self."):
-                raise ValueError("literal parameter is not attached to a supported module assignment")
-            transformed = set_python_parameter(
-                original_path.read_bytes(),
-                module_name=module_path.removeprefix("self."),
-                parameter_name=parameter.name,
-                source_expression=parameter.source_expression,
-                value=request.new_value,
-                expected_line=definition.span.start_line,
-            )
+            functional_anchor = node.attributes.get("functional_anchor")
+            if module_path.startswith("self."):
+                transformed = set_python_parameter(
+                    original_path.read_bytes(),
+                    module_name=module_path.removeprefix("self."),
+                    parameter_name=parameter.name,
+                    source_expression=parameter.source_expression,
+                    value=request.new_value,
+                    expected_line=definition.span.start_line,
+                )
+            elif isinstance(functional_anchor, str) and functional_anchor:
+                transformed = set_functional_parameter(
+                    original_path.read_bytes(),
+                    target_name=functional_anchor,
+                    parameter_name=parameter.name,
+                    source_expression=parameter.source_expression,
+                    value=request.new_value,
+                    expected_line=definition.span.start_line,
+                )
+            elif ".field." in definition.evidence_id:
+                transformed = set_class_field_parameter(
+                    original_path.read_bytes(),
+                    class_name=snapshot.entrypoint.split(":", 1)[1],
+                    field_name=parameter.name,
+                    source_expression=parameter.source_expression,
+                    value=request.new_value,
+                    expected_line=definition.span.start_line,
+                )
+            else:
+                raise ValueError(
+                    "literal parameter is not attached to a supported module or functional anchor"
+                )
             kind = "python"
         else:
             raise ValueError(
@@ -310,7 +380,14 @@ def prepare_transaction(
         evidence,
         prepared_bundle.evidence,
     )
-    if isinstance(request, SemanticParameterPatch):
+    if artifact_kind == "model-artifact":
+        validate_model_transaction_delta(
+            request,
+            architecture,
+            prepared_bundle.architecture,
+            expected,
+        )
+    elif isinstance(request, SemanticParameterPatch):
         target_change = next(
             (
                 item
@@ -357,6 +434,14 @@ def prepare_transaction(
 
     transaction = SourceTransaction(
         transaction_id=transaction_id,
+        framework=architecture.framework,
+        transaction_adapter_id=transaction_adapter_id(architecture.framework),
+        artifact_kind=artifact_kind,
+        validators=(
+            ["onnx-checker", "shape-inference", "graph-delta", "publication"]
+            if artifact_kind == "model-artifact"
+            else ["parse", "static-analysis", "graph-delta", "publication"]
+        ),
         state=TransactionState.PREPARED,
         state_history=[
             TransactionState.DRAFT,
@@ -380,7 +465,7 @@ def prepare_transaction(
                 after_sha256=_sha256(after),
             )
         ],
-        source_diff=_unified_diff(relative, before, after),
+        source_diff=semantic_manifest or _unified_diff(relative, before, after),
         expected_delta=expected,
         gates=[
             _gate(
@@ -414,6 +499,9 @@ def _fail(
 
 
 def _validate_source(path: Path, kind: str) -> None:
+    if kind == "onnx":
+        validate_model_artifact("onnx", path)
+        return
     content = path.read_text(encoding="utf-8")
     if kind == "python":
         ast.parse(content, filename=str(path))
@@ -495,7 +583,8 @@ def verify_transaction(path: Path) -> tuple[SourceTransaction, TransactionReceip
     history = list(transaction.state_history)
     try:
         _validate_source(prepared_path, change.kind)
-        _static_imports_resolve(project, _load_artifact(Path(transaction.artifact_path))[1])
+        if change.kind != "onnx":
+            _static_imports_resolve(project, _load_artifact(Path(transaction.artifact_path))[1])
     except Exception as error:  # noqa: BLE001
         return _fail(
             transaction,
@@ -552,7 +641,29 @@ def verify_transaction(path: Path) -> tuple[SourceTransaction, TransactionReceip
             ),
             _diagnostic("GRAPH_DELTA_MISMATCH", "Expected and observed Graph Delta differ."),
         )
-    if isinstance(transaction.request, SemanticStructuralPatch):
+    if transaction.artifact_kind == "model-artifact":
+        try:
+            validate_model_transaction_delta(
+                transaction.request,
+                original,
+                observed_bundle.architecture,
+                observed,
+            )
+        except ValueError as error:
+            staged = transaction.model_copy(
+                update={"gates": gates, "observed_delta": observed, "state_history": history}
+            )
+            return _fail(
+                staged,
+                _gate(
+                    "F-graph-delta",
+                    False,
+                    "Model artifact oracle passed.",
+                    "Model artifact Graph Delta oracle failed.",
+                ),
+                _diagnostic("MODEL_DELTA_ORACLE_FAILED", str(error)),
+            )
+    elif isinstance(transaction.request, SemanticStructuralPatch):
         try:
             validate_structural_oracle(
                 transaction.request,

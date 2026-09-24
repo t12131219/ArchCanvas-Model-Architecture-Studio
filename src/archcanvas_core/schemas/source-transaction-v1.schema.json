@@ -113,7 +113,8 @@
         "kind": {
           "enum": [
             "python",
-            "json"
+            "json",
+            "onnx"
           ],
           "title": "Kind",
           "type": "string"
@@ -595,9 +596,23 @@
   },
   "additionalProperties": false,
   "properties": {
+    "adapter_version": {
+      "default": "0.1.0",
+      "title": "Adapter Version",
+      "type": "string"
+    },
     "anchor_fingerprint": {
       "pattern": "^[a-f0-9]{64}$",
       "title": "Anchor Fingerprint",
+      "type": "string"
+    },
+    "artifact_kind": {
+      "default": "source-artifact",
+      "enum": [
+        "source-artifact",
+        "model-artifact"
+      ],
+      "title": "Artifact Kind",
       "type": "string"
     },
     "artifact_path": {
@@ -633,6 +648,17 @@
       "title": "File Changes",
       "type": "array"
     },
+    "framework": {
+      "default": "pytorch",
+      "enum": [
+        "pytorch",
+        "keras",
+        "jax",
+        "onnx"
+      ],
+      "title": "Framework",
+      "type": "string"
+    },
     "gates": {
       "items": {
         "$ref": "#/$defs/GateResult"
@@ -654,6 +680,11 @@
     "original_project_root": {
       "minLength": 1,
       "title": "Original Project Root",
+      "type": "string"
+    },
+    "reanalysis_route": {
+      "default": "analyze_with_adapter",
+      "title": "Reanalysis Route",
       "type": "string"
     },
     "request": {
@@ -705,10 +736,23 @@
       "title": "Test Results",
       "type": "array"
     },
+    "transaction_adapter_id": {
+      "default": "transaction:pytorch-source-v1",
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Transaction Adapter Id",
+      "type": "string"
+    },
     "transaction_id": {
       "pattern": "^[a-z][a-z0-9._:-]*$",
       "title": "Transaction Id",
       "type": "string"
+    },
+    "validators": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Validators",
+      "type": "array"
     },
     "workspace": {
       "minLength": 1,

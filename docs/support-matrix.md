@@ -5,15 +5,16 @@ emits the machine-readable version with installed dependency versions.
 
 ## Frameworks
 
-| Framework | Static Exact IR | Runtime evidence | Source transactions | Status |
+| Framework | Static Exact IR | Runtime evidence | Transactions | Status |
 | --- | --- | --- | --- | --- |
-| PyTorch | Module `forward`, generic recovery, five Tier A profiles | Verified opt-in hooks | Parameter plus registered structural transforms | Supported |
-| Keras | Subclassed `call`, Functional builder dataflow | No | No | Partial |
-| JAX/Flax | Flax-style `__call__`, pure function dataflow | No | No | Partial |
-| ONNX | ModelProto graph, initializer, symbolic shape and fan-out | No | No | Supported when optional `onnx` dependency is installed |
+| PyTorch | Module `forward`, generic recovery, five Tier A profiles | Verified opt-in hooks | Parameter plus registered structural transforms | Verified |
+| Keras | Subclassed `call`, Functional builder dataflow | Experimental layer-call replay on the selected backend | Config, registered/inline layer parameters, activation replacement, subclass normalization insertion | Partial |
+| JAX/Flax | Flax-style `__call__`, pure function dataflow, Module fields | Experimental JAXPR/eval-shape replay with params/state digest | Config, Module field, bounded Flax activation replacement | Partial |
+| ONNX | ModelProto graph, initializer, attribute, symbolic shape and fan-out | Experimental ONNX Runtime replay per provider | Initializer, attribute and bounded node ModelProto transactions | Partial |
 
-Keras and JAX analysis does not require or import their framework packages. Dynamic framework
-control flow and unproven parameter sharing remain unresolved.
+Keras and JAX static analysis does not require or import their framework packages. Runtime adapters
+are optional extras. Dynamic framework control flow and unproven parameter sharing remain
+unresolved. ONNX external-data mutation is rejected until multi-file atomic commit is verified.
 
 ## Hosts
 

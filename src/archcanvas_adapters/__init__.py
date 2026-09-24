@@ -1,3 +1,31 @@
-from .registry import adapter_capabilities, analyze_with_adapter, resolve_framework
+from .registry import (
+    RuntimeAdapter,
+    RuntimeAdapterRegistration,
+    StaticAdapter,
+    TransactionAdapter,
+    adapter_capabilities,
+    analyze_with_adapter,
+    apply_model_transaction,
+    resolve_framework,
+    runtime_adapter,
+    transaction_adapter_id,
+    transaction_artifact_kind,
+    validate_model_artifact,
+    validate_model_transaction_delta,
+)
 
-__all__ = ["adapter_capabilities", "analyze_with_adapter", "resolve_framework"]
+__all__ = [
+    "RuntimeAdapter",
+    "RuntimeAdapterRegistration",
+    "StaticAdapter",
+    "TransactionAdapter",
+    "adapter_capabilities",
+    "analyze_with_adapter",
+    "apply_model_transaction",
+    "resolve_framework",
+    "runtime_adapter",
+    "transaction_adapter_id",
+    "transaction_artifact_kind",
+    "validate_model_artifact",
+    "validate_model_transaction_delta",
+]

@@ -12,6 +12,7 @@ from typing import Any
 
 from pydantic import TypeAdapter
 
+from archcanvas_adapters import runtime_adapter
 from archcanvas_core.models import (
     ArchitectureIR,
     CommandReceipt,
@@ -112,7 +113,9 @@ def _limit_process(spec: RuntimeInputSpec) -> Any:
     return apply
 
 
-def _worker_environment(sandbox: Path, device: str) -> dict[str, str]:
+def _worker_environment(
+    sandbox: Path, device: str, adapter_environment: tuple[tuple[str, str], ...]
+) -> dict[str, str]:
     allowed = {
         "CONDA_DEFAULT_ENV",
         "CONDA_PREFIX",
@@ -123,6 +126,8 @@ def _worker_environment(sandbox: Path, device: str) -> dict[str, str]:
         "MKL_NUM_THREADS",
         "OMP_NUM_THREADS",
         "PATH",
+        "KERAS_BACKEND",
+        "JAX_PLATFORMS",
     }
     environment = {key: value for key, value in os.environ.items() if key in allowed}
     environment.update(
@@ -130,12 +135,19 @@ def _worker_environment(sandbox: Path, device: str) -> dict[str, str]:
             "HOME": str(sandbox),
             "XDG_CACHE_HOME": str(sandbox / "cache"),
             "TORCH_HOME": str(sandbox / "torch"),
+            "KERAS_HOME": str(sandbox / "keras"),
+            "JAX_COMPILATION_CACHE_DIR": str(sandbox / "jax-cache"),
+            "TMPDIR": str(sandbox),
+            "TMP": str(sandbox),
+            "TEMP": str(sandbox),
             "PYTHONDONTWRITEBYTECODE": "1",
             "PYTHONHASHSEED": "0",
         }
     )
     if device == "cpu":
         environment["CUDA_VISIBLE_DEVICES"] = ""
+    for key, value in adapter_environment:
+        environment[key] = value.format(device=device)
     return environment
 
 
@@ -144,6 +156,7 @@ def _run_worker(
     snapshot: SourceSnapshot,
     spec: RuntimeInputSpec,
 ) -> dict[str, Any]:
+    registration = runtime_adapter(ir.framework)
     worker = Path(__file__).with_name("worker.py")
     with tempfile.TemporaryDirectory(prefix="archcanvas-runtime-") as directory:
         sandbox = Path(directory).resolve()
@@ -157,7 +170,16 @@ def _run_worker(
                 match_paths[module_path.removeprefix("self.")].append(node.node_id)
             if node.parent_id is None:
                 match_paths["<root>"].append(node.node_id)
+            match_paths[node.semantic_name].append(node.node_id)
+            for key in ("op_type", "onnx_value", "assigned_symbol"):
+                value = node.attributes.get(key)
+                if isinstance(value, str) and value:
+                    match_paths[value].append(node.node_id)
         request = {
+            "framework": ir.framework,
+            "adapter_id": registration.adapter_id,
+            "adapter_version": registration.adapter_version,
+            "worker_module": registration.worker_module,
             "project_root": snapshot.project_root,
             "entrypoint": snapshot.entrypoint,
             "execution_mode": snapshot.execution_mode,
@@ -173,7 +195,7 @@ def _run_worker(
                 completed = subprocess.run(
                     [sys.executable, "-I", str(worker), str(request_path)],
                     cwd=sandbox,
-                    env=_worker_environment(sandbox, spec.device),
+                    env=_worker_environment(sandbox, spec.device, registration.environment),
                     stdout=log,
                     stderr=subprocess.STDOUT,
                     text=True,
@@ -294,6 +316,10 @@ def trace_runtime(
     replay_payload = {
         "observations": first["observations"],
         "output_tensors": first["output_tensors"],
+        "params_digest": first.get("params_digest"),
+        "state_digest": first.get("state_digest"),
+        "checkpoint_digest": first.get("checkpoint_digest"),
+        "environment": first.get("environment"),
         "violations": first.get("violations", []),
     }
     replay_digest = _digest(replay_payload)
@@ -301,6 +327,10 @@ def trace_runtime(
         {
             "observations": second["observations"],
             "output_tensors": second["output_tensors"],
+            "params_digest": second.get("params_digest"),
+            "state_digest": second.get("state_digest"),
+            "checkpoint_digest": second.get("checkpoint_digest"),
+            "environment": second.get("environment"),
             "violations": second.get("violations", []),
         }
     )
@@ -328,9 +358,16 @@ def trace_runtime(
         source_snapshot_id=snapshot.snapshot_id,
         source_revision=snapshot.revision,
         entrypoint=snapshot.entrypoint,
+        adapter_id=environment.adapter_id,
+        framework=ir.framework,
         input_spec=spec,
         input_spec_digest=input_digest,
         replay_digest=replay_digest,
+        params_digest=first.get("params_digest"),
+        state_digest=first.get("state_digest"),
+        checkpoint_digest=first.get("checkpoint_digest"),
+        observation_mechanism=environment.observation_mechanism,
+        limitations=first.get("limitations", []),
         observations=observations,
         output_tensors=TypeAdapter(list[RuntimeTensorObservation]).validate_python(
             first["output_tensors"]
@@ -366,16 +403,24 @@ def trace_runtime(
         )
         node_evidence[node_id] = [evidence_id]
     capability = RuntimeCapabilityReport(
+        adapter=environment.observation_mechanism,
+        adapter_id=environment.adapter_id,
+        framework=ir.framework,
+        framework_version=environment.framework_version,
+        backend=environment.backend,
+        backend_version=environment.backend_version,
         runtime_available=True,
         torch_version=environment.torch_version,
         cuda_build=environment.cuda_build,
         cuda_available=environment.cuda_available,
         supported_devices=["cpu", "cuda"] if environment.cuda_available else ["cpu"],
+        available_targets=environment.available_targets,
+        observation_mechanism=environment.observation_mechanism,
         isolation=isolation,
         limitations=[
-            "PyTorch module hooks observe module boundaries; functional operators remain static-only.",
+            *first.get("limitations", []),
             "Python socket and file APIs are guarded; this is not an OS container boundary.",
-            "Entrypoints must accept JSON-compatible constructor and forward keyword arguments.",
+            "Entrypoints must accept JSON-compatible constructor and call keyword arguments.",
         ],
     )
     artifacts = {
@@ -440,6 +485,9 @@ def trace_runtime(
             "replay_runs": 2,
             "observation_count": len(observations),
             "runtime_evidence_count": len(evidence),
+            "framework": ir.framework,
+            "adapter_id": environment.adapter_id,
+            "selected_target": environment.selected_target,
             "selected_device": environment.selected_device,
             "blocked_boundary_attempts": len(isolation.violations),
             "static_artifacts_unchanged": static_unchanged,

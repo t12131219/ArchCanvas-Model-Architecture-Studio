@@ -170,10 +170,15 @@ def doctor() -> CommandReceipt:
                 message="Missing exported schemas: " + ", ".join(missing_schemas),
             )
         )
-    try:
-        torch_version = importlib.metadata.version("torch")
-    except importlib.metadata.PackageNotFoundError:
-        torch_version = None
+    runtime_packages: dict[str, str | None] = {}
+    for package in ("torch", "keras", "jax", "flax", "onnx", "onnxruntime"):
+        try:
+            runtime_packages[package] = importlib.metadata.version(package)
+        except importlib.metadata.PackageNotFoundError:
+            runtime_packages[package] = None
+    runtime_frameworks = [
+        item.framework for item in adapter_capabilities() if item.runtime_evidence
+    ]
     status = "invalid" if diagnostics else "ok"
     return CommandReceipt(
         command="doctor",
@@ -199,15 +204,13 @@ def doctor() -> CommandReceipt:
                 "semantic_validation": "available",
                 "publication_render": "available-svg+html-l1-l4",
                 "studio": "available-visual-editing",
-                "runtime_trace": (
-                    "available-opt-in-pytorch" if torch_version else "unavailable-missing-torch"
-                ),
+                "runtime_trace": "available-opt-in-" + "+".join(runtime_frameworks),
                 "source_transactions": "available-parameter+registered-structural",
                 "structural_transforms": sorted(TRANSFORM_REGISTRY),
                 "agent_proposal": "available-no-execution-permissions",
                 "pattern_packs": "available-declarative+builtin+locked-workspace+candidate-preview",
             },
-            "runtime_packages": {"torch": torch_version},
+            "runtime_packages": runtime_packages,
             "framework_adapters": [
                 item.model_dump(mode="json") for item in adapter_capabilities()
             ],
@@ -564,9 +567,6 @@ def studio(args: argparse.Namespace) -> tuple[CommandReceipt, StudioBundle | Non
 
 
 def trace(args: argparse.Namespace) -> CommandReceipt:
-    architecture = ArchitectureIR.model_validate_json(args.artifact.read_text(encoding="utf-8"))
-    if architecture.framework != "pytorch":
-        raise ValueError("runtime tracing is currently verified only for PyTorch artifacts")
     return trace_runtime(args.artifact, args.input_spec, args.out)
 
 

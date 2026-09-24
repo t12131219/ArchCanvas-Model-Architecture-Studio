@@ -47,6 +47,7 @@ def release_support_matrix() -> ReleaseSupportMatrix:
         ],
         notes=[
             "Static analysis and artifact generation do not require network access.",
-            "Only PyTorch has verified runtime evidence and source transactions.",
+            "PyTorch remains the only framework with an entirely verified capability row.",
+            "Keras, JAX, and ONNX report runtime and transaction status per declared form.",
         ],
     )

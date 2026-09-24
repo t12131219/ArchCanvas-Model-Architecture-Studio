@@ -91,12 +91,32 @@
   },
   "additionalProperties": false,
   "properties": {
+    "artifact_kind": {
+      "default": "source-artifact",
+      "enum": [
+        "source-artifact",
+        "model-artifact"
+      ],
+      "title": "Artifact Kind",
+      "type": "string"
+    },
     "diagnostics": {
       "items": {
         "$ref": "#/$defs/Diagnostic"
       },
       "title": "Diagnostics",
       "type": "array"
+    },
+    "framework": {
+      "default": "pytorch",
+      "enum": [
+        "pytorch",
+        "keras",
+        "jax",
+        "onnx"
+      ],
+      "title": "Framework",
+      "type": "string"
     },
     "gates": {
       "items": {
@@ -125,6 +145,12 @@
         "failed"
       ],
       "title": "Status",
+      "type": "string"
+    },
+    "transaction_adapter_id": {
+      "default": "transaction:pytorch-source-v1",
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Transaction Adapter Id",
       "type": "string"
     },
     "transaction_id": {
