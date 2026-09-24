@@ -29,7 +29,12 @@ All persisted documents use a `schema_version` with major/minor semantics. A rea
    `PatternPackReceipt` records every loaded pack, match or rejection reason, selection, and the
    Exact IR digest before and after. `PatternCandidateReview` is preview-only and grants no shell,
    network, or source-write permission.
-12. `CommandReceipt` and `TransactionReceipt` report command status, artifacts, gates, structured
+12. `FrameworkAdapterCapability` and `ReleaseSupportMatrix` distinguish static analysis, runtime,
+   editing, host, dependency, and platform support. Missing optional dependencies are reported as
+   unavailable rather than silently installed.
+13. `OfflineBundleManifest` binds a redacted artifact directory to architecture/snapshot IDs and a
+   SHA-256 inventory. Verification rejects missing, extra, or modified files.
+14. `CommandReceipt` and `TransactionReceipt` report command status, artifacts, gates, structured
    diagnostics, and whether a source write occurred.
 
 Canonical identifiers derive from source symbol, callsite, logical path, repeat/branch identity, and sharing identity. Renderer coordinates and list ordering are never identity inputs.
@@ -43,6 +48,15 @@ architecture/source snapshot pair plus an explicit input spec, runs in a separat
 publishes `runtime-trace.json`, `runtime-evidence-ledger.json`, a node-evidence overlay, capability
 report, and receipt. Runtime failure leaves the static bundle usable and emits failed/skipped gates
 without claiming runtime-confirmed evidence.
+
+`analyze --framework keras|jax` parses Python AST without importing the target framework.
+`analyze --framework onnx` uses the official ONNX parser with external tensor loading disabled and
+does not execute the graph. Runtime trace and source transactions reject non-PyTorch artifacts.
+
+`bundle create` recompiles and validates L1-L4, redacts absolute paths in copied JSON, freezes
+JSON/SVG/HTML plus schemas and the support matrix, and writes a digest manifest. `bundle verify`
+checks the complete inventory and Exact IR binding. Neither command turns deterministic rendering
+into a human visual-review pass.
 
 ## Pattern Pack behavior
 

@@ -11,6 +11,7 @@ from typing import Any
 
 from pydantic import TypeAdapter, ValidationError
 
+from archcanvas_adapters import adapter_capabilities, analyze_with_adapter
 from archcanvas_core.models import (
     SCHEMA_MODELS,
     ArchitectureIR,
@@ -40,7 +41,8 @@ from archcanvas_publication import (
     validate_geometry,
     validate_publication,
 )
-from archcanvas_python import AnalysisError, analyze_project
+from archcanvas_python import AnalysisError
+from archcanvas_release import create_bundle, install_skill, release_support_matrix, verify_bundle
 from archcanvas_runtime import RuntimeTraceError, trace_runtime
 from archcanvas_studio import StudioBundle, prepare_studio_bundle, source_binding_digest
 from archcanvas_studio.server import create_studio_server
@@ -193,7 +195,7 @@ def doctor() -> CommandReceipt:
             "packages": packages,
             "network_required": False,
             "capabilities": {
-                "static_analysis": "available-generic+five-tier-a-profiles",
+                "static_analysis": "available-pytorch+keras+jax+onnx",
                 "semantic_validation": "available",
                 "publication_render": "available-svg+html-l1-l4",
                 "studio": "available-visual-editing",
@@ -206,6 +208,10 @@ def doctor() -> CommandReceipt:
                 "pattern_packs": "available-declarative+builtin+locked-workspace+candidate-preview",
             },
             "runtime_packages": {"torch": torch_version},
+            "framework_adapters": [
+                item.model_dump(mode="json") for item in adapter_capabilities()
+            ],
+            "release_support": release_support_matrix().model_dump(mode="json"),
         },
     )
 
@@ -213,13 +219,14 @@ def doctor() -> CommandReceipt:
 def analyze(args: argparse.Namespace) -> CommandReceipt:
     project = args.project.resolve()
     config_bytes = args.config.read_bytes() if args.config else b"{}"
-    bundle = analyze_project(
+    bundle = analyze_with_adapter(
         project,
         args.entry,
         args.task,
         args.mode,
         config_bytes,
         args.config,
+        framework=args.framework,
         pattern_packs_enabled=not args.no_pattern_packs,
     )
     gates, diagnostics = validate_architecture(
@@ -265,13 +272,13 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
         enabled=not args.no_pattern_packs,
     )
     candidate_reviews = build_candidate_reviews(bundle.architecture, registry)
-    profile = "generic" if args.no_pattern_packs else bundle.snapshot.resolved_config.get(
-        "architecture_profile"
-    ) or (
-        "transformer-l3"
-        if bundle.architecture.entrypoint.rsplit(":", 1)[-1].lower() == "transformer"
-        else "generic"
-    )
+    profile = "generic"
+    if bundle.architecture.framework == "pytorch" and not args.no_pattern_packs:
+        profile = bundle.snapshot.resolved_config.get("architecture_profile") or (
+            "transformer-l3"
+            if bundle.architecture.entrypoint.rsplit(":", 1)[-1].lower() == "transformer"
+            else "generic"
+        )
     _write_json(Path(artifacts["source_snapshot"]), bundle.snapshot)
     _write_json(Path(artifacts["evidence_ledger"]), bundle.evidence)
     _write_json(Path(artifacts["module_ledger"]), bundle.architecture.nodes)
@@ -283,7 +290,7 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
         Path(artifacts["capability_report"]),
         {
             "schema_version": "1.0",
-            "adapter": f"python-ast-pytorch-{profile}",
+            "adapter": f"{bundle.architecture.framework}-static-{profile}",
             "static_analysis": True,
             "runtime_evidence": "available-opt-in",
             "supported_profiles": [
@@ -314,6 +321,7 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
             "schema_version": "1.0",
             "status": "skipped",
             "source_execution": False,
+            "framework": bundle.architecture.framework,
             "reason": "Run archcanvas trace with an explicit input spec to opt in.",
             "gates": [
                 GateResult(
@@ -334,6 +342,7 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
         diagnostics=diagnostics,
         details={
             "source_execution": False,
+            "framework": bundle.architecture.framework,
             "profile": profile,
             "pattern_packs_enabled": not args.no_pattern_packs,
             "pattern_status": pattern_receipt.status,
@@ -555,7 +564,56 @@ def studio(args: argparse.Namespace) -> tuple[CommandReceipt, StudioBundle | Non
 
 
 def trace(args: argparse.Namespace) -> CommandReceipt:
+    architecture = ArchitectureIR.model_validate_json(args.artifact.read_text(encoding="utf-8"))
+    if architecture.framework != "pytorch":
+        raise ValueError("runtime tracing is currently verified only for PyTorch artifacts")
     return trace_runtime(args.artifact, args.input_spec, args.out)
+
+
+def bundle_command(args: argparse.Namespace) -> CommandReceipt:
+    if args.bundle_command == "create":
+        manifest, passed_gates = create_bundle(args.artifact, args.out)
+        return CommandReceipt(
+            command="bundle create",
+            status="ok",
+            exit_code=0,
+            artifacts={
+                "bundle": str(args.out.resolve()),
+                "manifest": str(args.out.resolve() / "bundle-manifest.json"),
+            },
+            details={
+                "bundle_id": manifest.bundle_id,
+                "file_count": len(manifest.files),
+                "network_required": False,
+                "source_execution": False,
+                "absolute_paths_redacted": manifest.absolute_paths_redacted,
+                "passed_gates": passed_gates,
+            },
+        )
+    manifest = verify_bundle(args.bundle)
+    return CommandReceipt(
+        command="bundle verify",
+        status="ok",
+        exit_code=0,
+        artifacts={"bundle": str(args.bundle.resolve())},
+        details={
+            "bundle_id": manifest.bundle_id,
+            "file_count": len(manifest.files),
+            "digest_verified": True,
+            "network_required": False,
+        },
+    )
+
+
+def install_skill_command(args: argparse.Namespace) -> CommandReceipt:
+    details = install_skill(args.project, args.host, args.mode)
+    return CommandReceipt(
+        command="install-skill",
+        status="ok",
+        exit_code=0,
+        artifacts={"skill": str(details["target"])},
+        details={**details, "project_writes": True},
+    )
 
 
 def patch(args: argparse.Namespace) -> CommandReceipt:
@@ -647,6 +705,11 @@ def build_parser() -> argparse.ArgumentParser:
     analyze_parser = subparsers.add_parser("analyze")
     analyze_parser.add_argument("--project", type=Path, required=True)
     analyze_parser.add_argument("--entry", required=True)
+    analyze_parser.add_argument(
+        "--framework",
+        choices=("pytorch", "keras", "jax", "onnx", "auto"),
+        default="pytorch",
+    )
     analyze_parser.add_argument("--config", type=Path)
     analyze_parser.add_argument("--task", required=True)
     analyze_parser.add_argument("--mode", choices=("eval", "train"), required=True)
@@ -695,6 +758,20 @@ def build_parser() -> argparse.ArgumentParser:
     propose_parser.add_argument("request", type=Path)
     propose_parser.add_argument("--out", type=Path, required=True)
     propose_parser.add_argument("--json", action="store_true")
+    bundle_parser = subparsers.add_parser("bundle")
+    bundle_subparsers = bundle_parser.add_subparsers(dest="bundle_command", required=True)
+    bundle_create_parser = bundle_subparsers.add_parser("create")
+    bundle_create_parser.add_argument("artifact", type=Path)
+    bundle_create_parser.add_argument("--out", type=Path, required=True)
+    bundle_create_parser.add_argument("--json", action="store_true")
+    bundle_verify_parser = bundle_subparsers.add_parser("verify")
+    bundle_verify_parser.add_argument("bundle", type=Path)
+    bundle_verify_parser.add_argument("--json", action="store_true")
+    install_parser = subparsers.add_parser("install-skill")
+    install_parser.add_argument("--project", type=Path, required=True)
+    install_parser.add_argument("--host", choices=("codex", "claude-code"), required=True)
+    install_parser.add_argument("--mode", choices=("copy", "symlink"), default="copy")
+    install_parser.add_argument("--json", action="store_true")
     return parser
 
 
@@ -728,6 +805,10 @@ def main(argv: list[str] | None = None) -> int:
             receipt = patch(args)
         elif args.command == "propose":
             receipt = propose(args)
+        elif args.command == "bundle":
+            receipt = bundle_command(args)
+        elif args.command == "install-skill":
+            receipt = install_skill_command(args)
         else:
             receipt = _unavailable(args.command, args.command)
         return _emit(receipt)

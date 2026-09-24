@@ -14,6 +14,7 @@ archcanvas doctor --json
 archcanvas analyze \
   --project fixtures/tier_a/transformer \
   --entry model:Transformer \
+  --framework pytorch \
   --task inference \
   --mode eval \
   --out build/transformer \
@@ -32,6 +33,17 @@ archcanvas studio build/transformer/architecture.json \
   --serve \
   --json
 ```
+
+Static cross-framework analysis uses the same pipeline:
+
+```bash
+archcanvas analyze --framework keras --project my-project --entry model:MyModel ...
+archcanvas analyze --framework jax --project my-project --entry model:my_function ...
+archcanvas analyze --framework onnx --project my-project --entry model.onnx ...
+```
+
+Keras and JAX adapters parse source without importing those frameworks. ONNX uses the optional
+official parser declared by `.[cross-framework]`; no adapter executes the target during analysis.
 
 Prepare and verify a semantic parameter transaction from a versioned request:
 
@@ -77,6 +89,22 @@ and every receipt records the unchanged Exact IR digest before and after matchin
 overlay is consumed by publication and Studio as optional metadata without changing canonical
 nodes, tensors, edges, or ports.
 
+Install the same offline-capable skill package into either supported local host:
+
+```bash
+archcanvas install-skill --host codex --project /path/to/project --json
+archcanvas install-skill --host claude-code --project /path/to/project --json
+```
+
+Copy mode includes the ArchCanvas runtime and schemas. It performs no dependency downloads; Python
+3.11 and the dependencies reported by `doctor` must already exist. Create and verify a portable,
+path-redacted review bundle with:
+
+```bash
+archcanvas bundle create build/model/architecture.json --out build/model.archcanvas --json
+archcanvas bundle verify build/model.archcanvas --json
+```
+
 ## Current support
 
 | Capability | Status |
@@ -99,5 +127,12 @@ nodes, tensors, edges, or ports.
 | Proposed Connection and AgentProposal | Available; handoff grants no shell, network, or source-write permission |
 | Declarative Pattern Packs | Builtin registry, digest-locked workspace packs, preview-only candidates |
 | Holdout generalization | Source-only residual forecaster passes semantic/publication/geometry gates |
+| Keras static adapter | Partial: subclassed `call` and Functional builder dataflow |
+| JAX static adapter | Partial: Flax-style `__call__` and pure functions |
+| ONNX adapter | ModelProto graph analysis when optional ONNX dependency is installed |
+| Local skill installers | Codex verified; Claude Code filesystem installer tested |
+| Offline review bundle | Redacted L1-L4 JSON/SVG/HTML with digest verification |
 
-See [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md), and [docs/contracts/protocols.md](docs/contracts/protocols.md).
+See [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md),
+[docs/contracts/protocols.md](docs/contracts/protocols.md), and
+[docs/support-matrix.md](docs/support-matrix.md).

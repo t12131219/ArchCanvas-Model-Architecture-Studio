@@ -1,0 +1,98 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "adapter_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Adapter Id",
+      "type": "string"
+    },
+    "adapter_version": {
+      "minLength": 1,
+      "title": "Adapter Version",
+      "type": "string"
+    },
+    "framework": {
+      "enum": [
+        "pytorch",
+        "keras",
+        "jax",
+        "onnx"
+      ],
+      "title": "Framework",
+      "type": "string"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "required_packages": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "title": "Required Packages",
+      "type": "object"
+    },
+    "runtime_evidence": {
+      "title": "Runtime Evidence",
+      "type": "boolean"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_transactions": {
+      "title": "Source Transactions",
+      "type": "boolean"
+    },
+    "static_analysis": {
+      "title": "Static Analysis",
+      "type": "boolean"
+    },
+    "status": {
+      "enum": [
+        "supported",
+        "partial",
+        "unavailable"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "supported_forms": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Supported Forms",
+      "type": "array"
+    },
+    "verified_fixtures": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Verified Fixtures",
+      "type": "array"
+    }
+  },
+  "required": [
+    "adapter_id",
+    "framework",
+    "adapter_version",
+    "status",
+    "static_analysis",
+    "runtime_evidence",
+    "source_transactions"
+  ],
+  "title": "FrameworkAdapterCapability",
+  "type": "object"
+}

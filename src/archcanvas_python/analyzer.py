@@ -94,6 +94,8 @@ def _call_name(node: ast.AST) -> str:
     if isinstance(node, ast.Attribute):
         prefix = _call_name(node.value)
         return f"{prefix}.{node.attr}" if prefix else node.attr
+    if isinstance(node, ast.Call):
+        return _call_name(node.func)
     return "call"
 
 
@@ -308,6 +310,8 @@ def _operation(
         return names.get(type(expression.op), type(expression.op).__name__), kind, None, {}
     if isinstance(expression, ast.Call):
         call = _call_name(expression.func)
+        if call.endswith("Input"):
+            return call, NodeKind.INPUT_OUTPUT, None, {"op_type": call, "io": "input"}
         if call.startswith("self."):
             module_name = call.split(".", 1)[1]
             module = modules.get(module_name)
@@ -414,12 +418,15 @@ def _infer_shape(
     if target.endswith("_concat"):
         parts = _shape_parts(first)
         return f"[B,{parts[-2]},D]" if len(parts) == 4 else "[?]"
-    if module and module.op_type.endswith("Linear"):
+    if module and module.op_type.endswith(("Linear", "Dense")):
         parts = _shape_parts(first)
-        if parts and len(module.parameters) >= 2:
-            parts[-1] = _symbolic_dimension(module.parameters[1].source_expression, config)
+        parameter_index = 1 if module.op_type.endswith("Linear") else 0
+        if parts and len(module.parameters) > parameter_index:
+            parts[-1] = _symbolic_dimension(
+                module.parameters[parameter_index].source_expression, config
+            )
             return f"[{','.join(parts)}]"
-    if module and (module.op_type.endswith("LayerNorm") or module.op_type.endswith("GELU")):
+    if module and module.op_type.endswith(("LayerNorm", "LayerNormalization", "GELU")):
         return first
     if isinstance(expression, ast.BinOp) or target.endswith(("_scores", "_weights")):
         return first
@@ -456,6 +463,8 @@ def analyze_project(
     config_path: Path | None = None,
     *,
     pattern_packs_enabled: bool = True,
+    framework: str = "pytorch",
+    execution_method: str | None = None,
 ) -> AnalysisBundle:
     project = project.resolve()
     if ":" not in entrypoint:
@@ -465,7 +474,7 @@ def analyze_project(
     if not source_path.is_file() or not source_path.resolve().is_relative_to(project):
         raise AnalysisError("ENTRYPOINT_NOT_FOUND", f"source module not found: {source_path}")
     config = _parse_config(config_bytes)
-    if pattern_packs_enabled and config.get("architecture_profile") == "autoformer":
+    if framework == "pytorch" and pattern_packs_enabled and config.get("architecture_profile") == "autoformer":
         from .autoformer import analyze_autoformer
 
         return analyze_autoformer(
@@ -477,7 +486,7 @@ def analyze_project(
             config_bytes,
             config_path,
         )
-    if pattern_packs_enabled and config.get("architecture_profile") == "itransformer":
+    if framework == "pytorch" and pattern_packs_enabled and config.get("architecture_profile") == "itransformer":
         from .itransformer import analyze_itransformer
 
         return analyze_itransformer(
@@ -489,7 +498,7 @@ def analyze_project(
             config_bytes,
             config_path,
         )
-    if pattern_packs_enabled and config.get("architecture_profile") == "patchtst":
+    if framework == "pytorch" and pattern_packs_enabled and config.get("architecture_profile") == "patchtst":
         from .patchtst import analyze_patchtst
 
         return analyze_patchtst(
@@ -501,7 +510,7 @@ def analyze_project(
             config_bytes,
             config_path,
         )
-    if pattern_packs_enabled and config.get("architecture_profile") == "timemixer":
+    if framework == "pytorch" and pattern_packs_enabled and config.get("architecture_profile") == "timemixer":
         from .timemixer import analyze_timemixer
 
         return analyze_timemixer(
@@ -520,22 +529,43 @@ def analyze_project(
         tree = ast.parse(source_bytes, filename=str(source_path))
     except SyntaxError as error:
         raise AnalysisError("SOURCE_SYNTAX_ERROR", str(error)) from error
-    class_node = next(
-        (node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == class_name),
-        None,
-    )
-    if class_node is None:
-        raise AnalysisError("ENTRYPOINT_SYMBOL_NOT_FOUND", f"class {class_name!r} was not found")
-    forward = next(
+    symbol_node = next(
         (
             node
-            for node in class_node.body
-            if isinstance(node, ast.FunctionDef) and node.name == "forward"
+            for node in tree.body
+            if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name == class_name
         ),
         None,
     )
-    if forward is None:
-        raise AnalysisError("FORWARD_NOT_FOUND", f"{class_name} has no forward method")
+    if symbol_node is None:
+        raise AnalysisError("ENTRYPOINT_SYMBOL_NOT_FOUND", f"symbol {class_name!r} was not found")
+    method_name = execution_method or {
+        "pytorch": "forward",
+        "keras": "call",
+        "jax": "__call__",
+    }.get(framework, "forward")
+    if isinstance(symbol_node, ast.ClassDef):
+        execution = next(
+            (
+                node
+                for node in symbol_node.body
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+                and node.name == method_name
+            ),
+            None,
+        )
+        if execution is None:
+            raise AnalysisError(
+                "EXECUTION_METHOD_NOT_FOUND",
+                f"{class_name} has no {method_name} method",
+            )
+        execution_symbol = f"{class_name}.{method_name}"
+        class_node: ast.ClassDef | None = symbol_node
+    else:
+        execution = symbol_node
+        execution_symbol = class_name
+        class_node = None
 
     relative_path = source_path.relative_to(project).as_posix()
     resolved_config_path: str | None = None
@@ -547,6 +577,8 @@ def analyze_project(
             else str(resolved)
         )
     snapshot_seed = f"{source_digest}:{config_digest}:{entrypoint}:{task}:{execution_mode}".encode()
+    if framework != "pytorch":
+        snapshot_seed += f":{framework}".encode()
     snapshot = SourceSnapshot(
         snapshot_id=f"snapshot:{_sha256(snapshot_seed)[:16]}",
         project_root=str(project),
@@ -554,7 +586,7 @@ def analyze_project(
         entrypoint=entrypoint,
         task=task,
         execution_mode=execution_mode,
-        framework="pytorch",
+        framework=framework,
         adapter_version=ANALYZER_VERSION,
         config_digest=config_digest,
         config_path=resolved_config_path,
@@ -582,7 +614,9 @@ def analyze_project(
             )
         )
 
-    initializer, constructor_values, constructor_origins = _constructor_values(class_node, config)
+    initializer, constructor_values, constructor_origins = (
+        _constructor_values(class_node, config) if class_node is not None else (None, {}, {})
+    )
     modules = _registered_modules(
         initializer,
         constructor_values,
@@ -595,13 +629,17 @@ def analyze_project(
         kind=NodeKind.MODULE_CONTAINER,
         semantic_name=class_name,
         source_symbol=class_name,
-        line=class_node.lineno,
-        end_line=getattr(class_node, "end_lineno", class_node.lineno),
+        line=symbol_node.lineno,
+        end_line=getattr(symbol_node, "end_lineno", symbol_node.lineno),
         attributes={
             "model_class": class_name,
+            "framework_adapter": framework,
+            "execution_symbol": execution_symbol,
             "architecture_profile": (
                 "transformer-l3"
-                if pattern_packs_enabled and class_name.lower() == "transformer"
+                if framework == "pytorch"
+                and pattern_packs_enabled
+                and class_name.lower() == "transformer"
                 else "generic"
             ),
             "pattern_packs_enabled": pattern_packs_enabled,
@@ -612,15 +650,15 @@ def analyze_project(
     variable_producer: dict[str, str] = {}
     shapes: dict[str, str] = {}
     input_shapes = config.get("input_shapes", {})
-    forward_args = [argument.arg for argument in forward.args.args if argument.arg != "self"]
+    forward_args = [argument.arg for argument in execution.args.args if argument.arg != "self"]
     for argument in forward_args:
         draft = _NodeDraft(
             node_id=f"node:input.{_identifier(argument)}",
             kind=NodeKind.INPUT_OUTPUT,
             semantic_name=argument,
-            source_symbol=f"{class_name}.forward",
-            line=forward.lineno,
-            end_line=forward.lineno,
+            source_symbol=execution_symbol,
+            line=execution.lineno,
+            end_line=execution.lineno,
             target=argument,
             attributes={"io": "input", "assigned_symbol": argument},
         )
@@ -632,7 +670,7 @@ def analyze_project(
     used_node_ids: set[str] = {draft.node_id for draft in drafts}
     output_created = False
     return_boundary: _NodeDraft | None = None
-    for statement in forward.body:
+    for statement in execution.body:
         target: str | None = None
         expression: ast.AST | None = None
         if (
@@ -654,7 +692,7 @@ def analyze_project(
                     node_id="node:output.model",
                     kind=NodeKind.INPUT_OUTPUT,
                     semantic_name="Model output",
-                    source_symbol=f"{class_name}.forward",
+                    source_symbol=execution_symbol,
                     line=statement.lineno,
                     end_line=getattr(statement, "end_lineno", statement.lineno),
                     dependencies=dependencies,
@@ -680,7 +718,7 @@ def analyze_project(
                     node_id=boundary_id,
                     kind=NodeKind.OPAQUE_COMPOSITE,
                     semantic_name=f"Unresolved {type(statement).__name__} boundary",
-                    source_symbol=f"{class_name}.forward",
+                    source_symbol=execution_symbol,
                     line=statement.lineno,
                     end_line=getattr(statement, "end_lineno", statement.lineno),
                     target=f"opaque_control_{boundary_index}",
@@ -749,10 +787,12 @@ def analyze_project(
             )
         primitive_module_suffixes = (
             "Linear",
+            "Dense",
             "Conv1d",
             "Conv2d",
             "Conv3d",
             "LayerNorm",
+            "LayerNormalization",
             "BatchNorm1d",
             "BatchNorm2d",
             "Embedding",
@@ -783,7 +823,7 @@ def analyze_project(
             node_id=node_id,
             kind=kind,
             semantic_name=semantic_name,
-            source_symbol=f"{class_name}.forward",
+            source_symbol=execution_symbol,
             line=statement.lineno,
             end_line=getattr(statement, "end_lineno", statement.lineno),
             target=target,
@@ -805,7 +845,7 @@ def analyze_project(
                 node_id="node:output.model",
                 kind=NodeKind.INPUT_OUTPUT,
                 semantic_name="Model output",
-                source_symbol=f"{class_name}.forward",
+                source_symbol=execution_symbol,
                 line=return_boundary.line,
                 end_line=return_boundary.end_line,
                 dependencies=[(return_boundary.target or "output", return_boundary.node_id)],
@@ -842,13 +882,13 @@ def analyze_project(
         )
 
     for index, draft in enumerate(drafts):
-        flow_id = f"evidence:{_identifier(class_name)}.forward.{index}"
+        flow_id = f"evidence:{_identifier(class_name)}.{_identifier(method_name)}.{index}"
         add_source_evidence(
             flow_id,
             draft.source_symbol,
             draft.line,
             draft.end_line,
-            f"{draft.semantic_name} participates in the selected forward dependency path",
+            f"{draft.semantic_name} participates in the selected execution dependency path",
         )
         evidence_by_node[draft.node_id] = [flow_id]
         if draft.module:
@@ -1011,7 +1051,7 @@ def analyze_project(
     architecture = ArchitectureIR(
         architecture_id=f"architecture:{_sha256(architecture_seed)[:16]}",
         source_snapshot_id=snapshot.snapshot_id,
-        framework="pytorch",
+        framework=framework,
         entrypoint=entrypoint,
         nodes=nodes,
         tensors=list(tensors.values()),

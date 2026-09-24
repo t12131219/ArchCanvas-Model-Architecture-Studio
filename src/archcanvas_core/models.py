@@ -223,6 +223,62 @@ class RuntimeCapabilityReport(StrictModel):
     limitations: list[str] = Field(default_factory=list)
 
 
+class FrameworkAdapterCapability(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    adapter_id: Identifier
+    framework: Literal["pytorch", "keras", "jax", "onnx"]
+    adapter_version: str = Field(min_length=1)
+    status: Literal["supported", "partial", "unavailable"]
+    static_analysis: bool
+    runtime_evidence: bool
+    source_transactions: bool
+    supported_forms: list[str] = Field(default_factory=list)
+    verified_fixtures: list[str] = Field(default_factory=list)
+    required_packages: dict[str, str | None] = Field(default_factory=dict)
+    limitations: list[str] = Field(default_factory=list)
+
+
+class HostSupport(StrictModel):
+    host: Literal["codex-local", "claude-code-local", "claude-api", "claude.ai"]
+    status: Literal["verified", "installer-tested", "unverified", "unsupported"]
+    install_target: str | None = None
+    limitations: list[str] = Field(default_factory=list)
+
+
+class PlatformSupport(StrictModel):
+    platform: Literal["linux", "macos", "windows"]
+    status: Literal["verified", "ci-configured", "unverified"]
+    limitations: list[str] = Field(default_factory=list)
+
+
+class ReleaseSupportMatrix(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    release: str = Field(min_length=1)
+    adapters: list[FrameworkAdapterCapability] = Field(min_length=1)
+    hosts: list[HostSupport] = Field(min_length=1)
+    platforms: list[PlatformSupport] = Field(min_length=1)
+    offline_runtime_network_required: Literal[False] = False
+    notes: list[str] = Field(default_factory=list)
+
+
+class OfflineBundleFile(StrictModel):
+    path: str = Field(min_length=1)
+    sha256: Sha256
+    size: int = Field(ge=0)
+
+
+class OfflineBundleManifest(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    bundle_id: Identifier
+    architecture_id: Identifier
+    source_snapshot_id: Identifier
+    exact_ir_digest: Sha256
+    source_execution: Literal[False] = False
+    network_required: Literal[False] = False
+    absolute_paths_redacted: bool
+    files: list[OfflineBundleFile] = Field(min_length=1)
+
+
 class NodeKind(str, Enum):
     MODULE_CONTAINER = "module_container"
     OPERATOR = "operator"
@@ -1023,6 +1079,9 @@ SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "runtime-input-spec-v1.schema.json": RuntimeInputSpec,
     "runtime-trace-v1.schema.json": RuntimeTrace,
     "runtime-capability-report-v1.schema.json": RuntimeCapabilityReport,
+    "framework-adapter-capability-v1.schema.json": FrameworkAdapterCapability,
+    "release-support-matrix-v1.schema.json": ReleaseSupportMatrix,
+    "offline-bundle-manifest-v1.schema.json": OfflineBundleManifest,
     "discrepancy-record-v1.schema.json": DiscrepancyRecord,
     "architecture-ir-v1.schema.json": ArchitectureIR,
     "pattern-pack-manifest-v1.schema.json": PatternPackManifest,

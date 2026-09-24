@@ -1,0 +1,94 @@
+{
+  "$defs": {
+    "OfflineBundleFile": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size": {
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path",
+        "sha256",
+        "size"
+      ],
+      "title": "OfflineBundleFile",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "absolute_paths_redacted": {
+      "title": "Absolute Paths Redacted",
+      "type": "boolean"
+    },
+    "architecture_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Architecture Id",
+      "type": "string"
+    },
+    "bundle_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Bundle Id",
+      "type": "string"
+    },
+    "exact_ir_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Exact Ir Digest",
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/OfflineBundleFile"
+      },
+      "minItems": 1,
+      "title": "Files",
+      "type": "array"
+    },
+    "network_required": {
+      "const": false,
+      "default": false,
+      "title": "Network Required",
+      "type": "boolean"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_execution": {
+      "const": false,
+      "default": false,
+      "title": "Source Execution",
+      "type": "boolean"
+    },
+    "source_snapshot_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Source Snapshot Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "bundle_id",
+    "architecture_id",
+    "source_snapshot_id",
+    "exact_ir_digest",
+    "absolute_paths_redacted",
+    "files"
+  ],
+  "title": "OfflineBundleManifest",
+  "type": "object"
+}

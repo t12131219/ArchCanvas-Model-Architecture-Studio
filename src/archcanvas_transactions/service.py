@@ -222,6 +222,8 @@ def prepare_transaction(
 ) -> tuple[SourceTransaction, TransactionReceipt]:
     artifact = Path(request.artifact_path).resolve()
     architecture, snapshot, evidence = _load_artifact(artifact)
+    if architecture.framework != "pytorch" or snapshot.framework != "pytorch":
+        raise ValueError("source transactions are currently verified only for PyTorch artifacts")
     _validate_snapshot(snapshot)
     project = Path(snapshot.project_root).resolve()
     node = next((item for item in architecture.nodes if item.node_id == request.target_node_id), None)

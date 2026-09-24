@@ -15,9 +15,15 @@ Start read-only. Resolve the repository, entrypoint, task branch, configuration,
 4. Preserve uncertainty as `unresolved`; never fill missing execution facts from a familiar model name.
 5. Run `archcanvas validate` on generated Exact IR and report the receipt and artifact paths.
 
+For non-PyTorch source, pass an explicit `--framework keras`, `--framework jax`, or
+`--framework onnx`. Python source adapters remain static and must not import the target framework.
+Read the matching framework reference before interpreting unsupported syntax or capability limits.
+
 Read [references/evidence-contract.md](references/evidence-contract.md) when resolving conflicts, reviewing provenance, or adding an adapter.
 Read [references/pattern-pack-contract.md](references/pattern-pack-contract.md) when enabling a
 workspace pack, reviewing a generated candidate, or interpreting an ambiguous match.
+Read [references/offline-release.md](references/offline-release.md) before installing the skill or
+creating a portable `.archcanvas` bundle.
 
 ## Editing boundary
 

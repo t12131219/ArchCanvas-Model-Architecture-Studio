@@ -11,6 +11,12 @@ group and is not imported by static analysis. Runtime receipts record the exact 
 CUDA build, CUDA availability, and selected device instead of inferring accelerator support from a
 CUDA-tagged package version.
 
+Stage 9 optionally uses the official ONNX Python package to parse, check, and infer shapes for
+ModelProto fixtures. It is declared in the `cross-framework` optional dependency group. The ONNX
+adapter disables external tensor loading and never executes the graph. Keras and JAX static
+fixtures are parsed as source text; TensorFlow, Keras, JAX, Flax, and Haiku are not dependencies and
+are not imported during analysis.
+
 `fixtures/tier_a/autoformer/` contains four unmodified source files from THUML Autoformer revision `51c7d416ae120b805fd5beef2f4ccf7de496a6ff`, used only as a deterministic static-analysis fixture. The upstream project is MIT licensed; the preserved license and archive/member SHA-256 values are stored beside the fixture.
 
 `fixtures/tier_a/itransformer/` contains three unmodified source files from THUML iTransformer revision `c2426e68ca13f74aaec08045c5c724d8ad328124`, used only as a deterministic static-analysis fixture. The upstream project is MIT licensed; the preserved license and archive/member SHA-256 values are stored beside the fixture.
