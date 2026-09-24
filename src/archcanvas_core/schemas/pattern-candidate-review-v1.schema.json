@@ -1,0 +1,214 @@
+{
+  "$defs": {
+    "SemanticAnnotation": {
+      "additionalProperties": false,
+      "properties": {
+        "annotation_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Annotation Id",
+          "type": "string"
+        },
+        "canonical_node_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Canonical Node Ids",
+          "type": "array"
+        },
+        "glyph": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Glyph"
+        },
+        "group_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group Id"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "layout_family": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Layout Family"
+        },
+        "pack_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Pack Id",
+          "type": "string"
+        },
+        "predicate_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Predicate Ids",
+          "type": "array"
+        },
+        "recommended_level": {
+          "anyOf": [
+            {
+              "enum": [
+                "L1",
+                "L2",
+                "L3",
+                "L4"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recommended Level"
+        },
+        "semantic_role": {
+          "minLength": 1,
+          "title": "Semantic Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "annotation_id",
+        "pack_id",
+        "canonical_node_ids",
+        "semantic_role",
+        "predicate_ids"
+      ],
+      "title": "SemanticAnnotation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "activated": {
+      "const": false,
+      "default": false,
+      "title": "Activated",
+      "type": "boolean"
+    },
+    "counterexample_risks": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Counterexample Risks",
+      "type": "array"
+    },
+    "exact_ir_digest_after": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Exact Ir Digest After",
+      "type": "string"
+    },
+    "exact_ir_digest_before": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Exact Ir Digest Before",
+      "type": "string"
+    },
+    "match_basis": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Match Basis",
+      "type": "array"
+    },
+    "match_status": {
+      "enum": [
+        "candidate-match",
+        "rejected"
+      ],
+      "title": "Match Status",
+      "type": "string"
+    },
+    "pack_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Pack Id",
+      "type": "string"
+    },
+    "permissions": {
+      "additionalProperties": {
+        "type": "boolean"
+      },
+      "propertyNames": {
+        "enum": [
+          "shell",
+          "network",
+          "source_write"
+        ]
+      },
+      "title": "Permissions",
+      "type": "object"
+    },
+    "preview_annotations": {
+      "items": {
+        "$ref": "#/$defs/SemanticAnnotation"
+      },
+      "title": "Preview Annotations",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "status": {
+      "const": "preview-only",
+      "default": "preview-only",
+      "title": "Status",
+      "type": "string"
+    },
+    "unproven_predicates": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Unproven Predicates",
+      "type": "array"
+    }
+  },
+  "required": [
+    "pack_id",
+    "match_status",
+    "exact_ir_digest_before",
+    "exact_ir_digest_after"
+  ],
+  "title": "PatternCandidateReview",
+  "type": "object"
+}

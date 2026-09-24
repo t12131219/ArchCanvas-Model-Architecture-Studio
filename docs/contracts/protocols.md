@@ -24,7 +24,12 @@ All persisted documents use a `schema_version` with major/minor semantics. A rea
    geometry as semantic evidence.
 10. `SourceTransaction` persists the original revision and hashes, exact anchor fingerprint, isolated
    project copy, unified diff, expected/observed deltas, gates, diagnostics, and state.
-11. `CommandReceipt` and `TransactionReceipt` report command status, artifacts, gates, structured
+11. `PatternPackManifest` defines ordered structural, dataflow, shape, sharing/control-flow, and
+   weak-name predicates. A pack reads Exact IR and emits only `SemanticAnnotationOverlay`.
+   `PatternPackReceipt` records every loaded pack, match or rejection reason, selection, and the
+   Exact IR digest before and after. `PatternCandidateReview` is preview-only and grants no shell,
+   network, or source-write permission.
+12. `CommandReceipt` and `TransactionReceipt` report command status, artifacts, gates, structured
    diagnostics, and whether a source write occurred.
 
 Canonical identifiers derive from source symbol, callsite, logical path, repeat/branch identity, and sharing identity. Renderer coordinates and list ordering are never identity inputs.
@@ -38,6 +43,20 @@ architecture/source snapshot pair plus an explicit input spec, runs in a separat
 publishes `runtime-trace.json`, `runtime-evidence-ledger.json`, a node-evidence overlay, capability
 report, and receipt. Runtime failure leaves the static bundle usable and emits failed/skipped gates
 without claiming runtime-confirmed evidence.
+
+## Pattern Pack behavior
+
+Matching order is fixed: structural hard constraints, dataflow/ports, shape/axes,
+sharing/control-flow, then weak names. A failed hard constraint sets the score to zero; weak names
+cannot rescue it. Equal unresolved winners or conflicting builtin/workspace annotations produce
+`ambiguous_pattern` and a generic overlay. Packs cannot create, delete, reconnect, or rewrite any
+canonical execution fact.
+
+Builtin manifests ship as package data. Workspace manifests are loaded only from an explicitly
+named path with an exact digest lock; when a builtin also matches, a workspace manifest must have
+more required hard predicates and must not conflict. A session candidate participates in review
+only and never enters selection. Declarative JSON is the only third-party format accepted in this
+stage; a colocated executable `matcher.py` is rejected.
 
 ## Source transaction behavior
 

@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "pack_id": "timemixer-multiscale",
+  "version": "1.0.0",
+  "authors": ["ArchCanvas maintainers"],
+  "license": "Apache-2.0",
+  "pack_digest": "a01e1754eb02c7112783bd6e9a1270ce6bda4dd7a8cc2c191330acdea5f6b14e",
+  "distribution": "builtin",
+  "supported_ir_versions": ["1.0"],
+  "supported_adapter_versions": [">=0.3,<1"],
+  "required": [
+    {"predicate_id": "scale-facts", "stage": "structure", "fact": "node-attribute", "field": "scale_index", "operator": "exists", "min_count": 12},
+    {"predicate_id": "bottom-up-mixing", "stage": "structure", "fact": "node-attribute", "field": "direction", "value": "high-resolution-to-low-resolution"},
+    {"predicate_id": "multiscale-shapes", "stage": "shape", "fact": "shape-axis", "operator": "contains", "value": "L/", "min_count": 4},
+    {"predicate_id": "scale-repeat", "stage": "sharing-control", "fact": "repeat-kind", "value": "scale"}
+  ],
+  "optional": [{"predicate_id": "scale-name", "stage": "weak-name", "fact": "name-hint", "operator": "contains", "value": "scale"}],
+  "forbidden": [],
+  "score": {"required_weight": 0.7, "optional_weight": 0.25, "weak_name_weight": 0.05, "minimum": 0.7},
+  "ambiguity_policy": "generic",
+  "fallback_policy": "generic",
+  "known_limitations": ["Requires explicit scale indices and bidirectional scale-mixing facts."],
+  "annotations": [
+    {"rule_id": "scale-members", "selector": {"predicate_id": "scale-selector", "stage": "structure", "fact": "node-attribute", "field": "scale_index", "operator": "exists", "min_count": 12}, "semantic_role": "multiscale branch", "group_id": "group:multiscale", "recommended_level": "L2", "glyph": "container", "layout_family": "multiscale-ladder", "label": "Scale branch"}
+  ],
+  "tests": {"positive": ["tier_a/timemixer"], "negative": ["tier_a/autoformer"], "mutation": ["remove scale repeat"], "digest_invariance": ["exact IR before/after"]}
+}

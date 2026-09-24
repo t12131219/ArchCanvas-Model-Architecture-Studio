@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import importlib.metadata
 import json
 import platform
@@ -20,11 +19,18 @@ from archcanvas_core.models import (
     EvidenceRecord,
     GateResult,
     ProposedConnection,
+    SemanticAnnotationOverlay,
     SemanticParameterPatch,
     SemanticStructuralPatch,
     SourceSnapshot,
 )
 from archcanvas_core.validation import validate_architecture
+from archcanvas_patterns import (
+    apply_pattern_packs,
+    build_candidate_reviews,
+    exact_ir_digest,
+    load_registry,
+)
 from archcanvas_publication import (
     build_scene,
     build_visual_spec,
@@ -97,6 +103,19 @@ def _invalid(command: str, code: str, message: str) -> CommandReceipt:
         exit_code=2,
         diagnostics=[Diagnostic(code=code, severity="blocking", message=message)],
     )
+
+
+def _semantic_overlay(artifact: Path, architecture: ArchitectureIR) -> SemanticAnnotationOverlay | None:
+    path = artifact.parent / "semantic-annotation-overlay.json"
+    if not path.is_file():
+        return None
+    overlay = SemanticAnnotationOverlay.model_validate_json(path.read_text(encoding="utf-8"))
+    if (
+        overlay.architecture_id != architecture.architecture_id
+        or overlay.exact_ir_digest != exact_ir_digest(architecture)
+    ):
+        raise ValueError("semantic annotation overlay binding is stale")
+    return overlay
 
 
 def _unavailable(command: str, capability: str) -> CommandReceipt:
@@ -184,6 +203,7 @@ def doctor() -> CommandReceipt:
                 "source_transactions": "available-parameter+registered-structural",
                 "structural_transforms": sorted(TRANSFORM_REGISTRY),
                 "agent_proposal": "available-no-execution-permissions",
+                "pattern_packs": "available-declarative+builtin+locked-workspace+candidate-preview",
             },
             "runtime_packages": {"torch": torch_version},
         },
@@ -208,13 +228,6 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
         bundle.snapshot,
     )
     out = args.out.resolve()
-    profile = "generic" if args.no_pattern_packs else bundle.snapshot.resolved_config.get(
-        "architecture_profile"
-    ) or (
-        "transformer-l3"
-        if bundle.architecture.entrypoint.rsplit(":", 1)[-1].lower() == "transformer"
-        else "generic"
-    )
     artifacts = {
         "source_snapshot": str(out / "source-snapshot.json"),
         "evidence_ledger": str(out / "evidence-ledger.json"),
@@ -226,6 +239,7 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
         "capability_report": str(out / "capability-report.json"),
         "semantic_overlay": str(out / "semantic-annotation-overlay.json"),
         "pattern_receipt": str(out / "pattern-pack-receipt.json"),
+        "pattern_candidate_review": str(out / "pattern-candidate-review.json"),
         "source_correction_report": str(out / "source-correction-report.json"),
         "runtime_receipt": str(out / "runtime-receipt.json"),
         "architecture": str(out / "architecture.json"),
@@ -240,6 +254,24 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
             diagnostics=diagnostics,
             details={"writes_performed": False},
         )
+    registry = load_registry(
+        workspace_paths=args.pattern_workspace,
+        workspace_locks=args.pattern_lock,
+        candidate_paths=args.pattern_candidate,
+    )
+    semantic_overlay, pattern_receipt = apply_pattern_packs(
+        bundle.architecture,
+        registry,
+        enabled=not args.no_pattern_packs,
+    )
+    candidate_reviews = build_candidate_reviews(bundle.architecture, registry)
+    profile = "generic" if args.no_pattern_packs else bundle.snapshot.resolved_config.get(
+        "architecture_profile"
+    ) or (
+        "transformer-l3"
+        if bundle.architecture.entrypoint.rsplit(":", 1)[-1].lower() == "transformer"
+        else "generic"
+    )
     _write_json(Path(artifacts["source_snapshot"]), bundle.snapshot)
     _write_json(Path(artifacts["evidence_ledger"]), bundle.evidence)
     _write_json(Path(artifacts["module_ledger"]), bundle.architecture.nodes)
@@ -265,40 +297,9 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
             "semantic_transforms": ["set_parameter", *sorted(TRANSFORM_REGISTRY)],
         },
     )
-    _write_json(
-        Path(artifacts["semantic_overlay"]),
-        {
-            "schema_version": "1.0",
-            "architecture_id": bundle.architecture.architecture_id,
-            "profile": profile,
-            "annotations": []
-            if args.no_pattern_packs
-            else [
-                {
-                    "node_id": node.node_id,
-                    "semantic_name": node.semantic_name,
-                    "evidence_ids": node.evidence_ids,
-                }
-                for node in bundle.architecture.nodes
-            ],
-        },
-    )
-    _write_json(
-        Path(artifacts["pattern_receipt"]),
-        {
-            "schema_version": "1.0",
-            "profile": profile,
-            "status": "disabled" if args.no_pattern_packs else "matched",
-            "source_execution": False,
-            "loaded_packs": [] if args.no_pattern_packs else [profile],
-            "exact_ir_digest_before": hashlib.sha256(
-                _compact(bundle.architecture).encode()
-            ).hexdigest(),
-            "exact_ir_digest_after": hashlib.sha256(
-                _compact(bundle.architecture).encode()
-            ).hexdigest(),
-        },
-    )
+    _write_json(Path(artifacts["semantic_overlay"]), semantic_overlay)
+    _write_json(Path(artifacts["pattern_receipt"]), pattern_receipt)
+    _write_json(Path(artifacts["pattern_candidate_review"]), candidate_reviews)
     _write_json(
         Path(artifacts["source_correction_report"]),
         {
@@ -335,6 +336,13 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
             "source_execution": False,
             "profile": profile,
             "pattern_packs_enabled": not args.no_pattern_packs,
+            "pattern_status": pattern_receipt.status,
+            "selected_pattern_packs": pattern_receipt.selected_pack_ids,
+            "candidate_pattern_packs": [
+                match.pack_id
+                for match in pattern_receipt.matches
+                if match.status == "candidate-match"
+            ],
             "node_count": len(bundle.architecture.nodes),
             "tensor_count": len(bundle.architecture.tensors),
             "edge_count": len(bundle.architecture.edges),
@@ -365,7 +373,7 @@ def validate(args: argparse.Namespace) -> CommandReceipt:
     publication_available = args.quality == "publication"
     if publication_available:
         gates = [gate for gate in gates if gate.gate != "C-publication-compilation"]
-        views = compile_views(ir)
+        views = compile_views(ir, _semantic_overlay(args.artifact, ir))
         publication_gates, publication_diagnostics = validate_publication(ir, views)
         gates.extend(publication_gates)
         diagnostics.extend(publication_diagnostics)
@@ -409,7 +417,8 @@ VIEW_ALIASES = {
 
 def render(args: argparse.Namespace) -> CommandReceipt:
     ir = ArchitectureIR.model_validate_json(args.artifact.read_text(encoding="utf-8"))
-    views = compile_views(ir)
+    overlay = _semantic_overlay(args.artifact, ir)
+    views = compile_views(ir, overlay)
     publication_gates, diagnostics = validate_publication(ir, views)
     if args.view == "all":
         selected = views
@@ -484,6 +493,7 @@ def render(args: argparse.Namespace) -> CommandReceipt:
             "pdf": "unavailable",
             "runtime_evidence": "skipped",
             "visual_review": "skipped",
+            "semantic_overlay": overlay.status if overlay is not None else "not-present",
         },
     )
     _write_json(Path(artifacts["render_receipt"]), receipt)
@@ -642,6 +652,9 @@ def build_parser() -> argparse.ArgumentParser:
     analyze_parser.add_argument("--mode", choices=("eval", "train"), required=True)
     analyze_parser.add_argument("--out", type=Path, required=True)
     analyze_parser.add_argument("--no-pattern-packs", action="store_true")
+    analyze_parser.add_argument("--pattern-workspace", type=Path, action="append", default=[])
+    analyze_parser.add_argument("--pattern-lock", action="append", default=[])
+    analyze_parser.add_argument("--pattern-candidate", type=Path, action="append", default=[])
     analyze_parser.add_argument("--json", action="store_true")
     validate_parser = subparsers.add_parser("validate")
     validate_parser.add_argument("artifact", type=Path)

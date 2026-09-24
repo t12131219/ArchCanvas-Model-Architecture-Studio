@@ -1,0 +1,386 @@
+{
+  "$defs": {
+    "PatternAnnotationRule": {
+      "additionalProperties": false,
+      "properties": {
+        "glyph": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Glyph"
+        },
+        "group_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group Id"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "layout_family": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Layout Family"
+        },
+        "recommended_level": {
+          "anyOf": [
+            {
+              "enum": [
+                "L1",
+                "L2",
+                "L3",
+                "L4"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recommended Level"
+        },
+        "rule_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Rule Id",
+          "type": "string"
+        },
+        "selector": {
+          "$ref": "#/$defs/PatternPredicate"
+        },
+        "semantic_role": {
+          "minLength": 1,
+          "title": "Semantic Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "rule_id",
+        "selector",
+        "semantic_role"
+      ],
+      "title": "PatternAnnotationRule",
+      "type": "object"
+    },
+    "PatternDistribution": {
+      "enum": [
+        "builtin",
+        "workspace",
+        "session-candidate"
+      ],
+      "title": "PatternDistribution",
+      "type": "string"
+    },
+    "PatternPredicate": {
+      "additionalProperties": false,
+      "properties": {
+        "fact": {
+          "enum": [
+            "node-kind",
+            "node-attribute",
+            "edge-type",
+            "edge-route",
+            "shape-axis",
+            "repeat-kind",
+            "execution-predicate",
+            "name-hint"
+          ],
+          "title": "Fact",
+          "type": "string"
+        },
+        "field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Field"
+        },
+        "min_count": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Min Count",
+          "type": "integer"
+        },
+        "operator": {
+          "default": "equals",
+          "enum": [
+            "equals",
+            "contains",
+            "exists"
+          ],
+          "title": "Operator",
+          "type": "string"
+        },
+        "predicate_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Predicate Id",
+          "type": "string"
+        },
+        "stage": {
+          "$ref": "#/$defs/PatternStage"
+        },
+        "value": {
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "predicate_id",
+        "stage",
+        "fact"
+      ],
+      "title": "PatternPredicate",
+      "type": "object"
+    },
+    "PatternScore": {
+      "additionalProperties": false,
+      "properties": {
+        "minimum": {
+          "default": 0.7,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Minimum",
+          "type": "number"
+        },
+        "optional_weight": {
+          "default": 0.25,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Optional Weight",
+          "type": "number"
+        },
+        "required_weight": {
+          "default": 0.7,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Required Weight",
+          "type": "number"
+        },
+        "weak_name_weight": {
+          "default": 0.05,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Weak Name Weight",
+          "type": "number"
+        }
+      },
+      "title": "PatternScore",
+      "type": "object"
+    },
+    "PatternStage": {
+      "enum": [
+        "structure",
+        "dataflow",
+        "shape",
+        "sharing-control",
+        "weak-name"
+      ],
+      "title": "PatternStage",
+      "type": "string"
+    },
+    "PatternTestInventory": {
+      "additionalProperties": false,
+      "properties": {
+        "digest_invariance": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Digest Invariance",
+          "type": "array"
+        },
+        "mutation": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Mutation",
+          "type": "array"
+        },
+        "negative": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Negative",
+          "type": "array"
+        },
+        "positive": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Positive",
+          "type": "array"
+        }
+      },
+      "required": [
+        "positive",
+        "negative",
+        "mutation",
+        "digest_invariance"
+      ],
+      "title": "PatternTestInventory",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "ambiguity_policy": {
+      "const": "generic",
+      "default": "generic",
+      "title": "Ambiguity Policy",
+      "type": "string"
+    },
+    "annotations": {
+      "items": {
+        "$ref": "#/$defs/PatternAnnotationRule"
+      },
+      "title": "Annotations",
+      "type": "array"
+    },
+    "authors": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Authors",
+      "type": "array"
+    },
+    "distribution": {
+      "$ref": "#/$defs/PatternDistribution"
+    },
+    "fallback_policy": {
+      "const": "generic",
+      "default": "generic",
+      "title": "Fallback Policy",
+      "type": "string"
+    },
+    "forbidden": {
+      "items": {
+        "$ref": "#/$defs/PatternPredicate"
+      },
+      "title": "Forbidden",
+      "type": "array"
+    },
+    "known_limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Known Limitations",
+      "type": "array"
+    },
+    "license": {
+      "minLength": 1,
+      "title": "License",
+      "type": "string"
+    },
+    "optional": {
+      "items": {
+        "$ref": "#/$defs/PatternPredicate"
+      },
+      "title": "Optional",
+      "type": "array"
+    },
+    "pack_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Pack Digest",
+      "type": "string"
+    },
+    "pack_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Pack Id",
+      "type": "string"
+    },
+    "required": {
+      "items": {
+        "$ref": "#/$defs/PatternPredicate"
+      },
+      "minItems": 1,
+      "title": "Required",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "score": {
+      "$ref": "#/$defs/PatternScore"
+    },
+    "supported_adapter_versions": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Supported Adapter Versions",
+      "type": "array"
+    },
+    "supported_ir_versions": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Supported Ir Versions",
+      "type": "array"
+    },
+    "tests": {
+      "$ref": "#/$defs/PatternTestInventory"
+    },
+    "version": {
+      "minLength": 1,
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "pack_id",
+    "version",
+    "authors",
+    "license",
+    "pack_digest",
+    "distribution",
+    "supported_ir_versions",
+    "supported_adapter_versions",
+    "required",
+    "tests"
+  ],
+  "title": "PatternPackManifest",
+  "type": "object"
+}

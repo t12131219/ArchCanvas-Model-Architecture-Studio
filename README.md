@@ -69,6 +69,14 @@ Use `--no-pattern-packs` to force source-only generic recovery. Unsupported cont
 preserved as an `opaque_composite` with explicit boundary ports and unresolved status instead of
 being filled with model-specific assumptions.
 
+Pattern Packs run only after Exact IR is complete. Builtin packs are declarative manifests;
+workspace packs require both an explicit `--pattern-workspace PATH` and
+`--pattern-lock PACK_ID=SHA256`. Use `--pattern-candidate PATH` to produce a preview-only candidate
+review. Candidates are never installed or activated, executable workspace matchers are rejected,
+and every receipt records the unchanged Exact IR digest before and after matching. The semantic
+overlay is consumed by publication and Studio as optional metadata without changing canonical
+nodes, tensors, edges, or ports.
+
 ## Current support
 
 | Capability | Status |
@@ -89,5 +97,7 @@ being filled with model-specific assumptions.
 | Safe parameter source transactions | Available for exact config and Python literal anchors |
 | Structural source transactions | Activation replacement and sequential LayerNorm insertion |
 | Proposed Connection and AgentProposal | Available; handoff grants no shell, network, or source-write permission |
+| Declarative Pattern Packs | Builtin registry, digest-locked workspace packs, preview-only candidates |
+| Holdout generalization | Source-only residual forecaster passes semantic/publication/geometry gates |
 
 See [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md), and [docs/contracts/protocols.md](docs/contracts/protocols.md).

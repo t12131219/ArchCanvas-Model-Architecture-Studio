@@ -1,0 +1,185 @@
+{
+  "$defs": {
+    "PatternDistribution": {
+      "enum": [
+        "builtin",
+        "workspace",
+        "session-candidate"
+      ],
+      "title": "PatternDistribution",
+      "type": "string"
+    },
+    "PatternMatch": {
+      "additionalProperties": false,
+      "properties": {
+        "distribution": {
+          "$ref": "#/$defs/PatternDistribution"
+        },
+        "matched_canonical_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Matched Canonical Ids",
+          "type": "array"
+        },
+        "matched_predicate_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Matched Predicate Ids",
+          "type": "array"
+        },
+        "pack_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Pack Id",
+          "type": "string"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "score": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Score",
+          "type": "number"
+        },
+        "status": {
+          "enum": [
+            "matched",
+            "rejected",
+            "ambiguous",
+            "candidate-match"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "pack_id",
+        "distribution",
+        "status",
+        "score"
+      ],
+      "title": "PatternMatch",
+      "type": "object"
+    },
+    "PatternPackLoad": {
+      "additionalProperties": false,
+      "properties": {
+        "digest": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Digest",
+          "type": "string"
+        },
+        "distribution": {
+          "$ref": "#/$defs/PatternDistribution"
+        },
+        "locked": {
+          "title": "Locked",
+          "type": "boolean"
+        },
+        "pack_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Pack Id",
+          "type": "string"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "pack_id",
+        "version",
+        "digest",
+        "distribution",
+        "source",
+        "locked"
+      ],
+      "title": "PatternPackLoad",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "architecture_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Architecture Id",
+      "type": "string"
+    },
+    "exact_ir_digest_after": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Exact Ir Digest After",
+      "type": "string"
+    },
+    "exact_ir_digest_before": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Exact Ir Digest Before",
+      "type": "string"
+    },
+    "loaded_packs": {
+      "items": {
+        "$ref": "#/$defs/PatternPackLoad"
+      },
+      "title": "Loaded Packs",
+      "type": "array"
+    },
+    "matches": {
+      "items": {
+        "$ref": "#/$defs/PatternMatch"
+      },
+      "title": "Matches",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "selected_pack_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Selected Pack Ids",
+      "type": "array"
+    },
+    "source_execution": {
+      "const": false,
+      "default": false,
+      "title": "Source Execution",
+      "type": "boolean"
+    },
+    "status": {
+      "enum": [
+        "disabled",
+        "generic",
+        "matched",
+        "ambiguous"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "architecture_id",
+    "status",
+    "exact_ir_digest_before",
+    "exact_ir_digest_after"
+  ],
+  "title": "PatternPackReceipt",
+  "type": "object"
+}

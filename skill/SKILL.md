@@ -16,6 +16,8 @@ Start read-only. Resolve the repository, entrypoint, task branch, configuration,
 5. Run `archcanvas validate` on generated Exact IR and report the receipt and artifact paths.
 
 Read [references/evidence-contract.md](references/evidence-contract.md) when resolving conflicts, reviewing provenance, or adding an adapter.
+Read [references/pattern-pack-contract.md](references/pattern-pack-contract.md) when enabling a
+workspace pack, reviewing a generated candidate, or interpreting an ambiguous match.
 
 ## Editing boundary
 

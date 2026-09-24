@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "pack_id": "itransformer-variable-token",
+  "version": "1.0.0",
+  "authors": ["ArchCanvas maintainers"],
+  "license": "Apache-2.0",
+  "pack_digest": "590b7a4250097a380a091212eeaac577df772a6d36bd9d8423f468ca5da6d0a0",
+  "distribution": "builtin",
+  "supported_ir_versions": ["1.0"],
+  "supported_adapter_versions": [">=0.3,<1"],
+  "required": [
+    {"predicate_id": "internal-axis-transform", "stage": "structure", "fact": "node-attribute", "field": "internal_axis_transform", "value": true},
+    {"predicate_id": "token-shape", "stage": "shape", "fact": "shape-axis", "operator": "contains", "value": "N+M", "min_count": 2},
+    {"predicate_id": "encoder-repeat", "stage": "sharing-control", "fact": "repeat-kind", "value": "stack"}
+  ],
+  "optional": [{"predicate_id": "variable-token-name", "stage": "weak-name", "fact": "name-hint", "operator": "contains", "value": "variable-token"}],
+  "forbidden": [{"predicate_id": "residual-route", "stage": "dataflow", "fact": "edge-type", "value": "residual"}],
+  "score": {"required_weight": 0.7, "optional_weight": 0.25, "weak_name_weight": 0.05, "minimum": 0.7},
+  "ambiguity_policy": "generic",
+  "fallback_policy": "generic",
+  "known_limitations": ["Only matches explicit variable-token axis inversion."],
+  "annotations": [
+    {"rule_id": "axis-inversion", "selector": {"predicate_id": "axis-selector", "stage": "structure", "fact": "node-attribute", "field": "internal_axis_transform", "value": true}, "semantic_role": "variable-token axis inversion", "group_id": "group:variable-token", "recommended_level": "L3", "glyph": "operator", "layout_family": "single-lane", "label": "Variable tokens"}
+  ],
+  "tests": {"positive": ["tier_a/itransformer"], "negative": ["tier_a/patchtst"], "mutation": ["remove axis transform"], "digest_invariance": ["exact IR before/after"]}
+}

@@ -10,7 +10,9 @@ from archcanvas_core.models import (
     PublicationEdge,
     PublicationNode,
     PublicationView,
+    SemanticAnnotationOverlay,
 )
+from archcanvas_patterns import exact_ir_digest
 
 LEVEL_NAMES = {
     "L1": "Paper overview",
@@ -106,9 +108,18 @@ def _group_label(nodes: list[ArchitectureNode], key: str) -> str:
     return friendly.title()
 
 
-def compile_publication(ir: ArchitectureIR, level: str) -> PublicationView:
+def compile_publication(
+    ir: ArchitectureIR,
+    level: str,
+    overlay: SemanticAnnotationOverlay | None = None,
+) -> PublicationView:
     if level not in LEVEL_NAMES:
         raise ValueError(f"unsupported publication level: {level}")
+    if overlay is not None and (
+        overlay.architecture_id != ir.architecture_id
+        or overlay.exact_ir_digest != exact_ir_digest(ir)
+    ):
+        raise ValueError("semantic annotation overlay binding is stale")
     profile = _profile(ir)
     executable_nodes = [node for node in ir.nodes if node.kind is not NodeKind.REFERENCE_ONLY]
     executable_ids = {node.node_id for node in executable_nodes}
@@ -146,6 +157,11 @@ def compile_publication(ir: ArchitectureIR, level: str) -> PublicationView:
                 for port in [*member.input_ports, *member.output_ports]
             }
         )
+        semantic_annotations = [
+            annotation
+            for annotation in (overlay.annotations if overlay is not None else [])
+            if set(annotation.canonical_node_ids) & {member.node_id for member in members}
+        ]
         publication_nodes.append(
             PublicationNode(
                 view_node_id=view_node_id,
@@ -171,6 +187,19 @@ def compile_publication(ir: ArchitectureIR, level: str) -> PublicationView:
                     "canonical_count": len(members),
                     "source_kind": representative.kind.value,
                     "io": representative.attributes.get("io"),
+                    "semantic_annotations": [
+                        {
+                            "annotation_id": annotation.annotation_id,
+                            "pack_id": annotation.pack_id,
+                            "semantic_role": annotation.semantic_role,
+                            "group_id": annotation.group_id,
+                            "recommended_level": annotation.recommended_level,
+                            "glyph": annotation.glyph,
+                            "layout_family": annotation.layout_family,
+                            "label": annotation.label,
+                        }
+                        for annotation in semantic_annotations
+                    ],
                     "resolution": {
                         key: representative.attributes[key]
                         for key in (
@@ -251,5 +280,10 @@ def compile_publication(ir: ArchitectureIR, level: str) -> PublicationView:
     )
 
 
-def compile_views(ir: ArchitectureIR) -> list[PublicationView]:
-    return [compile_publication(ir, level) for level in ("L1", "L2", "L3", "L4")]
+def compile_views(
+    ir: ArchitectureIR,
+    overlay: SemanticAnnotationOverlay | None = None,
+) -> list[PublicationView]:
+    return [
+        compile_publication(ir, level, overlay) for level in ("L1", "L2", "L3", "L4")
+    ]

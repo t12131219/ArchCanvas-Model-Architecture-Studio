@@ -16,6 +16,7 @@ from archcanvas_core.models import (
     ProposedConnection,
     PublicationView,
     RuntimeTrace,
+    SemanticAnnotationOverlay,
     SemanticParameterPatch,
     SemanticStructuralPatch,
     SourceSnapshot,
@@ -23,6 +24,7 @@ from archcanvas_core.models import (
     VisualScene,
     VisualSpec,
 )
+from archcanvas_patterns import exact_ir_digest
 from archcanvas_publication import (
     build_scene,
     build_visual_spec,
@@ -71,6 +73,7 @@ class StudioBundle:
     evidence: list[EvidenceRecord]
     runtime_trace: RuntimeTrace | None
     runtime_node_evidence: dict[str, list[str]]
+    semantic_overlay: SemanticAnnotationOverlay | None
     views: dict[str, PublicationView]
     specs: dict[str, VisualSpec]
     base_scenes: dict[str, VisualScene]
@@ -104,6 +107,11 @@ class StudioBundle:
                     "node_evidence": self.runtime_node_evidence,
                 }
                 if self.runtime_trace is not None
+                else None
+            ),
+            "semantic_overlay": (
+                self.semantic_overlay.model_dump(mode="json")
+                if self.semantic_overlay is not None
                 else None
             ),
             "views": {
@@ -257,6 +265,19 @@ def prepare_studio_bundle(artifact: Path, workspace: Path) -> StudioBundle:
         if evidence_path.is_file()
         else []
     )
+    semantic_overlay_path = artifact.parent / "semantic-annotation-overlay.json"
+    semantic_overlay = (
+        SemanticAnnotationOverlay.model_validate_json(
+            semantic_overlay_path.read_text(encoding="utf-8")
+        )
+        if semantic_overlay_path.is_file()
+        else None
+    )
+    if semantic_overlay is not None and (
+        semantic_overlay.architecture_id != architecture.architecture_id
+        or semantic_overlay.exact_ir_digest != exact_ir_digest(architecture)
+    ):
+        raise ValueError("semantic annotation overlay binding is stale")
     runtime_trace_path = artifact.parent / "runtime-trace.json"
     runtime_evidence_path = artifact.parent / "runtime-evidence-ledger.json"
     runtime_overlay_path = artifact.parent / "runtime-evidence-overlay.json"
@@ -306,7 +327,7 @@ def prepare_studio_bundle(artifact: Path, workspace: Path) -> StudioBundle:
         ):
             raise ValueError("runtime evidence overlay references an unknown record")
         evidence.extend(runtime_evidence)
-    compiled_views = compile_views(architecture)
+    compiled_views = compile_views(architecture, semantic_overlay)
     views = {view.level: view for view in compiled_views}
     specs = {level: build_visual_spec(view) for level, view in views.items()}
     base_scenes = {
@@ -339,6 +360,7 @@ def prepare_studio_bundle(artifact: Path, workspace: Path) -> StudioBundle:
         evidence=evidence,
         runtime_trace=runtime_trace,
         runtime_node_evidence=runtime_node_evidence,
+        semantic_overlay=semantic_overlay,
         views=views,
         specs=specs,
         base_scenes=base_scenes,

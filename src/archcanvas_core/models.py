@@ -409,6 +409,207 @@ class ArchitectureIR(StrictModel):
     unresolved: list[UnresolvedFact] = Field(default_factory=list)
 
 
+class PatternDistribution(str, Enum):
+    BUILTIN = "builtin"
+    WORKSPACE = "workspace"
+    SESSION_CANDIDATE = "session-candidate"
+
+
+class PatternStage(str, Enum):
+    STRUCTURE = "structure"
+    DATAFLOW = "dataflow"
+    SHAPE = "shape"
+    SHARING_CONTROL = "sharing-control"
+    WEAK_NAME = "weak-name"
+
+
+class PatternPredicate(StrictModel):
+    predicate_id: Identifier
+    stage: PatternStage
+    fact: Literal[
+        "node-kind",
+        "node-attribute",
+        "edge-type",
+        "edge-route",
+        "shape-axis",
+        "repeat-kind",
+        "execution-predicate",
+        "name-hint",
+    ]
+    operator: Literal["equals", "contains", "exists"] = "equals"
+    field: str | None = None
+    value: Any = None
+    min_count: int = Field(default=1, ge=1)
+
+    @model_validator(mode="after")
+    def stage_matches_fact(self) -> PatternPredicate:
+        allowed = {
+            PatternStage.STRUCTURE: {"node-kind", "node-attribute"},
+            PatternStage.DATAFLOW: {"edge-type", "edge-route"},
+            PatternStage.SHAPE: {"shape-axis"},
+            PatternStage.SHARING_CONTROL: {"repeat-kind", "execution-predicate"},
+            PatternStage.WEAK_NAME: {"name-hint"},
+        }
+        if self.fact not in allowed[self.stage]:
+            raise ValueError(f"{self.fact} is not valid in the {self.stage.value} stage")
+        if self.fact == "node-attribute" and not self.field:
+            raise ValueError("node-attribute predicates require a field")
+        if self.operator != "exists" and self.value is None:
+            raise ValueError("non-existence predicates require a value")
+        return self
+
+
+class PatternScore(StrictModel):
+    required_weight: float = Field(default=0.7, ge=0, le=1)
+    optional_weight: float = Field(default=0.25, ge=0, le=1)
+    weak_name_weight: float = Field(default=0.05, ge=0, le=1)
+    minimum: float = Field(default=0.7, ge=0, le=1)
+
+    @model_validator(mode="after")
+    def weights_fit(self) -> PatternScore:
+        if self.required_weight + self.optional_weight + self.weak_name_weight > 1.000001:
+            raise ValueError("pattern score weights cannot exceed 1")
+        return self
+
+
+class PatternAnnotationRule(StrictModel):
+    rule_id: Identifier
+    selector: PatternPredicate
+    semantic_role: str = Field(min_length=1)
+    group_id: Identifier | None = None
+    recommended_level: Literal["L1", "L2", "L3", "L4"] | None = None
+    glyph: str | None = None
+    layout_family: str | None = None
+    label: str | None = None
+
+    @model_validator(mode="after")
+    def selector_is_not_a_name_hint(self) -> PatternAnnotationRule:
+        if self.selector.stage is PatternStage.WEAK_NAME:
+            raise ValueError("annotation selectors cannot rely on weak names")
+        return self
+
+
+class PatternTestInventory(StrictModel):
+    positive: list[str] = Field(min_length=1)
+    negative: list[str] = Field(min_length=1)
+    mutation: list[str] = Field(min_length=1)
+    digest_invariance: list[str] = Field(min_length=1)
+
+
+class PatternPackManifest(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    pack_id: Identifier
+    version: str = Field(min_length=1)
+    authors: list[str] = Field(min_length=1)
+    license: str = Field(min_length=1)
+    pack_digest: Sha256
+    distribution: PatternDistribution
+    supported_ir_versions: list[str] = Field(min_length=1)
+    supported_adapter_versions: list[str] = Field(min_length=1)
+    required: list[PatternPredicate] = Field(min_length=1)
+    optional: list[PatternPredicate] = Field(default_factory=list)
+    forbidden: list[PatternPredicate] = Field(default_factory=list)
+    score: PatternScore = Field(default_factory=PatternScore)
+    ambiguity_policy: Literal["generic"] = "generic"
+    fallback_policy: Literal["generic"] = "generic"
+    known_limitations: list[str] = Field(default_factory=list)
+    annotations: list[PatternAnnotationRule] = Field(default_factory=list)
+    tests: PatternTestInventory
+
+    @model_validator(mode="after")
+    def weak_hints_are_optional(self) -> PatternPackManifest:
+        if any(item.stage is PatternStage.WEAK_NAME for item in self.required):
+            raise ValueError("weak name hints cannot be required predicates")
+        return self
+
+
+class SemanticAnnotation(StrictModel):
+    annotation_id: Identifier
+    pack_id: Identifier
+    canonical_node_ids: list[Identifier] = Field(min_length=1)
+    semantic_role: str = Field(min_length=1)
+    group_id: Identifier | None = None
+    recommended_level: Literal["L1", "L2", "L3", "L4"] | None = None
+    glyph: str | None = None
+    layout_family: str | None = None
+    label: str | None = None
+    predicate_ids: list[Identifier] = Field(min_length=1)
+
+
+class SemanticAnnotationOverlay(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    architecture_id: Identifier
+    exact_ir_digest: Sha256
+    status: Literal["disabled", "generic", "matched", "ambiguous"]
+    applied_pack_ids: list[Identifier] = Field(default_factory=list)
+    annotations: list[SemanticAnnotation] = Field(default_factory=list)
+    reasons: list[str] = Field(default_factory=list)
+
+
+class PatternPackLoad(StrictModel):
+    pack_id: Identifier
+    version: str = Field(min_length=1)
+    digest: Sha256
+    distribution: PatternDistribution
+    source: str = Field(min_length=1)
+    locked: bool
+
+
+class PatternMatch(StrictModel):
+    pack_id: Identifier
+    distribution: PatternDistribution
+    status: Literal["matched", "rejected", "ambiguous", "candidate-match"]
+    score: float = Field(ge=0, le=1)
+    matched_predicate_ids: list[Identifier] = Field(default_factory=list)
+    matched_canonical_ids: list[Identifier] = Field(default_factory=list)
+    reasons: list[str] = Field(default_factory=list)
+
+
+class PatternPackReceipt(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    architecture_id: Identifier
+    status: Literal["disabled", "generic", "matched", "ambiguous"]
+    source_execution: Literal[False] = False
+    loaded_packs: list[PatternPackLoad] = Field(default_factory=list)
+    matches: list[PatternMatch] = Field(default_factory=list)
+    selected_pack_ids: list[Identifier] = Field(default_factory=list)
+    exact_ir_digest_before: Sha256
+    exact_ir_digest_after: Sha256
+
+    @model_validator(mode="after")
+    def exact_ir_is_invariant(self) -> PatternPackReceipt:
+        if self.exact_ir_digest_before != self.exact_ir_digest_after:
+            raise ValueError("Pattern Pack application changed the Exact IR digest")
+        return self
+
+
+class PatternCandidateReview(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    pack_id: Identifier
+    status: Literal["preview-only"] = "preview-only"
+    match_status: Literal["candidate-match", "rejected"]
+    match_basis: list[Identifier] = Field(default_factory=list)
+    unproven_predicates: list[Identifier] = Field(default_factory=list)
+    counterexample_risks: list[str] = Field(default_factory=list)
+    preview_annotations: list[SemanticAnnotation] = Field(default_factory=list)
+    exact_ir_digest_before: Sha256
+    exact_ir_digest_after: Sha256
+    activated: Literal[False] = False
+    permissions: dict[Literal["shell", "network", "source_write"], bool] = Field(
+        default_factory=lambda: {"shell": False, "network": False, "source_write": False}
+    )
+
+    @model_validator(mode="after")
+    def remains_a_preview(self) -> PatternCandidateReview:
+        if self.exact_ir_digest_before != self.exact_ir_digest_after:
+            raise ValueError("candidate preview changed the Exact IR digest")
+        if set(self.permissions) != {"shell", "network", "source_write"} or any(
+            self.permissions.values()
+        ):
+            raise ValueError("candidate review cannot grant permissions")
+        return self
+
+
 class PublicationNode(StrictModel):
     view_node_id: Identifier
     canonical_node_ids: list[Identifier] = Field(min_length=1)
@@ -824,6 +1025,10 @@ SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "runtime-capability-report-v1.schema.json": RuntimeCapabilityReport,
     "discrepancy-record-v1.schema.json": DiscrepancyRecord,
     "architecture-ir-v1.schema.json": ArchitectureIR,
+    "pattern-pack-manifest-v1.schema.json": PatternPackManifest,
+    "semantic-annotation-overlay-v1.schema.json": SemanticAnnotationOverlay,
+    "pattern-pack-receipt-v1.schema.json": PatternPackReceipt,
+    "pattern-candidate-review-v1.schema.json": PatternCandidateReview,
     "publication-view-v1.schema.json": PublicationView,
     "visual-spec-v1.schema.json": VisualSpec,
     "visual-scene-v1.schema.json": VisualScene,

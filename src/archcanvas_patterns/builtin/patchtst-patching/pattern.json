@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "pack_id": "patchtst-patching",
+  "version": "1.0.0",
+  "authors": ["ArchCanvas maintainers"],
+  "license": "Apache-2.0",
+  "pack_digest": "f0bddb5627b7964afe7b718d7e4545c4735787b53882dd13aec938ca9371e473",
+  "distribution": "builtin",
+  "supported_ir_versions": ["1.0"],
+  "supported_adapter_versions": [">=0.3,<1"],
+  "required": [
+    {"predicate_id": "unfold-branches", "stage": "structure", "fact": "node-attribute", "field": "operation", "value": "unfold", "min_count": 2},
+    {"predicate_id": "position-state", "stage": "structure", "fact": "node-kind", "value": "state", "min_count": 2},
+    {"predicate_id": "patch-axis", "stage": "shape", "fact": "shape-axis", "operator": "contains", "value": "Np", "min_count": 3},
+    {"predicate_id": "branch-repeats", "stage": "sharing-control", "fact": "repeat-kind", "value": "stack", "min_count": 2}
+  ],
+  "optional": [{"predicate_id": "patch-name", "stage": "weak-name", "fact": "name-hint", "operator": "contains", "value": "patch"}],
+  "forbidden": [],
+  "score": {"required_weight": 0.7, "optional_weight": 0.25, "weak_name_weight": 0.05, "minimum": 0.7},
+  "ambiguity_policy": "generic",
+  "fallback_policy": "generic",
+  "known_limitations": ["Requires patch-unfold facts for both decomposition branches."],
+  "annotations": [
+    {"rule_id": "patch-extraction", "selector": {"predicate_id": "unfold-selector", "stage": "structure", "fact": "node-attribute", "field": "operation", "value": "unfold", "min_count": 2}, "semantic_role": "patch extraction", "group_id": "group:patching", "recommended_level": "L2", "glyph": "operator", "layout_family": "dual-backbone", "label": "Patchify"}
+  ],
+  "tests": {"positive": ["tier_a/patchtst"], "negative": ["tier_a/itransformer"], "mutation": ["remove one unfold branch"], "digest_invariance": ["exact IR before/after"]}
+}
