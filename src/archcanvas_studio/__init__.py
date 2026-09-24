@@ -3,6 +3,7 @@
 from .bundle import StudioBundle, prepare_studio_bundle
 from .document import (
     apply_patch,
+    apply_patch_batch,
     create_canvas_document,
     derive_view_state,
     load_canvas_document,
@@ -16,6 +17,7 @@ from .document import (
 __all__ = [
     "StudioBundle",
     "apply_patch",
+    "apply_patch_batch",
     "create_canvas_document",
     "derive_view_state",
     "load_canvas_document",

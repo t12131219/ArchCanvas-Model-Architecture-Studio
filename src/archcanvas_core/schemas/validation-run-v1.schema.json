@@ -1,0 +1,201 @@
+{
+  "$defs": {
+    "Diagnostic": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "pattern": "^[A-Z][A-Z0-9_]+$",
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "blocking",
+            "warning",
+            "unresolved",
+            "suggestion"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "target_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Target Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code",
+        "severity",
+        "message"
+      ],
+      "title": "Diagnostic",
+      "type": "object"
+    },
+    "JobState": {
+      "enum": [
+        "queued",
+        "running",
+        "cancelling",
+        "succeeded",
+        "failed",
+        "cancelled",
+        "stale"
+      ],
+      "title": "JobState",
+      "type": "string"
+    },
+    "ValidationGateResult": {
+      "additionalProperties": false,
+      "properties": {
+        "gate": {
+          "minLength": 1,
+          "title": "Gate",
+          "type": "string"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "failed",
+            "skipped",
+            "unsupported",
+            "cancelled"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "target_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Target Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "gate",
+        "status",
+        "message"
+      ],
+      "title": "ValidationGateResult",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "coverage": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Coverage",
+      "type": "object"
+    },
+    "diagnostics": {
+      "items": {
+        "$ref": "#/$defs/Diagnostic"
+      },
+      "title": "Diagnostics",
+      "type": "array"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished At"
+    },
+    "gate_results": {
+      "items": {
+        "$ref": "#/$defs/ValidationGateResult"
+      },
+      "title": "Gate Results",
+      "type": "array"
+    },
+    "generation": {
+      "minimum": 1,
+      "title": "Generation",
+      "type": "integer"
+    },
+    "input_fingerprint": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Input Fingerprint",
+      "type": "string"
+    },
+    "profile": {
+      "enum": [
+        "fast-static",
+        "publication",
+        "full",
+        "runtime-replay"
+      ],
+      "title": "Profile",
+      "type": "string"
+    },
+    "runtime_execution_authorized": {
+      "default": false,
+      "title": "Runtime Execution Authorized",
+      "type": "boolean"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "started_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Started At"
+    },
+    "state": {
+      "$ref": "#/$defs/JobState"
+    },
+    "supported_fixes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Supported Fixes",
+      "type": "array"
+    },
+    "validation_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Validation Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "validation_id",
+    "profile",
+    "input_fingerprint",
+    "generation",
+    "state"
+  ],
+  "title": "ValidationRun",
+  "type": "object"
+}

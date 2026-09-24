@@ -31,6 +31,13 @@
           "title": "Capability Status",
           "type": "object"
         },
+        "forms": {
+          "items": {
+            "$ref": "#/$defs/FrameworkFormCapability"
+          },
+          "title": "Forms",
+          "type": "array"
+        },
         "framework": {
           "enum": [
             "pytorch",
@@ -133,6 +140,103 @@
         "source_transactions"
       ],
       "title": "FrameworkAdapterCapability",
+      "type": "object"
+    },
+    "FrameworkFormCapability": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_commit": {
+          "enum": [
+            "verified",
+            "experimental",
+            "partial",
+            "unavailable"
+          ],
+          "title": "Artifact Commit",
+          "type": "string"
+        },
+        "form_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Form Id",
+          "type": "string"
+        },
+        "form_name": {
+          "minLength": 1,
+          "title": "Form Name",
+          "type": "string"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "parameter_transaction": {
+          "enum": [
+            "verified",
+            "experimental",
+            "partial",
+            "unavailable"
+          ],
+          "title": "Parameter Transaction",
+          "type": "string"
+        },
+        "runtime": {
+          "enum": [
+            "verified",
+            "experimental",
+            "partial",
+            "unavailable"
+          ],
+          "title": "Runtime",
+          "type": "string"
+        },
+        "static": {
+          "enum": [
+            "verified",
+            "experimental",
+            "partial",
+            "unavailable"
+          ],
+          "title": "Static",
+          "type": "string"
+        },
+        "structural_transaction": {
+          "enum": [
+            "verified",
+            "experimental",
+            "partial",
+            "unavailable"
+          ],
+          "title": "Structural Transaction",
+          "type": "string"
+        },
+        "supported_targets": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Supported Targets",
+          "type": "array"
+        },
+        "verified_fixtures": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Verified Fixtures",
+          "type": "array"
+        }
+      },
+      "required": [
+        "form_id",
+        "form_name",
+        "static",
+        "runtime",
+        "parameter_transaction",
+        "structural_transaction",
+        "artifact_commit"
+      ],
+      "title": "FrameworkFormCapability",
       "type": "object"
     },
     "HostSupport": {

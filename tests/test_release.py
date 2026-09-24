@@ -51,8 +51,11 @@ def test_offline_bundle_is_redacted_self_contained_and_tamper_evident(
     assert {"C-publication", "D-geometry"} <= {gate.split("-")[0] + "-" + gate.split("-")[1] for gate in gates}
     verified = verify_bundle(output)
     assert verified == manifest
-    assert (output / "publication/l1/view.html").is_file()
-    assert (output / "publication/l4/scene.svg").is_file()
+    assert (output / "publication/hierarchy.json").is_file()
+    assert (output / "publication/collapsed/view.html").is_file()
+    assert (output / "publication/full/scene.svg").is_file()
+    assert (output / "publication/collapsed/scene.png").read_bytes().startswith(b"\x89PNG")
+    assert (output / "publication/full/scene.pdf").read_bytes().startswith(b"%PDF-")
     all_json = "\n".join(
         path.read_text(encoding="utf-8") for path in output.rglob("*.json")
     )
@@ -164,6 +167,13 @@ def test_installer_refuses_overwrite_and_support_matrix_is_honest(tmp_path: Path
     assert adapters["onnx"].capability_status["runtime"] == "experimental"
     assert adapters["onnx"].artifact_commit is True
     assert adapters["onnx"].capability_status["parameter_transaction"] == "partial"
+    assert {form.form_id for form in adapters["keras"].forms} >= {
+        "form:keras-subclass-call",
+        "form:keras-functional",
+    }
+    assert next(
+        form for form in adapters["onnx"].forms if form.form_id == "form:onnx-custom-op"
+    ).runtime == "unavailable"
 
 
 def test_skill_routing_eval_has_balanced_trigger_and_nontrigger_cases() -> None:

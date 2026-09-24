@@ -19,7 +19,9 @@ def release_support_matrix() -> ReleaseSupportMatrix:
                 host="claude-code-local",
                 status="installer-tested",
                 install_target=".claude/skills/archcanvas",
-                limitations=["Filesystem installer tested; Claude Code host execution not present in CI."],
+                limitations=[
+                    "Filesystem installer tested; no Claude Code executable is present on the current verification host."
+                ],
             ),
             HostSupport(
                 host="claude-api",
@@ -49,5 +51,7 @@ def release_support_matrix() -> ReleaseSupportMatrix:
             "Static analysis and artifact generation do not require network access.",
             "PyTorch remains the only framework with an entirely verified capability row.",
             "Keras, JAX, and ONNX report runtime and transaction status per declared form.",
+            "PNG and PDF are deterministically derived from the canonical SVG scene.",
+            "ONNX external-data artifact sets use digest freezing and service-level rollback.",
         ],
     )

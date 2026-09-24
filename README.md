@@ -70,8 +70,9 @@ archcanvas propose proposed-connection.json \
 `prepare` writes only to an isolated transaction copy. `verify` reparses, statically resolves local
 imports, reanalyzes Exact IR, requires an exact Expected/Observed Graph Delta match, checks
 shape/type invariants, runs the built-in compile check plus requested targeted tests, and recompiles
-L1-L4 scenes. Only a `review-ready` transaction can atomically replace the exact source/config file;
-stale revisions and concurrent modifications are rejected without fuzzy merging.
+the arbitrary-depth containment hierarchy plus collapsed and fully expanded projections. Only a `review-ready` transaction can replace the exact source/config artifact or
+managed ONNX artifact set under the rollback contract; stale revisions and concurrent changes to
+any member are rejected without fuzzy merging.
 
 `analyze` never imports the target project. It reads Python source, records file digests and source spans, and emits unresolved facts whenever the static subset cannot prove a claim.
 
@@ -119,24 +120,34 @@ archcanvas bundle verify build/model.archcanvas --json
 | Static module/call recovery | Generic fallback plus all five Tier A source profiles |
 | Evidence ledger and Exact IR | Available |
 | Semantic validation | Available |
-| L1-L4 publication compiler | Available |
+| Arbitrary-depth publication hierarchy | Available; stable frontier projections follow tree expansion |
 | Family and generic DAG layout | Available |
-| Canonical SVG and self-contained HTML | Available |
+| Canonical SVG, PNG, PDF and self-contained HTML | Available; binary formats derive from the same SVG scene |
 | Publication and geometry validation | Available |
 | Interactive visual-only Studio | Available |
+| Two navigation projections | Module/source trees share canonical selection; stable expansion directly derives the current frontier scene |
 | CanvasDocument persistence and history | Available |
+| Studio project discovery and analysis jobs | Static, generation-bound, cancellable |
+| PatchBatch multi-select/alignment/layout history | Available; atomic validation and one-step undo/redo |
+| Unified semantic search | Node, Tensor, Port, Edge, Evidence, Diagnostic |
+| Active validation profiles | Fast static, publication, full; runtime requires explicit authorization |
+| Draft intent proof status | Connection handoffs surface unproven/invalid blockers before writeback |
+| Arbitrary draft nodes | Authored as blocked, zero-permission proposals until an adapter lowering is proven |
+| Staged multi-file source editor | Unavailable until snapshots inventory transitive source files |
+| ONNX external-data atomic commit | Same-size initializer updates with whole-set freshness and service-level rollback |
 | Runtime tracing | PyTorch verified; Keras/JAX/ONNX adapters available with per-form status |
 | Runtime shape/dtype evidence and replay | PyTorch hooks, Keras layer calls, JAXPR/eval-shape, ONNX graph outputs |
+| Form-level capability matrix | Explicit Keras subclass/Functional/custom, JAX pure/Flax/transformed, ONNX standard/external/custom rows |
 | Safe parameter transactions | Python config/literal/Functional/Flax field and ONNX initializer/attribute anchors |
 | Structural transactions | PyTorch transforms; bounded Keras/JAX activation and Keras normalization; bounded ONNX node replacement |
 | Proposed Connection and AgentProposal | Available; handoff grants no shell, network, or source-write permission |
 | Declarative Pattern Packs | Builtin registry, digest-locked workspace packs, preview-only candidates |
-| Holdout generalization | Source-only residual forecaster passes semantic/publication/geometry gates |
+| Holdout generalization | Seven source-only families pass semantic/publication/geometry gates without dedicated packs |
 | Keras adapter | Partial: Functional/subclass static + runtime; parameter and two bounded structural lowerings |
 | JAX adapter | Partial: pure function/Flax static + JAXPR runtime; config/field and bounded activation transactions |
 | ONNX adapter | Partial: ModelProto static/runtime; initializer, attribute and bounded node transactions |
 | Local skill installers | Codex verified; Claude Code filesystem installer tested |
-| Offline review bundle | Redacted L1-L4 JSON/SVG/HTML with digest verification |
+| Offline review bundle | Redacted hierarchy plus collapsed/full JSON/SVG/PNG/PDF/HTML with digest verification |
 
 See [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md),
 [docs/contracts/protocols.md](docs/contracts/protocols.md), and

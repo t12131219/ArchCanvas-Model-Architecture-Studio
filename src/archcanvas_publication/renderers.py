@@ -116,7 +116,16 @@ def _edge_svg(scene: VisualScene) -> str:
 
 def render_svg(scene: VisualScene) -> str:
     roots = [node for node in scene.nodes if node.parent_scene_node_id is None]
-    children = [node for node in scene.nodes if node.parent_scene_node_id is not None]
+    containers = [
+        node
+        for node in scene.nodes
+        if node.parent_scene_node_id is not None and node.shape == "container"
+    ]
+    children = [
+        node
+        for node in scene.nodes
+        if node.parent_scene_node_id is not None and node.shape != "container"
+    ]
     content = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         (
@@ -142,6 +151,9 @@ def render_svg(scene: VisualScene) -> str:
         f'<rect class="paper" width="{scene.paper_width:.1f}" height="{scene.paper_height:.1f}" fill="#ffffff"/>',
         '<g id="scene-root">',
         *(_node_svg(node) for node in roots),
+        '<g class="container-layer">',
+        *(_node_svg(node) for node in containers),
+        "</g>",
         '<g class="edge-layer">',
         _edge_svg(scene),
         "</g>",
@@ -152,6 +164,24 @@ def render_svg(scene: VisualScene) -> str:
         "</svg>",
     ]
     return "\n".join(content) + "\n"
+
+
+def render_png(scene: VisualScene) -> bytes:
+    """Rasterize the canonical SVG without introducing a second scene renderer."""
+    import cairosvg
+
+    return cairosvg.svg2png(
+        bytestring=render_svg(scene).encode("utf-8"),
+        output_width=round(scene.paper_width),
+        output_height=round(scene.paper_height),
+    )
+
+
+def render_pdf(scene: VisualScene) -> bytes:
+    """Convert the canonical SVG to a standalone single-page PDF."""
+    import cairosvg
+
+    return cairosvg.svg2pdf(bytestring=render_svg(scene).encode("utf-8"))
 
 
 def render_html(scene: VisualScene, view: PublicationView, spec: VisualSpec) -> str:
@@ -196,7 +226,7 @@ body.dark .canvas .paper{{fill:#f8fafc}}
 <body>
 <main class="app">
   <header class="toolbar">
-    <div class="brand">ArchCanvas</div><div class="view-name">{html.escape(view.level)} · {html.escape(view.name)}</div>
+    <div class="brand">ArchCanvas</div><div class="view-name">Depth {view.visible_depth}/{view.max_depth} · {html.escape(view.name)}</div>
     <div class="search"><input id="search" type="search" aria-label="Search architecture" placeholder="Search"><button id="search-go" title="Search" aria-label="Search">⌕</button></div>
     <button id="upstream" title="Show upstream" aria-label="Show upstream">←</button>
     <button id="downstream" title="Show downstream" aria-label="Show downstream">→</button>

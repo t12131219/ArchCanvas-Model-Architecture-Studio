@@ -13,7 +13,7 @@
   graph-delta validation, tests, review, and the terminal commit/discard/failure state.
 - Ordered verification for syntax, static relative imports, Exact IR, semantic closure, exact graph
   delta, shape/type invariants, built-in compile plus requested targeted tests, optional Stage 5
-  runtime replay, and L1-L4 publication/geometry recompilation.
+  runtime replay, and arbitrary-depth hierarchy/frontier publication/geometry recompilation.
 - Atomic commit with source revision/hash recheck, no fuzzy merge, post-commit reanalysis, and byte
   restoration if the commit path fails.
 - Studio Model Inspector for current value/provenance, target value, transform type, affected graph

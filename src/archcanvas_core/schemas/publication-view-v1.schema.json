@@ -114,7 +114,6 @@
             "pattern": "^[a-z][a-z0-9._:-]*$",
             "type": "string"
           },
-          "minItems": 1,
           "title": "Canonical Node Ids",
           "type": "array"
         },
@@ -159,7 +158,6 @@
       },
       "required": [
         "view_node_id",
-        "canonical_node_ids",
         "semantic_name",
         "kind",
         "collapsed"
@@ -223,6 +221,29 @@
       "title": "Edges",
       "type": "array"
     },
+    "expanded_node_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Expanded Node Ids",
+      "type": "array"
+    },
+    "frontier_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Frontier Digest",
+      "type": "string"
+    },
+    "fully_expanded": {
+      "default": false,
+      "title": "Fully Expanded",
+      "type": "boolean"
+    },
+    "hierarchy_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Hierarchy Id",
+      "type": "string"
+    },
     "layout_family": {
       "enum": [
         "dual-lane",
@@ -234,15 +255,10 @@
       "title": "Layout Family",
       "type": "string"
     },
-    "level": {
-      "enum": [
-        "L1",
-        "L2",
-        "L3",
-        "L4"
-      ],
-      "title": "Level",
-      "type": "string"
+    "max_depth": {
+      "minimum": 0,
+      "title": "Max Depth",
+      "type": "integer"
     },
     "name": {
       "minLength": 1,
@@ -262,6 +278,11 @@
       "title": "Non Executable Duplicates",
       "type": "boolean"
     },
+    "projection_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Projection Id",
+      "type": "string"
+    },
     "schema_version": {
       "const": "1.0",
       "default": "1.0",
@@ -272,12 +293,21 @@
       "pattern": "^[a-z][a-z0-9._:-]*$",
       "title": "View Id",
       "type": "string"
+    },
+    "visible_depth": {
+      "minimum": 0,
+      "title": "Visible Depth",
+      "type": "integer"
     }
   },
   "required": [
     "view_id",
     "architecture_id",
-    "level",
+    "hierarchy_id",
+    "projection_id",
+    "frontier_digest",
+    "visible_depth",
+    "max_depth",
     "name",
     "layout_family",
     "nodes",

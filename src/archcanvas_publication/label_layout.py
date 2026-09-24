@@ -28,7 +28,11 @@ def _overlap(first: SceneRect, second: SceneRect) -> bool:
 
 
 def edge_label_placements(scene: VisualScene) -> dict[str, LabelPlacement]:
-    nodes = [node.bounds for node in scene.nodes if node.parent_scene_node_id is not None]
+    nodes = [
+        node.bounds
+        for node in scene.nodes
+        if node.parent_scene_node_id is not None and node.shape != "container"
+    ]
     used: list[SceneRect] = []
     placements: dict[str, LabelPlacement] = {}
     first_node_y = min((bounds.y for bounds in nodes), default=scene.paper_height)

@@ -12,7 +12,8 @@ source remain authoritative and unchanged.
 - Three-column workbench with model/view/tensor navigation, central paper canvas, and Inspector.
 - Top modes for Explore, Layout, and Model. Explore selects and expands, Layout edits geometry, and
   Model exposes the future semantic surface while keeping source changes hard-disabled.
-- L1-L4 switching and `Open full` to the exact L4 canonical set.
+- Tree-driven detail selection: stable arbitrary-depth expansion compiles the current frontier, and
+  full expansion uses the exact one-to-one canonical set.
 - Node selection with a 2px selection boundary, visible ports, breadcrumb, and context controls.
 - Inspect, Visual, Model, and Evidence tabs. Visual and Model fields are separate.
 - Source-backed evidence records with paths, lines, claims, and confidence.
@@ -25,7 +26,7 @@ does not implement or imply Stage 6 source transactions.
 
 ## Persistence and history
 
-CanvasDocument now carries base scene IDs, applied patches, a redo stack, and selection-independent
+CanvasDocument now carries a base hierarchy ID, applied patches, a redo stack, and selection-independent
 view state. Theme and per-scene camera state are derived from patch history and restored on reopen.
 Patch application validates scene and target identities, finite numeric geometry, and
 operation-specific values.
@@ -38,7 +39,7 @@ incident edges; explicit route hints remain authoritative. Export calls the same
 `render_svg()` function over that materialized scene.
 
 On reopen, Studio rejects a document if its architecture ID, source snapshot ID, source-binding
-digest, or base scene IDs are stale. The source-binding digest covers revision, entrypoint, task,
+digest, or base hierarchy ID is stale. The source-binding digest covers revision, entrypoint, task,
 mode, config digest, source paths, and source file hashes.
 
 ## Local boundary
@@ -65,12 +66,12 @@ Automated tests prove:
 - persisted geometry is identical after reopening the CanvasDocument;
 - the Studio API persists patch/undo/redo and exports canonical SVG;
 - CLI preparation emits one receipt and a frontend with no external resources;
-- all materialized L1-L4 scenes continue to pass Gate D;
+- collapsed, partial, and fully expanded frontier scenes continue to pass Gate D;
 - fixture source hashes are unchanged after the complete editing workflow.
 
 Browser review on 2026-09-23 exercised the desktop workbench, selection, Evidence Inspector, Layout
-drag persistence, Source Diff, undo/redo, `Open full`, and the locked Model Inspector. It also
-verified theme, zoom, and pan recovery after reload; per-level selection recovery; and that dragging
+drag persistence, Source Diff, undo/redo, tree-driven scene depth, and the locked Model Inspector. It also
+verified theme, zoom, and pan recovery after reload; per-projection selection recovery; and that dragging
 in Model mode still creates only a visual position patch. A 390x844 viewport was checked with the
 Inspector overlay active. The final desktop and narrow layouts were nonblank and had no incoherent
 UI overlap or document-level horizontal overflow.

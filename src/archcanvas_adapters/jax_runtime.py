@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import inspect
+import json
 from pathlib import Path
 from typing import Any
 
@@ -55,9 +56,17 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
         item["name"]: jnp.asarray(numpy_input(item, np, spec["seed"] + index))
         for index, item in enumerate(spec["inputs"])
     }
+    input_prng_digests = {
+        name: hashlib.sha256(np.asarray(value).tobytes()).hexdigest()
+        for name, value in inputs.items()
+        if "key" in name.lower() or "prng" in name.lower()
+    }
     static_args = spec.get("static_args", {})
     params_digest = None
     state_digest = None
+    prng_digest = None
+    params_tree = None
+    state_tree = None
     limitations: list[str] = []
     try:
         from flax import linen as nn
@@ -66,11 +75,14 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
     if inspect.isclass(target) and nn is not None and issubclass(target, nn.Module):
         module = target(**constructor_kwargs(target, request))
         key = jax.random.PRNGKey(spec["seed"])
+        prng_digest = hashlib.sha256(np.asarray(key).tobytes()).hexdigest()
         variables = module.init(key, **inputs, **static_args)
         params = variables.get("params", {})
         state = {name: value for name, value in variables.items() if name != "params"}
         params_digest = _tree_digest(params, jax, np)
         state_digest = _tree_digest(state, jax, np)
+        params_tree = str(jax.tree_util.tree_structure(params))
+        state_tree = str(jax.tree_util.tree_structure(state))
 
         def callable_target(**values: Any) -> Any:
             return module.apply(variables, **values, **static_args)
@@ -81,6 +93,7 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
     closed = jax.make_jaxpr(callable_target)(**inputs)
     shaped = jax.eval_shape(callable_target, **inputs)
     output = callable_target(**inputs)
+    output_tree = str(jax.tree_util.tree_structure(output))
     observations: list[dict[str, Any]] = []
     for index, equation in enumerate(closed.jaxpr.eqns):
         primitive = equation.primitive.name
@@ -138,6 +151,25 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
             "selected_target": selected,
             "available_targets": [{"kind": "platform", "id": item} for item in available],
             "observation_mechanism": "jaxpr-eval-shape-v1",
+            "runtime_context": {
+                "form": "flax-module" if inspect.isclass(target) else "pure-function",
+                "prng_seed": spec["seed"],
+                "prng_digest": prng_digest,
+                "input_prng_digests": input_prng_digests,
+                "static_args_digest": hashlib.sha256(
+                    json.dumps(static_args, sort_keys=True, separators=(",", ":")).encode()
+                ).hexdigest(),
+                "params_pytree": params_tree,
+                "state_pytree": state_tree,
+                "output_pytree": output_tree,
+                "transform_primitives": sorted(
+                    {
+                        equation.primitive.name
+                        for equation in closed.jaxpr.eqns
+                        if equation.primitive.name in {"jit", "pjit", "scan", "while", "xla_call"}
+                    }
+                ),
+            },
         },
         "limitations": limitations,
     }

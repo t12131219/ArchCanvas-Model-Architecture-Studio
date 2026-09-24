@@ -37,6 +37,8 @@ from archcanvas_publication import (
     build_visual_spec,
     compile_views,
     render_html,
+    render_pdf,
+    render_png,
     render_svg,
     validate_geometry,
     validate_publication,
@@ -98,6 +100,14 @@ def _write_text(path: Path, value: str) -> None:
     temporary.replace(path)
 
 
+def _write_bytes(path: Path, value: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("wb", dir=path.parent, delete=False) as handle:
+        handle.write(value)
+        temporary = Path(handle.name)
+    temporary.replace(path)
+
+
 def _invalid(command: str, code: str, message: str) -> CommandReceipt:
     return CommandReceipt(
         command=command,
@@ -139,7 +149,7 @@ def _unavailable(command: str, capability: str) -> CommandReceipt:
 def doctor() -> CommandReceipt:
     packages: dict[str, str] = {}
     missing: list[str] = []
-    for package in ("pydantic", "jsonschema", "libcst"):
+    for package in ("pydantic", "jsonschema", "libcst", "cairosvg"):
         try:
             packages[package] = importlib.metadata.version(package)
         except importlib.metadata.PackageNotFoundError:
@@ -202,7 +212,7 @@ def doctor() -> CommandReceipt:
             "capabilities": {
                 "static_analysis": "available-pytorch+keras+jax+onnx",
                 "semantic_validation": "available",
-                "publication_render": "available-svg+html-l1-l4",
+                "publication_render": "available-svg+html+png+pdf-l1-l4",
                 "studio": "available-visual-editing",
                 "runtime_trace": "available-opt-in-" + "+".join(runtime_frameworks),
                 "source_transactions": "available-parameter+registered-structural",
@@ -394,7 +404,9 @@ def validate(args: argparse.Namespace) -> CommandReceipt:
             scene = build_scene(view, spec)
             geometry_gate, geometry_diagnostics = validate_geometry(scene)
             gates.append(
-                geometry_gate.model_copy(update={"gate": f"D-geometry-{view.level}"})
+                geometry_gate.model_copy(
+                    update={"gate": f"D-geometry-{view.frontier_digest[:12]}"}
+                )
             )
             diagnostics.extend(geometry_diagnostics)
     failed = any(gate.status == "failed" for gate in gates)
@@ -413,30 +425,12 @@ def validate(args: argparse.Namespace) -> CommandReceipt:
     )
 
 
-VIEW_ALIASES = {
-    "paper-overview": "L1",
-    "overview": "L1",
-    "l1": "L1",
-    "module": "L2",
-    "l2": "L2",
-    "semantic": "L3",
-    "l3": "L3",
-    "operator": "L4",
-    "full": "L4",
-    "l4": "L4",
-}
-
-
 def render(args: argparse.Namespace) -> CommandReceipt:
     ir = ArchitectureIR.model_validate_json(args.artifact.read_text(encoding="utf-8"))
     overlay = _semantic_overlay(args.artifact, ir)
     views = compile_views(ir, overlay)
     publication_gates, diagnostics = validate_publication(ir, views)
-    if args.view == "all":
-        selected = views
-    else:
-        selected_level = VIEW_ALIASES[args.view.lower()]
-        selected = [view for view in views if view.level == selected_level]
+    selected = views if args.view == "all" else [views[-1 if args.view == "full" else 0]]
     compiled: list[tuple[Any, Any, Any]] = []
     geometry_gates: list[GateResult] = []
     for view in selected:
@@ -445,7 +439,13 @@ def render(args: argparse.Namespace) -> CommandReceipt:
         geometry_gate, geometry_diagnostics = validate_geometry(scene)
         geometry_gates.append(
             geometry_gate.model_copy(
-                update={"gate": f"D-geometry-{view.level}" if args.view == "all" else "D-geometry"}
+                update={
+                    "gate": (
+                        f"D-geometry-{view.frontier_digest[:12]}"
+                        if args.view == "all"
+                        else "D-geometry"
+                    )
+                }
             )
         )
         diagnostics.extend(geometry_diagnostics)
@@ -472,21 +472,26 @@ def render(args: argparse.Namespace) -> CommandReceipt:
     out = args.out.resolve()
     artifacts: dict[str, str] = {"architecture": str(args.artifact.resolve())}
     for view, spec, scene in compiled:
-        target = out / view.level.lower() if args.view == "all" else out
+        projection_name = "full" if view.fully_expanded else "collapsed"
+        target = out / projection_name if args.view == "all" else out
         paths = {
             "publication_view": target / "publication-view.json",
             "visual_spec": target / "visual-spec.json",
             "visual_scene": target / "visual-scene.json",
             "svg": target / "scene.svg",
             "html": target / "view.html",
+            "png": target / "scene.png",
+            "pdf": target / "scene.pdf",
         }
-        prefix = f"{view.level.lower()}_" if args.view == "all" else ""
+        prefix = f"{projection_name}_" if args.view == "all" else ""
         artifacts.update({f"{prefix}{key}": str(path) for key, path in paths.items()})
         _write_json(paths["publication_view"], view)
         _write_json(paths["visual_spec"], spec)
         _write_json(paths["visual_scene"], scene)
         _write_text(paths["svg"], render_svg(scene))
         _write_text(paths["html"], render_html(scene, view, spec))
+        _write_bytes(paths["png"], render_png(scene))
+        _write_bytes(paths["pdf"], render_pdf(scene))
     artifacts["render_receipt"] = str(out / "render-receipt.json")
     receipt = CommandReceipt(
         command="render",
@@ -497,12 +502,14 @@ def render(args: argparse.Namespace) -> CommandReceipt:
         diagnostics=diagnostics,
         details={
             "view": args.view,
-            "levels": [view.level for view, _, _ in compiled],
-            "layout_families": {view.level: view.layout_family for view, _, _ in compiled},
+            "projections": [view.projection_id for view, _, _ in compiled],
+            "layout_families": {
+                view.projection_id: view.layout_family for view, _, _ in compiled
+            },
             "canonical_surface": "svg",
             "html_self_contained": True,
-            "png": "unavailable",
-            "pdf": "unavailable",
+            "png": "available",
+            "pdf": "available",
             "runtime_evidence": "skipped",
             "visual_review": "skipped",
             "semantic_overlay": overlay.status if overlay is not None else "not-present",
@@ -521,9 +528,9 @@ def studio(args: argparse.Namespace) -> tuple[CommandReceipt, StudioBundle | Non
     bundle = prepare_studio_bundle(args.artifact, workspace)
     gates: list[GateResult] = []
     diagnostics: list[Diagnostic] = []
-    for level, scene in bundle.materialized_scenes().items():
+    for projection_id, scene in bundle.materialized_scenes().items():
         gate, scene_diagnostics = validate_geometry(scene)
-        gates.append(gate.model_copy(update={"gate": f"D-geometry-{level}"}))
+        gates.append(gate.model_copy(update={"gate": f"D-geometry-{projection_id}"}))
         diagnostics.extend(scene_diagnostics)
     source_digest_matches = bundle.document.source_digest == source_binding_digest(bundle.snapshot)
     gates.append(
@@ -727,8 +734,8 @@ def build_parser() -> argparse.ArgumentParser:
     render_parser.add_argument("artifact", type=Path)
     render_parser.add_argument(
         "--view",
-        choices=(*VIEW_ALIASES, "all"),
-        default="paper-overview",
+        choices=("collapsed", "full", "all"),
+        default="collapsed",
     )
     render_parser.add_argument("--out", type=Path, required=True)
     render_parser.add_argument("--json", action="store_true")

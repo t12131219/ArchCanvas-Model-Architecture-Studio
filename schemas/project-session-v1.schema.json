@@ -1,0 +1,94 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "config_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Config Digest",
+      "type": "string"
+    },
+    "config_path": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Config Path"
+    },
+    "entrypoint": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Entrypoint"
+    },
+    "execution_policy": {
+      "default": "static-only",
+      "enum": [
+        "static-only",
+        "runtime-opt-in"
+      ],
+      "title": "Execution Policy",
+      "type": "string"
+    },
+    "framework": {
+      "default": "auto",
+      "title": "Framework",
+      "type": "string"
+    },
+    "generation": {
+      "minimum": 1,
+      "title": "Generation",
+      "type": "integer"
+    },
+    "opened_at": {
+      "minLength": 1,
+      "title": "Opened At",
+      "type": "string"
+    },
+    "project_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Project Id",
+      "type": "string"
+    },
+    "root": {
+      "minLength": 1,
+      "title": "Root",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "task": {
+      "default": "inference",
+      "title": "Task",
+      "type": "string"
+    },
+    "workspace": {
+      "minLength": 1,
+      "title": "Workspace",
+      "type": "string"
+    }
+  },
+  "required": [
+    "project_id",
+    "root",
+    "generation",
+    "config_digest",
+    "workspace",
+    "opened_at"
+  ],
+  "title": "ProjectSession",
+  "type": "object"
+}

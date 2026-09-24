@@ -5,6 +5,7 @@ import hashlib
 from pathlib import Path
 from typing import Any
 
+from .onnx_external import build_artifact_set
 from .runtime_common import matched_nodes, numpy_input
 
 
@@ -36,6 +37,8 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
     model_path = (project / Path(request["entrypoint"])).resolve()
     if not model_path.is_relative_to(project) or not model_path.is_file():
         raise RuntimeError("ONNX runtime entrypoint is outside the project or missing")
+    stored_model = onnx.load(model_path, load_external_data=False)
+    artifact_set = build_artifact_set(stored_model, model_path, project)
     model = onnx.load(model_path, load_external_data=True)
     inferred = onnx.shape_inference.infer_shapes(model)
     instrumented = copy.deepcopy(inferred)
@@ -95,7 +98,7 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
     return {
         "observations": observations,
         "output_tensors": [_record(value, selected) for value in graph_outputs],
-        "checkpoint_digest": hashlib.sha256(model_path.read_bytes()).hexdigest(),
+        "checkpoint_digest": artifact_set.set_digest,
         "environment": {
             "python_version": request["runtime_python_version"],
             "platform": request["runtime_platform"],
@@ -107,6 +110,22 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
             "selected_target": selected,
             "available_targets": [{"kind": "provider", "id": item} for item in available],
             "observation_mechanism": "onnx-graph-outputs-v1",
+            "runtime_context": {
+                "form": "modelproto",
+                "artifact_set_id": artifact_set.artifact_set_id,
+                "artifact_members": [entry.logical_path for entry in artifact_set.entries],
+                "provider_options_digest": hashlib.sha256(
+                    repr(sorted(spec.get("provider_options", {}).get(selected, {}).items())).encode()
+                ).hexdigest(),
+                "instrumented_output_count": len(intermediate_names),
+                "instrumentation_persisted": False,
+                "opsets": {
+                    (item.domain or "ai.onnx"): item.version for item in model.opset_import
+                },
+                "custom_domains": sorted(
+                    {node.domain for node in model.graph.node if node.domain not in {"", "ai.onnx"}}
+                ),
+            },
         },
         "limitations": [
             "Only values with inferred ONNX type information are temporarily exposed as outputs."

@@ -54,15 +54,18 @@ def test_cli_render_all_writes_versioned_publication_artifacts(tmp_path: Path, c
         "status"
     ] == "passed"
     assert receipt["details"]["visual_review"] == "skipped"
-    for level in ("l1", "l2", "l3", "l4"):
+    assert receipt["details"]["projections"]
+    for projection in ("collapsed", "full"):
         for filename in (
             "publication-view.json",
             "visual-spec.json",
             "visual-scene.json",
             "scene.svg",
             "view.html",
+            "scene.png",
+            "scene.pdf",
         ):
-            assert (publication / level / filename).is_file()
+            assert (publication / projection / filename).is_file()
     stored = json.loads((publication / "render-receipt.json").read_text())
     assert stored == receipt
 

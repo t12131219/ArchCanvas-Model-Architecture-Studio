@@ -124,7 +124,7 @@ def _annotations(
                 canonical_node_ids=ids,
                 semantic_role=rule.semantic_role,
                 group_id=rule.group_id,
-                recommended_level=rule.recommended_level,
+                recommended_depth=rule.recommended_depth,
                 glyph=rule.glyph,
                 layout_family=rule.layout_family,
                 label=rule.label,

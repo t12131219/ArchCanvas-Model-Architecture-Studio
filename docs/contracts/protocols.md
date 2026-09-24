@@ -36,6 +36,29 @@ All persisted documents use a `schema_version` with major/minor semantics. A rea
    SHA-256 inventory. Verification rejects missing, extra, or modified files.
 14. `CommandReceipt` and `TransactionReceipt` report command status, artifacts, gates, structured
    diagnostics, and whether a source write occurred.
+15. `ProjectSession` and `AnalysisJob` bind project generations, static discovery, request
+   fingerprints, progress, and terminal receipts. A completed job may replace the active canonical
+   plane only while its project generation is still current.
+16. `PatchBatch` groups validated `VisualPatch` values into one atomic history action. Validation
+   failure leaves the `CanvasDocument` unchanged; undo and redo move the whole batch.
+17. `DraftGraphDocument`, typed `EditIntent`, and `EditProofStatus` keep authored proposals outside
+   Exact IR. `checking`, `conditional`, `unproven`, `invalid`, and `stale` all block writeback;
+   `proven` permits prepare only, and `review-ready` permits explicit commit.
+18. `SearchSubject` is a fingerprint-bound projection across node, tensor, edge, port, evidence,
+   diagnostic, source, and transaction identities. Search changes focus only.
+19. `ValidationRun` distinguishes fast-static, publication, full, and explicit runtime-replay
+   profiles, including passed, failed, skipped, unsupported, and cancelled gates.
+20. `ArtifactSet` inventories model, external-data, and manifest files with confined relative paths
+   and a set digest. ONNX uses this boundary for same-size external initializer updates: every
+   member is frozen before prepare and the transaction service restores replaced members when a
+   commit or post-commit validation fails.
+21. Studio navigation exposes `module` and `source` projections over the same canonical identity
+   plane. Module rows derive from Exact IR containment and producer-output ownership; source rows
+   derive from Source Snapshot paths plus AST lexical definitions and callsites. Both projections
+   carry canonical/evidence bindings. Tree expansion is the only Studio detail control: its stable
+   expanded-node set directly compiles the current frontier scene. The hierarchy has no fixed depth;
+   a small model may have two levels and a complex model may have ten or more. Projection and
+   expansion persistence never changes IR, source, or canonical selection identity.
 
 Canonical identifiers derive from source symbol, callsite, logical path, repeat/branch identity, and sharing identity. Renderer coordinates and list ordering are never identity inputs.
 
@@ -50,10 +73,24 @@ report, and receipt. Runtime failure leaves the static bundle usable and emits f
 without claiming runtime-confirmed evidence.
 
 `analyze --framework keras|jax` parses Python AST without importing the target framework.
-`analyze --framework onnx` uses the official ONNX parser with external tensor loading disabled and
-does not execute the graph. Runtime trace and source transactions reject non-PyTorch artifacts.
+`analyze --framework onnx` uses the official ONNX parser, inventories confined external-data files,
+and reads their tensor values without executing the graph. Runtime and transaction capabilities
+remain adapter/form-specific and are reported as unavailable or partial when their exact fixture
+cell has not been verified. Each adapter publishes explicit form rows rather than relying only on a
+framework-wide status.
 
-`bundle create` recompiles and validates L1-L4, redacts absolute paths in copied JSON, freezes
+## Studio project and job behavior
+
+Studio project discovery walks a confined root, skips repositories, environments, caches, data,
+and weight directories, and parses Python with `ast` without importing it. Opening a project creates
+a new generation but does not disturb the current canvas. `POST /api/analyses` creates a static
+background job; only a successful, still-current generation replaces the canonical bundle.
+
+Browser write requests with an `Origin` header require a loopback Host/Origin and the session nonce.
+Patch batches, validation runs, draft revisions, search results, and job receipts are served through
+separate endpoints. The default Validate profile never executes project code.
+
+`bundle create` recompiles and validates the hierarchy plus collapsed/full projections, redacts absolute paths in copied JSON, freezes
 JSON/SVG/HTML plus schemas and the support matrix, and writes a digest manifest. `bundle verify`
 checks the complete inventory and Exact IR binding. Neither command turns deterministic rendering
 into a human visual-review pass.
@@ -81,7 +118,7 @@ The original project is not written.
 
 `patch verify TRANSACTION --json` executes the gates in order: parse/syntax, static relative-import
 resolution, Exact IR reanalysis, exact Graph Delta comparison, shape/type invariants, built-in and
-requested targeted tests, optional isolated runtime replay, and L1-L4 publication/geometry
+requested targeted tests, optional isolated runtime replay, and hierarchy/frontier publication/geometry
 recompilation. A failed gate transitions to `failed`; unexecuted gates are never labeled passed.
 
 `patch commit TRANSACTION --json` accepts only `review-ready`, rechecks every frozen source hash and

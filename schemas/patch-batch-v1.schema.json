@@ -1,0 +1,95 @@
+{
+  "$defs": {
+    "VisualPatch": {
+      "additionalProperties": false,
+      "properties": {
+        "operation": {
+          "enum": [
+            "set-position",
+            "set-size",
+            "set-pin",
+            "set-alignment",
+            "set-gap",
+            "set-route-hint",
+            "set-label-wrap",
+            "set-caption",
+            "set-legend-placement",
+            "set-theme",
+            "set-palette",
+            "set-line-weight",
+            "set-font-scale",
+            "set-collapse",
+            "set-camera",
+            "add-annotation"
+          ],
+          "title": "Operation",
+          "type": "string"
+        },
+        "patch_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Patch Id",
+          "type": "string"
+        },
+        "target_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Id"
+        },
+        "value": {
+          "additionalProperties": true,
+          "title": "Value",
+          "type": "object"
+        }
+      },
+      "required": [
+        "patch_id",
+        "operation",
+        "value"
+      ],
+      "title": "VisualPatch",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "batch_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Batch Id",
+      "type": "string"
+    },
+    "description": {
+      "minLength": 1,
+      "title": "Description",
+      "type": "string"
+    },
+    "patches": {
+      "items": {
+        "$ref": "#/$defs/VisualPatch"
+      },
+      "minItems": 1,
+      "title": "Patches",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "batch_id",
+    "description",
+    "patches"
+  ],
+  "title": "PatchBatch",
+  "type": "object"
+}

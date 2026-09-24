@@ -15,6 +15,15 @@ from archcanvas_core.models import (
     SourceSnapshot,
 )
 
+from .onnx_external import build_artifact_set, external_location
+
+
+@dataclass(frozen=True)
+class ModelTransformedFile:
+    relative_path: Path
+    content: bytes
+    kind: str
+
 
 @dataclass(frozen=True)
 class ModelTransformResult:
@@ -22,6 +31,7 @@ class ModelTransformResult:
     content: bytes
     semantic_manifest: str
     anchor_line: int = 1
+    additional_files: tuple[ModelTransformedFile, ...] = ()
 
 
 def validate_artifact(path: Path) -> None:
@@ -43,11 +53,14 @@ def apply_transaction(
     project = Path(snapshot.project_root).resolve()
     relative = Path(snapshot.source_files[0].path)
     model_path = (project / relative).resolve()
+    stored_model = onnx.load(model_path, load_external_data=False)
+    artifact_set = build_artifact_set(stored_model, model_path, project)
     model = onnx.load(model_path, load_external_data=True)
-    if any(item.data_location == onnx.TensorProto.EXTERNAL for item in model.graph.initializer):
-        raise ValueError(
-            "ONNX external-data mutation requires a registered multi-artifact atomic commit adapter"
-        )
+    external_contents = {
+        Path(entry.logical_path): bytearray((project / entry.logical_path).read_bytes())
+        for entry in artifact_set.entries
+        if entry.role == "external-data"
+    }
     target = next(
         (item for item in architecture.nodes if item.node_id == request.target_node_id), None
     )
@@ -57,6 +70,10 @@ def apply_transaction(
         "framework": "onnx",
         "target_node_id": request.target_node_id,
         "operation": request.operation,
+        "artifact_set_id": artifact_set.artifact_set_id,
+        "artifact_set_digest_before": artifact_set.set_digest,
+        "artifact_members": [entry.logical_path for entry in artifact_set.entries],
+        "atomicity": "service-contract-with-rollback",
     }
     if isinstance(request, SemanticParameterPatch):
         if target.attributes.get("onnx_initializer"):
@@ -64,7 +81,10 @@ def apply_transaction(
                 raise ValueError("ONNX initializer transactions support only the value parameter")
             name = str(target.attributes.get("onnx_value", target.semantic_name))
             initializer = next((item for item in model.graph.initializer if item.name == name), None)
-            if initializer is None:
+            stored_initializer = next(
+                (item for item in stored_model.graph.initializer if item.name == name), None
+            )
+            if initializer is None or stored_initializer is None:
                 raise ValueError(f"ONNX initializer not found: {name}")
             before = onnx.numpy_helper.to_array(initializer)
             after = np.asarray(request.new_value, dtype=before.dtype)
@@ -74,6 +94,26 @@ def apply_transaction(
                 )
             replacement = onnx.numpy_helper.from_array(after, name=name)
             initializer.CopyFrom(replacement)
+            if stored_initializer.data_location == onnx.TensorProto.EXTERNAL:
+                location = external_location(stored_initializer)
+                if location is None:
+                    raise ValueError(f"ONNX external initializer has no location: {name}")
+                fields = {item.key: item.value for item in stored_initializer.external_data}
+                offset = int(fields.get("offset", "0"))
+                payload = replacement.raw_data
+                length = int(fields.get("length", str(len(payload))))
+                relative_external = (model_path.parent / location).resolve().relative_to(project)
+                target_content = external_contents[relative_external]
+                if len(payload) != before.nbytes or length != len(payload):
+                    raise ValueError(
+                        "ONNX external initializer transaction must preserve the byte extent"
+                    )
+                if offset < 0 or offset + length > len(target_content):
+                    raise ValueError("ONNX external initializer extent is outside its data file")
+                target_content[offset : offset + length] = payload
+                manifest["external_data_path"] = relative_external.as_posix()
+            else:
+                stored_initializer.CopyFrom(replacement)
             manifest.update(
                 {
                     "kind": "initializer",
@@ -87,6 +127,7 @@ def apply_transaction(
             if not isinstance(index, int) or index >= len(model.graph.node):
                 raise ValueError("ONNX node has no stable ModelProto index")
             node = model.graph.node[index]
+            stored_node = stored_model.graph.node[index]
             attribute_index = next(
                 (
                     position
@@ -104,6 +145,12 @@ def apply_transaction(
             if replacement.type != original_type:
                 raise ValueError("ONNX attribute replacement must preserve the AttributeProto type")
             node.attribute[attribute_index].CopyFrom(replacement)
+            stored_attribute_index = next(
+                position
+                for position, item in enumerate(stored_node.attribute)
+                if item.name == request.parameter_name
+            )
+            stored_node.attribute[stored_attribute_index].CopyFrom(replacement)
             manifest.update(
                 {
                     "kind": "attribute",
@@ -119,6 +166,7 @@ def apply_transaction(
         if not isinstance(index, int) or index >= len(model.graph.node):
             raise ValueError("ONNX node has no stable ModelProto index")
         node = model.graph.node[index]
+        stored_node = stored_model.graph.node[index]
         allowed = {"Relu", "Gelu", "Silu"}
         replacement = {"ReLU": "Relu", "GELU": "Gelu", "SiLU": "Silu"}[
             str(request.parameters["replacement"])
@@ -136,12 +184,23 @@ def apply_transaction(
             }
         )
         node.op_type = replacement
+        stored_node.op_type = replacement
     onnx.checker.check_model(model, full_check=False)
     onnx.shape_inference.infer_shapes(model)
     return ModelTransformResult(
         relative_path=relative,
-        content=model.SerializeToString(),
+        content=stored_model.SerializeToString(),
         semantic_manifest=json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+        additional_files=tuple(
+            ModelTransformedFile(
+                relative_path=path,
+                content=bytes(content),
+                kind="binary",
+            )
+            for path, content in sorted(
+                external_contents.items(), key=lambda item: item[0].as_posix()
+            )
+        ),
     )
 
 

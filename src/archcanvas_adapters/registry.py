@@ -5,9 +5,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
-from archcanvas_core.models import FrameworkAdapterCapability
+from archcanvas_core.models import FrameworkAdapterCapability, FrameworkFormCapability
 from archcanvas_python import AnalysisBundle, AnalysisError, analyze_project
 
+from .environment_probe import pytorch_available_targets
 from .onnx_adapter import analyze_onnx
 
 ADAPTER_VERSION = "0.1.0"
@@ -78,6 +79,7 @@ RUNTIME_ADAPTERS = {
         worker_module="archcanvas_adapters.onnx_runtime",
         required_packages=("onnx", "onnxruntime"),
         observation_mechanism="onnx-graph-outputs-v1",
+        environment=(("ORT_DISABLE_TELEMETRY", "1"),),
     ),
 }
 
@@ -96,6 +98,7 @@ def adapter_capabilities() -> list[FrameworkAdapterCapability]:
     jax_version = _package_version("jax")
     flax_version = _package_version("flax")
     torch_version = _package_version("torch")
+    torch_targets = list(pytorch_available_targets()) if torch_version else []
     return [
         FrameworkAdapterCapability(
             adapter_id="adapter:pytorch-source",
@@ -103,22 +106,43 @@ def adapter_capabilities() -> list[FrameworkAdapterCapability]:
             adapter_version=ADAPTER_VERSION,
             status="verified",
             static_analysis=True,
-            runtime_evidence=True,
+            runtime_evidence=bool(torch_targets),
             source_transactions=True,
             parameter_transactions=True,
             structural_transactions=True,
             artifact_commit=True,
             capability_status={
                 "static": "verified",
-                "runtime": "verified" if torch_version else "unavailable",
+                "runtime": "verified" if torch_targets else "unavailable",
                 "parameter_transaction": "verified",
                 "structural_transaction": "verified",
                 "artifact_commit": "verified",
             },
-            supported_targets=["cpu", "cuda"] if torch_version else [],
+            supported_targets=torch_targets,
             supported_forms=["nn.Module.forward", "source-only generic recovery"],
             verified_fixtures=["tier_a/*", "holdout/residual_mlp"],
+            forms=[
+                FrameworkFormCapability(
+                    form_id="form:pytorch-module-forward",
+                    form_name="nn.Module.forward",
+                    static="verified",
+                    runtime="verified" if torch_targets else "unavailable",
+                    parameter_transaction="verified",
+                    structural_transaction="verified",
+                    artifact_commit="verified",
+                    supported_targets=torch_targets,
+                    verified_fixtures=["tier_a/*", "holdout/*"],
+                    limitations=[
+                        "Functional operators without module boundaries remain static-only."
+                    ],
+                )
+            ],
             required_packages={"torch": torch_version},
+            limitations=(
+                ["Torch is installed but the isolated environment capability probe failed."]
+                if torch_version and not torch_targets
+                else []
+            ),
         ),
         FrameworkAdapterCapability(
             adapter_id="adapter:keras-source",
@@ -140,7 +164,51 @@ def adapter_capabilities() -> list[FrameworkAdapterCapability]:
             },
             supported_targets=["cpu"] if keras_version else [],
             supported_forms=["Model.call", "Functional builder dataflow"],
-            verified_fixtures=["cross_framework/keras_subclass", "cross_framework/keras_functional"],
+            verified_fixtures=[
+                "cross_framework/keras_subclass",
+                "cross_framework/keras_functional",
+                "cross_framework/keras_multi_io",
+            ],
+            forms=[
+                FrameworkFormCapability(
+                    form_id="form:keras-subclass-call",
+                    form_name="subclassed Model.call",
+                    static="partial",
+                    runtime="experimental" if keras_version else "unavailable",
+                    parameter_transaction="partial",
+                    structural_transaction="partial",
+                    artifact_commit="verified",
+                    supported_targets=["cpu"] if keras_version else [],
+                    verified_fixtures=["cross_framework/keras_subclass"],
+                    limitations=["Custom train_step is not observed."],
+                ),
+                FrameworkFormCapability(
+                    form_id="form:keras-functional",
+                    form_name="Functional graph builder",
+                    static="partial",
+                    runtime="experimental" if keras_version else "unavailable",
+                    parameter_transaction="partial",
+                    structural_transaction="partial",
+                    artifact_commit="verified",
+                    supported_targets=["cpu"] if keras_version else [],
+                    verified_fixtures=[
+                        "cross_framework/keras_functional",
+                        "cross_framework/keras_multi_io",
+                    ],
+                    limitations=["Shared-layer and multi-output transaction matrices are incomplete."],
+                ),
+                FrameworkFormCapability(
+                    form_id="form:keras-custom-layer",
+                    form_name="custom Layer/backend-specific op",
+                    static="partial",
+                    runtime="experimental" if keras_version else "unavailable",
+                    parameter_transaction="unavailable",
+                    structural_transaction="unavailable",
+                    artifact_commit="unavailable",
+                    supported_targets=["cpu"] if keras_version else [],
+                    limitations=["No source lowering is registered for backend-specific layers."],
+                ),
+            ],
             required_packages={"keras": keras_version},
             limitations=[
                 "Static analysis does not import TensorFlow or Keras.",
@@ -167,7 +235,53 @@ def adapter_capabilities() -> list[FrameworkAdapterCapability]:
             },
             supported_targets=["cpu"] if jax_version else [],
             supported_forms=["Flax-style __call__", "pure function dataflow"],
-            verified_fixtures=["cross_framework/jax_flax", "cross_framework/jax_function"],
+            verified_fixtures=[
+                "cross_framework/jax_flax",
+                "cross_framework/jax_function",
+                "cross_framework/jax_scan",
+                "cross_framework/jax_prng",
+            ],
+            forms=[
+                FrameworkFormCapability(
+                    form_id="form:jax-pure-function",
+                    form_name="pure function",
+                    static="partial",
+                    runtime="experimental" if jax_version else "unavailable",
+                    parameter_transaction="partial",
+                    structural_transaction="unavailable",
+                    artifact_commit="verified",
+                    supported_targets=["cpu"] if jax_version else [],
+                    verified_fixtures=[
+                        "cross_framework/jax_function",
+                        "cross_framework/jax_prng",
+                    ],
+                    limitations=["No pure-function structural source lowering is registered."],
+                ),
+                FrameworkFormCapability(
+                    form_id="form:flax-module",
+                    form_name="Flax Module.__call__",
+                    static="partial",
+                    runtime="experimental" if flax_version else "unavailable",
+                    parameter_transaction="partial",
+                    structural_transaction="partial",
+                    artifact_commit="verified",
+                    supported_targets=["cpu"] if jax_version else [],
+                    verified_fixtures=["cross_framework/jax_flax"],
+                    limitations=["State collections and capture_intermediates matrices are incomplete."],
+                ),
+                FrameworkFormCapability(
+                    form_id="form:jax-transformed",
+                    form_name="jit/vmap/scan/stateful transformed function",
+                    static="partial",
+                    runtime="experimental" if jax_version else "unavailable",
+                    parameter_transaction="unavailable",
+                    structural_transaction="unavailable",
+                    artifact_commit="unavailable",
+                    supported_targets=["cpu"] if jax_version else [],
+                    limitations=["Transformation provenance is reported but source lowering is unavailable."],
+                    verified_fixtures=["cross_framework/jax_scan"],
+                ),
+            ],
             required_packages={"jax": jax_version, "flax": flax_version},
             limitations=[
                 "Static analysis does not import JAX, Flax, or Haiku.",
@@ -194,10 +308,53 @@ def adapter_capabilities() -> list[FrameworkAdapterCapability]:
             },
             supported_targets=["CPUExecutionProvider"] if onnxruntime_version else [],
             supported_forms=["ModelProto execution graph", "initializers", "symbolic shapes"],
-            verified_fixtures=["cross_framework/onnx_residual"] if onnx_version else [],
+            verified_fixtures=(
+                ["cross_framework/onnx_residual", "generated/onnx_external_data"]
+                if onnx_version
+                else []
+            ),
+            forms=[
+                FrameworkFormCapability(
+                    form_id="form:onnx-standard-op",
+                    form_name="standard-domain ModelProto graph",
+                    static="verified" if onnx_version else "unavailable",
+                    runtime="experimental" if onnxruntime_version else "unavailable",
+                    parameter_transaction="partial" if onnx_version else "unavailable",
+                    structural_transaction="partial" if onnx_version else "unavailable",
+                    artifact_commit="verified" if onnx_version else "unavailable",
+                    supported_targets=(
+                        ["CPUExecutionProvider"] if onnxruntime_version else []
+                    ),
+                    verified_fixtures=["cross_framework/onnx_residual"] if onnx_version else [],
+                ),
+                FrameworkFormCapability(
+                    form_id="form:onnx-external-data",
+                    form_name="external-data initializer set",
+                    static="verified" if onnx_version else "unavailable",
+                    runtime="experimental" if onnxruntime_version else "unavailable",
+                    parameter_transaction="partial" if onnx_version else "unavailable",
+                    structural_transaction="unavailable",
+                    artifact_commit="verified" if onnx_version else "unavailable",
+                    supported_targets=(
+                        ["CPUExecutionProvider"] if onnxruntime_version else []
+                    ),
+                    verified_fixtures=["generated/onnx_external_data"] if onnx_version else [],
+                    limitations=["Updates must preserve initializer shape and byte extent."],
+                ),
+                FrameworkFormCapability(
+                    form_id="form:onnx-custom-op",
+                    form_name="custom-domain operator",
+                    static="partial" if onnx_version else "unavailable",
+                    runtime="unavailable",
+                    parameter_transaction="unavailable",
+                    structural_transaction="unavailable",
+                    artifact_commit="unavailable",
+                    limitations=["A provider library is required and no implicit rewrite is allowed."],
+                ),
+            ],
             required_packages={"onnx": onnx_version, "onnxruntime": onnxruntime_version},
             limitations=[
-                "External-data mutation is rejected until multi-file atomic commit is implemented.",
+                "External-data commits provide service-level rollback, not filesystem-level multi-file atomic rename.",
                 "Custom operators require their provider library and are never rewritten implicitly.",
             ],
         ),

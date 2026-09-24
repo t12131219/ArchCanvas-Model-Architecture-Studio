@@ -110,6 +110,8 @@ class RuntimeInput(StrictModel):
         "bfloat16",
         "int32",
         "int64",
+        "uint32",
+        "uint64",
         "bool",
     ] = "float32"
     generator: Literal["zeros", "ones", "normal", "uniform", "randint"] = "normal"
@@ -119,7 +121,7 @@ class RuntimeInput(StrictModel):
     @model_validator(mode="after")
     def generator_parameters_are_valid(self) -> RuntimeInput:
         if self.generator == "randint":
-            if self.dtype not in {"int32", "int64"}:
+            if self.dtype not in {"int32", "int64", "uint32", "uint64"}:
                 raise ValueError("randint inputs require an integer dtype")
             if self.low is None or self.high is None or self.low >= self.high:
                 raise ValueError("randint inputs require low < high")
@@ -212,6 +214,7 @@ class RuntimeEnvironment(StrictModel):
     determinism_requested: bool = True
     determinism_achieved: bool = True
     determinism_limitations: list[str] = Field(default_factory=list)
+    runtime_context: dict[str, Any] = Field(default_factory=dict)
     torch_version: str | None = None
     cuda_build: str | None = None
     cuda_available: bool = False
@@ -264,6 +267,19 @@ class RuntimeCapabilityReport(StrictModel):
     limitations: list[str] = Field(default_factory=list)
 
 
+class FrameworkFormCapability(StrictModel):
+    form_id: Identifier
+    form_name: str = Field(min_length=1)
+    static: Literal["verified", "experimental", "partial", "unavailable"]
+    runtime: Literal["verified", "experimental", "partial", "unavailable"]
+    parameter_transaction: Literal["verified", "experimental", "partial", "unavailable"]
+    structural_transaction: Literal["verified", "experimental", "partial", "unavailable"]
+    artifact_commit: Literal["verified", "experimental", "partial", "unavailable"]
+    supported_targets: list[str] = Field(default_factory=list)
+    verified_fixtures: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+
+
 class FrameworkAdapterCapability(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     adapter_id: Identifier
@@ -282,8 +298,16 @@ class FrameworkAdapterCapability(StrictModel):
     supported_targets: list[str] = Field(default_factory=list)
     supported_forms: list[str] = Field(default_factory=list)
     verified_fixtures: list[str] = Field(default_factory=list)
+    forms: list[FrameworkFormCapability] = Field(default_factory=list)
     required_packages: dict[str, str | None] = Field(default_factory=dict)
     limitations: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def form_ids_are_unique(self) -> FrameworkAdapterCapability:
+        identifiers = [form.form_id for form in self.forms]
+        if len(identifiers) != len(set(identifiers)):
+            raise ValueError("framework form capability identifiers must be unique")
+        return self
 
 
 class HostSupport(StrictModel):
@@ -581,7 +605,7 @@ class PatternAnnotationRule(StrictModel):
     selector: PatternPredicate
     semantic_role: str = Field(min_length=1)
     group_id: Identifier | None = None
-    recommended_level: Literal["L1", "L2", "L3", "L4"] | None = None
+    recommended_depth: int | None = Field(default=None, ge=0)
     glyph: str | None = None
     layout_family: str | None = None
     label: str | None = None
@@ -633,7 +657,7 @@ class SemanticAnnotation(StrictModel):
     canonical_node_ids: list[Identifier] = Field(min_length=1)
     semantic_role: str = Field(min_length=1)
     group_id: Identifier | None = None
-    recommended_level: Literal["L1", "L2", "L3", "L4"] | None = None
+    recommended_depth: int | None = Field(default=None, ge=0)
     glyph: str | None = None
     layout_family: str | None = None
     label: str | None = None
@@ -716,7 +740,7 @@ class PatternCandidateReview(StrictModel):
 
 class PublicationNode(StrictModel):
     view_node_id: Identifier
-    canonical_node_ids: list[Identifier] = Field(min_length=1)
+    canonical_node_ids: list[Identifier] = Field(default_factory=list)
     semantic_name: str = Field(min_length=1)
     kind: NodeKind
     parent_view_node_id: Identifier | None = None
@@ -737,11 +761,77 @@ class PublicationEdge(StrictModel):
     evidence_ids: list[Identifier] = Field(default_factory=list)
 
 
+class PublicationHierarchyNode(StrictModel):
+    hierarchy_node_id: Identifier
+    parent_hierarchy_node_id: Identifier | None = None
+    semantic_name: str = Field(min_length=1)
+    kind: NodeKind
+    depth: int = Field(ge=0)
+    canonical_node_ids: list[Identifier] = Field(default_factory=list)
+    evidence_ids: list[Identifier] = Field(default_factory=list)
+    attributes: dict[str, Any] = Field(default_factory=dict)
+
+
+class PublicationHierarchy(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    hierarchy_id: Identifier
+    architecture_id: Identifier
+    root_node_id: Identifier
+    nodes: list[PublicationHierarchyNode] = Field(min_length=1)
+    max_depth: int = Field(ge=0)
+    canonical_node_ids: list[Identifier] = Field(min_length=1)
+    canonical_edge_ids: list[Identifier] = Field(default_factory=list)
+    canonical_tensor_ids: list[Identifier] = Field(default_factory=list)
+    canonical_port_ids: list[Identifier] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def containment_is_well_formed(self) -> PublicationHierarchy:
+        by_id = {node.hierarchy_node_id: node for node in self.nodes}
+        if len(by_id) != len(self.nodes):
+            raise ValueError("publication hierarchy node identifiers must be unique")
+        root = by_id.get(self.root_node_id)
+        if root is None or root.parent_hierarchy_node_id is not None or root.depth != 0:
+            raise ValueError("publication hierarchy root is missing or invalid")
+        canonical_ids = [
+            canonical_id for node in self.nodes for canonical_id in node.canonical_node_ids
+        ]
+        if len(canonical_ids) != len(set(canonical_ids)) or set(canonical_ids) != set(
+            self.canonical_node_ids
+        ):
+            raise ValueError("publication hierarchy must own every canonical node exactly once")
+        for node in self.nodes:
+            if node.hierarchy_node_id == self.root_node_id:
+                continue
+            parent = by_id.get(node.parent_hierarchy_node_id or "")
+            if parent is None:
+                raise ValueError("publication hierarchy references a missing parent")
+            if node.depth != parent.depth + 1:
+                raise ValueError("publication hierarchy depth does not match containment")
+            visited = {node.hierarchy_node_id}
+            cursor = parent
+            while cursor.parent_hierarchy_node_id is not None:
+                if cursor.hierarchy_node_id in visited:
+                    raise ValueError("publication hierarchy contains a cycle")
+                visited.add(cursor.hierarchy_node_id)
+                cursor = by_id.get(cursor.parent_hierarchy_node_id)
+                if cursor is None:
+                    raise ValueError("publication hierarchy references a missing ancestor")
+        if self.max_depth != max(node.depth for node in self.nodes):
+            raise ValueError("publication hierarchy max_depth is stale")
+        return self
+
+
 class PublicationView(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     view_id: Identifier
     architecture_id: Identifier
-    level: Literal["L1", "L2", "L3", "L4"]
+    hierarchy_id: Identifier
+    projection_id: Identifier
+    frontier_digest: Sha256
+    expanded_node_ids: list[Identifier] = Field(default_factory=list)
+    visible_depth: int = Field(ge=0)
+    max_depth: int = Field(ge=0)
+    fully_expanded: bool = False
     name: str = Field(min_length=1)
     layout_family: Literal[
         "dual-lane",
@@ -802,7 +892,7 @@ class SceneRect(StrictModel):
 class SceneNode(StrictModel):
     scene_node_id: Identifier
     view_node_id: Identifier
-    canonical_node_ids: list[Identifier] = Field(min_length=1)
+    canonical_node_ids: list[Identifier] = Field(default_factory=list)
     bounds: SceneRect
     shape: Literal["container", "rect", "merge", "io", "state", "opaque"]
     label_lines: list[str] = Field(min_length=1, max_length=3)
@@ -864,16 +954,40 @@ class VisualPatch(StrictModel):
     value: dict[str, Any]
 
 
+class PatchBatch(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    batch_id: Identifier
+    description: str = Field(min_length=1)
+    patches: list[VisualPatch] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def patch_ids_are_unique(self) -> PatchBatch:
+        patch_ids = [patch.patch_id for patch in self.patches]
+        if len(patch_ids) != len(set(patch_ids)):
+            raise ValueError("patch identifiers must be unique within a batch")
+        return self
+
+
 class CanvasDocument(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     document_id: Identifier
     source_snapshot_id: Identifier
     architecture_id: Identifier
     source_digest: Sha256
-    base_scene_ids: list[Identifier] = Field(default_factory=list)
+    base_hierarchy_id: Identifier | None = None
     visual_patches: list[VisualPatch] = Field(default_factory=list)
     redo_patches: list[VisualPatch] = Field(default_factory=list)
     view_state: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_fixed_scene_binding(cls, value: Any) -> Any:
+        if isinstance(value, dict) and "base_scene_ids" in value:
+            migrated = dict(value)
+            migrated.pop("base_scene_ids", None)
+            migrated.setdefault("base_hierarchy_id", None)
+            return migrated
+        return value
 
     @model_validator(mode="after")
     def history_is_well_formed(self) -> CanvasDocument:
@@ -1052,7 +1166,7 @@ class GraphDelta(StrictModel):
 
 class FileChange(StrictModel):
     path: str = Field(min_length=1)
-    kind: Literal["python", "json", "onnx"]
+    kind: Literal["python", "json", "onnx", "binary"]
     before_sha256: Sha256
     after_sha256: Sha256
 
@@ -1112,6 +1226,298 @@ class GateResult(StrictModel):
     message: str = Field(min_length=1)
 
 
+class JobState(str, Enum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    CANCELLING = "cancelling"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+    STALE = "stale"
+
+
+class ProjectSession(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    project_id: Identifier
+    root: str = Field(min_length=1)
+    generation: int = Field(ge=1)
+    entrypoint: str | None = None
+    framework: str = "auto"
+    task: str = "inference"
+    config_path: str | None = None
+    config_digest: Sha256
+    execution_policy: Literal["static-only", "runtime-opt-in"] = "static-only"
+    workspace: str = Field(min_length=1)
+    opened_at: str = Field(min_length=1)
+
+
+class AnalysisRequest(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    project_id: Identifier
+    project_generation: int = Field(ge=1)
+    entrypoint: str = Field(min_length=1)
+    framework: str = "auto"
+    task: str = "inference"
+    config_path: str | None = None
+    execution_mode: Literal["static", "runtime"] = "static"
+    pattern_packs_enabled: bool = True
+    request_id: Identifier
+
+
+class AnalysisJob(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    job_id: Identifier
+    project_id: Identifier
+    generation: int = Field(ge=1)
+    input_fingerprint: Sha256
+    profile: str = Field(min_length=1)
+    state: JobState
+    progress: float = Field(ge=0, le=1)
+    started_at: str | None = None
+    finished_at: str | None = None
+    receipt: dict[str, Any] | None = None
+    diagnostics: list[Diagnostic] = Field(default_factory=list)
+
+
+class DraftPort(StrictModel):
+    port_id: Identifier
+    name: str = Field(min_length=1)
+    direction: Literal["input", "output"]
+    role: str = Field(min_length=1)
+    shape_constraint: str | None = None
+    dtype: str | None = None
+
+    @model_validator(mode="after")
+    def uses_draft_identity(self) -> DraftPort:
+        if not self.port_id.startswith("draft:"):
+            raise ValueError("draft port identifiers must use the draft: prefix")
+        return self
+
+
+class DraftNode(StrictModel):
+    node_id: Identifier
+    semantic_name: str = Field(min_length=1)
+    framework: str = Field(min_length=1)
+    node_type: str = Field(min_length=1)
+    parent_id: Identifier | None = None
+    source_anchor: str | None = None
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    ports: list[DraftPort] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def uses_draft_identity(self) -> DraftNode:
+        if not self.node_id.startswith("draft:"):
+            raise ValueError("draft node identifiers must use the draft: prefix")
+        return self
+
+
+class DraftEdge(StrictModel):
+    edge_id: Identifier
+    source_port_id: Identifier
+    target_port_id: Identifier
+    policy: Literal["replace-input", "add-residual", "concat", "fanout", "disconnect"]
+    parameters: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def uses_draft_identity(self) -> DraftEdge:
+        if not self.edge_id.startswith("draft:"):
+            raise ValueError("draft edge identifiers must use the draft: prefix")
+        return self
+
+
+EditIntentKind = Literal[
+    "create-node",
+    "delete-node",
+    "connect-ports",
+    "disconnect-edge",
+    "replace-node",
+    "set-parameter",
+    "edit-source-buffer",
+    "edit-onnx-initializer",
+    "edit-onnx-attribute",
+]
+
+
+class EditIntent(StrictModel):
+    intent_id: Identifier
+    kind: EditIntentKind
+    target_ids: list[Identifier] = Field(default_factory=list)
+    preconditions: list[str] = Field(default_factory=list)
+    expected_delta: GraphDelta | None = None
+    user_input: dict[str, Any] = Field(default_factory=dict)
+    capability_requirement: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def uses_intent_identity(self) -> EditIntent:
+        if not self.intent_id.startswith("intent:"):
+            raise ValueError("edit intent identifiers must use the intent: prefix")
+        return self
+
+
+class EditProofState(str, Enum):
+    CHECKING = "checking"
+    CONDITIONAL = "conditional"
+    UNPROVEN = "unproven"
+    INVALID = "invalid"
+    STALE = "stale"
+    PROVEN = "proven"
+    REVIEW_READY = "review-ready"
+
+
+class EditProofStatus(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    intent_id: Identifier
+    status: EditProofState
+    writeback_eligibility: Literal["blocked", "prepare", "commit"]
+    reason_codes: list[str] = Field(default_factory=list)
+    message: str = Field(min_length=1)
+    affected_subject_ids: list[Identifier] = Field(default_factory=list)
+    required_facts: list[str] = Field(default_factory=list)
+    supported_fixes: list[str] = Field(default_factory=list)
+    checked_generation: int = Field(ge=1)
+    input_fingerprint: Sha256
+
+    @model_validator(mode="after")
+    def eligibility_matches_status(self) -> EditProofStatus:
+        expected = {
+            EditProofState.PROVEN: "prepare",
+            EditProofState.REVIEW_READY: "commit",
+        }.get(self.status, "blocked")
+        if self.writeback_eligibility != expected:
+            raise ValueError("proof status and writeback eligibility disagree")
+        return self
+
+
+class WritebackSummary(StrictModel):
+    eligibility: Literal["blocked", "prepare", "commit"] = "blocked"
+    blocking_intent_ids: list[Identifier] = Field(default_factory=list)
+
+
+class DraftGraphDocument(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    draft_id: Identifier
+    base_architecture_id: Identifier
+    base_source_digest: Sha256
+    revision: int = Field(ge=0)
+    nodes: list[DraftNode] = Field(default_factory=list)
+    edges: list[DraftEdge] = Field(default_factory=list)
+    intents: list[EditIntent] = Field(default_factory=list)
+    proofs: list[EditProofStatus] = Field(default_factory=list)
+    lowering_status: Literal["not-planned", "checking", "planned", "blocked"] = "not-planned"
+    writeback_summary: WritebackSummary = Field(default_factory=WritebackSummary)
+
+    @model_validator(mode="after")
+    def identities_and_summary_are_consistent(self) -> DraftGraphDocument:
+        if not self.draft_id.startswith("draft:"):
+            raise ValueError("draft document identifiers must use the draft: prefix")
+        groups = (self.nodes, self.edges, self.intents)
+        identifiers = [
+            item.node_id if isinstance(item, DraftNode)
+            else item.edge_id if isinstance(item, DraftEdge)
+            else item.intent_id
+            for group in groups
+            for item in group
+        ]
+        if len(identifiers) != len(set(identifiers)):
+            raise ValueError("draft document identifiers must be unique")
+        intent_ids = {intent.intent_id for intent in self.intents}
+        if any(proof.intent_id not in intent_ids for proof in self.proofs):
+            raise ValueError("proof status references an unknown edit intent")
+        if any(item not in intent_ids for item in self.writeback_summary.blocking_intent_ids):
+            raise ValueError("writeback summary references an unknown edit intent")
+        return self
+
+
+class EditableCapability(StrictModel):
+    id: str = Field(min_length=1)
+    plane: Literal["visual", "draft", "source"]
+    control: str | None = None
+    status: Literal["available", "conditional", "unavailable"]
+    preconditions: list[str] = Field(default_factory=list)
+
+
+class EditableCapabilityManifest(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    subject_id: Identifier
+    capabilities: list[EditableCapability] = Field(default_factory=list)
+
+
+class SearchSubject(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    id: Identifier
+    kind: Literal[
+        "node", "tensor", "edge", "port", "evidence", "source", "diagnostic", "transaction"
+    ]
+    canonical_ids: list[Identifier] = Field(default_factory=list)
+    title: str = Field(min_length=1)
+    aliases: list[str] = Field(default_factory=list)
+    tokens: list[str] = Field(default_factory=list)
+    source_spans: list[dict[str, Any]] = Field(default_factory=list)
+    view_bindings: list[dict[str, str]] = Field(default_factory=list)
+    runtime_bindings: list[Identifier] = Field(default_factory=list)
+    facets: dict[str, str] = Field(default_factory=dict)
+
+
+class ValidationGateResult(StrictModel):
+    gate: str = Field(min_length=1)
+    status: Literal["passed", "failed", "skipped", "unsupported", "cancelled"]
+    message: str = Field(min_length=1)
+    target_ids: list[Identifier] = Field(default_factory=list)
+
+
+class ValidationRun(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    validation_id: Identifier
+    profile: Literal["fast-static", "publication", "full", "runtime-replay"]
+    input_fingerprint: Sha256
+    generation: int = Field(ge=1)
+    state: JobState
+    gate_results: list[ValidationGateResult] = Field(default_factory=list)
+    diagnostics: list[Diagnostic] = Field(default_factory=list)
+    supported_fixes: list[str] = Field(default_factory=list)
+    coverage: dict[str, float] = Field(default_factory=dict)
+    runtime_execution_authorized: bool = False
+    started_at: str | None = None
+    finished_at: str | None = None
+
+    @model_validator(mode="after")
+    def runtime_requires_authorization(self) -> ValidationRun:
+        if self.profile == "runtime-replay" and not self.runtime_execution_authorized:
+            raise ValueError("runtime replay requires explicit execution authorization")
+        return self
+
+
+class ArtifactEntry(StrictModel):
+    logical_path: str = Field(min_length=1)
+    size: int = Field(ge=0)
+    sha256: Sha256
+    role: Literal["model", "external-data", "manifest"]
+
+    @model_validator(mode="after")
+    def path_is_relative_and_confined(self) -> ArtifactEntry:
+        normalized = self.logical_path.replace("\\", "/")
+        if normalized.startswith("/") or ".." in normalized.split("/") or "\x00" in normalized:
+            raise ValueError("artifact paths must be safe relative paths")
+        return self
+
+
+class ArtifactSet(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    artifact_set_id: Identifier
+    root: str = Field(min_length=1)
+    set_digest: Sha256
+    entries: list[ArtifactEntry] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def logical_paths_are_unique(self) -> ArtifactSet:
+        paths = [entry.logical_path for entry in self.entries]
+        if len(paths) != len(set(paths)):
+            raise ValueError("artifact logical paths must be unique")
+        if not any(entry.role == "model" for entry in self.entries):
+            raise ValueError("artifact set requires a model entry")
+        return self
+
+
 class CommandReceipt(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     command: str = Field(min_length=1)
@@ -1145,10 +1551,12 @@ SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "semantic-annotation-overlay-v1.schema.json": SemanticAnnotationOverlay,
     "pattern-pack-receipt-v1.schema.json": PatternPackReceipt,
     "pattern-candidate-review-v1.schema.json": PatternCandidateReview,
+    "publication-hierarchy-v1.schema.json": PublicationHierarchy,
     "publication-view-v1.schema.json": PublicationView,
     "visual-spec-v1.schema.json": VisualSpec,
     "visual-scene-v1.schema.json": VisualScene,
     "canvas-document-v1.schema.json": CanvasDocument,
+    "patch-batch-v1.schema.json": PatchBatch,
     "semantic-parameter-patch-v1.schema.json": SemanticParameterPatch,
     "semantic-structural-patch-v1.schema.json": SemanticStructuralPatch,
     "proposed-connection-v1.schema.json": ProposedConnection,
@@ -1157,4 +1565,11 @@ SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "source-transaction-v1.schema.json": SourceTransaction,
     "transaction-receipt-v1.schema.json": TransactionReceipt,
     "command-receipt-v1.schema.json": CommandReceipt,
+    "project-session-v1.schema.json": ProjectSession,
+    "analysis-job-v1.schema.json": AnalysisJob,
+    "draft-graph-document-v1.schema.json": DraftGraphDocument,
+    "edit-proof-status-v1.schema.json": EditProofStatus,
+    "search-subject-v1.schema.json": SearchSubject,
+    "validation-run-v1.schema.json": ValidationRun,
+    "artifact-set-v1.schema.json": ArtifactSet,
 }

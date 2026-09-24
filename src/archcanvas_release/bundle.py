@@ -19,8 +19,11 @@ from archcanvas_patterns import exact_ir_digest
 from archcanvas_publication import (
     build_scene,
     build_visual_spec,
+    compile_hierarchy,
     compile_views,
     render_html,
+    render_pdf,
+    render_png,
     render_svg,
     validate_geometry,
     validate_publication,
@@ -102,6 +105,7 @@ def create_bundle(artifact: Path, output: Path) -> tuple[OfflineBundleManifest, 
         raise ValueError("source snapshot does not match architecture")
     semantic_overlay = _overlay(artifact, architecture)
     views = compile_views(architecture, semantic_overlay)
+    hierarchy = compile_hierarchy(architecture, semantic_overlay)
     publication_gates, diagnostics = validate_publication(architecture, views)
     gates = [gate.model_dump(mode="json") for gate in publication_gates]
     if diagnostics or any(gate.status == "failed" for gate in publication_gates):
@@ -140,19 +144,25 @@ def create_bundle(artifact: Path, output: Path) -> tuple[OfflineBundleManifest, 
                     raise ValueError(f"bundle JSON artifact is invalid: {source.name}") from error
                 _write_json(analysis_target / source.name, payload, redact=True)
 
+        _write_json(staging / "publication" / "hierarchy.json", hierarchy)
         for view in views:
-            target = staging / "publication" / view.level.lower()
+            projection_name = "full" if view.fully_expanded else "collapsed"
+            target = staging / "publication" / projection_name
             spec = build_visual_spec(view)
             scene = build_scene(view, spec)
             geometry_gate, geometry_diagnostics = validate_geometry(scene)
             gates.append(geometry_gate.model_dump(mode="json"))
             if geometry_gate.status == "failed" or geometry_diagnostics:
-                raise ValueError(f"geometry validation failed for {view.level}")
+                raise ValueError(
+                    f"geometry validation failed for {view.projection_id}"
+                )
             _write_json(target / "publication-view.json", view)
             _write_json(target / "visual-spec.json", spec)
             _write_json(target / "visual-scene.json", scene)
             (target / "scene.svg").write_text(render_svg(scene), encoding="utf-8")
             (target / "view.html").write_text(render_html(scene, view, spec), encoding="utf-8")
+            (target / "scene.png").write_bytes(render_png(scene))
+            (target / "scene.pdf").write_bytes(render_pdf(scene))
 
         shutil.copytree(REPOSITORY_ROOT / "schemas", staging / "schemas")
         _write_json(staging / "support-matrix.json", release_support_matrix())

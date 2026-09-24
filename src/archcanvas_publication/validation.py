@@ -81,12 +81,11 @@ def validate_publication(
         for node in executable_nodes
         if node.kind is NodeKind.INPUT_OUTPUT and node.attributes.get("io") == "output"
     }
-    levels = [view.level for view in views]
-    if set(levels) != {"L1", "L2", "L3", "L4"} or len(levels) != 4:
+    if not views:
         diagnostics.append(
             _diagnostic(
-                "PUBLICATION_LEVEL_SET_INVALID",
-                "Publication compilation must contain exactly one L1, L2, L3, and L4 view.",
+                "PUBLICATION_PROJECTION_SET_EMPTY",
+                "Publication compilation must contain at least one containment projection.",
             )
         )
 
@@ -183,20 +182,24 @@ def validate_publication(
                     target,
                 )
             )
-        if view.level == "L4":
-            if any(len(node.canonical_node_ids) != 1 or node.collapsed for node in view.nodes):
+        if view.fully_expanded:
+            if any(
+                len(node.canonical_node_ids) != 1 or node.collapsed
+                for node in view.nodes
+                if node.canonical_node_ids
+            ):
                 diagnostics.append(
                     _diagnostic(
-                        "PUBLICATION_L4_NODE_NOT_EXACT",
-                        "L4 requires one visible view node per canonical node.",
+                        "PUBLICATION_FULL_NODE_NOT_EXACT",
+                        "A fully expanded projection requires one visible view node per canonical node.",
                         target,
                     )
                 )
             if any(len(edge.canonical_edge_ids) != 1 for edge in view.edges) or view.collapsed_edge_ids:
                 diagnostics.append(
                     _diagnostic(
-                        "PUBLICATION_L4_EDGE_NOT_EXACT",
-                        "L4 requires one visible view edge per canonical edge.",
+                        "PUBLICATION_FULL_EDGE_NOT_EXACT",
+                        "A fully expanded projection requires one visible view edge per canonical edge.",
                         target,
                     )
                 )
@@ -207,7 +210,7 @@ def validate_publication(
         message=(
             "Publication views failed canonical identity or reachability checks."
             if diagnostics
-            else "L1-L4 preserve canonical identity, provenance, and input-to-output reachability."
+            else "Containment projections preserve canonical identity, provenance, and input-to-output reachability."
         ),
     )
     return [gate], diagnostics
@@ -283,11 +286,23 @@ def validate_geometry(scene: VisualScene) -> tuple[GateResult, list[Diagnostic]]
                     node.scene_node_id,
                 )
             )
+    def is_ancestor(ancestor_id: str, node_id: str) -> bool:
+        cursor = by_id.get(node_id)
+        visited: set[str] = set()
+        while cursor is not None and cursor.parent_scene_node_id is not None:
+            if cursor.parent_scene_node_id == ancestor_id:
+                return True
+            if cursor.parent_scene_node_id in visited:
+                return False
+            visited.add(cursor.parent_scene_node_id)
+            cursor = by_id.get(cursor.parent_scene_node_id)
+        return False
+
     for index, first in enumerate(scene.nodes):
         for second in scene.nodes[index + 1 :]:
-            if first.parent_scene_node_id == second.scene_node_id:
-                continue
-            if second.parent_scene_node_id == first.scene_node_id:
+            if is_ancestor(first.scene_node_id, second.scene_node_id) or is_ancestor(
+                second.scene_node_id, first.scene_node_id
+            ):
                 continue
             if _overlap(first.bounds, second.bounds):
                 diagnostics.append(
@@ -395,7 +410,11 @@ def validate_geometry(scene: VisualScene) -> tuple[GateResult, list[Diagnostic]]
             )
         )
     placements = list(label_placements.items())
-    child_nodes = [node for node in scene.nodes if node.parent_scene_node_id is not None]
+    child_nodes = [
+        node
+        for node in scene.nodes
+        if node.parent_scene_node_id is not None and node.shape != "container"
+    ]
     for edge_id, placement in placements:
         for node in child_nodes:
             if _overlap(placement.bounds, node.bounds):

@@ -1,0 +1,81 @@
+{
+  "$defs": {
+    "ArtifactEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "logical_path": {
+          "minLength": 1,
+          "title": "Logical Path",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "model",
+            "external-data",
+            "manifest"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size": {
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "logical_path",
+        "size",
+        "sha256",
+        "role"
+      ],
+      "title": "ArtifactEntry",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "artifact_set_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Artifact Set Id",
+      "type": "string"
+    },
+    "entries": {
+      "items": {
+        "$ref": "#/$defs/ArtifactEntry"
+      },
+      "minItems": 1,
+      "title": "Entries",
+      "type": "array"
+    },
+    "root": {
+      "minLength": 1,
+      "title": "Root",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "set_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Set Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "artifact_set_id",
+    "root",
+    "set_digest",
+    "entries"
+  ],
+  "title": "ArtifactSet",
+  "type": "object"
+}

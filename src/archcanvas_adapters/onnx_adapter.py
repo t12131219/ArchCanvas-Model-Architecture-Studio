@@ -24,6 +24,8 @@ from archcanvas_core.models import (
 )
 from archcanvas_python.analyzer import AnalysisBundle, AnalysisError
 
+from .onnx_external import build_artifact_set
+
 ADAPTER_VERSION = "0.1.0"
 
 
@@ -108,7 +110,9 @@ def analyze_onnx(
     config = _config(config_bytes)
     config_digest = _sha256(config_bytes)
     try:
-        model = onnx.load(path, load_external_data=False)
+        stored_model = onnx.load(path, load_external_data=False)
+        artifact_set = build_artifact_set(stored_model, path, root)
+        model = onnx.load(path, load_external_data=True)
         model = onnx.shape_inference.infer_shapes(model)
         onnx.checker.check_model(model, full_check=False)
     except Exception as error:
@@ -116,7 +120,10 @@ def analyze_onnx(
 
     relative_path = path.relative_to(root).as_posix()
     resolved_config_path = str(config_path.resolve()) if config_path else None
-    seed = f"{source_digest}:{config_digest}:{relative_path}:{task}:{execution_mode}:onnx".encode()
+    seed = (
+        f"{source_digest}:{artifact_set.set_digest}:{config_digest}:"
+        f"{relative_path}:{task}:{execution_mode}:onnx"
+    ).encode()
     snapshot = SourceSnapshot(
         snapshot_id=f"snapshot:{_sha256(seed)[:16]}",
         project_root=str(root),
@@ -129,7 +136,10 @@ def analyze_onnx(
         config_digest=config_digest,
         config_path=resolved_config_path,
         resolved_config=config,
-        source_files=[SourceFile(path=relative_path, sha256=source_digest)],
+        source_files=[
+            SourceFile(path=entry.logical_path, sha256=entry.sha256)
+            for entry in artifact_set.entries
+        ],
     )
     predicate = f"task={task} && mode={execution_mode}"
     graph_name = model.graph.name or path.stem
@@ -220,16 +230,8 @@ def analyze_onnx(
                     ArchitectureParameter(
                         name="value",
                         source_expression=f"initializer:{initializer.name}",
-                        value=(
-                            onnx.numpy_helper.to_array(initializer).tolist()
-                            if initializer.data_location != onnx.TensorProto.EXTERNAL
-                            else None
-                        ),
-                        origin=(
-                            ParameterOrigin.LITERAL
-                            if initializer.data_location != onnx.TensorProto.EXTERNAL
-                            else ParameterOrigin.UNRESOLVED
-                        ),
+                        value=onnx.numpy_helper.to_array(initializer).tolist(),
+                        origin=ParameterOrigin.LITERAL,
                         evidence_ids=evidence_ids,
                     )
                 ],

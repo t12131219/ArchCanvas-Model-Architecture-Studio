@@ -24,5 +24,5 @@ semantic closure through generic operators and explicit `opaque_composite` bound
 running a profile-specific semantic gate.
 
 Destructive mutation tests cover every profile gate. Source member tampering is rejected against
-fixture provenance. Publication compilation, reference-image review, and L1-L4 visual outputs remain
+fixture provenance. Publication compilation, reference-image review, and dynamic frontier visual outputs remain
 explicitly skipped until Stage 3.

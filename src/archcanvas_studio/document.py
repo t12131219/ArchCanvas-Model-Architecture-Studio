@@ -11,6 +11,7 @@ from typing import Any
 from archcanvas_core.models import (
     ArchitectureIR,
     CanvasDocument,
+    PatchBatch,
     SceneNode,
     ScenePoint,
     SceneRect,
@@ -70,7 +71,9 @@ def source_binding_digest(snapshot: SourceSnapshot) -> str:
 def create_canvas_document(
     ir: ArchitectureIR,
     snapshot: SourceSnapshot,
-    scenes: Iterable[VisualScene],
+    scenes: Iterable[VisualScene] = (),
+    *,
+    hierarchy_id: str | None = None,
 ) -> CanvasDocument:
     suffix = ir.architecture_id.removeprefix("architecture:")
     return CanvasDocument(
@@ -78,8 +81,12 @@ def create_canvas_document(
         source_snapshot_id=snapshot.snapshot_id,
         architecture_id=ir.architecture_id,
         source_digest=source_binding_digest(snapshot),
-        base_scene_ids=[scene.scene_id for scene in scenes],
-        view_state={"active_level": "L1", "mode": "explore", "theme": "paper-light"},
+        base_hierarchy_id=hierarchy_id,
+        view_state={
+            "mode": "explore",
+            "theme": "paper-light",
+            "navigation_view": "module",
+        },
     )
 
 
@@ -182,6 +189,22 @@ def validate_patch(
         scale = _number(patch.value.get("scale"), "font scale", positive=True)
         if not 0.75 <= scale <= 1.5:
             raise ValueError("font scale must be between 0.75 and 1.5")
+    elif patch.operation == "set-line-weight":
+        width = _number(patch.value.get("width"), "line weight", positive=True)
+        if width > 8:
+            raise ValueError("line weight must not exceed 8")
+    elif patch.operation == "set-palette":
+        overrides = patch.value.get("overrides")
+        if not isinstance(overrides, dict):
+            raise ValueError("set-palette requires an overrides object")
+        if any(
+            not isinstance(key, str)
+            or not isinstance(value, str)
+            or not value.startswith("#")
+            or len(value) not in {4, 7, 9}
+            for key, value in overrides.items()
+        ):
+            raise ValueError("palette overrides must map identifiers to hex colors")
 
 
 def apply_patch(
@@ -206,20 +229,98 @@ def apply_patch(
             }
         )
     changed = apply_visual_patch(document, patch)
+    state = dict(changed.view_state)
+    state["_redo_batches"] = []
+    changed = changed.model_copy(update={"view_state": state})
     if changed.source_digest != document.source_digest:
         raise AssertionError("visual patch changed the source binding")
     return changed
 
 
+def apply_patch_batch(
+    document: CanvasDocument,
+    batch: PatchBatch,
+    scenes: dict[str, VisualScene],
+) -> CanvasDocument:
+    """Apply a validated group of visual changes as one history action."""
+    state = dict(document.view_state)
+    known_batch_ids = {
+        item.get("batch_id")
+        for key in ("_history_batches", "_redo_batches")
+        for item in state.get(key, [])
+        if isinstance(item, dict)
+    }
+    if batch.batch_id in known_batch_ids:
+        raise ValueError("visual patch batch identifier already exists")
+    camera_keys = [
+        patch.value.get("scene_id")
+        for patch in batch.patches
+        if patch.operation == "set-camera"
+    ]
+    if len(camera_keys) != len(set(camera_keys)):
+        raise ValueError("a patch batch cannot contain repeated camera updates")
+    changed = document
+    for patch in batch.patches:
+        changed = apply_patch(changed, patch, scenes)
+    state = dict(changed.view_state)
+    history = list(state.get("_history_batches", []))
+    history.append(
+        {
+            "batch_id": batch.batch_id,
+            "description": batch.description,
+            "patch_ids": [patch.patch_id for patch in batch.patches],
+        }
+    )
+    state["_history_batches"] = history
+    state["_redo_batches"] = []
+    changed = changed.model_copy(update={"view_state": state})
+    if changed.source_digest != document.source_digest:
+        raise AssertionError("visual patch batch changed the source binding")
+    return changed
+
+
 def undo_patch(document: CanvasDocument) -> CanvasDocument:
-    changed = undo_visual_patch(document)
+    state = dict(document.view_state)
+    history = list(state.get("_history_batches", []))
+    record = history[-1] if history else None
+    patch_ids = record.get("patch_ids", []) if isinstance(record, dict) else []
+    is_batch = bool(patch_ids) and [
+        patch.patch_id for patch in document.visual_patches[-len(patch_ids) :]
+    ] == patch_ids
+    changed = document
+    if is_batch:
+        for _ in patch_ids:
+            changed = undo_visual_patch(changed)
+        history.pop()
+        redo = list(state.get("_redo_batches", []))
+        state["_history_batches"] = history
+        state["_redo_batches"] = [record, *redo]
+        changed = changed.model_copy(update={"view_state": state})
+    else:
+        changed = undo_visual_patch(document)
     if changed.source_digest != document.source_digest:
         raise AssertionError("undo changed the source binding")
     return changed
 
 
 def redo_patch(document: CanvasDocument) -> CanvasDocument:
-    changed = redo_visual_patch(document)
+    state = dict(document.view_state)
+    redo = list(state.get("_redo_batches", []))
+    record = redo[0] if redo else None
+    patch_ids = record.get("patch_ids", []) if isinstance(record, dict) else []
+    is_batch = bool(patch_ids) and [
+        patch.patch_id for patch in document.redo_patches[: len(patch_ids)]
+    ] == patch_ids
+    changed = document
+    if is_batch:
+        for _ in patch_ids:
+            changed = redo_visual_patch(changed)
+        history = list(state.get("_history_batches", []))
+        state["_history_batches"] = [*history, record]
+        state["_redo_batches"] = redo[1:]
+        changed = changed.model_copy(update={"view_state": state})
+    else:
+        changed = redo_visual_patch(document)
     if changed.source_digest != document.source_digest:
         raise AssertionError("redo changed the source binding")
     return changed
@@ -275,7 +376,9 @@ def _reroute_edges(
 
 def materialize_scene(base: VisualScene, document: CanvasDocument) -> VisualScene:
     node_updates: dict[str, dict[str, Any]] = {}
+    node_style_updates: dict[str, dict[str, Any]] = {}
     route_hints: dict[str, list] = {}
+    line_width: float | None = None
     for patch in document.visual_patches:
         if not _patch_applies(patch, base):
             continue
@@ -294,6 +397,11 @@ def materialize_scene(base: VisualScene, document: CanvasDocument) -> VisualScen
             node_updates.setdefault(patch.target_id, {})["label_lines"] = patch.value["lines"]
         elif patch.operation == "set-route-hint" and patch.target_id:
             route_hints[patch.target_id] = patch.value["points"]
+        elif patch.operation == "set-palette":
+            for target_id, color in patch.value.get("overrides", {}).items():
+                node_style_updates.setdefault(target_id, {})["fill"] = color
+        elif patch.operation == "set-line-weight":
+            line_width = float(patch.value["width"])
 
     nodes: list[SceneNode] = []
     for node in base.nodes:
@@ -304,6 +412,7 @@ def materialize_scene(base: VisualScene, document: CanvasDocument) -> VisualScen
             node.model_copy(
                 update={
                     "bounds": bounds,
+                    **node_style_updates.get(node.scene_node_id, {}),
                     **({"label_lines": lines} if lines is not None else {}),
                 }
             )
@@ -339,6 +448,8 @@ def materialize_scene(base: VisualScene, document: CanvasDocument) -> VisualScen
         if any(key in update for key in ("x", "y", "width", "height"))
     }
     edges = _reroute_edges(base, nodes, route_hints, changed_node_ids)
+    if line_width is not None:
+        edges = [edge.model_copy(update={"width": line_width}) for edge in edges]
     return base.model_copy(
         update={
             "paper_width": paper_width,
@@ -351,6 +462,7 @@ def materialize_scene(base: VisualScene, document: CanvasDocument) -> VisualScen
 
 def derive_view_state(document: CanvasDocument) -> dict[str, Any]:
     state = dict(document.view_state)
+    state.setdefault("navigation_view", "module")
     pinned: set[str] = set()
     collapsed: set[str] = set()
     cameras: dict[str, dict[str, Any]] = {}
@@ -370,6 +482,14 @@ def derive_view_state(document: CanvasDocument) -> dict[str, Any]:
             state["theme"] = patch.value.get("theme", "paper-light")
         elif patch.operation == "set-caption":
             state["caption"] = patch.value.get("caption", "")
+        elif patch.operation == "set-font-scale":
+            state["font_scale"] = patch.value["scale"]
+        elif patch.operation == "set-line-weight":
+            state["line_weight"] = patch.value["width"]
+        elif patch.operation == "set-palette":
+            overrides = dict(state.get("palette_overrides", {}))
+            overrides.update(patch.value.get("overrides", {}))
+            state["palette_overrides"] = overrides
     state["pinned_node_ids"] = sorted(pinned)
     state["collapsed_node_ids"] = sorted(collapsed)
     state["cameras"] = cameras

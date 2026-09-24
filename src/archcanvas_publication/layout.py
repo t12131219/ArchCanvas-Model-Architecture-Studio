@@ -21,10 +21,10 @@ from archcanvas_core.models import (
 
 NODE_WIDTH = 210.0
 NODE_HEIGHT = 106.0
-ROW_GAP = 42.0
+ROW_GAP = 76.0
 
 
-def _node_style(node: PublicationNode, level: str) -> tuple[str, str, str]:
+def _node_style(node: PublicationNode, fully_expanded: bool) -> tuple[str, str, str]:
     source_kind = str(node.attributes.get("source_kind", node.kind.value))
     lowered = f"{node.semantic_name} {source_kind}".lower()
     if node.parent_view_node_id is None and node.kind is NodeKind.MODULE_CONTAINER:
@@ -49,7 +49,7 @@ def _node_style(node: PublicationNode, level: str) -> tuple[str, str, str]:
         return "operator", "#fff0f0", "#c92a2a"
     if any(word in lowered for word in ("embed", "projection", "linear", "conv")):
         return "operator", "#fff4e6", "#d9480f"
-    if level == "L4":
+    if fully_expanded:
         return "operator", "#e7f5ff", "#1864ab"
     return "operator", "#eef2f7", "#4b6075"
 
@@ -71,11 +71,13 @@ def _edge_style(edge_type: EdgeType) -> tuple[str, str | None, float]:
 def build_visual_spec(view: PublicationView) -> VisualSpec:
     node_styles: list[VisualNodeStyle] = []
     for node in view.nodes:
-        glyph, fill, stroke = _node_style(node, view.level)
+        glyph, fill, stroke = _node_style(node, view.fully_expanded)
         secondary: str | None = None
         if node.collapsed:
             secondary = f"{len(node.canonical_node_ids)} canonical nodes"
-        elif view.level == "L4":
+        elif not node.canonical_node_ids:
+            secondary = f"{node.attributes.get('canonical_count', 0)} contained nodes"
+        elif view.fully_expanded:
             secondary = node.canonical_node_ids[0]
         elif node.boundary_roles:
             secondary = ", ".join(node.boundary_roles[:3])
@@ -93,7 +95,7 @@ def build_visual_spec(view: PublicationView) -> VisualSpec:
     for edge in view.edges:
         stroke, dash, width = _edge_style(edge.edge_type)
         label = edge.role
-        if view.level in {"L3", "L4"} and edge.symbolic_shape != "[?]":
+        if view.visible_depth > 1 and edge.symbolic_shape != "[?]":
             label = f"{label} {edge.symbolic_shape}"
         edge_styles.append(
             VisualEdgeStyle(
@@ -192,18 +194,93 @@ def build_scene(view: PublicationView, spec: VisualSpec) -> VisualScene:
         ),
         None,
     )
-    placed = [node for node in view.nodes if node is not root]
+    by_view = {node.view_node_id: node for node in view.nodes}
+    visible_children: dict[str, list[PublicationNode]] = defaultdict(list)
+    for node in view.nodes:
+        if node.parent_view_node_id is not None:
+            visible_children[node.parent_view_node_id].append(node)
+    container_ids = {
+        parent_id for parent_id, members in visible_children.items() if members
+    }
+    placed = [
+        node
+        for node in view.nodes
+        if node is not root and node.view_node_id not in container_ids
+    ]
     if not placed:
         placed = list(view.nodes)
         root = None
-    column_gap = 240.0 if view.level in {"L3", "L4"} else 92.0
-    node_ids = [node.view_node_id for node in placed]
-    ranks = _ranks(view, node_ids)
-    rank_members: dict[int, list[PublicationNode]] = defaultdict(list)
+    column_gap = 240.0 if view.visible_depth > 1 else 112.0
+    rankable_ids = [
+        node.view_node_id
+        for node in view.nodes
+        if node is not root and node.canonical_node_ids
+    ]
+    ranks = _ranks(view, rankable_ids)
+
+    def containment_track(node: PublicationNode) -> tuple[str, str]:
+        nearest_container = (
+            node.parent_view_node_id
+            if node.parent_view_node_id in container_ids
+            else "__direct__"
+        )
+        cursor = node
+        while cursor.parent_view_node_id not in {None, "viewnode:model"}:
+            cursor = by_view[cursor.parent_view_node_id]
+        if cursor.view_node_id not in container_ids:
+            return "__ungrouped__", "__direct__"
+        return cursor.view_node_id, nearest_container
+
+    track_rank_members: dict[tuple[str, str, int], list[PublicationNode]] = defaultdict(list)
     for index, node in enumerate(placed):
-        rank_members[ranks[node.view_node_id]].append(node)
-    for rank, members in rank_members.items():
-        members.sort(key=lambda node: (_lane(node, view.layout_family, placed.index(node)), node.view_node_id))
+        rank = ranks.get(node.view_node_id, index)
+        group, track = containment_track(node)
+        track_rank_members[(group, track, rank)].append(node)
+    for members in track_rank_members.values():
+        members.sort(
+            key=lambda node: (
+                _lane(node, view.layout_family, placed.index(node)),
+                node.view_node_id,
+            )
+        )
+
+    groups = sorted(
+        {group for group, _, _ in track_rank_members},
+        key=lambda group: (
+            min(rank for candidate, _, rank in track_rank_members if candidate == group),
+            group,
+        ),
+    )
+
+    def track_path(track: str) -> tuple[str, ...]:
+        if track not in by_view:
+            return (track,)
+        path: list[str] = []
+        cursor = by_view[track]
+        while cursor.parent_view_node_id is not None:
+            path.append(cursor.view_node_id)
+            parent = by_view.get(cursor.parent_view_node_id)
+            if parent is None:
+                break
+            cursor = parent
+        return tuple(reversed(path))
+
+    tracks_by_group = {
+        group: sorted(
+            {track for candidate, track, _ in track_rank_members if candidate == group},
+            key=lambda track: (track_path(track), track),
+        )
+        for group in groups
+    }
+    track_rows = {
+        (group, track): max(
+            len(members)
+            for (candidate, candidate_track, _), members in track_rank_members.items()
+            if candidate == group and candidate_track == track
+        )
+        for group in groups
+        for track in tracks_by_group[group]
+    }
 
     long_edges = [
         edge
@@ -213,32 +290,47 @@ def build_scene(view: PublicationView, spec: VisualSpec) -> VisualScene:
         and ranks[edge.target_view_node_id] - ranks[edge.source_view_node_id] != 1
     ]
     top_margin = 92.0 + len(long_edges) * 18.0
-    max_rows = max((len(members) for members in rank_members.values()), default=1)
-    max_rank = max(ranks.values(), default=0)
+    group_gap = 112.0
+    track_gap = 72.0
+    track_offsets: dict[tuple[str, str], float] = {}
+    cursor_y = top_margin
+    for group in groups:
+        for track in tracks_by_group[group]:
+            track_offsets[(group, track)] = cursor_y
+            cursor_y += track_rows[(group, track)] * (NODE_HEIGHT + ROW_GAP) + track_gap
+        cursor_y += group_gap - track_gap
+    max_rank = max((ranks.get(node.view_node_id, 0) for node in placed), default=0)
     content_width = (max_rank + 1) * NODE_WIDTH + max_rank * column_gap
-    content_height = max_rows * NODE_HEIGHT + max(0, max_rows - 1) * ROW_GAP
+    content_height = max(NODE_HEIGHT, cursor_y - top_margin - group_gap)
     paper_width = max(720.0, content_width + 144.0)
     paper_height = max(360.0, top_margin + content_height + 86.0)
 
     styles = {style.view_node_id: style for style in spec.node_styles}
-    scene_nodes: list[SceneNode] = []
+    leaf_scene_nodes: list[SceneNode] = []
     view_to_scene: dict[str, str] = {}
     root_scene_id = (
         f"scenenode:{root.view_node_id.removeprefix('viewnode:')}" if root is not None else None
     )
-    for rank in sorted(rank_members):
-        for row, node in enumerate(rank_members[rank]):
+    for (group, track, rank), members in sorted(
+        track_rank_members.items(), key=lambda item: (item[0][2], item[0][0], item[0][1])
+    ):
+        for row, node in enumerate(members):
             style = styles[node.view_node_id]
             scene_id = f"scenenode:{node.view_node_id.removeprefix('viewnode:')}"
             view_to_scene[node.view_node_id] = scene_id
-            scene_nodes.append(
+            parent_scene_id = (
+                f"scenenode:{node.parent_view_node_id.removeprefix('viewnode:')}"
+                if node.parent_view_node_id
+                else None
+            )
+            leaf_scene_nodes.append(
                 SceneNode(
                     scene_node_id=scene_id,
                     view_node_id=node.view_node_id,
                     canonical_node_ids=node.canonical_node_ids,
                     bounds=SceneRect(
-                        x=72.0 + rank * (NODE_WIDTH + column_gap),
-                        y=top_margin + row * (NODE_HEIGHT + ROW_GAP),
+                        x=96.0 + rank * (NODE_WIDTH + column_gap),
+                        y=track_offsets[(group, track)] + row * (NODE_HEIGHT + ROW_GAP),
                         width=NODE_WIDTH,
                         height=NODE_HEIGHT,
                     ),
@@ -255,10 +347,84 @@ def build_scene(view: PublicationView, spec: VisualSpec) -> VisualScene:
                     secondary_label=style.secondary_label,
                     fill=style.fill,
                     stroke=style.stroke,
-                    parent_scene_node_id=root_scene_id,
+                    parent_scene_node_id=parent_scene_id,
                     evidence_ids=node.evidence_ids,
                 )
             )
+
+    scene_by_view = {node.view_node_id: node for node in leaf_scene_nodes}
+    container_scene_nodes: list[SceneNode] = []
+    containers = sorted(
+        (
+            node
+            for node in view.nodes
+            if node is not root and node.view_node_id in container_ids
+        ),
+        key=lambda node: int(node.attributes.get("depth", 0)),
+        reverse=True,
+    )
+    for node in containers:
+        members = [
+            scene_by_view[child.view_node_id]
+            for child in visible_children[node.view_node_id]
+            if child.view_node_id in scene_by_view
+        ]
+        if not members:
+            continue
+        left = min(member.bounds.x for member in members) - 30.0
+        top = min(member.bounds.y for member in members) - 44.0
+        right = max(member.bounds.x + member.bounds.width for member in members) + 30.0
+        bottom = max(member.bounds.y + member.bounds.height for member in members) + 24.0
+        style = styles[node.view_node_id]
+        scene_id = f"scenenode:{node.view_node_id.removeprefix('viewnode:')}"
+        parent_scene_id = (
+            f"scenenode:{node.parent_view_node_id.removeprefix('viewnode:')}"
+            if node.parent_view_node_id
+            else None
+        )
+        scene_node = SceneNode(
+            scene_node_id=scene_id,
+            view_node_id=node.view_node_id,
+            canonical_node_ids=node.canonical_node_ids,
+            bounds=SceneRect(
+                x=max(30.0, left),
+                y=max(30.0, top),
+                width=right - max(30.0, left),
+                height=bottom - max(30.0, top),
+            ),
+            shape="container",
+            label_lines=_wrap_label(style.label),
+            secondary_label=style.secondary_label,
+            fill=style.fill,
+            stroke=style.stroke,
+            parent_scene_node_id=parent_scene_id,
+            evidence_ids=node.evidence_ids,
+        )
+        scene_by_view[node.view_node_id] = scene_node
+        view_to_scene[node.view_node_id] = scene_id
+        container_scene_nodes.append(scene_node)
+
+    paper_width = max(
+        paper_width,
+        max(
+            (node.bounds.x + node.bounds.width + 72.0 for node in scene_by_view.values()),
+            default=paper_width,
+        ),
+    )
+    paper_height = max(
+        paper_height,
+        max(
+            (node.bounds.y + node.bounds.height + 72.0 for node in scene_by_view.values()),
+            default=paper_height,
+        ),
+    )
+    scene_nodes = [
+        *sorted(
+            container_scene_nodes,
+            key=lambda node: int(by_view[node.view_node_id].attributes.get("depth", 0)),
+        ),
+        *leaf_scene_nodes,
+    ]
     if root is not None:
         style = styles[root.view_node_id]
         view_to_scene[root.view_node_id] = root_scene_id or "scenenode:model"
@@ -278,15 +444,15 @@ def build_scene(view: PublicationView, spec: VisualSpec) -> VisualScene:
             ),
         )
 
-    by_view = {node.view_node_id: node for node in scene_nodes}
+    by_scene_view = {node.view_node_id: node for node in scene_nodes}
     edge_styles = {style.view_edge_id: style for style in spec.edge_styles}
     corridor_index = {edge.view_edge_id: index for index, edge in enumerate(long_edges)}
     scene_edges: list[SceneEdge] = []
     for index, edge in enumerate(view.edges):
-        if edge.source_view_node_id not in by_view or edge.target_view_node_id not in by_view:
+        if edge.source_view_node_id not in by_scene_view or edge.target_view_node_id not in by_scene_view:
             continue
-        source = by_view[edge.source_view_node_id].bounds
-        target = by_view[edge.target_view_node_id].bounds
+        source = by_scene_view[edge.source_view_node_id].bounds
+        target = by_scene_view[edge.target_view_node_id].bounds
         start = ScenePoint(x=source.x + source.width, y=source.y + source.height / 2)
         end = ScenePoint(x=target.x, y=target.y + target.height / 2)
         rank_delta = ranks[edge.target_view_node_id] - ranks[edge.source_view_node_id]

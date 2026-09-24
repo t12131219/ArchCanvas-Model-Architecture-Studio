@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import shutil
 from pathlib import Path
@@ -26,6 +27,9 @@ FIXTURES = [
     ("keras", "keras_functional", "model:build_network"),
     ("jax", "jax_flax", "model:ResidualMixer"),
     ("jax", "jax_function", "model:residual_projection"),
+    ("keras", "keras_multi_io", "model:build_multi_io"),
+    ("jax", "jax_scan", "model:recurrent_scan"),
+    ("jax", "jax_prng", "model:keyed_mask"),
     ("onnx", "onnx_residual", "model.onnx"),
 ]
 
@@ -86,6 +90,41 @@ def test_python_source_adapters_do_not_require_framework_packages() -> None:
     assert "jax" in capabilities["jax"].required_packages
     assert capabilities["keras"].capability_status["static"] == "partial"
     assert capabilities["jax"].parameter_transactions is True
+
+
+def test_capability_matrix_is_explicit_per_framework_form() -> None:
+    capabilities = {item.framework: item for item in adapter_capabilities()}
+    expected_forms = {
+        "pytorch": {"form:pytorch-module-forward"},
+        "keras": {
+            "form:keras-subclass-call",
+            "form:keras-functional",
+            "form:keras-custom-layer",
+        },
+        "jax": {"form:jax-pure-function", "form:flax-module", "form:jax-transformed"},
+        "onnx": {
+            "form:onnx-standard-op",
+            "form:onnx-external-data",
+            "form:onnx-custom-op",
+        },
+    }
+    for framework, identifiers in expected_forms.items():
+        forms = capabilities[framework].forms
+        assert {form.form_id for form in forms} == identifiers
+        assert all(form.static and form.runtime and form.artifact_commit for form in forms)
+    custom_onnx = next(
+        form for form in capabilities["onnx"].forms if form.form_id == "form:onnx-custom-op"
+    )
+    assert custom_onnx.runtime == "unavailable"
+    assert custom_onnx.structural_transaction == "unavailable"
+
+
+def test_pytorch_registry_targets_match_the_verified_environment() -> None:
+    torch = pytest.importorskip("torch")
+    capability = next(item for item in adapter_capabilities() if item.framework == "pytorch")
+    assert capability.supported_targets == (
+        ["cpu", "cuda"] if torch.cuda.is_available() else ["cpu"]
+    )
 
 
 @pytest.mark.parametrize(
@@ -156,8 +195,27 @@ def test_cross_framework_runtime_replay_is_normalized_and_source_preserving(
     trace = json.loads((analysis / "runtime-trace.json").read_text())
     assert trace["framework"] == framework
     assert trace["environment"]["framework"] == framework
+    context = trace["environment"]["runtime_context"]
+    if framework == "keras":
+        assert context["form"] in {"subclassed-model-call", "functional-builder"}
+        assert context["custom_train_step_observed"] is False
+    elif framework == "jax":
+        assert context["form"] in {"flax-module", "pure-function"}
+        assert len(context["static_args_digest"]) == 64
+        assert context["output_pytree"]
+    elif framework == "onnx":
+        assert context["instrumentation_persisted"] is False
+        assert context["artifact_members"] == ["model.onnx"]
     assert trace["observations"]
     assert trace["output_tensors"]
+    if fixture_name == "keras_multi_io":
+        assert context["input_structure"] == "mapping"
+        assert context["output_count"] == 2
+    if fixture_name == "jax_scan":
+        assert "scan" in context["transform_primitives"]
+    if fixture_name == "jax_prng":
+        assert len(context["input_prng_digests"]["key"]) == 64
+        assert context["static_args_digest"] != "0" * 64
     assert before == {path: path.read_bytes() for path in before}
 
 
@@ -535,6 +593,224 @@ def test_onnx_initializer_transaction_replays_and_commits_atomically(tmp_path: P
     model = onnx.load(project / "model.onnx")
     weight = next(item for item in model.graph.initializer if item.name == "weight")
     assert onnx.numpy_helper.to_array(weight).tolist() == new_weight
+
+
+def _onnx_external_data_project(project: Path) -> None:
+    np = pytest.importorskip("numpy")
+    onnx = pytest.importorskip("onnx")
+    project.mkdir()
+    signal = onnx.helper.make_tensor_value_info("signal", onnx.TensorProto.FLOAT, [1, 4])
+    output = onnx.helper.make_tensor_value_info("output", onnx.TensorProto.FLOAT, [1, 4])
+    weight = onnx.numpy_helper.from_array(np.eye(4, dtype=np.float32), name="weight")
+    node = onnx.helper.make_node("MatMul", ["signal", "weight"], ["output"], name="matmul")
+    graph = onnx.helper.make_graph([node], "ExternalWeightGraph", [signal], [output], [weight])
+    model = onnx.helper.make_model(graph, opset_imports=[onnx.helper.make_opsetid("", 20)])
+    model.ir_version = 13
+    onnx.save_model(
+        model,
+        project / "model.onnx",
+        save_as_external_data=True,
+        all_tensors_to_one_file=True,
+        location="weights.bin",
+        size_threshold=0,
+    )
+    (project / "runtime-input.json").write_text(
+        json.dumps(
+            {
+                "inputs": [
+                    {
+                        "name": "signal",
+                        "shape": [1, 4],
+                        "dtype": "float32",
+                        "generator": "ones",
+                    }
+                ]
+            }
+        )
+    )
+
+
+def _external_transaction(project: Path, root: Path):
+    root.mkdir(parents=True, exist_ok=True)
+    artifact = _onnx_transaction_artifacts(project, root / "analysis")
+    request = SemanticParameterPatch(
+        patch_id="patch:onnx-external-initializer",
+        artifact_path=str(artifact),
+        target_node_id="node:initializer.weight",
+        parameter_name="value",
+        new_value=[
+            [3.0, 0.0, 0.0, 0.0],
+            [0.0, 3.0, 0.0, 0.0],
+            [0.0, 0.0, 3.0, 0.0],
+            [0.0, 0.0, 0.0, 3.0],
+        ],
+        runtime_input_spec="runtime-input.json",
+    )
+    transaction, prepared = prepare_transaction(request, root / "workspace")
+    assert prepared.status == "ok"
+    assert {change.path for change in transaction.file_changes} == {
+        "model.onnx",
+        "weights.bin",
+    }
+    transaction_path = (
+        Path(transaction.workspace) / "transactions" / transaction.transaction_id / "transaction.json"
+    )
+    transaction, verified = verify_transaction(transaction_path)
+    assert verified.status == "ok", verified.model_dump(mode="json")
+    return transaction_path
+
+
+def test_onnx_external_data_transaction_replays_and_commits_as_artifact_set(
+    tmp_path: Path,
+) -> None:
+    onnx = pytest.importorskip("onnx")
+    project = tmp_path / "project"
+    _onnx_external_data_project(project)
+    bundle = analyze_with_adapter(
+        project,
+        "model.onnx",
+        "inference",
+        "eval",
+        b"{}",
+        None,
+        framework="onnx",
+        pattern_packs_enabled=False,
+    )
+    assert {item.path for item in bundle.snapshot.source_files} == {"model.onnx", "weights.bin"}
+    transaction_path = _external_transaction(project, tmp_path)
+    _, committed = commit_transaction(transaction_path)
+    assert committed.status == "ok", committed.model_dump(mode="json")
+    model = onnx.load(project / "model.onnx", load_external_data=True)
+    weight = next(item for item in model.graph.initializer if item.name == "weight")
+    assert onnx.numpy_helper.to_array(weight)[0, 0] == pytest.approx(3.0)
+
+
+def test_onnx_external_data_concurrency_and_rollback_cover_every_member(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from archcanvas_transactions import service
+
+    project = tmp_path / "project"
+    _onnx_external_data_project(project)
+    transaction_path = _external_transaction(project, tmp_path / "stale")
+    external = project / "weights.bin"
+    external.write_bytes(external.read_bytes() + b"concurrent")
+    _, stale = commit_transaction(transaction_path)
+    assert stale.status == "invalid"
+    assert stale.diagnostics[0].code == "CONCURRENT_MODIFICATION"
+
+    project = tmp_path / "rollback-project"
+    _onnx_external_data_project(project)
+    originals = {path: path.read_bytes() for path in (project / "model.onnx", project / "weights.bin")}
+    transaction_path = _external_transaction(project, tmp_path / "rollback")
+    monkeypatch.setattr(service, "_analyze_at", lambda *_: (_ for _ in ()).throw(RuntimeError("boom")))
+    _, rolled_back = commit_transaction(transaction_path)
+    assert rolled_back.status == "invalid"
+    assert rolled_back.diagnostics[0].code == "ATOMIC_COMMIT_FAILED"
+    assert originals == {path: path.read_bytes() for path in originals}
+
+
+def test_onnx_external_data_location_must_be_confined_to_project(tmp_path: Path) -> None:
+    np = pytest.importorskip("numpy")
+    onnx = pytest.importorskip("onnx")
+    project = tmp_path / "project"
+    project.mkdir()
+    signal = onnx.helper.make_tensor_value_info("signal", onnx.TensorProto.FLOAT, [1, 2])
+    output = onnx.helper.make_tensor_value_info("output", onnx.TensorProto.FLOAT, [1, 2])
+    weight = onnx.numpy_helper.from_array(np.eye(2, dtype=np.float32), name="weight")
+    external_bytes = bytes(weight.raw_data)
+    onnx.external_data_helper.set_external_data(weight, location="../outside.bin")
+    weight.ClearField("raw_data")
+    node = onnx.helper.make_node("MatMul", ["signal", "weight"], ["output"])
+    graph = onnx.helper.make_graph([node], "EscapingGraph", [signal], [output], [weight])
+    model = onnx.helper.make_model(graph, opset_imports=[onnx.helper.make_opsetid("", 20)])
+    (tmp_path / "outside.bin").write_bytes(external_bytes)
+    (project / "model.onnx").write_bytes(model.SerializeToString())
+    with pytest.raises(ValueError, match="not confined"):
+        analyze_with_adapter(
+            project,
+            "model.onnx",
+            "inference",
+            "eval",
+            b"{}",
+            None,
+            framework="onnx",
+            pattern_packs_enabled=False,
+        )
+
+
+def test_onnx_runtime_rejects_unavailable_provider_without_artifact_changes(
+    tmp_path: Path,
+) -> None:
+    if importlib.util.find_spec("onnxruntime") is None:
+        pytest.skip("optional ONNX Runtime dependency is not installed")
+    repository_entries = set(ROOT.iterdir())
+    source = ROOT / "fixtures" / "cross_framework" / "onnx_residual"
+    project = tmp_path / "project"
+    shutil.copytree(source, project)
+    artifact = _onnx_transaction_artifacts(project, tmp_path / "analysis")
+    spec = json.loads((project / "runtime-input.json").read_text())
+    spec["selected_target"] = "UnavailableExecutionProvider"
+    input_path = tmp_path / "provider-input.json"
+    input_path.write_text(json.dumps(spec))
+    protected = {path: path.read_bytes() for path in (project / "model.onnx", artifact)}
+    receipt = trace_runtime(artifact, input_path, tmp_path / "runtime")
+    assert receipt.status == "failed"
+    assert receipt.gates[0].status == "passed"
+    assert "unavailable" in receipt.diagnostics[0].message
+    assert protected == {path: path.read_bytes() for path in protected}
+    assert set(ROOT.iterdir()) == repository_entries
+
+
+def test_onnx_custom_op_requires_provider_and_preserves_original_model(tmp_path: Path) -> None:
+    onnx = pytest.importorskip("onnx")
+    if importlib.util.find_spec("onnxruntime") is None:
+        pytest.skip("optional ONNX Runtime dependency is not installed")
+    project = tmp_path / "project"
+    project.mkdir()
+    signal = onnx.helper.make_tensor_value_info("signal", onnx.TensorProto.FLOAT, [1, 4])
+    output = onnx.helper.make_tensor_value_info("output", onnx.TensorProto.FLOAT, [1, 4])
+    custom = onnx.helper.make_node(
+        "ResearchOp",
+        ["signal"],
+        ["output"],
+        name="custom",
+        domain="research.archcanvas",
+    )
+    graph = onnx.helper.make_graph([custom], "CustomGraph", [signal], [output])
+    model = onnx.helper.make_model(
+        graph,
+        opset_imports=[
+            onnx.helper.make_opsetid("", 20),
+            onnx.helper.make_opsetid("research.archcanvas", 1),
+        ],
+    )
+    model.ir_version = 13
+    model_path = project / "model.onnx"
+    model_path.write_bytes(model.SerializeToString())
+    input_path = project / "runtime-input.json"
+    input_path.write_text(
+        json.dumps(
+            {
+                "selected_target": "CPUExecutionProvider",
+                "inputs": [
+                    {
+                        "name": "signal",
+                        "shape": [1, 4],
+                        "dtype": "float32",
+                        "generator": "ones",
+                    }
+                ],
+            }
+        )
+    )
+    artifact = _onnx_transaction_artifacts(project, tmp_path / "analysis")
+    before = model_path.read_bytes()
+    receipt = trace_runtime(artifact, input_path, tmp_path / "runtime")
+    assert receipt.status == "failed"
+    assert receipt.gates[0].status == "passed"
+    assert "ResearchOp" in receipt.diagnostics[0].message
+    assert model_path.read_bytes() == before
 
 
 def _onnx_activation_project(project: Path, op_type: str, **attributes: object) -> None:

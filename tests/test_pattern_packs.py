@@ -33,6 +33,15 @@ PROFILES = [
     ("patchtst", "models.PatchTST:Model", "long_term_forecast", "patchtst-patching"),
     ("timemixer", "models.TimeMixer:Model", "long_term_forecast", "timemixer-multiscale"),
 ]
+HOLDOUT_FAMILIES = [
+    ("cnn-vit", "vision_tokens", "model:VisionTokenStem", "classification"),
+    ("state-space", "state_space", "model:SelectiveStateCell", "inference"),
+    ("gnn", "graph_message", "model:NeighborhoodExchange", "inference"),
+    ("diffusion", "diffusion_denoiser", "model:TimestepDenoiser", "denoising"),
+    ("moe", "sparse_moe", "model:DualExpertRouter", "inference"),
+    ("time-series", "seasonal_timeseries", "model:SeasonalTrendForecaster", "forecast"),
+    ("custom-hybrid", "residual_mlp", "model:CrossBlendRegressor", "forecast"),
+]
 
 
 def _analyze_fixture(name: str, entrypoint: str, task: str, *, patterns: bool = True):
@@ -54,6 +63,19 @@ def _holdout():
         fixture,
         "model:CrossBlendRegressor",
         "forecast",
+        "eval",
+        (fixture / "config.json").read_bytes(),
+        fixture / "config.json",
+        pattern_packs_enabled=False,
+    )
+
+
+def _holdout_family(fixture_name: str, entrypoint: str, task: str):
+    fixture = ROOT / "fixtures" / "holdout" / fixture_name
+    return analyze_project(
+        fixture,
+        entrypoint,
+        task,
         "eval",
         (fixture / "config.json").read_bytes(),
         fixture / "config.json",
@@ -273,8 +295,14 @@ def test_registry_rejects_stale_digest_and_executable_matcher(tmp_path: Path) ->
         )
 
 
-def test_holdout_without_pattern_pack_passes_semantic_publication_and_geometry() -> None:
-    bundle = _holdout()
+@pytest.mark.parametrize(("family", "fixture_name", "entrypoint", "task"), HOLDOUT_FAMILIES)
+def test_holdout_without_pattern_pack_passes_semantic_publication_and_geometry(
+    family: str, fixture_name: str, entrypoint: str, task: str
+) -> None:
+    bundle = _holdout_family(fixture_name, entrypoint, task)
+    assert family
+    assert bundle.snapshot.source_files
+    assert all(record.evidence_ids for record in bundle.architecture.nodes)
     gates, diagnostics = validate_architecture(
         bundle.architecture,
         bundle.evidence,

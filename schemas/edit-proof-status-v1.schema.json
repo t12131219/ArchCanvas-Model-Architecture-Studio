@@ -1,0 +1,97 @@
+{
+  "$defs": {
+    "EditProofState": {
+      "enum": [
+        "checking",
+        "conditional",
+        "unproven",
+        "invalid",
+        "stale",
+        "proven",
+        "review-ready"
+      ],
+      "title": "EditProofState",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "affected_subject_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Affected Subject Ids",
+      "type": "array"
+    },
+    "checked_generation": {
+      "minimum": 1,
+      "title": "Checked Generation",
+      "type": "integer"
+    },
+    "input_fingerprint": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Input Fingerprint",
+      "type": "string"
+    },
+    "intent_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Intent Id",
+      "type": "string"
+    },
+    "message": {
+      "minLength": 1,
+      "title": "Message",
+      "type": "string"
+    },
+    "reason_codes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Reason Codes",
+      "type": "array"
+    },
+    "required_facts": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Required Facts",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/EditProofState"
+    },
+    "supported_fixes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Supported Fixes",
+      "type": "array"
+    },
+    "writeback_eligibility": {
+      "enum": [
+        "blocked",
+        "prepare",
+        "commit"
+      ],
+      "title": "Writeback Eligibility",
+      "type": "string"
+    }
+  },
+  "required": [
+    "intent_id",
+    "status",
+    "writeback_eligibility",
+    "message",
+    "checked_generation",
+    "input_fingerprint"
+  ],
+  "title": "EditProofStatus",
+  "type": "object"
+}

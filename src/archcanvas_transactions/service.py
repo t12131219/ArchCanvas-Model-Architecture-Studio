@@ -257,6 +257,7 @@ def prepare_transaction(
     _copy_project(project, temporary_project, workspace)
 
     semantic_manifest: str | None = None
+    additional_model_files: list[Any] = []
     if artifact_kind == "model-artifact":
         if isinstance(request, SemanticParameterPatch):
             parameter = next(
@@ -276,6 +277,7 @@ def prepare_transaction(
         original_path = project / relative
         transformed = model_transform
         semantic_manifest = model_transform.semantic_manifest
+        additional_model_files = list(model_transform.additional_files)
         kind = "onnx"
     elif isinstance(request, SemanticParameterPatch):
         parameter = next(
@@ -373,6 +375,27 @@ def prepare_transaction(
     prepared_path = temporary_project / relative
     write_prepared(prepared_path, transformed.content)
     after = prepared_path.read_bytes()
+    file_changes = [
+        FileChange(
+            path=relative.as_posix(),
+            kind=kind,
+            before_sha256=_sha256(before),
+            after_sha256=_sha256(after),
+        )
+    ]
+    for additional in additional_model_files:
+        additional_original = project / additional.relative_path
+        additional_before = additional_original.read_bytes()
+        additional_prepared = temporary_project / additional.relative_path
+        write_prepared(additional_prepared, additional.content)
+        file_changes.append(
+            FileChange(
+                path=additional.relative_path.as_posix(),
+                kind=additional.kind,
+                before_sha256=_sha256(additional_before),
+                after_sha256=_sha256(additional_prepared.read_bytes()),
+            )
+        )
     prepared_bundle = _analyze_at(temporary_project, snapshot)
     expected = graph_delta(
         architecture,
@@ -457,14 +480,7 @@ def prepare_transaction(
         source_snapshot_id=snapshot.snapshot_id,
         base_revision=snapshot.revision,
         anchor_fingerprint=anchor,
-        file_changes=[
-            FileChange(
-                path=relative.as_posix(),
-                kind=kind,
-                before_sha256=_sha256(before),
-                after_sha256=_sha256(after),
-            )
-        ],
+        file_changes=file_changes,
         source_diff=semantic_manifest or _unified_diff(relative, before, after),
         expected_delta=expected,
         gates=[
@@ -501,6 +517,10 @@ def _fail(
 def _validate_source(path: Path, kind: str) -> None:
     if kind == "onnx":
         validate_model_artifact("onnx", path)
+        return
+    if kind == "binary":
+        if not path.is_file():
+            raise ValueError(f"prepared binary artifact is unavailable: {path}")
         return
     content = path.read_text(encoding="utf-8")
     if kind == "python":
@@ -577,13 +597,12 @@ def verify_transaction(path: Path) -> tuple[SourceTransaction, TransactionReceip
     if transaction.state is not TransactionState.PREPARED:
         raise ValueError(f"only prepared transactions can be verified, got {transaction.state.value}")
     project = Path(transaction.temporary_project_root)
-    change = transaction.file_changes[0]
-    prepared_path = project / change.path
     gates = list(transaction.gates)
     history = list(transaction.state_history)
     try:
-        _validate_source(prepared_path, change.kind)
-        if change.kind != "onnx":
+        for change in transaction.file_changes:
+            _validate_source(project / change.path, change.kind)
+        if transaction.artifact_kind != "model-artifact":
             _static_imports_resolve(project, _load_artifact(Path(transaction.artifact_path))[1])
     except Exception as error:  # noqa: BLE001
         return _fail(
@@ -762,7 +781,7 @@ def verify_transaction(path: Path) -> tuple[SourceTransaction, TransactionReceip
         _gate(
             "F-visual-recompile",
             True,
-            "L1-L4 scenes recompiled and passed deterministic geometry gates.",
+            "Collapsed and fully expanded containment projections passed deterministic geometry gates.",
             "Visual recompile failed.",
         )
     )

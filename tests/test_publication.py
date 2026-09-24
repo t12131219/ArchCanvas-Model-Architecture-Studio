@@ -9,8 +9,11 @@ import pytest
 from archcanvas_publication import (
     build_scene,
     build_visual_spec,
+    compile_hierarchy,
     compile_views,
     render_html,
+    render_pdf,
+    render_png,
     render_svg,
     validate_geometry,
     validate_publication,
@@ -44,13 +47,15 @@ def _architecture(fixture_name: str, entrypoint: str, task: str, patterns: bool)
 @pytest.mark.parametrize(
     ("fixture_name", "entrypoint", "task", "layout_family"), PROFILES
 )
-def test_specialized_profiles_compile_l1_l4_and_pass_geometry(
+def test_specialized_profiles_compile_dynamic_projections_and_pass_geometry(
     fixture_name: str, entrypoint: str, task: str, layout_family: str
 ) -> None:
     ir = _architecture(fixture_name, entrypoint, task, True)
     views = compile_views(ir)
     gates, diagnostics = validate_publication(ir, views)
-    assert [view.level for view in views] == ["L1", "L2", "L3", "L4"]
+    assert views[0].fully_expanded is False
+    assert views[-1].fully_expanded is True
+    assert all(view.max_depth >= 2 for view in views)
     assert {view.layout_family for view in views} == {layout_family}
     assert gates[0].status == "passed"
     assert not diagnostics
@@ -58,7 +63,7 @@ def test_specialized_profiles_compile_l1_l4_and_pass_geometry(
         spec = build_visual_spec(view)
         scene = build_scene(view, spec)
         gate, geometry_diagnostics = validate_geometry(scene)
-        assert gate.status == "passed", (view.level, geometry_diagnostics)
+        assert gate.status == "passed", (view.projection_id, geometry_diagnostics)
         assert not geometry_diagnostics
 
 
@@ -80,18 +85,40 @@ def test_generic_fallback_compiles_and_renders_without_family_assumptions(
         assert "architecture_profile" not in render_svg(scene)
 
 
-def test_l4_and_progressive_views_share_exact_canonical_sets() -> None:
+def test_full_and_collapsed_projections_share_exact_canonical_sets() -> None:
     ir = _architecture("transformer", "model:Transformer", "inference", True)
     views = compile_views(ir)
-    l4 = views[-1]
-    assert all(len(node.canonical_node_ids) == 1 for node in l4.nodes)
-    assert all(len(edge.canonical_edge_ids) == 1 for edge in l4.edges)
-    assert not l4.collapsed_edge_ids
+    full = views[-1]
+    executable_nodes = [node for node in full.nodes if node.canonical_node_ids]
+    structural_nodes = [node for node in full.nodes if not node.canonical_node_ids]
+    assert all(len(node.canonical_node_ids) == 1 for node in executable_nodes)
+    assert structural_nodes
+    assert all(node.kind.value == "module_container" for node in structural_nodes)
+    assert all(len(edge.canonical_edge_ids) == 1 for edge in full.edges)
+    assert not full.collapsed_edge_ids
     for view in views[:-1]:
-        assert set(view.canonical_node_ids) == set(l4.canonical_node_ids)
-        assert set(view.canonical_edge_ids) == set(l4.canonical_edge_ids)
-        assert set(view.canonical_tensor_ids) == set(l4.canonical_tensor_ids)
-        assert set(view.canonical_port_ids) == set(l4.canonical_port_ids)
+        assert set(view.canonical_node_ids) == set(full.canonical_node_ids)
+        assert set(view.canonical_edge_ids) == set(full.canonical_edge_ids)
+        assert set(view.canonical_tensor_ids) == set(full.canonical_tensor_ids)
+        assert set(view.canonical_port_ids) == set(full.canonical_port_ids)
+
+
+def test_hierarchy_depth_is_derived_and_not_capped() -> None:
+    ir = _architecture("transformer", "model:Transformer", "inference", True)
+    target = ir.nodes[1]
+    deep = target.model_copy(
+        update={
+            "attributes": {
+                **target.attributes,
+                "module_path": "self.a.b.c.d.e.f.g.h.i.j.operator",
+            }
+        }
+    )
+    changed = ir.model_copy(
+        update={"nodes": [deep if node == target else node for node in ir.nodes]}
+    )
+    hierarchy = compile_hierarchy(changed)
+    assert hierarchy.max_depth >= 11
 
 
 def test_publication_gate_rejects_missing_canonical_mapping() -> None:
@@ -165,3 +192,15 @@ def test_svg_and_html_share_scene_and_html_is_self_contained() -> None:
     for control in ("search", "upstream", "downstream", "zoom-in", "theme", "details"):
         assert f'id="{control}"' in page
     assert json.loads(page.split('<script id="archcanvas-data" type="application/json">', 1)[1].split("</script>", 1)[0])
+
+
+def test_png_and_pdf_are_derived_from_the_canonical_scene() -> None:
+    ir = _architecture("autoformer", "models.Autoformer:Model", "long_term_forecast", True)
+    view = compile_views(ir)[0]
+    scene = build_scene(view, build_visual_spec(view))
+    png = render_png(scene)
+    pdf = render_pdf(scene)
+    assert png.startswith(b"\x89PNG\r\n\x1a\n")
+    assert pdf.startswith(b"%PDF-")
+    assert len(png) > 1000
+    assert len(pdf) > 1000

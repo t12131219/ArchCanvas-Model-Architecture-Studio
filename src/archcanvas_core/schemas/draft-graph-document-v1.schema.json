@@ -1,0 +1,773 @@
+{
+  "$defs": {
+    "DraftEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "edge_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Edge Id",
+          "type": "string"
+        },
+        "parameters": {
+          "additionalProperties": true,
+          "title": "Parameters",
+          "type": "object"
+        },
+        "policy": {
+          "enum": [
+            "replace-input",
+            "add-residual",
+            "concat",
+            "fanout",
+            "disconnect"
+          ],
+          "title": "Policy",
+          "type": "string"
+        },
+        "source_port_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Source Port Id",
+          "type": "string"
+        },
+        "target_port_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Target Port Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "edge_id",
+        "source_port_id",
+        "target_port_id",
+        "policy"
+      ],
+      "title": "DraftEdge",
+      "type": "object"
+    },
+    "DraftNode": {
+      "additionalProperties": false,
+      "properties": {
+        "framework": {
+          "minLength": 1,
+          "title": "Framework",
+          "type": "string"
+        },
+        "node_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Node Id",
+          "type": "string"
+        },
+        "node_type": {
+          "minLength": 1,
+          "title": "Node Type",
+          "type": "string"
+        },
+        "parameters": {
+          "additionalProperties": true,
+          "title": "Parameters",
+          "type": "object"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Id"
+        },
+        "ports": {
+          "items": {
+            "$ref": "#/$defs/DraftPort"
+          },
+          "title": "Ports",
+          "type": "array"
+        },
+        "semantic_name": {
+          "minLength": 1,
+          "title": "Semantic Name",
+          "type": "string"
+        },
+        "source_anchor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Anchor"
+        }
+      },
+      "required": [
+        "node_id",
+        "semantic_name",
+        "framework",
+        "node_type"
+      ],
+      "title": "DraftNode",
+      "type": "object"
+    },
+    "DraftPort": {
+      "additionalProperties": false,
+      "properties": {
+        "direction": {
+          "enum": [
+            "input",
+            "output"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "dtype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dtype"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "port_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Port Id",
+          "type": "string"
+        },
+        "role": {
+          "minLength": 1,
+          "title": "Role",
+          "type": "string"
+        },
+        "shape_constraint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Shape Constraint"
+        }
+      },
+      "required": [
+        "port_id",
+        "name",
+        "direction",
+        "role"
+      ],
+      "title": "DraftPort",
+      "type": "object"
+    },
+    "EditIntent": {
+      "additionalProperties": false,
+      "properties": {
+        "capability_requirement": {
+          "minLength": 1,
+          "title": "Capability Requirement",
+          "type": "string"
+        },
+        "expected_delta": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GraphDelta"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "intent_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Intent Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "create-node",
+            "delete-node",
+            "connect-ports",
+            "disconnect-edge",
+            "replace-node",
+            "set-parameter",
+            "edit-source-buffer",
+            "edit-onnx-initializer",
+            "edit-onnx-attribute"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "preconditions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Preconditions",
+          "type": "array"
+        },
+        "target_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Target Ids",
+          "type": "array"
+        },
+        "user_input": {
+          "additionalProperties": true,
+          "title": "User Input",
+          "type": "object"
+        }
+      },
+      "required": [
+        "intent_id",
+        "kind",
+        "capability_requirement"
+      ],
+      "title": "EditIntent",
+      "type": "object"
+    },
+    "EditProofState": {
+      "enum": [
+        "checking",
+        "conditional",
+        "unproven",
+        "invalid",
+        "stale",
+        "proven",
+        "review-ready"
+      ],
+      "title": "EditProofState",
+      "type": "string"
+    },
+    "EditProofStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "affected_subject_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Affected Subject Ids",
+          "type": "array"
+        },
+        "checked_generation": {
+          "minimum": 1,
+          "title": "Checked Generation",
+          "type": "integer"
+        },
+        "input_fingerprint": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Input Fingerprint",
+          "type": "string"
+        },
+        "intent_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Intent Id",
+          "type": "string"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "reason_codes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reason Codes",
+          "type": "array"
+        },
+        "required_facts": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Required Facts",
+          "type": "array"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/EditProofState"
+        },
+        "supported_fixes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Supported Fixes",
+          "type": "array"
+        },
+        "writeback_eligibility": {
+          "enum": [
+            "blocked",
+            "prepare",
+            "commit"
+          ],
+          "title": "Writeback Eligibility",
+          "type": "string"
+        }
+      },
+      "required": [
+        "intent_id",
+        "status",
+        "writeback_eligibility",
+        "message",
+        "checked_generation",
+        "input_fingerprint"
+      ],
+      "title": "EditProofStatus",
+      "type": "object"
+    },
+    "FactDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "after_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "After Sha256"
+        },
+        "before_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Before Sha256"
+        },
+        "kind": {
+          "enum": [
+            "node",
+            "edge",
+            "tensor",
+            "port",
+            "fanout",
+            "repeat",
+            "config-predicate",
+            "evidence",
+            "unresolved"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "subject_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Subject Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject_id",
+        "kind"
+      ],
+      "title": "FactDelta",
+      "type": "object"
+    },
+    "GraphDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "added_config_predicates": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Added Config Predicates",
+          "type": "array"
+        },
+        "added_edges": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Added Edges",
+          "type": "array"
+        },
+        "added_fanouts": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Added Fanouts",
+          "type": "array"
+        },
+        "added_nodes": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Added Nodes",
+          "type": "array"
+        },
+        "added_ports": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Added Ports",
+          "type": "array"
+        },
+        "added_tensors": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Added Tensors",
+          "type": "array"
+        },
+        "changed_config_predicates": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Changed Config Predicates",
+          "type": "array"
+        },
+        "changed_edges": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Changed Edges",
+          "type": "array"
+        },
+        "changed_fanouts": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Changed Fanouts",
+          "type": "array"
+        },
+        "changed_nodes": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Changed Nodes",
+          "type": "array"
+        },
+        "changed_parameters": {
+          "items": {
+            "$ref": "#/$defs/ParameterDelta"
+          },
+          "title": "Changed Parameters",
+          "type": "array"
+        },
+        "changed_ports": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Changed Ports",
+          "type": "array"
+        },
+        "changed_repeats": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Changed Repeats",
+          "type": "array"
+        },
+        "changed_shapes": {
+          "items": {
+            "$ref": "#/$defs/ShapeDelta"
+          },
+          "title": "Changed Shapes",
+          "type": "array"
+        },
+        "changed_sharing": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Changed Sharing",
+          "type": "array"
+        },
+        "changed_tensors": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Changed Tensors",
+          "type": "array"
+        },
+        "evidence_anchor_changes": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Evidence Anchor Changes",
+          "type": "array"
+        },
+        "fact_changes": {
+          "items": {
+            "$ref": "#/$defs/FactDelta"
+          },
+          "title": "Fact Changes",
+          "type": "array"
+        },
+        "removed_config_predicates": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Removed Config Predicates",
+          "type": "array"
+        },
+        "removed_edges": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Removed Edges",
+          "type": "array"
+        },
+        "removed_fanouts": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Removed Fanouts",
+          "type": "array"
+        },
+        "removed_nodes": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Removed Nodes",
+          "type": "array"
+        },
+        "removed_ports": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Removed Ports",
+          "type": "array"
+        },
+        "removed_tensors": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Removed Tensors",
+          "type": "array"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "unresolved_changes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unresolved Changes",
+          "type": "array"
+        }
+      },
+      "title": "GraphDelta",
+      "type": "object"
+    },
+    "ParameterDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "after": {
+          "title": "After"
+        },
+        "before": {
+          "title": "Before"
+        },
+        "node_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Node Id",
+          "type": "string"
+        },
+        "parameter_name": {
+          "minLength": 1,
+          "title": "Parameter Name",
+          "type": "string"
+        },
+        "source_expression": {
+          "minLength": 1,
+          "title": "Source Expression",
+          "type": "string"
+        }
+      },
+      "required": [
+        "node_id",
+        "parameter_name",
+        "before",
+        "after",
+        "source_expression"
+      ],
+      "title": "ParameterDelta",
+      "type": "object"
+    },
+    "ShapeDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "after": {
+          "minLength": 1,
+          "title": "After",
+          "type": "string"
+        },
+        "before": {
+          "minLength": 1,
+          "title": "Before",
+          "type": "string"
+        },
+        "subject_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Subject Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject_id",
+        "before",
+        "after"
+      ],
+      "title": "ShapeDelta",
+      "type": "object"
+    },
+    "WritebackSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "blocking_intent_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Blocking Intent Ids",
+          "type": "array"
+        },
+        "eligibility": {
+          "default": "blocked",
+          "enum": [
+            "blocked",
+            "prepare",
+            "commit"
+          ],
+          "title": "Eligibility",
+          "type": "string"
+        }
+      },
+      "title": "WritebackSummary",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "base_architecture_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Base Architecture Id",
+      "type": "string"
+    },
+    "base_source_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Base Source Digest",
+      "type": "string"
+    },
+    "draft_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Draft Id",
+      "type": "string"
+    },
+    "edges": {
+      "items": {
+        "$ref": "#/$defs/DraftEdge"
+      },
+      "title": "Edges",
+      "type": "array"
+    },
+    "intents": {
+      "items": {
+        "$ref": "#/$defs/EditIntent"
+      },
+      "title": "Intents",
+      "type": "array"
+    },
+    "lowering_status": {
+      "default": "not-planned",
+      "enum": [
+        "not-planned",
+        "checking",
+        "planned",
+        "blocked"
+      ],
+      "title": "Lowering Status",
+      "type": "string"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/DraftNode"
+      },
+      "title": "Nodes",
+      "type": "array"
+    },
+    "proofs": {
+      "items": {
+        "$ref": "#/$defs/EditProofStatus"
+      },
+      "title": "Proofs",
+      "type": "array"
+    },
+    "revision": {
+      "minimum": 0,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "writeback_summary": {
+      "$ref": "#/$defs/WritebackSummary"
+    }
+  },
+  "required": [
+    "draft_id",
+    "base_architecture_id",
+    "base_source_digest",
+    "revision"
+  ],
+  "title": "DraftGraphDocument",
+  "type": "object"
+}

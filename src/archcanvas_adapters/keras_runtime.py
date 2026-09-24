@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
 import inspect
 from pathlib import Path
 from typing import Any
@@ -31,7 +32,18 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
 
     spec = request["input_spec"]
     keras.utils.set_random_seed(spec["seed"])
+    backend = keras.backend.backend()
+    determinism_limitations: list[str] = []
+    if backend == "torch":
+        import torch
+
+        torch.use_deterministic_algorithms(True)
+    else:
+        determinism_limitations.append(
+            f"Deterministic kernel enforcement is not registered for the {backend} backend."
+        )
     target = resolve_entrypoint(Path(request["project_root"]).resolve(), request["entrypoint"])
+    form = "subclassed-model-call" if inspect.isclass(target) else "functional-builder"
     if inspect.isclass(target):
         model = target(**constructor_kwargs(target, request))
     else:
@@ -41,7 +53,19 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
         elif keras.backend.is_keras_tensor(built):
             model = keras.Model(keras.utils.get_source_inputs(built), built)
         else:
-            raise RuntimeError("Keras entrypoint must construct a Model or return KerasTensor outputs")
+            output_leaves = flatten(built, keras.backend.is_keras_tensor)
+            if not output_leaves:
+                raise RuntimeError(
+                    "Keras entrypoint must construct a Model or return KerasTensor outputs"
+                )
+            source_inputs: list[Any] = []
+            seen_sources: set[int] = set()
+            for output_leaf in output_leaves:
+                for source_input in keras.utils.get_source_inputs(output_leaf):
+                    if id(source_input) not in seen_sources:
+                        source_inputs.append(source_input)
+                        seen_sources.add(id(source_input))
+            model = keras.Model(source_inputs, built)
     numpy_inputs = {
         item["name"]: numpy_input(item, np, spec["seed"] + index)
         for index, item in enumerate(spec["inputs"])
@@ -103,7 +127,6 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
             "matched_node_ids": matched_nodes(request, "<root>"),
         }
     )
-    backend = keras.backend.backend()
     parameter_hash = hashlib.sha256()
     for weight in sorted(model.weights, key=lambda item: item.path):
         array = keras.ops.convert_to_numpy(weight)
@@ -122,10 +145,19 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
             "framework": "keras",
             "framework_version": keras.__version__,
             "backend": backend,
-            "backend_version": None,
+            "backend_version": importlib.metadata.version(backend),
             "selected_target": spec.get("selected_target") or spec["device"],
             "available_targets": [{"kind": "device", "id": "cpu"}],
             "observation_mechanism": "keras-layer-call-v1",
+            "determinism_achieved": not determinism_limitations,
+            "determinism_limitations": determinism_limitations,
+            "runtime_context": {
+                "form": form,
+                "training": training,
+                "custom_train_step_observed": False,
+                "input_structure": "single" if len(inputs) == 1 else "mapping",
+                "output_count": len(output_records),
+            },
         },
         "limitations": [
             "Custom train_step is outside this adapter; runtime evidence covers Model.call only."
