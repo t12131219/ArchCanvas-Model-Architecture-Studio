@@ -48,6 +48,17 @@ import {
 import { JobPollingController, type StudioJob } from "./jobs";
 import { initialProjectSelection } from "./project-launch";
 import { constrainDragDelta } from "./drag";
+import {
+  relationLabel,
+  SceneEdgeGraphic,
+  SceneNodeGraphic,
+  updatePreviewEdgeElement,
+  type Point,
+  type Rect,
+  type SceneEdge,
+  type SceneNode,
+} from "./scene-graphics";
+import { buildSceneRenderIndex, previewEdgePoints } from "./scene-performance";
 import { nodesInSelection, selectionBounds } from "./selection";
 import {
   studioModelIdentity,
@@ -120,45 +131,6 @@ const LanguageContext = React.createContext<LanguageContextValue>({
 
 function useLanguage(): LanguageContextValue {
   return React.useContext(LanguageContext);
-}
-
-interface Rect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-interface Point {
-  x: number;
-  y: number;
-}
-
-interface SceneNode {
-  scene_node_id: string;
-  view_node_id: string;
-  canonical_node_ids: string[];
-  bounds: Rect;
-  shape: "container" | "rect" | "tensor" | "merge" | "io" | "state" | "opaque" | "projection" | "activation" | "normalization" | "attention" | "transform" | "condition" | "repeat";
-  label_lines: string[];
-  secondary_label?: string;
-  fill: string;
-  stroke: string;
-  parent_scene_node_id?: string;
-  evidence_ids: string[];
-}
-
-interface SceneEdge {
-  scene_edge_id: string;
-  source_scene_node_id: string;
-  target_scene_node_id: string;
-  points: Point[];
-  edge_type: string;
-  visual_relation: string;
-  stroke: string;
-  dash?: string;
-  width: number;
-  label: string;
 }
 
 interface SceneAnnotation {
@@ -544,6 +516,12 @@ interface DragState {
   rootIds: string[];
 }
 
+interface DragDomPreview {
+  nodeElements: Map<string, SVGGElement>;
+  edgeElements: Map<string, SVGGElement[]>;
+  affectedEdges: Array<{ edge: SceneEdge; index: number }>;
+}
+
 interface EdgeEndpointDrag {
   edgeId: string;
   endpoint: "source" | "target";
@@ -604,6 +582,17 @@ interface NavigationNode {
   sibling_count: number;
 }
 
+const EMPTY_POSITION_PREVIEW: Readonly<Record<string, Point>> = {};
+const PROOF_RANK: Readonly<Record<string, number>> = {
+  invalid: 7,
+  stale: 6,
+  unproven: 5,
+  conditional: 4,
+  checking: 3,
+  proven: 2,
+  "review-ready": 1,
+};
+
 function embeddedState(): StudioState | null {
   const element = document.getElementById("archcanvas-studio-data");
   if (!element?.textContent) return null;
@@ -631,70 +620,12 @@ function patchId(operation: string): string {
   return `patch:${operation}.${Date.now().toString(36)}.${random[0].toString(36)}${random[1].toString(36)}`;
 }
 
-function nodeShape(node: SceneNode): React.ReactNode {
-  const { x, y, width, height } = node.bounds;
-  if (node.shape === "merge") {
-    return (
-      <polygon
-        className="node-shape"
-        points={`${x + width / 2},${y} ${x + width},${y + height / 2} ${x + width / 2},${y + height} ${x},${y + height / 2}`}
-        fill={node.fill}
-        stroke={node.stroke}
-      />
-    );
-  }
-  if (node.shape === "projection" || node.shape === "transform") {
-    const inset = Math.min(22, width * 0.12);
-    return <polygon className="node-shape" points={`${x + inset},${y} ${x + width},${y} ${x + width - inset},${y + height} ${x},${y + height}`} fill={node.fill} stroke={node.stroke} />;
-  }
-  if (node.shape === "condition") {
-    const inset = Math.min(28, width * 0.16);
-    return <polygon className="node-shape" points={`${x + inset},${y} ${x + width - inset},${y} ${x + width},${y + height / 2} ${x + width - inset},${y + height} ${x + inset},${y + height} ${x},${y + height / 2}`} fill={node.fill} stroke={node.stroke} />;
-  }
-  if (node.shape === "activation") {
-    return <ellipse className="node-shape" cx={x + width / 2} cy={y + height / 2} rx={width / 2} ry={height / 2} fill={node.fill} stroke={node.stroke} />;
-  }
-  if (node.shape === "tensor" || node.shape === "repeat") {
-    return (
-      <>
-        {[8, 4, 0].map((offset, index) => <rect key={offset} className={index === 2 ? "node-shape" : "shape-detail"} x={x + offset} y={y - offset} width={width - 8} height={height} rx={5} fill={node.fill} stroke={node.stroke} />)}
-      </>
-    );
-  }
-  if (node.shape === "normalization" || node.shape === "attention") {
-    const radius = node.shape === "normalization" ? 18 : 6;
-    return (
-      <>
-        <rect className="node-shape" x={x} y={y} width={width} height={height} rx={radius} fill={node.fill} stroke={node.stroke} />
-        <rect className="shape-detail" x={x + 6} y={y + 6} width={width - 12} height={height - 12} rx={Math.max(3, radius - 5)} fill="none" stroke={node.stroke} />
-      </>
-    );
-  }
-  return (
-    <rect
-      className="node-shape"
-      x={x}
-      y={y}
-      width={width}
-      height={height}
-      rx={node.shape === "io" ? 28 : node.shape === "container" ? 3 : 6}
-      fill={node.fill}
-      stroke={node.stroke}
-      strokeDasharray={node.shape === "opaque" ? "6 4" : undefined}
-    />
-  );
-}
-
-function edgeLabelPoint(edge: SceneEdge): Point {
-  const horizontal = edge.points.slice(0, -1).map((point, index) => ({
-    start: point,
-    end: edge.points[index + 1],
-    length: Math.abs(edge.points[index + 1].x - point.x),
-  })).filter((segment) => Math.abs(segment.start.y - segment.end.y) < 0.1).sort((a, b) => b.length - a.length)[0];
-  if (horizontal) return { x: (horizontal.start.x + horizontal.end.x) / 2, y: horizontal.start.y - 7 };
-  const start = edge.points[0];
-  const end = edge.points.at(-1)!;
-  return { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 - 7 };
+function useStableEvent<Args extends unknown[]>(callback: (...args: Args) => void) {
+  const callbackRef = useRef(callback);
+  useLayoutEffect(() => {
+    callbackRef.current = callback;
+  });
+  return useMemo(() => (...args: Args) => callbackRef.current(...args), []);
 }
 
 function sceneDescendantIds(scene: Scene, rootIds: string[]): string[] {
@@ -716,89 +647,6 @@ function sceneDescendantIds(scene: Scene, rootIds: string[]): string[] {
   return scene.nodes
     .map((node) => node.scene_node_id)
     .filter((nodeId) => collected.has(nodeId));
-}
-
-function sceneNodeDepths(scene: Scene): Map<string, number> {
-  const byId = new Map(scene.nodes.map((node) => [node.scene_node_id, node]));
-  const depths = new Map<string, number>();
-  const depthOf = (node: SceneNode): number => {
-    const cached = depths.get(node.scene_node_id);
-    if (cached !== undefined) return cached;
-    const parent = node.parent_scene_node_id ? byId.get(node.parent_scene_node_id) : undefined;
-    const depth = parent ? depthOf(parent) + 1 : 0;
-    depths.set(node.scene_node_id, depth);
-    return depth;
-  };
-  for (const node of scene.nodes) depthOf(node);
-  return depths;
-}
-
-function previewEdgePoints(
-  edge: SceneEdge,
-  nodes: SceneNode[],
-  preview: Record<string, Point>,
-  index: number,
-): Point[] {
-  const byId = new Map(nodes.map((node) => [node.scene_node_id, node]));
-  const source = byId.get(edge.source_scene_node_id);
-  const target = byId.get(edge.target_scene_node_id);
-  if (!source || !target) return edge.points;
-  const sourcePreview = preview[source.scene_node_id];
-  const targetPreview = preview[target.scene_node_id];
-  const sourceDelta = sourcePreview
-    ? { x: sourcePreview.x - source.bounds.x, y: sourcePreview.y - source.bounds.y }
-    : { x: 0, y: 0 };
-  const targetDelta = targetPreview
-    ? { x: targetPreview.x - target.bounds.x, y: targetPreview.y - target.bounds.y }
-    : { x: 0, y: 0 };
-  const sourceMoved = Boolean(sourcePreview);
-  const targetMoved = Boolean(targetPreview);
-  if (!sourceMoved && !targetMoved) return edge.points;
-  if (
-    sourceMoved
-    && targetMoved
-    && Math.abs(sourceDelta.x - targetDelta.x) < 0.01
-    && Math.abs(sourceDelta.y - targetDelta.y) < 0.01
-  ) {
-    return edge.points.map((point) => ({
-      x: point.x + sourceDelta.x,
-      y: point.y + sourceDelta.y,
-    }));
-  }
-  const sourceBounds = {
-    ...source.bounds,
-    ...(sourcePreview ?? {}),
-  };
-  const targetBounds = {
-    ...target.bounds,
-    ...(targetPreview ?? {}),
-  };
-  const start = {
-    x: sourceBounds.x + sourceBounds.width,
-    y: sourceBounds.y + sourceBounds.height / 2,
-  };
-  const end = {
-    x: targetBounds.x,
-    y: targetBounds.y + targetBounds.height / 2,
-  };
-  if (edge.points.length >= 6 || end.x <= start.x + 30) {
-    const corridorY = Math.min(...edge.points.map((point) => point.y));
-    return [
-      start,
-      { x: start.x + 24, y: start.y },
-      { x: start.x + 24, y: corridorY },
-      { x: Math.max(24, end.x - 24), y: corridorY },
-      { x: Math.max(24, end.x - 24), y: end.y },
-      end,
-    ];
-  }
-  const corridorX = (start.x + end.x) / 2 + ((index % 5) - 2) * 5;
-  return [
-    start,
-    { x: corridorX, y: start.y },
-    { x: corridorX, y: end.y },
-    end,
-  ];
 }
 
 function distanceToPolyline(point: Point, points: Point[]): number {
@@ -1149,11 +997,6 @@ function moveRouteEndpoint(
     ))[0];
 }
 
-function relationLabel(relation: string): string {
-  const labels = { sequence: "Flow", "parallel-branch": "Branch", merge: "Merge", residual: "Residual", "shape-transform": "Transform", "memory-reference": "Memory", condition: "Condition", routing: "Routing", "state-update": "State", "parameter-share": "Shared", "training-only": "Training" };
-  return (labels as Record<string, string>)[relation] ?? relation;
-}
-
 function navigationIcon(kind: string): React.ReactNode {
   if (["file", "directory", "repository"].includes(kind)) return <FileCode2 size={12} />;
   if (["class", "function", "control-scope"].includes(kind)) return <Braces size={12} />;
@@ -1257,7 +1100,6 @@ function App() {
   const [drag, setDrag] = useState<DragState | null>(null);
   const [pan, setPan] = useState<PanState | null>(null);
   const [marquee, setMarquee] = useState<MarqueeState | null>(null);
-  const [preview, setPreview] = useState<Record<string, Point>>({});
   const [edgeEndpointDrag, setEdgeEndpointDrag] = useState<EdgeEndpointDrag | null>(null);
   const [edgeRoutePreview, setEdgeRoutePreview] = useState<Point[] | null>(null);
   const [panelSizes, setPanelSizes] = useState<PanelSizes>(storedPanelSizes);
@@ -1275,6 +1117,12 @@ function App() {
   const framedLayoutFamily = useRef<string | null>(null);
   const viewBoxRef = useRef<[number, number, number, number] | null>(null);
   const viewBoxAnimation = useRef<number | null>(null);
+  const dragPreviewFrame = useRef<number | null>(null);
+  const dragPreview = useRef<Record<string, Point>>({});
+  const pendingDragPreview = useRef<Record<string, Point> | null>(null);
+  const dragDomPreview = useRef<DragDomPreview | null>(null);
+  const edgePreviewFrame = useRef<number | null>(null);
+  const edgeRoutePreviewRef = useRef<Point[] | null>(null);
   const pendingHierarchyFocus = useRef<string | null>(null);
   const jobController = useRef<JobPollingController<StudioState> | null>(null);
   if (jobController.current === null) {
@@ -1365,6 +1213,8 @@ function App() {
     if (cameraTimer.current !== null) window.clearTimeout(cameraTimer.current);
     if (navigationTimer.current !== null) window.clearTimeout(navigationTimer.current);
     if (viewBoxAnimation.current !== null) cancelAnimationFrame(viewBoxAnimation.current);
+    if (dragPreviewFrame.current !== null) cancelAnimationFrame(dragPreviewFrame.current);
+    if (edgePreviewFrame.current !== null) cancelAnimationFrame(edgePreviewFrame.current);
     jobController.current?.dispose();
   }, []);
 
@@ -1373,6 +1223,49 @@ function App() {
   const scene = layoutPreview?.scene ?? baseScene;
   const view = activeProjectionId ? data?.views[activeProjectionId] : undefined;
   const camera = scene ? data?.view_state.cameras?.[scene.scene_id] : undefined;
+  const sceneRenderIndex = useMemo(
+    () => scene ? buildSceneRenderIndex(scene.nodes) : null,
+    [scene?.nodes],
+  );
+  const publicationNodesById = useMemo(
+    () => new Map(view?.nodes.map((node) => [node.view_node_id, node]) ?? []),
+    [view?.nodes],
+  );
+  const proofBySceneNodeId = useMemo(() => {
+    const result = new Map<string, StudioState["draft"]["proofs"][number]>();
+    if (!scene || !data) return result;
+    const proofsBySubject = new Map<string, StudioState["draft"]["proofs"]>();
+    for (const proof of data.draft.proofs) {
+      for (const subjectId of proof.affected_subject_ids) {
+        const matches = proofsBySubject.get(subjectId);
+        if (matches) matches.push(proof);
+        else proofsBySubject.set(subjectId, [proof]);
+      }
+    }
+    for (const node of scene.nodes) {
+      let strongest: StudioState["draft"]["proofs"][number] | undefined;
+      for (const canonicalId of node.canonical_node_ids) {
+        for (const proof of proofsBySubject.get(canonicalId) ?? []) {
+          if (!strongest || PROOF_RANK[proof.status] > PROOF_RANK[strongest.status]) strongest = proof;
+        }
+      }
+      if (strongest) result.set(node.scene_node_id, strongest);
+    }
+    return result;
+  }, [data?.draft.proofs, scene?.nodes]);
+  const pinned = useMemo(() => new Set(data?.view_state.pinned_node_ids ?? []), [data?.view_state.pinned_node_ids]);
+  const collapsed = useMemo(() => new Set(data?.view_state.collapsed_node_ids ?? []), [data?.view_state.collapsed_node_ids]);
+
+  function writeViewBox(next: [number, number, number, number]) {
+    viewBoxRef.current = next;
+    svgRef.current?.setAttribute("viewBox", next.join(" "));
+  }
+
+  function commitViewBox(next: [number, number, number, number]) {
+    writeViewBox(next);
+    setViewBox(next);
+  }
+
   useEffect(() => {
     let focusedSceneNodeId: string | null = null;
     if (scene) {
@@ -1412,8 +1305,7 @@ function App() {
       const start = viewBoxRef.current;
       if (viewBoxAnimation.current !== null) cancelAnimationFrame(viewBoxAnimation.current);
       if (!start || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        viewBoxRef.current = target;
-        setViewBox(target);
+        commitViewBox(target);
       } else {
         const started = performance.now();
         const animate = (now: number) => {
@@ -1422,10 +1314,12 @@ function App() {
           const next = start.map((value, index) =>
             value + (target[index] - value) * eased,
           ) as [number, number, number, number];
-          viewBoxRef.current = next;
-          setViewBox(next);
+          writeViewBox(next);
           if (progress < 1) viewBoxAnimation.current = requestAnimationFrame(animate);
-          else viewBoxAnimation.current = null;
+          else {
+            viewBoxAnimation.current = null;
+            setViewBox(target);
+          }
         };
         viewBoxAnimation.current = requestAnimationFrame(animate);
       }
@@ -1441,7 +1335,8 @@ function App() {
     setSelectedEdgeId(null);
     setEdgeEndpointDrag(null);
     setEdgeRoutePreview(null);
-    setPreview({});
+    edgeRoutePreviewRef.current = null;
+    clearDragPreview();
   }, [activeProjectionId, scene?.scene_id, scene?.layout_family, scene?.paper_width, scene?.paper_height, camera?.x, camera?.y, camera?.zoom]);
 
   useEffect(() => {
@@ -1594,8 +1489,6 @@ function App() {
   const canonicalDeleteIntents = data?.draft.intents.filter(
     (intent) => intent.kind === "delete-node",
   ) ?? [];
-  const pinned = new Set(data?.view_state.pinned_node_ids ?? []);
-  const collapsed = new Set(data?.view_state.collapsed_node_ids ?? []);
 
   async function mutate(
     endpoint: string,
@@ -1944,6 +1837,85 @@ function App() {
     }
   }
 
+  function collectDragDomPreview(movingIds: readonly string[]) {
+    const svg = svgRef.current;
+    if (!svg || !scene) return null;
+    const moving = new Set(movingIds);
+    const nodeElements = new Map<string, SVGGElement>();
+    for (const element of svg.querySelectorAll<SVGGElement>("[data-scene-node-id]")) {
+      const nodeId = element.dataset.sceneNodeId;
+      if (nodeId && moving.has(nodeId)) nodeElements.set(nodeId, element);
+    }
+    const edgeElements = new Map<string, SVGGElement[]>();
+    for (const element of svg.querySelectorAll<SVGGElement>("[data-scene-edge-id]")) {
+      const edgeId = element.dataset.sceneEdgeId;
+      if (!edgeId) continue;
+      const matches = edgeElements.get(edgeId);
+      if (matches) matches.push(element);
+      else edgeElements.set(edgeId, [element]);
+    }
+    const affectedEdges = scene.edges
+      .map((edge, index) => ({ edge, index }))
+      .filter(({ edge }) => moving.has(edge.source_scene_node_id) || moving.has(edge.target_scene_node_id));
+    return { nodeElements, edgeElements, affectedEdges };
+  }
+
+  function applyDragPreview(next: Record<string, Point>) {
+    dragPreview.current = next;
+    const dom = dragDomPreview.current;
+    if (!dom || !sceneRenderIndex) return;
+    for (const [nodeId, position] of Object.entries(next)) {
+      const node = sceneRenderIndex.byId.get(nodeId);
+      const element = dom.nodeElements.get(nodeId);
+      if (!node || !element) continue;
+      element.style.transform = `translate(${position.x - node.bounds.x}px, ${position.y - node.bounds.y}px)`;
+    }
+    for (const { edge, index } of dom.affectedEdges) {
+      const points = previewEdgePoints(edge, sceneRenderIndex.byId, next, index);
+      for (const element of dom.edgeElements.get(edge.scene_edge_id) ?? []) {
+        updatePreviewEdgeElement(element, edge, points);
+      }
+    }
+  }
+
+  function scheduleDragPreview(next: Record<string, Point>) {
+    pendingDragPreview.current = next;
+    dragPreview.current = next;
+    if (dragPreviewFrame.current !== null) return;
+    dragPreviewFrame.current = requestAnimationFrame(() => {
+      dragPreviewFrame.current = null;
+      const pending = pendingDragPreview.current;
+      pendingDragPreview.current = null;
+      if (pending) applyDragPreview(pending);
+    });
+  }
+
+  function clearDragPreview() {
+    if (dragPreviewFrame.current !== null) cancelAnimationFrame(dragPreviewFrame.current);
+    dragPreviewFrame.current = null;
+    pendingDragPreview.current = null;
+    const dom = dragDomPreview.current;
+    if (dom) {
+      for (const element of dom.nodeElements.values()) element.style.removeProperty("transform");
+      for (const { edge } of dom.affectedEdges) {
+        for (const element of dom.edgeElements.get(edge.scene_edge_id) ?? []) {
+          updatePreviewEdgeElement(element, edge, edge.points);
+        }
+      }
+    }
+    dragPreview.current = {};
+    dragDomPreview.current = null;
+  }
+
+  function scheduleEdgeRoutePreview(next: Point[]) {
+    edgeRoutePreviewRef.current = next;
+    if (edgePreviewFrame.current !== null) return;
+    edgePreviewFrame.current = requestAnimationFrame(() => {
+      edgePreviewFrame.current = null;
+      setEdgeRoutePreview(edgeRoutePreviewRef.current);
+    });
+  }
+
   function chooseEdge(edgeId: string) {
     const next = selectedEdgeId === edgeId ? null : edgeId;
     setSelectedEdgeId(next);
@@ -1958,22 +1930,23 @@ function App() {
 
   function chooseEdgeAtClient(clientX: number, clientY: number, fallbackEdgeId: string) {
     const point = scenePointFromClient(clientX, clientY);
-    if (!scene || !point) {
+    if (!scene || !sceneRenderIndex || !point) {
       chooseEdge(fallbackEdgeId);
       return;
     }
     const nearest = scene.edges
       .map((edge, index) => ({
         edge,
-        distance: distanceToPolyline(point, previewEdgePoints(edge, scene.nodes, preview, index)),
+        distance: distanceToPolyline(point, previewEdgePoints(edge, sceneRenderIndex.byId, dragPreview.current, index)),
       }))
       .sort((left, right) => left.distance - right.distance)[0];
     chooseEdge(nearest?.edge.scene_edge_id ?? fallbackEdgeId);
   }
 
   function zoom(factor: number) {
-    if (!viewBox || !scene) return;
-    const [x, y, width, height] = viewBox;
+    const current = viewBoxRef.current ?? viewBox;
+    if (!current || !scene) return;
+    const [x, y, width, height] = current;
     const nextWidth = width * factor;
     const nextHeight = height * factor;
     const next: [number, number, number, number] = [
@@ -1982,7 +1955,7 @@ function App() {
       nextWidth,
       nextHeight,
     ];
-    setViewBox(next);
+    commitViewBox(next);
     persistCamera(next, scene);
   }
 
@@ -2020,6 +1993,8 @@ function App() {
           return [nodeId, current?.bounds ?? node.bounds];
         }),
     );
+    dragDomPreview.current = collectDragDomPreview(movingIds);
+    dragPreview.current = {};
     setDrag({ startClient: point, baselines, rootIds: movingRoots });
   }
 
@@ -2032,13 +2007,15 @@ function App() {
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     const index = scene.edges.indexOf(selectedEdge);
-    const points = previewEdgePoints(selectedEdge, scene.nodes, preview, index);
+    if (!sceneRenderIndex) return;
+    const points = previewEdgePoints(selectedEdge, sceneRenderIndex.byId, dragPreview.current, index);
+    edgeRoutePreviewRef.current = points;
     setEdgeRoutePreview(points);
     setEdgeEndpointDrag({ edgeId: selectedEdge.scene_edge_id, endpoint, points });
   }
 
   function moveEdgeEndpoint(event: React.PointerEvent) {
-    if (!edgeEndpointDrag || !edgeRoutePreview || !scene) return;
+    if (!edgeEndpointDrag || !edgeRoutePreviewRef.current || !scene) return;
     const point = pointerPosition(event);
     const edge = scene.edges.find((item) => item.scene_edge_id === edgeEndpointDrag.edgeId);
     if (!point || !edge) return;
@@ -2047,7 +2024,7 @@ function App() {
       : edge.target_scene_node_id;
     const node = scene.nodes.find((item) => item.scene_node_id === nodeId);
     if (!node) return;
-    setEdgeRoutePreview(moveRouteEndpoint(
+    scheduleEdgeRoutePreview(moveRouteEndpoint(
       edgeEndpointDrag.points,
       edgeEndpointDrag.endpoint,
       node.bounds,
@@ -2070,7 +2047,7 @@ function App() {
         y: point.y - drag.startClient.y,
       },
     );
-    setPreview(Object.fromEntries(Object.entries(drag.baselines).map(([nodeId, bounds]) => [
+    scheduleDragPreview(Object.fromEntries(Object.entries(drag.baselines).map(([nodeId, bounds]) => [
       nodeId,
       {
         x: bounds.x + delta.x,
@@ -2081,7 +2058,8 @@ function App() {
 
   function beginPan(event: React.PointerEvent<SVGSVGElement>) {
     if ((event.target as Element).closest(".scene-edge")) return;
-    if ((event.target as Element).closest(".scene-node:not(.root)") || !viewBox) return;
+    const currentViewBox = viewBoxRef.current ?? viewBox;
+    if ((event.target as Element).closest(".scene-node:not(.root)") || !currentViewBox) return;
     setSelectedEdgeId(null);
     event.currentTarget.setPointerCapture(event.pointerId);
     if (event.shiftKey) {
@@ -2091,7 +2069,7 @@ function App() {
     }
     setPan({
       startClient: { x: event.clientX, y: event.clientY },
-      startViewBox: viewBox,
+      startViewBox: currentViewBox,
     });
   }
 
@@ -2113,7 +2091,7 @@ function App() {
     const rect = svgRef.current.getBoundingClientRect();
     const scaleX = pan.startViewBox[2] / rect.width;
     const scaleY = pan.startViewBox[3] / rect.height;
-    setViewBox([
+    writeViewBox([
       pan.startViewBox[0] - (event.clientX - pan.startClient.x) * scaleX,
       pan.startViewBox[1] - (event.clientY - pan.startClient.y) * scaleY,
       pan.startViewBox[2],
@@ -2123,7 +2101,7 @@ function App() {
 
   function endDrag() {
     if (!drag) return;
-    const patches = Object.entries(preview).map(([nodeId, position], index) => ({
+    const patches = Object.entries(dragPreview.current).map(([nodeId, position], index) => ({
       patch_id: `${patchId("move-batch")}.${index}`,
       operation: "set-position",
       target_id: nodeId,
@@ -2136,17 +2114,22 @@ function App() {
         : tx(`Move ${patches.length} node${patches.length === 1 ? "" : "s"}`, `移动 ${patches.length} 个节点`),
       patches,
     });
+    clearDragPreview();
     setDrag(null);
-    setPreview({});
   }
 
   function endPointer() {
-    if (edgeEndpointDrag && edgeRoutePreview) {
+    if (edgeEndpointDrag && edgeRoutePreviewRef.current) {
       const dragState = edgeEndpointDrag;
-      const route = edgeRoutePreview;
+      const route = edgeRoutePreviewRef.current;
+      if (edgePreviewFrame.current !== null) cancelAnimationFrame(edgePreviewFrame.current);
+      edgePreviewFrame.current = null;
       setEdgeEndpointDrag(null);
       void submit("set-route-hint", dragState.edgeId, { points: route })
-        .finally(() => setEdgeRoutePreview(null));
+        .finally(() => {
+          edgeRoutePreviewRef.current = null;
+          setEdgeRoutePreview(null);
+        });
       return;
     }
     if (marquee && scene) {
@@ -2163,23 +2146,28 @@ function App() {
       return;
     }
     if (drag) endDrag();
-    if (pan && viewBox && scene) {
+    const finalViewBox = viewBoxRef.current;
+    if (pan && finalViewBox && scene) {
+      setViewBox(finalViewBox);
       void submit("set-camera", undefined, {
-        x: viewBox[0],
-        y: viewBox[1],
-        zoom: scene.paper_width / viewBox[2],
+        x: finalViewBox[0],
+        y: finalViewBox[1],
+        zoom: scene.paper_width / finalViewBox[2],
       });
     }
     setPan(null);
   }
 
   function cancelPointer() {
+    clearDragPreview();
+    if (edgePreviewFrame.current !== null) cancelAnimationFrame(edgePreviewFrame.current);
+    edgePreviewFrame.current = null;
+    edgeRoutePreviewRef.current = null;
     setDrag(null);
     setEdgeEndpointDrag(null);
     setEdgeRoutePreview(null);
     setPan(null);
     setMarquee(null);
-    setPreview({});
   }
 
   function align(command: string) {
@@ -2441,7 +2429,7 @@ function App() {
       scene.paper_width,
       scene.paper_height,
     ];
-    setViewBox(next);
+    commitViewBox(next);
     void submit("set-camera", undefined, { x: 0, y: 0, zoom: 1 }, scene.scene_id);
   }
 
@@ -2467,11 +2455,11 @@ function App() {
       const progress = Math.min(1, (now - started) / 320);
       const eased = 1 - Math.pow(1 - progress, 3);
       const next = start.map((value, index) => value + (target[index] - value) * eased) as [number, number, number, number];
-      viewBoxRef.current = next;
-      setViewBox(next);
+      writeViewBox(next);
       if (progress < 1) viewBoxAnimation.current = requestAnimationFrame(animate);
       else {
         viewBoxAnimation.current = null;
+        setViewBox(target);
         persistCamera(target, scene);
       }
     };
@@ -2576,6 +2564,13 @@ function App() {
     }));
   }
 
+  const beginDragStable = useStableEvent((event: React.PointerEvent, node: SceneNode) => beginDrag(event, node));
+  const expandInNavigationStable = useStableEvent((node: SceneNode) => expandInNavigation(node));
+  const chooseEdgeStable = useStableEvent((edgeId: string) => chooseEdge(edgeId));
+  const chooseEdgeAtClientStable = useStableEvent((clientX: number, clientY: number, edgeId: string) => {
+    chooseEdgeAtClient(clientX, clientY, edgeId);
+  });
+
   if (!data || !scene || !view || !viewBox || !navigation) {
     return <div className="loading">{tx("Loading Studio...", "正在加载 Studio...")}</div>;
   }
@@ -2591,7 +2586,6 @@ function App() {
   const breadcrumb = selectedViewNode
     ? `${data.architecture.entrypoint.split(":").at(-1)} / ${localizedProjectionName} / ${selectedViewNode.semantic_name}`
     : `${data.architecture.entrypoint.split(":").at(-1)} / ${localizedProjectionName}`;
-  const proofRank: Record<string, number> = { invalid: 7, stale: 6, unproven: 5, conditional: 4, checking: 3, proven: 2, "review-ready": 1 };
   const proofs = data.draft.proofs;
   const proofCounts = proofs.reduce<Record<string, number>>((counts, proof) => ({ ...counts, [proof.status]: (counts[proof.status] ?? 0) + 1 }), {});
   const writebackBlocked = data.draft.writeback_summary.eligibility === "blocked" && data.draft.writeback_summary.blocking_intent_ids.length > 0;
@@ -2600,105 +2594,56 @@ function App() {
   const semanticZoom = screenScale < 0.35 ? "overview" : screenScale < 0.82 ? "standard" : "detail";
   const labelScale = Math.min(2.5, Math.max(1, 0.78 / screenScale));
   const containerLabelScale = Math.min(4, Math.max(1, 0.95 / screenScale));
-  const sceneDepths = sceneNodeDepths(scene);
-  function renderSceneNode(original: SceneNode) {
-    const position = preview[original.scene_node_id];
-    const node = position ? { ...original, bounds: { ...original.bounds, ...position } } : original;
-    const isRoot = !node.parent_scene_node_id;
+  const sceneIndex = sceneRenderIndex!;
+  function renderSceneNode(node: SceneNode) {
     const isSelected = selectedIds.includes(node.scene_node_id);
     const isEdgeSource = selectedEdge?.source_scene_node_id === node.scene_node_id;
     const isEdgeTarget = selectedEdge?.target_scene_node_id === node.scene_node_id;
-    const publicationNode = view!.nodes.find((item) => item.view_node_id === node.view_node_id);
-    const isStructuralContainer = node.shape === "container" && !publicationNode?.collapsed;
-    const proof = proofs
-      .filter((item) => item.affected_subject_ids.some((id) => node.canonical_node_ids.includes(id)))
-      .sort((a, b) => proofRank[b.status] - proofRank[a.status])[0];
+    const publicationNode = publicationNodesById.get(node.view_node_id);
     return (
-      <g
+      <SceneNodeGraphic
         key={node.scene_node_id}
-        className={`scene-node scene-depth-${Math.min(sceneDepths.get(node.scene_node_id) ?? 0, 4)} ${isRoot ? "root" : ""} ${isSelected ? "selected" : ""} ${isEdgeSource ? "edge-source" : ""} ${isEdgeTarget ? "edge-target" : ""} ${collapsed.has(node.scene_node_id) ? "collapsed" : ""} ${publicationNode?.collapsed ? "publication-collapsed" : ""} ${proof ? `proof-${proof.status}` : ""}`}
-        data-scene-node-id={node.scene_node_id}
-        data-scene-depth={sceneDepths.get(node.scene_node_id) ?? 0}
-        data-node-shape={node.shape}
-        tabIndex={isRoot ? -1 : 0}
-        onPointerDown={(event) => beginDrag(event, node)}
-        onClick={() => {
-          if (!isRoot && mode === "explore" && publicationNode?.collapsed) expandInNavigation(node);
-        }}
-        onDoubleClick={() => !isRoot && publicationNode?.collapsed && expandInNavigation(node)}
-        onKeyDown={(event) => { if (event.key === "Enter" && !isRoot) expandInNavigation(node); }}
-      >
-        {nodeShape(node)}
-        {isRoot || isStructuralContainer ? (
-          <text className="container-label" x={node.bounds.x + 14} y={isRoot ? node.bounds.y + 23 : node.bounds.y - 8}>{node.label_lines.join(" ")}</text>
-        ) : (
-          <>
-            {node.label_lines.map((line, index) => (
-              <text key={line + index} className="node-label" textAnchor="middle" x={node.bounds.x + node.bounds.width / 2} y={node.bounds.y + node.bounds.height / 2 - ((node.label_lines.length - 1) * 15 * Math.min(labelScale, 1.7)) / 2 + index * 15 * Math.min(labelScale, 1.7)}>{line}</text>
-            ))}
-            {node.secondary_label && <text className="node-secondary" textAnchor="middle" x={node.bounds.x + node.bounds.width / 2} y={node.bounds.y + node.bounds.height - 14}>{node.secondary_label.slice(0, 28)}</text>}
-          </>
-        )}
-        {isSelected && !isRoot && (
-          <>
-            <rect className="selection-box" x={node.bounds.x - 4} y={node.bounds.y - 4} width={node.bounds.width + 8} height={node.bounds.height + 8} />
-            <circle className="port" cx={node.bounds.x} cy={node.bounds.y + node.bounds.height / 2} r={4} />
-            <circle className="port" cx={node.bounds.x + node.bounds.width} cy={node.bounds.y + node.bounds.height / 2} r={4} />
-          </>
-        )}
-        {proof && !isRoot && <g className="proof-overlay" aria-label={`${proof.status}: ${proof.message}`}><rect x={node.bounds.x - 7} y={node.bounds.y - 7} width={node.bounds.width + 14} height={node.bounds.height + 14} rx={7} /><text x={node.bounds.x + node.bounds.width - 3} y={node.bounds.y + 3}>{proof.status === "invalid" ? "×" : proof.status === "unproven" ? "?" : "!"}</text></g>}
-      </g>
+        node={node}
+        depth={sceneIndex.depths.get(node.scene_node_id) ?? 0}
+        isSelected={isSelected}
+        isEdgeSource={isEdgeSource}
+        isEdgeTarget={isEdgeTarget}
+        isCollapsed={collapsed.has(node.scene_node_id)}
+        publicationCollapsed={publicationNode?.collapsed ?? false}
+        isStructuralContainer={node.shape === "container" && !publicationNode?.collapsed}
+        proof={proofBySceneNodeId.get(node.scene_node_id)}
+        labelScale={labelScale}
+        mode={mode}
+        onBeginDrag={beginDragStable}
+        onExpand={expandInNavigationStable}
+      />
     );
   }
 
   function renderSceneEdge(edge: SceneEdge, index: number, overlay = false) {
     const points = selectedEdgeId === edge.scene_edge_id && edgeRoutePreview
       ? edgeRoutePreview
-      : previewEdgePoints(edge, scene!.nodes, preview, index);
-    const previewEdge = { ...edge, points };
-    const labelPoint = edgeLabelPoint(previewEdge);
-    const criticalLabel = ["residual", "shape-transform", "memory-reference", "condition", "routing", "state-update"].includes(edge.visual_relation);
-    const showLabel = semanticZoom === "detail"
-      ? !scene!.layout_family.endsWith("-vertical") || !["sequence", "parallel-branch"].includes(edge.visual_relation)
-      : semanticZoom === "standard" ? !["sequence", "parallel-branch"].includes(edge.visual_relation) : false;
+      : previewEdgePoints(edge, sceneIndex.byId, EMPTY_POSITION_PREVIEW, index);
     const related = selectedIds.includes(edge.source_scene_node_id) || selectedIds.includes(edge.target_scene_node_id);
     const edgeSelected = selectedEdgeId === edge.scene_edge_id;
-    const start = points[0];
-    const end = points.at(-1)!;
-    const visibleLabel = semanticZoom === "detail"
-      ? edge.label.slice(0, 38)
-      : relationLabel(edge.visual_relation);
-    const sourceLabel = scene!.nodes.find((node) => node.scene_node_id === edge.source_scene_node_id)?.label_lines.join(" ") ?? edge.source_scene_node_id;
-    const targetLabel = scene!.nodes.find((node) => node.scene_node_id === edge.target_scene_node_id)?.label_lines.join(" ") ?? edge.target_scene_node_id;
-    const pointString = points.map((point) => `${point.x},${point.y}`).join(" ");
+    const sourceLabel = sceneIndex.byId.get(edge.source_scene_node_id)?.label_lines.join(" ") ?? edge.source_scene_node_id;
+    const targetLabel = sceneIndex.byId.get(edge.target_scene_node_id)?.label_lines.join(" ") ?? edge.target_scene_node_id;
     return (
-      <g
+      <SceneEdgeGraphic
         key={`${edge.scene_edge_id}-${overlay ? "overlay" : "base"}`}
-        className={`scene-edge relation-${edge.visual_relation} ${related ? "edge-related" : ""} ${edgeSelected ? "edge-selected" : ""} ${overlay ? "edge-overlay" : "edge-base"}`}
-        data-scene-edge-id={overlay ? undefined : edge.scene_edge_id}
-        data-visual-relation={edge.visual_relation}
-        role={overlay ? undefined : "button"}
-        tabIndex={overlay ? undefined : 0}
-        aria-label={overlay ? undefined : `${sourceLabel} ${tx("to", "到")} ${targetLabel}, ${relationLabel(edge.visual_relation)}`}
-        aria-pressed={overlay ? undefined : edgeSelected}
-        aria-hidden={overlay || undefined}
-        onPointerDown={overlay ? undefined : (event) => event.stopPropagation()}
-        onClick={overlay ? undefined : (event) => { event.stopPropagation(); chooseEdgeAtClient(event.clientX, event.clientY, edge.scene_edge_id); }}
-        onKeyDown={overlay ? undefined : (event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            chooseEdge(edge.scene_edge_id);
-          }
-        }}
-      >
-        {!overlay && <polyline className="edge-hit-target" points={pointString} fill="none" stroke="transparent" vectorEffect="non-scaling-stroke" />}
-        {overlay && <polyline className="edge-highlight-halo" points={pointString} fill="none" vectorEffect="non-scaling-stroke" />}
-        <polyline className="edge-path" points={pointString} fill="none" stroke={edge.stroke} strokeWidth={Math.max(edge.width, related ? 3.2 : 2.15)} strokeDasharray={edge.dash} markerEnd="url(#studio-arrow)" vectorEffect="non-scaling-stroke" />
-        {edge.visual_relation === "parallel-branch" && <circle className="edge-junction" cx={start.x} cy={start.y} r={3.2} fill={edge.stroke} />}
-        {edge.visual_relation === "merge" && <circle className="edge-junction" cx={end.x} cy={end.y} r={3.2} fill="var(--paper)" stroke={edge.stroke} strokeWidth={1.5} />}
-        {showLabel && <text className={`edge-label ${criticalLabel ? "critical" : ""}`} textAnchor="middle" x={labelPoint.x} y={labelPoint.y}>{visibleLabel}</text>}
-        {!overlay && <title>{sourceLabel} → {targetLabel} · {relationLabel(edge.visual_relation)}</title>}
-      </g>
+        edge={edge}
+        points={points}
+        overlay={overlay}
+        related={related}
+        selected={edgeSelected}
+        semanticZoom={semanticZoom}
+        layoutFamily={scene!.layout_family}
+        sourceLabel={sourceLabel}
+        targetLabel={targetLabel}
+        toLabel={tx("to", "到")}
+        onChooseAtClient={chooseEdgeAtClientStable}
+        onChoose={chooseEdgeStable}
+      />
     );
   }
 
@@ -2853,22 +2798,22 @@ function App() {
             <svg ref={svgRef} className={`scene semantic-${semanticZoom} ${selectedEdge ? "has-edge-selection" : ""}`} style={{ "--font-scale": data.view_state.font_scale ?? 1, "--label-scale": labelScale, "--container-label-scale": containerLabelScale } as React.CSSProperties} viewBox={viewBox.join(" ")} onPointerDown={beginPan} onPointerMove={movePointer} onPointerUp={endPointer} onPointerCancel={cancelPointer} onWheel={(event) => { event.preventDefault(); zoom(event.deltaY > 0 ? 1.1 : 0.9); }}>
               <defs><marker id="studio-arrow" viewBox="0 0 10 10" refX="8.4" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="context-stroke" /></marker></defs>
               <rect className="paper" width={scene.paper_width} height={scene.paper_height} />
-              <g className="root-layer">{scene.nodes.filter((node) => !node.parent_scene_node_id).map(renderSceneNode)}</g>
-              <g className="container-layer">{scene.nodes.filter((node) => node.parent_scene_node_id && node.shape === "container").map(renderSceneNode)}</g>
+              <g className="root-layer">{sceneIndex.roots.map(renderSceneNode)}</g>
+              <g className="container-layer">{sceneIndex.containers.map(renderSceneNode)}</g>
               <g className="edge-layer">{scene.edges.map((edge, index) => renderSceneEdge(edge, index))}</g>
-              <g className="node-layer">{scene.nodes.filter((node) => node.parent_scene_node_id && node.shape !== "container").map(renderSceneNode)}</g>
+              <g className="node-layer">{sceneIndex.leaves.map(renderSceneNode)}</g>
               <g className="annotation-layer">{(scene.annotations ?? []).map((annotation) => <g key={annotation.annotation_id} className="scene-annotation" role="note" aria-label={annotation.text}><rect x={annotation.bounds.x} y={annotation.bounds.y} width={annotation.bounds.width} height={annotation.bounds.height} rx={4} fill={annotation.fill} stroke={annotation.stroke} /><text x={annotation.bounds.x + 10} y={annotation.bounds.y + 21}>{annotation.text.slice(0, 52)}</text></g>)}</g>
               {scene.caption && <text className="scene-caption" textAnchor="middle" x={scene.paper_width / 2} y={scene.paper_height - 12}>{scene.caption}</text>}
               {marquee && (() => { const bounds = selectionBounds(marquee.start, marquee.current); return <rect className="marquee-selection" x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} />; })()}
               <g className="edge-overlay-layer">{selectedEdge && renderSceneEdge(selectedEdge, scene.edges.indexOf(selectedEdge), true)}</g>
               {mode === "layout" && selectedEdge && (() => {
-                const points = edgeRoutePreview ?? previewEdgePoints(selectedEdge, scene.nodes, preview, scene.edges.indexOf(selectedEdge));
+                const points = edgeRoutePreview ?? previewEdgePoints(selectedEdge, sceneIndex.byId, EMPTY_POSITION_PREVIEW, scene.edges.indexOf(selectedEdge));
                 const radius = Math.min(20, Math.max(5, 6 / screenScale));
                 return <g className="edge-route-handles"><circle className={`edge-route-handle source ${edgeEndpointDrag?.endpoint === "source" ? "dragging" : ""}`} data-endpoint="source" cx={points[0].x} cy={points[0].y} r={radius} onPointerDown={(event) => beginEdgeEndpointDrag(event, "source")}><title>{tx("Move source connection", "移动起点连接")}</title></circle><circle className={`edge-route-handle target ${edgeEndpointDrag?.endpoint === "target" ? "dragging" : ""}`} data-endpoint="target" cx={points.at(-1)!.x} cy={points.at(-1)!.y} r={radius} onPointerDown={(event) => beginEdgeEndpointDrag(event, "target")}><title>{tx("Move target connection", "移动终点连接")}</title></circle></g>;
               })()}
             </svg>
             {scene.legend_placement !== "hidden" && <div className={`relation-legend legend-${scene.legend_placement ?? "top-left"}`} aria-label={tx("Visible relation types", "可见关系类型")}>{[...new Map(scene.edges.map((edge) => [edge.visual_relation, edge])).values()].map((edge) => <span key={edge.visual_relation}><i className={edge.dash ? "dashed" : ""} style={{ "--relation-color": edge.stroke } as React.CSSProperties} />{relationLabel(edge.visual_relation)}</span>)}</div>}
-            {selectedEdge && <div className="edge-flow-status" role="status"><strong>{scene.nodes.find((node) => node.scene_node_id === selectedEdge.source_scene_node_id)?.label_lines.join(" ")}</strong><ArrowRight size={13} /><strong>{scene.nodes.find((node) => node.scene_node_id === selectedEdge.target_scene_node_id)?.label_lines.join(" ")}</strong><span>{relationLabel(selectedEdge.visual_relation)}</span></div>}
+            {selectedEdge && <div className="edge-flow-status" role="status"><strong>{sceneIndex.byId.get(selectedEdge.source_scene_node_id)?.label_lines.join(" ")}</strong><ArrowRight size={13} /><strong>{sceneIndex.byId.get(selectedEdge.target_scene_node_id)?.label_lines.join(" ")}</strong><span>{relationLabel(selectedEdge.visual_relation)}</span></div>}
             {selectedNode && <div className="context-bar"><button title={tx("Focus selection", "聚焦所选内容")} aria-label={tx("Focus selection", "聚焦所选内容")} onClick={focusSelection}><Focus size={14} /></button><button title={pinned.has(selectedNode.scene_node_id) ? tx("Unpin", "取消固定") : tx("Pin", "固定")} onClick={() => void submit("set-pin", selectedNode.scene_node_id, { enabled: !pinned.has(selectedNode.scene_node_id) })}>{pinned.has(selectedNode.scene_node_id) ? <PinOff size={14} /> : <Pin size={14} />}</button><button title={tx("Expand in navigation tree", "在导航树中展开")} onClick={() => expandInNavigation(selectedNode)}><Maximize2 size={14} /></button></div>}
           </div>
         </main>
