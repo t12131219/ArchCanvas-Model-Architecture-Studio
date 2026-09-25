@@ -7,6 +7,7 @@ from typing import Any, Protocol
 
 from archcanvas_core.models import FrameworkAdapterCapability, FrameworkFormCapability
 from archcanvas_python import AnalysisBundle, AnalysisError, analyze_project
+from archcanvas_python.source_index import detect_framework
 
 from .environment_probe import pytorch_available_targets
 from .onnx_adapter import analyze_onnx
@@ -289,6 +290,43 @@ def adapter_capabilities() -> list[FrameworkAdapterCapability]:
             ],
         ),
         FrameworkAdapterCapability(
+            adapter_id="adapter:python-source-generic",
+            framework="python",
+            adapter_version=ADAPTER_VERSION,
+            status="partial",
+            static_analysis=True,
+            runtime_evidence=False,
+            source_transactions=False,
+            parameter_transactions=False,
+            structural_transactions=False,
+            artifact_commit=False,
+            capability_status={
+                "static": "partial",
+                "runtime": "unavailable",
+                "parameter_transaction": "unavailable",
+                "structural_transaction": "unavailable",
+                "artifact_commit": "unavailable",
+            },
+            supported_forms=["Python callable static dataflow", "opaque composite recovery"],
+            forms=[
+                FrameworkFormCapability(
+                    form_id="form:python-callable",
+                    form_name="generic Python callable",
+                    static="partial",
+                    runtime="unavailable",
+                    parameter_transaction="unavailable",
+                    structural_transaction="unavailable",
+                    artifact_commit="unavailable",
+                    limitations=[
+                        "Unknown calls and dynamic control flow remain explicit opaque boundaries."
+                    ],
+                )
+            ],
+            limitations=[
+                "The generic adapter preserves static evidence but does not claim framework semantics."
+            ],
+        ),
+        FrameworkAdapterCapability(
             adapter_id="adapter:onnx-graph",
             framework="onnx",
             adapter_version=ADAPTER_VERSION,
@@ -432,12 +470,7 @@ def transaction_adapter_id(framework: str) -> str:
 def resolve_framework(project: Path, entrypoint: str, requested: str) -> str:
     if requested != "auto":
         return requested
-    if entrypoint.lower().endswith(".onnx") or project.suffix.lower() == ".onnx":
-        return "onnx"
-    raise AnalysisError(
-        "FRAMEWORK_REQUIRED",
-        "auto detection is deterministic only for .onnx; pass --framework for Python source",
-    )
+    return detect_framework(project.resolve(), entrypoint)
 
 
 def analyze_with_adapter(
@@ -461,7 +494,7 @@ def analyze_with_adapter(
             config_bytes,
             config_path,
         )
-    if selected not in {"pytorch", "keras", "jax"}:
+    if selected not in {"pytorch", "keras", "jax", "python"}:
         raise AnalysisError("FRAMEWORK_UNSUPPORTED", f"unsupported framework: {selected}")
     return analyze_project(
         project,

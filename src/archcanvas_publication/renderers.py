@@ -182,6 +182,67 @@ def _edge_svg(scene: VisualScene) -> str:
     return "\n".join(chunks)
 
 
+def _annotation_svg(scene: VisualScene) -> str:
+    chunks: list[str] = []
+    for annotation in scene.annotations:
+        bounds = annotation.bounds
+        chunks.extend(
+            [
+                (
+                    f'<g id="{_attribute(annotation.annotation_id)}" class="scene-annotation" '
+                    'role="note">'
+                ),
+                (
+                    f'<rect x="{bounds.x:.1f}" y="{bounds.y:.1f}" '
+                    f'width="{bounds.width:.1f}" height="{bounds.height:.1f}" rx="4" '
+                    f'fill="{_attribute(annotation.fill)}" '
+                    f'stroke="{_attribute(annotation.stroke)}" stroke-width="1.2"/>'
+                ),
+                (
+                    f'<text x="{bounds.x + 10:.1f}" y="{bounds.y + 21:.1f}">'
+                    f'{html.escape(annotation.text)}</text>'
+                ),
+                "</g>",
+            ]
+        )
+    return "\n".join(chunks)
+
+
+def _legend_svg(scene: VisualScene) -> str:
+    if not scene.legend_placement or scene.legend_placement == "hidden" or not scene.edges:
+        return ""
+    entries = list(dict.fromkeys(edge.visual_relation.value for edge in scene.edges))
+    width = max(116.0, max(len(item) for item in entries) * 7.0 + 38.0)
+    height = len(entries) * 20.0 + 16.0
+    left = scene.legend_placement.endswith("left")
+    top = scene.legend_placement.startswith("top")
+    x = 14.0 if left else scene.paper_width - width - 14.0
+    y = 14.0 if top else scene.paper_height - height - 14.0
+    chunks = [
+        '<g class="scene-legend" role="list">',
+        (
+            f'<rect x="{x:.1f}" y="{y:.1f}" width="{width:.1f}" '
+            f'height="{height:.1f}" rx="4" fill="#ffffff" fill-opacity="0.94" '
+            'stroke="#c6cbd1"/>'
+        ),
+    ]
+    edge_by_relation = {edge.visual_relation.value: edge for edge in scene.edges}
+    for index, relation in enumerate(entries):
+        edge = edge_by_relation[relation]
+        row_y = y + 19.0 + index * 20.0
+        dash = f' stroke-dasharray="{_attribute(edge.dash)}"' if edge.dash else ""
+        chunks.append(
+            f'<line x1="{x + 10:.1f}" y1="{row_y - 4:.1f}" '
+            f'x2="{x + 30:.1f}" y2="{row_y - 4:.1f}" '
+            f'stroke="{_attribute(edge.stroke)}" stroke-width="{edge.width:.1f}"{dash}/>'
+        )
+        chunks.append(
+            f'<text x="{x + 36:.1f}" y="{row_y:.1f}">{html.escape(relation)}</text>'
+        )
+    chunks.append("</g>")
+    return "\n".join(chunks)
+
+
 def render_svg(scene: VisualScene) -> str:
     roots = [node for node in scene.nodes if node.parent_scene_node_id is None]
     containers = [
@@ -215,7 +276,7 @@ def render_svg(scene: VisualScene) -> str:
         '<path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/>',
         "</marker>",
         "</defs>",
-        '<style>.node-label,.container-title{font:600 13px Arial,Helvetica,sans-serif;fill:#182026;letter-spacing:0}.node-secondary{font:10px Arial,Helvetica,sans-serif;fill:#52606d;letter-spacing:0}.edge-label{font:10px Arial,Helvetica,sans-serif;fill:#36454f;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round;letter-spacing:0}.scene-node:focus{outline:none}</style>',
+        '<style>.node-label,.container-title{font:600 13px Arial,Helvetica,sans-serif;fill:#182026;letter-spacing:0}.node-secondary{font:10px Arial,Helvetica,sans-serif;fill:#52606d;letter-spacing:0}.edge-label{font:10px Arial,Helvetica,sans-serif;fill:#36454f;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round;letter-spacing:0}.scene-annotation text,.scene-legend text{font:11px Arial,Helvetica,sans-serif;fill:#29323a;letter-spacing:0}.scene-caption{font:12px Arial,Helvetica,sans-serif;fill:#36454f;letter-spacing:0}.scene-node:focus{outline:none}</style>',
         f'<rect class="paper" width="{scene.paper_width:.1f}" height="{scene.paper_height:.1f}" fill="#ffffff"/>',
         '<g id="scene-root">',
         *(_node_svg(node) for node in roots),
@@ -228,6 +289,17 @@ def render_svg(scene: VisualScene) -> str:
         '<g class="node-layer">',
         *(_node_svg(node) for node in children),
         "</g>",
+        '<g class="annotation-layer">',
+        _annotation_svg(scene),
+        "</g>",
+        _legend_svg(scene),
+        (
+            f'<text class="scene-caption" text-anchor="middle" '
+            f'x="{scene.paper_width / 2:.1f}" y="{scene.paper_height - 12:.1f}">'
+            f'{html.escape(scene.caption)}</text>'
+            if scene.caption
+            else ""
+        ),
         "</g>",
         "</svg>",
     ]

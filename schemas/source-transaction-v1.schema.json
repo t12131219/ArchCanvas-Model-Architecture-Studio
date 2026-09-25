@@ -135,6 +135,96 @@
       "title": "FileChange",
       "type": "object"
     },
+    "FreeformSourceBufferPatch": {
+      "additionalProperties": false,
+      "properties": {
+        "base_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Base Sha256",
+          "type": "string"
+        },
+        "content": {
+          "title": "Content",
+          "type": "string"
+        },
+        "path": {
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "base_sha256",
+        "content"
+      ],
+      "title": "FreeformSourceBufferPatch",
+      "type": "object"
+    },
+    "FreeformSourcePatch": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_path": {
+          "minLength": 1,
+          "title": "Artifact Path",
+          "type": "string"
+        },
+        "buffers": {
+          "items": {
+            "$ref": "#/$defs/FreeformSourceBufferPatch"
+          },
+          "minItems": 1,
+          "title": "Buffers",
+          "type": "array"
+        },
+        "operation": {
+          "const": "edit_source_buffers",
+          "default": "edit_source_buffers",
+          "title": "Operation",
+          "type": "string"
+        },
+        "patch_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Patch Id",
+          "type": "string"
+        },
+        "runtime_input_spec": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Runtime Input Spec"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "targeted_tests": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Targeted Tests",
+          "type": "array"
+        }
+      },
+      "required": [
+        "patch_id",
+        "artifact_path",
+        "buffers"
+      ],
+      "title": "FreeformSourcePatch",
+      "type": "object"
+    },
     "GateResult": {
       "additionalProperties": false,
       "properties": {
@@ -695,6 +785,9 @@
         },
         {
           "$ref": "#/$defs/SemanticStructuralPatch"
+        },
+        {
+          "$ref": "#/$defs/FreeformSourcePatch"
         }
       ],
       "title": "Request"

@@ -367,6 +367,11 @@ def test_transformer_expanded_ports_and_container_borders_have_clearance() -> No
         ]
         if not children:
             continue
+        child_area = sum(
+            child.bounds.width * child.bounds.height for child in children
+        )
+        container_area = container.bounds.width * container.bounds.height
+        assert container_area <= child_area * 3.75
         assert min(child.bounds.x - container.bounds.x for child in children) >= 14.0
         assert min(child.bounds.y - container.bounds.y for child in children) >= 14.0
         assert min(

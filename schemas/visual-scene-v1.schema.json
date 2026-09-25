@@ -15,6 +15,44 @@
       "title": "EdgeType",
       "type": "string"
     },
+    "SceneAnnotation": {
+      "additionalProperties": false,
+      "properties": {
+        "annotation_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Annotation Id",
+          "type": "string"
+        },
+        "bounds": {
+          "$ref": "#/$defs/SceneRect"
+        },
+        "fill": {
+          "default": "#fff8c5",
+          "minLength": 1,
+          "title": "Fill",
+          "type": "string"
+        },
+        "stroke": {
+          "default": "#8a6d1d",
+          "minLength": 1,
+          "title": "Stroke",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "annotation_id",
+        "text",
+        "bounds"
+      ],
+      "title": "SceneAnnotation",
+      "type": "object"
+    },
     "SceneEdge": {
       "additionalProperties": false,
       "properties": {
@@ -295,6 +333,25 @@
   },
   "additionalProperties": false,
   "properties": {
+    "annotations": {
+      "items": {
+        "$ref": "#/$defs/SceneAnnotation"
+      },
+      "title": "Annotations",
+      "type": "array"
+    },
+    "caption": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Caption"
+    },
     "edges": {
       "items": {
         "$ref": "#/$defs/SceneEdge"
@@ -306,6 +363,25 @@
       "minLength": 1,
       "title": "Layout Family",
       "type": "string"
+    },
+    "legend_placement": {
+      "anyOf": [
+        {
+          "enum": [
+            "top-left",
+            "top-right",
+            "bottom-left",
+            "bottom-right",
+            "hidden"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Legend Placement"
     },
     "nodes": {
       "items": {

@@ -9,6 +9,7 @@ from .registry import (
 from .service import (
     commit_transaction,
     discard_transaction,
+    prepare_freeform_transaction,
     prepare_transaction,
     verify_transaction,
 )
@@ -20,6 +21,7 @@ __all__ = [
     "discard_transaction",
     "load_transaction",
     "plan_connection",
+    "prepare_freeform_transaction",
     "prepare_transaction",
     "unsupported_intent_proposal",
     "validate_structural_oracle",

@@ -29,6 +29,7 @@ from archcanvas_core.models import (
     EvidenceKind,
     EvidenceRecord,
     FileChange,
+    FreeformSourcePatch,
     GateResult,
     SemanticParameterPatch,
     SemanticStructuralPatch,
@@ -497,6 +498,139 @@ def prepare_transaction(
     return transaction, _receipt(transaction)
 
 
+def prepare_freeform_transaction(
+    request: FreeformSourcePatch,
+    workspace: Path,
+) -> tuple[SourceTransaction, TransactionReceipt]:
+    artifact = Path(request.artifact_path).resolve()
+    architecture, snapshot, evidence = _load_artifact(artifact)
+    if architecture.framework != snapshot.framework:
+        raise ValueError("architecture and snapshot framework bindings do not match")
+    if transaction_artifact_kind(architecture.framework) != "source-artifact":
+        raise ValueError("freeform source buffers are unavailable for model artifacts")
+    _validate_snapshot(snapshot)
+    project = Path(snapshot.project_root).resolve()
+    snapshot_files = {item.path: item for item in snapshot.source_files}
+    seed = json.dumps(request.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
+    transaction_id = f"transaction:{_sha256((seed + datetime.now(UTC).isoformat()).encode())[:16]}"
+    workspace = workspace.resolve()
+    directory = workspace / "transactions" / transaction_id
+    temporary_project = directory / "project"
+    directory.mkdir(parents=True, exist_ok=False)
+    try:
+        _copy_project(project, temporary_project, workspace)
+        file_changes: list[FileChange] = []
+        diffs: list[str] = []
+        anchor_payload: list[dict[str, str]] = []
+        for buffer in request.buffers:
+            source_file = snapshot_files.get(buffer.path)
+            if source_file is None:
+                raise ValueError(f"source buffer is outside the frozen snapshot: {buffer.path}")
+            if source_file.sha256 != buffer.base_sha256:
+                raise ValueError(f"source buffer base hash is stale: {buffer.path}")
+            relative = Path(buffer.path)
+            unresolved = project / relative
+            if unresolved.is_symlink():
+                raise ValueError(f"source buffer cannot target a symbolic link: {buffer.path}")
+            original_path = unresolved.resolve()
+            if not original_path.is_relative_to(project) or not original_path.is_file():
+                raise ValueError(f"source buffer path is unavailable: {buffer.path}")
+            if relative.suffix not in {".py", ".json"}:
+                raise ValueError(f"source buffer is not an editable text type: {buffer.path}")
+            before = original_path.read_bytes()
+            if len(before) > 1_000_000:
+                raise ValueError(f"source buffer exceeds the 1 MB editing limit: {buffer.path}")
+            try:
+                before.decode("utf-8")
+            except UnicodeDecodeError as error:
+                raise ValueError(f"source buffer is not UTF-8 text: {buffer.path}") from error
+            after = buffer.content.encode("utf-8")
+            if b"\x00" in after:
+                raise ValueError(f"source buffer contains a NUL byte: {buffer.path}")
+            if len(after) > 1_000_000:
+                raise ValueError(f"staged source buffer exceeds the 1 MB limit: {buffer.path}")
+            if before == after:
+                continue
+            prepared_path = temporary_project / relative
+            write_prepared(prepared_path, after)
+            kind = "python" if relative.suffix == ".py" else "json"
+            file_changes.append(
+                FileChange(
+                    path=relative.as_posix(),
+                    kind=kind,
+                    before_sha256=_sha256(before),
+                    after_sha256=_sha256(after),
+                )
+            )
+            diffs.append(_unified_diff(relative, before, after))
+            anchor_payload.append(
+                {"path": relative.as_posix(), "base_sha256": buffer.base_sha256}
+            )
+        if not file_changes:
+            raise ValueError("source workspace has no staged changes")
+
+        prepared_bundle = _analyze_at(temporary_project, snapshot)
+        expected = graph_delta(
+            architecture,
+            prepared_bundle.architecture,
+            evidence,
+            prepared_bundle.evidence,
+        )
+        anchor = _sha256(
+            json.dumps(
+                {"revision": snapshot.revision, "buffers": anchor_payload},
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+        )
+        transaction = SourceTransaction(
+            transaction_id=transaction_id,
+            framework=architecture.framework,
+            transaction_adapter_id=transaction_adapter_id(architecture.framework),
+            artifact_kind="source-artifact",
+            validators=[
+                "parse",
+                "static-analysis",
+                "full-observed-graph-delta",
+                "publication",
+            ],
+            state=TransactionState.PREPARED,
+            state_history=[
+                TransactionState.DRAFT,
+                TransactionState.PLANNED,
+                TransactionState.PREPARED,
+            ],
+            request=request,
+            created_at=datetime.now(UTC).isoformat(),
+            workspace=str(workspace),
+            original_project_root=str(project),
+            temporary_project_root=str(temporary_project),
+            artifact_path=str(artifact),
+            source_snapshot_id=snapshot.snapshot_id,
+            base_revision=snapshot.revision,
+            anchor_fingerprint=anchor,
+            file_changes=file_changes,
+            source_diff="\n".join(diffs),
+            expected_delta=expected,
+            gates=[
+                _gate(
+                    "F-freeform-staging",
+                    True,
+                    "Snapshot paths, base hashes, UTF-8 limits, isolated staging, and full "
+                    "observed Graph Delta capture passed.",
+                    "Freeform source staging failed.",
+                )
+            ],
+        )
+        save_transaction(transaction)
+        (directory / "source.diff").write_text(transaction.source_diff, encoding="utf-8")
+        return transaction, _receipt(transaction)
+    except Exception:
+        if directory.is_dir():
+            shutil.rmtree(directory)
+        raise
+
+
 def _fail(
     transaction: SourceTransaction,
     gate: GateResult,
@@ -704,11 +838,16 @@ def verify_transaction(path: Path) -> tuple[SourceTransaction, TransactionReceip
                 ),
                 _diagnostic("STRUCTURAL_DELTA_ORACLE_FAILED", str(error)),
             )
+    freeform = isinstance(transaction.request, FreeformSourcePatch)
     gates.append(
         _gate(
             "F-graph-delta",
             True,
-            "Expected and observed Graph Delta match exactly and the operation oracle passed.",
+            (
+                "The complete staged Graph Delta was reproduced exactly for high-risk review."
+                if freeform
+                else "Expected and observed Graph Delta match exactly and the operation oracle passed."
+            ),
             "Graph Delta validation failed.",
         )
     )

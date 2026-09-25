@@ -367,7 +367,15 @@ def _simplify_route(points: list[ScenePoint]) -> list[ScenePoint]:
         simplified.append(point)
         while len(simplified) >= 3:
             first, middle, last = simplified[-3:]
-            if (first.x == middle.x == last.x) or (first.y == middle.y == last.y):
+            vertical_middle = (
+                first.x == middle.x == last.x
+                and min(first.y, last.y) <= middle.y <= max(first.y, last.y)
+            )
+            horizontal_middle = (
+                first.y == middle.y == last.y
+                and min(first.x, last.x) <= middle.x <= max(first.x, last.x)
+            )
+            if vertical_middle or horizontal_middle:
                 simplified.pop(-2)
             else:
                 break
@@ -406,7 +414,28 @@ def _avoid_opaque_nodes(
     ]
     if not blockers or len(points) < 4:
         return points
-    lead_start, lead_end = points[1], points[-2]
+    start, first_lead = points[0], points[1]
+    penultimate, end = points[-2], points[-1]
+
+    def short_stub(
+        anchor: ScenePoint, direction: ScenePoint, distance: float = 24.0
+    ) -> ScenePoint:
+        dx = direction.x - anchor.x
+        dy = direction.y - anchor.y
+        if abs(dx) >= abs(dy):
+            sign = 1.0 if dx >= 0.0 else -1.0
+            return ScenePoint(
+                x=min(paper_width, max(0.0, anchor.x + sign * distance)),
+                y=anchor.y,
+            )
+        sign = 1.0 if dy >= 0.0 else -1.0
+        return ScenePoint(
+            x=anchor.x,
+            y=min(paper_height, max(0.0, anchor.y + sign * distance)),
+        )
+
+    lead_start = short_stub(start, first_lead)
+    lead_end = short_stub(end, penultimate)
     candidates = [points]
     x_corridors = {18.0, paper_width - 18.0}
     y_corridors = {18.0, paper_height - 18.0}
@@ -944,9 +973,9 @@ def _build_vertical_dual_lane_scene(
             if not children:
                 continue
             left = max(30.0, min(child.bounds.x for child in children) - 18.0)
-            top = max(30.0, min(child.bounds.y for child in children) - 14.0)
+            top = max(30.0, min(child.bounds.y for child in children) - 30.0)
             right = max(child.bounds.x + child.bounds.width for child in children) + 18.0
-            bottom = max(child.bounds.y + child.bounds.height for child in children) + 14.0
+            bottom = max(child.bounds.y + child.bounds.height for child in children) + 18.0
             style = styles[node.view_node_id]
             scene_id = f"scenenode:{node.view_node_id.removeprefix('viewnode:')}"
             parent_scene_id = (
@@ -979,11 +1008,8 @@ def _build_vertical_dual_lane_scene(
             max((node.bounds.y + node.bounds.height + 56.0 for node in scene_by_view.values()), default=0),
         )
 
-        # Structural containers are computed from their visible children.  A
-        # branch with several nested wrappers can therefore make two sibling
-        # boxes touch or overlap even though all leaf nodes have distinct
-        # slots.  Resolve those collisions as a final deterministic pass and
-        # grow the owning container so the containment contract remains true.
+        # Structural containers are tightened from the leaves upward. This
+        # avoids retaining stale empty space after a nested sibling is shifted.
         scene_by_id = {node.scene_node_id: node for node in scene_by_view.values()}
 
         def descendants(scene_id: str) -> list[str]:
@@ -1011,8 +1037,75 @@ def _build_vertical_dual_lane_scene(
                     }
                 )
 
-        for _ in range(8):
-            changed = False
+        def depth(scene_id: str) -> int:
+            value = 0
+            cursor = scene_by_id[scene_id]
+            visited: set[str] = set()
+            while cursor.parent_scene_node_id in scene_by_id:
+                parent_id = cursor.parent_scene_node_id
+                if parent_id is None or parent_id in visited:
+                    break
+                visited.add(parent_id)
+                value += 1
+                cursor = scene_by_id[parent_id]
+            return value
+
+        def tighten_containers() -> bool:
+            tightened = False
+            containers = sorted(
+                (item for item in scene_by_id.values() if item.shape == "container"),
+                key=lambda item: (-depth(item.scene_node_id), item.scene_node_id),
+            )
+            for container in containers:
+                children = [
+                    item
+                    for item in scene_by_id.values()
+                    if item.parent_scene_node_id == container.scene_node_id
+                ]
+                if not children:
+                    continue
+                horizontal_padding = 18.0
+                title_padding = 30.0
+                bottom_padding = 18.0
+                left = max(
+                    18.0,
+                    min(item.bounds.x for item in children) - horizontal_padding,
+                )
+                top = max(
+                    18.0,
+                    min(item.bounds.y for item in children) - title_padding,
+                )
+                right = (
+                    max(item.bounds.x + item.bounds.width for item in children)
+                    + horizontal_padding
+                )
+                bottom = (
+                    max(item.bounds.y + item.bounds.height for item in children)
+                    + bottom_padding
+                )
+                minimum_width = (
+                    max(len(line) for line in container.label_lines) * 7.2 * 1.25
+                    + 28.0
+                )
+                width = max(minimum_width, right - left)
+                bounds = container.bounds.model_copy(
+                    update={
+                        "x": left,
+                        "y": top,
+                        "width": width,
+                        "height": bottom - top,
+                    }
+                )
+                current = scene_by_id[container.scene_node_id]
+                if bounds != current.bounds:
+                    scene_by_id[container.scene_node_id] = current.model_copy(
+                        update={"bounds": bounds}
+                    )
+                    tightened = True
+            return tightened
+
+        for _ in range(12):
+            changed = tighten_containers()
             siblings: dict[str | None, list[SceneNode]] = defaultdict(list)
             for node in scene_by_id.values():
                 siblings[node.parent_scene_node_id].append(node)
@@ -1042,33 +1135,10 @@ def _build_vertical_dual_lane_scene(
                         current = scene_by_id[current.scene_node_id]
                         changed = True
                     accepted.append(current)
-
-            # Expand each non-root container around its descendants.  The
-            # expansion is monotonic, so the collision pass converges.
-            for container in sorted(
-                (item for item in scene_by_id.values() if item.shape == "container"),
-                key=lambda item: item.bounds.width * item.bounds.height,
-            ):
-                children = descendants(container.scene_node_id)
-                if not children:
-                    continue
-                current = scene_by_id[container.scene_node_id]
-                descendants_bounds = [scene_by_id[item_id].bounds for item_id in children]
-                right = max(item.x + item.width for item in descendants_bounds) + 18.0
-                bottom = max(item.y + item.height for item in descendants_bounds) + 18.0
-                width = max(current.bounds.width, right - current.bounds.x)
-                height = max(current.bounds.height, bottom - current.bounds.y)
-                if width != current.bounds.width or height != current.bounds.height:
-                    scene_by_id[container.scene_node_id] = current.model_copy(
-                        update={
-                            "bounds": current.bounds.model_copy(
-                                update={"width": width, "height": height}
-                            )
-                        }
-                    )
-                    changed = True
             if not changed:
                 break
+
+        tighten_containers()
 
         leaf_scene_nodes = [scene_by_id[node.scene_node_id] for node in leaf_scene_nodes]
         container_scene_nodes = [
@@ -1091,6 +1161,15 @@ def _build_vertical_dual_lane_scene(
         ),
         *leaf_scene_nodes,
     ]
+    scene_nodes = _compact_compound_nodes(scene_nodes, preserve_flow=True)
+    paper_width = max(
+        720.0,
+        max(node.bounds.x + node.bounds.width for node in scene_nodes) + 72.0,
+    )
+    paper_height = max(
+        420.0,
+        max(node.bounds.y + node.bounds.height for node in scene_nodes) + 72.0,
+    )
     if root is not None:
         style = styles[root.view_node_id]
         view_to_scene[root.view_node_id] = root_scene_id or "scenenode:model"
@@ -1115,6 +1194,11 @@ def _build_vertical_dual_lane_scene(
             ),
         )
 
+    by_scene_id = {node.scene_node_id: node for node in scene_nodes}
+    overview_aliases = {
+        view_id: by_scene_id[node.scene_node_id]
+        for view_id, node in overview_aliases.items()
+    }
     by_scene_view = {node.view_node_id: node for node in scene_nodes}
     # Overview role groups intentionally alias several PublicationNodes to a
     # single summary box.  Resolve those aliases for routing while retaining
@@ -1194,8 +1278,8 @@ def _build_vertical_dual_lane_scene(
                 target.width / 2.0 - 18.0,
             )
             vertical_overlap = not (
-                source.y + source.height + 24.0 < target.y
-                or target.y + target.height + 24.0 < source.y
+                source.y + source.height <= target.y
+                or target.y + target.height <= source.y
             )
             horizontal_overlap = not (
                 source.x + source.width < target.x
@@ -1215,8 +1299,26 @@ def _build_vertical_dual_lane_scene(
                 )
                 if dense_layout and vertical_overlap and horizontal_overlap:
                     corridor_x = max(source.x + source.width, target.x + target.width) + 28.0
-                    start = ScenePoint(x=source.x + source.width, y=source.y + source.height / 2)
-                    end = ScenePoint(x=target.x + target.width, y=target.y + target.height / 2)
+                    source_side_offset = port_offset(
+                        edge.view_edge_id,
+                        outgoing_edges[edge.source_view_node_id],
+                        16.0,
+                        source.height / 2.0 - 10.0,
+                    )
+                    target_side_offset = port_offset(
+                        edge.view_edge_id,
+                        incoming_edges[edge.target_view_node_id],
+                        16.0,
+                        target.height / 2.0 - 10.0,
+                    )
+                    start = ScenePoint(
+                        x=source.x + source.width,
+                        y=source.y + source.height / 2 + source_side_offset,
+                    )
+                    end = ScenePoint(
+                        x=target.x + target.width,
+                        y=target.y + target.height / 2 + target_side_offset,
+                    )
                     points = [
                         start,
                         ScenePoint(x=corridor_x, y=start.y),
@@ -1243,32 +1345,86 @@ def _build_vertical_dual_lane_scene(
                         end,
                     ]
             elif vertical_overlap and not horizontal_overlap:
+                source_side_offset = port_offset(
+                    edge.view_edge_id,
+                    outgoing_edges[edge.source_view_node_id],
+                    16.0,
+                    source.height / 2.0 - 10.0,
+                )
+                target_side_offset = port_offset(
+                    edge.view_edge_id,
+                    incoming_edges[edge.target_view_node_id],
+                    16.0,
+                    target.height / 2.0 - 10.0,
+                )
                 if source.x < target.x:
                     start = ScenePoint(
                         x=source.x + source.width,
-                        y=source.y + source.height / 2,
+                        y=source.y + source.height / 2 + source_side_offset,
                     )
-                    end = ScenePoint(x=target.x, y=target.y + target.height / 2)
-                else:
-                    start = ScenePoint(x=source.x, y=source.y + source.height / 2)
                     end = ScenePoint(
-                        x=target.x + target.width,
-                        y=target.y + target.height / 2,
+                        x=target.x,
+                        y=target.y + target.height / 2 + target_side_offset,
                     )
-                corridor_x = (start.x + end.x) / 2 + ((index % 5) - 2) * 5.0
-                points = [
-                    start,
-                    ScenePoint(x=corridor_x, y=start.y),
-                    ScenePoint(x=corridor_x, y=end.y),
-                    end,
-                ]
+                else:
+                    start = ScenePoint(
+                        x=source.x + source.width,
+                        y=source.y + source.height / 2 + source_side_offset,
+                    )
+                    end = ScenePoint(
+                        x=target.x,
+                        y=target.y + target.height / 2 + target_side_offset,
+                    )
+                if source.x < target.x:
+                    corridor_x = (start.x + end.x) / 2 + ((index % 5) - 2) * 5.0
+                    points = [
+                        start,
+                        ScenePoint(x=corridor_x, y=start.y),
+                        ScenePoint(x=corridor_x, y=end.y),
+                        end,
+                    ]
+                else:
+                    corridor_y = (
+                        max(
+                            source.y + source.height,
+                            target.y + target.height,
+                        )
+                        + 28.0
+                        + (index % 3) * 7.0
+                    )
+                    points = [
+                        start,
+                        ScenePoint(x=start.x + 24.0, y=start.y),
+                        ScenePoint(x=start.x + 24.0, y=corridor_y),
+                        ScenePoint(x=end.x - 24.0, y=corridor_y),
+                        ScenePoint(x=end.x - 24.0, y=end.y),
+                        end,
+                    ]
             elif vertical_overlap and horizontal_overlap:
                 # Shared embedding branches can occupy overlapping rank bands.
                 # Route around the right edge and use right-side ports instead
                 # of producing a visually backwards top/bottom edge.
                 corridor_x = max(source.x + source.width, target.x + target.width) + 28.0
-                start = ScenePoint(x=source.x + source.width, y=source.y + source.height / 2)
-                end = ScenePoint(x=target.x + target.width, y=target.y + target.height / 2)
+                source_side_offset = port_offset(
+                    edge.view_edge_id,
+                    outgoing_edges[edge.source_view_node_id],
+                    16.0,
+                    source.height / 2.0 - 10.0,
+                )
+                target_side_offset = port_offset(
+                    edge.view_edge_id,
+                    incoming_edges[edge.target_view_node_id],
+                    16.0,
+                    target.height / 2.0 - 10.0,
+                )
+                start = ScenePoint(
+                    x=source.x + source.width,
+                    y=source.y + source.height / 2 + source_side_offset,
+                )
+                end = ScenePoint(
+                    x=target.x + target.width,
+                    y=target.y + target.height / 2 + target_side_offset,
+                )
                 points = [
                     start,
                     ScenePoint(x=corridor_x, y=start.y),
@@ -1287,7 +1443,7 @@ def _build_vertical_dual_lane_scene(
                     y=target.y + target.height,
                 )
                 corridor_y = (start.y + end.y) / 2 + ((index % 5) - 2) * 5.0
-                corridor_y = min(start.y - 12.0, max(end.y + 12.0, corridor_y))
+                corridor_y = min(start.y, max(end.y, corridor_y))
                 points = [
                     start,
                     ScenePoint(x=start.x, y=corridor_y),
@@ -1305,7 +1461,7 @@ def _build_vertical_dual_lane_scene(
                     y=target.y,
                 )
                 corridor_y = (start.y + end.y) / 2 + ((index % 5) - 2) * 5.0
-                corridor_y = max(start.y + 12.0, min(end.y - 12.0, corridor_y))
+                corridor_y = max(start.y, min(end.y, corridor_y))
                 points = [
                     start,
                     ScenePoint(x=start.x, y=corridor_y),
@@ -1427,6 +1583,242 @@ def _resolve_box_collisions(
                 changed = True
         if not changed:
             break
+
+
+def _compact_compound_nodes(
+    nodes: list[SceneNode], *, preserve_flow: bool = False
+) -> list[SceneNode]:
+    """Pack each compound bottom-up and retain space for titles and routes."""
+    by_id = {node.scene_node_id: node for node in nodes}
+
+    def children(parent_id: str) -> list[SceneNode]:
+        return [
+            node for node in by_id.values() if node.parent_scene_node_id == parent_id
+        ]
+
+    def descendants(parent_id: str) -> list[str]:
+        result: list[str] = []
+        pending = [parent_id]
+        while pending:
+            current = pending.pop()
+            child_ids = [item.scene_node_id for item in children(current)]
+            result.extend(child_ids)
+            pending.extend(child_ids)
+        return result
+
+    def depth(node_id: str) -> int:
+        value = 0
+        cursor = by_id[node_id]
+        visited: set[str] = set()
+        while cursor.parent_scene_node_id in by_id:
+            parent_id = cursor.parent_scene_node_id
+            if parent_id is None or parent_id in visited:
+                break
+            visited.add(parent_id)
+            value += 1
+            cursor = by_id[parent_id]
+        return value
+
+    def shift_subtree(node_id: str, dx: float, dy: float) -> None:
+        for item_id in [node_id, *descendants(node_id)]:
+            item = by_id[item_id]
+            by_id[item_id] = item.model_copy(
+                update={
+                    "bounds": item.bounds.model_copy(
+                        update={"x": item.bounds.x + dx, "y": item.bounds.y + dy}
+                    )
+                }
+            )
+
+    def tighten(container_id: str) -> None:
+        members = children(container_id)
+        if not members:
+            return
+        container = by_id[container_id]
+        left = max(18.0, min(item.bounds.x for item in members) - 18.0)
+        top = max(18.0, min(item.bounds.y for item in members) - 30.0)
+        right = max(item.bounds.x + item.bounds.width for item in members) + 18.0
+        bottom = max(item.bounds.y + item.bounds.height for item in members) + 18.0
+        label_width = (
+            max(len(line) for line in container.label_lines) * 7.2 * 1.25 + 28.0
+        )
+        by_id[container_id] = container.model_copy(
+            update={
+                "bounds": container.bounds.model_copy(
+                    update={
+                        "x": left,
+                        "y": top,
+                        "width": max(label_width, right - left),
+                        "height": bottom - top,
+                    }
+                )
+            }
+        )
+
+    containers = sorted(
+        (
+            node
+            for node in nodes
+            if node.shape == "container" and children(node.scene_node_id)
+        ),
+        key=lambda node: (-depth(node.scene_node_id), node.scene_node_id),
+    )
+    horizontal_gap = 24.0
+    vertical_gap = 24.0
+
+    def pack_members(raw_members: list[SceneNode]) -> None:
+        members = list(raw_members)
+        if len(members) < 2:
+            return
+        origin_x = min(item.bounds.x for item in members)
+        origin_y = min(item.bounds.y for item in members)
+        current_width = (
+            max(item.bounds.x + item.bounds.width for item in members) - origin_x
+        )
+        current_height = (
+            max(item.bounds.y + item.bounds.height for item in members) - origin_y
+        )
+        placements: list[tuple[str, float, float]] = []
+
+        def place_layers(
+            layers: list[
+                tuple[float, float, list[tuple[str, float, float]]]
+            ],
+        ) -> list[tuple[str, float, float]]:
+            if preserve_flow:
+                result: list[tuple[str, float, float]] = []
+                if current_height >= current_width:
+                    y = 0.0
+                    for _, layer_height, layer_members in layers:
+                        result.extend(
+                            (member_id, member_x, y + member_y)
+                            for member_id, member_x, member_y in layer_members
+                        )
+                        y += layer_height + vertical_gap
+                else:
+                    x = 0.0
+                    for layer_width, _, layer_members in layers:
+                        result.extend(
+                            (member_id, x + member_x, member_y)
+                            for member_id, member_x, member_y in layer_members
+                        )
+                        x += layer_width + horizontal_gap
+                return result
+            preferred = min(2.0, max(0.75, current_width / current_height))
+            layer_area = sum(width * height for width, height, _ in layers)
+            base_width = math.sqrt(layer_area * preferred)
+            target_widths = {
+                max(width for width, _, _ in layers),
+                *(base_width * scale for scale in (0.8, 1.0, 1.25, 1.5)),
+            }
+            arrangements = []
+            for target_width in sorted(target_widths):
+                x = 0.0
+                y = 0.0
+                row_height = 0.0
+                width = 0.0
+                result: list[tuple[str, float, float]] = []
+                for layer_width, layer_height, layer_members in layers:
+                    if x and x + layer_width > target_width + 1e-6:
+                        x = 0.0
+                        y += row_height + vertical_gap
+                        row_height = 0.0
+                    result.extend(
+                        (member_id, x + member_x, y + member_y)
+                        for member_id, member_x, member_y in layer_members
+                    )
+                    width = max(width, x + layer_width)
+                    row_height = max(row_height, layer_height)
+                    x += layer_width + horizontal_gap
+                height = y + row_height
+                aspect_penalty = abs(
+                    math.log(max(width / max(height, 1.0), 1e-6) / preferred)
+                )
+                score = width * height * (1.0 + aspect_penalty * 0.35)
+                arrangements.append((score, width * height, width, result))
+            return min(arrangements, key=lambda item: item[:3])[3]
+
+        if current_height >= current_width:
+            rows: list[list[SceneNode]] = []
+            row_bottoms: list[float] = []
+            for member in sorted(
+                members,
+                key=lambda item: (item.bounds.y, item.bounds.x, item.scene_node_id),
+            ):
+                if not rows or member.bounds.y >= row_bottoms[-1]:
+                    rows.append([member])
+                    row_bottoms.append(member.bounds.y + member.bounds.height)
+                else:
+                    rows[-1].append(member)
+                    row_bottoms[-1] = max(
+                        row_bottoms[-1], member.bounds.y + member.bounds.height
+                    )
+            layers = []
+            for row in rows:
+                x = 0.0
+                row_height = max(item.bounds.height for item in row)
+                layer_members = []
+                for member in sorted(
+                    row,
+                    key=lambda item: (item.bounds.x, item.bounds.y, item.scene_node_id),
+                ):
+                    layer_members.append((member.scene_node_id, x, 0.0))
+                    x += member.bounds.width + horizontal_gap
+                layers.append((x - horizontal_gap, row_height, layer_members))
+            placements = place_layers(layers)
+        else:
+            columns: list[list[SceneNode]] = []
+            column_rights: list[float] = []
+            for member in sorted(
+                members,
+                key=lambda item: (item.bounds.x, item.bounds.y, item.scene_node_id),
+            ):
+                if not columns or member.bounds.x >= column_rights[-1]:
+                    columns.append([member])
+                    column_rights.append(member.bounds.x + member.bounds.width)
+                else:
+                    columns[-1].append(member)
+                    column_rights[-1] = max(
+                        column_rights[-1], member.bounds.x + member.bounds.width
+                    )
+            layers = []
+            for column in columns:
+                y = 0.0
+                column_width = max(item.bounds.width for item in column)
+                layer_members = []
+                for member in sorted(
+                    column,
+                    key=lambda item: (item.bounds.y, item.bounds.x, item.scene_node_id),
+                ):
+                    layer_members.append((member.scene_node_id, 0.0, y))
+                    y += member.bounds.height + vertical_gap
+                layers.append((column_width, y - vertical_gap, layer_members))
+            placements = place_layers(layers)
+        for child_id, x, y in placements:
+            child = by_id[child_id]
+            shift_subtree(
+                child_id,
+                origin_x + x - child.bounds.x,
+                origin_y + y - child.bounds.y,
+            )
+
+    for container in containers:
+        tighten(container.scene_node_id)
+        pack_members(children(container.scene_node_id))
+        tighten(container.scene_node_id)
+
+    # The visual root is added after this pass, so its direct children appear
+    # as a sibling group whose parent is not present yet. Pack that group too
+    # instead of repeatedly pushing colliding top-level compounds outward.
+    if containers:
+        external_groups: dict[str | None, list[SceneNode]] = defaultdict(list)
+        for node in by_id.values():
+            if node.parent_scene_node_id not in by_id:
+                external_groups[node.parent_scene_node_id].append(node)
+        for members in external_groups.values():
+            pack_members(members)
+
+    return [by_id[node.scene_node_id] for node in nodes]
 
 
 def _unit_centers(
@@ -1579,24 +1971,43 @@ def _route_between_rects(
     dx = target_center[0] - source_center[0]
     dy = target_center[1] - source_center[1]
     stagger = ((index % 7) - 3) * 7.0
-    if abs(dx) >= abs(dy):
+    horizontal_separation = (
+        source.x + source.width <= target.x
+        or target.x + target.width <= source.x
+    )
+    vertical_separation = (
+        source.y + source.height <= target.y
+        or target.y + target.height <= source.y
+    )
+    route_horizontally = horizontal_separation and (
+        not vertical_separation or abs(dx) >= abs(dy)
+    )
+    if route_horizontally:
         if dx >= 0.0:
+            gap = target.x - (source.x + source.width)
+            lead_distance = min(26.0, max(4.0, gap / 3.0))
             start = ScenePoint(
                 x=source.x + source.width,
                 y=source_center[1] + source_offset,
             )
             end = ScenePoint(x=target.x, y=target_center[1] + target_offset)
-            lead_start = ScenePoint(x=start.x + 26.0, y=start.y)
-            lead_end = ScenePoint(x=end.x - 26.0, y=end.y)
+            lead_start = ScenePoint(x=start.x + lead_distance, y=start.y)
+            lead_end = ScenePoint(x=end.x - lead_distance, y=end.y)
         else:
+            gap = source.x - (target.x + target.width)
+            lead_distance = min(26.0, max(4.0, gap / 3.0))
             start = ScenePoint(x=source.x, y=source_center[1] + source_offset)
             end = ScenePoint(
                 x=target.x + target.width,
                 y=target_center[1] + target_offset,
             )
-            lead_start = ScenePoint(x=start.x - 26.0, y=start.y)
-            lead_end = ScenePoint(x=end.x + 26.0, y=end.y)
+            lead_start = ScenePoint(x=start.x - lead_distance, y=start.y)
+            lead_end = ScenePoint(x=end.x + lead_distance, y=end.y)
         corridor_x = (lead_start.x + lead_end.x) / 2.0 + stagger
+        corridor_x = min(
+            max(lead_start.x, lead_end.x),
+            max(min(lead_start.x, lead_end.x), corridor_x),
+        )
         return _simplify_route(
             [
                 start,
@@ -1607,30 +2018,56 @@ def _route_between_rects(
                 end,
             ]
         )
-    if dy >= 0.0:
-        start = ScenePoint(
-            x=source_center[0] + source_offset,
-            y=source.y + source.height,
+    if vertical_separation:
+        if dy >= 0.0:
+            gap = target.y - (source.y + source.height)
+            lead_distance = min(26.0, max(4.0, gap / 3.0))
+            start = ScenePoint(
+                x=source_center[0] + source_offset,
+                y=source.y + source.height,
+            )
+            end = ScenePoint(x=target_center[0] + target_offset, y=target.y)
+            lead_start = ScenePoint(x=start.x, y=start.y + lead_distance)
+            lead_end = ScenePoint(x=end.x, y=end.y - lead_distance)
+        else:
+            gap = source.y - (target.y + target.height)
+            lead_distance = min(26.0, max(4.0, gap / 3.0))
+            start = ScenePoint(x=source_center[0] + source_offset, y=source.y)
+            end = ScenePoint(
+                x=target_center[0] + target_offset,
+                y=target.y + target.height,
+            )
+            lead_start = ScenePoint(x=start.x, y=start.y - lead_distance)
+            lead_end = ScenePoint(x=end.x, y=end.y + lead_distance)
+        corridor_y = (lead_start.y + lead_end.y) / 2.0 + stagger
+        corridor_y = min(
+            max(lead_start.y, lead_end.y),
+            max(min(lead_start.y, lead_end.y), corridor_y),
         )
-        end = ScenePoint(x=target_center[0] + target_offset, y=target.y)
-        lead_start = ScenePoint(x=start.x, y=start.y + 26.0)
-        lead_end = ScenePoint(x=end.x, y=end.y - 26.0)
-    else:
-        start = ScenePoint(x=source_center[0] + source_offset, y=source.y)
-        end = ScenePoint(
-            x=target_center[0] + target_offset,
-            y=target.y + target.height,
+        return _simplify_route(
+            [
+                start,
+                lead_start,
+                ScenePoint(x=lead_start.x, y=corridor_y),
+                ScenePoint(x=lead_end.x, y=corridor_y),
+                lead_end,
+                end,
+            ]
         )
-        lead_start = ScenePoint(x=start.x, y=start.y - 26.0)
-        lead_end = ScenePoint(x=end.x, y=end.y + 26.0)
-    corridor_y = (lead_start.y + lead_end.y) / 2.0 + stagger
+
+    # Endpoint rectangles should not overlap, but a legacy compound scene may
+    # contain such a pair. Route around their right edge with outward ports.
+    corridor_x = max(
+        source.x + source.width,
+        target.x + target.width,
+    ) + 26.0 + abs(stagger)
+    start = ScenePoint(x=source.x + source.width, y=source_center[1] + source_offset)
+    end = ScenePoint(x=target.x + target.width, y=target_center[1] + target_offset)
     return _simplify_route(
         [
             start,
-            lead_start,
-            ScenePoint(x=lead_start.x, y=corridor_y),
-            ScenePoint(x=lead_end.x, y=corridor_y),
-            lead_end,
+            ScenePoint(x=corridor_x, y=start.y),
+            ScenePoint(x=corridor_x, y=end.y),
             end,
         ]
     )
@@ -1837,6 +2274,13 @@ def _relayout_compound_scene(scene: VisualScene, mode: str) -> VisualScene:
             "edges": moved_edges,
         }
     )
+
+
+def relayout_scene(scene: VisualScene, layout_mode: str) -> VisualScene:
+    """Relayout an existing scene while preserving its labels, sizes, and hierarchy."""
+    if layout_mode not in {"force-directed", "radial", "orthogonal"}:
+        raise ValueError("scene relayout requires a compound layout mode")
+    return _relayout_compound_scene(scene, layout_mode)
 
 
 def build_scene(
@@ -2128,6 +2572,15 @@ def build_scene(
         ),
         *leaf_scene_nodes,
     ]
+    scene_nodes = _compact_compound_nodes(scene_nodes)
+    paper_width = max(
+        720.0,
+        max(node.bounds.x + node.bounds.width for node in scene_nodes) + 72.0,
+    )
+    paper_height = max(
+        420.0,
+        max(node.bounds.y + node.bounds.height for node in scene_nodes) + 72.0,
+    )
     if root is not None:
         style = styles[root.view_node_id]
         view_to_scene[root.view_node_id] = root_scene_id or "scenenode:model"
@@ -2149,50 +2602,49 @@ def build_scene(
 
     by_scene_view = {node.view_node_id: node for node in scene_nodes}
     edge_styles = {style.view_edge_id: style for style in spec.edge_styles}
-    corridor_index = {edge.view_edge_id: index for index, edge in enumerate(long_edges)}
-    residual_index = {
-        edge.view_edge_id: index for index, edge in enumerate(residual_edges)
-    }
+    outgoing_edges: dict[str, list[str]] = defaultdict(list)
+    incoming_edges: dict[str, list[str]] = defaultdict(list)
+    for edge in view.edges:
+        outgoing_edges[edge.source_view_node_id].append(edge.view_edge_id)
+        incoming_edges[edge.target_view_node_id].append(edge.view_edge_id)
+
+    def port_offset(edge_id: str, edge_ids: list[str], limit: float) -> float:
+        if len(edge_ids) <= 1:
+            return 0.0
+        step = min(15.0, (limit * 2.0) / (len(edge_ids) - 1))
+        return (edge_ids.index(edge_id) - (len(edge_ids) - 1) / 2.0) * step
+
     scene_edges: list[SceneEdge] = []
     for index, edge in enumerate(view.edges):
         if edge.source_view_node_id not in by_scene_view or edge.target_view_node_id not in by_scene_view:
             continue
         source = by_scene_view[edge.source_view_node_id].bounds
         target = by_scene_view[edge.target_view_node_id].bounds
-        start = ScenePoint(x=source.x + source.width, y=source.y + source.height / 2)
-        end = ScenePoint(x=target.x, y=target.y + target.height / 2)
-        rank_delta = ranks[edge.target_view_node_id] - ranks[edge.source_view_node_id]
-        if edge.visual_relation is VisualRelation.RESIDUAL:
-            corridor_y = paper_height - 54.0 - residual_index[edge.view_edge_id] * 18.0
-            points = [
-                start,
-                ScenePoint(x=start.x + 26.0, y=start.y),
-                ScenePoint(x=start.x + 26.0, y=corridor_y),
-                ScenePoint(x=max(36.0, end.x - 26.0), y=corridor_y),
-                ScenePoint(x=max(36.0, end.x - 26.0), y=end.y),
-                end,
-            ]
-        elif rank_delta == 1:
-            offset = ((index % 5) - 2) * 5.0
-            corridor_x = (start.x + end.x) / 2 + offset
-            points = [
-                start,
-                ScenePoint(x=corridor_x, y=start.y),
-                ScenePoint(x=corridor_x, y=end.y),
-                end,
-            ]
-        else:
-            corridor_y = 60.0 + corridor_index[edge.view_edge_id] * 18.0
-            source_out = start.x + 24.0
-            target_out = max(36.0, end.x - 24.0)
-            points = [
-                start,
-                ScenePoint(x=source_out, y=start.y),
-                ScenePoint(x=source_out, y=corridor_y),
-                ScenePoint(x=target_out, y=corridor_y),
-                ScenePoint(x=target_out, y=end.y),
-                end,
-            ]
+        source_limit = max(0.0, min(source.width, source.height) / 2.0 - 12.0)
+        target_limit = max(0.0, min(target.width, target.height) / 2.0 - 12.0)
+        points = _route_between_rects(
+            source,
+            target,
+            index,
+            port_offset(
+                edge.view_edge_id,
+                outgoing_edges[edge.source_view_node_id],
+                source_limit,
+            ),
+            port_offset(
+                edge.view_edge_id,
+                incoming_edges[edge.target_view_node_id],
+                target_limit,
+            ),
+        )
+        points = _avoid_opaque_nodes(
+            points,
+            scene_nodes,
+            view_to_scene[edge.source_view_node_id],
+            view_to_scene[edge.target_view_node_id],
+            paper_width,
+            paper_height,
+        )
         style = edge_styles[edge.view_edge_id]
         scene_edges.append(
             SceneEdge(

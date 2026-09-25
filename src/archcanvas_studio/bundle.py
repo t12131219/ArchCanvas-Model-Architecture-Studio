@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import difflib
 import hashlib
 import json
 import shutil
@@ -13,12 +14,17 @@ from archcanvas_core.models import (
     ArchitectureIR,
     CanvasDocument,
     Diagnostic,
+    DraftEdge,
     DraftGraphDocument,
     DraftNode,
     EditIntent,
     EditProofState,
     EditProofStatus,
     EvidenceRecord,
+    FreeformSourceBufferPatch,
+    FreeformSourcePatch,
+    GraphDelta,
+    PatchBatch,
     ProjectSession,
     ProposedConnection,
     PublicationHierarchy,
@@ -28,9 +34,14 @@ from archcanvas_core.models import (
     SemanticAnnotationOverlay,
     SemanticParameterPatch,
     SemanticStructuralPatch,
+    SourceFile,
     SourceSnapshot,
     SourceTransaction,
+    SourceWorkspaceDocument,
+    StagedSourceBuffer,
+    TransactionState,
     ValidationRun,
+    VisualPatch,
     VisualScene,
     VisualSpec,
     WritebackSummary,
@@ -43,6 +54,7 @@ from archcanvas_publication import (
     compile_hierarchy,
     expandable_node_ids,
     project_hierarchy,
+    relayout_scene,
     render_svg,
     validate_geometry,
 )
@@ -50,11 +62,13 @@ from archcanvas_transactions import (
     commit_transaction,
     discard_transaction,
     plan_connection,
+    prepare_freeform_transaction,
     prepare_transaction,
     verify_transaction,
 )
 
 from .document import (
+    apply_patch_batch,
     create_canvas_document,
     derive_view_state,
     load_canvas_document,
@@ -63,7 +77,12 @@ from .document import (
     source_binding_digest,
 )
 from .navigation import PROJECTIONS, build_navigation_projections
-from .operations import build_search_index, run_validation, studio_fingerprint
+from .operations import (
+    auto_layout_batch,
+    build_search_index,
+    run_validation,
+    studio_fingerprint,
+)
 from .project import create_project_session, discover_project
 
 STATIC_ROOT = Path(__file__).resolve().parent / "static"
@@ -126,6 +145,8 @@ class StudioBundle:
     project_discovery: dict[str, object]
     draft_path: Path
     draft: DraftGraphDocument
+    source_workspace_path: Path
+    source_workspace: SourceWorkspaceDocument
     search_index: list[SearchSubject]
     validation_runs: list[ValidationRun]
     navigation: dict[str, object]
@@ -239,6 +260,240 @@ class StudioBundle:
             ],
         }
 
+    def _source_workspace_target(self, path: str) -> tuple[Path, SourceFile]:
+        source_file = next(
+            (item for item in self.snapshot.source_files if item.path == path), None
+        )
+        if source_file is None:
+            raise ValueError("source path is not part of the frozen snapshot")
+        if Path(path).suffix not in {".py", ".json"}:
+            raise ValueError("source workspace only edits snapshot Python and JSON files")
+        root = Path(self.snapshot.project_root).resolve()
+        unresolved = root / path
+        if unresolved.is_symlink():
+            raise ValueError("source workspace cannot edit symbolic links")
+        target = unresolved.resolve()
+        if not target.is_relative_to(root) or not target.is_file():
+            raise ValueError("source workspace path is unavailable")
+        if target.stat().st_size > 1_000_000:
+            raise ValueError("source workspace file exceeds the 1 MB editing limit")
+        return target, source_file
+
+    def _working_source(self, path: str) -> tuple[bytes, str]:
+        target, _ = self._source_workspace_target(path)
+        content = target.read_bytes()
+        try:
+            content.decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise ValueError("source workspace file is not UTF-8 text") from error
+        return content, hashlib.sha256(content).hexdigest()
+
+    def source_workspace_summary(self) -> dict[str, object]:
+        buffers = {buffer.path: buffer for buffer in self.source_workspace.buffers}
+        files: list[dict[str, object]] = []
+        any_stale = False
+        any_modified = False
+        for source_file in sorted(self.snapshot.source_files, key=lambda item: item.path):
+            if Path(source_file.path).suffix not in {".py", ".json"}:
+                continue
+            buffer = buffers.get(source_file.path)
+            try:
+                working, working_sha256 = self._working_source(source_file.path)
+                readonly_reason = None
+                size = len(working)
+            except ValueError as error:
+                working_sha256 = None
+                readonly_reason = str(error)
+                size = 0
+            staged_sha256 = (
+                hashlib.sha256(buffer.staged_content.encode("utf-8")).hexdigest()
+                if buffer is not None
+                else None
+            )
+            stale = working_sha256 != source_file.sha256
+            modified = buffer is not None and staged_sha256 != buffer.base_sha256
+            any_stale = any_stale or stale
+            any_modified = any_modified or modified
+            files.append(
+                {
+                    "path": source_file.path,
+                    "base_sha256": source_file.sha256,
+                    "staged_sha256": staged_sha256,
+                    "working_sha256": working_sha256,
+                    "state": (
+                        "readonly"
+                        if readonly_reason
+                        else "stale"
+                        if stale
+                        else "modified"
+                        if modified
+                        else "clean"
+                    ),
+                    "opened": buffer is not None,
+                    "size": size,
+                    "readonly_reason": readonly_reason,
+                }
+            )
+        return {
+            "workspace_id": self.source_workspace.workspace_id,
+            "revision": self.source_workspace.revision,
+            "base_revision": self.source_workspace.base_revision,
+            "state": "stale" if any_stale else "modified" if any_modified else "clean",
+            "files": files,
+        }
+
+    def open_source_buffer(self, path: str) -> dict[str, object]:
+        existing = next(
+            (buffer for buffer in self.source_workspace.buffers if buffer.path == path), None
+        )
+        if existing is None:
+            working, working_sha256 = self._working_source(path)
+            _, source_file = self._source_workspace_target(path)
+            if working_sha256 != source_file.sha256:
+                raise ValueError("working source changed since the frozen snapshot")
+            base_content = working.decode("utf-8")
+            existing = StagedSourceBuffer(
+                path=path,
+                base_sha256=source_file.sha256,
+                base_content=base_content,
+                staged_content=base_content,
+            )
+            self.source_workspace = self.source_workspace.model_copy(
+                update={
+                    "revision": self.source_workspace.revision + 1,
+                    "buffers": [*self.source_workspace.buffers, existing],
+                }
+            )
+            _write_json(self.source_workspace_path, self.source_workspace)
+        return self.source_buffer(path)
+
+    def source_buffer(self, path: str) -> dict[str, object]:
+        buffer = next(
+            (item for item in self.source_workspace.buffers if item.path == path), None
+        )
+        if buffer is None:
+            raise ValueError("source buffer is not open")
+        working, working_sha256 = self._working_source(path)
+        staged_bytes = buffer.staged_content.encode("utf-8")
+        staged_sha256 = hashlib.sha256(staged_bytes).hexdigest()
+        diff = "".join(
+            difflib.unified_diff(
+                buffer.base_content.splitlines(keepends=True),
+                buffer.staged_content.splitlines(keepends=True),
+                fromfile=f"a/{buffer.path}",
+                tofile=f"b/{buffer.path}",
+            )
+        )
+        return {
+            "path": buffer.path,
+            "revision": self.source_workspace.revision,
+            "base_sha256": buffer.base_sha256,
+            "staged_sha256": staged_sha256,
+            "working_sha256": working_sha256,
+            "state": (
+                "stale"
+                if working_sha256 != buffer.base_sha256
+                else "modified"
+                if staged_sha256 != buffer.base_sha256
+                else "clean"
+            ),
+            "base_content": buffer.base_content,
+            "staged_content": buffer.staged_content,
+            "working_content": working.decode("utf-8"),
+            "diff": diff,
+        }
+
+    def save_source_buffer(
+        self, path: str, content: str, base_sha256: str, expected_revision: int
+    ) -> dict[str, object]:
+        if expected_revision != self.source_workspace.revision:
+            raise ValueError("source workspace revision is stale")
+        if self.active_transaction is not None and self.active_transaction.state not in {
+            TransactionState.COMMITTED,
+            TransactionState.DISCARDED,
+            TransactionState.FAILED,
+        }:
+            raise ValueError("source buffers are locked while a transaction is active")
+        if "\x00" in content or len(content.encode("utf-8")) > 1_000_000:
+            raise ValueError("staged source buffer is not valid bounded UTF-8 text")
+        buffer = next(
+            (item for item in self.source_workspace.buffers if item.path == path), None
+        )
+        if buffer is None:
+            raise ValueError("source buffer is not open")
+        if buffer.base_sha256 != base_sha256:
+            raise ValueError("source buffer base binding is stale")
+        updated = buffer.model_copy(update={"staged_content": content})
+        self.source_workspace = self.source_workspace.model_copy(
+            update={
+                "revision": self.source_workspace.revision + 1,
+                "buffers": [
+                    updated if item.path == path else item
+                    for item in self.source_workspace.buffers
+                ],
+            }
+        )
+        _write_json(self.source_workspace_path, self.source_workspace)
+        return self.source_buffer(path)
+
+    def discard_source_buffer(self, path: str, expected_revision: int) -> None:
+        if expected_revision != self.source_workspace.revision:
+            raise ValueError("source workspace revision is stale")
+        if not any(item.path == path for item in self.source_workspace.buffers):
+            raise ValueError("source buffer is not open")
+        self.source_workspace = self.source_workspace.model_copy(
+            update={
+                "revision": self.source_workspace.revision + 1,
+                "buffers": [
+                    item for item in self.source_workspace.buffers if item.path != path
+                ],
+            }
+        )
+        _write_json(self.source_workspace_path, self.source_workspace)
+
+    def prepare_source_workspace(self) -> None:
+        modified = [
+            buffer
+            for buffer in self.source_workspace.buffers
+            if hashlib.sha256(buffer.staged_content.encode("utf-8")).hexdigest()
+            != buffer.base_sha256
+        ]
+        if not modified:
+            raise ValueError("source workspace has no staged changes")
+        request = FreeformSourcePatch(
+            patch_id=f"patch:source-workspace.{self.source_workspace.revision}",
+            artifact_path=str(self.artifact_path),
+            buffers=[
+                FreeformSourceBufferPatch(
+                    path=buffer.path,
+                    base_sha256=buffer.base_sha256,
+                    content=buffer.staged_content,
+                )
+                for buffer in modified
+            ],
+        )
+        transaction, _ = prepare_freeform_transaction(request, self.workspace)
+        transaction, _ = verify_transaction(
+            self.workspace / "transactions" / transaction.transaction_id
+        )
+        self.active_transaction = transaction
+        self.active_proposal = None
+
+    def discard_source_workspace(self) -> None:
+        if self.active_transaction is not None and self.active_transaction.state not in {
+            TransactionState.COMMITTED,
+            TransactionState.DISCARDED,
+            TransactionState.FAILED,
+        }:
+            transaction, _ = discard_transaction(
+                self.workspace / "transactions" / self.active_transaction.transaction_id
+            )
+            self.active_transaction = transaction
+        self.source_workspace = self.source_workspace.model_copy(
+            update={"revision": self.source_workspace.revision + 1, "buffers": []}
+        )
+        _write_json(self.source_workspace_path, self.source_workspace)
+
     def state(self) -> dict[str, object]:
         scenes = self.materialized_scenes()
         view_state = derive_view_state(self.document)
@@ -280,6 +535,7 @@ class StudioBundle:
             },
             "document": self.document.model_dump(mode="json"),
             "draft": self.draft.model_dump(mode="json"),
+            "source_workspace": self.source_workspace_summary(),
             "view_state": view_state,
             "navigation": navigation,
             "diagnostics": [item.model_dump(mode="json") for item in self.diagnostics()],
@@ -319,8 +575,9 @@ class StudioBundle:
                     "reason": "Unknown node types require a framework adapter lowering and proof.",
                 },
                 "staged_multi_file_source_editor": {
-                    "status": "unavailable",
-                    "reason": "The current snapshot does not inventory transitive source files.",
+                    "status": "available",
+                    "scope": "frozen-snapshot-python-and-json",
+                    "writeback": "validate-review-explicit-commit",
                 },
                 "navigation_projections": list(PROJECTIONS),
                 "layout_modes": list(LAYOUT_MODES),
@@ -383,6 +640,172 @@ class StudioBundle:
         state["layout_mode"] = layout_mode
         self.save_document(self.document.model_copy(update={"view_state": state}))
         self.recompile_projection()
+
+    def layout_candidates(self, limit: int = 3) -> list[tuple[dict[str, object], PatchBatch]]:
+        """Build deterministic, geometry-valid layout previews without mutating the document."""
+        if limit < 1:
+            raise ValueError("layout candidate limit must be positive")
+        projection_id = next(iter(self.views))
+        current = self.materialized_scenes()[projection_id]
+        base = self.base_scenes[projection_id]
+        pinned_ids = set(derive_view_state(self.document).get("pinned_node_ids", []))
+        fingerprint = studio_fingerprint(self)
+        current_by_id = {node.scene_node_id: node for node in current.nodes}
+        seen_geometry: set[str] = set()
+        candidates: list[tuple[dict[str, object], PatchBatch]] = []
+        targets = [
+            ("compiler", base),
+            *(
+                (layout_mode, relayout_scene(current, layout_mode))
+                for layout_mode in ("force-directed", "radial", "orthogonal")
+            ),
+        ]
+        for layout_mode, target in targets:
+            try:
+                batch = auto_layout_batch(
+                    current,
+                    baseline_scene=target,
+                    pinned_ids=pinned_ids,
+                    batch_id=f"batch:layout.{fingerprint[:12]}.{layout_mode}",
+                )
+            except ValueError as error:
+                if str(error) == "the current scene is already at its deterministic layout":
+                    continue
+                raise
+            target_by_id = {node.scene_node_id: node for node in target.nodes}
+            size_patches = [
+                VisualPatch(
+                    patch_id=(
+                        f"patch:{batch.batch_id.removeprefix('batch:')}.size.{index}"
+                    ),
+                    operation="set-size",
+                    target_id=node_id,
+                    value={
+                        "scene_id": current.scene_id,
+                        "width": max(
+                            current_by_id[node_id].bounds.width,
+                            target_by_id[node_id].bounds.width,
+                        ),
+                        "height": max(
+                            current_by_id[node_id].bounds.height,
+                            target_by_id[node_id].bounds.height,
+                        ),
+                    },
+                )
+                for index, node_id in enumerate(sorted(current_by_id))
+                if node_id not in pinned_ids
+                if (
+                    current_by_id[node_id].bounds.width,
+                    current_by_id[node_id].bounds.height,
+                )
+                != (
+                    max(
+                        current_by_id[node_id].bounds.width,
+                        target_by_id[node_id].bounds.width,
+                    ),
+                    max(
+                        current_by_id[node_id].bounds.height,
+                        target_by_id[node_id].bounds.height,
+                    ),
+                )
+            ]
+            manual_route_ids = {
+                patch.target_id
+                for patch in self.document.visual_patches
+                if patch.operation == "set-route-hint" and patch.target_id is not None
+            }
+            route_patches = [
+                VisualPatch(
+                    patch_id=(
+                        f"patch:{batch.batch_id.removeprefix('batch:')}.route.{index}"
+                    ),
+                    operation="set-route-hint",
+                    target_id=edge.scene_edge_id,
+                    value={
+                        "scene_id": current.scene_id,
+                        "points": [point.model_dump(mode="json") for point in edge.points],
+                    },
+                )
+                for index, edge in enumerate(target.edges)
+                if edge.scene_edge_id not in manual_route_ids
+            ]
+            batch = batch.model_copy(
+                update={"patches": [*batch.patches, *size_patches, *route_patches]}
+            )
+            preview_document = apply_patch_batch(
+                self.document, batch, {base.scene_id: base}
+            )
+            preview = materialize_scene(base, preview_document)
+            preview_by_id = {node.scene_node_id: node for node in preview.nodes}
+            if any(
+                preview_by_id[node_id].bounds != current_by_id[node_id].bounds
+                for node_id in pinned_ids
+                if node_id in current_by_id and node_id in preview_by_id
+            ):
+                continue
+            gate, diagnostics = validate_geometry(preview)
+            if gate.status != "passed":
+                continue
+            geometry_payload = [
+                (
+                    node.scene_node_id,
+                    node.bounds.x,
+                    node.bounds.y,
+                    node.bounds.width,
+                    node.bounds.height,
+                )
+                for node in preview.nodes
+            ]
+            geometry_digest = hashlib.sha256(
+                json.dumps(geometry_payload, separators=(",", ":")).encode()
+            ).hexdigest()
+            if geometry_digest in seen_geometry:
+                continue
+            seen_geometry.add(geometry_digest)
+            movement = sum(
+                abs(node.bounds.x - current_by_id[node.scene_node_id].bounds.x)
+                + abs(node.bounds.y - current_by_id[node.scene_node_id].bounds.y)
+                for node in preview.nodes
+            )
+            route_length = sum(
+                abs(end.x - start.x) + abs(end.y - start.y)
+                for edge in preview.edges
+                for start, end in zip(edge.points, edge.points[1:])
+            )
+            area = preview.paper_width * preview.paper_height
+            score = round(area / 1000.0 + route_length + movement * 0.2, 3)
+            candidate_digest = hashlib.sha256(
+                f"{fingerprint}:{layout_mode}:{geometry_digest}".encode()
+            ).hexdigest()
+            payload: dict[str, object] = {
+                "candidate_id": f"layoutcandidate:{candidate_digest[:20]}",
+                "input_fingerprint": fingerprint,
+                "strategy": layout_mode,
+                "score": score,
+                "metrics": {
+                    "paper_area": round(area, 3),
+                    "route_length": round(route_length, 3),
+                    "movement": round(movement, 3),
+                    "changed_nodes": len(
+                        {
+                            patch.target_id
+                            for patch in batch.patches
+                            if patch.operation in {"set-position", "set-size"}
+                        }
+                    ),
+                    "route_changes": len(route_patches),
+                },
+                "supported_fixes": [],
+                "diagnostics": [
+                    diagnostic.model_dump(mode="json") for diagnostic in diagnostics
+                ],
+                "scene": preview.model_dump(mode="json"),
+            }
+            candidates.append((payload, batch))
+        candidates.sort(
+            key=lambda item: (float(item[0]["score"]), str(item[0]["strategy"]))
+        )
+        return candidates[:limit]
 
     def search(self, query: str, limit: int = 50) -> list[dict[str, object]]:
         from .operations import search_subjects
@@ -484,6 +907,434 @@ class StudioBundle:
             }
         )
         self.draft = DraftGraphDocument.model_validate(draft.model_dump(mode="json"))
+        _write_json(self.draft_path, self.draft)
+
+    def delete_draft_node(self, node_id: str) -> None:
+        node = next((item for item in self.draft.nodes if item.node_id == node_id), None)
+        if node is None:
+            raise ValueError("draft node does not exist")
+        port_ids = {port.port_id for port in node.ports}
+        removed_edges = {
+            edge.edge_id
+            for edge in self.draft.edges
+            if edge.source_port_id in port_ids or edge.target_port_id in port_ids
+        }
+        removed_subjects = {node_id, *port_ids, *removed_edges}
+        removed_intents = {
+            intent.intent_id
+            for intent in self.draft.intents
+            if removed_subjects.intersection(intent.target_ids)
+        }
+        intents = [
+            intent
+            for intent in self.draft.intents
+            if intent.intent_id not in removed_intents
+        ]
+        proofs = [
+            proof for proof in self.draft.proofs if proof.intent_id not in removed_intents
+        ]
+        blocking = [
+            intent_id
+            for intent_id in self.draft.writeback_summary.blocking_intent_ids
+            if intent_id not in removed_intents
+        ]
+        draft = self.draft.model_copy(
+            update={
+                "revision": self.draft.revision + 1,
+                "nodes": [item for item in self.draft.nodes if item.node_id != node_id],
+                "edges": [
+                    edge for edge in self.draft.edges if edge.edge_id not in removed_edges
+                ],
+                "intents": intents,
+                "proofs": proofs,
+                "lowering_status": "blocked" if proofs else "not-planned",
+                "writeback_summary": WritebackSummary(
+                    eligibility="blocked",
+                    blocking_intent_ids=blocking,
+                ),
+            }
+        )
+        self.draft = DraftGraphDocument.model_validate(draft.model_dump(mode="json"))
+        self.active_proposal = None
+        _write_json(self.draft_path, self.draft)
+
+    def _draft_port_owner(self, port_id: str) -> tuple[str, str, str, bool]:
+        matches: list[tuple[str, str, str, bool]] = []
+        for node in self.architecture.nodes:
+            matches.extend(
+                (node.node_id, port.direction, port.role, False)
+                for port in [*node.input_ports, *node.output_ports]
+                if port.port_id == port_id
+            )
+        for node in self.draft.nodes:
+            matches.extend(
+                (node.node_id, port.direction, port.role, True)
+                for port in node.ports
+                if port.port_id == port_id
+            )
+        if not matches:
+            raise ValueError(f"draft edge references an unknown port: {port_id}")
+        if len(matches) > 1:
+            raise ValueError(f"draft edge references an ambiguous port: {port_id}")
+        return matches[0]
+
+    def propose_draft_edge(self, payload: dict[str, object]) -> None:
+        edge = DraftEdge.model_validate(payload["edge"])
+        if any(item.edge_id == edge.edge_id for item in self.draft.edges):
+            raise ValueError("draft edge identifier already exists")
+        source_node_id, source_direction, source_role, source_is_draft = (
+            self._draft_port_owner(edge.source_port_id)
+        )
+        target_node_id, target_direction, _, target_is_draft = self._draft_port_owner(
+            edge.target_port_id
+        )
+        if source_direction != "output":
+            raise ValueError("draft edge source must reference an output port")
+        if target_direction != "input":
+            raise ValueError("draft edge target must reference an input port")
+
+        intent_id = str(payload.get("intent_id", edge.edge_id.replace("draft:", "intent:", 1)))
+        intent = EditIntent(
+            intent_id=intent_id,
+            kind="connect-ports",
+            target_ids=[
+                edge.edge_id,
+                source_node_id,
+                edge.source_port_id,
+                target_node_id,
+                edge.target_port_id,
+            ],
+            preconditions=[
+                "authored output port",
+                "authored input port",
+                "proven tensor compatibility",
+                "registered connection lowering",
+            ],
+            user_input={
+                **edge.model_dump(mode="json"),
+                "source_node_id": source_node_id,
+                "target_node_id": target_node_id,
+            },
+            capability_requirement=f"semantic.connect-ports.{edge.policy}",
+        )
+        if source_is_draft or target_is_draft:
+            reason_code = "UNSUPPORTED_STRUCTURAL_INTENT"
+            summary = (
+                "The draft connection is recorded for review, but an endpoint has no "
+                "canonical source lowering."
+            )
+            proof_state = EditProofState.UNPROVEN
+            source_context = {
+                "architecture_id": self.architecture.architecture_id,
+                "source_node_id": source_node_id,
+                "source_port_id": edge.source_port_id,
+                "target_node_id": target_node_id,
+                "target_port_id": edge.target_port_id,
+                "compatibility": "unresolved",
+                "registry_match": None,
+            }
+            proposal = AgentProposal(
+                proposal_id=f"proposal:{edge.edge_id.removeprefix('draft:')}",
+                reason_code=reason_code,
+                summary=summary,
+                requested_intent=intent.model_dump(mode="json"),
+                source_context=source_context,
+            )
+        else:
+            request = ProposedConnection(
+                proposal_id=f"proposal:{edge.edge_id.removeprefix('draft:')}",
+                artifact_path=str(self.artifact_path),
+                source_node_id=source_node_id,
+                source_port_id=edge.source_port_id,
+                target_node_id=target_node_id,
+                target_port_id=edge.target_port_id,
+                role=source_role,
+            )
+            proposal = plan_connection(request, self.architecture)
+            reason_code = proposal.reason_code
+            summary = proposal.summary
+            proof_state = (
+                EditProofState.INVALID
+                if reason_code == "INCOMPATIBLE_PORTS"
+                else EditProofState.UNPROVEN
+            )
+
+        proof = EditProofStatus(
+            intent_id=intent_id,
+            status=proof_state,
+            writeback_eligibility="blocked",
+            reason_codes=[reason_code],
+            message=summary,
+            affected_subject_ids=intent.target_ids,
+            required_facts=["tensor shape compatibility", "exact source anchors"],
+            supported_fixes=["Register and test a framework-specific connection lowering."],
+            checked_generation=self.project_session.generation,
+            input_fingerprint=studio_fingerprint(self),
+        )
+        draft = self.draft.model_copy(
+            update={
+                "revision": self.draft.revision + 1,
+                "edges": [*self.draft.edges, edge],
+                "intents": [*self.draft.intents, intent],
+                "proofs": [*self.draft.proofs, proof],
+                "lowering_status": "blocked",
+                "writeback_summary": WritebackSummary(
+                    eligibility="blocked",
+                    blocking_intent_ids=[
+                        *self.draft.writeback_summary.blocking_intent_ids,
+                        intent_id,
+                    ],
+                ),
+            }
+        )
+        self.draft = DraftGraphDocument.model_validate(draft.model_dump(mode="json"))
+        self.active_proposal = proposal
+        _write_json(self.draft_path, self.draft)
+
+    def delete_draft_edge(self, edge_id: str) -> None:
+        edge = next((item for item in self.draft.edges if item.edge_id == edge_id), None)
+        if edge is None:
+            raise ValueError("draft edge does not exist")
+        removed_intents = {
+            intent.intent_id
+            for intent in self.draft.intents
+            if edge_id in intent.target_ids
+        }
+        intents = [
+            intent for intent in self.draft.intents if intent.intent_id not in removed_intents
+        ]
+        proofs = [
+            proof for proof in self.draft.proofs if proof.intent_id not in removed_intents
+        ]
+        blocking = [
+            intent_id
+            for intent_id in self.draft.writeback_summary.blocking_intent_ids
+            if intent_id not in removed_intents
+        ]
+        draft = self.draft.model_copy(
+            update={
+                "revision": self.draft.revision + 1,
+                "edges": [item for item in self.draft.edges if item.edge_id != edge_id],
+                "intents": intents,
+                "proofs": proofs,
+                "lowering_status": "blocked" if proofs else "not-planned",
+                "writeback_summary": WritebackSummary(
+                    eligibility="blocked",
+                    blocking_intent_ids=blocking,
+                ),
+            }
+        )
+        self.draft = DraftGraphDocument.model_validate(draft.model_dump(mode="json"))
+        self.active_proposal = None
+        _write_json(self.draft_path, self.draft)
+
+    def canonical_delete_impact(self, node_id: str) -> dict[str, object]:
+        node = next((item for item in self.architecture.nodes if item.node_id == node_id), None)
+        if node is None:
+            raise ValueError("canonical delete references an unknown node")
+        incoming_edges = [
+            edge for edge in self.architecture.edges if edge.consumer_id == node_id
+        ]
+        outgoing_edges = [
+            edge for edge in self.architecture.edges if edge.producer_id == node_id
+        ]
+        affected_edges = sorted(
+            {edge.edge_id for edge in [*incoming_edges, *outgoing_edges]}
+        )
+        produced_tensors = sorted(
+            tensor.tensor_id
+            for tensor in self.architecture.tensors
+            if tensor.producer_id == node_id
+        )
+        affected_fanouts = sorted(
+            relation.relation_id
+            for relation in self.architecture.fanouts
+            if relation.producer_id == node_id
+            or node_id in relation.consumer_ids
+        )
+        parameter_identity = node.parameter_identity.lower()
+        explicitly_shared = any(
+            marker in parameter_identity for marker in ("shared", "tied", "reused")
+        )
+        shared_parameter_nodes = sorted(
+            item.node_id
+            for item in self.architecture.nodes
+            if explicitly_shared
+            and item.node_id != node_id
+            and item.parameter_identity == node.parameter_identity
+        )
+        child_ids = sorted(node.children)
+        downstream_nodes = sorted({edge.consumer_id for edge in outgoing_edges})
+        source_evidence_ids = sorted(
+            evidence_id
+            for evidence_id in node.evidence_ids
+            if any(
+                record.evidence_id == evidence_id and record.kind.value == "source"
+                for record in self.evidence
+            )
+        )
+        runtime_evidence_ids = sorted(self.runtime_node_evidence.get(node_id, []))
+        unresolved: list[str] = []
+        if incoming_edges and outgoing_edges:
+            unresolved.append("deletion requires an explicit bypass or replacement connection")
+        if child_ids:
+            unresolved.append("child nodes require an explicit reparent or cascade decision")
+        if shared_parameter_nodes:
+            unresolved.append("shared parameter ownership must be preserved")
+        if affected_fanouts:
+            unresolved.append("fanout consumers require an explicit routing decision")
+        if node.repeat_id:
+            unresolved.append("repeat membership requires an explicit structural update")
+        if node.execution_predicate != "always":
+            unresolved.append("conditional execution semantics require proof")
+        expected_delta = GraphDelta(
+            removed_nodes=[node_id],
+            removed_edges=affected_edges,
+            removed_tensors=produced_tensors,
+            removed_fanouts=affected_fanouts,
+            unresolved_changes=unresolved,
+        )
+        return {
+            "node_id": node.node_id,
+            "semantic_name": node.semantic_name,
+            "input_fingerprint": studio_fingerprint(self),
+            "incoming_edge_ids": sorted(edge.edge_id for edge in incoming_edges),
+            "outgoing_edge_ids": sorted(edge.edge_id for edge in outgoing_edges),
+            "produced_tensor_ids": produced_tensors,
+            "downstream_node_ids": downstream_nodes,
+            "fanout_ids": affected_fanouts,
+            "shared_parameter_node_ids": shared_parameter_nodes,
+            "child_node_ids": child_ids,
+            "repeat_id": node.repeat_id,
+            "execution_predicate": node.execution_predicate,
+            "source_evidence_ids": source_evidence_ids,
+            "runtime_evidence_ids": runtime_evidence_ids,
+            "expected_delta": expected_delta.model_dump(mode="json"),
+            "required_action": (
+                "Choose an explicit bypass or replacement before lowering."
+                if incoming_edges and outgoing_edges
+                else "Confirm the adapter-specific removal plan before lowering."
+            ),
+            "blocking_reasons": unresolved,
+        }
+
+    def propose_canonical_delete(self, payload: dict[str, object]) -> None:
+        node_id = str(payload["node_id"])
+        impact = self.canonical_delete_impact(node_id)
+        if payload.get("input_fingerprint") != impact["input_fingerprint"]:
+            raise ValueError("canonical delete impact preview is stale")
+        if any(
+            intent.kind == "delete-node" and node_id in intent.target_ids
+            for intent in self.draft.intents
+        ):
+            raise ValueError("canonical node already has a delete intent")
+        intent_id = str(payload.get("intent_id", f"intent:delete.{node_id.removeprefix('node:')}"))
+        expected_delta = GraphDelta.model_validate(impact["expected_delta"])
+        affected_ids = [
+            node_id,
+            *expected_delta.removed_edges,
+            *expected_delta.removed_tensors,
+            *expected_delta.removed_fanouts,
+        ]
+        intent = EditIntent(
+            intent_id=intent_id,
+            kind="delete-node",
+            target_ids=affected_ids,
+            preconditions=[
+                "impact preview accepted",
+                "no unresolved consumers",
+                "explicit bypass or replacement",
+                "registered adapter lowering",
+            ],
+            expected_delta=expected_delta,
+            user_input={"node_id": node_id, "impact": impact},
+            capability_requirement=(
+                f"semantic.delete-node.{self.architecture.framework}.{node_id}"
+            ),
+        )
+        summary = (
+            f"Deleting {impact['semantic_name']} would remove "
+            f"{len(expected_delta.removed_edges)} edge(s) and "
+            f"{len(expected_delta.removed_tensors)} produced tensor(s). "
+            "No registered adapter lowering proves this deletion safe."
+        )
+        proof = EditProofStatus(
+            intent_id=intent_id,
+            status=EditProofState.UNPROVEN,
+            writeback_eligibility="blocked",
+            reason_codes=["UNSUPPORTED_STRUCTURAL_INTENT"],
+            message=summary,
+            affected_subject_ids=affected_ids,
+            required_facts=[
+                "consumer preservation",
+                "parameter ownership",
+                "source deletion anchor",
+                "observed Graph Delta oracle",
+            ],
+            supported_fixes=[
+                "Choose an explicit bypass or replacement connection.",
+                "Register and test an adapter-specific delete-node lowering.",
+            ],
+            checked_generation=self.project_session.generation,
+            input_fingerprint=studio_fingerprint(self),
+        )
+        proposal = AgentProposal(
+            proposal_id=f"proposal:{intent_id.removeprefix('intent:')}",
+            reason_code="UNSUPPORTED_STRUCTURAL_INTENT",
+            summary=summary,
+            requested_intent=intent.model_dump(mode="json"),
+            source_context={
+                "architecture_id": self.architecture.architecture_id,
+                "source_digest": self.document.source_digest,
+                "impact": impact,
+            },
+        )
+        draft = self.draft.model_copy(
+            update={
+                "revision": self.draft.revision + 1,
+                "intents": [*self.draft.intents, intent],
+                "proofs": [*self.draft.proofs, proof],
+                "lowering_status": "blocked",
+                "writeback_summary": WritebackSummary(
+                    eligibility="blocked",
+                    blocking_intent_ids=[
+                        *self.draft.writeback_summary.blocking_intent_ids,
+                        intent_id,
+                    ],
+                ),
+            }
+        )
+        self.draft = DraftGraphDocument.model_validate(draft.model_dump(mode="json"))
+        self.active_proposal = proposal
+        _write_json(self.draft_path, self.draft)
+
+    def discard_canonical_delete(self, intent_id: str) -> None:
+        intent = next(
+            (item for item in self.draft.intents if item.intent_id == intent_id), None
+        )
+        if intent is None or intent.kind != "delete-node":
+            raise ValueError("canonical delete intent does not exist")
+        intents = [item for item in self.draft.intents if item.intent_id != intent_id]
+        proofs = [item for item in self.draft.proofs if item.intent_id != intent_id]
+        blocking = [
+            item
+            for item in self.draft.writeback_summary.blocking_intent_ids
+            if item != intent_id
+        ]
+        draft = self.draft.model_copy(
+            update={
+                "revision": self.draft.revision + 1,
+                "intents": intents,
+                "proofs": proofs,
+                "lowering_status": "blocked" if proofs else "not-planned",
+                "writeback_summary": WritebackSummary(
+                    eligibility="blocked",
+                    blocking_intent_ids=blocking,
+                ),
+            }
+        )
+        self.draft = DraftGraphDocument.model_validate(draft.model_dump(mode="json"))
+        self.active_proposal = None
         _write_json(self.draft_path, self.draft)
 
     def prepare_parameter(self, payload: dict[str, object]) -> None:
@@ -592,6 +1443,14 @@ class StudioBundle:
             self.workspace / "transactions" / self.active_transaction.transaction_id
         )
         self.active_transaction = transaction
+        if (
+            transaction.state is TransactionState.COMMITTED
+            and isinstance(transaction.request, FreeformSourcePatch)
+        ):
+            self.source_workspace = self.source_workspace.model_copy(
+                update={"revision": self.source_workspace.revision + 1, "buffers": []}
+            )
+            _write_json(self.source_workspace_path, self.source_workspace)
 
     def discard_parameter(self) -> None:
         if self.active_transaction is None:
@@ -641,8 +1500,23 @@ def _write_static_bundle(bundle: StudioBundle) -> None:
     _write_json(bundle.static_dir / "studio-state.json", bundle.state())
 
 
+def _archive_stale_binding(path: Path) -> Path:
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()[:12]
+    archive = path.with_name(f"{path.stem}.stale-{digest}{path.suffix}")
+    index = 1
+    while archive.exists():
+        archive = path.with_name(f"{path.stem}.stale-{digest}-{index}{path.suffix}")
+        index += 1
+    path.rename(archive)
+    return archive
+
+
 def prepare_studio_bundle(
-    artifact: Path, workspace: Path, *, write_static: bool = True
+    artifact: Path,
+    workspace: Path,
+    *,
+    write_static: bool = True,
+    replace_stale_bindings: bool = False,
 ) -> StudioBundle:
     artifact = artifact.resolve()
     workspace = workspace.resolve()
@@ -723,21 +1597,45 @@ def prepare_studio_bundle(
     navigation = build_navigation_projections(architecture, snapshot, evidence, hierarchy)
     suffix = architecture.architecture_id.removeprefix("architecture:")
     document_path = workspace / "documents" / f"{suffix}.canvas.json"
+    document: CanvasDocument | None = None
     if document_path.is_file():
-        document = load_canvas_document(document_path)
+        saved_document = load_canvas_document(document_path)
         expected_digest = source_binding_digest(snapshot)
-        if document.architecture_id != architecture.architecture_id:
-            raise ValueError("saved CanvasDocument belongs to a different architecture")
-        if document.source_snapshot_id != snapshot.snapshot_id:
-            raise ValueError("saved CanvasDocument belongs to a stale source snapshot")
-        if document.source_digest != expected_digest:
-            raise ValueError("saved CanvasDocument source digest is stale")
-        if document.base_hierarchy_id not in {None, hierarchy.hierarchy_id}:
-            raise ValueError("saved CanvasDocument hierarchy does not match this compilation")
-        if document.base_hierarchy_id is None:
+        stale_reason = next(
+            (
+                message
+                for invalid, message in (
+                    (
+                        saved_document.architecture_id != architecture.architecture_id,
+                        "saved CanvasDocument belongs to a different architecture",
+                    ),
+                    (
+                        saved_document.source_snapshot_id != snapshot.snapshot_id,
+                        "saved CanvasDocument belongs to a stale source snapshot",
+                    ),
+                    (
+                        saved_document.source_digest != expected_digest,
+                        "saved CanvasDocument source digest is stale",
+                    ),
+                    (
+                        saved_document.base_hierarchy_id not in {None, hierarchy.hierarchy_id},
+                        "saved CanvasDocument hierarchy does not match this compilation",
+                    ),
+                )
+                if invalid
+            ),
+            None,
+        )
+        if stale_reason is not None:
+            if not replace_stale_bindings:
+                raise ValueError(stale_reason)
+            _archive_stale_binding(document_path)
+        else:
+            document = saved_document
+        if document is not None and document.base_hierarchy_id is None:
             document = document.model_copy(update={"base_hierarchy_id": hierarchy.hierarchy_id})
             persist_canvas_document(document_path, document)
-    else:
+    if document is None:
         document = create_canvas_document(
             architecture, snapshot, hierarchy_id=hierarchy.hierarchy_id
         )
@@ -790,13 +1688,22 @@ def prepare_studio_bundle(
     project_discovery = discover_project(project_root)
     draft_path = workspace / "drafts" / f"{suffix}.draft.json"
     if draft_path.is_file():
-        draft = DraftGraphDocument.model_validate_json(draft_path.read_text(encoding="utf-8"))
+        saved_draft = DraftGraphDocument.model_validate_json(
+            draft_path.read_text(encoding="utf-8")
+        )
         if (
-            draft.base_architecture_id != architecture.architecture_id
-            or draft.base_source_digest != document.source_digest
+            saved_draft.base_architecture_id != architecture.architecture_id
+            or saved_draft.base_source_digest != document.source_digest
         ):
-            raise ValueError("saved DraftGraphDocument binding is stale")
+            if not replace_stale_bindings:
+                raise ValueError("saved DraftGraphDocument binding is stale")
+            _archive_stale_binding(draft_path)
+            draft = None
+        else:
+            draft = saved_draft
     else:
+        draft = None
+    if draft is None:
         draft = DraftGraphDocument(
             draft_id=f"draft:{suffix}",
             base_architecture_id=architecture.architecture_id,
@@ -804,6 +1711,32 @@ def prepare_studio_bundle(
             revision=0,
         )
         _write_json(draft_path, draft)
+
+    source_workspace_path = workspace / "source-workspace" / f"{suffix}.source-workspace.json"
+    if source_workspace_path.is_file():
+        saved_source_workspace = SourceWorkspaceDocument.model_validate_json(
+            source_workspace_path.read_text(encoding="utf-8")
+        )
+        if (
+            saved_source_workspace.source_snapshot_id != snapshot.snapshot_id
+            or saved_source_workspace.base_revision != snapshot.revision
+        ):
+            if not replace_stale_bindings:
+                raise ValueError("saved source workspace binding is stale")
+            _archive_stale_binding(source_workspace_path)
+            source_workspace = None
+        else:
+            source_workspace = saved_source_workspace
+    else:
+        source_workspace = None
+    if source_workspace is None:
+        source_workspace = SourceWorkspaceDocument(
+            workspace_id=f"source-workspace:{suffix}",
+            source_snapshot_id=snapshot.snapshot_id,
+            base_revision=snapshot.revision,
+            revision=0,
+        )
+        _write_json(source_workspace_path, source_workspace)
 
     bundle = StudioBundle(
         artifact_path=artifact,
@@ -825,6 +1758,8 @@ def prepare_studio_bundle(
         project_discovery=project_discovery,
         draft_path=draft_path,
         draft=draft,
+        source_workspace_path=source_workspace_path,
+        source_workspace=source_workspace,
         search_index=[],
         validation_runs=[],
         navigation=navigation,

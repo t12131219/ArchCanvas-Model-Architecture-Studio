@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from pathlib import PurePosixPath
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_serializer, model_validator
@@ -283,7 +284,7 @@ class FrameworkFormCapability(StrictModel):
 class FrameworkAdapterCapability(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     adapter_id: Identifier
-    framework: Literal["pytorch", "keras", "jax", "onnx"]
+    framework: Literal["pytorch", "keras", "jax", "onnx", "python"]
     adapter_version: str = Field(min_length=1)
     status: Literal["verified", "experimental", "partial", "unavailable", "supported"]
     static_analysis: bool
@@ -967,6 +968,14 @@ class SceneEdge(StrictModel):
     label: str = Field(min_length=1)
 
 
+class SceneAnnotation(StrictModel):
+    annotation_id: Identifier
+    text: str = Field(min_length=1, max_length=500)
+    bounds: SceneRect
+    fill: str = Field(default="#fff8c5", min_length=1)
+    stroke: str = Field(default="#8a6d1d", min_length=1)
+
+
 class VisualScene(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     scene_id: Identifier
@@ -977,6 +986,15 @@ class VisualScene(StrictModel):
     paper_height: float = Field(gt=0)
     nodes: list[SceneNode] = Field(min_length=1)
     edges: list[SceneEdge] = Field(default_factory=list)
+    caption: str | None = None
+    legend_placement: Literal[
+        "top-left",
+        "top-right",
+        "bottom-left",
+        "bottom-right",
+        "hidden",
+    ] | None = None
+    annotations: list[SceneAnnotation] = Field(default_factory=list)
 
 
 class VisualPatch(StrictModel):
@@ -1108,6 +1126,73 @@ class SemanticStructuralPatch(StrictModel):
         return self
 
 
+class FreeformSourceBufferPatch(StrictModel):
+    path: str = Field(min_length=1)
+    base_sha256: Sha256
+    content: str
+
+    @model_validator(mode="after")
+    def path_is_snapshot_relative(self) -> FreeformSourceBufferPatch:
+        path = PurePosixPath(self.path)
+        if path.is_absolute() or ".." in path.parts or "." in path.parts:
+            raise ValueError("source buffer path must be normalized and project-relative")
+        return self
+
+
+class FreeformSourcePatch(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    patch_id: Identifier
+    operation: Literal["edit_source_buffers"] = "edit_source_buffers"
+    artifact_path: str = Field(min_length=1)
+    buffers: list[FreeformSourceBufferPatch] = Field(min_length=1)
+    targeted_tests: list[list[str]] = Field(default_factory=list)
+    runtime_input_spec: str | None = None
+
+    @model_validator(mode="after")
+    def buffers_and_commands_are_well_formed(self) -> FreeformSourcePatch:
+        paths = [buffer.path for buffer in self.buffers]
+        if len(paths) != len(set(paths)):
+            raise ValueError("freeform source buffer paths must be unique")
+        if any(
+            not command or any(not argument for argument in command)
+            for command in self.targeted_tests
+        ):
+            raise ValueError("targeted test commands must contain non-empty arguments")
+        return self
+
+
+class StagedSourceBuffer(StrictModel):
+    path: str = Field(min_length=1)
+    base_sha256: Sha256
+    base_content: str
+    staged_content: str
+
+    @model_validator(mode="after")
+    def path_is_snapshot_relative(self) -> StagedSourceBuffer:
+        path = PurePosixPath(self.path)
+        if path.is_absolute() or ".." in path.parts or "." in path.parts:
+            raise ValueError("staged source path must be normalized and project-relative")
+        return self
+
+
+class SourceWorkspaceDocument(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    workspace_id: Identifier
+    source_snapshot_id: Identifier
+    base_revision: str = Field(min_length=1)
+    revision: int = Field(ge=0)
+    buffers: list[StagedSourceBuffer] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def identity_and_paths_are_well_formed(self) -> SourceWorkspaceDocument:
+        if not self.workspace_id.startswith("source-workspace:"):
+            raise ValueError("source workspace identifiers must use the source-workspace: prefix")
+        paths = [buffer.path for buffer in self.buffers]
+        if len(paths) != len(set(paths)):
+            raise ValueError("staged source buffer paths must be unique")
+        return self
+
+
 class ProposedConnection(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     proposal_id: Identifier
@@ -1231,7 +1316,7 @@ class SourceTransaction(StrictModel):
     reanalysis_route: str = "analyze_with_adapter"
     state: TransactionState
     state_history: list[TransactionState] = Field(default_factory=list)
-    request: SemanticParameterPatch | SemanticStructuralPatch
+    request: SemanticParameterPatch | SemanticStructuralPatch | FreeformSourcePatch
     created_at: str = Field(min_length=1)
     workspace: str = Field(min_length=1)
     original_project_root: str = Field(min_length=1)
@@ -1296,6 +1381,8 @@ class ProjectSession(StrictModel):
     config_path: str | None = None
     config_digest: Sha256
     execution_policy: Literal["static-only", "runtime-opt-in"] = "static-only"
+    environment_path: str | None = None
+    python_executable: str | None = None
     workspace: str = Field(min_length=1)
     opened_at: str = Field(min_length=1)
 

@@ -5,9 +5,12 @@ import hashlib
 import json
 import operator
 import re
+import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+import yaml
 
 from archcanvas_core.models import (
     ArchitectureEdge,
@@ -30,7 +33,9 @@ from archcanvas_core.models import (
     UnresolvedFact,
 )
 
-ANALYZER_VERSION = "0.3.0"
+from .source_index import resolve_module_path, resolve_symbol
+
+ANALYZER_VERSION = "0.4.0"
 
 
 class AnalysisError(ValueError):
@@ -123,10 +128,24 @@ def _loaded_names(node: ast.AST) -> list[str]:
     return names
 
 
+def _attribute_parts(node: ast.AST) -> list[str] | None:
+    parts: list[str] = []
+    current = node
+    while isinstance(current, ast.Attribute):
+        parts.append(current.attr)
+        current = current.value
+    if not isinstance(current, ast.Name):
+        return None
+    return [current.id, *reversed(parts)]
+
+
 def _config_names(node: ast.AST, config: dict[str, Any]) -> list[str]:
-    return sorted(
-        {name.id for name in ast.walk(node) if isinstance(name, ast.Name)} & config.keys()
-    )
+    names = {name.id for name in ast.walk(node) if isinstance(name, ast.Name)} & config.keys()
+    for descendant in ast.walk(node):
+        parts = _attribute_parts(descendant)
+        if parts and parts[-1] in config:
+            names.add(parts[-1])
+    return sorted(names)
 
 
 _BINARY_OPERATORS = {
@@ -144,12 +163,17 @@ def _resolve_expression(node: ast.AST, values: dict[str, Any]) -> Any:
         return node.value
     if isinstance(node, ast.Name):
         return values.get(node.id, ast.unparse(node))
-    if (
-        isinstance(node, ast.Attribute)
-        and isinstance(node.value, ast.Name)
-        and node.value.id == "self"
-    ):
-        return values.get(node.attr, ast.unparse(node))
+    if isinstance(node, ast.Attribute):
+        parts = _attribute_parts(node)
+        if parts:
+            if parts[0] == "self" and len(parts) == 2:
+                return values.get(parts[1], ast.unparse(node))
+            value = values.get(parts[0])
+            for part in parts[1:]:
+                if not isinstance(value, dict) or part not in value:
+                    return ast.unparse(node)
+                value = value[part]
+            return value
     if isinstance(node, (ast.Tuple, ast.List)):
         return [_resolve_expression(item, values) for item in node.elts]
     if isinstance(node, ast.BinOp) and type(node.op) in _BINARY_OPERATORS:
@@ -201,7 +225,13 @@ def _constructor_values(
             values[name] = _resolve_expression(default, values)
             origins[name] = ParameterOrigin.CONSTRUCTOR_DEFAULT
         else:
-            values[name] = name
+            uses_config_attributes = any(
+                (parts := _attribute_parts(descendant))
+                and parts[0] == name
+                and parts[-1] in config
+                for descendant in ast.walk(initializer)
+            )
+            values[name] = config if uses_config_attributes else name
             origins[name] = ParameterOrigin.UNRESOLVED
     for statement in initializer.body:
         if not isinstance(statement, (ast.Assign, ast.AnnAssign)):
@@ -220,7 +250,7 @@ def _constructor_values(
                 names = _config_names(value, config)
                 origins[target.attr] = (
                     ParameterOrigin.CONFIG
-                    if len(names) == 1 and isinstance(value, ast.Name)
+                    if len(names) == 1
                     else ParameterOrigin.COMPUTED
                 )
     return initializer, values, origins
@@ -235,7 +265,7 @@ def _registered_modules(
     modules: dict[str, _ModuleDraft] = {}
     if initializer is None:
         return modules
-    for statement in initializer.body:
+    for statement in ast.walk(initializer):
         if not isinstance(statement, (ast.Assign, ast.AnnAssign)):
             continue
         targets = statement.targets if isinstance(statement, ast.Assign) else [statement.target]
@@ -252,6 +282,8 @@ def _registered_modules(
                 origin=(
                     origins.get(argument.id, ParameterOrigin.UNRESOLVED)
                     if isinstance(argument, ast.Name)
+                    else ParameterOrigin.CONFIG
+                    if isinstance(argument, ast.Attribute) and _config_names(argument, config)
                     else ParameterOrigin.COMPUTED
                     if _config_names(argument, config)
                     else ParameterOrigin.LITERAL
@@ -268,6 +300,9 @@ def _registered_modules(
                 origin=(
                     origins.get(keyword.value.id, ParameterOrigin.UNRESOLVED)
                     if isinstance(keyword.value, ast.Name)
+                    else ParameterOrigin.CONFIG
+                    if isinstance(keyword.value, ast.Attribute)
+                    and _config_names(keyword.value, config)
                     else ParameterOrigin.COMPUTED
                     if _config_names(keyword.value, config)
                     else ParameterOrigin.LITERAL
@@ -344,6 +379,8 @@ def _inline_module(
             origin=(
                 origins.get(argument.id, ParameterOrigin.UNRESOLVED)
                 if isinstance(argument, ast.Name)
+                else ParameterOrigin.CONFIG
+                if isinstance(argument, ast.Attribute) and _config_names(argument, config)
                 else ParameterOrigin.COMPUTED
                 if _config_names(argument, config)
                 else ParameterOrigin.LITERAL
@@ -360,6 +397,8 @@ def _inline_module(
             origin=(
                 origins.get(keyword.value.id, ParameterOrigin.UNRESOLVED)
                 if isinstance(keyword.value, ast.Name)
+                else ParameterOrigin.CONFIG
+                if isinstance(keyword.value, ast.Attribute) and _config_names(keyword.value, config)
                 else ParameterOrigin.COMPUTED
                 if _config_names(keyword.value, config)
                 else ParameterOrigin.LITERAL
@@ -532,13 +571,36 @@ def _edge_type(variable: str, consumer: _NodeDraft) -> EdgeType:
     return EdgeType.MAIN
 
 
-def _parse_config(config_bytes: bytes) -> dict[str, Any]:
+def _reachable_draft_ids(drafts: list[_NodeDraft]) -> set[str]:
+    reachable = {
+        draft.node_id
+        for draft in drafts
+        if draft.kind is NodeKind.INPUT_OUTPUT and draft.attributes.get("io") == "input"
+    }
+    for draft in drafts:
+        if any(producer_id in reachable for _, producer_id in draft.dependencies):
+            reachable.add(draft.node_id)
+    return reachable
+
+
+def _parse_config(config_bytes: bytes, config_path: Path | None) -> dict[str, Any]:
     try:
-        value = json.loads(config_bytes)
-    except (UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise AnalysisError("CONFIG_INVALID", f"config must be a JSON object: {error}") from error
+        suffix = config_path.suffix.lower() if config_path else ".json"
+        if suffix == ".toml":
+            value = tomllib.loads(config_bytes.decode("utf-8"))
+        elif suffix in {".yaml", ".yml"}:
+            value = yaml.safe_load(config_bytes.decode("utf-8"))
+        else:
+            value = json.loads(config_bytes)
+    except (UnicodeDecodeError, json.JSONDecodeError, tomllib.TOMLDecodeError, yaml.YAMLError) as error:
+        raise AnalysisError(
+            "CONFIG_INVALID",
+            f"config must be a valid JSON, TOML, or YAML object: {error}",
+        ) from error
+    if value is None:
+        value = {}
     if not isinstance(value, dict):
-        raise AnalysisError("CONFIG_INVALID", "config must be a JSON object")
+        raise AnalysisError("CONFIG_INVALID", "config must be a JSON, TOML, or YAML object")
     return value
 
 
@@ -556,12 +618,12 @@ def analyze_project(
 ) -> AnalysisBundle:
     project = project.resolve()
     if ":" not in entrypoint:
-        raise AnalysisError("ENTRYPOINT_FORMAT", "entrypoint must use module:Class syntax")
+        raise AnalysisError("ENTRYPOINT_FORMAT", "entrypoint must use module:symbol syntax")
     module_name, class_name = entrypoint.split(":", 1)
-    source_path = project / (module_name.replace(".", "/") + ".py")
-    if not source_path.is_file() or not source_path.resolve().is_relative_to(project):
-        raise AnalysisError("ENTRYPOINT_NOT_FOUND", f"source module not found: {source_path}")
-    config = _parse_config(config_bytes)
+    requested_source_path = resolve_module_path(project, module_name)
+    if requested_source_path is None:
+        raise AnalysisError("ENTRYPOINT_NOT_FOUND", f"source module not found: {module_name}")
+    config = _parse_config(config_bytes, config_path)
     if framework == "pytorch" and pattern_packs_enabled and config.get("architecture_profile") == "autoformer":
         from .autoformer import analyze_autoformer
 
@@ -610,45 +672,44 @@ def analyze_project(
             config_bytes,
             config_path,
         )
+    try:
+        ast.parse(requested_source_path.read_bytes(), filename=str(requested_source_path))
+    except (OSError, UnicodeError) as error:
+        raise AnalysisError("SOURCE_UNREADABLE", str(error)) from error
+    except SyntaxError as error:
+        raise AnalysisError("SOURCE_SYNTAX_ERROR", str(error)) from error
+    resolved_symbol = resolve_symbol(project, entrypoint)
+    if resolved_symbol is None:
+        raise AnalysisError("ENTRYPOINT_SYMBOL_NOT_FOUND", f"symbol {class_name!r} was not found")
+    source_path = resolved_symbol.module.path
+    symbol_node = resolved_symbol.node
     source_bytes = source_path.read_bytes()
     source_digest = _sha256(source_bytes)
     config_digest = _sha256(config_bytes)
-    try:
-        tree = ast.parse(source_bytes, filename=str(source_path))
-    except SyntaxError as error:
-        raise AnalysisError("SOURCE_SYNTAX_ERROR", str(error)) from error
-    symbol_node = next(
-        (
-            node
-            for node in tree.body
-            if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))
-            and node.name == class_name
-        ),
-        None,
-    )
-    if symbol_node is None:
-        raise AnalysisError("ENTRYPOINT_SYMBOL_NOT_FOUND", f"symbol {class_name!r} was not found")
     method_name = execution_method or {
         "pytorch": "forward",
         "keras": "call",
         "jax": "__call__",
     }.get(framework, "forward")
+    execution_unresolved = False
     if isinstance(symbol_node, ast.ClassDef):
-        execution = next(
-            (
-                node
-                for node in symbol_node.body
-                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-                and node.name == method_name
-            ),
-            None,
-        )
+        methods = {
+            node.name: node
+            for node in symbol_node.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
+        execution = methods.get(method_name)
+        if execution is None and execution_method is None:
+            for fallback_name in ("forward", "call", "__call__"):
+                if fallback_name in methods:
+                    method_name = fallback_name
+                    execution = methods[fallback_name]
+                    break
         if execution is None:
-            raise AnalysisError(
-                "EXECUTION_METHOD_NOT_FOUND",
-                f"{class_name} has no {method_name} method",
-            )
-        execution_symbol = f"{class_name}.{method_name}"
+            execution_unresolved = True
+            execution_symbol = f"{class_name}.<inherited-or-dynamic>"
+        else:
+            execution_symbol = f"{class_name}.{method_name}"
         class_node: ast.ClassDef | None = symbol_node
     else:
         execution = symbol_node
@@ -711,6 +772,23 @@ def analyze_project(
         constructor_origins,
         config,
     )
+    transformer_signature = {
+        "encoder_q_proj",
+        "encoder_k_proj",
+        "encoder_v_proj",
+        "cross_q_proj",
+        "cross_k_proj",
+        "cross_v_proj",
+        "generator",
+    }
+    transformer_profile = pattern_packs_enabled and (
+        config.get("architecture_profile") == "transformer-l3"
+        or (
+            class_name.lower() == "transformer"
+            and transformer_signature <= modules.keys()
+            and {"input_shapes", "d_model", "num_heads", "vocab_size"} <= config.keys()
+        )
+    )
     drafts: list[_NodeDraft] = []
     container = _NodeDraft(
         node_id=f"node:{_identifier(class_name)}",
@@ -723,13 +801,7 @@ def analyze_project(
             "model_class": class_name,
             "framework_adapter": framework,
             "execution_symbol": execution_symbol,
-            "architecture_profile": (
-                "transformer-l3"
-                if framework == "pytorch"
-                and pattern_packs_enabled
-                and class_name.lower() == "transformer"
-                else "generic"
-            ),
+            "architecture_profile": "transformer-l3" if transformer_profile else "generic",
             "pattern_packs_enabled": pattern_packs_enabled,
         },
         parameters=_class_field_parameters(class_node, config),
@@ -739,27 +811,71 @@ def analyze_project(
     variable_producer: dict[str, str] = {}
     shapes: dict[str, str] = {}
     input_shapes = config.get("input_shapes", {})
-    forward_args = [argument.arg for argument in execution.args.args if argument.arg != "self"]
+    forward_args: list[str] = []
+    if execution is not None:
+        arguments = [*execution.args.posonlyargs, *execution.args.args, *execution.args.kwonlyargs]
+        forward_args.extend(argument.arg for argument in arguments if argument.arg not in {"self", "cls"})
+        if execution.args.vararg:
+            forward_args.append(execution.args.vararg.arg)
+        if execution.args.kwarg:
+            forward_args.append(execution.args.kwarg.arg)
+    if not forward_args:
+        forward_args = ["invocation"]
     for argument in forward_args:
+        evidence_line = execution.lineno if execution is not None else symbol_node.lineno
         draft = _NodeDraft(
             node_id=f"node:input.{_identifier(argument)}",
             kind=NodeKind.INPUT_OUTPUT,
             semantic_name=argument,
             source_symbol=execution_symbol,
-            line=execution.lineno,
-            end_line=execution.lineno,
+            line=evidence_line,
+            end_line=evidence_line,
             target=argument,
             attributes={"io": "input", "assigned_symbol": argument},
         )
         drafts.append(draft)
         variable_producer[argument] = draft.node_id
         shapes[argument] = input_shapes.get(argument, "[?]")
+    input_producers = {name: variable_producer[name] for name in forward_args}
 
     unresolved: list[UnresolvedFact] = []
     used_node_ids: set[str] = {draft.node_id for draft in drafts}
     output_created = False
     return_boundary: _NodeDraft | None = None
-    for statement in execution.body:
+    if execution_unresolved:
+        return_boundary = _NodeDraft(
+            node_id="node:opaque.execution",
+            kind=NodeKind.OPAQUE_COMPOSITE,
+            semantic_name="Inherited or dynamic execution",
+            source_symbol=class_name,
+            line=symbol_node.lineno,
+            end_line=getattr(symbol_node, "end_lineno", symbol_node.lineno),
+            target="opaque_execution",
+            dependencies=[(name, input_producers[name]) for name in forward_args],
+            attributes={
+                "implementation_status": "boundary-only",
+                "semantic_status": "unnamed",
+                "execution_status": "unresolved",
+                "unresolved_reason": "execution_method_not_locally_defined",
+                "capabilities": ["inspect_boundary", "edit_visual"],
+                "contains_return": True,
+            },
+        )
+        drafts.append(return_boundary)
+        used_node_ids.add(return_boundary.node_id)
+        variable_producer[return_boundary.target] = return_boundary.node_id
+        shapes[return_boundary.target] = "[?]"
+        unresolved.append(
+            UnresolvedFact(
+                code="EXECUTION_METHOD_NOT_LOCALLY_DEFINED",
+                message=(
+                    f"{class_name} does not define {method_name} locally; the inherited or "
+                    "dynamic execution body remains an opaque boundary."
+                ),
+                blocking=False,
+            )
+        )
+    for statement in execution.body if execution is not None else []:
         target: str | None = None
         expression: ast.AST | None = None
         if (
@@ -776,6 +892,109 @@ def analyze_project(
                 for name in (_loaded_names(statement.value) if statement.value else [])
                 if name in variable_producer
             ]
+            if statement.value is not None and not isinstance(
+                statement.value, (ast.Name, ast.Constant)
+            ):
+                return_target = "model_result"
+                semantic_name, kind, module, attributes = _operation(
+                    statement.value,
+                    return_target,
+                    modules,
+                )
+                if module is None:
+                    module = _inline_module(
+                        statement.value,
+                        return_target,
+                        constructor_values,
+                        constructor_origins,
+                        config,
+                    )
+                    if module is not None:
+                        attributes["op_type"] = module.op_type
+                        attributes["functional_anchor"] = return_target
+                if kind is NodeKind.MERGE_EVENT and len(dependencies) < 2:
+                    kind = NodeKind.OPAQUE_COMPOSITE
+                    attributes.update(
+                        {
+                            "implementation_status": "boundary-only",
+                            "semantic_status": "unnamed",
+                            "execution_status": "static-active",
+                            "unresolved_reason": "merge_inputs_not_fully_resolved",
+                            "capabilities": ["inspect_boundary", "edit_visual"],
+                        }
+                    )
+                    unresolved.append(
+                        UnresolvedFact(
+                            code="MERGE_INPUTS_NOT_EXPANDED",
+                            message=(
+                                f"Generic recovery could not prove every input to the return "
+                                f"expression at line {statement.lineno}."
+                            ),
+                            blocking=False,
+                        )
+                    )
+                canonical = module.module_name if module else return_target
+                base_node_id = f"node:{_identifier(canonical)}"
+                node_id = base_node_id
+                suffix = 2
+                while node_id in used_node_ids:
+                    node_id = f"{base_node_id}.{suffix}"
+                    suffix += 1
+                used_node_ids.add(node_id)
+                return_draft = _NodeDraft(
+                    node_id=node_id,
+                    kind=kind,
+                    semantic_name=semantic_name,
+                    source_symbol=execution_symbol,
+                    line=statement.lineno,
+                    end_line=getattr(statement, "end_lineno", statement.lineno),
+                    target=return_target,
+                    dependencies=dependencies,
+                    attributes={
+                        **attributes,
+                        "assigned_symbol": return_target,
+                        "source_expression": ast.unparse(statement.value),
+                    },
+                    module=module,
+                )
+                drafts.append(return_draft)
+                variable_producer[return_target] = node_id
+                shapes[return_target] = _infer_shape(
+                    return_target,
+                    statement.value,
+                    module,
+                    dependencies,
+                    shapes,
+                    config,
+                )
+                dependencies = [(return_target, node_id)]
+            if not dependencies:
+                dependencies = [(forward_args[0], input_producers[forward_args[0]])]
+                unresolved.append(
+                    UnresolvedFact(
+                        code="RETURN_DEPENDENCY_NOT_EXPANDED",
+                        message=(
+                            f"The return expression at line {statement.lineno} has no locally "
+                            "resolved producer; invocation dependency is retained."
+                        ),
+                        blocking=False,
+                    )
+                )
+            elif not any(
+                producer_id in _reachable_draft_ids(drafts)
+                for _, producer_id in dependencies
+            ):
+                dependencies.append(("invocation", input_producers[forward_args[0]]))
+                unresolved.append(
+                    UnresolvedFact(
+                        code="RETURN_PATH_BRIDGED",
+                        message=(
+                            f"The return expression at line {statement.lineno} depends on a "
+                            "partially recovered local path; invocation dependency is retained."
+                        ),
+                        blocking=False,
+                    )
+                )
             drafts.append(
                 _NodeDraft(
                     node_id="node:output.model",
@@ -790,43 +1009,55 @@ def analyze_project(
             )
             output_created = True
             continue
-        elif isinstance(statement, (ast.If, ast.For, ast.While, ast.Try, ast.Match)):
+        elif isinstance(
+            statement,
+            (
+                ast.If,
+                ast.For,
+                ast.AsyncFor,
+                ast.While,
+                ast.Try,
+                ast.Match,
+                ast.With,
+                ast.AsyncWith,
+            ),
+        ):
             statement_names = [
                 name for name in _loaded_names(statement) if name in variable_producer
             ]
             contains_return = any(isinstance(node, ast.Return) for node in ast.walk(statement))
-            if not pattern_packs_enabled:
-                boundary_index = len(unresolved) + 1
-                boundary_id = f"node:opaque.control.{boundary_index}"
-                dependencies = [
-                    (name, variable_producer[name])
-                    for name in dict.fromkeys([*forward_args, *statement_names])
-                    if name in variable_producer
-                ]
-                boundary = _NodeDraft(
-                    node_id=boundary_id,
-                    kind=NodeKind.OPAQUE_COMPOSITE,
-                    semantic_name=f"Unresolved {type(statement).__name__} boundary",
-                    source_symbol=execution_symbol,
-                    line=statement.lineno,
-                    end_line=getattr(statement, "end_lineno", statement.lineno),
-                    target=f"opaque_control_{boundary_index}",
-                    dependencies=dependencies,
-                    attributes={
-                        "implementation_status": "boundary-only",
-                        "semantic_status": "unnamed",
-                        "execution_status": "unresolved",
-                        "unresolved_reason": "static_control_flow_not_expanded",
-                        "capabilities": ["inspect_boundary", "edit_visual"],
-                        "contains_return": contains_return,
-                    },
-                )
-                drafts.append(boundary)
-                used_node_ids.add(boundary_id)
-                variable_producer[boundary.target] = boundary.node_id
-                shapes[boundary.target] = "[?]"
-                if contains_return:
-                    return_boundary = boundary
+            boundary_index = len(unresolved) + 1
+            boundary_id = f"node:opaque.control.{boundary_index}"
+            dependencies = [(name, input_producers[name]) for name in forward_args]
+            dependencies.extend(
+                (name, variable_producer[name])
+                for name in statement_names
+                if variable_producer[name] != input_producers.get(name)
+            )
+            boundary = _NodeDraft(
+                node_id=boundary_id,
+                kind=NodeKind.OPAQUE_COMPOSITE,
+                semantic_name=f"Unresolved {type(statement).__name__} boundary",
+                source_symbol=execution_symbol,
+                line=statement.lineno,
+                end_line=getattr(statement, "end_lineno", statement.lineno),
+                target=f"opaque_control_{boundary_index}",
+                dependencies=dependencies,
+                attributes={
+                    "implementation_status": "boundary-only",
+                    "semantic_status": "unnamed",
+                    "execution_status": "unresolved",
+                    "unresolved_reason": "static_control_flow_not_expanded",
+                    "capabilities": ["inspect_boundary", "edit_visual"],
+                    "contains_return": contains_return,
+                },
+            )
+            drafts.append(boundary)
+            used_node_ids.add(boundary_id)
+            variable_producer[boundary.target] = boundary.node_id
+            shapes[boundary.target] = "[?]"
+            if contains_return:
+                return_boundary = boundary
             unresolved.append(
                 UnresolvedFact(
                     code="CONTROL_FLOW_NOT_EXPANDED",
@@ -864,7 +1095,7 @@ def analyze_project(
             for name in _loaded_names(expression)
             if name in variable_producer
         ]
-        if not pattern_packs_enabled and kind is NodeKind.MERGE_EVENT and len(dependencies) < 2:
+        if kind is NodeKind.MERGE_EVENT and len(dependencies) < 2:
             kind = NodeKind.OPAQUE_COMPOSITE
             attributes.update(
                 {
@@ -939,7 +1170,34 @@ def analyze_project(
         variable_producer[target] = node_id
         shapes[target] = _infer_shape(target, expression, module, dependencies, shapes, config)
 
-    if not output_created and return_boundary is not None:
+    if not output_created:
+        if return_boundary is None:
+            recoverable = next(
+                (
+                    draft
+                    for draft in reversed(drafts)
+                    if draft is not container and draft.target is not None
+                ),
+                None,
+            )
+            if recoverable is not None:
+                return_boundary = recoverable
+            unresolved.append(
+                UnresolvedFact(
+                    code="OUTPUT_PATH_NOT_EXPANDED",
+                    message=(
+                        f"Static recovery did not find a top-level return in {execution_symbol}; "
+                        "the last recoverable boundary is used as the model output."
+                    ),
+                    blocking=False,
+                )
+            )
+        assert return_boundary is not None
+        output_dependencies = [
+            (return_boundary.target or "output", return_boundary.node_id)
+        ]
+        if return_boundary.node_id not in _reachable_draft_ids(drafts):
+            output_dependencies.append(("invocation", input_producers[forward_args[0]]))
         drafts.append(
             _NodeDraft(
                 node_id="node:output.model",
@@ -948,7 +1206,7 @@ def analyze_project(
                 source_symbol=execution_symbol,
                 line=return_boundary.line,
                 end_line=return_boundary.end_line,
-                dependencies=[(return_boundary.target or "output", return_boundary.node_id)],
+                dependencies=output_dependencies,
                 attributes={
                     "io": "output",
                     "assigned_symbol": "model_output",
@@ -1032,6 +1290,7 @@ def analyze_project(
             )
 
     tensors: dict[str, TensorValue] = {}
+    tensor_ids_by_value: dict[tuple[str, str], str] = {}
     edges: list[ArchitectureEdge] = []
     known_shape_evidence = [
         config_evidence[key]
@@ -1048,7 +1307,16 @@ def analyze_project(
             )
             input_ports[draft.node_id].append(consumer_port)
             producer_port = output_ports[producer_id][0]
-            tensor_id = f"tensor:{_identifier(variable)}"
+            value_key = (variable, producer_id)
+            tensor_id = tensor_ids_by_value.get(value_key)
+            if tensor_id is None:
+                base_tensor_id = f"tensor:{_identifier(variable)}"
+                tensor_id = base_tensor_id
+                suffix = 2
+                while tensor_id in tensors:
+                    tensor_id = f"{base_tensor_id}.{suffix}"
+                    suffix += 1
+                tensor_ids_by_value[value_key] = tensor_id
             edge_id = (
                 f"edge:{producer_id.removeprefix('node:')}:"
                 f"{draft.node_id.removeprefix('node:')}:{index}"

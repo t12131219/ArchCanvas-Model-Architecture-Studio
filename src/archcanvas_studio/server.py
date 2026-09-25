@@ -2,16 +2,19 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import secrets
+import signal
+import subprocess
 import sys
 import threading
+from copy import deepcopy
 from datetime import UTC, datetime
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from archcanvas_adapters import analyze_with_adapter
 from archcanvas_core.models import (
     AnalysisJob,
     AnalysisRequest,
@@ -20,13 +23,19 @@ from archcanvas_core.models import (
     JobState,
     PatchBatch,
     ProjectSession,
+    TransactionState,
     VisualPatch,
 )
-from archcanvas_python import AnalysisError
 
 from .bundle import StudioBundle, prepare_studio_bundle
 from .document import apply_patch, apply_patch_batch, redo_patch, undo_patch
-from .operations import alignment_batch, auto_layout_batch, auto_route_batch, studio_fingerprint
+from .operations import (
+    alignment_batch,
+    auto_layout_batch,
+    auto_route_batch,
+    run_validation,
+    studio_fingerprint,
+)
 from .project import (
     browse_directories,
     create_project_session,
@@ -62,6 +71,12 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(payload)
+
+    def _studio_state(self) -> dict[str, object]:
+        state = self.server.bundle.state()
+        state["session_nonce"] = self.server.session_nonce
+        state["jobs"] = [job.model_dump(mode="json") for job in self.server.jobs.values()]
+        return state
 
     def _error(self, error: Exception) -> None:
         self._json(
@@ -183,12 +198,13 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
             if self.path == "/api/projects/open":
                 root = Path(str(payload["root"]))
                 with self.server.lock:
-                    environment = resolve_conda_environment(
-                        str(payload["environment_path"])
-                        if payload.get("environment_path")
+                    environment_path = payload.get("environment_path")
+                    environment = (
+                        resolve_conda_environment(str(environment_path))
+                        if environment_path
                         else None
                     )
-                    generation = self.server.bundle.project_session.generation + 1
+                    generation = self.server.next_project_generation()
                     session = create_project_session(
                         root,
                         self.server.bundle.workspace,
@@ -197,10 +213,11 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                         framework=str(payload.get("framework", "auto")),
                         task=str(payload.get("task", "inference")),
                         config_path=str(payload["config_path"]) if payload.get("config_path") else None,
+                        environment=environment,
                     )
                     discovery = discover_project(Path(session.root))
                     discovery["environment"] = environment
-                    self.server.pending_projects[session.project_id] = (session, discovery)
+                    self.server.activate_project(session, discovery)
                     self._json(
                         {
                             "project": session.model_dump(mode="json"),
@@ -240,11 +257,24 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                         if expansions is not None
                         else None,
                     )
+                    self.server.layout_candidates.clear()
                     self._json(self.server.bundle.state())
                     return
                 if self.path == "/api/layout-mode":
                     self.server.bundle.set_layout_mode(str(payload.get("layout_mode", "")))
+                    self.server.layout_candidates.clear()
                     self._json(self.server.bundle.state())
+                    return
+                if self.path == "/api/layout-candidates":
+                    self._json({"candidates": self.server.create_layout_candidates()})
+                    return
+                if self.path.startswith("/api/layout-candidates/") and self.path.endswith(
+                    "/apply"
+                ):
+                    candidate_id = self.path[
+                        len("/api/layout-candidates/") : -len("/apply")
+                    ]
+                    self._json(self.server.apply_layout_candidate(candidate_id))
                     return
                 if self.path == "/api/patch":
                     patch = VisualPatch.model_validate(payload)
@@ -252,14 +282,18 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                         scene.scene_id: scene
                         for scene in self.server.bundle.base_scenes.values()
                     }
-                    changed = apply_patch(document, patch, scenes)
+                    changed = apply_patch(
+                        document, patch, scenes, enforce_containment=True
+                    )
                 elif self.path == "/api/patch-batch":
                     batch = PatchBatch.model_validate(payload)
                     scenes = {
                         scene.scene_id: scene
                         for scene in self.server.bundle.base_scenes.values()
                     }
-                    changed = apply_patch_batch(document, batch, scenes)
+                    changed = apply_patch_batch(
+                        document, batch, scenes, enforce_containment=True
+                    )
                 elif self.path == "/api/layout":
                     scene = next(iter(self.server.bundle.materialized_scenes().values()))
                     baseline_scene = next(iter(self.server.bundle.base_scenes.values()))
@@ -280,7 +314,9 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                     scenes = {
                         item.scene_id: item for item in self.server.bundle.base_scenes.values()
                     }
-                    changed = apply_patch_batch(document, batch, scenes)
+                    changed = apply_patch_batch(
+                        document, batch, scenes, enforce_containment=True
+                    )
                 elif self.path == "/api/route":
                     scene = next(iter(self.server.bundle.materialized_scenes().values()))
                     batch = auto_route_batch(
@@ -308,7 +344,9 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                     scenes = {
                         item.scene_id: item for item in self.server.bundle.base_scenes.values()
                     }
-                    changed = apply_patch_batch(document, batch, scenes)
+                    changed = apply_patch_batch(
+                        document, batch, scenes, enforce_containment=True
+                    )
                 elif self.path == "/api/undo":
                     changed = undo_patch(document)
                 elif self.path == "/api/redo":
@@ -329,24 +367,80 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                     self.server.bundle.propose_draft_node(payload)
                     self._json(self.server.bundle.state())
                     return
-                elif self.path == "/api/transaction/commit":
-                    self.server.bundle.commit_parameter()
+                elif self.path == "/api/proposal/draft-edge":
+                    self.server.bundle.propose_draft_edge(payload)
                     self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/proposal/delete-node/preview":
+                    self._json(
+                        {
+                            "impact": self.server.bundle.canonical_delete_impact(
+                                str(payload["node_id"])
+                            )
+                        }
+                    )
+                    return
+                elif self.path == "/api/proposal/delete-node":
+                    self.server.bundle.propose_canonical_delete(payload)
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/draft/node/delete":
+                    self.server.bundle.delete_draft_node(str(payload["node_id"]))
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/draft/edge/delete":
+                    self.server.bundle.delete_draft_edge(str(payload["edge_id"]))
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/draft/delete-intent/discard":
+                    self.server.bundle.discard_canonical_delete(str(payload["intent_id"]))
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/source-workspace/open":
+                    buffer = self.server.bundle.open_source_buffer(str(payload["path"]))
+                    self._json({"buffer": buffer, "state": self._studio_state()})
+                    return
+                elif self.path == "/api/source-workspace/save":
+                    buffer = self.server.bundle.save_source_buffer(
+                        str(payload["path"]),
+                        str(payload["content"]),
+                        str(payload["base_sha256"]),
+                        int(payload["expected_revision"]),
+                    )
+                    self._json({"buffer": buffer, "state": self._studio_state()})
+                    return
+                elif self.path == "/api/source-workspace/buffer/discard":
+                    self.server.bundle.discard_source_buffer(
+                        str(payload["path"]), int(payload["expected_revision"])
+                    )
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/source-workspace/validate":
+                    self.server.bundle.prepare_source_workspace()
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/source-workspace/discard":
+                    self.server.bundle.discard_source_workspace()
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/transaction/commit":
+                    job = self.server.commit_transaction_and_reanalyze()
+                    state = self.server.bundle.state()
+                    state["reanalysis_job_id"] = job.job_id if job is not None else None
+                    self._json(state)
                     return
                 elif self.path == "/api/transaction/discard":
                     self.server.bundle.discard_parameter()
                     self._json(self.server.bundle.state())
                     return
                 elif self.path == "/api/validation-runs":
-                    validation = self.server.bundle.validate(
+                    job = self.server.start_validation(
                         str(payload.get("profile", "fast-static")),
                         runtime_execution_authorized=bool(
                             payload.get("runtime_execution_authorized", False)
                         ),
                     )
-                    state = self.server.bundle.state()
-                    state["active_validation"] = validation.model_dump(mode="json")
-                    self._json(state)
+                    self._json(job, HTTPStatus.ACCEPTED)
                     return
                 elif self.path.startswith("/api/jobs/") and self.path.endswith("/cancel"):
                     job_id = self.path[len("/api/jobs/") : -len("/cancel")]
@@ -354,16 +448,13 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                     if job is None:
                         self.send_error(HTTPStatus.NOT_FOUND)
                         return
-                    if job.state in {JobState.QUEUED, JobState.RUNNING}:
-                        self.server.jobs[job_id] = job.model_copy(
-                            update={"state": JobState.CANCELLED, "finished_at": datetime.now(UTC).isoformat()}
-                        )
-                    self._json(self.server.jobs[job_id])
+                    self._json(self.server.cancel_job(job_id))
                     return
                 else:
                     self.send_error(HTTPStatus.NOT_FOUND)
                     return
                 self.server.bundle.save_document(changed)
+                self.server.layout_candidates.clear()
                 self._json(self.server.bundle.state())
         except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
             self._error(error)
@@ -396,7 +487,122 @@ class StudioHTTPServer(ThreadingHTTPServer):
         self.session_nonce = secrets.token_urlsafe(24)
         self.jobs: dict[str, AnalysisJob] = {}
         self.pending_projects: dict[str, tuple[ProjectSession, dict[str, object]]] = {}
+        self.job_processes: dict[str, subprocess.Popen[str]] = {}
+        self.job_cancellations: dict[str, threading.Event] = {}
+        self.project_generation = bundle.project_session.generation
+        self.validation_generation = bundle.validation_generation
+        self.layout_candidates: dict[str, tuple[str, PatchBatch]] = {}
+        self.active_project_key = (
+            bundle.project_session.project_id,
+            bundle.project_session.generation,
+        )
         super().__init__(address, StudioRequestHandler)
+
+    def next_project_generation(self) -> int:
+        with self.lock:
+            self.project_generation += 1
+            return self.project_generation
+
+    def activate_project(
+        self, session: ProjectSession, discovery: dict[str, object]
+    ) -> None:
+        """Select one project generation and invalidate every older in-flight job."""
+        with self.lock:
+            self.active_project_key = (session.project_id, session.generation)
+            self.pending_projects = {session.project_id: (session, discovery)}
+            self.layout_candidates.clear()
+            for job_id, job in list(self.jobs.items()):
+                if job.state not in {
+                    JobState.QUEUED,
+                    JobState.RUNNING,
+                    JobState.CANCELLING,
+                }:
+                    continue
+                if (job.project_id, job.generation) != self.active_project_key:
+                    self._cancel_job_locked(job_id, stale=True)
+
+    def _terminate_process_locked(self, process: subprocess.Popen[str]) -> None:
+        if process.poll() is not None:
+            return
+        if os.name == "posix":
+            try:
+                os.killpg(process.pid, signal.SIGTERM)
+                return
+            except ProcessLookupError:
+                return
+        process.terminate()
+
+    def _finish_cancelled_locked(self, job_id: str) -> AnalysisJob:
+        current = self.jobs[job_id]
+        state = JobState.STALE if current.state is JobState.STALE else JobState.CANCELLED
+        finished = current.model_copy(
+            update={
+                "state": state,
+                "progress": 1,
+                "finished_at": datetime.now(UTC).isoformat(),
+            }
+        )
+        self.jobs[job_id] = finished
+        return finished
+
+    def _cancel_job_locked(self, job_id: str, *, stale: bool = False) -> AnalysisJob:
+        job = self.jobs[job_id]
+        if job.state not in {JobState.QUEUED, JobState.RUNNING, JobState.CANCELLING}:
+            return job
+        cancellation = self.job_cancellations.setdefault(job_id, threading.Event())
+        cancellation.set()
+        process = self.job_processes.get(job_id)
+        if process is not None:
+            self._terminate_process_locked(process)
+        state = JobState.STALE if stale else JobState.CANCELLING
+        update: dict[str, object] = {"state": state}
+        if stale:
+            update.update(
+                {
+                    "progress": 1,
+                    "finished_at": datetime.now(UTC).isoformat(),
+                }
+            )
+        changed = job.model_copy(update=update)
+        self.jobs[job_id] = changed
+        return changed
+
+    def cancel_job(self, job_id: str) -> AnalysisJob:
+        with self.lock:
+            if job_id not in self.jobs:
+                raise ValueError("job does not exist")
+            return self._cancel_job_locked(job_id)
+
+    def create_layout_candidates(self) -> list[dict[str, object]]:
+        with self.lock:
+            candidates = self.bundle.layout_candidates()
+            self.layout_candidates = {
+                str(payload["candidate_id"]): (
+                    str(payload["input_fingerprint"]),
+                    batch,
+                )
+                for payload, batch in candidates
+            }
+            return [payload for payload, _ in candidates]
+
+    def apply_layout_candidate(self, candidate_id: str) -> dict[str, object]:
+        with self.lock:
+            candidate = self.layout_candidates.get(candidate_id)
+            if candidate is None:
+                raise ValueError("layout candidate does not exist or has expired")
+            fingerprint, batch = candidate
+            if fingerprint != studio_fingerprint(self.bundle):
+                self.layout_candidates.clear()
+                raise ValueError("layout candidate input fingerprint is stale")
+            scenes = {
+                scene.scene_id: scene for scene in self.bundle.base_scenes.values()
+            }
+            changed = apply_patch_batch(
+                self.bundle.document, batch, scenes, enforce_containment=True
+            )
+            self.bundle.save_document(changed)
+            self.layout_candidates.clear()
+            return self.bundle.state()
 
     def start_analysis(self, request: AnalysisRequest) -> AnalysisJob:
         with self.lock:
@@ -409,6 +615,8 @@ class StudioHTTPServer(ThreadingHTTPServer):
                 session = pending[0]
             if request.project_generation != session.generation:
                 raise ValueError("analysis project generation is stale")
+            if (request.project_id, request.project_generation) != self.active_project_key:
+                raise ValueError("analysis does not target the active project generation")
             encoded = json.dumps(request.model_dump(mode="json"), sort_keys=True).encode()
             fingerprint = hashlib.sha256(encoded).hexdigest()
             job_id = f"job:{request.request_id.removeprefix('request:')}"
@@ -425,25 +633,183 @@ class StudioHTTPServer(ThreadingHTTPServer):
                 progress=0,
             )
             self.jobs[job_id] = job
+            self.job_cancellations[job_id] = threading.Event()
+            discovery = deepcopy(pending[1]) if pending is not None else {}
+            workspace = self.bundle.workspace
         threading.Thread(
             target=self._run_analysis,
-            args=(request, session, job_id),
+            args=(request, session, discovery, workspace, job_id),
             daemon=True,
             name=f"archcanvas-{job_id}",
         ).start()
         return job
 
+    def commit_transaction_and_reanalyze(self) -> AnalysisJob | None:
+        with self.lock:
+            self.bundle.commit_parameter()
+            transaction = self.bundle.active_transaction
+            if transaction is None or transaction.state is not TransactionState.COMMITTED:
+                return None
+            project = self.bundle.project_session
+            request = AnalysisRequest(
+                project_id=project.project_id,
+                project_generation=project.generation,
+                entrypoint=project.entrypoint or self.bundle.snapshot.entrypoint,
+                framework=project.framework,
+                task=project.task,
+                config_path=project.config_path,
+                execution_mode="static",
+                pattern_packs_enabled=True,
+                request_id=f"request:reanalysis.{secrets.token_hex(10)}",
+            )
+            return self.start_analysis(request)
+
+    def start_validation(
+        self, profile: str, *, runtime_execution_authorized: bool = False
+    ) -> AnalysisJob:
+        with self.lock:
+            if profile not in {"fast-static", "publication", "full", "runtime-replay"}:
+                raise ValueError("unknown validation profile")
+            if profile == "runtime-replay" and not runtime_execution_authorized:
+                raise ValueError("runtime replay requires explicit execution authorization")
+            target_bundle = self.bundle
+            validation_input = deepcopy(target_bundle)
+            project = target_bundle.project_session
+            request_id = secrets.token_hex(10)
+            job_id = f"job:validation.{request_id}"
+            fingerprint = studio_fingerprint(validation_input)
+            job = AnalysisJob(
+                job_id=job_id,
+                project_id=project.project_id,
+                generation=project.generation,
+                input_fingerprint=fingerprint,
+                profile=f"validation:{profile}",
+                state=JobState.QUEUED,
+                progress=0,
+            )
+            self.jobs[job_id] = job
+            self.job_cancellations[job_id] = threading.Event()
+            self.validation_generation += 1
+            validation_generation = self.validation_generation
+        threading.Thread(
+            target=self._run_validation,
+            args=(
+                validation_input,
+                target_bundle,
+                profile,
+                runtime_execution_authorized,
+                validation_generation,
+                job_id,
+            ),
+            daemon=True,
+            name=f"archcanvas-{job_id}",
+        ).start()
+        return job
+
+    def _run_validation(
+        self,
+        validation_input: StudioBundle,
+        target_bundle: StudioBundle,
+        profile: str,
+        runtime_execution_authorized: bool,
+        validation_generation: int,
+        job_id: str,
+    ) -> None:
+        with self.lock:
+            if self.job_cancellations[job_id].is_set():
+                self._finish_cancelled_locked(job_id)
+                return
+            self.jobs[job_id] = self.jobs[job_id].model_copy(
+                update={
+                    "state": JobState.RUNNING,
+                    "progress": 0.1,
+                    "started_at": datetime.now(UTC).isoformat(),
+                }
+            )
+        try:
+            validation = run_validation(
+                validation_input,
+                profile,
+                validation_generation,
+                runtime_execution_authorized=runtime_execution_authorized,
+            )
+            with self.lock:
+                current = self.jobs[job_id]
+                cancelled = self.job_cancellations[job_id].is_set()
+                active = self.bundle is target_bundle and (
+                    current.project_id,
+                    current.generation,
+                ) == self.active_project_key
+                if cancelled:
+                    state = (
+                        JobState.STALE
+                        if current.state is JobState.STALE
+                        else JobState.CANCELLED
+                    )
+                    self.jobs[job_id] = current.model_copy(
+                        update={
+                            "state": state,
+                            "progress": 1,
+                            "finished_at": datetime.now(UTC).isoformat(),
+                        }
+                    )
+                elif not active:
+                    self.jobs[job_id] = current.model_copy(
+                        update={
+                            "state": JobState.STALE,
+                            "progress": 1,
+                            "finished_at": datetime.now(UTC).isoformat(),
+                        }
+                    )
+                else:
+                    target_bundle.validation_generation = max(
+                        target_bundle.validation_generation,
+                        validation_generation,
+                    )
+                    target_bundle.validation_runs.append(validation)
+                    target_bundle.validation_runs.sort(key=lambda run: run.generation)
+                    validation_path = (
+                        target_bundle.workspace
+                        / "validations"
+                        / f"{validation.validation_id.removeprefix('validation:')}.json"
+                    )
+                    validation_path.parent.mkdir(parents=True, exist_ok=True)
+                    validation_path.write_text(
+                        validation.model_dump_json() + "\n", encoding="utf-8"
+                    )
+                    self.jobs[job_id] = current.model_copy(
+                        update={
+                            "state": JobState.SUCCEEDED,
+                            "progress": 1,
+                            "finished_at": datetime.now(UTC).isoformat(),
+                            "receipt": {
+                                "status": validation.state.value,
+                                "validation_id": validation.validation_id,
+                            },
+                        }
+                    )
+        except Exception as error:  # noqa: BLE001
+            self._finish_failed_job(job_id, "VALIDATION_FAILED", error)
+
     def _run_analysis(
-        self, request: AnalysisRequest, session: ProjectSession, job_id: str
+        self,
+        request: AnalysisRequest,
+        session: ProjectSession,
+        discovery: dict[str, object],
+        workspace: Path,
+        job_id: str,
     ) -> None:
         started = datetime.now(UTC).isoformat()
         with self.lock:
+            cancellation = self.job_cancellations[job_id]
+            if cancellation.is_set():
+                self._finish_cancelled_locked(job_id)
+                return
             self.jobs[job_id] = self.jobs[job_id].model_copy(
                 update={"state": JobState.RUNNING, "progress": 0.1, "started_at": started}
             )
         try:
             root = Path(session.root)
-            discovery = self.pending_projects.get(request.project_id, (None, {}))[1]
             selected = next(
                 (
                     item
@@ -455,105 +821,160 @@ class StudioHTTPServer(ThreadingHTTPServer):
             analysis_root = root / str(selected.get("analysis_root", ".")) if selected else root
             analysis_entrypoint = str(selected.get("analysis_entrypoint", request.entrypoint)) if selected else request.entrypoint
             selected_config = request.config_path
-            if selected is not None and selected.get("config_paths"):
-                selected_config = next(
-                    (
-                        path
-                        for path in selected["config_paths"]
-                        if request.config_path is None or path == request.config_path
-                    ),
-                    selected["config_paths"][0],
+            if selected is not None and selected_config is not None:
+                if selected_config not in selected.get("config_paths", []):
+                    raise ValueError("selected config is outside the entrypoint analysis scope")
+                selected_config = str(
+                    Path(selected_config).relative_to(Path(selected.get("analysis_root", ".")))
                 )
-                selected_config = str(Path(selected_config).relative_to(Path(selected.get("analysis_root", "."))))
             config_path = analysis_root / selected_config if selected_config else None
             if config_path is not None:
                 config_path = config_path.resolve()
                 if not config_path.is_relative_to(root) or not config_path.is_file():
                     raise ValueError("analysis config escapes the project root or does not exist")
-                config_bytes = config_path.read_bytes()
-            else:
-                config_bytes = b"{}"
-            analyzed = analyze_with_adapter(
-                analysis_root,
+            analysis_dir = workspace / "analyses" / job_id.removeprefix("job:")
+            command = [
+                sys.executable,
+                "-m",
+                "archcanvas_engine.cli",
+                "analyze",
+                "--project",
+                str(analysis_root),
+                "--entry",
                 analysis_entrypoint,
+                "--framework",
+                request.framework,
+                "--task",
                 request.task,
+                "--mode",
                 "eval",
-                config_bytes,
-                config_path,
-                framework=request.framework,
-                pattern_packs_enabled=request.pattern_packs_enabled,
+                "--out",
+                str(analysis_dir),
+                "--json",
+            ]
+            if config_path is not None:
+                command.extend(["--config", str(config_path)])
+            if not request.pattern_packs_enabled:
+                command.append("--no-pattern-packs")
+            source_root = str(Path(__file__).resolve().parents[1])
+            environment = dict(os.environ)
+            environment["PYTHONPATH"] = os.pathsep.join(
+                part
+                for part in (source_root, environment.get("PYTHONPATH"))
+                if part
             )
-            analysis_dir = self.bundle.workspace / "analyses" / job_id.removeprefix("job:")
-            analysis_dir.mkdir(parents=True, exist_ok=True)
-            (analysis_dir / "architecture.json").write_text(
-                analyzed.architecture.model_dump_json(), encoding="utf-8"
+            process_options: dict[str, object] = {}
+            if os.name == "posix":
+                process_options["start_new_session"] = True
+            process = subprocess.Popen(  # type: ignore[arg-type]
+                command,
+                cwd=analysis_root,
+                env=environment,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                **process_options,
             )
-            (analysis_dir / "source-snapshot.json").write_text(
-                analyzed.snapshot.model_dump_json(), encoding="utf-8"
-            )
-            (analysis_dir / "evidence-ledger.json").write_text(
-                json.dumps(
-                    [item.model_dump(mode="json") for item in analyzed.evidence],
-                    ensure_ascii=False,
-                ),
-                encoding="utf-8",
-            )
+            with self.lock:
+                self.job_processes[job_id] = process
+                if cancellation.is_set():
+                    self._terminate_process_locked(process)
+            stdout, stderr = process.communicate()
+            with self.lock:
+                self.job_processes.pop(job_id, None)
+            if cancellation.is_set():
+                with self.lock:
+                    self._finish_cancelled_locked(job_id)
+                return
+            receipt = json.loads(stdout.strip().splitlines()[-1]) if stdout.strip() else {}
+            if process.returncode != 0:
+                diagnostic = next(iter(receipt.get("diagnostics", [])), {})
+                raise ValueError(
+                    diagnostic.get("message")
+                    or stderr.strip().splitlines()[-1]
+                    or f"analysis subprocess exited with code {process.returncode}"
+                )
+            receipt_details = dict(receipt.get("details", {}))
+            receipt["details"] = {
+                **receipt_details,
+                "analysis_python": sys.executable,
+                "target_environment_python": session.python_executable,
+                "target_environment_usage": "runtime-only",
+            }
             replacement = prepare_studio_bundle(
                 analysis_dir / "architecture.json",
-                self.bundle.workspace,
+                workspace,
                 write_static=False,
+                replace_stale_bindings=True,
             )
             replacement.project_session = session.model_copy(
                 update={
                     "entrypoint": request.entrypoint,
-                    "framework": analyzed.snapshot.framework,
+                    "framework": replacement.snapshot.framework,
                     "task": request.task,
                     "config_path": request.config_path,
-                    "config_digest": analyzed.snapshot.config_digest,
+                    "config_digest": replacement.snapshot.config_digest,
                 }
             )
-            pending = self.pending_projects.get(request.project_id)
-            if pending is not None:
-                replacement.project_discovery = pending[1]
+            replacement.project_discovery = discovery
             finished = datetime.now(UTC).isoformat()
             with self.lock:
                 current = self.jobs[job_id]
-                if current.state is JobState.CANCELLED:
+                if cancellation.is_set() or current.state is JobState.CANCELLING:
+                    self._finish_cancelled_locked(job_id)
                     return
-                latest = self.pending_projects.get(request.project_id)
-                if latest is not None and latest[0].generation != request.project_generation:
+                if (request.project_id, request.project_generation) != self.active_project_key:
                     self.jobs[job_id] = current.model_copy(
                         update={"state": JobState.STALE, "progress": 1, "finished_at": finished}
                     )
                     return
                 self.bundle = replacement
+                self.layout_candidates.clear()
                 replacement.write_static()
                 self.jobs[job_id] = current.model_copy(
                     update={
                         "state": JobState.SUCCEEDED,
                         "progress": 1,
                         "finished_at": finished,
-                        "receipt": {"status": "ok", "artifact": str(replacement.artifact_path)},
+                        "receipt": {
+                            **receipt,
+                            "artifact": str(replacement.artifact_path),
+                        },
                     }
                 )
         except Exception as error:  # noqa: BLE001 - background jobs must end with a receipt
-            code = error.code if isinstance(error, AnalysisError) else "ANALYSIS_FAILED"
-            diagnostic = Diagnostic(
-                code=code if str(code).isupper() else "ANALYSIS_FAILED",
-                severity="blocking",
-                message=str(error),
-            )
+            self._finish_failed_job(job_id, "ANALYSIS_FAILED", error)
+        finally:
             with self.lock:
-                current = self.jobs[job_id]
-                if current.state is not JobState.CANCELLED:
-                    self.jobs[job_id] = current.model_copy(
-                        update={
-                            "state": JobState.FAILED,
-                            "progress": 1,
-                            "finished_at": datetime.now(UTC).isoformat(),
-                            "diagnostics": [diagnostic],
-                        }
-                    )
+                self.job_processes.pop(job_id, None)
+
+    def _finish_failed_job(self, job_id: str, code: str, error: Exception) -> None:
+        diagnostic = Diagnostic(
+            code=code,
+            severity="blocking",
+            message=str(error),
+        )
+        with self.lock:
+            current = self.jobs[job_id]
+            if current.state in {JobState.CANCELLED, JobState.STALE}:
+                return
+            if self.job_cancellations.get(job_id, threading.Event()).is_set():
+                self.jobs[job_id] = current.model_copy(
+                    update={
+                        "state": JobState.CANCELLED,
+                        "progress": 1,
+                        "finished_at": datetime.now(UTC).isoformat(),
+                    }
+                )
+                return
+            self.jobs[job_id] = current.model_copy(
+                update={
+                    "state": JobState.FAILED,
+                    "progress": 1,
+                    "finished_at": datetime.now(UTC).isoformat(),
+                    "diagnostics": [diagnostic],
+                }
+            )
 
 
 def create_studio_server(bundle: StudioBundle, host: str, port: int) -> StudioHTTPServer:

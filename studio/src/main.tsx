@@ -29,12 +29,15 @@ import {
   Pin,
   PinOff,
   Play,
+  Plus,
   Redo2,
   RefreshCw,
   Route,
+  Save,
   Search,
   ShieldCheck,
   Sun,
+  Trash2,
   Undo2,
   Variable,
   X,
@@ -42,6 +45,15 @@ import {
   ZoomOut,
 } from "lucide-react";
 
+import { JobPollingController, type StudioJob } from "./jobs";
+import { initialProjectSelection } from "./project-launch";
+import { constrainDragDelta } from "./drag";
+import { nodesInSelection, selectionBounds } from "./selection";
+import {
+  studioModelIdentity,
+  visibleNavigationRows,
+  visibleProjectEntrypoints,
+} from "./tree";
 import "./styles.css";
 
 type Mode = "explore" | "layout" | "model";
@@ -50,6 +62,7 @@ type RouteStrategy = "avoid" | "balanced" | "compact";
 type LayoutMode = "auto" | "dual-swimlane" | "single-lane" | "hierarchical" | "branch-tree" | "force-directed" | "radial" | "orthogonal";
 type RouteSide = "left" | "right" | "top" | "bottom";
 type Locale = "en" | "zh";
+type DraftEdgePolicy = "replace-input" | "add-residual" | "concat" | "fanout" | "disconnect";
 
 interface LanguageContextValue {
   locale: Locale;
@@ -76,6 +89,9 @@ interface ProjectEntrypoint {
   contains: string[];
   child_count: number;
   top_level: boolean;
+  analysis_root: string;
+  analysis_entrypoint: string;
+  config_paths: string[];
   category: "model" | "encoder" | "decoder" | "backbone" | "attention" | "head" | "block" | "layer" | "component";
 }
 
@@ -145,6 +161,14 @@ interface SceneEdge {
   label: string;
 }
 
+interface SceneAnnotation {
+  annotation_id: string;
+  text: string;
+  bounds: Rect;
+  fill: string;
+  stroke: string;
+}
+
 interface Scene {
   scene_id: string;
   view_id: string;
@@ -153,6 +177,26 @@ interface Scene {
   paper_height: number;
   nodes: SceneNode[];
   edges: SceneEdge[];
+  caption?: string;
+  legend_placement?: "top-left" | "top-right" | "bottom-left" | "bottom-right" | "hidden";
+  annotations: SceneAnnotation[];
+}
+
+interface LayoutCandidate {
+  candidate_id: string;
+  input_fingerprint: string;
+  strategy: string;
+  score: number;
+  metrics: {
+    paper_area: number;
+    route_length: number;
+    movement: number;
+    changed_nodes: number;
+    route_changes: number;
+  };
+  supported_fixes: string[];
+  diagnostics: Diagnostic[];
+  scene: Scene;
 }
 
 interface PublicationNode {
@@ -284,11 +328,12 @@ interface SourceTransaction {
   transaction_id: string;
   state: string;
   request: {
-    target_node_id: string;
-    operation: "set_parameter" | "replace_activation" | "insert_layer_norm";
+    target_node_id?: string;
+    operation: "set_parameter" | "replace_activation" | "insert_layer_norm" | "edit_source_buffers";
     parameter_name?: string;
     new_value?: unknown;
     parameters?: Record<string, unknown>;
+    buffers?: Array<{ path: string; base_sha256: string; content: string }>;
   };
   source_diff: string;
   expected_delta: GraphDelta;
@@ -306,6 +351,50 @@ interface AgentProposal {
   permissions: { shell: false; network: false; source_write: false };
 }
 
+interface SourceWorkspaceFile {
+  path: string;
+  base_sha256: string;
+  staged_sha256: string | null;
+  working_sha256: string | null;
+  state: "clean" | "modified" | "stale" | "readonly";
+  opened: boolean;
+  size: number;
+  readonly_reason: string | null;
+}
+
+interface SourceWorkspaceBuffer {
+  path: string;
+  revision: number;
+  base_sha256: string;
+  staged_sha256: string;
+  working_sha256: string;
+  state: "clean" | "modified" | "stale";
+  base_content: string;
+  staged_content: string;
+  working_content: string;
+  diff: string;
+}
+
+interface CanonicalDeleteImpact {
+  node_id: string;
+  semantic_name: string;
+  input_fingerprint: string;
+  incoming_edge_ids: string[];
+  outgoing_edge_ids: string[];
+  produced_tensor_ids: string[];
+  downstream_node_ids: string[];
+  fanout_ids: string[];
+  shared_parameter_node_ids: string[];
+  child_node_ids: string[];
+  repeat_id: string | null;
+  execution_predicate: string;
+  source_evidence_ids: string[];
+  runtime_evidence_ids: string[];
+  expected_delta: GraphDelta;
+  required_action: string;
+  blocking_reasons: string[];
+}
+
 interface StudioState {
   session_nonce?: string;
   project: {
@@ -313,6 +402,8 @@ interface StudioState {
     root: string;
     generation: number;
     framework: string;
+    environment_path?: string | null;
+    python_executable?: string | null;
   };
   architecture: {
     architecture_id: string;
@@ -356,6 +447,8 @@ interface StudioState {
     font_scale?: number;
     line_weight?: number;
     palette_overrides?: Record<string, string>;
+    caption?: string;
+    legend_placement?: "top-left" | "top-right" | "bottom-left" | "bottom-right" | "hidden";
   };
   navigation: {
     active_projection: Projection;
@@ -369,6 +462,37 @@ interface StudioState {
   draft: {
     draft_id: string;
     revision: number;
+    nodes: Array<{
+      node_id: string;
+      semantic_name: string;
+      framework: string;
+      node_type: string;
+      parent_id?: string | null;
+      source_anchor?: string | null;
+      parameters: Record<string, unknown>;
+      ports: Array<{
+        port_id: string;
+        name: string;
+        direction: "input" | "output";
+        role: string;
+      }>;
+    }>;
+    edges: Array<{
+      edge_id: string;
+      source_port_id: string;
+      target_port_id: string;
+      policy: DraftEdgePolicy;
+      parameters: Record<string, unknown>;
+    }>;
+    intents: Array<{
+      intent_id: string;
+      kind: "create-node" | "delete-node" | "connect-ports" | "disconnect-edge" | "replace-node" | "set-parameter" | "edit-source-buffer" | "edit-onnx-initializer" | "edit-onnx-attribute";
+      target_ids: string[];
+      expected_delta: GraphDelta | null;
+      user_input: Record<string, unknown>;
+      capability_requirement: string;
+    }>;
+    lowering_status: "not-planned" | "checking" | "planned" | "blocked";
     proofs: Array<{
       intent_id: string;
       status: "checking" | "conditional" | "unproven" | "invalid" | "stale" | "proven" | "review-ready";
@@ -378,6 +502,13 @@ interface StudioState {
     }>;
     writeback_summary: { eligibility: "blocked" | "prepare" | "commit"; blocking_intent_ids: string[] };
   };
+  source_workspace: {
+    workspace_id: string;
+    revision: number;
+    base_revision: string;
+    state: "clean" | "modified" | "stale";
+    files: SourceWorkspaceFile[];
+  };
   validation_runs: Array<{
     validation_id: string;
     profile: string;
@@ -386,7 +517,7 @@ interface StudioState {
     gate_results: Array<{ gate: string; status: string; message: string }>;
     diagnostics: Diagnostic[];
   }>;
-  jobs?: Array<{ job_id: string; state: string; progress: number; profile: string }>;
+  jobs?: StudioJob<Diagnostic>[];
   diagnostics: Diagnostic[];
   transaction: SourceTransaction | null;
   proposal: AgentProposal | null;
@@ -449,6 +580,11 @@ interface PanState {
   startViewBox: [number, number, number, number];
 }
 
+interface MarqueeState {
+  start: Point;
+  current: Point;
+}
+
 interface NavigationNode {
   id: string;
   parent_id: string | null;
@@ -466,42 +602,6 @@ interface NavigationNode {
   child_count: number;
   sibling_index: number;
   sibling_count: number;
-}
-
-function visibleNavigationRows(nodes: NavigationNode[], expanded: Set<string>): NavigationNode[] {
-  // Navigation data is persisted as a flat list, but publication compilation
-  // may append canonical children after later root siblings. Rebuild a stable
-  // preorder here so expansion can never make a child appear under a sibling.
-  const children = new Map<string | null, NavigationNode[]>();
-  for (const item of nodes) {
-    const siblings = children.get(item.parent_id) ?? [];
-    siblings.push(item);
-    children.set(item.parent_id, siblings);
-  }
-  const rows: NavigationNode[] = [];
-  const visit = (parentId: string | null, visible: boolean) => {
-    if (!visible) return;
-    for (const item of children.get(parentId) ?? []) {
-      rows.push(item);
-      visit(item.id, item.parent_id === null || expanded.has(item.id));
-    }
-  };
-  visit(null, true);
-  return rows;
-}
-
-function visibleProjectEntrypoints(items: ProjectEntrypoint[], expanded: Set<string>): ProjectEntrypoint[] {
-  const byId = new Map(items.map((item) => [item.entrypoint, item]));
-  return items.filter((item) => {
-    let parent = item.parent_entrypoint;
-    const visited = new Set<string>();
-    while (parent) {
-      if (visited.has(parent) || !expanded.has(parent)) return false;
-      visited.add(parent);
-      parent = byId.get(parent)?.parent_entrypoint ?? null;
-    }
-    return true;
-  });
 }
 
 function embeddedState(): StudioState | null {
@@ -792,14 +892,42 @@ function orthogonalSegmentInteraction(firstStart: Point, firstEnd: Point, second
   return [isEndpoint(point, firstStart, firstEnd) && isEndpoint(point, secondStart, secondEnd) ? 0 : 1, 0];
 }
 
-function routeInteractions(route: Point[], otherRoutes: Point[][]): [number, number] {
+interface RouteReference {
+  points: Point[];
+  sourceId: string;
+  targetId: string;
+}
+
+function routeInteractions(
+  route: Point[],
+  otherRoutes: RouteReference[],
+  sourceId: string,
+  targetId: string,
+): [number, number] {
   let crossings = 0;
   let overlap = 0;
   for (const other of otherRoutes) {
+    const routeSegments = route.length - 1;
+    const otherSegments = other.points.length - 1;
     for (let index = 0; index < route.length - 1; index += 1) {
-      for (let otherIndex = 0; otherIndex < other.length - 1; otherIndex += 1) {
+      for (let otherIndex = 0; otherIndex < other.points.length - 1; otherIndex += 1) {
+        const segmentLength = Math.abs(route[index + 1].x - route[index].x)
+          + Math.abs(route[index + 1].y - route[index].y);
+        const otherSegmentLength = Math.abs(other.points[otherIndex + 1].x - other.points[otherIndex].x)
+          + Math.abs(other.points[otherIndex + 1].y - other.points[otherIndex].y);
+        const shortStubs = segmentLength <= 32 && otherSegmentLength <= 32;
+        if (
+          (shortStubs && sourceId === other.sourceId && index === 0 && otherIndex === 0)
+          || (
+            shortStubs
+            &&
+            targetId === other.targetId
+            && index === routeSegments - 1
+            && otherIndex === otherSegments - 1
+          )
+        ) continue;
         const [segmentCrossings, segmentOverlap] = orthogonalSegmentInteraction(
-          route[index], route[index + 1], other[otherIndex], other[otherIndex + 1],
+          route[index], route[index + 1], other.points[otherIndex], other.points[otherIndex + 1],
         );
         crossings += segmentCrossings;
         overlap += segmentOverlap;
@@ -814,8 +942,12 @@ function routeMetric(
   nodes: SceneNode[],
   relatedIds: Set<string>,
   strategy: RouteStrategy,
-  otherRoutes: Point[][] = [],
+  otherRoutes: RouteReference[] = [],
+  sourceId = "",
+  targetId = "",
 ): number[] {
+  const crossedNodeIds = new Set<string>();
+  const crossedContainerIds = new Set<string>();
   let nodeLength = 0;
   let containerLength = 0;
   let clearanceLength = 0;
@@ -827,9 +959,13 @@ function routeMetric(
     for (const node of nodes) {
       if (relatedIds.has(node.scene_node_id)) continue;
       const inside = segmentLengthInside(start, end, node.bounds);
-      if (node.shape === "container") containerLength += inside;
+      if (node.shape === "container") {
+        containerLength += inside;
+        if (inside > 0.001) crossedContainerIds.add(node.scene_node_id);
+      }
       else {
         nodeLength += inside;
+        if (inside > 0.001) crossedNodeIds.add(node.scene_node_id);
         clearanceLength += segmentLengthInside(start, end, {
           x: node.bounds.x - 10,
           y: node.bounds.y - 10,
@@ -840,10 +976,40 @@ function routeMetric(
     }
   }
   const bends = Math.max(0, route.length - 2);
-  const [crossings, overlap] = routeInteractions(route, otherRoutes);
-  if (strategy === "avoid") return [nodeLength, clearanceLength, containerLength, crossings, overlap, length, bends];
-  if (strategy === "balanced") return [nodeLength * 24 + clearanceLength * 3 + containerLength * 5 + crossings * 240 + overlap * 6 + length, crossings, overlap, bends];
-  return [length + nodeLength * 8 + clearanceLength * 1.5 + containerLength + crossings * 90 + overlap * 2.5, crossings, overlap, bends];
+  const nodeCount = crossedNodeIds.size;
+  const containerCount = crossedContainerIds.size;
+  const [crossings, overlap] = routeInteractions(route, otherRoutes, sourceId, targetId);
+  if (strategy === "avoid") {
+    return [
+      nodeCount,
+      nodeLength,
+      containerCount,
+      containerLength,
+      overlap,
+      crossings,
+      clearanceLength,
+      length,
+      bends,
+    ];
+  }
+  if (strategy === "balanced") {
+    return [
+      nodeCount * 1200 + nodeLength * 24 + containerCount * 300 + clearanceLength * 3
+        + containerLength * 5 + crossings * 240 + overlap * 6 + length,
+      nodeCount + containerCount,
+      crossings,
+      overlap,
+      bends,
+    ];
+  }
+  return [
+    length + nodeCount * 300 + nodeLength * 8 + containerCount * 80 + clearanceLength * 1.5
+      + containerLength + crossings * 90 + overlap * 2.5,
+    nodeCount + containerCount,
+    crossings,
+    overlap,
+    bends,
+  ];
 }
 
 function compareMetric(left: number[], right: number[]): number {
@@ -923,6 +1089,26 @@ function moveRouteEndpoint(
     corridorYs.add(Math.max(8, node.bounds.y - nodeMargin));
     corridorYs.add(Math.min(scene.paper_height - 8, node.bounds.y + node.bounds.height + nodeMargin));
   }
+  const otherRoutes: RouteReference[] = scene.edges
+    .filter((candidate) => candidate.scene_edge_id !== edge.scene_edge_id)
+    .map((candidate) => ({
+      points: candidate.points,
+      sourceId: candidate.source_scene_node_id,
+      targetId: candidate.target_scene_node_id,
+    }));
+  const laneOffsets = [-16, -8, 8, 16];
+  for (const other of otherRoutes) {
+    for (let index = 0; index < other.points.length - 1; index += 1) {
+      const routeStart = other.points[index];
+      const routeEnd = other.points[index + 1];
+      if (Math.abs(routeEnd.x - routeStart.x) + Math.abs(routeEnd.y - routeStart.y) < 32) continue;
+      if (Math.abs(routeStart.x - routeEnd.x) < 0.001) {
+        for (const offset of laneOffsets) corridorXs.add(routeStart.x + offset);
+      } else if (Math.abs(routeStart.y - routeEnd.y) < 0.001) {
+        for (const offset of laneOffsets) corridorYs.add(routeStart.y + offset);
+      }
+    }
+  }
   for (const x of corridorXs) routes.push([start, sourceStub, { x, y: sourceStub.y }, { x, y: targetStub.y }, targetStub, end]);
   for (const y of corridorYs) routes.push([start, sourceStub, { x: sourceStub.x, y }, { x: targetStub.x, y }, targetStub, end]);
   const byId = new Map(scene.nodes.map((node) => [node.scene_node_id, node]));
@@ -937,16 +1123,29 @@ function moveRouteEndpoint(
   });
   const relatedIds = new Set<string>([edge.source_scene_node_id, edge.target_scene_node_id]);
   for (const nodeId of ancestorSets[0]) if (ancestorSets[1].has(nodeId)) relatedIds.add(nodeId);
-  const otherRoutes = scene.edges
-    .filter((candidate) => candidate.scene_edge_id !== edge.scene_edge_id)
-    .map((candidate) => candidate.points);
   return routes
     .map(compactRoute)
     .filter((route) => route.every((point) => point.x >= 0 && point.y >= 0 && point.x <= scene.paper_width && point.y <= scene.paper_height))
     .filter((route) => routeDirectionsValid(route, sourceSide, targetSide))
     .sort((left, right) => compareMetric(
-      routeMetric(left, scene.nodes, relatedIds, strategy, otherRoutes),
-      routeMetric(right, scene.nodes, relatedIds, strategy, otherRoutes),
+      routeMetric(
+        left,
+        scene.nodes,
+        relatedIds,
+        strategy,
+        otherRoutes,
+        edge.source_scene_node_id,
+        edge.target_scene_node_id,
+      ),
+      routeMetric(
+        right,
+        scene.nodes,
+        relatedIds,
+        strategy,
+        otherRoutes,
+        edge.source_scene_node_id,
+        edge.target_scene_node_id,
+      ),
     ))[0];
 }
 
@@ -1016,14 +1215,27 @@ function App() {
   const [mode, setMode] = useState<Mode>("explore");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [focusedCanonicalId, setFocusedCanonicalId] = useState<string | null>(null);
   const [focusedNavigationRowId, setFocusedNavigationRowId] = useState<string | null>(null);
   const [inspectorTab, setInspectorTab] = useState<"inspect" | "source" | "visual" | "model" | "evidence">("inspect");
-  const [bottomTab, setBottomTab] = useState<"problems" | "diff" | "validation" | "jobs" | "activity">("problems");
+  const [bottomTab, setBottomTab] = useState<"problems" | "source" | "diff" | "validation" | "jobs" | "activity">("problems");
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [validationProfile, setValidationProfile] = useState("fast-static");
   const [routeStrategy, setRouteStrategy] = useState<RouteStrategy>("avoid");
+  const [layoutCandidates, setLayoutCandidates] = useState<LayoutCandidate[]>([]);
+  const [layoutPreviewId, setLayoutPreviewId] = useState<string | null>(null);
+  const [layoutLoading, setLayoutLoading] = useState(false);
   const [projectDialog, setProjectDialog] = useState(true);
+  const [draftDialog, setDraftDialog] = useState(false);
+  const [draftName, setDraftName] = useState("");
+  const [draftType, setDraftType] = useState("");
+  const [draftEdgeDialog, setDraftEdgeDialog] = useState(false);
+  const [draftEdgeSource, setDraftEdgeSource] = useState("");
+  const [draftEdgeTarget, setDraftEdgeTarget] = useState("");
+  const [draftEdgePolicy, setDraftEdgePolicy] = useState<DraftEdgePolicy>("fanout");
+  const [deleteImpact, setDeleteImpact] = useState<CanonicalDeleteImpact | null>(null);
+  const [deleteImpactLoading, setDeleteImpactLoading] = useState(false);
   const [projectRoot, setProjectRoot] = useState(() => embeddedState()?.project.root ?? "");
   const [pendingProject, setPendingProject] = useState<PendingProject | null>(null);
   const [condaEnvironments, setCondaEnvironments] = useState<CondaEnvironment[]>([]);
@@ -1044,6 +1256,7 @@ function App() {
   const [canvasSize, setCanvasSize] = useState({ width: 1, height: 1 });
   const [drag, setDrag] = useState<DragState | null>(null);
   const [pan, setPan] = useState<PanState | null>(null);
+  const [marquee, setMarquee] = useState<MarqueeState | null>(null);
   const [preview, setPreview] = useState<Record<string, Point>>({});
   const [edgeEndpointDrag, setEdgeEndpointDrag] = useState<EdgeEndpointDrag | null>(null);
   const [edgeRoutePreview, setEdgeRoutePreview] = useState<Point[] | null>(null);
@@ -1057,11 +1270,46 @@ function App() {
   const navigationQueue = useRef<Promise<void>>(Promise.resolve());
   const expansionsRef = useRef(expansions);
   const navigationTouched = useRef(false);
+  const activeModelIdentity = useRef(studioModelIdentity(embeddedState()));
   const previousScene = useRef<Scene | null>(null);
   const framedLayoutFamily = useRef<string | null>(null);
   const viewBoxRef = useRef<[number, number, number, number] | null>(null);
   const viewBoxAnimation = useRef<number | null>(null);
   const pendingHierarchyFocus = useRef<string | null>(null);
+  const jobController = useRef<JobPollingController<StudioState> | null>(null);
+  if (jobController.current === null) {
+    jobController.current = new JobPollingController<StudioState>(
+      window.fetch.bind(window),
+      (state) => acceptStudioState(state),
+    );
+  }
+
+  function restoreNavigationState(state: StudioState) {
+    const restored = expansionState(state);
+    expansionsRef.current = restored;
+    setExpansions(restored);
+    setProjection(state.navigation.active_projection ?? state.view_state.navigation_view ?? "module");
+  }
+
+  function acceptStudioState(state: StudioState): boolean {
+    const nextIdentity = studioModelIdentity(state);
+    const modelChanged = activeModelIdentity.current !== nextIdentity;
+    if (modelChanged) {
+      activeModelIdentity.current = nextIdentity;
+      navigationTouched.current = false;
+      restoreNavigationState(state);
+      selections.current = {};
+      setSelectedIds([]);
+      setSelectedEdgeId(null);
+      setFocusedCanonicalId(null);
+      setFocusedNavigationRowId(null);
+      setLayoutCandidates([]);
+      setLayoutPreviewId(null);
+      pendingHierarchyFocus.current = null;
+    }
+    setData(state);
+    return modelChanged;
+  }
 
   useEffect(() => {
     window.localStorage.setItem("archcanvas.locale", locale);
@@ -1106,12 +1354,9 @@ function App() {
       .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then((state: StudioState) => {
         if (!navigationTouched.current) {
-          const restored = expansionState(state);
-          expansionsRef.current = restored;
-          setExpansions(restored);
-          setProjection(state.navigation.active_projection ?? state.view_state.navigation_view ?? "module");
+          restoreNavigationState(state);
         }
-        setData(state);
+        acceptStudioState(state);
       })
       .catch(() => undefined);
   }, []);
@@ -1120,9 +1365,12 @@ function App() {
     if (cameraTimer.current !== null) window.clearTimeout(cameraTimer.current);
     if (navigationTimer.current !== null) window.clearTimeout(navigationTimer.current);
     if (viewBoxAnimation.current !== null) cancelAnimationFrame(viewBoxAnimation.current);
+    jobController.current?.dispose();
   }, []);
 
-  const scene = activeProjectionId ? data?.scenes[activeProjectionId] : undefined;
+  const baseScene = activeProjectionId ? data?.scenes[activeProjectionId] : undefined;
+  const layoutPreview = layoutCandidates.find((item) => item.candidate_id === layoutPreviewId);
+  const scene = layoutPreview?.scene ?? baseScene;
   const view = activeProjectionId ? data?.views[activeProjectionId] : undefined;
   const camera = scene ? data?.view_state.cameras?.[scene.scene_id] : undefined;
   useEffect(() => {
@@ -1313,10 +1561,47 @@ function App() {
     const ids = new Set([...(selectedNode?.evidence_ids ?? []), ...staticIds, ...runtimeIds]);
     return data?.evidence.filter((record) => ids.has(record.evidence_id)) ?? [];
   }, [data?.architecture.nodes, data?.evidence, data?.runtime, selectedCanonicalIds, selectedNode]);
+  const draftPortOptions = [
+    ...(data?.architecture.nodes.flatMap((node) => [
+      ...node.input_ports.map((port) => ({
+        ...port,
+        node_id: node.node_id,
+        node_label: node.semantic_name,
+        draft: false,
+      })),
+      ...node.output_ports.map((port) => ({
+        ...port,
+        node_id: node.node_id,
+        node_label: node.semantic_name,
+        draft: false,
+      })),
+    ]) ?? []),
+    ...(data?.draft.nodes.flatMap((node) => node.ports.map((port) => ({
+      ...port,
+      node_id: node.node_id,
+      node_label: node.semantic_name,
+      draft: true,
+    }))) ?? []),
+  ];
+  const draftSourcePorts = draftPortOptions.filter((port) => port.direction === "output");
+  const draftTargetPorts = draftPortOptions.filter((port) => port.direction === "input");
+  const draftPortLabels = new Map(
+    draftPortOptions.map((port) => [
+      port.port_id,
+      `${port.node_label} · ${port.name}${port.draft ? ` · ${tx("draft", "草稿")}` : ""}`,
+    ]),
+  );
+  const canonicalDeleteIntents = data?.draft.intents.filter(
+    (intent) => intent.kind === "delete-node",
+  ) ?? [];
   const pinned = new Set(data?.view_state.pinned_node_ids ?? []);
   const collapsed = new Set(data?.view_state.collapsed_node_ids ?? []);
 
-  async function mutate(endpoint: string, payload?: object, activityLabel?: string) {
+  async function mutate(
+    endpoint: string,
+    payload?: object,
+    activityLabel?: string,
+  ): Promise<StudioState | null> {
     try {
       const response = await fetch(endpoint, {
         method: "POST",
@@ -1329,12 +1614,98 @@ function App() {
       if (!response.ok) throw new Error(await response.text());
       const state = (await response.json()) as StudioState;
       setData(state);
+      setLayoutCandidates([]);
+      setLayoutPreviewId(null);
       const visualPatch = payload as VisualPatch | undefined;
       const label = activityLabel ?? (visualPatch?.operation ? `${visualPatch.operation} · ${visualPatch.target_id ?? "document"}` : endpoint.slice(5));
       setActivity((items) => [label, ...items].slice(0, 20));
+      return state;
     } catch (error) {
       setActivity((items) => [`${tx("Request failed", "请求失败")} · ${String(error)}`, ...items].slice(0, 20));
+      return null;
     }
+  }
+
+  async function refreshState(): Promise<StudioState | null> {
+    return jobController.current?.refreshState() ?? null;
+  }
+
+  function pollJob(jobId: string, onSuccess?: () => void) {
+    jobController.current?.start(jobId, (job) => {
+      if (job.state === "succeeded") onSuccess?.();
+    });
+  }
+
+  async function cancelJob(jobId: string) {
+    try {
+      await jobController.current?.cancel(jobId, data?.session_nonce);
+      setActivity((items) => [`${tx("Cancellation requested", "已请求取消")} · ${jobId}`, ...items].slice(0, 20));
+    } catch (error) {
+      setActivity((items) => [`${tx("Cancellation failed", "取消失败")} · ${String(error)}`, ...items].slice(0, 20));
+    }
+  }
+
+  async function commitSourceTransaction() {
+    try {
+      const response = await fetch("/api/transaction/commit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(data?.session_nonce ? { "X-ArchCanvas-Nonce": data.session_nonce } : {}),
+        },
+        body: "{}",
+      });
+      if (!response.ok) throw new Error(await response.text());
+      const state = await response.json() as StudioState & { reanalysis_job_id?: string | null };
+      setData(state);
+      setActivity((items) => [tx("Committed source transaction", "已提交源码事务"), ...items].slice(0, 20));
+      if (state.reanalysis_job_id) {
+        setBottomTab("jobs");
+        pollJob(state.reanalysis_job_id, () => {
+          setActivity((items) => [tx("Reanalysis completed on the committed source", "已基于提交后的源码完成重新分析"), ...items].slice(0, 20));
+          setBottomTab("problems");
+        });
+      }
+    } catch (error) {
+      setActivity((items) => [`${tx("Source commit failed", "源码提交失败")} · ${String(error)}`, ...items].slice(0, 20));
+    }
+  }
+
+  async function requestLayoutCandidates() {
+    setLayoutLoading(true);
+    try {
+      const response = await fetch("/api/layout-candidates", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(data?.session_nonce ? { "X-ArchCanvas-Nonce": data.session_nonce } : {}),
+        },
+        body: "{}",
+      });
+      if (!response.ok) throw new Error(await response.text());
+      const payload = await response.json() as { candidates: LayoutCandidate[] };
+      setLayoutCandidates(payload.candidates);
+      setLayoutPreviewId(payload.candidates[0]?.candidate_id ?? null);
+      setActivity((items) => [
+        payload.candidates.length
+          ? tx(`${payload.candidates.length} valid layout candidates`, `${payload.candidates.length} 个有效布局候选`)
+          : tx("No valid layout candidate; document unchanged", "没有合格布局候选，文档未修改"),
+        ...items,
+      ].slice(0, 20));
+    } catch (error) {
+      setActivity((items) => [`${tx("Layout candidate generation failed", "布局候选生成失败")} · ${String(error)}`, ...items].slice(0, 20));
+    } finally {
+      setLayoutLoading(false);
+    }
+  }
+
+  async function applyLayoutCandidate() {
+    if (!layoutPreviewId) return;
+    await mutate(
+      `/api/layout-candidates/${layoutPreviewId}/apply`,
+      {},
+      tx("Applied layout candidate", "已应用布局候选"),
+    );
   }
 
   function persistNavigation(
@@ -1343,6 +1714,8 @@ function App() {
     activityLabel: string,
   ) {
     if (navigationTimer.current !== null) window.clearTimeout(navigationTimer.current);
+    setLayoutCandidates([]);
+    setLayoutPreviewId(null);
     const payload = {
       projection: nextProjection,
       expansions: {
@@ -1364,7 +1737,7 @@ function App() {
           });
           if (!response.ok) throw new Error(await response.text());
           const state = (await response.json()) as StudioState;
-          setData(state);
+          acceptStudioState(state);
           setActivity((items) => [activityLabel, ...items].slice(0, 20));
         })
         .catch((error) => {
@@ -1465,6 +1838,9 @@ function App() {
     if (binding) {
       selections.current[binding.projection_id] = [binding.scene_node_id];
       setSelectedIds([binding.scene_node_id]);
+      setFocusedCanonicalId(
+        result.canonical_ids.includes(result.id) ? result.id : result.canonical_ids[0] ?? null,
+      );
     } else {
       chooseCanonical(result.canonical_ids);
     }
@@ -1477,7 +1853,7 @@ function App() {
     );
     if (target) {
       const sceneNode = scene?.nodes.find((node) => node.canonical_node_ids.includes(target));
-      if (sceneNode) choose(sceneNode.scene_node_id, false, navigationRowId);
+      if (sceneNode) choose(sceneNode.scene_node_id, false, navigationRowId, target);
     } else if (navigationRowId) {
       choose(null, false, navigationRowId);
     }
@@ -1486,6 +1862,7 @@ function App() {
   function switchProjection(next: Projection) {
     navigationTouched.current = true;
     setFocusedNavigationRowId(null);
+    setFocusedCanonicalId(null);
     setProjection(next);
     persistNavigation(next, expansionsRef.current, tx(
       `${next === "module" ? "Module" : "Source"} relations view`,
@@ -1519,7 +1896,12 @@ function App() {
     const hierarchySceneNode = hierarchyViewNode
       ? scene?.nodes.find((node) => node.view_node_id === hierarchyViewNode.view_node_id)
       : undefined;
-    if (hierarchySceneNode) choose(hierarchySceneNode.scene_node_id, false, item.id);
+    if (hierarchySceneNode) choose(
+      hierarchySceneNode.scene_node_id,
+      false,
+      item.id,
+      item.canonical_ids.length === 1 ? item.canonical_ids[0] : null,
+    );
     else if (item.canonical_ids.length) chooseCanonical(item.canonical_ids, item.id);
     else choose(null, false, item.id);
     if (item.child_count > 0 && !expansionsRef.current[projection].has(item.id)) {
@@ -1531,8 +1913,10 @@ function App() {
     nodeId: string | null,
     additive = false,
     navigationRowId?: string | null,
+    preferredCanonicalId: string | null = null,
   ) {
     setSelectedEdgeId(null);
+    setFocusedCanonicalId(preferredCanonicalId);
     const next = !nodeId
       ? []
       : additive
@@ -1563,6 +1947,7 @@ function App() {
   function chooseEdge(edgeId: string) {
     const next = selectedEdgeId === edgeId ? null : edgeId;
     setSelectedEdgeId(next);
+    setFocusedCanonicalId(null);
     setEdgeEndpointDrag(null);
     setEdgeRoutePreview(null);
     if (!next) return;
@@ -1674,17 +2059,22 @@ function App() {
   }
 
   function moveDrag(event: React.PointerEvent) {
-    if (!drag) return;
+    if (!drag || !scene) return;
     const point = pointerPosition(event);
     if (!point) return;
-    const bounds = Object.values(drag.baselines);
-    const deltaX = Math.max(point.x - drag.startClient.x, -Math.min(...bounds.map((item) => item.x)));
-    const deltaY = Math.max(point.y - drag.startClient.y, -Math.min(...bounds.map((item) => item.y)));
+    const delta = constrainDragDelta(
+      scene.nodes,
+      Object.keys(drag.baselines),
+      {
+        x: point.x - drag.startClient.x,
+        y: point.y - drag.startClient.y,
+      },
+    );
     setPreview(Object.fromEntries(Object.entries(drag.baselines).map(([nodeId, bounds]) => [
       nodeId,
       {
-        x: bounds.x + deltaX,
-        y: bounds.y + deltaY,
+        x: bounds.x + delta.x,
+        y: bounds.y + delta.y,
       },
     ])));
   }
@@ -1694,6 +2084,11 @@ function App() {
     if ((event.target as Element).closest(".scene-node:not(.root)") || !viewBox) return;
     setSelectedEdgeId(null);
     event.currentTarget.setPointerCapture(event.pointerId);
+    if (event.shiftKey) {
+      const point = pointerPosition(event);
+      if (point) setMarquee({ start: point, current: point });
+      return;
+    }
     setPan({
       startClient: { x: event.clientX, y: event.clientY },
       startViewBox: viewBox,
@@ -1707,6 +2102,11 @@ function App() {
     }
     if (drag) {
       moveDrag(event);
+      return;
+    }
+    if (marquee) {
+      const point = pointerPosition(event);
+      if (point) setMarquee({ ...marquee, current: point });
       return;
     }
     if (!pan || !svgRef.current) return;
@@ -1749,6 +2149,19 @@ function App() {
         .finally(() => setEdgeRoutePreview(null));
       return;
     }
+    if (marquee && scene) {
+      const enclosed = nodesInSelection(
+        scene.nodes,
+        selectionBounds(marquee.start, marquee.current),
+      );
+      const next = [...new Set([...selectedIds, ...enclosed])];
+      if (activeProjectionId) selections.current[activeProjectionId] = next;
+      setSelectedIds(next);
+      setFocusedCanonicalId(null);
+      setFocusedNavigationRowId(null);
+      setMarquee(null);
+      return;
+    }
     if (drag) endDrag();
     if (pan && viewBox && scene) {
       void submit("set-camera", undefined, {
@@ -1765,6 +2178,7 @@ function App() {
     setEdgeEndpointDrag(null);
     setEdgeRoutePreview(null);
     setPan(null);
+    setMarquee(null);
     setPreview({});
   }
 
@@ -1777,16 +2191,162 @@ function App() {
     }, `${tx("Aligned", "已对齐")} ${selectedIds.length} ${tx("nodes", "个节点")} · ${command}`);
   }
 
-  function runValidation() {
-    void mutate("/api/validation-runs", {
-      profile: validationProfile,
-      runtime_execution_authorized: false,
-    }, `${tx("Validated", "已验证")} · ${validationProfile}`);
-    setBottomTab("validation");
+  async function createDraftNode() {
+    const semanticName = draftName.trim();
+    const nodeType = draftType.trim();
+    if (!semanticName || !nodeType) return;
+    const nodeId = patchId("draft-node").replace("patch:", "draft:");
+    const state = await mutate(
+      "/api/proposal/node",
+      {
+        node: {
+          node_id: nodeId,
+          semantic_name: semanticName,
+          framework: data?.project.framework ?? "pytorch",
+          node_type: nodeType,
+          parent_id: selectedCanonicalIds[0] ?? null,
+          parameters: {},
+          ports: [
+            {
+              port_id: `${nodeId}.input`,
+              name: "input",
+              direction: "input",
+              role: "main",
+            },
+            {
+              port_id: `${nodeId}.output`,
+              name: "output",
+              direction: "output",
+              role: "main",
+            },
+          ],
+        },
+      },
+      `${tx("Created draft", "已创建草稿")} · ${semanticName}`,
+    );
+    if (state) {
+      setDraftDialog(false);
+      setDraftName("");
+      setDraftType("");
+      setBottomTab("problems");
+    }
+  }
+
+  async function deleteDraftNode(nodeId: string) {
+    await mutate(
+      "/api/draft/node/delete",
+      { node_id: nodeId },
+      `${tx("Deleted draft", "已删除草稿")} · ${nodeId}`,
+    );
+  }
+
+  function openDraftEdgeDialog() {
+    setDraftEdgeSource((current) => current || draftSourcePorts[0]?.port_id || "");
+    setDraftEdgeTarget((current) => current || draftTargetPorts[0]?.port_id || "");
+    setDraftEdgeDialog(true);
+  }
+
+  async function createDraftEdge() {
+    if (!draftEdgeSource || !draftEdgeTarget) return;
+    const edgeId = patchId("draft-edge").replace("patch:", "draft:");
+    const state = await mutate(
+      "/api/proposal/draft-edge",
+      {
+        edge: {
+          edge_id: edgeId,
+          source_port_id: draftEdgeSource,
+          target_port_id: draftEdgeTarget,
+          policy: draftEdgePolicy,
+          parameters: {},
+        },
+      },
+      `${tx("Created draft connection", "已创建草稿连接")} · ${draftEdgePolicy}`,
+    );
+    if (state) {
+      setDraftEdgeDialog(false);
+      setBottomTab("problems");
+    }
+  }
+
+  async function deleteDraftEdge(edgeId: string) {
+    await mutate(
+      "/api/draft/edge/delete",
+      { edge_id: edgeId },
+      `${tx("Deleted draft connection", "已删除草稿连接")} · ${edgeId}`,
+    );
+  }
+
+  async function reviewCanonicalDelete(nodeId: string) {
+    setDeleteImpactLoading(true);
+    try {
+      const response = await fetch("/api/proposal/delete-node/preview", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(data?.session_nonce ? { "X-ArchCanvas-Nonce": data.session_nonce } : {}),
+        },
+        body: JSON.stringify({ node_id: nodeId }),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      const result = await response.json() as { impact: CanonicalDeleteImpact };
+      setDeleteImpact(result.impact);
+    } catch (error) {
+      setActivity((items) => [`${tx("Impact preview failed", "影响预览失败")} · ${String(error)}`, ...items].slice(0, 20));
+    } finally {
+      setDeleteImpactLoading(false);
+    }
+  }
+
+  async function createCanonicalDeleteIntent() {
+    if (!deleteImpact) return;
+    const state = await mutate(
+      "/api/proposal/delete-node",
+      {
+        node_id: deleteImpact.node_id,
+        input_fingerprint: deleteImpact.input_fingerprint,
+        intent_id: patchId("delete-node").replace("patch:", "intent:"),
+      },
+      `${tx("Created delete intent", "已创建删除意图")} · ${deleteImpact.semantic_name}`,
+    );
+    if (state) {
+      setDeleteImpact(null);
+      setBottomTab("problems");
+    }
+  }
+
+  async function discardCanonicalDeleteIntent(intentId: string) {
+    await mutate(
+      "/api/draft/delete-intent/discard",
+      { intent_id: intentId },
+      `${tx("Discarded delete intent", "已丢弃删除意图")} · ${intentId}`,
+    );
+  }
+
+  async function runValidation() {
+    try {
+      const response = await fetch("/api/validation-runs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(data?.session_nonce ? { "X-ArchCanvas-Nonce": data.session_nonce } : {}),
+        },
+        body: JSON.stringify({
+          profile: validationProfile,
+          runtime_execution_authorized: false,
+        }),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      const job = await response.json() as { job_id: string };
+      setBottomTab("jobs");
+      pollJob(job.job_id, () => setBottomTab("validation"));
+      await refreshState();
+    } catch (error) {
+      setActivity((items) => [`${tx("Validation start failed", "验证启动失败")} · ${String(error)}`, ...items].slice(0, 20));
+    }
   }
 
   async function openProject() {
-    if (!projectRoot.trim() || !condaEnvironment) return;
+    if (!projectRoot.trim()) return;
     setProjectScanning(true);
     setProjectError("");
     setPendingProject(null);
@@ -1794,17 +2354,17 @@ function App() {
       const response = await fetch("/api/projects/open", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(data?.session_nonce ? { "X-ArchCanvas-Nonce": data.session_nonce } : {}) },
-        body: JSON.stringify({ root: projectRoot.trim(), environment_path: condaEnvironment }),
+        body: JSON.stringify({ root: projectRoot.trim(), environment_path: condaEnvironment || null }),
       });
       if (!response.ok) throw new Error(await response.text());
       const result = await response.json() as PendingProject;
       setPendingProject(result);
       const roots = result.discovery.entrypoints.filter((item) => item.depth === 0);
       setProjectModelExpansions(new Set(roots.filter((item) => item.child_count > 0).map((item) => item.entrypoint)));
-      const candidate = result.discovery.entrypoints.find((item) => item.top_level) ?? roots[0] ?? result.discovery.entrypoints[0];
-      setProjectEntrypoint(candidate?.entrypoint ?? "");
-      setProjectFramework(candidate?.framework === "unknown" ? "auto" : candidate?.framework ?? "auto");
-      setProjectConfig(result.discovery.configs[0]?.path ?? "");
+      const selection = initialProjectSelection(result.discovery.entrypoints);
+      setProjectEntrypoint(selection.entrypoint);
+      setProjectFramework(selection.framework);
+      setProjectConfig(selection.configPath);
     } catch (error) {
       setProjectError(String(error));
       setActivity((items) => [`${tx("Project discovery failed", "项目发现失败")} · ${String(error)}`, ...items].slice(0, 20));
@@ -1832,12 +2392,14 @@ function App() {
     setProjectEntrypoint(candidate.entrypoint);
     setProjectFramework(candidate.framework === "unknown" ? "auto" : candidate.framework);
     const parent = candidate.path.includes("/") ? candidate.path.slice(0, candidate.path.lastIndexOf("/") + 1) : "";
-    const nearestConfig = pendingProject?.discovery.configs.find((item) => item.path.startsWith(parent));
-    setProjectConfig(nearestConfig?.path ?? pendingProject?.discovery.configs[0]?.path ?? "");
+    const nearestConfig = pendingProject?.discovery.configs.find(
+      (item) => candidate.config_paths.includes(item.path) && item.path.startsWith(parent),
+    );
+    setProjectConfig(nearestConfig?.path ?? "");
   }
 
   async function analyzeProject() {
-    if (!pendingProject || !projectEntrypoint || projectFramework === "auto") return;
+    if (!pendingProject || !projectEntrypoint) return;
     try {
       const response = await fetch("/api/analyses", {
         method: "POST",
@@ -1857,20 +2419,11 @@ function App() {
       if (!response.ok) throw new Error(await response.text());
       const job = await response.json() as { job_id: string };
       setBottomTab("jobs");
-      const poll = window.setInterval(async () => {
-        const jobResponse = await fetch(`/api/jobs/${job.job_id}`, { cache: "no-store" });
-        if (!jobResponse.ok) return;
-        const current = await jobResponse.json() as { state: string; diagnostics?: Diagnostic[] };
-        const stateResponse = await fetch("/api/state", { cache: "no-store" });
-        if (stateResponse.ok) setData(await stateResponse.json() as StudioState);
-        if (["succeeded", "failed", "cancelled", "stale"].includes(current.state)) {
-          window.clearInterval(poll);
-          if (current.state === "succeeded") {
-            setProjectDialog(false);
-            setPendingProject(null);
-          }
-        }
-      }, 300);
+      pollJob(job.job_id, () => {
+        setProjectDialog(false);
+        setPendingProject(null);
+      });
+      await refreshState();
     } catch (error) {
       setActivity((items) => [`${tx("Analysis start failed", "分析启动失败")} · ${String(error)}`, ...items].slice(0, 20));
     }
@@ -2028,7 +2581,9 @@ function App() {
   }
 
   const sourceDigest = data.document.source_digest.slice(0, 12);
-  const selectedCanonical = selectedCanonicalIds[0];
+  const selectedCanonical = focusedCanonicalId && selectedCanonicalIds.includes(focusedCanonicalId)
+    ? focusedCanonicalId
+    : selectedCanonicalIds[0];
   const architectureNode = data.architecture.nodes.find((node) => node.node_id === selectedCanonical);
   const localizedProjectionName = projection === "module"
     ? tx("Module relations", "模块关系")
@@ -2161,6 +2716,7 @@ function App() {
   };
   const bottomLabels = {
     problems: tx("Problems", "问题"),
+    source: tx("Source Workspace", "源码工作区"),
     diff: tx("Source Diff", "源码差异"),
     validation: tx("Validation", "验证"),
     jobs: tx("Jobs", "任务"),
@@ -2175,7 +2731,7 @@ function App() {
         "--left-panel-width": `${panelSizes.left}px`,
         "--right-panel-width": `${panelSizes.right}px`,
         "--top-panel-height": `${panelSizes.top}px`,
-        "--bottom-panel-height": `${panelSizes.bottom}px`,
+        "--bottom-panel-height": `${bottomTab === "source" ? Math.max(320, panelSizes.bottom) : panelSizes.bottom}px`,
       } as React.CSSProperties}
     >
       <header className="topbar">
@@ -2259,6 +2815,20 @@ function App() {
               return <div key={item.id} className={`navigation-row ${active ? "selected" : ""} ${related ? "canonical-related" : ""} ${item.reference ? "reference-row" : ""} ${item.parent_id === null ? "tree-root" : ""}`} style={{ paddingLeft: `${indent}px`, "--tree-indent": `${indent}px` } as React.CSSProperties}><button className="tree-chevron" disabled={!hasVisibleChildren} aria-label={`${expansions[projection].has(item.id) ? tx("Collapse", "折叠") : tx("Expand", "展开")} ${item.label}`} onClick={() => toggleNavigationRow(item.id)}>{hasVisibleChildren ? expansions[projection].has(item.id) ? <ChevronDown size={13} /> : <ChevronRight size={13} /> : null}</button><button className="tree-subject" onClick={() => activateNavigationRow(item)} title={`${location} · ${tx("Relation", "关系")}：${relationLabel}${sourceOrder ? ` · ${tx("Sibling", "同级")} ${sourceOrder}（${tx("stable source order, not execution order", "稳定源码次序，不代表执行顺序")}）` : ""}`}>{navigationIcon(item.kind)}<span><b>{item.label}</b><span className="tree-meta">{secondaryLabel && secondaryLabel !== item.label && <small>{secondaryLabel}</small>}<i>{relationLabel}</i>{sourceOrder && <i title={tx("Stable source order under the same parent; not execution order", "同父节点中的稳定源码次序，不代表执行顺序")}>{tx("Sibling", "同级")} {sourceOrder}</i>}{item.binding_status === "ambiguous" && <i className="ambiguous" title={tx("Static evidence resolves only to a candidate set", "静态证据只能定位到候选集合")}>{tx("Candidate", "候选")}</i>}</span></span>{item.reference && <Link2 size={10} />}{childCount > 0 && <em>{childCount}</em>}{item.evidence_ids.length > 0 && <CircleDot size={9} />}</button></div>;
             })}
           </div>
+          <section className="draft-panel">
+            <header><span><Braces size={13} />{tx("Draft graph", "草稿图")}</span><div className="draft-actions"><button className="icon-button" disabled={!draftSourcePorts.length || !draftTargetPorts.length} title={tx("Create draft connection", "创建草稿连接")} aria-label={tx("Create draft connection", "创建草稿连接")} onClick={openDraftEdgeDialog}><Link2 size={13} /></button><button className="icon-button" title={tx("Create draft node", "创建草稿节点")} aria-label={tx("Create draft node", "创建草稿节点")} onClick={() => setDraftDialog(true)}><Plus size={13} /></button></div></header>
+            {data.draft.nodes.length || data.draft.edges.length || canonicalDeleteIntents.length ? <div className="draft-list">{data.draft.nodes.map((node) => {
+              const proof = data.draft.proofs.find((item) => item.affected_subject_ids.includes(node.node_id));
+              return <div className="draft-item" key={node.node_id}><Box size={13} /><span><b>{node.semantic_name}</b><small>{node.node_type}</small></span><i className={proof?.status}>{proof?.status ?? data.draft.lowering_status}</i><button className="icon-button" title={tx("Delete draft node", "删除草稿节点")} aria-label={tx("Delete draft node", "删除草稿节点")} onClick={() => void deleteDraftNode(node.node_id)}><Trash2 size={12} /></button></div>;
+            })}{data.draft.edges.map((edge) => {
+              const proof = data.draft.proofs.find((item) => item.affected_subject_ids.includes(edge.edge_id));
+              return <div className="draft-item draft-edge" key={edge.edge_id}><Link2 size={13} /><span><b>{draftPortLabels.get(edge.source_port_id) ?? edge.source_port_id}</b><small>{tx("to", "至")} {draftPortLabels.get(edge.target_port_id) ?? edge.target_port_id} · {edge.policy}</small></span><i className={proof?.status}>{proof?.status ?? data.draft.lowering_status}</i><button className="icon-button" title={tx("Delete draft connection", "删除草稿连接")} aria-label={tx("Delete draft connection", "删除草稿连接")} onClick={() => void deleteDraftEdge(edge.edge_id)}><Trash2 size={12} /></button></div>;
+            })}{canonicalDeleteIntents.map((intent) => {
+              const proof = data.draft.proofs.find((item) => item.intent_id === intent.intent_id);
+              const impact = intent.user_input.impact as CanonicalDeleteImpact | undefined;
+              return <div className="draft-item draft-delete" key={intent.intent_id}><Trash2 size={13} /><span><b>{tx("Delete", "删除")} · {impact?.semantic_name ?? intent.target_ids[0]}</b><small>{intent.expected_delta?.removed_edges.length ?? 0} {tx("edges", "条边")} · {intent.expected_delta?.removed_tensors.length ?? 0} Tensor</small></span><i className={proof?.status}>{proof?.status ?? data.draft.lowering_status}</i><button className="icon-button" title={tx("Discard delete intent", "丢弃删除意图")} aria-label={tx("Discard delete intent", "丢弃删除意图")} onClick={() => void discardCanonicalDeleteIntent(intent.intent_id)}><X size={12} /></button></div>;
+            })}</div> : <div className="draft-empty">{tx("No draft changes", "没有草稿变更")}</div>}
+          </section>
         </aside>
 
         <main className="canvas-column">
@@ -2266,7 +2836,12 @@ function App() {
             <div className="breadcrumb">{breadcrumb}</div>
             <div className="canvas-actions">
               <label className="layout-strategy"><Layers3 size={14} /><select aria-label={tx("Diagram layout", "图形布局")} value={data.view_state.layout_mode ?? "auto"} onChange={(event) => void mutate("/api/layout-mode", { layout_mode: event.target.value }, `${tx("Layout", "布局")} · ${event.target.value}`)}><option value="auto">{tx("Auto", "自动")}</option><option value="dual-swimlane">{tx("Dual swimlane", "双泳道")}</option><option value="single-lane">{tx("Single lane", "单泳道")}</option><option value="hierarchical">{tx("Hierarchical DAG", "层级图")}</option><option value="branch-tree">{tx("Branch tree", "分支树")}</option><option value="force-directed">{tx("Force directed", "力导向")}</option><option value="radial">{tx("Radial", "径向")}</option><option value="orthogonal">{tx("Orthogonal", "正交")}</option></select></label>
-              {mode === "layout" && <><button className="icon-button" title={tx("Align left to primary", "向主节点左对齐")} onClick={() => align("left")} disabled={selectedIds.length < 2}><Grip /></button><button className="icon-button" title={tx("Distribute horizontally", "水平分布")} onClick={() => align("distribute-horizontal")} disabled={selectedIds.length < 2}><Grip /></button><label className="route-strategy"><Route size={14} /><select aria-label={tx("Auto-route strategy", "自动布线方案")} value={routeStrategy} onChange={(event) => setRouteStrategy(event.target.value as RouteStrategy)}><option value="avoid">{tx("Scheme 1 · Avoid obstacles", "方案 1 · 避障优先")}</option><option value="balanced">{tx("Scheme 2 · Balanced", "方案 2 · 平衡")}</option><option value="compact">{tx("Scheme 3 · Shortest path", "方案 3 · 最短路径")}</option></select></label><button className="open-full" title={tx("Apply the selected routing strategy", "应用所选布线方案")} onClick={() => void mutate("/api/route", { batch_id: patchId("route").replace("patch:", "batch:"), strategy: routeStrategy }, `${tx("Auto route", "自动布线")} · ${routeStrategy}`)}><Route size={14} /> {tx("Route", "布线")}</button><button className="open-full" onClick={() => void mutate("/api/layout", { batch_id: patchId("layout").replace("patch:", "batch:") }, tx("Auto layout", "自动布局"))}><Layers3 size={14} /> {tx("Auto layout", "自动布局")}</button></>}
+              {mode === "layout" && <>
+                <label className="layout-strategy"><Grip size={14} /><select aria-label={tx("Arrange selection", "排列所选节点")} value="" disabled={selectedIds.length < 2} onChange={(event) => align(event.target.value)}><option value="" disabled>{tx("Arrange", "排列")}</option><option value="left">{tx("Align left", "左对齐")}</option><option value="hcenter">{tx("Align horizontal centers", "水平居中")}</option><option value="right">{tx("Align right", "右对齐")}</option><option value="top">{tx("Align top", "顶部对齐")}</option><option value="vcenter">{tx("Align vertical centers", "垂直居中")}</option><option value="bottom">{tx("Align bottom", "底部对齐")}</option><option value="distribute-horizontal">{tx("Distribute horizontally", "水平分布")}</option><option value="distribute-vertical">{tx("Distribute vertically", "垂直分布")}</option><option value="same-width">{tx("Same width", "等宽")}</option><option value="same-height">{tx("Same height", "等高")}</option><option value="same-size">{tx("Same size", "等尺寸")}</option></select></label>
+                <label className="route-strategy"><Route size={14} /><select aria-label={tx("Auto-route strategy", "自动布线方案")} value={routeStrategy} onChange={(event) => setRouteStrategy(event.target.value as RouteStrategy)}><option value="avoid">{tx("Scheme 1 · Avoid obstacles", "方案 1 · 避障优先")}</option><option value="balanced">{tx("Scheme 2 · Balanced", "方案 2 · 平衡")}</option><option value="compact">{tx("Scheme 3 · Shortest path", "方案 3 · 最短路径")}</option></select></label>
+                <button className="open-full" title={tx("Apply the selected routing strategy", "应用所选布线方案")} onClick={() => void mutate("/api/route", { batch_id: patchId("route").replace("patch:", "batch:"), strategy: routeStrategy }, `${tx("Auto route", "自动布线")} · ${routeStrategy}`)}><Route size={14} /> {tx("Route", "布线")}</button>
+                <button className="open-full" disabled={layoutLoading} onClick={() => void requestLayoutCandidates()}>{layoutLoading ? <RefreshCw className="spin" size={14} /> : <Layers3 size={14} />} {tx("Auto layout", "自动布局")}</button>
+              </>}
               <button className="icon-button" title={tx("Zoom out", "缩小")} aria-label={tx("Zoom out", "缩小")} onClick={() => zoom(1.2)}><ZoomOut /></button>
               <button className="icon-button" title={tx("Zoom in", "放大")} aria-label={tx("Zoom in", "放大")} onClick={() => zoom(0.82)}><ZoomIn /></button>
               <button className="icon-button" title={tx("Fit scene", "适应画布")} aria-label={tx("Fit scene", "适应画布")} onClick={fitScene}><Maximize2 /></button>
@@ -2274,6 +2849,7 @@ function App() {
             </div>
           </div>
           <div className="canvas-stage">
+            {layoutCandidates.length > 0 && <section className="layout-candidate-panel" aria-label={tx("Layout candidates", "布局候选")}><header><div><Eye size={14} /><strong>{tx("Layout preview", "布局预览")}</strong></div><button className="icon-button" title={tx("Close preview", "关闭预览")} aria-label={tx("Close preview", "关闭预览")} onClick={() => { setLayoutCandidates([]); setLayoutPreviewId(null); }}><X size={13} /></button></header><div className="layout-candidate-list" role="radiogroup">{layoutCandidates.map((candidate, index) => <button key={candidate.candidate_id} className={candidate.candidate_id === layoutPreviewId ? "selected" : ""} role="radio" aria-checked={candidate.candidate_id === layoutPreviewId} onClick={() => setLayoutPreviewId(candidate.candidate_id)}><span>{index + 1}</span><strong>{candidate.strategy.replaceAll("-", " ")}</strong><small>{tx("score", "评分")} {candidate.score.toFixed(1)} · {candidate.metrics.changed_nodes} {tx("changes", "项变更")}</small></button>)}</div><footer><span>{tx("Preview is not saved", "预览尚未保存")}</span><button className="apply-visual" onClick={() => void applyLayoutCandidate()}>{tx("Apply", "应用")}</button></footer></section>}
             <svg ref={svgRef} className={`scene semantic-${semanticZoom} ${selectedEdge ? "has-edge-selection" : ""}`} style={{ "--font-scale": data.view_state.font_scale ?? 1, "--label-scale": labelScale, "--container-label-scale": containerLabelScale } as React.CSSProperties} viewBox={viewBox.join(" ")} onPointerDown={beginPan} onPointerMove={movePointer} onPointerUp={endPointer} onPointerCancel={cancelPointer} onWheel={(event) => { event.preventDefault(); zoom(event.deltaY > 0 ? 1.1 : 0.9); }}>
               <defs><marker id="studio-arrow" viewBox="0 0 10 10" refX="8.4" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="context-stroke" /></marker></defs>
               <rect className="paper" width={scene.paper_width} height={scene.paper_height} />
@@ -2281,6 +2857,9 @@ function App() {
               <g className="container-layer">{scene.nodes.filter((node) => node.parent_scene_node_id && node.shape === "container").map(renderSceneNode)}</g>
               <g className="edge-layer">{scene.edges.map((edge, index) => renderSceneEdge(edge, index))}</g>
               <g className="node-layer">{scene.nodes.filter((node) => node.parent_scene_node_id && node.shape !== "container").map(renderSceneNode)}</g>
+              <g className="annotation-layer">{(scene.annotations ?? []).map((annotation) => <g key={annotation.annotation_id} className="scene-annotation" role="note" aria-label={annotation.text}><rect x={annotation.bounds.x} y={annotation.bounds.y} width={annotation.bounds.width} height={annotation.bounds.height} rx={4} fill={annotation.fill} stroke={annotation.stroke} /><text x={annotation.bounds.x + 10} y={annotation.bounds.y + 21}>{annotation.text.slice(0, 52)}</text></g>)}</g>
+              {scene.caption && <text className="scene-caption" textAnchor="middle" x={scene.paper_width / 2} y={scene.paper_height - 12}>{scene.caption}</text>}
+              {marquee && (() => { const bounds = selectionBounds(marquee.start, marquee.current); return <rect className="marquee-selection" x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} />; })()}
               <g className="edge-overlay-layer">{selectedEdge && renderSceneEdge(selectedEdge, scene.edges.indexOf(selectedEdge), true)}</g>
               {mode === "layout" && selectedEdge && (() => {
                 const points = edgeRoutePreview ?? previewEdgePoints(selectedEdge, scene.nodes, preview, scene.edges.indexOf(selectedEdge));
@@ -2288,7 +2867,7 @@ function App() {
                 return <g className="edge-route-handles"><circle className={`edge-route-handle source ${edgeEndpointDrag?.endpoint === "source" ? "dragging" : ""}`} data-endpoint="source" cx={points[0].x} cy={points[0].y} r={radius} onPointerDown={(event) => beginEdgeEndpointDrag(event, "source")}><title>{tx("Move source connection", "移动起点连接")}</title></circle><circle className={`edge-route-handle target ${edgeEndpointDrag?.endpoint === "target" ? "dragging" : ""}`} data-endpoint="target" cx={points.at(-1)!.x} cy={points.at(-1)!.y} r={radius} onPointerDown={(event) => beginEdgeEndpointDrag(event, "target")}><title>{tx("Move target connection", "移动终点连接")}</title></circle></g>;
               })()}
             </svg>
-            <div className="relation-legend" aria-label={tx("Visible relation types", "可见关系类型")}>{[...new Map(scene.edges.map((edge) => [edge.visual_relation, edge])).values()].map((edge) => <span key={edge.visual_relation}><i className={edge.dash ? "dashed" : ""} style={{ "--relation-color": edge.stroke } as React.CSSProperties} />{relationLabel(edge.visual_relation)}</span>)}</div>
+            {scene.legend_placement !== "hidden" && <div className={`relation-legend legend-${scene.legend_placement ?? "top-left"}`} aria-label={tx("Visible relation types", "可见关系类型")}>{[...new Map(scene.edges.map((edge) => [edge.visual_relation, edge])).values()].map((edge) => <span key={edge.visual_relation}><i className={edge.dash ? "dashed" : ""} style={{ "--relation-color": edge.stroke } as React.CSSProperties} />{relationLabel(edge.visual_relation)}</span>)}</div>}
             {selectedEdge && <div className="edge-flow-status" role="status"><strong>{scene.nodes.find((node) => node.scene_node_id === selectedEdge.source_scene_node_id)?.label_lines.join(" ")}</strong><ArrowRight size={13} /><strong>{scene.nodes.find((node) => node.scene_node_id === selectedEdge.target_scene_node_id)?.label_lines.join(" ")}</strong><span>{relationLabel(selectedEdge.visual_relation)}</span></div>}
             {selectedNode && <div className="context-bar"><button title={tx("Focus selection", "聚焦所选内容")} aria-label={tx("Focus selection", "聚焦所选内容")} onClick={focusSelection}><Focus size={14} /></button><button title={pinned.has(selectedNode.scene_node_id) ? tx("Unpin", "取消固定") : tx("Pin", "固定")} onClick={() => void submit("set-pin", selectedNode.scene_node_id, { enabled: !pinned.has(selectedNode.scene_node_id) })}>{pinned.has(selectedNode.scene_node_id) ? <PinOff size={14} /> : <Pin size={14} />}</button><button title={tx("Expand in navigation tree", "在导航树中展开")} onClick={() => expandInNavigation(selectedNode)}><Maximize2 size={14} /></button></div>}
           </div>
@@ -2300,16 +2879,23 @@ function App() {
           {!selectedNode || !selectedViewNode ? <div className="empty-state"><Focus size={20} /><span>{tx("No selection", "未选择内容")}</span></div> : <div className="inspector-content">
             {inspectorTab === "inspect" && <StructureInspector label={selectedViewNode.semantic_name} viewNode={selectedViewNode} sceneNode={selectedNode} nodes={selectedArchitectureNodes} tensors={data.architecture.tensors} evidence={selectedEvidence} />}
             {inspectorTab === "source" && <SourceInspector nodes={selectedArchitectureNodes} evidence={selectedEvidence} />}
-            {inspectorTab === "visual" && <VisualInspector node={selectedNode} pinned={pinned.has(selectedNode.scene_node_id)} fontScale={data.view_state.font_scale ?? 1} lineWeight={data.view_state.line_weight ?? 1.5} onPatch={submit} onBatch={submitBatch} />}
-            {inspectorTab === "model" && <ModelInspector node={architectureNode} nodes={data.architecture.nodes} transaction={data.transaction} proposal={data.proposal} writebackBlocked={writebackBlocked} onPrepareParameter={prepareParameter} onPrepareStructural={prepareStructural} onProposeConnection={proposeConnection} onCommit={() => mutate("/api/transaction/commit", {}, tx("Committed source transaction", "已提交源码事务"))} onDiscard={() => mutate("/api/transaction/discard", {}, tx("Discarded source transaction", "已放弃源码事务"))} />}
+            {inspectorTab === "visual" && <VisualInspector node={selectedNode} pinned={pinned.has(selectedNode.scene_node_id)} fontScale={data.view_state.font_scale ?? 1} lineWeight={data.view_state.line_weight ?? 1.5} caption={scene.caption ?? ""} legendPlacement={scene.legend_placement ?? "top-left"} onPatch={submit} onBatch={submitBatch} />}
+            {inspectorTab === "model" && <ModelInspector node={architectureNode} nodes={data.architecture.nodes} transaction={data.transaction} proposal={data.proposal} writebackBlocked={writebackBlocked} deleteIntentActive={canonicalDeleteIntents.some((intent) => intent.target_ids[0] === architectureNode?.node_id)} deleteImpactLoading={deleteImpactLoading} onPrepareParameter={prepareParameter} onPrepareStructural={prepareStructural} onProposeConnection={proposeConnection} onReviewDelete={reviewCanonicalDelete} onCommit={commitSourceTransaction} onDiscard={async () => { await mutate("/api/transaction/discard", {}, tx("Discarded source transaction", "已放弃源码事务")); }} />}
             {inspectorTab === "evidence" && <div className="evidence-list">{selectedEvidence.length ? selectedEvidence.map((record) => <section key={record.evidence_id}><div><FileCode2 size={14} /><strong>{record.kind}</strong><span>{record.confidence}</span></div><code>{record.path ?? record.evidence_id}{record.span ? `:${record.span.start_line}` : ""}</code><p>{record.claim}</p></section>) : <div className="empty-state">{tx("No linked evidence", "没有关联证据")}</div>}</div>}
           </div>}
         </aside>
       </div>
 
       <section className="bottom-panel">
-        <div className="bottom-tabs"><PanelBottom size={14} />{(["problems", "diff", "validation", "jobs", "activity"] as const).map((tab) => <button key={tab} className={bottomTab === tab ? "active" : ""} onClick={() => setBottomTab(tab)}>{bottomLabels[tab]}{tab === "problems" && <span>{data.diagnostics.length}</span>}{tab === "jobs" && data.jobs?.some((job) => ["queued", "running"].includes(job.state)) && <span>1</span>}</button>)}</div>
-        <div className="bottom-content">{bottomTab === "problems" && ([...data.diagnostics, ...data.draft.proofs.map((proof) => ({ code: proof.reason_codes[0] ?? proof.status.toUpperCase(), severity: proof.status, message: proof.message, target_ids: proof.affected_subject_ids }))].length ? [...data.diagnostics, ...data.draft.proofs.map((proof) => ({ code: proof.reason_codes[0] ?? proof.status.toUpperCase(), severity: proof.status, message: proof.message, target_ids: proof.affected_subject_ids }))].map((item, index) => <button key={`${item.code}-${index}`} onClick={() => choose(scene.nodes.find((node) => node.canonical_node_ids.some((id) => item.target_ids.includes(id)))?.scene_node_id ?? null)}><AlertTriangle size={13} /><b>{item.severity}</b><span>{item.message}</span></button>) : <div className="ok-line"><CircleDot size={13} /> {tx("No geometry or writeback problems", "没有几何或回写问题")}</div>)}{bottomTab === "diff" && (data.transaction ? <TransactionReview transaction={data.transaction} writebackBlocked={writebackBlocked} onCommit={() => mutate("/api/transaction/commit", {}, tx("Committed source transaction", "已提交源码事务"))} onDiscard={() => mutate("/api/transaction/discard", {}, tx("Discarded source transaction", "已放弃源码事务"))} /> : <div className="ok-line"><LockKeyhole size={13} /> {tx(`Source digest ${sourceDigest} unchanged`, `源码摘要 ${sourceDigest} 未改变`)}</div>)}{bottomTab === "validation" && (latestValidation ? <div className="gate-list">{latestValidation.gate_results.map((gate) => <span key={gate.gate} className={gate.status}>{gate.status} · {gate.gate} · {gate.message}</span>)}</div> : <div className="validation-line"><CircleDot size={13} /> {tx("Validation has not been run for this fingerprint", "尚未为此指纹运行验证")}</div>)}{bottomTab === "jobs" && <div className="job-list">{data.jobs?.length ? data.jobs.map((job) => <div key={job.job_id}><code>{job.job_id}</code><span>{job.profile}</span><b>{job.state} · {Math.round(job.progress * 100)}%</b></div>) : <div className="validation-line">{tx("No analysis jobs in this session", "本会话中没有分析任务")}</div>}</div>}{bottomTab === "activity" && <div className="activity-list">{activity.map((item, index) => <span key={`${item}-${index}`}><History size={12} />{item}</span>)}</div>}</div>
+        <div className="bottom-tabs"><PanelBottom size={14} />{(["problems", "source", "diff", "validation", "jobs", "activity"] as const).map((tab) => <button key={tab} className={bottomTab === tab ? "active" : ""} onClick={() => setBottomTab(tab)}>{bottomLabels[tab]}{tab === "problems" && <span>{data.diagnostics.length}</span>}{tab === "source" && data.source_workspace.state !== "clean" && <span>{data.source_workspace.files.filter((file) => file.state !== "clean").length}</span>}{tab === "jobs" && data.jobs?.some((job) => ["queued", "running"].includes(job.state)) && <span>1</span>}</button>)}</div>
+        <div className="bottom-content">
+          {bottomTab === "problems" && ([...data.diagnostics, ...data.draft.proofs.map((proof) => ({ code: proof.reason_codes[0] ?? proof.status.toUpperCase(), severity: proof.status, message: proof.message, target_ids: proof.affected_subject_ids }))].length ? [...data.diagnostics, ...data.draft.proofs.map((proof) => ({ code: proof.reason_codes[0] ?? proof.status.toUpperCase(), severity: proof.status, message: proof.message, target_ids: proof.affected_subject_ids }))].map((item, index) => <button key={`${item.code}-${index}`} onClick={() => choose(scene.nodes.find((node) => node.canonical_node_ids.some((id) => item.target_ids.includes(id)))?.scene_node_id ?? null)}><AlertTriangle size={13} /><b>{item.severity}</b><span>{item.message}</span></button>) : <div className="ok-line"><CircleDot size={13} /> {tx("No geometry or writeback problems", "没有几何或回写问题")}</div>)}
+          {bottomTab === "source" && <SourceWorkspacePanel workspace={data.source_workspace} transaction={data.transaction} sessionNonce={data.session_nonce} onState={setData} onActivity={(message) => setActivity((items) => [message, ...items].slice(0, 20))} onShowDiff={() => setBottomTab("diff")} />}
+          {bottomTab === "diff" && (data.transaction ? <TransactionReview transaction={data.transaction} writebackBlocked={writebackBlocked} onCommit={commitSourceTransaction} onDiscard={async () => { await mutate("/api/transaction/discard", {}, tx("Discarded source transaction", "已放弃源码事务")); }} /> : <div className="ok-line"><LockKeyhole size={13} /> {tx(`Source digest ${sourceDigest} unchanged`, `源码摘要 ${sourceDigest} 未改变`)}</div>)}
+          {bottomTab === "validation" && (latestValidation ? <div className="gate-list">{latestValidation.gate_results.map((gate) => <span key={gate.gate} className={gate.status}>{gate.status} · {gate.gate} · {gate.message}</span>)}</div> : <div className="validation-line"><CircleDot size={13} /> {tx("Validation has not been run for this fingerprint", "尚未为此指纹运行验证")}</div>)}
+          {bottomTab === "jobs" && <div className="job-list">{data.jobs?.length ? data.jobs.map((job) => <div key={job.job_id}><code>{job.job_id}</code><span>{job.profile}</span><b>{job.state} · {Math.round(job.progress * 100)}%</b>{["queued", "running", "cancelling"].includes(job.state) && <button className="icon-button" title={tx("Cancel job", "取消任务")} aria-label={tx("Cancel job", "取消任务")} onClick={() => void cancelJob(job.job_id)}><X size={12} /></button>}</div>) : <div className="validation-line">{tx("No jobs in this session", "本会话中没有任务")}</div>}</div>}
+          {bottomTab === "activity" && <div className="activity-list">{activity.map((item, index) => <span key={`${item}-${index}`}><History size={12} />{item}</span>)}</div>}
+        </div>
       </section>
 
       <button className="theme-toggle icon-button" title={tx("Toggle theme", "切换主题")} aria-label={tx("Toggle theme", "切换主题")} onClick={() => { const next = !dark; setDark(next); void submit("set-theme", undefined, { theme: next ? "studio-dark" : "paper-light" }); }}>{dark ? <Sun /> : <Moon />}</button>
@@ -2322,15 +2908,15 @@ function App() {
 
           <div className="launcher-field">
             <div className="launcher-label"><span>1</span><div><strong>{tx("Conda environment", "Conda 环境")}</strong><small>{environmentLoading ? tx("Loading", "正在加载") : `${condaEnvironments.length} ${tx("available", "个可用")}`}</small></div><button className="icon-button launcher-refresh" aria-label={tx("Reload environments", "重新加载环境")} title={tx("Reload environments", "重新加载环境")} onClick={() => setCondaEnvironments([])} disabled={environmentLoading}><RefreshCw size={14} /></button></div>
-            <select aria-label={tx("Conda environment", "Conda 环境")} value={condaEnvironment} disabled={environmentLoading || !condaEnvironments.length} onChange={(event) => { setCondaEnvironment(event.target.value); setPendingProject(null); }}>
-              {!condaEnvironments.length && <option value="">{tx("No Conda environments found", "未发现 Conda 环境")}</option>}
+            <select aria-label={tx("Conda environment", "Conda 环境")} value={condaEnvironment} disabled={environmentLoading} onChange={(event) => { setCondaEnvironment(event.target.value); setPendingProject(null); }}>
+              <option value="">{tx("Studio environment (static analysis)", "Studio 环境（静态分析）")}</option>
               {condaEnvironments.map((item) => <option key={item.path} value={item.path}>{item.active ? "● " : ""}{item.name} — {item.path}</option>)}
             </select>
           </div>
 
           <div className="launcher-field">
             <div className="launcher-label"><span>2</span><div><strong>{tx("Model location", "模型存放路径")}</strong><small>{tx("Parent folders are supported", "支持选择上级文件夹")}</small></div></div>
-            <div className="path-scan-row"><div className="path-input"><FolderOpen size={15} /><input aria-label={tx("Model location", "模型存放路径")} value={projectRoot} onChange={(event) => { setProjectRoot(event.target.value); setPendingProject(null); setProjectError(""); }} onKeyDown={(event) => { if (event.key === "Enter") void openProject(); }} /></div><button className="folder-button icon-button" aria-label={tx("Browse folders", "浏览文件夹")} title={tx("Browse folders", "浏览文件夹")} onClick={() => void browseFolders()}><FolderOpen size={14} /></button><button className="prepare-button" disabled={!projectRoot.trim() || !condaEnvironment || projectScanning} onClick={() => void openProject()}>{projectScanning ? <RefreshCw className="spin" size={14} /> : <Search size={14} />} {tx("Scan", "扫描")}</button></div>
+            <div className="path-scan-row"><div className="path-input"><FolderOpen size={15} /><input aria-label={tx("Model location", "模型存放路径")} value={projectRoot} onChange={(event) => { setProjectRoot(event.target.value); setPendingProject(null); setProjectError(""); }} onKeyDown={(event) => { if (event.key === "Enter") void openProject(); }} /></div><button className="folder-button icon-button" aria-label={tx("Browse folders", "浏览文件夹")} title={tx("Browse folders", "浏览文件夹")} onClick={() => void browseFolders()}><FolderOpen size={14} /></button><button className="prepare-button" disabled={!projectRoot.trim() || projectScanning} onClick={() => void openProject()}>{projectScanning ? <RefreshCw className="spin" size={14} /> : <Search size={14} />} {tx("Scan", "扫描")}</button></div>
           </div>
 
           {folderPicker && <div className="folder-picker" role="dialog" aria-label={tx("Choose model folder", "选择模型文件夹")}>
@@ -2359,9 +2945,37 @@ function App() {
                 </div>;
               })}
             </div> : <div className="launcher-empty"><Search size={18} /><span>{tx("No supported models found", "未找到支持的模型")}</span></div>}
-            {projectEntrypoint && <div className="launcher-options"><label><span>{tx("Framework", "框架")}</span><select value={projectFramework} onChange={(event) => setProjectFramework(event.target.value)}>{["auto", "pytorch", "keras", "jax", "onnx"].map((item) => <option key={item}>{item}</option>)}</select></label><label><span>{tx("Config", "配置")}</span><select value={projectConfig} onChange={(event) => setProjectConfig(event.target.value)}><option value="">{tx("No config", "无配置")}</option>{pendingProject.discovery.configs.map((item) => <option key={item.path}>{item.path}</option>)}</select></label></div>}
-            <div className="launcher-actions"><button onClick={() => setProjectDialog(false)}>{tx("Cancel", "取消")}</button><button className="primary-action" disabled={!projectEntrypoint || projectFramework === "auto"} onClick={() => void analyzeProject()}><Play size={14} /> {tx("Open model", "打开模型")}</button></div>
+            {projectEntrypoint && <div className="launcher-options"><label><span>{tx("Framework", "框架")}</span><select value={projectFramework} onChange={(event) => setProjectFramework(event.target.value)}>{["auto", "pytorch", "keras", "jax", "onnx", "python"].map((item) => <option key={item}>{item}</option>)}</select></label><label><span>{tx("Config", "配置")}</span><select value={projectConfig} onChange={(event) => setProjectConfig(event.target.value)}><option value="">{tx("No config", "无配置")}</option>{pendingProject.discovery.configs.filter((item) => pendingProject.discovery.entrypoints.find((candidate) => candidate.entrypoint === projectEntrypoint)?.config_paths.includes(item.path)).map((item) => <option key={item.path}>{item.path}</option>)}</select></label></div>}
+            <div className="launcher-actions"><button onClick={() => setProjectDialog(false)}>{tx("Cancel", "取消")}</button><button className="primary-action" disabled={!projectEntrypoint} onClick={() => void analyzeProject()}><Play size={14} /> {tx("Open model", "打开模型")}</button></div>
           </div>}
+        </section>
+      </div>}
+      {draftDialog && <div className="dialog-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setDraftDialog(false); }}>
+        <section className="project-dialog draft-dialog" role="dialog" aria-modal="true" aria-label={tx("Create draft node", "创建草稿节点")}>
+          <header><div><strong>{tx("Create draft node", "创建草稿节点")}</strong><span>{data.project.framework} · DraftGraphDocument</span></div><button className="icon-button" title={tx("Close", "关闭")} aria-label={tx("Close", "关闭")} onClick={() => setDraftDialog(false)}><X /></button></header>
+          <label className="model-field"><span>{tx("Semantic name", "语义名称")}</span><input autoFocus value={draftName} onChange={(event) => setDraftName(event.target.value)} /></label>
+          <label className="model-field"><span>{tx("Node type", "节点类型")}</span><input value={draftType} onChange={(event) => setDraftType(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void createDraftNode(); }} /></label>
+          <Field label={tx("Parent anchor", "父级锚点")} value={selectedCanonicalIds[0] ?? tx("Architecture root", "架构根节点")} mono />
+          <div className="launcher-actions"><button onClick={() => setDraftDialog(false)}>{tx("Cancel", "取消")}</button><button className="primary-action" disabled={!draftName.trim() || !draftType.trim()} onClick={() => void createDraftNode()}><Plus size={14} /> {tx("Create draft", "创建草稿")}</button></div>
+        </section>
+      </div>}
+      {draftEdgeDialog && <div className="dialog-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setDraftEdgeDialog(false); }}>
+        <section className="project-dialog draft-dialog" role="dialog" aria-modal="true" aria-label={tx("Create draft connection", "创建草稿连接")}>
+          <header><div><strong>{tx("Create draft connection", "创建草稿连接")}</strong><span>DraftGraphDocument · {tx("source remains unchanged", "不修改源码")}</span></div><button className="icon-button" title={tx("Close", "关闭")} aria-label={tx("Close", "关闭")} onClick={() => setDraftEdgeDialog(false)}><X /></button></header>
+          <label className="model-field"><span>{tx("Source output", "源输出端口")}</span><select autoFocus value={draftEdgeSource} onChange={(event) => setDraftEdgeSource(event.target.value)}>{draftSourcePorts.map((port) => <option key={port.port_id} value={port.port_id}>{draftPortLabels.get(port.port_id)} · {port.role}</option>)}</select></label>
+          <label className="model-field"><span>{tx("Target input", "目标输入端口")}</span><select value={draftEdgeTarget} onChange={(event) => setDraftEdgeTarget(event.target.value)}>{draftTargetPorts.map((port) => <option key={port.port_id} value={port.port_id}>{draftPortLabels.get(port.port_id)} · {port.role}</option>)}</select></label>
+          <label className="model-field"><span>{tx("Connection policy", "连接策略")}</span><select value={draftEdgePolicy} onChange={(event) => setDraftEdgePolicy(event.target.value as DraftEdgePolicy)}><option value="replace-input">{tx("Replace input", "替换输入")}</option><option value="add-residual">{tx("Add residual", "添加残差")}</option><option value="concat">{tx("Concatenate", "拼接")}</option><option value="fanout">{tx("Fan out", "扇出")}</option><option value="disconnect">{tx("Disconnect", "断开")}</option></select></label>
+          <div className="launcher-actions"><button onClick={() => setDraftEdgeDialog(false)}>{tx("Cancel", "取消")}</button><button className="primary-action" disabled={!draftEdgeSource || !draftEdgeTarget} onClick={() => void createDraftEdge()}><Link2 size={14} /> {tx("Create connection", "创建连接")}</button></div>
+        </section>
+      </div>}
+      {deleteImpact && <div className="dialog-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setDeleteImpact(null); }}>
+        <section className="project-dialog impact-dialog" role="dialog" aria-modal="true" aria-label={tx("Deletion impact preview", "删除影响预览")}>
+          <header><div><strong>{tx("Deletion impact preview", "删除影响预览")}</strong><span>{deleteImpact.semantic_name} · {deleteImpact.node_id}</span></div><button className="icon-button" title={tx("Close", "关闭")} aria-label={tx("Close", "关闭")} onClick={() => setDeleteImpact(null)}><X /></button></header>
+          <div className="impact-warning"><AlertTriangle size={16} /><span>{tx("This preview creates an intent only. Exact IR and source stay unchanged.", "此预览只会创建意图，Exact IR 与源码保持不变。")}</span></div>
+          <div className="impact-metrics"><div><strong>{deleteImpact.incoming_edge_ids.length}</strong><span>{tx("incoming edges", "条入边")}</span></div><div><strong>{deleteImpact.outgoing_edge_ids.length}</strong><span>{tx("outgoing edges", "条出边")}</span></div><div><strong>{deleteImpact.produced_tensor_ids.length}</strong><span>{tx("produced tensors", "个输出 Tensor")}</span></div><div><strong>{deleteImpact.downstream_node_ids.length}</strong><span>{tx("downstream nodes", "个下游节点")}</span></div></div>
+          <section className="impact-details"><h3>{tx("Structural impact", "结构影响")}</h3><dl><dt>Fanout</dt><dd>{deleteImpact.fanout_ids.length}</dd><dt>{tx("Shared parameters", "共享参数节点")}</dt><dd>{deleteImpact.shared_parameter_node_ids.length}</dd><dt>{tx("Children", "子节点")}</dt><dd>{deleteImpact.child_node_ids.length}</dd><dt>Repeat</dt><dd>{deleteImpact.repeat_id ?? tx("None", "无")}</dd><dt>{tx("Source anchors", "源码锚点")}</dt><dd>{deleteImpact.source_evidence_ids.length}</dd><dt>{tx("Runtime evidence", "运行时证据")}</dt><dd>{deleteImpact.runtime_evidence_ids.length}</dd></dl></section>
+          <section className="impact-details"><h3>{tx("Required decisions", "必须决策")}</h3><p>{deleteImpact.required_action}</p>{deleteImpact.blocking_reasons.length ? <ul>{deleteImpact.blocking_reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul> : <p>{tx("Adapter lowering proof is still required.", "仍需适配器 lowering 证明。")}</p>}</section>
+          <div className="launcher-actions"><button onClick={() => setDeleteImpact(null)}>{tx("Cancel", "取消")}</button><button className="danger-action" onClick={() => void createCanonicalDeleteIntent()}><Trash2 size={14} /> {tx("Create blocked intent", "创建阻断意图")}</button></div>
         </section>
       </div>}
     </div>
@@ -2718,15 +3332,18 @@ function parseValue(value: string): unknown {
   }
 }
 
-function ModelInspector({ node, nodes, transaction, proposal, writebackBlocked, onPrepareParameter, onPrepareStructural, onProposeConnection, onCommit, onDiscard }: {
+function ModelInspector({ node, nodes, transaction, proposal, writebackBlocked, deleteIntentActive, deleteImpactLoading, onPrepareParameter, onPrepareStructural, onProposeConnection, onReviewDelete, onCommit, onDiscard }: {
   node?: StudioState["architecture"]["nodes"][number];
   nodes: StudioState["architecture"]["nodes"];
   transaction: SourceTransaction | null;
   proposal: AgentProposal | null;
   writebackBlocked: boolean;
+  deleteIntentActive: boolean;
+  deleteImpactLoading: boolean;
   onPrepareParameter: (parameterName: string, newValue: unknown) => Promise<void>;
   onPrepareStructural: (operation: string, parameters: Record<string, unknown>) => Promise<void>;
   onProposeConnection: (sourcePortId: string, targetNodeId: string, targetPortId: string) => Promise<void>;
+  onReviewDelete: (nodeId: string) => Promise<void>;
   onCommit: () => Promise<void>;
   onDiscard: () => Promise<void>;
 }) {
@@ -2780,6 +3397,7 @@ function ModelInspector({ node, nodes, transaction, proposal, writebackBlocked, 
     {parameter ? <section className="model-operation"><div className="section-heading">{tx("Parameter", "参数")}</div><label className="model-field"><span>{tx("Parameter", "参数")}</span><select value={parameter.name} onChange={(event) => setName(event.target.value)}>{parameters.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></label><Field label={tx("Current / provenance", "当前值 / 来源")} value={`${displayValue(parameter.value)} · ${parameter.origin}`} mono /><label className="model-field"><span>{tx("Target value", "目标值")}</span><input value={value} onChange={(event) => setValue(event.target.value)} /></label><button className="prepare-button" disabled={transactionLocked || value === displayValue(parameter.value)} onClick={() => void onPrepareParameter(parameter.name, parseValue(value))}><GitBranch size={14} /> {tx("Prepare parameter", "准备参数修改")}</button></section> : <div className="operation-unavailable">{tx("No exact editable parameter on this node.", "此节点没有可精确编辑的参数。")}</div>}
     <section className="model-operation"><div className="section-heading">{tx("Registered transforms", "已注册变换")}</div>{activationSupported && <><label className="model-field"><span>{tx("Activation", "激活函数")}</span><select value={replacement} onChange={(event) => setReplacement(event.target.value)}>{["GELU", "ReLU", "SiLU"].filter((item) => item !== currentActivation).map((item) => <option key={item}>{item}</option>)}</select></label><button className="prepare-button" disabled={transactionLocked} onClick={() => void onPrepareStructural("replace_activation", { replacement })}><GitBranch size={14} /> {tx("Replace activation", "替换激活函数")}</button></>}<label className="model-field"><span>{tx("LayerNorm module", "LayerNorm 模块")}</span><input value={moduleName} onChange={(event) => setModuleName(event.target.value)} /></label><label className="model-field"><span>{tx("Normalized shape", "归一化形状")}</span><input value={normalizedShape} onChange={(event) => setNormalizedShape(event.target.value)} /></label><button className="prepare-button" disabled={transactionLocked || !moduleName || !normalizedShape} onClick={() => void onPrepareStructural("insert_layer_norm", { module_name: moduleName, normalized_shape: parseValue(normalizedShape) })}><GitBranch size={14} /> {tx("Insert LayerNorm", "插入 LayerNorm")}</button></section>
     <section className="model-operation"><div className="section-heading">{tx("Proposed connection", "连接提议")}</div>{node.output_ports.length && targetNode ? <><label className="model-field"><span>{tx("Source output", "源输出")}</span><select value={sourcePortId} onChange={(event) => setSourcePortId(event.target.value)}>{node.output_ports.map((port) => <option key={port.port_id} value={port.port_id}>{port.role} · {port.port_id}</option>)}</select></label><label className="model-field"><span>{tx("Target node", "目标节点")}</span><select value={targetNode.node_id} onChange={(event) => setTargetNodeId(event.target.value)}>{targetOptions.map((item) => <option key={item.node_id} value={item.node_id}>{item.semantic_name}</option>)}</select></label><label className="model-field"><span>{tx("Target input", "目标输入")}</span><select value={targetPortId} onChange={(event) => setTargetPortId(event.target.value)}>{targetNode.input_ports.map((port) => <option key={port.port_id} value={port.port_id}>{port.role} · {port.port_id}</option>)}</select></label><button className="prepare-button" onClick={() => void onProposeConnection(sourcePortId, targetNode.node_id, targetPortId)}><Link2 size={14} /> {tx("Create handoff", "创建交接")}</button></> : <div className="operation-unavailable">{tx("Select a node with an authored output port.", "请选择带源码定义输出端口的节点。")}</div>}</section>
+    <section className="model-operation danger-zone"><div className="section-heading">{tx("Canonical deletion", "规范节点删除")}</div><p>{tx("Review graph impact before creating a typed delete intent.", "创建类型化删除意图前先审查图影响。")}</p><button className="prepare-button danger-action" disabled={deleteIntentActive || deleteImpactLoading} onClick={() => void onReviewDelete(node.node_id)}><Trash2 size={14} /> {deleteIntentActive ? tx("Delete intent pending", "删除意图待处理") : deleteImpactLoading ? tx("Calculating impact", "正在计算影响") : tx("Review deletion impact", "审查删除影响")}</button></section>
     {proposal && <div className="proposal-card"><div><ShieldCheck size={15} /><strong>{tx("Agent handoff", "代理交接")}</strong><code>{proposal.reason_code}</code></div><p>{proposal.summary}</p><dl><dt>{tx("Shell", "终端")}</dt><dd>{tx("Denied", "已拒绝")}</dd><dt>{tx("Network", "网络")}</dt><dd>{tx("Denied", "已拒绝")}</dd><dt>{tx("Source write", "源码写入")}</dt><dd>{tx("Denied", "已拒绝")}</dd></dl></div>}
     <Field label={tx("Expected affected nodes / edges", "预计影响的节点 / 边")} value={active ? `${affected} / ${transaction.expected_delta.changed_edges.length}` : tx("Calculated during prepare", "在准备阶段计算")} />
     {active && <div className={`transaction-state ${transaction.state}`}>{transaction.state}</div>}
@@ -2795,6 +3413,205 @@ function deltaSummary(delta: GraphDelta | undefined, tx: LanguageContextValue["t
   return `${delta.changed_parameters.length} ${tx("parameters", "个参数")} · ${nodes} ${tx("nodes", "个节点")} · ${edges} ${tx("edges", "条边")} · ${delta.changed_shapes.length} ${tx("shapes", "个形状")}`;
 }
 
+function SourceWorkspacePanel({ workspace, transaction, sessionNonce, onState, onActivity, onShowDiff }: {
+  workspace: StudioState["source_workspace"];
+  transaction: SourceTransaction | null;
+  sessionNonce?: string;
+  onState: (state: StudioState) => void;
+  onActivity: (message: string) => void;
+  onShowDiff: () => void;
+}) {
+  const { tx } = useLanguage();
+  const [selectedPath, setSelectedPath] = useState("");
+  const [buffer, setBuffer] = useState<SourceWorkspaceBuffer | null>(null);
+  const [content, setContent] = useState("");
+  const [view, setView] = useState<"editor" | "diff">("editor");
+  const [busy, setBusy] = useState<"open" | "save" | "validate" | "discard-file" | "discard-all" | null>(null);
+  const [error, setError] = useState("");
+  const lineNumbers = useRef<HTMLPreElement>(null);
+  const requestSequence = useRef(0);
+  const selectedFile = workspace.files.find((file) => file.path === selectedPath);
+  const transactionActive = Boolean(transaction && !["committed", "discarded", "failed"].includes(transaction.state));
+  const sourceReviewReady = transaction?.request.operation === "edit_source_buffers" && transaction.state === "review-ready";
+  const localDirty = Boolean(buffer && content !== buffer.staged_content);
+  const modifiedCount = workspace.files.filter((file) => file.state === "modified").length;
+
+  async function request<T>(endpoint: string, payload: object): Promise<T> {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(sessionNonce ? { "X-ArchCanvas-Nonce": sessionNonce } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      try {
+        const parsed = JSON.parse(detail) as { error?: string };
+        throw new Error(parsed.error ?? detail);
+      } catch (parseError) {
+        if (parseError instanceof SyntaxError) throw new Error(detail || response.statusText);
+        throw parseError;
+      }
+    }
+    return await response.json() as T;
+  }
+
+  async function openPath(path: string) {
+    if (!path) return;
+    const sequence = ++requestSequence.current;
+    setBusy("open");
+    setError("");
+    setSelectedPath(path);
+    try {
+      const result = await request<{ buffer: SourceWorkspaceBuffer; state: StudioState }>(
+        "/api/source-workspace/open",
+        { path },
+      );
+      if (sequence !== requestSequence.current) return;
+      setBuffer(result.buffer);
+      setContent(result.buffer.staged_content);
+      onState({ ...result.state, session_nonce: result.state.session_nonce ?? sessionNonce });
+    } catch (requestError) {
+      if (sequence !== requestSequence.current) return;
+      setBuffer(null);
+      setError(String(requestError));
+    } finally {
+      if (sequence === requestSequence.current) setBusy(null);
+    }
+  }
+
+  useEffect(() => {
+    const initial = workspace.files.find((file) => file.opened && file.state !== "readonly")
+      ?? workspace.files.find((file) => file.state !== "readonly");
+    setSelectedPath(initial?.path ?? "");
+    setBuffer(null);
+    setContent("");
+    setView("editor");
+    setError("");
+    if (initial) void openPath(initial.path);
+  }, [workspace.workspace_id]);
+
+  async function saveDraft(): Promise<SourceWorkspaceBuffer | null> {
+    if (!buffer || !localDirty) return buffer;
+    setBusy("save");
+    setError("");
+    try {
+      const result = await request<{ buffer: SourceWorkspaceBuffer; state: StudioState }>(
+        "/api/source-workspace/save",
+        {
+          path: buffer.path,
+          content,
+          base_sha256: buffer.base_sha256,
+          expected_revision: workspace.revision,
+        },
+      );
+      setBuffer(result.buffer);
+      setContent(result.buffer.staged_content);
+      onState({ ...result.state, session_nonce: result.state.session_nonce ?? sessionNonce });
+      onActivity(`${tx("Saved source draft", "已保存源码草稿")} · ${buffer.path}`);
+      return result.buffer;
+    } catch (requestError) {
+      setError(String(requestError));
+      return null;
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function validateChanges() {
+    if (sourceReviewReady) {
+      onShowDiff();
+      return;
+    }
+    if (localDirty && !await saveDraft()) return;
+    setBusy("validate");
+    setError("");
+    try {
+      const state = await request<StudioState>("/api/source-workspace/validate", {});
+      onState(state);
+      onActivity(tx("Source workspace passed validation and is ready for review", "源码工作区已通过验证，可以审查"));
+      onShowDiff();
+    } catch (requestError) {
+      setError(String(requestError));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function discardFile() {
+    if (!buffer) return;
+    setBusy("discard-file");
+    setError("");
+    try {
+      const state = await request<StudioState>("/api/source-workspace/buffer/discard", {
+        path: buffer.path,
+        expected_revision: workspace.revision,
+      });
+      onState(state);
+      onActivity(`${tx("Discarded source draft", "已丢弃源码草稿")} · ${buffer.path}`);
+      setBuffer(null);
+      setContent("");
+    } catch (requestError) {
+      setError(String(requestError));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function discardWorkspace() {
+    setBusy("discard-all");
+    setError("");
+    try {
+      const state = await request<StudioState>("/api/source-workspace/discard", {});
+      onState(state);
+      onActivity(tx("Discarded all staged source changes", "已丢弃全部暂存源码修改"));
+      setBuffer(null);
+      setContent("");
+    } catch (requestError) {
+      setError(String(requestError));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const shortHash = (value: string | null) => value ? value.slice(0, 12) : tx("Unavailable", "不可用");
+  const stateLabel = (state: SourceWorkspaceFile["state"]) => ({
+    clean: tx("Clean", "干净"),
+    modified: tx("Modified", "已修改"),
+    stale: tx("Stale", "已过期"),
+    readonly: tx("Read only", "只读"),
+  })[state];
+  const lineCount = Math.max(1, content.split("\n").length);
+
+  return <div className="source-workspace">
+    <aside className="source-workspace-files">
+      <header><strong>{tx("Snapshot files", "快照文件")}</strong><span className={`source-workspace-state ${workspace.state}`}>{workspace.state}</span></header>
+      <div className="source-file-list">
+        {workspace.files.map((file) => <button key={file.path} className={`${file.path === selectedPath ? "active" : ""} ${file.state}`} title={file.readonly_reason ?? file.path} onClick={() => { setBuffer(null); setContent(""); void openPath(file.path); }} disabled={busy !== null || file.state === "readonly"}>
+          <FileCode2 size={13} /><span>{file.path}</span><b>{stateLabel(file.state)}</b>
+        </button>)}
+      </div>
+      <footer><span>{workspace.files.length} {tx("files", "个文件")} · {modifiedCount} {tx("modified", "个已修改")}</span><button disabled={busy !== null || (!modifiedCount && !transactionActive)} onClick={() => void discardWorkspace()}><Trash2 size={13} />{tx("Discard all", "全部丢弃")}</button></footer>
+    </aside>
+    <section className="source-workspace-editor">
+      <header className="source-editor-toolbar">
+        <div><strong>{selectedPath || tx("No source file", "没有源码文件")}</strong>{selectedFile && <span>{selectedFile.size.toLocaleString()} B</span>}</div>
+        <div className="source-view-switch"><button className={view === "editor" ? "active" : ""} onClick={() => setView("editor")}>{tx("Editor", "编辑器")}</button><button className={view === "diff" ? "active" : ""} onClick={() => setView("diff")}>{tx("Staged diff", "暂存差异")}</button></div>
+        <button className="source-action" disabled={!buffer || !localDirty || busy !== null || transactionActive || buffer?.state === "stale"} onClick={() => void saveDraft()}><Save size={13} />{tx("Save draft", "保存草稿")}</button>
+        <button className="source-action primary" disabled={busy !== null || workspace.state === "stale" || (!modifiedCount && !localDirty && !sourceReviewReady) || (transactionActive && !sourceReviewReady)} onClick={() => void validateChanges()}><ShieldCheck size={13} />{sourceReviewReady ? tx("Review changes", "审查修改") : busy === "validate" ? tx("Validating", "正在验证") : tx("Validate changes", "验证修改")}</button>
+        <button className="icon-button" title={tx("Discard selected buffer", "丢弃所选缓冲区")} aria-label={tx("Discard selected buffer", "丢弃所选缓冲区")} disabled={!buffer || busy !== null} onClick={() => void discardFile()}><X size={13} /></button>
+      </header>
+      {error && <div className="source-workspace-error"><AlertTriangle size={13} />{error}</div>}
+      {buffer ? <>
+        <div className="source-hashes"><span>Base <code title={buffer.base_sha256}>{shortHash(buffer.base_sha256)}</code></span><span>Staged <code title={buffer.staged_sha256}>{shortHash(buffer.staged_sha256)}</code></span><span>Working <code title={buffer.working_sha256}>{shortHash(buffer.working_sha256)}</code></span><b className={buffer.state}>{buffer.state}</b></div>
+        {view === "editor" ? <div className="source-code-editor"><pre ref={lineNumbers} aria-hidden="true">{Array.from({ length: lineCount }, (_, index) => index + 1).join("\n")}</pre><textarea aria-label={tx("Staged source content", "暂存源码内容")} spellCheck={false} wrap="off" value={content} readOnly={transactionActive || buffer.state === "stale"} onScroll={(event) => { if (lineNumbers.current) lineNumbers.current.scrollTop = event.currentTarget.scrollTop; }} onChange={(event) => setContent(event.target.value)} /></div> : <pre className="source-staged-diff">{buffer.diff || tx("No staged textual changes", "没有暂存文本修改")}</pre>}
+      </> : selectedFile?.state === "readonly" ? <div className="source-workspace-empty"><LockKeyhole size={18} /><span>{selectedFile.readonly_reason}</span></div> : <div className="source-workspace-empty"><FileCode2 size={18} /><span>{busy === "open" ? tx("Opening source buffer", "正在打开源码缓冲区") : tx("Buffer is closed", "缓冲区已关闭")}</span>{busy !== "open" && selectedPath && <button onClick={() => void openPath(selectedPath)}>{tx("Open file", "打开文件")}</button>}</div>}
+    </section>
+  </div>;
+}
+
 function TransactionReview({ transaction, writebackBlocked, onCommit, onDiscard }: { transaction: SourceTransaction; writebackBlocked: boolean; onCommit: () => Promise<void>; onDiscard: () => Promise<void> }) {
   const { tx } = useLanguage();
   return <div className="transaction-review">
@@ -2804,14 +3621,24 @@ function TransactionReview({ transaction, writebackBlocked, onCommit, onDiscard 
   </div>;
 }
 
-function VisualInspector({ node, pinned, fontScale, lineWeight, onPatch, onBatch }: { node: SceneNode; pinned: boolean; fontScale: number; lineWeight: number; onPatch: (operation: string, targetId: string | undefined, value: Record<string, unknown>) => Promise<void>; onBatch: (description: string, patches: Array<{ operation: string; targetId?: string; value: Record<string, unknown> }>) => Promise<void> }) {
+function VisualInspector({ node, pinned, fontScale, lineWeight, caption, legendPlacement, onPatch, onBatch }: { node: SceneNode; pinned: boolean; fontScale: number; lineWeight: number; caption: string; legendPlacement: "top-left" | "top-right" | "bottom-left" | "bottom-right" | "hidden"; onPatch: (operation: string, targetId: string | undefined, value: Record<string, unknown>) => Promise<void>; onBatch: (description: string, patches: Array<{ operation: string; targetId?: string; value: Record<string, unknown> }>) => Promise<void> }) {
   const { tx } = useLanguage();
   const [bounds, setBounds] = useState(node.bounds);
   const [label, setLabel] = useState(node.label_lines.join("\n"));
+  const [captionText, setCaptionText] = useState(caption);
+  const [annotationText, setAnnotationText] = useState("");
   useEffect(() => setBounds(node.bounds), [node.scene_node_id, node.bounds]);
   useEffect(() => setLabel(node.label_lines.join("\n")), [node.scene_node_id, node.label_lines]);
+  useEffect(() => setCaptionText(caption), [caption]);
   const update = (key: keyof Rect, value: number) => setBounds((current) => ({ ...current, [key]: value }));
-  return <><div className="section-label">{tx("Geometry", "几何")}</div><div className="numeric-grid">{(["x", "y", "width", "height"] as const).map((key) => <label key={key}><span>{key.toUpperCase()}</span><input type="number" min={key === "width" || key === "height" ? 1 : 0} value={Math.round(bounds[key])} onChange={(event) => update(key, Number(event.target.value))} /></label>)}</div><button className="apply-visual" onClick={() => void onBatch(tx("Apply geometry", "应用几何设置"), [{ operation: "set-position", targetId: node.scene_node_id, value: { x: bounds.x, y: bounds.y } }, { operation: "set-size", targetId: node.scene_node_id, value: { width: bounds.width, height: bounds.height } }])}>{tx("Apply geometry", "应用几何设置")}</button><label className="toggle-row"><input type="checkbox" checked={pinned} onChange={() => void onPatch("set-pin", node.scene_node_id, { enabled: !pinned })} /><span>{tx("Pin during layout", "布局时固定")}</span></label><label className="model-field"><span>{tx("Fill", "填充色")}</span><input type="color" value={node.fill.startsWith("#") ? node.fill.slice(0, 7) : "#ffffff"} onChange={(event) => void onPatch("set-palette", undefined, { overrides: { [node.scene_node_id]: event.target.value } })} /></label><label className="model-field"><span>{tx("Label lines", "标签行")}</span><textarea rows={3} value={label} onChange={(event) => setLabel(event.target.value)} /></label><button className="apply-visual" onClick={() => void onPatch("set-label-wrap", node.scene_node_id, { lines: label.split("\n").filter(Boolean).slice(0, 3) })}>{tx("Apply label wrap", "应用标签换行")}</button><label className="model-field"><span>{tx("Font scale", "字体缩放")} · {fontScale.toFixed(2)}</span><input type="range" min="0.75" max="1.5" step="0.05" value={fontScale} onChange={(event) => void onPatch("set-font-scale", undefined, { scale: Number(event.target.value) })} /></label><label className="model-field"><span>{tx("Line weight", "线宽")} · {lineWeight.toFixed(1)}</span><input type="range" min="0.5" max="5" step="0.5" value={lineWeight} onChange={(event) => void onPatch("set-line-weight", undefined, { width: Number(event.target.value) })} /></label><Field label={tx("Stroke", "描边色")} value={node.stroke} mono /></>;
+  const addAnnotation = async () => {
+    const text = annotationText.trim();
+    if (!text) return;
+    const annotationId = patchId("annotation").replace("patch:", "annotation:");
+    await onPatch("add-annotation", annotationId, { text, x: node.bounds.x, y: node.bounds.y + node.bounds.height + 12, width: 190, height: 52 });
+    setAnnotationText("");
+  };
+  return <><div className="section-label">{tx("Geometry", "几何")}</div><div className="numeric-grid">{(["x", "y", "width", "height"] as const).map((key) => <label key={key}><span>{key.toUpperCase()}</span><input type="number" min={key === "width" || key === "height" ? 1 : 0} value={Math.round(bounds[key])} onChange={(event) => update(key, Number(event.target.value))} /></label>)}</div><button className="apply-visual" onClick={() => void onBatch(tx("Apply geometry", "应用几何设置"), [{ operation: "set-position", targetId: node.scene_node_id, value: { x: bounds.x, y: bounds.y } }, { operation: "set-size", targetId: node.scene_node_id, value: { width: bounds.width, height: bounds.height } }])}>{tx("Apply geometry", "应用几何设置")}</button><label className="toggle-row"><input type="checkbox" checked={pinned} onChange={() => void onPatch("set-pin", node.scene_node_id, { enabled: !pinned })} /><span>{tx("Pin during layout", "布局时固定")}</span></label><label className="model-field"><span>{tx("Fill", "填充色")}</span><input type="color" value={node.fill.startsWith("#") ? node.fill.slice(0, 7) : "#ffffff"} onChange={(event) => void onPatch("set-palette", undefined, { overrides: { [node.scene_node_id]: event.target.value } })} /></label><label className="model-field"><span>{tx("Stroke", "描边色")}</span><input type="color" value={node.stroke.startsWith("#") ? node.stroke.slice(0, 7) : "#1b1d1a"} onChange={(event) => void onPatch("set-palette", undefined, { overrides: { [`${node.scene_node_id}:stroke`]: event.target.value } })} /></label><label className="model-field"><span>{tx("Label lines", "标签行")}</span><textarea rows={3} value={label} onChange={(event) => setLabel(event.target.value)} /></label><button className="apply-visual" onClick={() => void onPatch("set-label-wrap", node.scene_node_id, { lines: label.split("\n").filter(Boolean).slice(0, 3) })}>{tx("Apply label wrap", "应用标签换行")}</button><label className="model-field"><span>{tx("Font scale", "字体缩放")} · {fontScale.toFixed(2)}</span><input type="range" min="0.75" max="1.5" step="0.05" value={fontScale} onChange={(event) => void onPatch("set-font-scale", undefined, { scale: Number(event.target.value) })} /></label><label className="model-field"><span>{tx("Line weight", "线宽")} · {lineWeight.toFixed(1)}</span><input type="range" min="0.5" max="5" step="0.5" value={lineWeight} onChange={(event) => void onPatch("set-line-weight", undefined, { width: Number(event.target.value) })} /></label><div className="section-label">{tx("Document", "文档")}</div><label className="model-field"><span>{tx("Caption", "图注")}</span><input value={captionText} maxLength={240} onChange={(event) => setCaptionText(event.target.value)} /></label><button className="apply-visual" onClick={() => void onPatch("set-caption", undefined, { caption: captionText })}>{tx("Apply caption", "应用图注")}</button><label className="model-field"><span>{tx("Legend placement", "图例位置")}</span><select value={legendPlacement} onChange={(event) => void onPatch("set-legend-placement", undefined, { placement: event.target.value })}><option value="top-left">{tx("Top left", "左上")}</option><option value="top-right">{tx("Top right", "右上")}</option><option value="bottom-left">{tx("Bottom left", "左下")}</option><option value="bottom-right">{tx("Bottom right", "右下")}</option><option value="hidden">{tx("Hidden", "隐藏")}</option></select></label><label className="model-field"><span>{tx("Annotation", "批注")}</span><textarea rows={2} maxLength={500} value={annotationText} onChange={(event) => setAnnotationText(event.target.value)} /></label><button className="apply-visual" disabled={!annotationText.trim()} onClick={() => void addAnnotation()}>{tx("Add annotation", "添加批注")}</button></>;
 }
 
 createRoot(document.getElementById("root")!).render(

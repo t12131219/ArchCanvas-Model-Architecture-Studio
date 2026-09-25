@@ -85,6 +85,8 @@ def test_cross_framework_static_ir_publication_and_geometry(
 
 def test_python_source_adapters_do_not_require_framework_packages() -> None:
     capabilities = {item.framework: item for item in adapter_capabilities()}
+    assert capabilities["python"].static_analysis is True
+    assert capabilities["python"].runtime_evidence is False
     assert capabilities["keras"].static_analysis is True
     assert capabilities["jax"].static_analysis is True
     assert "keras" in capabilities["keras"].required_packages
@@ -914,7 +916,7 @@ def test_onnx_limited_node_transform_commits_atomically(tmp_path: Path) -> None:
     assert onnx.load(project / "model.onnx").graph.node[0].op_type == "Gelu"
 
 
-def test_onnx_auto_detection_is_extension_only() -> None:
+def test_framework_auto_detection_supports_onnx_and_python_source() -> None:
     if next(item for item in adapter_capabilities() if item.framework == "onnx").status == "unavailable":
         pytest.skip("optional ONNX dependency is not installed")
     fixture = ROOT / "fixtures" / "cross_framework" / "onnx_residual"
@@ -929,14 +931,14 @@ def test_onnx_auto_detection_is_extension_only() -> None:
         pattern_packs_enabled=False,
     )
     assert bundle.architecture.framework == "onnx"
-    with pytest.raises(ValueError, match="pass --framework"):
-        analyze_with_adapter(
-            ROOT / "fixtures" / "cross_framework" / "keras_subclass",
-            "model:TemporalGate",
-            "inference",
-            "eval",
-            b"{}",
-            None,
-            framework="auto",
-            pattern_packs_enabled=False,
-        )
+    python_bundle = analyze_with_adapter(
+        ROOT / "fixtures" / "cross_framework" / "keras_subclass",
+        "model:TemporalGate",
+        "inference",
+        "eval",
+        b"{}",
+        None,
+        framework="auto",
+        pattern_packs_enabled=False,
+    )
+    assert python_bundle.architecture.framework == "keras"

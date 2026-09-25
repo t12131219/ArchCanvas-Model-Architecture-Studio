@@ -10,6 +10,12 @@ from pathlib import Path
 from typing import Any
 
 from archcanvas_core.models import ProjectSession, SourceSnapshot
+from archcanvas_python.source_index import (
+    absolute_import_module,
+    framework_evidence,
+    module_name_from_path,
+    resolve_module_path,
+)
 
 EXCLUDED_DIRECTORIES = {
     ".git",
@@ -150,6 +156,7 @@ def create_project_session(
     framework: str = "auto",
     task: str = "inference",
     config_path: str | None = None,
+    environment: Mapping[str, Any] | None = None,
 ) -> ProjectSession:
     root = root.resolve()
     if not root.is_dir():
@@ -178,26 +185,16 @@ def create_project_session(
         task=task if snapshot is None else snapshot.task,
         config_path=normalized_config,
         config_digest=config_digest,
+        environment_path=(str(environment["path"]) if environment else None),
+        python_executable=(str(environment["python"]) if environment else None),
         workspace=str(workspace.resolve()),
         opened_at=datetime.now(UTC).isoformat(),
     )
 
 
 def _framework_evidence(tree: ast.AST) -> tuple[str, list[str]]:
-    imports: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            imports.update(alias.name.split(".")[0] for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            imports.add(node.module.split(".")[0])
-    evidence = sorted(imports & {"torch", "tensorflow", "keras", "jax", "flax"})
-    if "torch" in imports:
-        return "pytorch", evidence
-    if {"tensorflow", "keras"} & imports:
-        return "keras", evidence
-    if {"jax", "flax"} & imports:
-        return "jax", evidence
-    return "unknown", evidence
+    framework, evidence = framework_evidence(tree)
+    return framework or "unknown", evidence
 
 
 def _dotted_name(node: ast.expr) -> str | None:
@@ -209,22 +206,19 @@ def _dotted_name(node: ast.expr) -> str | None:
     return None
 
 
-def _import_aliases(tree: ast.Module, module: str) -> dict[str, str]:
+def _import_aliases(tree: ast.Module, module: str, *, is_package: bool = False) -> dict[str, str]:
     aliases: dict[str, str] = {}
-    package = module.rpartition(".")[0]
     for node in tree.body:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 aliases[alias.asname or alias.name.split(".")[0]] = alias.name
         elif isinstance(node, ast.ImportFrom):
-            imported_module = node.module or ""
-            if node.level:
-                package_parts = package.split(".") if package else []
-                keep = max(0, len(package_parts) - node.level + 1)
-                prefix = ".".join(package_parts[:keep])
-                imported_module = ".".join(
-                    part for part in (prefix, imported_module) if part
-                )
+            imported_module = absolute_import_module(
+                module,
+                is_package,
+                node.module,
+                node.level,
+            )
             for alias in node.names:
                 if alias.name == "*":
                     continue
@@ -232,6 +226,35 @@ def _import_aliases(tree: ast.Module, module: str) -> dict[str, str]:
                     part for part in (imported_module, alias.name) if part
                 )
     return aliases
+
+
+def _resolve_entrypoint_reference(
+    name: str,
+    *,
+    module: str,
+    aliases: Mapping[str, str],
+    entrypoint_by_symbol: Mapping[str, str],
+    entrypoints_by_name: Mapping[str, list[str]],
+) -> str | None:
+    parts = name.split(".")
+    imported = aliases.get(parts[0])
+    expanded = ".".join([imported, *parts[1:]]) if imported else name
+    direct = entrypoint_by_symbol.get(expanded)
+    if direct is None and "." in expanded:
+        suffix_matches = [
+            entrypoint
+            for symbol, entrypoint in entrypoint_by_symbol.items()
+            if symbol.endswith(f".{expanded}")
+        ]
+        if len(suffix_matches) == 1:
+            direct = suffix_matches[0]
+    if direct is None and "." not in expanded:
+        direct = entrypoint_by_symbol.get(f"{module}.{expanded}")
+    if direct is None:
+        candidates = entrypoints_by_name.get(parts[-1], [])
+        if len(candidates) == 1:
+            direct = candidates[0]
+    return direct
 
 
 def _entrypoint_category(name: str, kind: str, top_level: bool) -> str:
@@ -268,24 +291,13 @@ def _resolve_instantiated_entrypoints(
         call_name = _dotted_name(descendant.func)
         if not call_name:
             continue
-        parts = call_name.split(".")
-        imported = aliases.get(parts[0])
-        expanded = ".".join([imported, *parts[1:]]) if imported else call_name
-        direct = entrypoint_by_symbol.get(expanded)
-        if direct is None and "." in expanded:
-            suffix_matches = [
-                entrypoint
-                for symbol, entrypoint in entrypoint_by_symbol.items()
-                if symbol.endswith(f".{expanded}")
-            ]
-            if len(suffix_matches) == 1:
-                direct = suffix_matches[0]
-        if direct is None and "." not in expanded:
-            direct = entrypoint_by_symbol.get(f"{module}.{expanded}")
-        if direct is None:
-            candidates = entrypoints_by_name.get(parts[-1], [])
-            if len(candidates) == 1:
-                direct = candidates[0]
+        direct = _resolve_entrypoint_reference(
+            call_name,
+            module=module,
+            aliases=aliases,
+            entrypoint_by_symbol=entrypoint_by_symbol,
+            entrypoints_by_name=entrypoints_by_name,
+        )
         if direct is not None:
             resolved.add(direct)
     return resolved
@@ -294,24 +306,52 @@ def _resolve_instantiated_entrypoints(
 def _is_top_level_model(item: Mapping[str, Any], has_parent: bool) -> bool:
     if has_parent:
         return False
-    if item["kind"] in {"model-artifact", "function"}:
-        return True
-    name = item["entrypoint"].rsplit(":", 1)[-1].lower().replace("_", "")
-    if name in {"model", "transformer", "patchtst"}:
-        return True
-    return name.endswith(("model", "network", "net"))
+    return item["kind"] in {"model-artifact", "function", "class", "re-export"}
 
 
 def _analysis_scope(
-    item: Mapping[str, Any], configs: list[dict[str, Any]]
+    root: Path,
+    item: Mapping[str, Any],
+    configs: list[dict[str, Any]],
 ) -> tuple[str, str, list[str]]:
     source_path = Path(item["path"])
-    config_parents = {
-        Path(config["path"]).parent
-        for config in configs
-        if source_path.is_relative_to(Path(config["path"]).parent)
-    }
-    scope = max(config_parents, key=lambda path: len(path.parts), default=Path("."))
+    scope = Path(".")
+    if item["kind"] != "model-artifact":
+        absolute_imports: set[str] = set()
+        try:
+            tree = ast.parse((root / source_path).read_bytes(), filename=source_path.as_posix())
+            absolute_imports = {
+                node.module
+                for node in tree.body
+                if isinstance(node, ast.ImportFrom) and node.level == 0 and node.module
+            }
+            absolute_imports.update(
+                alias.name
+                for node in tree.body
+                if isinstance(node, ast.Import)
+                for alias in node.names
+            )
+        except (OSError, SyntaxError, UnicodeError):
+            pass
+        candidates = [Path(".")]
+        parent = source_path.parent
+        candidates.extend(
+            Path(*parent.parts[:index]) for index in range(1, len(parent.parts) + 1)
+        )
+        scored = [
+            (
+                sum(
+                    resolve_module_path((root / candidate).resolve(), imported) is not None
+                    for imported in absolute_imports
+                ),
+                -len(candidate.parts),
+                candidate,
+            )
+            for candidate in candidates
+        ]
+        best_score, _, best_scope = max(scored, key=lambda value: (value[0], value[1]))
+        if best_score:
+            scope = best_scope
     scope_path = scope.as_posix()
     entrypoint = str(item["entrypoint"])
     if item["kind"] == "model-artifact":
@@ -371,6 +411,14 @@ def discover_project(root: Path) -> dict[str, Any]:
     configs: list[dict[str, Any]] = []
     warnings: list[str] = []
     class_nodes: dict[str, tuple[ast.ClassDef, str, dict[str, str]]] = {}
+    all_class_nodes: dict[
+        str, tuple[ast.ClassDef, str, dict[str, str], str, list[str], str]
+    ] = {}
+    function_nodes: list[
+        tuple[ast.FunctionDef | ast.AsyncFunctionDef, str, dict[str, str], str, list[str], str]
+    ] = []
+    package_modules: set[str] = set()
+    package_aliases: dict[str, tuple[dict[str, str], str, list[str], str]] = {}
     scanned_files = 0
     for current, directory_names, file_names in os.walk(root, followlinks=False):
         current_path = Path(current)
@@ -416,10 +464,30 @@ def discover_project(root: Path) -> dict[str, Any]:
                 warnings.append(f"{relative.as_posix()}: {type(error).__name__}")
                 continue
             framework, evidence = _framework_evidence(tree)
-            module = relative.with_suffix("").as_posix().replace("/", ".")
+            module = module_name_from_path(relative)
+            is_package = path.name == "__init__.py"
+            if is_package:
+                package_modules.add(module)
+            aliases = _import_aliases(tree, module, is_package=is_package)
+            if is_package:
+                package_aliases[module] = (
+                    aliases,
+                    relative.as_posix(),
+                    evidence,
+                    framework,
+                )
             for node in tree.body:
                 if isinstance(node, ast.ClassDef):
                     bases = [ast.unparse(base) for base in node.bases]
+                    entrypoint = f"{module}:{node.name}"
+                    all_class_nodes[entrypoint] = (
+                        node,
+                        module,
+                        aliases,
+                        framework,
+                        evidence,
+                        relative.as_posix(),
+                    )
                     model_like = any(
                         marker in base
                         for base in bases
@@ -429,7 +497,6 @@ def discover_project(root: Path) -> dict[str, Any]:
                         child.name for child in node.body if isinstance(child, ast.FunctionDef)
                     }
                     if model_like or {"forward", "call", "__call__"} & methods:
-                        entrypoint = f"{module}:{node.name}"
                         entrypoints.append(
                             {
                                 "entrypoint": entrypoint,
@@ -444,25 +511,173 @@ def discover_project(root: Path) -> dict[str, Any]:
                         class_nodes[entrypoint] = (
                             node,
                             module,
-                            _import_aliases(tree, module),
+                            aliases,
                         )
-                elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name in {
-                    "model",
-                    "build_model",
-                    "create_model",
-                    "forward",
-                }:
-                    entrypoints.append(
-                        {
-                            "entrypoint": f"{module}:{node.name}",
-                            "path": relative.as_posix(),
-                            "framework": framework,
-                            "kind": "function",
-                            "confidence": "inferred",
-                            "evidence": evidence,
-                            "line": node.lineno,
-                        }
+                elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    function_nodes.append(
+                        (node, module, aliases, framework, evidence, relative.as_posix())
                     )
+
+    all_entrypoint_by_symbol = {
+        entrypoint.replace(":", "."): entrypoint for entrypoint in all_class_nodes
+    }
+    all_entrypoints_by_name: dict[str, list[str]] = defaultdict(list)
+    for entrypoint in all_class_nodes:
+        all_entrypoints_by_name[entrypoint.rsplit(":", 1)[-1]].append(entrypoint)
+    class_parents: dict[str, set[str]] = defaultdict(set)
+    for entrypoint, (node, module, aliases, _, _, _) in all_class_nodes.items():
+        for base in node.bases:
+            base_name = _dotted_name(base)
+            if not base_name:
+                continue
+            resolved = _resolve_entrypoint_reference(
+                base_name,
+                module=module,
+                aliases=aliases,
+                entrypoint_by_symbol=all_entrypoint_by_symbol,
+                entrypoints_by_name=all_entrypoints_by_name,
+            )
+            if resolved and resolved != entrypoint:
+                class_parents[entrypoint].add(resolved)
+
+    selected_classes = set(class_nodes)
+    changed = True
+    while changed:
+        changed = False
+        for entrypoint, parents in class_parents.items():
+            if entrypoint in selected_classes or not (parents & selected_classes):
+                continue
+            node, module, aliases, framework, evidence, relative = all_class_nodes[entrypoint]
+            inherited_framework = next(
+                (
+                    str(item["framework"])
+                    for item in entrypoints
+                    if item["entrypoint"] in parents and item["framework"] != "unknown"
+                ),
+                framework,
+            )
+            bases = [ast.unparse(base) for base in node.bases]
+            entrypoints.append(
+                {
+                    "entrypoint": entrypoint,
+                    "path": relative,
+                    "framework": inherited_framework,
+                    "kind": "class",
+                    "confidence": "inferred",
+                    "evidence": [*evidence, *bases, "model-like local base class"],
+                    "line": node.lineno,
+                }
+            )
+            class_nodes[entrypoint] = (node, module, aliases)
+            selected_classes.add(entrypoint)
+            changed = True
+
+    framework_by_class = {
+        str(item["entrypoint"]): str(item["framework"])
+        for item in entrypoints
+        if item["kind"] == "class"
+    }
+    changed = True
+    while changed:
+        changed = False
+        for item in entrypoints:
+            entrypoint = str(item["entrypoint"])
+            if item["kind"] != "class" or item["framework"] != "unknown":
+                continue
+            inherited = next(
+                (
+                    framework_by_class[parent]
+                    for parent in class_parents[entrypoint]
+                    if framework_by_class.get(parent, "unknown") != "unknown"
+                ),
+                None,
+            )
+            if inherited:
+                item["framework"] = inherited
+                item["evidence"] = [*item["evidence"], "framework inherited from local base"]
+                framework_by_class[entrypoint] = inherited
+                changed = True
+
+    selected_entrypoint_by_symbol = {
+        entrypoint.replace(":", "."): entrypoint for entrypoint in selected_classes
+    }
+    selected_entrypoints_by_name: dict[str, list[str]] = defaultdict(list)
+    for entrypoint in selected_classes:
+        selected_entrypoints_by_name[entrypoint.rsplit(":", 1)[-1]].append(entrypoint)
+    framework_roots = {"torch", "tensorflow", "keras", "jax", "flax"}
+    for node, module, aliases, framework, evidence, relative in function_nodes:
+        if node.name.startswith("_") or not any(isinstance(item, ast.Return) for item in ast.walk(node)):
+            continue
+        constructed = _resolve_instantiated_entrypoints(
+            node,
+            module=module,
+            aliases=aliases,
+            entrypoint_by_symbol=selected_entrypoint_by_symbol,
+            entrypoints_by_name=selected_entrypoints_by_name,
+        )
+        framework_call = False
+        for descendant in ast.walk(node):
+            if not isinstance(descendant, ast.Call):
+                continue
+            call_name = _dotted_name(descendant.func)
+            if not call_name:
+                continue
+            first, *rest = call_name.split(".")
+            expanded = ".".join([aliases.get(first, first), *rest])
+            if expanded.split(".", 1)[0] in framework_roots:
+                framework_call = True
+                break
+        legacy_factory = node.name in {"model", "build_model", "create_model", "forward"}
+        if not (constructed or framework_call or legacy_factory):
+            continue
+        inferred_framework = framework
+        if inferred_framework == "unknown" and constructed:
+            inferred_framework = next(
+                (
+                    framework_by_class[target]
+                    for target in sorted(constructed)
+                    if framework_by_class.get(target, "unknown") != "unknown"
+                ),
+                "unknown",
+            )
+        entrypoints.append(
+            {
+                "entrypoint": f"{module}:{node.name}",
+                "path": relative,
+                "framework": inferred_framework,
+                "kind": "function",
+                "confidence": "inferred",
+                "evidence": [
+                    *evidence,
+                    *(sorted(constructed) if constructed else []),
+                    *(("framework call in returned dataflow",) if framework_call else ()),
+                ],
+                "line": node.lineno,
+            }
+        )
+
+    for module in sorted(package_modules):
+        aliases, relative, evidence, framework = package_aliases[module]
+        for alias_name, expanded in sorted(aliases.items()):
+            target = selected_entrypoint_by_symbol.get(expanded)
+            if target is None:
+                continue
+            entrypoint = f"{module}:{alias_name}"
+            if entrypoint in selected_classes:
+                continue
+            target_framework = framework_by_class.get(target, framework)
+            entrypoints.append(
+                {
+                    "entrypoint": entrypoint,
+                    "path": relative,
+                    "framework": target_framework,
+                    "kind": "re-export",
+                    "confidence": "exact",
+                    "evidence": [*evidence, f"re-export of {target}"],
+                    "line": 1,
+                }
+            )
+
     entrypoint_by_symbol = {
         item["entrypoint"].replace(":", "."): item["entrypoint"]
         for item in entrypoints
@@ -525,7 +740,7 @@ def discover_project(root: Path) -> dict[str, Any]:
         entrypoint = item["entrypoint"]
         name = entrypoint.rsplit(":", 1)[-1]
         top_level = _is_top_level_model(item, entrypoint in parents_by_child)
-        analysis_root, analysis_entrypoint, scoped_configs = _analysis_scope(item, configs)
+        analysis_root, analysis_entrypoint, scoped_configs = _analysis_scope(root, item, configs)
         item.update(
             {
                 "parent_entrypoint": primary_parent.get(entrypoint),

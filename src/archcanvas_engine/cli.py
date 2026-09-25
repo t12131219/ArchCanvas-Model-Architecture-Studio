@@ -210,7 +210,7 @@ def doctor() -> CommandReceipt:
             "packages": packages,
             "network_required": False,
             "capabilities": {
-                "static_analysis": "available-pytorch+keras+jax+onnx",
+                "static_analysis": "available-python+pytorch+keras+jax+onnx",
                 "semantic_validation": "available",
                 "publication_render": "available-svg+html+png+pdf-l1-l4",
                 "studio": "available-visual-editing",
@@ -287,10 +287,13 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
     candidate_reviews = build_candidate_reviews(bundle.architecture, registry)
     profile = "generic"
     if bundle.architecture.framework == "pytorch" and not args.no_pattern_packs:
-        profile = bundle.snapshot.resolved_config.get("architecture_profile") or (
-            "transformer-l3"
-            if bundle.architecture.entrypoint.rsplit(":", 1)[-1].lower() == "transformer"
-            else "generic"
+        profile = bundle.snapshot.resolved_config.get("architecture_profile") or next(
+            (
+                str(node.attributes["architecture_profile"])
+                for node in bundle.architecture.nodes
+                if node.attributes.get("architecture_profile") not in {None, "generic"}
+            ),
+            "generic",
         )
     _write_json(Path(artifacts["source_snapshot"]), bundle.snapshot)
     _write_json(Path(artifacts["evidence_ledger"]), bundle.evidence)
@@ -714,7 +717,7 @@ def build_parser() -> argparse.ArgumentParser:
     analyze_parser.add_argument("--entry", required=True)
     analyze_parser.add_argument(
         "--framework",
-        choices=("pytorch", "keras", "jax", "onnx", "auto"),
+        choices=("pytorch", "keras", "jax", "onnx", "python", "auto"),
         default="pytorch",
     )
     analyze_parser.add_argument("--config", type=Path)

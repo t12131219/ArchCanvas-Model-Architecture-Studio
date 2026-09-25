@@ -9,7 +9,7 @@ and commit flow for exact parameter edits and a small registry of bounded struct
 ## Quick start
 
 ```bash
-python -m pip install -e .[dev]
+python -m pip install -c .github/constraints-py311.txt -e .[dev,cross-framework,runtime-pytorch]
 archcanvas doctor --json
 archcanvas analyze \
   --project fixtures/tier_a/transformer \
@@ -33,6 +33,19 @@ archcanvas studio build/transformer/architecture.json \
   --serve \
   --json
 ```
+
+For a hash-locked Linux CPython 3.11 core development environment, install
+`pylock.dev-linux-py311.toml`, then add the separately constrained PyTorch runtime:
+
+```bash
+python -m pip install -r pylock.dev-linux-py311.toml
+python -m pip install -c .github/constraints-py311.txt "torch>=2.2"
+python -m pip check
+```
+
+The PEP 751 lock is intentionally platform-specific because binary wheels for LibCST, ONNX,
+NumPy, and Cairo differ by platform. macOS and Windows development use the cross-platform direct
+constraints above; CI resolves and tests the full dependency graph on all three operating systems.
 
 Cross-framework static analysis and opt-in runtime tracing use the same pipeline:
 

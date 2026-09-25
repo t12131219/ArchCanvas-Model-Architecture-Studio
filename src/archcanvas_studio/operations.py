@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import heapq
 import json
 import math
 from datetime import UTC, datetime
@@ -306,6 +307,31 @@ def alignment_batch(
     if any(node.scene_node_id in pinned_ids for node in nodes):
         raise ValueError("pinned nodes cannot be moved by alignment commands")
     primary = nodes[-1]
+    if command in {"same-width", "same-height", "same-size"}:
+        patches = []
+        for node in nodes[:-1]:
+            width = primary.bounds.width if command != "same-height" else node.bounds.width
+            height = primary.bounds.height if command != "same-width" else node.bounds.height
+            if (width, height) == (node.bounds.width, node.bounds.height):
+                continue
+            patches.append(
+                VisualPatch(
+                    patch_id=(
+                        f"patch:{batch_id.removeprefix('batch:')}.{len(patches)}"
+                    ),
+                    operation="set-size",
+                    target_id=node.scene_node_id,
+                    value={
+                        "scene_id": scene.scene_id,
+                        "width": width,
+                        "height": height,
+                    },
+                )
+            )
+        if not patches:
+            raise ValueError("alignment command would not change the document")
+        return PatchBatch(batch_id=batch_id, description=command, patches=patches)
+
     positions = {node.scene_node_id: (node.bounds.x, node.bounds.y) for node in nodes}
     if command in {"left", "hcenter", "right", "top", "vcenter", "bottom"}:
         for node in nodes[:-1]:
@@ -481,9 +507,15 @@ def _compact_route(points: list[tuple[float, float]]) -> list[tuple[float, float
         compact.append(point)
         while len(compact) >= 3:
             first, middle, last = compact[-3:]
-            if (first[0] == middle[0] == last[0]) or (
+            vertical_middle = (
+                first[0] == middle[0] == last[0]
+                and min(first[1], last[1]) <= middle[1] <= max(first[1], last[1])
+            )
+            horizontal_middle = (
                 first[1] == middle[1] == last[1]
-            ):
+                and min(first[0], last[0]) <= middle[0] <= max(first[0], last[0])
+            )
+            if vertical_middle or horizontal_middle:
                 compact.pop(-2)
             else:
                 break
@@ -538,7 +570,9 @@ def _route_inside_unrelated(
     points: list[tuple[float, float]],
     scene: VisualScene,
     related_ids: set[str],
-) -> tuple[float, float, float]:
+) -> tuple[int, float, int, float, float]:
+    crossed_node_ids: set[str] = set()
+    crossed_container_ids: set[str] = set()
     node_length = 0.0
     container_length = 0.0
     clearance_length = 0.0
@@ -549,8 +583,12 @@ def _route_inside_unrelated(
             length = _segment_length_inside_rect(start, end, node.bounds)
             if node.shape == "container":
                 container_length += length
+                if length > 1e-6:
+                    crossed_container_ids.add(node.scene_node_id)
             else:
                 node_length += length
+                if length > 1e-6:
+                    crossed_node_ids.add(node.scene_node_id)
                 margin = 10.0
                 expanded = node.bounds.model_copy(
                     update={
@@ -561,7 +599,13 @@ def _route_inside_unrelated(
                     }
                 )
                 clearance_length += _segment_length_inside_rect(start, end, expanded)
-    return node_length, container_length, clearance_length
+    return (
+        len(crossed_node_ids),
+        node_length,
+        len(crossed_container_ids),
+        container_length,
+        clearance_length,
+    )
 
 
 def _orthogonal_segment_interaction(
@@ -629,11 +673,19 @@ def _route_interactions(
         other_segments = list(pairwise(other_points))
         for index, (start, end) in enumerate(candidate_segments):
             for other_index, (other_start, other_end) in enumerate(other_segments):
+                short_stubs = (
+                    _route_length([start, end]) <= 32.0
+                    and _route_length([other_start, other_end]) <= 32.0
+                )
                 shared_source_stub = (
-                    source_id == other_source_id and index == 0 and other_index == 0
+                    short_stubs
+                    and source_id == other_source_id
+                    and index == 0
+                    and other_index == 0
                 )
                 shared_target_stub = (
-                    target_id == other_target_id
+                    short_stubs
+                    and target_id == other_target_id
                     and index == len(candidate_segments) - 1
                     and other_index == len(other_segments) - 1
                 )
@@ -731,10 +783,267 @@ def _route_candidates(
     return candidates
 
 
+def _segment_hits_box(
+    start: tuple[float, float],
+    end: tuple[float, float],
+    box: tuple[float, float, float, float],
+) -> bool:
+    """Return whether an orthogonal segment enters a box interior."""
+    left, top, right, bottom = box
+    if abs(start[0] - end[0]) < 1e-6:
+        return (
+            left < start[0] < right
+            and max(min(start[1], end[1]), top)
+            < min(max(start[1], end[1]), bottom)
+        )
+    if abs(start[1] - end[1]) < 1e-6:
+        return (
+            top < start[1] < bottom
+            and max(min(start[0], end[0]), left)
+            < min(max(start[0], end[0]), right)
+        )
+    return True
+
+
+def _orthogonal_shortest_path(
+    scene: VisualScene,
+    start: tuple[float, float],
+    end: tuple[float, float],
+    *,
+    related_ids: set[str],
+    soft_obstacles: list[Any],
+    routed: list[tuple[list[tuple[float, float]], str, str]],
+    strategy: str,
+) -> list[tuple[float, float]] | None:
+    """Find a deterministic obstacle-aware path on an orthogonal visibility grid."""
+    clearance = 10.0
+    blockers: list[tuple[float, float, float, float]] = []
+    xs = {8.0, scene.paper_width - 8.0, start[0], end[0]}
+    ys = {8.0, scene.paper_height - 8.0, start[1], end[1]}
+    by_id = {node.scene_node_id: node for node in scene.nodes}
+
+    def hidden_by_blocked_ancestor(node: Any) -> bool:
+        parent_id = node.parent_scene_node_id
+        visited: set[str] = set()
+        while parent_id in by_id and parent_id not in visited:
+            if parent_id not in related_ids:
+                return True
+            visited.add(parent_id)
+            parent_id = by_id[parent_id].parent_scene_node_id
+        return False
+
+    for node in scene.nodes:
+        if node.scene_node_id in related_ids or hidden_by_blocked_ancestor(node):
+            continue
+        bounds = node.bounds
+        left = max(8.0, bounds.x - clearance)
+        top = max(8.0, bounds.y - clearance)
+        right = min(scene.paper_width - 8.0, bounds.x + bounds.width + clearance)
+        bottom = min(scene.paper_height - 8.0, bounds.y + bounds.height + clearance)
+        if right <= left or bottom <= top:
+            continue
+        blockers.append((left, top, right, bottom))
+        xs.update((left, right))
+        ys.update((top, bottom))
+    for bounds in soft_obstacles:
+        xs.update(
+            (
+                max(8.0, bounds.x - clearance),
+                min(scene.paper_width - 8.0, bounds.x + bounds.width + clearance),
+            )
+        )
+        ys.update(
+            (
+                max(8.0, bounds.y - clearance),
+                min(scene.paper_height - 8.0, bounds.y + bounds.height + clearance),
+            )
+        )
+
+    # Existing routes contribute neighbouring lanes. This is what lets a
+    # crowded corridor fan into parallel tracks instead of sharing a trunk.
+    lane_offsets = (-16.0, -8.0, 8.0, 16.0)
+    occupied_xs: set[float] = set()
+    occupied_ys: set[float] = set()
+    for points, _, _ in routed:
+        for first, second in pairwise(points):
+            if abs(first[0] - second[0]) < 1e-6:
+                occupied_xs.add(first[0])
+            elif abs(first[1] - second[1]) < 1e-6:
+                occupied_ys.add(first[1])
+    focus_x = (start[0] + end[0]) / 2.0
+    focus_y = (start[1] + end[1]) / 2.0
+    for coordinate in sorted(occupied_xs, key=lambda value: abs(value - focus_x))[:16]:
+        xs.update(
+            coordinate + offset
+            for offset in lane_offsets
+            if 8.0 <= coordinate + offset <= scene.paper_width - 8.0
+        )
+    for coordinate in sorted(occupied_ys, key=lambda value: abs(value - focus_y))[:16]:
+        ys.update(
+            coordinate + offset
+            for offset in lane_offsets
+            if 8.0 <= coordinate + offset <= scene.paper_height - 8.0
+        )
+
+    x_values = sorted(xs)
+    y_values = sorted(ys)
+    x_index = {value: index for index, value in enumerate(x_values)}
+    y_index = {value: index for index, value in enumerate(y_values)}
+    start_index = (x_index[start[0]], y_index[start[1]])
+    end_index = (x_index[end[0]], y_index[end[1]])
+
+    def point(index: tuple[int, int]) -> tuple[float, float]:
+        return x_values[index[0]], y_values[index[1]]
+
+    def point_blocked(candidate: tuple[float, float]) -> bool:
+        if candidate in {start, end}:
+            return False
+        return any(
+            left < candidate[0] < right and top < candidate[1] < bottom
+            for left, top, right, bottom in blockers
+        )
+
+    bend_cost = {"avoid": 28.0, "balanced": 22.0, "compact": 14.0}[strategy]
+    crossing_cost = {"avoid": 900.0, "balanced": 520.0, "compact": 280.0}[
+        strategy
+    ]
+    overlap_cost = {"avoid": 90.0, "balanced": 55.0, "compact": 28.0}[
+        strategy
+    ]
+    container_cost = {"avoid": 12.0, "balanced": 6.0, "compact": 2.5}[strategy]
+    horizontal_routes: dict[float, list[tuple[float, float]]] = {}
+    vertical_routes: dict[float, list[tuple[float, float]]] = {}
+    for points, _, _ in routed:
+        for first, second in pairwise(points):
+            if abs(first[0] - second[0]) < 1e-6:
+                vertical_routes.setdefault(first[0], []).append(
+                    tuple(sorted((first[1], second[1])))
+                )
+            elif abs(first[1] - second[1]) < 1e-6:
+                horizontal_routes.setdefault(first[1], []).append(
+                    tuple(sorted((first[0], second[0])))
+                )
+
+    interaction_cache: dict[
+        tuple[tuple[float, float], tuple[float, float]], tuple[int, float]
+    ] = {}
+
+    def interactions(
+        first: tuple[float, float], second: tuple[float, float]
+    ) -> tuple[int, float]:
+        key = tuple(sorted((first, second)))
+        cached = interaction_cache.get(key)
+        if cached is not None:
+            return cached
+        crossings = 0
+        overlap = 0.0
+        if abs(first[1] - second[1]) < 1e-6:
+            low, high = sorted((first[0], second[0]))
+            for other_low, other_high in horizontal_routes.get(first[1], []):
+                overlap += max(0.0, min(high, other_high) - max(low, other_low))
+            crossings = sum(
+                low <= x <= high
+                for x, intervals in vertical_routes.items()
+                for other_low, other_high in intervals
+                if other_low <= first[1] <= other_high
+            )
+        else:
+            low, high = sorted((first[1], second[1]))
+            for other_low, other_high in vertical_routes.get(first[0], []):
+                overlap += max(0.0, min(high, other_high) - max(low, other_low))
+            crossings = sum(
+                low <= y <= high
+                for y, intervals in horizontal_routes.items()
+                for other_low, other_high in intervals
+                if other_low <= first[0] <= other_high
+            )
+        interaction_cache[key] = crossings, overlap
+        return crossings, overlap
+
+    # State includes the incoming direction so the search can price bends.
+    initial_state = (*start_index, "")
+    distances: dict[tuple[int, int, str], float] = {initial_state: 0.0}
+    previous: dict[tuple[int, int, str], tuple[int, int, str]] = {}
+    serial = 0
+    queue: list[tuple[float, float, int, tuple[int, int, str]]] = [
+        (
+            abs(end[0] - start[0]) + abs(end[1] - start[1]),
+            0.0,
+            serial,
+            initial_state,
+        )
+    ]
+    final_state: tuple[int, int, str] | None = None
+    while queue:
+        _, cost, _, state = heapq.heappop(queue)
+        if cost != distances.get(state):
+            continue
+        ix, iy, incoming = state
+        if (ix, iy) == end_index:
+            final_state = state
+            break
+        neighbours = []
+        if ix > 0:
+            neighbours.append((ix - 1, iy, "h"))
+        if ix + 1 < len(x_values):
+            neighbours.append((ix + 1, iy, "h"))
+        if iy > 0:
+            neighbours.append((ix, iy - 1, "v"))
+        if iy + 1 < len(y_values):
+            neighbours.append((ix, iy + 1, "v"))
+        origin = point((ix, iy))
+        for next_x, next_y, direction in neighbours:
+            destination = point((next_x, next_y))
+            if point_blocked(destination) or any(
+                _segment_hits_box(origin, destination, blocker)
+                for blocker in blockers
+            ):
+                continue
+            length = abs(destination[0] - origin[0]) + abs(
+                destination[1] - origin[1]
+            )
+            crossings, overlap = interactions(origin, destination)
+            step_cost = (
+                length
+                + crossings * crossing_cost
+                + overlap * overlap_cost
+                + sum(
+                    _segment_length_inside_rect(origin, destination, bounds)
+                    for bounds in soft_obstacles
+                )
+                * container_cost
+                + (bend_cost if incoming and incoming != direction else 0.0)
+            )
+            next_state = (next_x, next_y, direction)
+            next_cost = cost + step_cost
+            if next_cost >= distances.get(next_state, math.inf) - 1e-9:
+                continue
+            distances[next_state] = next_cost
+            previous[next_state] = state
+            serial += 1
+            heuristic = abs(end[0] - destination[0]) + abs(
+                end[1] - destination[1]
+            )
+            heapq.heappush(
+                queue,
+                (next_cost + heuristic, next_cost, serial, next_state),
+            )
+    if final_state is None:
+        return None
+    reversed_points: list[tuple[float, float]] = []
+    cursor = final_state
+    while True:
+        reversed_points.append(point((cursor[0], cursor[1])))
+        if cursor == initial_state:
+            break
+        cursor = previous[cursor]
+    return _compact_route(list(reversed(reversed_points)))
+
+
 def auto_route_batch(
     scene: VisualScene, *, batch_id: str, strategy: str = "avoid"
 ) -> PatchBatch:
-    """Route edges by minimizing travel inside unrelated nodes and containers."""
+    """Route edges with obstacle-aware orthogonal search and congestion costs."""
     if strategy not in {"avoid", "balanced", "compact"}:
         raise ValueError("route strategy must be avoid, balanced, or compact")
     by_id = {node.scene_node_id: node for node in scene.nodes}
@@ -747,55 +1056,27 @@ def auto_route_batch(
             current = by_id[current.parent_scene_node_id]
         return result
 
-    margin = 18.0
-    corridor_xs = {8.0, scene.paper_width - 8.0}
-    corridor_ys = {8.0, scene.paper_height - 8.0}
-    for node in scene.nodes:
-        if node.shape not in {"container", "opaque"}:
-            continue
-        corridor_xs.update(
-            {
-                max(8.0, node.bounds.x - margin),
-                min(
-                    scene.paper_width - 8.0,
-                    node.bounds.x + node.bounds.width + margin,
-                ),
-            }
-        )
-        corridor_ys.update(
-            {
-                max(8.0, node.bounds.y - margin),
-                min(
-                    scene.paper_height - 8.0,
-                    node.bounds.y + node.bounds.height + margin,
-                ),
-            }
-        )
-
-    used_corridors: dict[str, int] = {}
-    routed: list[tuple[list[tuple[float, float]], str, str]] = []
-    patches: list[VisualPatch] = []
-    ordered_edges = sorted(
-        scene.edges,
-        key=lambda edge: (
-            -abs(
-                by_id[edge.source_scene_node_id].bounds.y
-                - by_id[edge.target_scene_node_id].bounds.y
-            ),
-            edge.scene_edge_id,
-        ),
-    )
-    for edge in ordered_edges:
+    def route_edge(
+        edge: Any,
+        routed: list[tuple[list[tuple[float, float]], str, str]],
+    ) -> tuple[list[tuple[float, float]], set[str]] | None:
         source_node = by_id[edge.source_scene_node_id]
         target_node = by_id[edge.target_scene_node_id]
-        current = [(point.x, point.y) for point in edge.points]
         source_ancestors = ancestors(edge.source_scene_node_id)
         target_ancestors = ancestors(edge.target_scene_node_id)
-        related_ids = {
+        # An edge must be able to leave its source compound and enter its
+        # target compound. Every other module is a true routing obstacle.
+        hard_related_ids = source_ancestors | target_ancestors
+        metric_related_ids = {
             edge.source_scene_node_id,
             edge.target_scene_node_id,
             *(source_ancestors & target_ancestors),
         }
+        soft_obstacles = [
+            by_id[node_id].bounds
+            for node_id in sorted(hard_related_ids - metric_related_ids)
+            if by_id[node_id].shape == "container"
+        ]
         source_center = (
             source_node.bounds.x + source_node.bounds.width / 2,
             source_node.bounds.y + source_node.bounds.height / 2,
@@ -808,191 +1089,182 @@ def auto_route_batch(
             abs(target_center[0] - source_center[0]) * 0.5
         )
         if vertical:
-            expected_source = "bottom" if target_center[1] > source_center[1] else "top"
-            expected_target = "top" if target_center[1] > source_center[1] else "bottom"
+            source_side = "bottom" if target_center[1] > source_center[1] else "top"
+            target_side = "top" if target_center[1] > source_center[1] else "bottom"
         else:
-            expected_source = "right" if target_center[0] > source_center[0] else "left"
-            expected_target = "left" if target_center[0] > source_center[0] else "right"
-        # Port direction is the first score dimension, so alternate pairs can never
-        # beat the expected pair. Avoid generating and scoring those dead candidates.
-        port_pairs = [(expected_source, expected_target)]
-        min_x, max_x = sorted((source_center[0], target_center[0]))
-        min_y, max_y = sorted((source_center[1], target_center[1]))
-        local_xs = set(corridor_xs)
-        local_ys = set(corridor_ys)
-        local_nodes = [
-            node
-            for node in scene.nodes
-            if node.scene_node_id not in related_ids
-            and node.bounds.x < max_x + 120.0
-            and node.bounds.x + node.bounds.width > min_x - 120.0
-            and node.bounds.y < max_y + 120.0
-            and node.bounds.y + node.bounds.height > min_y - 120.0
-        ]
-        focus_x = (source_center[0] + target_center[0]) / 2
-        focus_y = (source_center[1] + target_center[1]) / 2
-        local_x_candidates = {
-            coordinate
-            for node in local_nodes
-            for coordinate in (
-                max(8.0, node.bounds.x - 10.0),
-                min(scene.paper_width - 8.0, node.bounds.x + node.bounds.width + 10.0),
-            )
-        }
-        local_y_candidates = {
-            coordinate
-            for node in local_nodes
-            for coordinate in (
-                max(8.0, node.bounds.y - 10.0),
-                min(scene.paper_height - 8.0, node.bounds.y + node.bounds.height + 10.0),
-            )
-        }
-        local_xs.update(sorted(local_x_candidates, key=lambda value: abs(value - focus_x))[:24])
-        local_ys.update(sorted(local_y_candidates, key=lambda value: abs(value - focus_y))[:24])
-        candidates = _route_candidates(
+            source_side = "right" if target_center[0] > source_center[0] else "left"
+            target_side = "left" if target_center[0] > source_center[0] else "right"
+        start = _route_port(source_node.bounds, source_side)
+        end = _route_port(target_node.bounds, target_side)
+        source_stub = _port_stub(start, source_side)
+        target_stub = _port_stub(end, target_side)
+        if any(
+            x < 0 or y < 0 or x > scene.paper_width or y > scene.paper_height
+            for x, y in (source_stub, target_stub)
+        ):
+            return None
+        middle = _orthogonal_shortest_path(
             scene,
-            source_node,
-            target_node,
-            corridor_xs=sorted(local_xs),
-            corridor_ys=sorted(local_ys),
-            port_pairs=port_pairs,
+            source_stub,
+            target_stub,
+            related_ids=hard_related_ids,
+            soft_obstacles=soft_obstacles,
+            routed=routed,
+            strategy=strategy,
         )
-        preliminary: list[
-            tuple[
-                tuple[float, ...],
-                list[tuple[float, float]],
-                str | None,
-                tuple[float, float, float, float, int, float],
+        if middle is None:
+            # A malformed or extremely tight legacy scene can leave a stub in
+            # an obstacle clearance box. Preserve a deterministic escape path
+            # while still applying the same global scoring policy.
+            candidates = _route_candidates(
+                scene,
+                source_node,
+                target_node,
+                corridor_xs=[8.0, scene.paper_width - 8.0],
+                corridor_ys=[8.0, scene.paper_height - 8.0],
+                port_pairs=[(source_side, target_side)],
+            )
+            valid = [
+                points
+                for points, _, candidate_source, candidate_target in candidates
+                if _route_directions_valid(
+                    points, candidate_source, candidate_target
+                )
+                and not any(
+                    x < 0
+                    or y < 0
+                    or x > scene.paper_width
+                    or y > scene.paper_height
+                    for x, y in points
+                )
             ]
-        ] = []
-        for points, corridor, source_side, target_side in candidates:
-            if any(
-                x < 0 or y < 0 or x > scene.paper_width or y > scene.paper_height
-                for x, y in points
-            ) or not _route_directions_valid(points, source_side, target_side):
-                continue
-            node_length, container_length, clearance_length = _route_inside_unrelated(
-                points, scene, related_ids
-            )
-            length = _route_length(points)
-            bends = max(0, len(points) - 2)
-            lane_penalty = used_corridors.get(corridor or "", 0) * 36.0
-            direction_penalty = 220.0 * (
-                int(source_side != expected_source) + int(target_side != expected_target)
-            )
-            if strategy == "avoid":
-                base_score = (
-                    direction_penalty,
-                    node_length,
-                    clearance_length,
-                    container_length,
-                    length + lane_penalty,
-                    bends,
+            if not valid:
+                return None
+
+            def fallback_score(
+                points: list[tuple[float, float]],
+            ) -> tuple[float, ...]:
+                obstruction = _route_inside_unrelated(
+                    points, scene, metric_related_ids
                 )
-            elif strategy == "balanced":
-                base_score = (
-                    direction_penalty,
-                    node_length * 24.0
-                    + clearance_length * 3.0
-                    + container_length * 5.0
-                    + length
-                    + lane_penalty,
-                    node_length + clearance_length + container_length,
-                    bends,
-                )
-            else:
-                base_score = (
-                    direction_penalty,
-                    length
-                    + node_length * 8.0
-                    + clearance_length * 1.5
-                    + container_length
-                    + lane_penalty,
-                    node_length + clearance_length + container_length,
-                    bends,
-                )
-            preliminary.append(
-                (
-                    base_score,
+                crossings, overlap = _route_interactions(
                     points,
-                    corridor,
-                    (
-                        node_length,
-                        clearance_length,
-                        container_length,
-                        length,
-                        bends,
-                        direction_penalty,
-                    ),
+                    routed,
+                    edge.source_scene_node_id,
+                    edge.target_scene_node_id,
                 )
-            )
-        scored: list[
-            tuple[tuple[float, ...], list[tuple[float, float]], str | None]
-        ] = []
-        for _, points, corridor, metrics in sorted(preliminary, key=lambda item: item[0])[:36]:
-            (
-                node_length,
-                clearance_length,
-                container_length,
-                length,
-                bends,
-                direction_penalty,
-            ) = metrics
-            crossings, overlap = _route_interactions(
-                points,
-                routed,
-                edge.source_scene_node_id,
-                edge.target_scene_node_id,
-            )
-            lane_penalty = used_corridors.get(corridor or "", 0) * 36.0
-            if strategy == "avoid":
-                score = (
-                    direction_penalty,
-                    node_length,
-                    clearance_length,
-                    container_length,
-                    crossings,
+                return (
+                    obstruction[0],
+                    obstruction[1],
+                    obstruction[2],
+                    obstruction[3],
                     overlap,
-                    length + lane_penalty,
-                    bends,
-                )
-            elif strategy == "balanced":
-                score = (
-                    direction_penalty,
-                    node_length * 24.0
-                    + clearance_length * 3.0
-                    + container_length * 5.0
-                    + crossings * 240.0
-                    + overlap * 6.0
-                    + length
-                    + lane_penalty,
                     crossings,
-                    overlap,
-                    bends,
+                    _route_length(points),
+                    len(points),
                 )
-            else:
-                score = (
-                    direction_penalty,
-                    length
-                    + node_length * 8.0
-                    + clearance_length * 1.5
-                    + container_length
-                    + crossings * 90.0
-                    + overlap * 2.5
-                    + lane_penalty,
-                    crossings,
-                    overlap,
-                    bends,
+
+            return min(valid, key=fallback_score), metric_related_ids
+        points = _compact_route([start, source_stub, *middle, target_stub, end])
+        if not _route_directions_valid(points, source_side, target_side):
+            return None
+        return points, metric_related_ids
+
+    routes: dict[str, tuple[list[tuple[float, float]], set[str]]] = {}
+    routed: list[tuple[list[tuple[float, float]], str, str]] = []
+    ordered_edges = sorted(
+        scene.edges,
+        key=lambda edge: (
+            -(
+                abs(
+                    by_id[edge.source_scene_node_id].bounds.x
+                    - by_id[edge.target_scene_node_id].bounds.x
                 )
-            scored.append((score, points, corridor))
-        if not scored:
+                + abs(
+                    by_id[edge.source_scene_node_id].bounds.y
+                    - by_id[edge.target_scene_node_id].bounds.y
+                )
+            ),
+            edge.scene_edge_id,
+        ),
+    )
+    for edge in ordered_edges:
+        result = route_edge(edge, routed)
+        if result is None:
             continue
-        _, points, corridor = min(scored, key=lambda item: item[0])
+        points, related_ids = result
+        routes[edge.scene_edge_id] = (points, related_ids)
         routed.append(
             (points, edge.source_scene_node_id, edge.target_scene_node_id)
         )
-        if corridor:
-            used_corridors[corridor] = used_corridors.get(corridor, 0) + 1
+
+    # One deterministic rip-up/reroute pass gives early paths a chance to use
+    # the lanes opened by later paths. Accept only strict local improvements.
+    edge_by_id = {edge.scene_edge_id: edge for edge in scene.edges}
+
+    def route_quality(
+        edge: Any,
+        points: list[tuple[float, float]],
+        related_ids: set[str],
+        others: list[tuple[list[tuple[float, float]], str, str]],
+    ) -> tuple[float, ...]:
+        obstruction = _route_inside_unrelated(points, scene, related_ids)
+        crossings, overlap = _route_interactions(
+            points,
+            others,
+            edge.source_scene_node_id,
+            edge.target_scene_node_id,
+        )
+        return (
+            obstruction[0],
+            obstruction[1],
+            obstruction[2],
+            obstruction[3],
+            overlap,
+            crossings,
+            _route_length(points),
+            max(0, len(points) - 2),
+        )
+
+    conflicted = []
+    for edge_id, (points, related_ids) in routes.items():
+        edge = edge_by_id[edge_id]
+        others = [
+            (other_points, edge_by_id[other_id].source_scene_node_id, edge_by_id[other_id].target_scene_node_id)
+            for other_id, (other_points, _) in routes.items()
+            if other_id != edge_id
+        ]
+        crossings, overlap = _route_interactions(
+            points,
+            others,
+            edge.source_scene_node_id,
+            edge.target_scene_node_id,
+        )
+        if crossings or overlap > 1e-6:
+            conflicted.append((-(overlap + crossings * 1000.0), edge_id, related_ids))
+    for _, edge_id, related_ids in sorted(conflicted)[:12]:
+        edge = edge_by_id[edge_id]
+        others = [
+            (other_points, edge_by_id[other_id].source_scene_node_id, edge_by_id[other_id].target_scene_node_id)
+            for other_id, (other_points, _) in routes.items()
+            if other_id != edge_id
+        ]
+        replacement = route_edge(edge, others)
+        if replacement is None:
+            continue
+        new_points, new_related_ids = replacement
+        old_points = routes[edge_id][0]
+        if route_quality(edge, new_points, new_related_ids, others) < route_quality(
+            edge, old_points, related_ids, others
+        ):
+            routes[edge_id] = (new_points, new_related_ids)
+
+    patches: list[VisualPatch] = []
+    for edge in scene.edges:
+        if edge.scene_edge_id not in routes:
+            continue
+        points = routes[edge.scene_edge_id][0]
+        current = [(point.x, point.y) for point in edge.points]
         if points == current:
             continue
         patches.append(
