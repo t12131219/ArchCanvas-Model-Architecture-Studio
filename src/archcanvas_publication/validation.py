@@ -246,6 +246,42 @@ def _segment_crosses_rect(
     return False
 
 
+def _boundary_side(x: float, y: float, rect: SceneRect) -> str | None:
+    if x == rect.x and rect.y <= y <= rect.y + rect.height:
+        return "left"
+    if x == rect.x + rect.width and rect.y <= y <= rect.y + rect.height:
+        return "right"
+    if y == rect.y and rect.x <= x <= rect.x + rect.width:
+        return "top"
+    if y == rect.y + rect.height and rect.x <= x <= rect.x + rect.width:
+        return "bottom"
+    return None
+
+
+def _leaves_source_outward(side: str | None, first: object, second: object) -> bool:
+    if side == "left":
+        return first.y == second.y and second.x <= first.x
+    if side == "right":
+        return first.y == second.y and second.x >= first.x
+    if side == "top":
+        return first.x == second.x and second.y <= first.y
+    if side == "bottom":
+        return first.x == second.x and second.y >= first.y
+    return False
+
+
+def _enters_target(side: str | None, penultimate: object, last: object) -> bool:
+    if side == "left":
+        return penultimate.y == last.y and penultimate.x <= last.x
+    if side == "right":
+        return penultimate.y == last.y and penultimate.x >= last.x
+    if side == "top":
+        return penultimate.x == last.x and penultimate.y <= last.y
+    if side == "bottom":
+        return penultimate.x == last.x and penultimate.y >= last.y
+    return False
+
+
 def validate_geometry(scene: VisualScene) -> tuple[GateResult, list[Diagnostic]]:
     diagnostics: list[Diagnostic] = []
     by_id = {node.scene_node_id: node for node in scene.nodes}
@@ -327,7 +363,13 @@ def validate_geometry(scene: VisualScene) -> tuple[GateResult, list[Diagnostic]]
                 )
             )
             continue
-        if any(point.x > scene.paper_width or point.y > scene.paper_height for point in edge.points):
+        if any(
+            point.x < 0
+            or point.y < 0
+            or point.x > scene.paper_width
+            or point.y > scene.paper_height
+            for point in edge.points
+        ):
             diagnostics.append(
                 _diagnostic(
                     "GEOMETRY_EDGE_OFF_CANVAS",
@@ -337,20 +379,16 @@ def validate_geometry(scene: VisualScene) -> tuple[GateResult, list[Diagnostic]]
             )
         first, second = edge.points[0], edge.points[1]
         penultimate, last = edge.points[-2], edge.points[-1]
-        source_right = source.bounds.x + source.bounds.width
-        target_left = target.bounds.x
+        source_side = _boundary_side(first.x, first.y, source.bounds)
+        target_side = _boundary_side(last.x, last.y, target.bounds)
         if not (
-            first.x == source_right
-            and first.y == second.y
-            and second.x >= first.x
-            and last.x == target_left
-            and penultimate.y == last.y
-            and penultimate.x <= last.x
+            _leaves_source_outward(source_side, first, second)
+            and _enters_target(target_side, penultimate, last)
         ):
             diagnostics.append(
                 _diagnostic(
                     "GEOMETRY_PORT_DIRECTION_INVALID",
-                    f"{edge.scene_edge_id} does not leave right and enter left orthogonally.",
+                    f"{edge.scene_edge_id} does not leave its source and enter its target through valid boundary ports.",
                     edge.scene_edge_id,
                 )
             )
@@ -385,7 +423,7 @@ def validate_geometry(scene: VisualScene) -> tuple[GateResult, list[Diagnostic]]
 
     styles_by_type: dict[str, set[tuple[str, str | None]]] = defaultdict(set)
     for edge in scene.edges:
-        styles_by_type[edge.edge_type.value].add((edge.stroke, edge.dash))
+        styles_by_type[edge.visual_relation.value].add((edge.stroke, edge.dash))
     representatives = {
         edge_type: next(iter(styles)) for edge_type, styles in styles_by_type.items() if styles
     }

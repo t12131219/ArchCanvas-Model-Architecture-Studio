@@ -86,6 +86,7 @@ def create_canvas_document(
             "mode": "explore",
             "theme": "paper-light",
             "navigation_view": "module",
+            "layout_mode": "auto",
         },
     )
 
@@ -337,6 +338,7 @@ def _reroute_edges(
     changed_node_ids: set[str],
 ) -> list:
     by_id = {node.scene_node_id: node for node in nodes}
+    original_by_id = {node.scene_node_id: node for node in scene.nodes}
     edges = []
     for index, edge in enumerate(scene.edges):
         if edge.scene_edge_id in route_hints:
@@ -348,8 +350,38 @@ def _reroute_edges(
         ):
             edges.append(edge)
             continue
+        original_source = original_by_id[edge.source_scene_node_id].bounds
+        original_target = original_by_id[edge.target_scene_node_id].bounds
         source = by_id[edge.source_scene_node_id].bounds
         target = by_id[edge.target_scene_node_id].bounds
+        source_delta = (source.x - original_source.x, source.y - original_source.y)
+        target_delta = (target.x - original_target.x, target.y - original_target.y)
+        both_translated = (
+            {edge.source_scene_node_id, edge.target_scene_node_id}.issubset(changed_node_ids)
+            and source.width == original_source.width
+            and source.height == original_source.height
+            and target.width == original_target.width
+            and target.height == original_target.height
+            and abs(source_delta[0] - target_delta[0]) < 1e-6
+            and abs(source_delta[1] - target_delta[1]) < 1e-6
+        )
+        if both_translated:
+            edges.append(
+                edge.model_copy(
+                    update={
+                        "points": [
+                            point.model_copy(
+                                update={
+                                    "x": point.x + source_delta[0],
+                                    "y": point.y + source_delta[1],
+                                }
+                            )
+                            for point in edge.points
+                        ]
+                    }
+                )
+            )
+            continue
         start = ScenePoint(x=source.x + source.width, y=source.y + source.height / 2)
         end = ScenePoint(x=target.x, y=target.y + target.height / 2)
         if len(edge.points) >= 6 or end.x <= start.x + 30:
@@ -463,6 +495,7 @@ def materialize_scene(base: VisualScene, document: CanvasDocument) -> VisualScen
 def derive_view_state(document: CanvasDocument) -> dict[str, Any]:
     state = dict(document.view_state)
     state.setdefault("navigation_view", "module")
+    state.setdefault("layout_mode", "auto")
     pinned: set[str] = set()
     collapsed: set[str] = set()
     cameras: dict[str, dict[str, Any]] = {}

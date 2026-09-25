@@ -13,6 +13,11 @@ class LabelPlacement:
 
 
 def label_required(scene: VisualScene, edge: SceneEdge) -> bool:
+    if scene.layout_family.endswith("-vertical") and edge.visual_relation.value in {
+        "sequence",
+        "parallel-branch",
+    }:
+        return False
     if not scene.view_id.endswith((".l1", ".l2")):
         return True
     return edge.edge_type.value in {"memory", "state", "condition", "parameter-share"}
@@ -44,29 +49,57 @@ def edge_label_placements(scene: VisualScene) -> dict[str, LabelPlacement]:
         height = 15.0
         start, end = edge.points[0], edge.points[-1]
         candidates: list[tuple[float, float]] = []
-        if len(edge.points) >= 6:
-            left, right = edge.points[2], edge.points[3]
-            for fraction in (0.5, 0.35, 0.65):
-                candidates.append((left.x + (right.x - left.x) * fraction, left.y - 6.0))
-        else:
-            x = (start.x + end.x) / 2
-            candidates.extend(
-                (x, y)
-                for y in (
-                    start.y - 6.0,
-                    end.y - 6.0,
-                    start.y - 24.0,
-                    end.y - 24.0,
-                    start.y + 24.0,
-                    end.y + 24.0,
-                    start.y - 64.0,
-                    end.y - 64.0,
-                    start.y + 64.0,
-                    end.y + 64.0,
-                    start.y - 82.0,
-                    end.y - 82.0,
+        segments = sorted(
+            zip(edge.points, edge.points[1:]),
+            key=lambda pair: abs(pair[1].x - pair[0].x) + abs(pair[1].y - pair[0].y),
+            reverse=True,
+        )
+        for first, second in segments:
+            if first.y == second.y:
+                for fraction in (0.5, 0.35, 0.65):
+                    candidates.append(
+                        (first.x + (second.x - first.x) * fraction, first.y - 6.0)
+                    )
+                    candidates.append(
+                        (first.x + (second.x - first.x) * fraction, first.y + 18.0)
+                    )
+            elif first.x == second.x:
+                for fraction in (0.5, 0.35, 0.65):
+                    candidates.append(
+                        (first.x + width / 2 + 8.0, first.y + (second.y - first.y) * fraction)
+                    )
+                    candidates.append(
+                        (first.x - width / 2 - 8.0, first.y + (second.y - first.y) * fraction)
+                    )
+        x = (start.x + end.x) / 2
+        middle_y = (start.y + end.y) / 2
+        if scene.layout_family.endswith("-vertical"):
+            for rail_x in (
+                scene.paper_width * 0.5,
+                scene.paper_width * 0.44,
+                scene.paper_width * 0.56,
+            ):
+                candidates.extend(
+                    (rail_x, rail_y)
+                    for rail_y in (middle_y, middle_y - 18.0, middle_y + 18.0)
                 )
+        candidates.extend(
+            (x, y)
+            for y in (
+                start.y - 6.0,
+                end.y - 6.0,
+                start.y - 24.0,
+                end.y - 24.0,
+                start.y + 24.0,
+                end.y + 24.0,
+                start.y - 64.0,
+                end.y - 64.0,
+                start.y + 64.0,
+                end.y + 64.0,
+                start.y - 82.0,
+                end.y - 82.0,
             )
+        )
         top_row = 42.0
         while top_row < first_node_y - 8.0:
             candidates.append((scene.paper_width / 2, top_row))

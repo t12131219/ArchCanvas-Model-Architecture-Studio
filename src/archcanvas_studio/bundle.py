@@ -37,6 +37,7 @@ from archcanvas_core.models import (
 )
 from archcanvas_patterns import exact_ir_digest
 from archcanvas_publication import (
+    LAYOUT_MODES,
     build_scene,
     build_visual_spec,
     compile_hierarchy,
@@ -176,7 +177,8 @@ class StudioBundle:
             self.architecture, self.hierarchy, self._expanded_hierarchy_ids()
         )
         spec = build_visual_spec(view)
-        scene = build_scene(view, spec)
+        layout_mode = str(derive_view_state(self.document).get("layout_mode", "auto"))
+        scene = build_scene(view, spec, layout_mode)
         self.views = {view.projection_id: view}
         self.specs = {view.projection_id: spec}
         self.base_scenes = {view.projection_id: scene}
@@ -321,6 +323,7 @@ class StudioBundle:
                     "reason": "The current snapshot does not inventory transitive source files.",
                 },
                 "navigation_projections": list(PROJECTIONS),
+                "layout_modes": list(LAYOUT_MODES),
                 "validation_profiles": [
                     "fast-static",
                     "publication",
@@ -370,6 +373,14 @@ class StudioBundle:
             state[f"{projection}_expansion"] = validate_expansion(
                 projection, expanded_ids
             )
+        self.save_document(self.document.model_copy(update={"view_state": state}))
+        self.recompile_projection()
+
+    def set_layout_mode(self, layout_mode: str) -> None:
+        if layout_mode not in LAYOUT_MODES:
+            raise ValueError(f"unknown layout mode: {layout_mode}")
+        state = dict(self.document.view_state)
+        state["layout_mode"] = layout_mode
         self.save_document(self.document.model_copy(update={"view_state": state}))
         self.recompile_projection()
 
@@ -561,13 +572,13 @@ class StudioBundle:
                 "intents": [*intents, intent],
                 "proofs": [*proofs, proof],
                 "lowering_status": "blocked",
-                "writeback_summary": {
-                    "eligibility": "blocked",
-                    "blocking_intent_ids": [
+                "writeback_summary": WritebackSummary(
+                    eligibility="blocked",
+                    blocking_intent_ids=[
                         *[item.intent_id for item in proofs],
                         intent_id,
                     ],
-                },
+                ),
             }
         )
         draft = DraftGraphDocument.model_validate(draft.model_dump(mode="json"))
@@ -764,7 +775,7 @@ def prepare_studio_bundle(
             }
     view = project_hierarchy(architecture, hierarchy, expanded_ids)
     spec = build_visual_spec(view)
-    scene = build_scene(view, spec)
+    scene = build_scene(view, spec, str(state.get("layout_mode", "auto")))
     views = {view.projection_id: view}
     specs = {view.projection_id: spec}
     base_scenes = {view.projection_id: scene}

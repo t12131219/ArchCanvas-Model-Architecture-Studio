@@ -30,6 +30,10 @@
           "title": "View Edge Id",
           "type": "string"
         },
+        "visual_relation": {
+          "$ref": "#/$defs/VisualRelation",
+          "default": "sequence"
+        },
         "width": {
           "default": 1.5,
           "exclusiveMinimum": 0,
@@ -61,7 +65,14 @@
             "merge",
             "io",
             "state",
-            "opaque"
+            "opaque",
+            "projection",
+            "activation",
+            "normalization",
+            "attention",
+            "transform",
+            "condition",
+            "repeat"
           ],
           "title": "Glyph",
           "type": "string"
@@ -103,6 +114,24 @@
       ],
       "title": "VisualNodeStyle",
       "type": "object"
+    },
+    "VisualRelation": {
+      "description": "Evidence-derived diagram grammar layered over canonical edge semantics.",
+      "enum": [
+        "sequence",
+        "parallel-branch",
+        "merge",
+        "residual",
+        "shape-transform",
+        "memory-reference",
+        "condition",
+        "routing",
+        "state-update",
+        "parameter-share",
+        "training-only"
+      ],
+      "title": "VisualRelation",
+      "type": "string"
     }
   },
   "additionalProperties": false,

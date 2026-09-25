@@ -378,6 +378,22 @@ class EdgeType(str, Enum):
     TRAINING_ONLY = "training-only"
 
 
+class VisualRelation(str, Enum):
+    """Evidence-derived diagram grammar layered over canonical edge semantics."""
+
+    SEQUENCE = "sequence"
+    PARALLEL_BRANCH = "parallel-branch"
+    MERGE = "merge"
+    RESIDUAL = "residual"
+    SHAPE_TRANSFORM = "shape-transform"
+    MEMORY_REFERENCE = "memory-reference"
+    CONDITION = "condition"
+    ROUTING = "routing"
+    STATE_UPDATE = "state-update"
+    PARAMETER_SHARE = "parameter-share"
+    TRAINING_ONLY = "training-only"
+
+
 class RepeatKind(str, Enum):
     STACK = "stack"
     TIME = "time"
@@ -757,6 +773,7 @@ class PublicationEdge(StrictModel):
     target_view_node_id: Identifier
     role: str = Field(min_length=1)
     edge_type: EdgeType
+    visual_relation: VisualRelation = VisualRelation.SEQUENCE
     symbolic_shape: str = Field(min_length=1)
     evidence_ids: list[Identifier] = Field(default_factory=list)
 
@@ -852,7 +869,22 @@ class PublicationView(StrictModel):
 
 class VisualNodeStyle(StrictModel):
     view_node_id: Identifier
-    glyph: Literal["container", "operator", "tensor", "merge", "io", "state", "opaque"]
+    glyph: Literal[
+        "container",
+        "operator",
+        "tensor",
+        "merge",
+        "io",
+        "state",
+        "opaque",
+        "projection",
+        "activation",
+        "normalization",
+        "attention",
+        "transform",
+        "condition",
+        "repeat",
+    ]
     fill: str = Field(min_length=1)
     stroke: str = Field(min_length=1)
     label: str = Field(min_length=1)
@@ -861,6 +893,7 @@ class VisualNodeStyle(StrictModel):
 
 class VisualEdgeStyle(StrictModel):
     view_edge_id: Identifier
+    visual_relation: VisualRelation = VisualRelation.SEQUENCE
     stroke: str = Field(min_length=1)
     dash: str | None = None
     width: float = Field(default=1.5, gt=0)
@@ -894,7 +927,22 @@ class SceneNode(StrictModel):
     view_node_id: Identifier
     canonical_node_ids: list[Identifier] = Field(default_factory=list)
     bounds: SceneRect
-    shape: Literal["container", "rect", "merge", "io", "state", "opaque"]
+    shape: Literal[
+        "container",
+        "rect",
+        "tensor",
+        "merge",
+        "io",
+        "state",
+        "opaque",
+        "projection",
+        "activation",
+        "normalization",
+        "attention",
+        "transform",
+        "condition",
+        "repeat",
+    ]
     label_lines: list[str] = Field(min_length=1, max_length=3)
     secondary_label: str | None = None
     fill: str = Field(min_length=1)
@@ -912,6 +960,7 @@ class SceneEdge(StrictModel):
     points: list[ScenePoint] = Field(min_length=2)
     role: str = Field(min_length=1)
     edge_type: EdgeType
+    visual_relation: VisualRelation = VisualRelation.SEQUENCE
     stroke: str = Field(min_length=1)
     dash: str | None = None
     width: float = Field(gt=0)

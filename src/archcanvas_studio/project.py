@@ -3,6 +3,8 @@ from __future__ import annotations
 import ast
 import hashlib
 import os
+from collections import defaultdict, deque
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -30,6 +32,7 @@ EXCLUDED_DIRECTORIES = {
     "checkpoints",
 }
 CONFIG_SUFFIXES = {".json", ".yaml", ".yml", ".toml"}
+CONDA_ROOT_NAMES = ("anaconda3", "miniconda3", "miniforge3", "mambaforge")
 
 
 def _digest(data: bytes) -> str:
@@ -41,6 +44,100 @@ def _confined(root: Path, candidate: Path) -> Path:
     if not resolved.is_relative_to(root):
         raise ValueError("project path escapes the selected project root")
     return resolved
+
+
+def _conda_environment(path: Path, active: Path | None) -> dict[str, Any] | None:
+    try:
+        resolved = path.expanduser().resolve()
+    except OSError:
+        return None
+    python = resolved / ("python.exe" if os.name == "nt" else "bin/python")
+    if not resolved.is_dir() or not (resolved / "conda-meta").is_dir() or not python.is_file():
+        return None
+    name = "base" if resolved.name in CONDA_ROOT_NAMES else resolved.name
+    return {
+        "name": name,
+        "path": str(resolved),
+        "python": str(python),
+        "active": active == resolved,
+    }
+
+
+def discover_conda_environments(
+    *,
+    home: Path | None = None,
+    environ: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
+    """Discover registered Conda environments without executing Conda or Python."""
+    variables = os.environ if environ is None else environ
+    home = (home or Path.home()).expanduser().resolve()
+    active_value = variables.get("CONDA_PREFIX")
+    active = Path(active_value).expanduser().resolve() if active_value else None
+    candidates: set[Path] = set()
+
+    if active is not None:
+        candidates.add(active)
+    conda_executable = variables.get("CONDA_EXE")
+    if conda_executable:
+        executable = Path(conda_executable).expanduser().resolve()
+        candidates.add(executable.parent.parent)
+    for name in CONDA_ROOT_NAMES:
+        candidates.add(home / name)
+
+    registry = home / ".conda" / "environments.txt"
+    if registry.is_file():
+        try:
+            candidates.update(
+                Path(line.strip()).expanduser()
+                for line in registry.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            )
+        except (OSError, UnicodeError):
+            pass
+
+    roots = list(candidates)
+    for root in roots:
+        envs = root / "envs"
+        if not envs.is_dir():
+            continue
+        try:
+            candidates.update(path for path in envs.iterdir() if path.is_dir())
+        except OSError:
+            continue
+
+    environments = [
+        item
+        for item in (_conda_environment(path, active) for path in candidates)
+        if item is not None
+    ]
+    environments.sort(key=lambda item: (not item["active"], item["name"].lower(), item["path"]))
+    return {
+        "schema_version": "1.0",
+        "environments": environments,
+        "selected": next(
+            (item["path"] for item in environments if item["active"]),
+            environments[0]["path"] if environments else None,
+        ),
+        "source_execution": False,
+    }
+
+
+def resolve_conda_environment(path: str | None) -> dict[str, Any] | None:
+    discovered = discover_conda_environments()
+    if path is None:
+        selected = discovered["selected"]
+        return next(
+            (item for item in discovered["environments"] if item["path"] == selected),
+            None,
+        )
+    resolved = str(Path(path).expanduser().resolve())
+    selected = next(
+        (item for item in discovered["environments"] if item["path"] == resolved),
+        None,
+    )
+    if selected is None:
+        raise ValueError("selected Conda environment is not registered or valid")
+    return selected
 
 
 def create_project_session(
@@ -103,6 +200,169 @@ def _framework_evidence(tree: ast.AST) -> tuple[str, list[str]]:
     return "unknown", evidence
 
 
+def _dotted_name(node: ast.expr) -> str | None:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        owner = _dotted_name(node.value)
+        return f"{owner}.{node.attr}" if owner else node.attr
+    return None
+
+
+def _import_aliases(tree: ast.Module, module: str) -> dict[str, str]:
+    aliases: dict[str, str] = {}
+    package = module.rpartition(".")[0]
+    for node in tree.body:
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                aliases[alias.asname or alias.name.split(".")[0]] = alias.name
+        elif isinstance(node, ast.ImportFrom):
+            imported_module = node.module or ""
+            if node.level:
+                package_parts = package.split(".") if package else []
+                keep = max(0, len(package_parts) - node.level + 1)
+                prefix = ".".join(package_parts[:keep])
+                imported_module = ".".join(
+                    part for part in (prefix, imported_module) if part
+                )
+            for alias in node.names:
+                if alias.name == "*":
+                    continue
+                aliases[alias.asname or alias.name] = ".".join(
+                    part for part in (imported_module, alias.name) if part
+                )
+    return aliases
+
+
+def _entrypoint_category(name: str, kind: str, top_level: bool) -> str:
+    if kind in {"model-artifact", "function"} or top_level:
+        return "model"
+    normalized = name.lower().replace("_", "")
+    for marker, category in (
+        ("attention", "attention"),
+        ("attn", "attention"),
+        ("head", "head"),
+        ("block", "block"),
+        ("layer", "layer"),
+        ("encoder", "encoder"),
+        ("decoder", "decoder"),
+        ("backbone", "backbone"),
+    ):
+        if marker in normalized:
+            return category
+    return "component"
+
+
+def _resolve_instantiated_entrypoints(
+    node: ast.ClassDef,
+    *,
+    module: str,
+    aliases: Mapping[str, str],
+    entrypoint_by_symbol: Mapping[str, str],
+    entrypoints_by_name: Mapping[str, list[str]],
+) -> set[str]:
+    resolved: set[str] = set()
+    for descendant in ast.walk(node):
+        if not isinstance(descendant, ast.Call):
+            continue
+        call_name = _dotted_name(descendant.func)
+        if not call_name:
+            continue
+        parts = call_name.split(".")
+        imported = aliases.get(parts[0])
+        expanded = ".".join([imported, *parts[1:]]) if imported else call_name
+        direct = entrypoint_by_symbol.get(expanded)
+        if direct is None and "." in expanded:
+            suffix_matches = [
+                entrypoint
+                for symbol, entrypoint in entrypoint_by_symbol.items()
+                if symbol.endswith(f".{expanded}")
+            ]
+            if len(suffix_matches) == 1:
+                direct = suffix_matches[0]
+        if direct is None and "." not in expanded:
+            direct = entrypoint_by_symbol.get(f"{module}.{expanded}")
+        if direct is None:
+            candidates = entrypoints_by_name.get(parts[-1], [])
+            if len(candidates) == 1:
+                direct = candidates[0]
+        if direct is not None:
+            resolved.add(direct)
+    return resolved
+
+
+def _is_top_level_model(item: Mapping[str, Any], has_parent: bool) -> bool:
+    if has_parent:
+        return False
+    if item["kind"] in {"model-artifact", "function"}:
+        return True
+    name = item["entrypoint"].rsplit(":", 1)[-1].lower().replace("_", "")
+    if name in {"model", "transformer", "patchtst"}:
+        return True
+    return name.endswith(("model", "network", "net"))
+
+
+def _analysis_scope(
+    item: Mapping[str, Any], configs: list[dict[str, Any]]
+) -> tuple[str, str, list[str]]:
+    source_path = Path(item["path"])
+    config_parents = {
+        Path(config["path"]).parent
+        for config in configs
+        if source_path.is_relative_to(Path(config["path"]).parent)
+    }
+    scope = max(config_parents, key=lambda path: len(path.parts), default=Path("."))
+    scope_path = scope.as_posix()
+    entrypoint = str(item["entrypoint"])
+    if item["kind"] == "model-artifact":
+        entrypoint = Path(entrypoint).relative_to(scope).as_posix()
+    elif ":" in entrypoint and scope != Path("."):
+        module, symbol = entrypoint.split(":", 1)
+        prefix = f"{scope_path.replace('/', '.')}."
+        if module.startswith(prefix):
+            entrypoint = f"{module.removeprefix(prefix)}:{symbol}"
+    scoped_configs = [
+        config["path"]
+        for config in configs
+        if Path(config["path"]).is_relative_to(scope)
+    ]
+    return scope_path, entrypoint, scoped_configs
+
+
+def browse_directories(path: Path | None = None) -> dict[str, Any]:
+    """Return a deterministic directory listing for the local Studio picker."""
+    current = (path or Path.home()).expanduser().resolve()
+    if not current.is_dir():
+        raise ValueError("selected folder does not exist or is not a directory")
+    try:
+        directories = sorted(
+            (
+                child
+                for child in current.iterdir()
+                if child.is_dir() and not child.is_symlink()
+            ),
+            key=lambda child: (child.name.startswith("."), child.name.lower()),
+        )
+    except OSError as error:
+        raise ValueError("selected folder cannot be read") from error
+    breadcrumbs: list[dict[str, str]] = []
+    cursor = Path(current.anchor)
+    breadcrumbs.append({"name": current.anchor or "/", "path": str(cursor)})
+    for part in current.parts[1:]:
+        cursor /= part
+        breadcrumbs.append({"name": part, "path": str(cursor)})
+    return {
+        "schema_version": "1.0",
+        "path": str(current),
+        "parent": str(current.parent) if current.parent != current else None,
+        "breadcrumbs": breadcrumbs,
+        "directories": [
+            {"name": child.name, "path": str(child)} for child in directories[:500]
+        ],
+        "truncated": len(directories) > 500,
+    }
+
+
 def discover_project(root: Path) -> dict[str, Any]:
     root = root.resolve()
     if not root.is_dir():
@@ -110,6 +370,7 @@ def discover_project(root: Path) -> dict[str, Any]:
     entrypoints: list[dict[str, Any]] = []
     configs: list[dict[str, Any]] = []
     warnings: list[str] = []
+    class_nodes: dict[str, tuple[ast.ClassDef, str, dict[str, str]]] = {}
     scanned_files = 0
     for current, directory_names, file_names in os.walk(root, followlinks=False):
         current_path = Path(current)
@@ -135,10 +396,12 @@ def discover_project(root: Path) -> dict[str, Any]:
                 entrypoints.append(
                     {
                         "entrypoint": relative.as_posix(),
+                        "path": relative.as_posix(),
                         "framework": "onnx",
                         "kind": "model-artifact",
                         "confidence": "exact",
                         "evidence": [".onnx suffix"],
+                        "line": 1,
                     }
                 )
                 scanned_files += 1
@@ -166,15 +429,22 @@ def discover_project(root: Path) -> dict[str, Any]:
                         child.name for child in node.body if isinstance(child, ast.FunctionDef)
                     }
                     if model_like or {"forward", "call", "__call__"} & methods:
+                        entrypoint = f"{module}:{node.name}"
                         entrypoints.append(
                             {
-                                "entrypoint": f"{module}:{node.name}",
+                                "entrypoint": entrypoint,
+                                "path": relative.as_posix(),
                                 "framework": framework,
                                 "kind": "class",
                                 "confidence": "inferred" if framework == "unknown" else "exact",
                                 "evidence": [*evidence, *bases],
                                 "line": node.lineno,
                             }
+                        )
+                        class_nodes[entrypoint] = (
+                            node,
+                            module,
+                            _import_aliases(tree, module),
                         )
                 elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name in {
                     "model",
@@ -185,6 +455,7 @@ def discover_project(root: Path) -> dict[str, Any]:
                     entrypoints.append(
                         {
                             "entrypoint": f"{module}:{node.name}",
+                            "path": relative.as_posix(),
                             "framework": framework,
                             "kind": "function",
                             "confidence": "inferred",
@@ -192,7 +463,101 @@ def discover_project(root: Path) -> dict[str, Any]:
                             "line": node.lineno,
                         }
                     )
-    entrypoints.sort(key=lambda item: (item["entrypoint"], item["kind"]))
+    entrypoint_by_symbol = {
+        item["entrypoint"].replace(":", "."): item["entrypoint"]
+        for item in entrypoints
+        if item["kind"] == "class"
+    }
+    entrypoints_by_name: dict[str, list[str]] = defaultdict(list)
+    for item in entrypoints:
+        if item["kind"] == "class":
+            entrypoints_by_name[item["entrypoint"].rsplit(":", 1)[-1]].append(
+                item["entrypoint"]
+            )
+
+    children_by_parent: dict[str, set[str]] = defaultdict(set)
+    parents_by_child: dict[str, set[str]] = defaultdict(set)
+    for parent, (node, module, aliases) in class_nodes.items():
+        children = _resolve_instantiated_entrypoints(
+            node,
+            module=module,
+            aliases=aliases,
+            entrypoint_by_symbol=entrypoint_by_symbol,
+            entrypoints_by_name=entrypoints_by_name,
+        )
+        for child in children - {parent}:
+            children_by_parent[parent].add(child)
+            parents_by_child[child].add(parent)
+
+    all_ids = {item["entrypoint"] for item in entrypoints}
+    roots = sorted(all_ids - set(parents_by_child))
+    depths = {entrypoint: 0 for entrypoint in roots}
+    queue = deque(roots)
+    while queue:
+        parent = queue.popleft()
+        for child in sorted(children_by_parent[parent]):
+            candidate_depth = depths[parent] + 1
+            if child not in depths or candidate_depth < depths[child]:
+                depths[child] = candidate_depth
+                queue.append(child)
+    for entrypoint in sorted(all_ids - set(depths)):
+        depths[entrypoint] = 0
+
+    primary_parent: dict[str, str] = {}
+    for child, parents in parents_by_child.items():
+        shallower = [
+            parent for parent in parents if depths[parent] < depths[child]
+        ]
+        if shallower:
+            primary_parent[child] = min(
+                shallower,
+                key=lambda parent: (depths[child] - depths[parent], parent),
+            )
+
+    roots_by_entrypoint: dict[str, str] = {}
+    for entrypoint in sorted(all_ids, key=lambda item: (depths[item], item)):
+        parent = primary_parent.get(entrypoint)
+        roots_by_entrypoint[entrypoint] = (
+            roots_by_entrypoint.get(parent, parent) if parent else entrypoint
+        )
+
+    for item in entrypoints:
+        entrypoint = item["entrypoint"]
+        name = entrypoint.rsplit(":", 1)[-1]
+        top_level = _is_top_level_model(item, entrypoint in parents_by_child)
+        analysis_root, analysis_entrypoint, scoped_configs = _analysis_scope(item, configs)
+        item.update(
+            {
+                "parent_entrypoint": primary_parent.get(entrypoint),
+                "parent_entrypoints": sorted(parents_by_child[entrypoint]),
+                "root_entrypoint": roots_by_entrypoint[entrypoint],
+                "depth": depths[entrypoint],
+                "contains": sorted(children_by_parent[entrypoint]),
+                "child_count": len(children_by_parent[entrypoint]),
+                "top_level": top_level,
+                "analysis_root": analysis_root,
+                "analysis_entrypoint": analysis_entrypoint,
+                "config_paths": scoped_configs,
+                "category": _entrypoint_category(
+                    name, item["kind"], top_level
+                ),
+            }
+        )
+
+    top_level_ids = {
+        item["entrypoint"] for item in entrypoints if item["top_level"]
+    }
+    entrypoints.sort(
+        key=lambda item: (
+            item["root_entrypoint"] not in top_level_ids,
+            item["root_entrypoint"],
+            item["depth"],
+            item["parent_entrypoint"] or "",
+            item["path"],
+            item.get("line", 0),
+            item["entrypoint"],
+        )
+    )
     configs.sort(key=lambda item: item["path"])
     return {
         "schema_version": "1.0",

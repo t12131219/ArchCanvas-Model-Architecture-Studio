@@ -73,7 +73,8 @@ def test_cross_framework_static_ir_publication_and_geometry(
     )
     assert all(gate.status == "passed" for gate in publication_gates)
     assert not publication_diagnostics
-    assert {view.layout_family for view in views} == {"generic-dag"}
+    assert len({view.layout_family for view in views}) == 1
+    assert views[0].layout_family in {"single-lane", "dual-lane"}
     for view in views:
         geometry_gate, geometry_diagnostics = validate_geometry(
             build_scene(view, build_visual_spec(view))

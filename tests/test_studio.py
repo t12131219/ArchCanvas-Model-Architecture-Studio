@@ -5,17 +5,26 @@ import json
 import shutil
 import threading
 from collections import defaultdict
+from itertools import pairwise
 from pathlib import Path
 from urllib.request import Request, urlopen
 
 import pytest
 
-from archcanvas_core.models import DraftGraphDocument, EditProofState, PatchBatch, VisualPatch
+from archcanvas_core.models import (
+    DraftGraphDocument,
+    EditProofState,
+    PatchBatch,
+    ScenePoint,
+    VisualPatch,
+)
 from archcanvas_engine.cli import main
+from archcanvas_publication import validate_geometry
 from archcanvas_python import analyze_project
 from archcanvas_studio import (
     apply_patch,
     apply_patch_batch,
+    auto_route_batch,
     derive_view_state,
     load_canvas_document,
     materialize_scene,
@@ -24,8 +33,17 @@ from archcanvas_studio import (
     redo_patch,
     undo_patch,
 )
-from archcanvas_studio.operations import build_search_index
-from archcanvas_studio.project import discover_project
+from archcanvas_studio.operations import (
+    _orthogonal_segment_interaction,
+    _route_interactions,
+    auto_layout_batch,
+    build_search_index,
+)
+from archcanvas_studio.project import (
+    browse_directories,
+    discover_conda_environments,
+    discover_project,
+)
 from archcanvas_studio.server import create_studio_server
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,6 +75,27 @@ def _source_hashes() -> dict[str, str]:
         str(path.relative_to(FIXTURE)): hashlib.sha256(path.read_bytes()).hexdigest()
         for path in sorted(FIXTURE.rglob("*.py"))
     }
+
+
+def test_route_interactions_distinguish_crossings_and_shared_segments() -> None:
+    assert _orthogonal_segment_interaction(
+        (10.0, 0.0), (10.0, 20.0), (0.0, 10.0), (20.0, 10.0)
+    ) == (1, 0.0)
+    assert _orthogonal_segment_interaction(
+        (10.0, 0.0), (10.0, 20.0), (10.0, 5.0), (10.0, 25.0)
+    ) == (0, 15.0)
+    assert _orthogonal_segment_interaction(
+        (10.0, 0.0), (10.0, 20.0), (10.0, 20.0), (30.0, 20.0)
+    ) == (0, 0.0)
+
+
+def test_route_interactions_allow_shared_endpoint_stubs() -> None:
+    candidate = [(10.0, 10.0), (10.0, 30.0), (40.0, 30.0)]
+    routed = [
+        ([(10.0, 10.0), (10.0, 30.0), (10.0, 50.0)], "source", "other"),
+        ([(70.0, 30.0), (40.0, 30.0)], "other", "target"),
+    ]
+    assert _route_interactions(candidate, routed, "source", "target") == (0, 0.0)
 
 
 def _move_patch(bundle, *, suffix: str = "move") -> tuple[VisualPatch, str, float]:
@@ -156,6 +195,41 @@ def test_theme_and_camera_persist_across_reopen(
         "y": -12,
         "zoom": 1.25,
     }
+
+
+def test_layout_mode_recompiles_and_persists_across_reopen(
+    analysis_dir: Path, tmp_path: Path
+) -> None:
+    workspace = tmp_path / ".archcanvas"
+    bundle = prepare_studio_bundle(analysis_dir / "architecture.json", workspace)
+    assert bundle.state()["view_state"]["layout_mode"] == "auto"
+    assert bundle.state()["capabilities"]["layout_modes"] == [
+        "auto",
+        "dual-swimlane",
+        "single-lane",
+        "hierarchical",
+        "branch-tree",
+        "force-directed",
+        "radial",
+        "orthogonal",
+    ]
+
+    canonical_nodes = set(next(iter(bundle.views.values())).canonical_node_ids)
+    bundle.set_layout_mode("branch-tree")
+    state = bundle.state()
+    assert state["view_state"]["layout_mode"] == "branch-tree"
+    assert next(iter(state["scenes"].values()))["layout_family"] == "branch-tree"
+    assert {
+        canonical_id
+        for node in next(iter(state["scenes"].values()))["nodes"]
+        for canonical_id in node["canonical_node_ids"]
+    } == canonical_nodes
+
+    reopened = prepare_studio_bundle(analysis_dir / "architecture.json", workspace)
+    assert reopened.state()["view_state"]["layout_mode"] == "branch-tree"
+    assert next(iter(reopened.base_scenes.values())).layout_family == "branch-tree"
+    with pytest.raises(ValueError, match="unknown layout mode"):
+        reopened.set_layout_mode("spiral")
 
 
 def test_module_and_source_navigation_share_canonical_objects_and_preference(
@@ -323,6 +397,51 @@ def test_module_expansion_compiles_stable_arbitrary_frontiers(
     assert full["views"][full["active_projection_id"]]["fully_expanded"] is True
 
 
+def test_autoformer_module_navigation_is_semantic_preorder(tmp_path: Path) -> None:
+    fixture = ROOT / "fixtures" / "tier_a" / "autoformer"
+    analyzed = analyze_project(
+        fixture,
+        "models.Autoformer:Model",
+        "long_term_forecast",
+        "eval",
+        (fixture / "config.json").read_bytes(),
+        fixture / "config.json",
+    )
+    analysis_dir = tmp_path / "autoformer-analysis"
+    analysis_dir.mkdir()
+    (analysis_dir / "architecture.json").write_text(
+        analyzed.architecture.model_dump_json()
+    )
+    (analysis_dir / "source-snapshot.json").write_text(
+        analyzed.snapshot.model_dump_json()
+    )
+    (analysis_dir / "evidence-ledger.json").write_text(
+        json.dumps([record.model_dump(mode="json") for record in analyzed.evidence])
+    )
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json", tmp_path / ".autoformer-archcanvas"
+    )
+    rows = bundle.state()["navigation"]["projections"]["module"]["nodes"]
+    root = next(row for row in rows if row["parent_id"] is None)
+    root_children = [row for row in rows if row["parent_id"] == root["id"]]
+    assert [row["label"].lower() for row in root_children] == [
+        "inputs",
+        "decomposition",
+        "encoder",
+        "decoder",
+        "output",
+    ]
+
+    positions = {row["id"]: index for index, row in enumerate(rows)}
+    assert all(
+        row["parent_id"] is None or positions[row["parent_id"]] < positions[row["id"]]
+        for row in rows
+    )
+    seasonal = next(row for row in rows if row["label"] == "Seasonal zero seed")
+    decomposition = next(row for row in rows if row["label"] == "decomposition")
+    assert seasonal["parent_id"] == decomposition["id"]
+
+
 def test_encoder_expansion_preserves_container_and_reveals_immediate_structure(
     analysis_dir: Path, tmp_path: Path
 ) -> None:
@@ -433,6 +552,302 @@ def test_patch_batch_is_atomic_and_undoes_as_one_action(
     assert redo_patch(undone).visual_patches == changed.visual_patches
 
 
+def test_container_move_translates_descendants_and_internal_edges_atomically(
+    analysis_dir: Path, tmp_path: Path
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json", tmp_path / ".archcanvas"
+    )
+    rows = bundle.state()["navigation"]["projections"]["module"]["nodes"]
+    bundle.set_navigation_view(
+        "module",
+        expansions={
+            "module": [row["id"] for row in rows if row["child_count"] > 0],
+            "source": [],
+        },
+    )
+    scene = next(iter(bundle.base_scenes.values()))
+    view = next(iter(bundle.views.values()))
+    encoder_row = next(row for row in rows if row["label"] == "encoder")
+    encoder_view = next(
+        node
+        for node in view.nodes
+        if node.attributes.get("hierarchy_node_id") == encoder_row["id"]
+    )
+    container = next(
+        node for node in scene.nodes if node.view_node_id == encoder_view.view_node_id
+    )
+    children: dict[str, list[str]] = defaultdict(list)
+    for node in scene.nodes:
+        if node.parent_scene_node_id:
+            children[node.parent_scene_node_id].append(node.scene_node_id)
+    moving_ids: set[str] = set()
+
+    def collect(node_id: str) -> None:
+        if node_id in moving_ids:
+            return
+        moving_ids.add(node_id)
+        for child_id in children[node_id]:
+            collect(child_id)
+
+    collect(container.scene_node_id)
+    assert len(moving_ids) > 1
+    internal_edge = next(
+        edge
+        for edge in scene.edges
+        if {edge.source_scene_node_id, edge.target_scene_node_id} <= moving_ids
+    )
+    delta_x, delta_y = 37.0, 23.0
+    batch = PatchBatch(
+        batch_id="batch:test.move-container",
+        description="Move encoder with descendants",
+        patches=[
+            VisualPatch(
+                patch_id=f"patch:test.move-container-{index}",
+                operation="set-position",
+                target_id=node.scene_node_id,
+                value={
+                    "scene_id": scene.scene_id,
+                    "x": node.bounds.x + delta_x,
+                    "y": node.bounds.y + delta_y,
+                },
+            )
+            for index, node in enumerate(scene.nodes)
+            if node.scene_node_id in moving_ids
+        ],
+    )
+    original = materialize_scene(scene, bundle.document)
+    changed = apply_patch_batch(
+        bundle.document,
+        batch,
+        {item.scene_id: item for item in bundle.base_scenes.values()},
+    )
+    moved = materialize_scene(scene, changed)
+    original_nodes = {node.scene_node_id: node for node in original.nodes}
+    moved_nodes = {node.scene_node_id: node for node in moved.nodes}
+    for node_id in moving_ids:
+        assert moved_nodes[node_id].bounds.x == original_nodes[node_id].bounds.x + delta_x
+        assert moved_nodes[node_id].bounds.y == original_nodes[node_id].bounds.y + delta_y
+    moved_edge = next(
+        edge for edge in moved.edges if edge.scene_edge_id == internal_edge.scene_edge_id
+    )
+    assert [
+        (point.x, point.y) for point in moved_edge.points
+    ] == [
+        (point.x + delta_x, point.y + delta_y) for point in internal_edge.points
+    ]
+    undone = undo_patch(changed)
+    assert materialize_scene(scene, undone) == original
+    redone = redo_patch(undone)
+    assert materialize_scene(scene, redone) == moved
+
+
+def test_auto_layout_restores_compound_baseline_without_breaking_containment(
+    analysis_dir: Path, tmp_path: Path
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json", tmp_path / ".archcanvas"
+    )
+    rows = bundle.state()["navigation"]["projections"]["module"]["nodes"]
+    bundle.set_navigation_view(
+        "module",
+        expansions={
+            "module": [row["id"] for row in rows if row["child_count"] > 0],
+            "source": [],
+        },
+    )
+    baseline = next(iter(bundle.base_scenes.values()))
+    parent_ids = {
+        node.parent_scene_node_id
+        for node in baseline.nodes
+        if node.parent_scene_node_id is not None
+    }
+    parent = next(
+        node
+        for node in baseline.nodes
+        if node.scene_node_id in parent_ids and node.parent_scene_node_id is not None
+    )
+    child = next(
+        node
+        for node in baseline.nodes
+        if node.parent_scene_node_id == parent.scene_node_id
+    )
+    moved_patch = VisualPatch(
+        patch_id="patch:test.damage-containment",
+        operation="set-position",
+        target_id=child.scene_node_id,
+        value={
+            "scene_id": baseline.scene_id,
+            "x": parent.bounds.x + parent.bounds.width + 40.0,
+            "y": child.bounds.y,
+        },
+    )
+    scenes = {baseline.scene_id: baseline}
+    damaged_document = apply_patch(bundle.document, moved_patch, scenes)
+    damaged = materialize_scene(baseline, damaged_document)
+    damaged_gate, _ = validate_geometry(damaged)
+    assert damaged_gate.status == "failed"
+
+    batch = auto_layout_batch(
+        damaged,
+        baseline_scene=baseline,
+        pinned_ids=set(),
+        batch_id="batch:test.restore-layout",
+    )
+    restored_document = apply_patch_batch(damaged_document, batch, scenes)
+    restored = materialize_scene(baseline, restored_document)
+    restored_gate, diagnostics = validate_geometry(restored)
+    assert restored_gate.status == "passed", diagnostics
+    assert restored == baseline
+
+
+def test_auto_route_uses_distributed_exterior_corridors_for_long_edges(
+    analysis_dir: Path, tmp_path: Path
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json", tmp_path / ".archcanvas"
+    )
+    rows = bundle.state()["navigation"]["projections"]["module"]["nodes"]
+    bundle.set_navigation_view(
+        "module",
+        expansions={
+            "module": [row["id"] for row in rows if row["child_count"] > 0],
+            "source": [],
+        },
+    )
+    scene = next(iter(bundle.materialized_scenes().values()))
+    canonical = next(
+        edge
+        for edge in bundle.architecture.edges
+        if edge.producer_id == "node:input.src"
+        and edge.consumer_id == "node:enc_residual"
+    )
+    scene_edge = next(
+        edge for edge in scene.edges if canonical.edge_id in edge.canonical_edge_ids
+    )
+    batch = auto_route_batch(scene, batch_id="batch:test.auto-route")
+    route_patch = next(
+        patch for patch in batch.patches if patch.target_id == scene_edge.scene_edge_id
+    )
+    encoder = next(
+        node
+        for node in scene.nodes
+        if node.shape == "container" and " ".join(node.label_lines).lower() == "encoder"
+    )
+    points = route_patch.value["points"]
+    exterior_verticals = [
+        (start, end)
+        for start, end in pairwise(points)
+        if start["x"] == end["x"]
+        and (
+            start["x"] < encoder.bounds.x
+            or start["x"] > encoder.bounds.x + encoder.bounds.width
+        )
+    ]
+    assert exterior_verticals
+    assert max(
+        abs(end["y"] - start["y"]) for start, end in exterior_verticals
+    ) > encoder.bounds.height * 0.75
+
+    source = next(
+        node
+        for node in scene.nodes
+        if node.scene_node_id == scene_edge.source_scene_node_id
+    )
+    for consumer_id in (
+        "node:encoder_q_proj",
+        "node:encoder_k_proj",
+        "node:encoder_v_proj",
+    ):
+        canonical_qkv = next(
+            edge
+            for edge in bundle.architecture.edges
+            if edge.producer_id == "node:input.src"
+            and edge.consumer_id == consumer_id
+        )
+        qkv_edge = next(
+            edge
+            for edge in scene.edges
+            if canonical_qkv.edge_id in edge.canonical_edge_ids
+        )
+        qkv_patch = next(
+            patch for patch in batch.patches if patch.target_id == qkv_edge.scene_edge_id
+        )
+        qkv_target = next(
+            node
+            for node in scene.nodes
+            if node.scene_node_id == qkv_edge.target_scene_node_id
+        )
+        qkv_points = qkv_patch.value["points"]
+        assert qkv_points[0]["y"] == source.bounds.y
+        assert qkv_points[-1]["y"] == qkv_target.bounds.y + qkv_target.bounds.height
+
+    for strategy in ("avoid", "balanced", "compact"):
+        strategy_batch = auto_route_batch(
+            scene,
+            batch_id=f"batch:test.auto-route.{strategy}",
+            strategy=strategy,
+        )
+        strategy_document = apply_patch_batch(
+            bundle.document,
+            strategy_batch,
+            {item.scene_id: item for item in bundle.base_scenes.values()},
+        )
+        strategy_scene = materialize_scene(
+            next(iter(bundle.base_scenes.values())), strategy_document
+        )
+        strategy_gate, strategy_diagnostics = validate_geometry(strategy_scene)
+        assert strategy_gate.status == "passed", strategy_diagnostics
+
+    base_scene = next(iter(bundle.base_scenes.values()))
+    original = materialize_scene(base_scene, bundle.document)
+    changed = apply_patch_batch(
+        bundle.document,
+        batch,
+        {item.scene_id: item for item in bundle.base_scenes.values()},
+    )
+    routed = materialize_scene(base_scene, changed)
+    changed_edge = next(
+        edge for edge in routed.edges if edge.scene_edge_id == scene_edge.scene_edge_id
+    )
+    assert [(point.x, point.y) for point in changed_edge.points] == [
+        (point["x"], point["y"]) for point in points
+    ]
+    gate, diagnostics = validate_geometry(routed)
+    assert gate.status == "passed", diagnostics
+    assert not diagnostics
+
+    target = next(
+        node for node in routed.nodes if node.scene_node_id == changed_edge.target_scene_node_id
+    )
+    trunk = changed_edge.points[-2]
+    top_x = target.bounds.x + target.bounds.width / 2
+    top_y = target.bounds.y
+    moved_points = [
+        *changed_edge.points[:-2],
+        trunk,
+        ScenePoint(x=trunk.x, y=top_y - 24.0),
+        ScenePoint(x=top_x, y=top_y - 24.0),
+        ScenePoint(x=top_x, y=top_y),
+    ]
+    moved_edge = changed_edge.model_copy(update={"points": moved_points})
+    moved_scene = routed.model_copy(
+        update={
+            "edges": [
+                moved_edge if edge.scene_edge_id == moved_edge.scene_edge_id else edge
+                for edge in routed.edges
+            ]
+        }
+    )
+    gate, diagnostics = validate_geometry(moved_scene)
+    assert gate.status == "passed", diagnostics
+    assert not diagnostics
+    undone = undo_patch(changed)
+    assert materialize_scene(base_scene, undone) == original
+    redone = redo_patch(undone)
+    assert materialize_scene(base_scene, redone) == routed
+
+
 def test_patch_batch_failure_keeps_original_document(
     analysis_dir: Path, tmp_path: Path
 ) -> None:
@@ -479,6 +894,95 @@ def test_static_project_discovery_does_not_execute_source(tmp_path: Path) -> Non
     discovered = discover_project(project)
     assert discovered["source_execution"] is False
     assert discovered["entrypoints"][0]["entrypoint"] == "model:Model"
+    assert discovered["entrypoints"][0]["path"] == "model.py"
+
+
+def test_project_discovery_builds_model_component_hierarchy(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    project.mkdir()
+    (project / "components.py").write_text(
+        "from torch import nn\n"
+        "class EncoderLayer(nn.Module):\n"
+        "    def forward(self, x): return x\n"
+        "class Encoder(nn.Module):\n"
+        "    def __init__(self):\n"
+        "        super().__init__()\n"
+        "        self.layers = nn.ModuleList([EncoderLayer() for _ in range(2)])\n"
+        "    def forward(self, x): return x\n"
+    )
+    (project / "model.py").write_text(
+        "raise RuntimeError('must not execute')\n"
+        "from torch import nn\n"
+        "from .components import Encoder\n"
+        "class Transformer(nn.Module):\n"
+        "    def __init__(self):\n"
+        "        super().__init__()\n"
+        "        self.encoder = Encoder()\n"
+        "    def forward(self, x): return self.encoder(x)\n"
+    )
+
+    discovered = discover_project(project)
+    by_id = {item["entrypoint"]: item for item in discovered["entrypoints"]}
+
+    assert discovered["source_execution"] is False
+    assert by_id["model:Transformer"]["depth"] == 0
+    assert by_id["model:Transformer"]["top_level"] is True
+    assert by_id["model:Transformer"]["category"] == "model"
+    assert by_id["model:Transformer"]["contains"] == ["components:Encoder"]
+    assert by_id["components:Encoder"]["parent_entrypoint"] == "model:Transformer"
+    assert by_id["components:Encoder"]["depth"] == 1
+    assert by_id["components:Encoder"]["top_level"] is False
+    assert by_id["components:Encoder"]["category"] == "encoder"
+    assert by_id["components:EncoderLayer"]["parent_entrypoint"] == "components:Encoder"
+    assert by_id["components:EncoderLayer"]["depth"] == 2
+    assert by_id["components:EncoderLayer"]["category"] == "layer"
+    assert [item["entrypoint"] for item in discovered["entrypoints"] if item["depth"] == 0] == [
+        "model:Transformer"
+    ]
+    assert by_id["model:Transformer"]["analysis_root"] == "."
+    assert by_id["model:Transformer"]["analysis_entrypoint"] == "model:Transformer"
+
+
+def test_project_discovery_scopes_fixture_model_profiles_and_browses_directories() -> None:
+    root = ROOT / "fixtures" / "tier_a"
+    discovered = discover_project(root)
+    by_id = {item["entrypoint"]: item for item in discovered["entrypoints"]}
+    assert by_id["autoformer.models.Autoformer:Model"]["analysis_root"] == "autoformer"
+    assert by_id["autoformer.models.Autoformer:Model"]["analysis_entrypoint"] == "models.Autoformer:Model"
+    assert "autoformer/config.json" in by_id["autoformer.models.Autoformer:Model"]["config_paths"]
+    browser = browse_directories(root)
+    assert browser["path"] == str(root.resolve())
+    assert any(item["name"] == "autoformer" for item in browser["directories"])
+
+
+def test_conda_environment_discovery_is_static_and_marks_active(tmp_path: Path) -> None:
+    root = tmp_path / "miniconda3"
+    environment = root / "envs" / "ArchCanvas"
+    (root / "conda-meta").mkdir(parents=True)
+    (root / "bin").mkdir()
+    (root / "bin" / "python").touch()
+    (environment / "conda-meta").mkdir(parents=True)
+    (environment / "bin").mkdir()
+    (environment / "bin" / "python").touch()
+    registry = tmp_path / ".conda" / "environments.txt"
+    registry.parent.mkdir()
+    registry.write_text(f"{environment}\n")
+
+    discovered = discover_conda_environments(
+        home=tmp_path,
+        environ={
+            "CONDA_PREFIX": str(environment),
+            "CONDA_EXE": str(root / "bin" / "conda"),
+        },
+    )
+
+    assert discovered["source_execution"] is False
+    assert discovered["selected"] == str(environment)
+    assert [item["name"] for item in discovered["environments"]] == [
+        "ArchCanvas",
+        "base",
+    ]
+    assert discovered["environments"][0]["active"] is True
 
 
 def test_search_index_and_publication_validation_are_fingerprint_bound(
@@ -615,6 +1119,24 @@ def test_studio_server_persists_patch_undo_redo_and_exports_svg(
     try:
         state = json.loads(urlopen(f"{base_url}/api/state").read())
         assert state["document"]["source_digest"] == bundle.document.source_digest
+        layout_request = Request(
+            f"{base_url}/api/layout-mode",
+            data=json.dumps({"layout_mode": "hierarchical"}).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        state = json.loads(urlopen(layout_request).read())
+        assert state["view_state"]["layout_mode"] == "hierarchical"
+        assert next(iter(state["scenes"].values()))["layout_family"] == "hierarchical"
+        layout_noop_request = Request(
+            f"{base_url}/api/layout",
+            data=json.dumps({"batch_id": "batch:test.layout-noop"}).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        unchanged = json.loads(urlopen(layout_noop_request).read())
+        assert unchanged["view_state"]["layout_mode"] == "hierarchical"
+        assert not unchanged["document"]["visual_patches"]
         patch, _, _ = _move_patch(bundle, suffix="server")
         request = Request(
             f"{base_url}/api/patch",

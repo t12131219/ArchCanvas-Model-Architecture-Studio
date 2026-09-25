@@ -26,8 +26,14 @@ from archcanvas_python import AnalysisError
 
 from .bundle import StudioBundle, prepare_studio_bundle
 from .document import apply_patch, apply_patch_batch, redo_patch, undo_patch
-from .operations import alignment_batch, auto_layout_batch, studio_fingerprint
-from .project import create_project_session, discover_project
+from .operations import alignment_batch, auto_layout_batch, auto_route_batch, studio_fingerprint
+from .project import (
+    browse_directories,
+    create_project_session,
+    discover_conda_environments,
+    discover_project,
+    resolve_conda_environment,
+)
 
 
 class StudioRequestHandler(SimpleHTTPRequestHandler):
@@ -98,6 +104,16 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
             with self.server.lock:
                 self._json({"projects": [self.server.bundle.project_session.model_dump(mode="json")]})
             return
+        if parsed.path == "/api/environments/conda":
+            self._json(discover_conda_environments())
+            return
+        if parsed.path == "/api/directories":
+            try:
+                requested = parse_qs(parsed.query).get("path", [None])[0]
+                self._json(browse_directories(Path(requested) if requested else None))
+            except (TypeError, ValueError) as error:
+                self._error(error)
+            return
         if parsed.path.endswith("/discovery") and parsed.path.startswith("/api/projects/"):
             with self.server.lock:
                 project_id = parsed.path.split("/")[3]
@@ -167,6 +183,11 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
             if self.path == "/api/projects/open":
                 root = Path(str(payload["root"]))
                 with self.server.lock:
+                    environment = resolve_conda_environment(
+                        str(payload["environment_path"])
+                        if payload.get("environment_path")
+                        else None
+                    )
                     generation = self.server.bundle.project_session.generation + 1
                     session = create_project_session(
                         root,
@@ -178,6 +199,7 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                         config_path=str(payload["config_path"]) if payload.get("config_path") else None,
                     )
                     discovery = discover_project(Path(session.root))
+                    discovery["environment"] = environment
                     self.server.pending_projects[session.project_id] = (session, discovery)
                     self._json(
                         {
@@ -220,6 +242,10 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                     )
                     self._json(self.server.bundle.state())
                     return
+                if self.path == "/api/layout-mode":
+                    self.server.bundle.set_layout_mode(str(payload.get("layout_mode", "")))
+                    self._json(self.server.bundle.state())
+                    return
                 if self.path == "/api/patch":
                     patch = VisualPatch.model_validate(payload)
                     scenes = {
@@ -236,10 +262,31 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                     changed = apply_patch_batch(document, batch, scenes)
                 elif self.path == "/api/layout":
                     scene = next(iter(self.server.bundle.materialized_scenes().values()))
-                    batch = auto_layout_batch(
+                    baseline_scene = next(iter(self.server.bundle.base_scenes.values()))
+                    try:
+                        batch = auto_layout_batch(
+                            scene,
+                            baseline_scene=baseline_scene,
+                            pinned_ids=set(
+                                self.server.bundle.state()["view_state"]["pinned_node_ids"]
+                            ),
+                            batch_id=str(payload["batch_id"]),
+                        )
+                    except ValueError as error:
+                        if str(error) != "the current scene is already at its deterministic layout":
+                            raise
+                        self._json(self.server.bundle.state())
+                        return
+                    scenes = {
+                        item.scene_id: item for item in self.server.bundle.base_scenes.values()
+                    }
+                    changed = apply_patch_batch(document, batch, scenes)
+                elif self.path == "/api/route":
+                    scene = next(iter(self.server.bundle.materialized_scenes().values()))
+                    batch = auto_route_batch(
                         scene,
-                        pinned_ids=set(self.server.bundle.state()["view_state"]["pinned_node_ids"]),
                         batch_id=str(payload["batch_id"]),
+                        strategy=str(payload.get("strategy", "avoid")),
                     )
                     scenes = {
                         item.scene_id: item for item in self.server.bundle.base_scenes.values()
@@ -396,7 +443,29 @@ class StudioHTTPServer(ThreadingHTTPServer):
             )
         try:
             root = Path(session.root)
-            config_path = root / request.config_path if request.config_path else None
+            discovery = self.pending_projects.get(request.project_id, (None, {}))[1]
+            selected = next(
+                (
+                    item
+                    for item in discovery.get("entrypoints", [])
+                    if item.get("entrypoint") == request.entrypoint
+                ),
+                None,
+            )
+            analysis_root = root / str(selected.get("analysis_root", ".")) if selected else root
+            analysis_entrypoint = str(selected.get("analysis_entrypoint", request.entrypoint)) if selected else request.entrypoint
+            selected_config = request.config_path
+            if selected is not None and selected.get("config_paths"):
+                selected_config = next(
+                    (
+                        path
+                        for path in selected["config_paths"]
+                        if request.config_path is None or path == request.config_path
+                    ),
+                    selected["config_paths"][0],
+                )
+                selected_config = str(Path(selected_config).relative_to(Path(selected.get("analysis_root", "."))))
+            config_path = analysis_root / selected_config if selected_config else None
             if config_path is not None:
                 config_path = config_path.resolve()
                 if not config_path.is_relative_to(root) or not config_path.is_file():
@@ -405,8 +474,8 @@ class StudioHTTPServer(ThreadingHTTPServer):
             else:
                 config_bytes = b"{}"
             analyzed = analyze_with_adapter(
-                root,
-                request.entrypoint,
+                analysis_root,
+                analysis_entrypoint,
                 request.task,
                 "eval",
                 config_bytes,

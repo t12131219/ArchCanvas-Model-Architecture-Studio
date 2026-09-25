@@ -13,11 +13,13 @@ from .document import (
     source_binding_digest,
     undo_patch,
 )
+from .operations import auto_route_batch
 
 __all__ = [
     "StudioBundle",
     "apply_patch",
     "apply_patch_batch",
+    "auto_route_batch",
     "create_canvas_document",
     "derive_view_state",
     "load_canvas_document",

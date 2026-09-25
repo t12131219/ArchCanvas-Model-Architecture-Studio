@@ -324,7 +324,8 @@ def test_holdout_without_pattern_pack_passes_semantic_publication_and_geometry(
     )
     assert all(gate.status == "passed" for gate in publication_gates)
     assert not publication_diagnostics
-    assert {view.layout_family for view in views} == {"generic-dag"}
+    assert len({view.layout_family for view in views}) == 1
+    assert views[0].layout_family in {"single-lane", "dual-lane"}
     for view in views:
         gate, geometry_diagnostics = validate_geometry(
             build_scene(view, build_visual_spec(view))

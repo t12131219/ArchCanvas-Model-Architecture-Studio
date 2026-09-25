@@ -197,6 +197,33 @@ def _module_projection(
             children[node.parent_hierarchy_node_id].append(node.hierarchy_node_id)
 
     descendants: dict[str, list[str]] = {}
+    hierarchy_order = {
+        node.hierarchy_node_id: index for index, node in enumerate(hierarchy.nodes)
+    }
+
+    def semantic_order(node_id: str) -> tuple[int, int]:
+        name = by_id[node_id].semantic_name.lower()
+        stage = next(
+            (
+                rank
+                for rank, tokens in enumerate(
+                    (
+                        ("input", "source", "covariate"),
+                        ("decomp", "seasonal", "trend", "state"),
+                        ("encoder", "backbone"),
+                        ("decoder",),
+                        ("ffn", "feed", "mlp"),
+                        ("output", "forecast", "prediction", "head"),
+                    )
+                )
+                if any(token in name for token in tokens)
+            ),
+            6,
+        )
+        return stage, hierarchy_order[node_id]
+
+    for members in children.values():
+        members.sort(key=semantic_order)
 
     def canonical_descendants(node_id: str) -> list[str]:
         if node_id not in descendants:
@@ -216,7 +243,9 @@ def _module_projection(
         return descendants[node_id]
 
     rows: list[dict[str, Any]] = []
-    for node in hierarchy.nodes:
+
+    def append_preorder(node_id: str) -> None:
+        node = by_id[node_id]
         canonical_ids = canonical_descendants(node.hierarchy_node_id)
         rows.append(
             _row(
@@ -236,6 +265,10 @@ def _module_projection(
                 ),
             )
         )
+        for child_id in children.get(node_id, []):
+            append_preorder(child_id)
+
+    append_preorder(hierarchy.root_node_id)
     return rows
 
 

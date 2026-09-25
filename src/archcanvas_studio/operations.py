@@ -4,6 +4,7 @@ import hashlib
 import json
 import math
 from datetime import UTC, datetime
+from itertools import pairwise
 from typing import TYPE_CHECKING, Any
 
 from archcanvas_core.models import (
@@ -357,44 +358,661 @@ def alignment_batch(
 
 
 def auto_layout_batch(
-    scene: VisualScene, *, pinned_ids: set[str], batch_id: str
+    scene: VisualScene,
+    *,
+    baseline_scene: VisualScene,
+    pinned_ids: set[str],
+    batch_id: str,
 ) -> PatchBatch:
-    patches: list[VisualPatch] = []
-    groups: dict[str, list[Any]] = {}
+    """Restore the selected compiler layout without splitting nested modules."""
+    if scene.scene_id != baseline_scene.scene_id:
+        raise ValueError("auto-layout baseline belongs to a different scene")
+    current_by_id = {node.scene_node_id: node for node in scene.nodes}
+    baseline_by_id = {node.scene_node_id: node for node in baseline_scene.nodes}
+    if set(current_by_id) != set(baseline_by_id):
+        raise ValueError("auto-layout baseline has a different node set")
+
+    children: dict[str, list[str]] = {}
+    parent_by_id: dict[str, str] = {}
     for node in scene.nodes:
-        if node.parent_scene_node_id and node.scene_node_id not in pinned_ids:
-            groups.setdefault(node.parent_scene_node_id, []).append(node)
-    by_id = {node.scene_node_id: node for node in scene.nodes}
-    index = 0
-    for parent_id, nodes in sorted(groups.items()):
-        parent = by_id[parent_id]
-        ordered = sorted(nodes, key=lambda node: (node.bounds.y, node.bounds.x, node.scene_node_id))
-        columns = max(1, math.ceil(math.sqrt(len(ordered))))
-        cell_width = max(node.bounds.width for node in ordered) + 28
-        cell_height = max(node.bounds.height for node in ordered) + 28
-        start_x = parent.bounds.x + 24
-        start_y = parent.bounds.y + 44
-        for offset, node in enumerate(ordered):
-            x = start_x + (offset % columns) * cell_width
-            y = start_y + (offset // columns) * cell_height
-            if x + node.bounds.width > parent.bounds.x + parent.bounds.width - 16:
-                x = node.bounds.x
-            if y + node.bounds.height > parent.bounds.y + parent.bounds.height - 16:
-                y = node.bounds.y
-            if (x, y) == (node.bounds.x, node.bounds.y):
+        if node.parent_scene_node_id:
+            children.setdefault(node.parent_scene_node_id, []).append(node.scene_node_id)
+            parent_by_id[node.scene_node_id] = node.parent_scene_node_id
+
+    roots = sorted(
+        node.scene_node_id for node in scene.nodes if node.parent_scene_node_id is None
+    )
+    outer_root = roots[0] if len(roots) == 1 and children.get(roots[0]) else None
+    unit_ids = sorted(children[outer_root]) if outer_root else roots
+
+    subtree_by_unit: dict[str, list[str]] = {}
+    for unit_id in unit_ids:
+        members: list[str] = []
+        pending = [unit_id]
+        while pending:
+            node_id = pending.pop()
+            members.append(node_id)
+            pending.extend(sorted(children.get(node_id, []), reverse=True))
+        subtree_by_unit[unit_id] = members
+
+    locked_units = {
+        unit_id
+        for unit_id, members in subtree_by_unit.items()
+        if pinned_ids.intersection(members)
+    }
+    # A pin outside the normal unit frontier locks its nearest top-level
+    # ancestor as well, so restoring the baseline cannot move a pinned child
+    # indirectly through its container.
+    for pinned_id in pinned_ids:
+        cursor = pinned_id
+        visited: set[str] = set()
+        while cursor in parent_by_id and cursor not in visited:
+            visited.add(cursor)
+            cursor = parent_by_id[cursor]
+        if cursor in subtree_by_unit:
+            locked_units.add(cursor)
+
+    patches: list[VisualPatch] = []
+    for unit_id in unit_ids:
+        if unit_id in locked_units:
+            continue
+        for node_id in subtree_by_unit[unit_id]:
+            current = current_by_id[node_id]
+            baseline = baseline_by_id[node_id]
+            if (current.bounds.x, current.bounds.y) == (
+                baseline.bounds.x,
+                baseline.bounds.y,
+            ):
                 continue
             patches.append(
                 VisualPatch(
-                    patch_id=f"patch:{batch_id.removeprefix('batch:')}.{index}",
+                    patch_id=(
+                        f"patch:{batch_id.removeprefix('batch:')}.{len(patches)}"
+                    ),
                     operation="set-position",
-                    target_id=node.scene_node_id,
-                    value={"scene_id": scene.scene_id, "x": x, "y": y},
+                    target_id=node_id,
+                    value={
+                        "scene_id": scene.scene_id,
+                        "x": baseline.bounds.x,
+                        "y": baseline.bounds.y,
+                    },
                 )
             )
-            index += 1
     if not patches:
         raise ValueError("the current scene is already at its deterministic layout")
     return PatchBatch(batch_id=batch_id, description="auto-layout", patches=patches)
+
+
+def _route_length(points: list[tuple[float, float]]) -> float:
+    return sum(
+        abs(end[0] - start[0]) + abs(end[1] - start[1])
+        for start, end in pairwise(points)
+    )
+
+
+def _segment_length_inside_rect(
+    start: tuple[float, float], end: tuple[float, float], rect: Any
+) -> float:
+    """Return the length of an orthogonal segment inside a rectangle."""
+    if abs(start[0] - end[0]) < 1e-6:
+        if not rect.x < start[0] < rect.x + rect.width:
+            return 0.0
+        return max(
+            0.0,
+            min(max(start[1], end[1]), rect.y + rect.height)
+            - max(min(start[1], end[1]), rect.y),
+        )
+    if abs(start[1] - end[1]) < 1e-6:
+        if not rect.y < start[1] < rect.y + rect.height:
+            return 0.0
+        return max(
+            0.0,
+            min(max(start[0], end[0]), rect.x + rect.width)
+            - max(min(start[0], end[0]), rect.x),
+        )
+    return math.dist(start, end)
+
+
+def _compact_route(points: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    compact: list[tuple[float, float]] = []
+    for point in points:
+        if compact and point == compact[-1]:
+            continue
+        compact.append(point)
+        while len(compact) >= 3:
+            first, middle, last = compact[-3:]
+            if (first[0] == middle[0] == last[0]) or (
+                first[1] == middle[1] == last[1]
+            ):
+                compact.pop(-2)
+            else:
+                break
+    return compact
+
+
+def _route_directions_valid(
+    points: list[tuple[float, float]], source_side: str, target_side: str
+) -> bool:
+    if len(points) < 2:
+        return False
+    first, second = points[0], points[1]
+    penultimate, last = points[-2], points[-1]
+    source_valid = {
+        "left": second[1] == first[1] and second[0] <= first[0],
+        "right": second[1] == first[1] and second[0] >= first[0],
+        "top": second[0] == first[0] and second[1] <= first[1],
+        "bottom": second[0] == first[0] and second[1] >= first[1],
+    }[source_side]
+    target_valid = {
+        "left": penultimate[1] == last[1] and penultimate[0] <= last[0],
+        "right": penultimate[1] == last[1] and penultimate[0] >= last[0],
+        "top": penultimate[0] == last[0] and penultimate[1] <= last[1],
+        "bottom": penultimate[0] == last[0] and penultimate[1] >= last[1],
+    }[target_side]
+    return source_valid and target_valid
+
+
+def _route_port(bounds: Any, side: str) -> tuple[float, float]:
+    if side == "left":
+        return bounds.x, bounds.y + bounds.height / 2
+    if side == "right":
+        return bounds.x + bounds.width, bounds.y + bounds.height / 2
+    if side == "top":
+        return bounds.x + bounds.width / 2, bounds.y
+    return bounds.x + bounds.width / 2, bounds.y + bounds.height
+
+
+def _port_stub(
+    point: tuple[float, float], side: str, distance: float = 24.0
+) -> tuple[float, float]:
+    if side == "left":
+        return point[0] - distance, point[1]
+    if side == "right":
+        return point[0] + distance, point[1]
+    if side == "top":
+        return point[0], point[1] - distance
+    return point[0], point[1] + distance
+
+
+def _route_inside_unrelated(
+    points: list[tuple[float, float]],
+    scene: VisualScene,
+    related_ids: set[str],
+) -> tuple[float, float, float]:
+    node_length = 0.0
+    container_length = 0.0
+    clearance_length = 0.0
+    for start, end in pairwise(points):
+        for node in scene.nodes:
+            if node.scene_node_id in related_ids:
+                continue
+            length = _segment_length_inside_rect(start, end, node.bounds)
+            if node.shape == "container":
+                container_length += length
+            else:
+                node_length += length
+                margin = 10.0
+                expanded = node.bounds.model_copy(
+                    update={
+                        "x": node.bounds.x - margin,
+                        "y": node.bounds.y - margin,
+                        "width": node.bounds.width + margin * 2,
+                        "height": node.bounds.height + margin * 2,
+                    }
+                )
+                clearance_length += _segment_length_inside_rect(start, end, expanded)
+    return node_length, container_length, clearance_length
+
+
+def _orthogonal_segment_interaction(
+    first_start: tuple[float, float],
+    first_end: tuple[float, float],
+    second_start: tuple[float, float],
+    second_end: tuple[float, float],
+) -> tuple[int, float]:
+    first_vertical = abs(first_start[0] - first_end[0]) < 1e-6
+    second_vertical = abs(second_start[0] - second_end[0]) < 1e-6
+    if first_vertical == second_vertical:
+        first_axis = first_start[0] if first_vertical else first_start[1]
+        second_axis = second_start[0] if second_vertical else second_start[1]
+        if abs(first_axis - second_axis) >= 1e-6:
+            return 0, 0.0
+        first_interval = sorted(
+            (first_start[1], first_end[1])
+            if first_vertical
+            else (first_start[0], first_end[0])
+        )
+        second_interval = sorted(
+            (second_start[1], second_end[1])
+            if second_vertical
+            else (second_start[0], second_end[0])
+        )
+        overlap = max(
+            0.0,
+            min(first_interval[1], second_interval[1])
+            - max(first_interval[0], second_interval[0]),
+        )
+        return 0, overlap
+
+    vertical_start, vertical_end = (
+        (first_start, first_end) if first_vertical else (second_start, second_end)
+    )
+    horizontal_start, horizontal_end = (
+        (second_start, second_end) if first_vertical else (first_start, first_end)
+    )
+    crossing = (
+        min(horizontal_start[0], horizontal_end[0])
+        <= vertical_start[0]
+        <= max(horizontal_start[0], horizontal_end[0])
+        and min(vertical_start[1], vertical_end[1])
+        <= horizontal_start[1]
+        <= max(vertical_start[1], vertical_end[1])
+    )
+    if not crossing:
+        return 0, 0.0
+    point = (vertical_start[0], horizontal_start[1])
+    first_endpoint = point in {first_start, first_end}
+    second_endpoint = point in {second_start, second_end}
+    return (0 if first_endpoint and second_endpoint else 1), 0.0
+
+
+def _route_interactions(
+    points: list[tuple[float, float]],
+    routed: list[tuple[list[tuple[float, float]], str, str]],
+    source_id: str,
+    target_id: str,
+) -> tuple[int, float]:
+    crossings = 0
+    overlap = 0.0
+    candidate_segments = list(pairwise(points))
+    for other_points, other_source_id, other_target_id in routed:
+        other_segments = list(pairwise(other_points))
+        for index, (start, end) in enumerate(candidate_segments):
+            for other_index, (other_start, other_end) in enumerate(other_segments):
+                shared_source_stub = (
+                    source_id == other_source_id and index == 0 and other_index == 0
+                )
+                shared_target_stub = (
+                    target_id == other_target_id
+                    and index == len(candidate_segments) - 1
+                    and other_index == len(other_segments) - 1
+                )
+                if shared_source_stub or shared_target_stub:
+                    continue
+                segment_crossings, segment_overlap = _orthogonal_segment_interaction(
+                    start, end, other_start, other_end
+                )
+                crossings += segment_crossings
+                overlap += segment_overlap
+    return crossings, overlap
+
+
+def _route_candidates(
+    scene: VisualScene,
+    source_node: Any,
+    target_node: Any,
+    *,
+    corridor_xs: list[float],
+    corridor_ys: list[float],
+    port_pairs: list[tuple[str, str]],
+) -> list[tuple[list[tuple[float, float]], str | None, str, str]]:
+    candidates: list[tuple[list[tuple[float, float]], str | None, str, str]] = []
+    for source_side, target_side in port_pairs:
+        start = _route_port(source_node.bounds, source_side)
+        source_stub = _port_stub(start, source_side)
+        end = _route_port(target_node.bounds, target_side)
+        target_stub = _port_stub(end, target_side)
+        raw_routes = [
+            [start, source_stub, (source_stub[0], target_stub[1]), target_stub, end],
+            [start, source_stub, (target_stub[0], source_stub[1]), target_stub, end],
+        ]
+        middle_x = (source_stub[0] + target_stub[0]) / 2
+        middle_y = (source_stub[1] + target_stub[1]) / 2
+        raw_routes.extend(
+            [
+                [
+                    start,
+                    source_stub,
+                    (middle_x, source_stub[1]),
+                    (middle_x, target_stub[1]),
+                    target_stub,
+                    end,
+                ],
+                [
+                    start,
+                    source_stub,
+                    (source_stub[0], middle_y),
+                    (target_stub[0], middle_y),
+                    target_stub,
+                    end,
+                ],
+            ]
+        )
+        for route in raw_routes:
+            candidates.append(
+                (_compact_route(route), None, source_side, target_side)
+            )
+        for corridor_x in corridor_xs:
+            candidates.append(
+                (
+                    _compact_route(
+                        [
+                            start,
+                            source_stub,
+                            (corridor_x, source_stub[1]),
+                            (corridor_x, target_stub[1]),
+                            target_stub,
+                            end,
+                        ]
+                    ),
+                    f"x:{corridor_x}",
+                    source_side,
+                    target_side,
+                )
+            )
+        for corridor_y in corridor_ys:
+            candidates.append(
+                (
+                    _compact_route(
+                        [
+                            start,
+                            source_stub,
+                            (source_stub[0], corridor_y),
+                            (target_stub[0], corridor_y),
+                            target_stub,
+                            end,
+                        ]
+                    ),
+                    f"y:{corridor_y}",
+                    source_side,
+                    target_side,
+                )
+            )
+    return candidates
+
+
+def auto_route_batch(
+    scene: VisualScene, *, batch_id: str, strategy: str = "avoid"
+) -> PatchBatch:
+    """Route edges by minimizing travel inside unrelated nodes and containers."""
+    if strategy not in {"avoid", "balanced", "compact"}:
+        raise ValueError("route strategy must be avoid, balanced, or compact")
+    by_id = {node.scene_node_id: node for node in scene.nodes}
+
+    def ancestors(node_id: str) -> set[str]:
+        result = {node_id}
+        current = by_id[node_id]
+        while current.parent_scene_node_id:
+            result.add(current.parent_scene_node_id)
+            current = by_id[current.parent_scene_node_id]
+        return result
+
+    margin = 18.0
+    corridor_xs = {8.0, scene.paper_width - 8.0}
+    corridor_ys = {8.0, scene.paper_height - 8.0}
+    for node in scene.nodes:
+        if node.shape not in {"container", "opaque"}:
+            continue
+        corridor_xs.update(
+            {
+                max(8.0, node.bounds.x - margin),
+                min(
+                    scene.paper_width - 8.0,
+                    node.bounds.x + node.bounds.width + margin,
+                ),
+            }
+        )
+        corridor_ys.update(
+            {
+                max(8.0, node.bounds.y - margin),
+                min(
+                    scene.paper_height - 8.0,
+                    node.bounds.y + node.bounds.height + margin,
+                ),
+            }
+        )
+
+    used_corridors: dict[str, int] = {}
+    routed: list[tuple[list[tuple[float, float]], str, str]] = []
+    patches: list[VisualPatch] = []
+    ordered_edges = sorted(
+        scene.edges,
+        key=lambda edge: (
+            -abs(
+                by_id[edge.source_scene_node_id].bounds.y
+                - by_id[edge.target_scene_node_id].bounds.y
+            ),
+            edge.scene_edge_id,
+        ),
+    )
+    for edge in ordered_edges:
+        source_node = by_id[edge.source_scene_node_id]
+        target_node = by_id[edge.target_scene_node_id]
+        current = [(point.x, point.y) for point in edge.points]
+        source_ancestors = ancestors(edge.source_scene_node_id)
+        target_ancestors = ancestors(edge.target_scene_node_id)
+        related_ids = {
+            edge.source_scene_node_id,
+            edge.target_scene_node_id,
+            *(source_ancestors & target_ancestors),
+        }
+        source_center = (
+            source_node.bounds.x + source_node.bounds.width / 2,
+            source_node.bounds.y + source_node.bounds.height / 2,
+        )
+        target_center = (
+            target_node.bounds.x + target_node.bounds.width / 2,
+            target_node.bounds.y + target_node.bounds.height / 2,
+        )
+        vertical = abs(target_center[1] - source_center[1]) >= (
+            abs(target_center[0] - source_center[0]) * 0.5
+        )
+        if vertical:
+            expected_source = "bottom" if target_center[1] > source_center[1] else "top"
+            expected_target = "top" if target_center[1] > source_center[1] else "bottom"
+        else:
+            expected_source = "right" if target_center[0] > source_center[0] else "left"
+            expected_target = "left" if target_center[0] > source_center[0] else "right"
+        # Port direction is the first score dimension, so alternate pairs can never
+        # beat the expected pair. Avoid generating and scoring those dead candidates.
+        port_pairs = [(expected_source, expected_target)]
+        min_x, max_x = sorted((source_center[0], target_center[0]))
+        min_y, max_y = sorted((source_center[1], target_center[1]))
+        local_xs = set(corridor_xs)
+        local_ys = set(corridor_ys)
+        local_nodes = [
+            node
+            for node in scene.nodes
+            if node.scene_node_id not in related_ids
+            and node.bounds.x < max_x + 120.0
+            and node.bounds.x + node.bounds.width > min_x - 120.0
+            and node.bounds.y < max_y + 120.0
+            and node.bounds.y + node.bounds.height > min_y - 120.0
+        ]
+        focus_x = (source_center[0] + target_center[0]) / 2
+        focus_y = (source_center[1] + target_center[1]) / 2
+        local_x_candidates = {
+            coordinate
+            for node in local_nodes
+            for coordinate in (
+                max(8.0, node.bounds.x - 10.0),
+                min(scene.paper_width - 8.0, node.bounds.x + node.bounds.width + 10.0),
+            )
+        }
+        local_y_candidates = {
+            coordinate
+            for node in local_nodes
+            for coordinate in (
+                max(8.0, node.bounds.y - 10.0),
+                min(scene.paper_height - 8.0, node.bounds.y + node.bounds.height + 10.0),
+            )
+        }
+        local_xs.update(sorted(local_x_candidates, key=lambda value: abs(value - focus_x))[:24])
+        local_ys.update(sorted(local_y_candidates, key=lambda value: abs(value - focus_y))[:24])
+        candidates = _route_candidates(
+            scene,
+            source_node,
+            target_node,
+            corridor_xs=sorted(local_xs),
+            corridor_ys=sorted(local_ys),
+            port_pairs=port_pairs,
+        )
+        preliminary: list[
+            tuple[
+                tuple[float, ...],
+                list[tuple[float, float]],
+                str | None,
+                tuple[float, float, float, float, int, float],
+            ]
+        ] = []
+        for points, corridor, source_side, target_side in candidates:
+            if any(
+                x < 0 or y < 0 or x > scene.paper_width or y > scene.paper_height
+                for x, y in points
+            ) or not _route_directions_valid(points, source_side, target_side):
+                continue
+            node_length, container_length, clearance_length = _route_inside_unrelated(
+                points, scene, related_ids
+            )
+            length = _route_length(points)
+            bends = max(0, len(points) - 2)
+            lane_penalty = used_corridors.get(corridor or "", 0) * 36.0
+            direction_penalty = 220.0 * (
+                int(source_side != expected_source) + int(target_side != expected_target)
+            )
+            if strategy == "avoid":
+                base_score = (
+                    direction_penalty,
+                    node_length,
+                    clearance_length,
+                    container_length,
+                    length + lane_penalty,
+                    bends,
+                )
+            elif strategy == "balanced":
+                base_score = (
+                    direction_penalty,
+                    node_length * 24.0
+                    + clearance_length * 3.0
+                    + container_length * 5.0
+                    + length
+                    + lane_penalty,
+                    node_length + clearance_length + container_length,
+                    bends,
+                )
+            else:
+                base_score = (
+                    direction_penalty,
+                    length
+                    + node_length * 8.0
+                    + clearance_length * 1.5
+                    + container_length
+                    + lane_penalty,
+                    node_length + clearance_length + container_length,
+                    bends,
+                )
+            preliminary.append(
+                (
+                    base_score,
+                    points,
+                    corridor,
+                    (
+                        node_length,
+                        clearance_length,
+                        container_length,
+                        length,
+                        bends,
+                        direction_penalty,
+                    ),
+                )
+            )
+        scored: list[
+            tuple[tuple[float, ...], list[tuple[float, float]], str | None]
+        ] = []
+        for _, points, corridor, metrics in sorted(preliminary, key=lambda item: item[0])[:36]:
+            (
+                node_length,
+                clearance_length,
+                container_length,
+                length,
+                bends,
+                direction_penalty,
+            ) = metrics
+            crossings, overlap = _route_interactions(
+                points,
+                routed,
+                edge.source_scene_node_id,
+                edge.target_scene_node_id,
+            )
+            lane_penalty = used_corridors.get(corridor or "", 0) * 36.0
+            if strategy == "avoid":
+                score = (
+                    direction_penalty,
+                    node_length,
+                    clearance_length,
+                    container_length,
+                    crossings,
+                    overlap,
+                    length + lane_penalty,
+                    bends,
+                )
+            elif strategy == "balanced":
+                score = (
+                    direction_penalty,
+                    node_length * 24.0
+                    + clearance_length * 3.0
+                    + container_length * 5.0
+                    + crossings * 240.0
+                    + overlap * 6.0
+                    + length
+                    + lane_penalty,
+                    crossings,
+                    overlap,
+                    bends,
+                )
+            else:
+                score = (
+                    direction_penalty,
+                    length
+                    + node_length * 8.0
+                    + clearance_length * 1.5
+                    + container_length
+                    + crossings * 90.0
+                    + overlap * 2.5
+                    + lane_penalty,
+                    crossings,
+                    overlap,
+                    bends,
+                )
+            scored.append((score, points, corridor))
+        if not scored:
+            continue
+        _, points, corridor = min(scored, key=lambda item: item[0])
+        routed.append(
+            (points, edge.source_scene_node_id, edge.target_scene_node_id)
+        )
+        if corridor:
+            used_corridors[corridor] = used_corridors.get(corridor, 0) + 1
+        if points == current:
+            continue
+        patches.append(
+            VisualPatch(
+                patch_id=f"patch:{batch_id.removeprefix('batch:')}.{len(patches)}",
+                operation="set-route-hint",
+                target_id=edge.scene_edge_id,
+                value={
+                    "scene_id": scene.scene_id,
+                    "points": [{"x": x, "y": y} for x, y in points],
+                },
+            )
+        )
+    if not patches:
+        raise ValueError("the current scene has no obstructed routes")
+    return PatchBatch(
+        batch_id=batch_id,
+        description=f"auto-route:{strategy}",
+        patches=patches,
+    )
 
 
 def proof_severity(status: str) -> int:

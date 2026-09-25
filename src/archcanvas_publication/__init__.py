@@ -5,11 +5,12 @@ from .compiler import (
     expandable_node_ids,
     project_hierarchy,
 )
-from .layout import build_scene, build_visual_spec
+from .layout import LAYOUT_MODES, build_scene, build_visual_spec
 from .renderers import render_html, render_pdf, render_png, render_svg
 from .validation import validate_geometry, validate_publication
 
 __all__ = [
+    "LAYOUT_MODES",
     "build_scene",
     "build_visual_spec",
     "compile_hierarchy",

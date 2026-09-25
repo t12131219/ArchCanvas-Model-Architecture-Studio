@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "re
 import { createRoot } from "react-dom/client";
 import {
   AlertTriangle,
+  ArrowRight,
   Box,
   Braces,
   ChevronDown,
@@ -11,6 +12,7 @@ import {
   Download,
   Eye,
   FileCode2,
+  FolderOpen,
   Focus,
   GitBranch,
   Grip,
@@ -28,6 +30,8 @@ import {
   PinOff,
   Play,
   Redo2,
+  RefreshCw,
+  Route,
   Search,
   ShieldCheck,
   Sun,
@@ -42,6 +46,65 @@ import "./styles.css";
 
 type Mode = "explore" | "layout" | "model";
 type Projection = "module" | "source";
+type RouteStrategy = "avoid" | "balanced" | "compact";
+type LayoutMode = "auto" | "dual-swimlane" | "single-lane" | "hierarchical" | "branch-tree" | "force-directed" | "radial" | "orthogonal";
+type RouteSide = "left" | "right" | "top" | "bottom";
+type Locale = "en" | "zh";
+
+interface LanguageContextValue {
+  locale: Locale;
+  tx: (english: string, chinese: string) => string;
+}
+
+interface CondaEnvironment {
+  name: string;
+  path: string;
+  python: string;
+  active: boolean;
+}
+
+interface ProjectEntrypoint {
+  entrypoint: string;
+  path: string;
+  framework: string;
+  kind: string;
+  confidence: string;
+  parent_entrypoint: string | null;
+  parent_entrypoints: string[];
+  root_entrypoint: string;
+  depth: number;
+  contains: string[];
+  child_count: number;
+  top_level: boolean;
+  category: "model" | "encoder" | "decoder" | "backbone" | "attention" | "head" | "block" | "layer" | "component";
+}
+
+interface PendingProject {
+  project: StudioState["project"];
+  discovery: {
+    entrypoints: ProjectEntrypoint[];
+    configs: Array<{ path: string }>;
+    scanned_files: number;
+    environment?: CondaEnvironment | null;
+  };
+}
+
+interface DirectoryBrowserState {
+  path: string;
+  parent: string | null;
+  breadcrumbs: Array<{ name: string; path: string }>;
+  directories: Array<{ name: string; path: string }>;
+  truncated: boolean;
+}
+
+const LanguageContext = React.createContext<LanguageContextValue>({
+  locale: "zh",
+  tx: (_english, chinese) => chinese,
+});
+
+function useLanguage(): LanguageContextValue {
+  return React.useContext(LanguageContext);
+}
 
 interface Rect {
   x: number;
@@ -60,7 +123,7 @@ interface SceneNode {
   view_node_id: string;
   canonical_node_ids: string[];
   bounds: Rect;
-  shape: "container" | "rect" | "merge" | "io" | "state" | "opaque";
+  shape: "container" | "rect" | "tensor" | "merge" | "io" | "state" | "opaque" | "projection" | "activation" | "normalization" | "attention" | "transform" | "condition" | "repeat";
   label_lines: string[];
   secondary_label?: string;
   fill: string;
@@ -75,6 +138,7 @@ interface SceneEdge {
   target_scene_node_id: string;
   points: Point[];
   edge_type: string;
+  visual_relation: string;
   stroke: string;
   dash?: string;
   width: number;
@@ -84,6 +148,7 @@ interface SceneEdge {
 interface Scene {
   scene_id: string;
   view_id: string;
+  layout_family: string;
   paper_width: number;
   paper_height: number;
   nodes: SceneNode[];
@@ -281,6 +346,7 @@ interface StudioState {
   };
   view_state: {
     navigation_view?: Projection;
+    layout_mode?: LayoutMode;
     pinned_node_ids?: string[];
     collapsed_node_ids?: string[];
     theme?: string;
@@ -330,6 +396,7 @@ interface StudioState {
     runtime_evidence: boolean;
     semantic_transforms: string[];
     proposed_connection: boolean;
+    layout_modes?: LayoutMode[];
   };
 }
 
@@ -343,6 +410,28 @@ interface VisualPatch {
 interface DragState {
   startClient: Point;
   baselines: Record<string, Rect>;
+  rootIds: string[];
+}
+
+interface EdgeEndpointDrag {
+  edgeId: string;
+  endpoint: "source" | "target";
+  points: Point[];
+}
+
+interface PanelSizes {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+type PanelResizeEdge = keyof PanelSizes;
+
+interface PanelResizeState {
+  edge: PanelResizeEdge;
+  startClient: Point;
+  sizes: PanelSizes;
 }
 
 interface SearchResult {
@@ -380,15 +469,38 @@ interface NavigationNode {
 }
 
 function visibleNavigationRows(nodes: NavigationNode[], expanded: Set<string>): NavigationNode[] {
-  const visible = new Set<string>();
-  return nodes.filter((item) => {
-    if (item.parent_id === null) {
-      visible.add(item.id);
-      return true;
+  // Navigation data is persisted as a flat list, but publication compilation
+  // may append canonical children after later root siblings. Rebuild a stable
+  // preorder here so expansion can never make a child appear under a sibling.
+  const children = new Map<string | null, NavigationNode[]>();
+  for (const item of nodes) {
+    const siblings = children.get(item.parent_id) ?? [];
+    siblings.push(item);
+    children.set(item.parent_id, siblings);
+  }
+  const rows: NavigationNode[] = [];
+  const visit = (parentId: string | null, visible: boolean) => {
+    if (!visible) return;
+    for (const item of children.get(parentId) ?? []) {
+      rows.push(item);
+      visit(item.id, item.parent_id === null || expanded.has(item.id));
     }
-    const shown = visible.has(item.parent_id) && expanded.has(item.parent_id);
-    if (shown) visible.add(item.id);
-    return shown;
+  };
+  visit(null, true);
+  return rows;
+}
+
+function visibleProjectEntrypoints(items: ProjectEntrypoint[], expanded: Set<string>): ProjectEntrypoint[] {
+  const byId = new Map(items.map((item) => [item.entrypoint, item]));
+  return items.filter((item) => {
+    let parent = item.parent_entrypoint;
+    const visited = new Set<string>();
+    while (parent) {
+      if (visited.has(parent) || !expanded.has(parent)) return false;
+      visited.add(parent);
+      parent = byId.get(parent)?.parent_entrypoint ?? null;
+    }
+    return true;
   });
 }
 
@@ -431,6 +543,33 @@ function nodeShape(node: SceneNode): React.ReactNode {
       />
     );
   }
+  if (node.shape === "projection" || node.shape === "transform") {
+    const inset = Math.min(22, width * 0.12);
+    return <polygon className="node-shape" points={`${x + inset},${y} ${x + width},${y} ${x + width - inset},${y + height} ${x},${y + height}`} fill={node.fill} stroke={node.stroke} />;
+  }
+  if (node.shape === "condition") {
+    const inset = Math.min(28, width * 0.16);
+    return <polygon className="node-shape" points={`${x + inset},${y} ${x + width - inset},${y} ${x + width},${y + height / 2} ${x + width - inset},${y + height} ${x + inset},${y + height} ${x},${y + height / 2}`} fill={node.fill} stroke={node.stroke} />;
+  }
+  if (node.shape === "activation") {
+    return <ellipse className="node-shape" cx={x + width / 2} cy={y + height / 2} rx={width / 2} ry={height / 2} fill={node.fill} stroke={node.stroke} />;
+  }
+  if (node.shape === "tensor" || node.shape === "repeat") {
+    return (
+      <>
+        {[8, 4, 0].map((offset, index) => <rect key={offset} className={index === 2 ? "node-shape" : "shape-detail"} x={x + offset} y={y - offset} width={width - 8} height={height} rx={5} fill={node.fill} stroke={node.stroke} />)}
+      </>
+    );
+  }
+  if (node.shape === "normalization" || node.shape === "attention") {
+    const radius = node.shape === "normalization" ? 18 : 6;
+    return (
+      <>
+        <rect className="node-shape" x={x} y={y} width={width} height={height} rx={radius} fill={node.fill} stroke={node.stroke} />
+        <rect className="shape-detail" x={x + 6} y={y + 6} width={width - 12} height={height - 12} rx={Math.max(3, radius - 5)} fill="none" stroke={node.stroke} />
+      </>
+    );
+  }
   return (
     <rect
       className="node-shape"
@@ -446,6 +585,376 @@ function nodeShape(node: SceneNode): React.ReactNode {
   );
 }
 
+function edgeLabelPoint(edge: SceneEdge): Point {
+  const horizontal = edge.points.slice(0, -1).map((point, index) => ({
+    start: point,
+    end: edge.points[index + 1],
+    length: Math.abs(edge.points[index + 1].x - point.x),
+  })).filter((segment) => Math.abs(segment.start.y - segment.end.y) < 0.1).sort((a, b) => b.length - a.length)[0];
+  if (horizontal) return { x: (horizontal.start.x + horizontal.end.x) / 2, y: horizontal.start.y - 7 };
+  const start = edge.points[0];
+  const end = edge.points.at(-1)!;
+  return { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 - 7 };
+}
+
+function sceneDescendantIds(scene: Scene, rootIds: string[]): string[] {
+  const children = new Map<string, string[]>();
+  for (const node of scene.nodes) {
+    if (!node.parent_scene_node_id) continue;
+    children.set(node.parent_scene_node_id, [
+      ...(children.get(node.parent_scene_node_id) ?? []),
+      node.scene_node_id,
+    ]);
+  }
+  const collected = new Set<string>();
+  const visit = (nodeId: string) => {
+    if (collected.has(nodeId)) return;
+    collected.add(nodeId);
+    for (const childId of children.get(nodeId) ?? []) visit(childId);
+  };
+  for (const rootId of rootIds) visit(rootId);
+  return scene.nodes
+    .map((node) => node.scene_node_id)
+    .filter((nodeId) => collected.has(nodeId));
+}
+
+function sceneNodeDepths(scene: Scene): Map<string, number> {
+  const byId = new Map(scene.nodes.map((node) => [node.scene_node_id, node]));
+  const depths = new Map<string, number>();
+  const depthOf = (node: SceneNode): number => {
+    const cached = depths.get(node.scene_node_id);
+    if (cached !== undefined) return cached;
+    const parent = node.parent_scene_node_id ? byId.get(node.parent_scene_node_id) : undefined;
+    const depth = parent ? depthOf(parent) + 1 : 0;
+    depths.set(node.scene_node_id, depth);
+    return depth;
+  };
+  for (const node of scene.nodes) depthOf(node);
+  return depths;
+}
+
+function previewEdgePoints(
+  edge: SceneEdge,
+  nodes: SceneNode[],
+  preview: Record<string, Point>,
+  index: number,
+): Point[] {
+  const byId = new Map(nodes.map((node) => [node.scene_node_id, node]));
+  const source = byId.get(edge.source_scene_node_id);
+  const target = byId.get(edge.target_scene_node_id);
+  if (!source || !target) return edge.points;
+  const sourcePreview = preview[source.scene_node_id];
+  const targetPreview = preview[target.scene_node_id];
+  const sourceDelta = sourcePreview
+    ? { x: sourcePreview.x - source.bounds.x, y: sourcePreview.y - source.bounds.y }
+    : { x: 0, y: 0 };
+  const targetDelta = targetPreview
+    ? { x: targetPreview.x - target.bounds.x, y: targetPreview.y - target.bounds.y }
+    : { x: 0, y: 0 };
+  const sourceMoved = Boolean(sourcePreview);
+  const targetMoved = Boolean(targetPreview);
+  if (!sourceMoved && !targetMoved) return edge.points;
+  if (
+    sourceMoved
+    && targetMoved
+    && Math.abs(sourceDelta.x - targetDelta.x) < 0.01
+    && Math.abs(sourceDelta.y - targetDelta.y) < 0.01
+  ) {
+    return edge.points.map((point) => ({
+      x: point.x + sourceDelta.x,
+      y: point.y + sourceDelta.y,
+    }));
+  }
+  const sourceBounds = {
+    ...source.bounds,
+    ...(sourcePreview ?? {}),
+  };
+  const targetBounds = {
+    ...target.bounds,
+    ...(targetPreview ?? {}),
+  };
+  const start = {
+    x: sourceBounds.x + sourceBounds.width,
+    y: sourceBounds.y + sourceBounds.height / 2,
+  };
+  const end = {
+    x: targetBounds.x,
+    y: targetBounds.y + targetBounds.height / 2,
+  };
+  if (edge.points.length >= 6 || end.x <= start.x + 30) {
+    const corridorY = Math.min(...edge.points.map((point) => point.y));
+    return [
+      start,
+      { x: start.x + 24, y: start.y },
+      { x: start.x + 24, y: corridorY },
+      { x: Math.max(24, end.x - 24), y: corridorY },
+      { x: Math.max(24, end.x - 24), y: end.y },
+      end,
+    ];
+  }
+  const corridorX = (start.x + end.x) / 2 + ((index % 5) - 2) * 5;
+  return [
+    start,
+    { x: corridorX, y: start.y },
+    { x: corridorX, y: end.y },
+    end,
+  ];
+}
+
+function distanceToPolyline(point: Point, points: Point[]): number {
+  let nearest = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const start = points[index];
+    const end = points[index + 1];
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const lengthSquared = dx * dx + dy * dy;
+    const projection = lengthSquared === 0
+      ? 0
+      : Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared));
+    const x = start.x + projection * dx;
+    const y = start.y + projection * dy;
+    nearest = Math.min(nearest, Math.hypot(point.x - x, point.y - y));
+  }
+  return nearest;
+}
+
+function boundarySide(point: Point, bounds: Rect): RouteSide {
+  const distances: Array<[number, RouteSide]> = [
+    [Math.abs(point.x - bounds.x), "left"],
+    [Math.abs(point.x - bounds.x - bounds.width), "right"],
+    [Math.abs(point.y - bounds.y), "top"],
+    [Math.abs(point.y - bounds.y - bounds.height), "bottom"],
+  ];
+  return distances.sort((left, right) => left[0] - right[0])[0][1];
+}
+
+function routeStub(point: Point, side: RouteSide, distance = 24): Point {
+  if (side === "left") return { x: point.x - distance, y: point.y };
+  if (side === "right") return { x: point.x + distance, y: point.y };
+  if (side === "top") return { x: point.x, y: point.y - distance };
+  return { x: point.x, y: point.y + distance };
+}
+
+function compactRoute(route: Point[]): Point[] {
+  const compact: Point[] = [];
+  for (const point of route) {
+    if (compact.length && compact.at(-1)!.x === point.x && compact.at(-1)!.y === point.y) continue;
+    compact.push(point);
+    while (compact.length >= 3) {
+      const [first, middle, last] = compact.slice(-3);
+      if ((first.x === middle.x && middle.x === last.x) || (first.y === middle.y && middle.y === last.y)) {
+        compact.splice(-2, 1);
+      } else break;
+    }
+  }
+  return compact;
+}
+
+function segmentLengthInside(start: Point, end: Point, bounds: Rect): number {
+  if (Math.abs(start.x - end.x) < 0.001) {
+    if (!(bounds.x < start.x && start.x < bounds.x + bounds.width)) return 0;
+    return Math.max(0, Math.min(Math.max(start.y, end.y), bounds.y + bounds.height) - Math.max(Math.min(start.y, end.y), bounds.y));
+  }
+  if (Math.abs(start.y - end.y) < 0.001) {
+    if (!(bounds.y < start.y && start.y < bounds.y + bounds.height)) return 0;
+    return Math.max(0, Math.min(Math.max(start.x, end.x), bounds.x + bounds.width) - Math.max(Math.min(start.x, end.x), bounds.x));
+  }
+  return Math.hypot(end.x - start.x, end.y - start.y);
+}
+
+function orthogonalSegmentInteraction(firstStart: Point, firstEnd: Point, secondStart: Point, secondEnd: Point): [number, number] {
+  const firstVertical = Math.abs(firstStart.x - firstEnd.x) < 0.001;
+  const secondVertical = Math.abs(secondStart.x - secondEnd.x) < 0.001;
+  if (firstVertical === secondVertical) {
+    const firstAxis = firstVertical ? firstStart.x : firstStart.y;
+    const secondAxis = secondVertical ? secondStart.x : secondStart.y;
+    if (Math.abs(firstAxis - secondAxis) >= 0.001) return [0, 0];
+    const firstInterval = firstVertical
+      ? [Math.min(firstStart.y, firstEnd.y), Math.max(firstStart.y, firstEnd.y)]
+      : [Math.min(firstStart.x, firstEnd.x), Math.max(firstStart.x, firstEnd.x)];
+    const secondInterval = secondVertical
+      ? [Math.min(secondStart.y, secondEnd.y), Math.max(secondStart.y, secondEnd.y)]
+      : [Math.min(secondStart.x, secondEnd.x), Math.max(secondStart.x, secondEnd.x)];
+    return [0, Math.max(0, Math.min(firstInterval[1], secondInterval[1]) - Math.max(firstInterval[0], secondInterval[0]))];
+  }
+  const [verticalStart, verticalEnd] = firstVertical ? [firstStart, firstEnd] : [secondStart, secondEnd];
+  const [horizontalStart, horizontalEnd] = firstVertical ? [secondStart, secondEnd] : [firstStart, firstEnd];
+  const crossing = horizontalStart.x <= verticalStart.x && verticalStart.x <= horizontalEnd.x
+    || horizontalEnd.x <= verticalStart.x && verticalStart.x <= horizontalStart.x;
+  const withinVertical = verticalStart.y <= horizontalStart.y && horizontalStart.y <= verticalEnd.y
+    || verticalEnd.y <= horizontalStart.y && horizontalStart.y <= verticalStart.y;
+  if (!crossing || !withinVertical) return [0, 0];
+  const point = { x: verticalStart.x, y: horizontalStart.y };
+  const isEndpoint = (candidate: Point, start: Point, end: Point) => (
+    (candidate.x === start.x && candidate.y === start.y) || (candidate.x === end.x && candidate.y === end.y)
+  );
+  return [isEndpoint(point, firstStart, firstEnd) && isEndpoint(point, secondStart, secondEnd) ? 0 : 1, 0];
+}
+
+function routeInteractions(route: Point[], otherRoutes: Point[][]): [number, number] {
+  let crossings = 0;
+  let overlap = 0;
+  for (const other of otherRoutes) {
+    for (let index = 0; index < route.length - 1; index += 1) {
+      for (let otherIndex = 0; otherIndex < other.length - 1; otherIndex += 1) {
+        const [segmentCrossings, segmentOverlap] = orthogonalSegmentInteraction(
+          route[index], route[index + 1], other[otherIndex], other[otherIndex + 1],
+        );
+        crossings += segmentCrossings;
+        overlap += segmentOverlap;
+      }
+    }
+  }
+  return [crossings, overlap];
+}
+
+function routeMetric(
+  route: Point[],
+  nodes: SceneNode[],
+  relatedIds: Set<string>,
+  strategy: RouteStrategy,
+  otherRoutes: Point[][] = [],
+): number[] {
+  let nodeLength = 0;
+  let containerLength = 0;
+  let clearanceLength = 0;
+  let length = 0;
+  for (let index = 0; index < route.length - 1; index += 1) {
+    const start = route[index];
+    const end = route[index + 1];
+    length += Math.abs(end.x - start.x) + Math.abs(end.y - start.y);
+    for (const node of nodes) {
+      if (relatedIds.has(node.scene_node_id)) continue;
+      const inside = segmentLengthInside(start, end, node.bounds);
+      if (node.shape === "container") containerLength += inside;
+      else {
+        nodeLength += inside;
+        clearanceLength += segmentLengthInside(start, end, {
+          x: node.bounds.x - 10,
+          y: node.bounds.y - 10,
+          width: node.bounds.width + 20,
+          height: node.bounds.height + 20,
+        });
+      }
+    }
+  }
+  const bends = Math.max(0, route.length - 2);
+  const [crossings, overlap] = routeInteractions(route, otherRoutes);
+  if (strategy === "avoid") return [nodeLength, clearanceLength, containerLength, crossings, overlap, length, bends];
+  if (strategy === "balanced") return [nodeLength * 24 + clearanceLength * 3 + containerLength * 5 + crossings * 240 + overlap * 6 + length, crossings, overlap, bends];
+  return [length + nodeLength * 8 + clearanceLength * 1.5 + containerLength + crossings * 90 + overlap * 2.5, crossings, overlap, bends];
+}
+
+function compareMetric(left: number[], right: number[]): number {
+  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+    const difference = (left[index] ?? 0) - (right[index] ?? 0);
+    if (difference) return difference;
+  }
+  return 0;
+}
+
+function routeDirectionsValid(route: Point[], sourceSide: RouteSide, targetSide: RouteSide): boolean {
+  if (route.length < 2) return false;
+  const [first, second] = route;
+  const penultimate = route.at(-2)!;
+  const last = route.at(-1)!;
+  const sourceValid = {
+    left: second.y === first.y && second.x <= first.x,
+    right: second.y === first.y && second.x >= first.x,
+    top: second.x === first.x && second.y <= first.y,
+    bottom: second.x === first.x && second.y >= first.y,
+  }[sourceSide];
+  const targetValid = {
+    left: penultimate.y === last.y && penultimate.x <= last.x,
+    right: penultimate.y === last.y && penultimate.x >= last.x,
+    top: penultimate.x === last.x && penultimate.y <= last.y,
+    bottom: penultimate.x === last.x && penultimate.y >= last.y,
+  }[targetSide];
+  return sourceValid && targetValid;
+}
+
+function moveRouteEndpoint(
+  points: Point[],
+  endpoint: "source" | "target",
+  bounds: Rect,
+  pointer: Point,
+  edge: SceneEdge,
+  scene: Scene,
+  strategy: RouteStrategy,
+): Point[] {
+  const clamp = (value: number, minimum: number, maximum: number) => Math.max(minimum, Math.min(maximum, value));
+  const inset = Math.min(8, bounds.width / 4, bounds.height / 4);
+  const borderCandidates: Array<{ point: Point; side: RouteSide }> = [
+    { point: { x: bounds.x, y: clamp(pointer.y, bounds.y + inset, bounds.y + bounds.height - inset) }, side: "left" },
+    { point: { x: bounds.x + bounds.width, y: clamp(pointer.y, bounds.y + inset, bounds.y + bounds.height - inset) }, side: "right" },
+    { point: { x: clamp(pointer.x, bounds.x + inset, bounds.x + bounds.width - inset), y: bounds.y }, side: "top" },
+    { point: { x: clamp(pointer.x, bounds.x + inset, bounds.x + bounds.width - inset), y: bounds.y + bounds.height }, side: "bottom" },
+  ];
+  const snapped = borderCandidates.sort((left, right) => (
+    Math.hypot(pointer.x - left.point.x, pointer.y - left.point.y)
+    - Math.hypot(pointer.x - right.point.x, pointer.y - right.point.y)
+  ))[0];
+  const start = endpoint === "source" ? snapped.point : points[0];
+  const end = endpoint === "target" ? snapped.point : points.at(-1)!;
+  const sourceNode = scene.nodes.find((node) => node.scene_node_id === edge.source_scene_node_id)!;
+  const targetNode = scene.nodes.find((node) => node.scene_node_id === edge.target_scene_node_id)!;
+  const sourceSide = endpoint === "source" ? snapped.side : boundarySide(start, sourceNode.bounds);
+  const targetSide = endpoint === "target" ? snapped.side : boundarySide(end, targetNode.bounds);
+  const sourceStub = routeStub(start, sourceSide);
+  const targetStub = routeStub(end, targetSide);
+  const routes: Point[][] = [
+    [start, sourceStub, { x: sourceStub.x, y: targetStub.y }, targetStub, end],
+    [start, sourceStub, { x: targetStub.x, y: sourceStub.y }, targetStub, end],
+  ];
+  const middleX = (sourceStub.x + targetStub.x) / 2;
+  const middleY = (sourceStub.y + targetStub.y) / 2;
+  routes.push(
+    [start, sourceStub, { x: middleX, y: sourceStub.y }, { x: middleX, y: targetStub.y }, targetStub, end],
+    [start, sourceStub, { x: sourceStub.x, y: middleY }, { x: targetStub.x, y: middleY }, targetStub, end],
+  );
+  const margin = 18;
+  const corridorXs = new Set([8, scene.paper_width - 8]);
+  const corridorYs = new Set([8, scene.paper_height - 8]);
+  for (const node of scene.nodes) {
+    const nodeMargin = node.shape === "container" || node.shape === "opaque" ? margin : 10;
+    corridorXs.add(Math.max(8, node.bounds.x - nodeMargin));
+    corridorXs.add(Math.min(scene.paper_width - 8, node.bounds.x + node.bounds.width + nodeMargin));
+    corridorYs.add(Math.max(8, node.bounds.y - nodeMargin));
+    corridorYs.add(Math.min(scene.paper_height - 8, node.bounds.y + node.bounds.height + nodeMargin));
+  }
+  for (const x of corridorXs) routes.push([start, sourceStub, { x, y: sourceStub.y }, { x, y: targetStub.y }, targetStub, end]);
+  for (const y of corridorYs) routes.push([start, sourceStub, { x: sourceStub.x, y }, { x: targetStub.x, y }, targetStub, end]);
+  const byId = new Map(scene.nodes.map((node) => [node.scene_node_id, node]));
+  const ancestorSets = [edge.source_scene_node_id, edge.target_scene_node_id].map((endpointId) => {
+    const ancestors = new Set<string>();
+    let current: SceneNode | undefined = byId.get(endpointId);
+    while (current) {
+      ancestors.add(current.scene_node_id);
+      current = current.parent_scene_node_id ? byId.get(current.parent_scene_node_id) : undefined;
+    }
+    return ancestors;
+  });
+  const relatedIds = new Set<string>([edge.source_scene_node_id, edge.target_scene_node_id]);
+  for (const nodeId of ancestorSets[0]) if (ancestorSets[1].has(nodeId)) relatedIds.add(nodeId);
+  const otherRoutes = scene.edges
+    .filter((candidate) => candidate.scene_edge_id !== edge.scene_edge_id)
+    .map((candidate) => candidate.points);
+  return routes
+    .map(compactRoute)
+    .filter((route) => route.every((point) => point.x >= 0 && point.y >= 0 && point.x <= scene.paper_width && point.y <= scene.paper_height))
+    .filter((route) => routeDirectionsValid(route, sourceSide, targetSide))
+    .sort((left, right) => compareMetric(
+      routeMetric(left, scene.nodes, relatedIds, strategy, otherRoutes),
+      routeMetric(right, scene.nodes, relatedIds, strategy, otherRoutes),
+    ))[0];
+}
+
+function relationLabel(relation: string): string {
+  const labels = { sequence: "Flow", "parallel-branch": "Branch", merge: "Merge", residual: "Residual", "shape-transform": "Transform", "memory-reference": "Memory", condition: "Condition", routing: "Routing", "state-update": "State", "parameter-share": "Shared", "training-only": "Training" };
+  return (labels as Record<string, string>)[relation] ?? relation;
+}
+
 function navigationIcon(kind: string): React.ReactNode {
   if (["file", "directory", "repository"].includes(kind)) return <FileCode2 size={12} />;
   if (["class", "function", "control-scope"].includes(kind)) return <Braces size={12} />;
@@ -456,19 +965,49 @@ function navigationIcon(kind: string): React.ReactNode {
   return <Box size={12} />;
 }
 
-function navigationRelationLabel(relation: string): string {
-  return {
-    "module-containment": "归属",
-    "source-containment": "归属",
-    invocation: "调用",
-    assignment: "赋值",
-    return: "返回",
-    "producer-output": "产出",
-    "consumer-reference": "引用",
-  }[relation] ?? relation;
+function navigationRelationLabel(relation: string, locale: Locale): string {
+  const labels = locale === "zh" ? {
+    "module-containment": "归属", "source-containment": "归属", invocation: "调用", assignment: "赋值", return: "返回", "producer-output": "产出", "consumer-reference": "引用",
+  } : {
+    "module-containment": "Contains", "source-containment": "Contains", invocation: "Calls", assignment: "Assigns", return: "Returns", "producer-output": "Produces", "consumer-reference": "References",
+  };
+  return (labels as Record<string, string>)[relation] ?? relation;
+}
+
+function navigationSecondaryLabel(label: string | null | undefined, tx: LanguageContextValue["tx"]): string | undefined {
+  if (!label) return undefined;
+  const contained = label.match(/^包含 (\d+) 个执行对象$/);
+  if (!contained) return label;
+  const count = Number(contained[1]);
+  return tx(
+    `Contains ${count} executable ${count === 1 ? "object" : "objects"}`,
+    `包含 ${count} 个执行对象`,
+  );
+}
+
+const DEFAULT_PANEL_SIZES: PanelSizes = { left: 238, right: 320, top: 42, bottom: 132 };
+
+function storedPanelSizes(): PanelSizes {
+  try {
+    const value = JSON.parse(window.localStorage.getItem("archcanvas.panel-sizes") ?? "null") as Partial<PanelSizes> | null;
+    if (!value) return DEFAULT_PANEL_SIZES;
+    return {
+      left: Number.isFinite(value.left) ? Number(value.left) : DEFAULT_PANEL_SIZES.left,
+      right: Number.isFinite(value.right) ? Number(value.right) : DEFAULT_PANEL_SIZES.right,
+      top: Number.isFinite(value.top) ? Number(value.top) : DEFAULT_PANEL_SIZES.top,
+      bottom: Number.isFinite(value.bottom) ? Number(value.bottom) : DEFAULT_PANEL_SIZES.bottom,
+    };
+  } catch {
+    return DEFAULT_PANEL_SIZES;
+  }
 }
 
 function App() {
+  const [locale, setLocale] = useState<Locale>(() => {
+    const stored = window.localStorage.getItem("archcanvas.locale");
+    return stored === "en" || stored === "zh" ? stored : "zh";
+  });
+  const tx = (english: string, chinese: string) => locale === "zh" ? chinese : english;
   const [data, setData] = useState<StudioState | null>(() => embeddedState());
   const [projection, setProjection] = useState<Projection>(
     () => embeddedState()?.navigation?.active_projection ?? embeddedState()?.view_state.navigation_view ?? "module",
@@ -476,28 +1015,41 @@ function App() {
   const [expansions, setExpansions] = useState<Record<Projection, Set<string>>>(() => expansionState(embeddedState()));
   const [mode, setMode] = useState<Mode>("explore");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [focusedNavigationRowId, setFocusedNavigationRowId] = useState<string | null>(null);
   const [inspectorTab, setInspectorTab] = useState<"inspect" | "source" | "visual" | "model" | "evidence">("inspect");
   const [bottomTab, setBottomTab] = useState<"problems" | "diff" | "validation" | "jobs" | "activity">("problems");
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [validationProfile, setValidationProfile] = useState("fast-static");
-  const [projectDialog, setProjectDialog] = useState(false);
+  const [routeStrategy, setRouteStrategy] = useState<RouteStrategy>("avoid");
+  const [projectDialog, setProjectDialog] = useState(true);
   const [projectRoot, setProjectRoot] = useState(() => embeddedState()?.project.root ?? "");
-  const [pendingProject, setPendingProject] = useState<{
-    project: StudioState["project"];
-    discovery: { entrypoints: Array<{ entrypoint: string; framework: string }>; configs: Array<{ path: string }> };
-  } | null>(null);
+  const [pendingProject, setPendingProject] = useState<PendingProject | null>(null);
+  const [condaEnvironments, setCondaEnvironments] = useState<CondaEnvironment[]>([]);
+  const [condaEnvironment, setCondaEnvironment] = useState("");
+  const [environmentLoading, setEnvironmentLoading] = useState(false);
+  const [projectScanning, setProjectScanning] = useState(false);
+  const [projectError, setProjectError] = useState("");
+  const [folderPicker, setFolderPicker] = useState<DirectoryBrowserState | null>(null);
+  const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(null);
+  const [folderLoading, setFolderLoading] = useState(false);
   const [projectEntrypoint, setProjectEntrypoint] = useState("");
+  const [projectModelExpansions, setProjectModelExpansions] = useState<Set<string>>(new Set());
   const [projectFramework, setProjectFramework] = useState("auto");
   const [projectConfig, setProjectConfig] = useState("");
   const [mobileInspector, setMobileInspector] = useState(false);
   const [dark, setDark] = useState(() => embeddedState()?.view_state.theme === "studio-dark");
   const [viewBox, setViewBox] = useState<[number, number, number, number] | null>(null);
+  const [canvasSize, setCanvasSize] = useState({ width: 1, height: 1 });
   const [drag, setDrag] = useState<DragState | null>(null);
   const [pan, setPan] = useState<PanState | null>(null);
   const [preview, setPreview] = useState<Record<string, Point>>({});
-  const [activity, setActivity] = useState<string[]>(["Studio document opened"]);
+  const [edgeEndpointDrag, setEdgeEndpointDrag] = useState<EdgeEndpointDrag | null>(null);
+  const [edgeRoutePreview, setEdgeRoutePreview] = useState<Point[] | null>(null);
+  const [panelSizes, setPanelSizes] = useState<PanelSizes>(storedPanelSizes);
+  const [panelResize, setPanelResize] = useState<PanelResizeState | null>(null);
+  const [activity, setActivity] = useState<string[]>([tx("Studio document opened", "Studio 文档已打开")]);
   const svgRef = useRef<SVGSVGElement>(null);
   const selections = useRef<Record<string, string[]>>({});
   const cameraTimer = useRef<number | null>(null);
@@ -506,9 +1058,42 @@ function App() {
   const expansionsRef = useRef(expansions);
   const navigationTouched = useRef(false);
   const previousScene = useRef<Scene | null>(null);
+  const framedLayoutFamily = useRef<string | null>(null);
   const viewBoxRef = useRef<[number, number, number, number] | null>(null);
   const viewBoxAnimation = useRef<number | null>(null);
   const pendingHierarchyFocus = useRef<string | null>(null);
+
+  useEffect(() => {
+    window.localStorage.setItem("archcanvas.locale", locale);
+    document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
+  }, [locale]);
+
+  useEffect(() => {
+    window.localStorage.setItem("archcanvas.panel-sizes", JSON.stringify(panelSizes));
+  }, [panelSizes]);
+
+  useEffect(() => {
+    if (!projectDialog || condaEnvironments.length || environmentLoading) return;
+    const controller = new AbortController();
+    setEnvironmentLoading(true);
+    setProjectError("");
+    fetch("/api/environments/conda", { signal: controller.signal, cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(await response.text());
+        return response.json() as Promise<{ environments: CondaEnvironment[]; selected: string | null }>;
+      })
+      .then((result) => {
+        setCondaEnvironments(result.environments);
+        setCondaEnvironment(result.selected ?? result.environments[0]?.path ?? "");
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) setProjectError(String(error));
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setEnvironmentLoading(false);
+      });
+    return () => controller.abort();
+  }, [projectDialog, condaEnvironments.length]);
 
   const navigation = data?.navigation.projections[projection];
   const visibleNavigation = navigation
@@ -543,6 +1128,9 @@ function App() {
   useEffect(() => {
     let focusedSceneNodeId: string | null = null;
     if (scene) {
+      const layoutChanged = framedLayoutFamily.current !== null
+        && framedLayoutFamily.current !== scene.layout_family;
+      framedLayoutFamily.current = scene.layout_family;
       let target: [number, number, number, number] = camera
         ? [camera.x, camera.y, scene.paper_width / camera.zoom, scene.paper_height / camera.zoom]
         : [0, 0, scene.paper_width, scene.paper_height];
@@ -550,9 +1138,12 @@ function App() {
       const focusViewNode = focusId
         ? view?.nodes.find((node) => node.attributes.hierarchy_node_id === focusId)
         : undefined;
-      const focusNode = focusViewNode
+      const hierarchyFocusNode = focusViewNode
         ? scene.nodes.find((node) => node.view_node_id === focusViewNode.view_node_id)
         : undefined;
+      const focusNode = hierarchyFocusNode ?? (layoutChanged
+        ? scene.nodes.find((node) => node.scene_node_id === selectedIds.at(-1))
+        : undefined);
       if (focusNode && svgRef.current) {
         focusedSceneNodeId = focusNode.scene_node_id;
         const horizontalPadding = Math.max(90, focusNode.bounds.width * 0.06);
@@ -599,12 +1190,28 @@ function App() {
       if (activeProjectionId) selections.current[activeProjectionId] = next;
       return next;
     });
+    setSelectedEdgeId(null);
+    setEdgeEndpointDrag(null);
+    setEdgeRoutePreview(null);
     setPreview({});
-  }, [activeProjectionId, scene?.scene_id, camera?.x, camera?.y, camera?.zoom]);
+  }, [activeProjectionId, scene?.scene_id, scene?.layout_family, scene?.paper_width, scene?.paper_height, camera?.x, camera?.y, camera?.zoom]);
 
   useEffect(() => {
     viewBoxRef.current = viewBox;
   }, [viewBox]);
+
+  useLayoutEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const updateSize = () => {
+      const bounds = svg.getBoundingClientRect();
+      setCanvasSize({ width: Math.max(1, bounds.width), height: Math.max(1, bounds.height) });
+    };
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(svg);
+    return () => observer.disconnect();
+  }, [scene?.scene_id, Boolean(viewBox)]);
 
   useLayoutEffect(() => {
     if (!scene || !svgRef.current) return;
@@ -642,7 +1249,7 @@ function App() {
         { duration: 300, delay: 70, easing: "ease-out", fill: "both" },
       );
     }
-  }, [scene?.scene_id]);
+  }, [scene?.scene_id, scene?.layout_family]);
 
   useEffect(() => {
     setDark(data?.view_state.theme === "studio-dark");
@@ -665,6 +1272,7 @@ function App() {
 
   const selected = selectedIds.at(-1) ?? null;
   const selectedNode = scene?.nodes.find((node) => node.scene_node_id === selected) ?? null;
+  const selectedEdge = scene?.edges.find((edge) => edge.scene_edge_id === selectedEdgeId) ?? null;
   const selectedViewNode = view?.nodes.find(
     (node) => node.view_node_id === selectedNode?.view_node_id,
   );
@@ -725,7 +1333,7 @@ function App() {
       const label = activityLabel ?? (visualPatch?.operation ? `${visualPatch.operation} · ${visualPatch.target_id ?? "document"}` : endpoint.slice(5));
       setActivity((items) => [label, ...items].slice(0, 20));
     } catch (error) {
-      setActivity((items) => [`Request failed · ${String(error)}`, ...items].slice(0, 20));
+      setActivity((items) => [`${tx("Request failed", "请求失败")} · ${String(error)}`, ...items].slice(0, 20));
     }
   }
 
@@ -760,7 +1368,7 @@ function App() {
           setActivity((items) => [activityLabel, ...items].slice(0, 20));
         })
         .catch((error) => {
-          setActivity((items) => [`Navigation persistence failed · ${String(error)}`, ...items].slice(0, 20));
+          setActivity((items) => [`${tx("Navigation persistence failed", "导航状态保存失败")} · ${String(error)}`, ...items].slice(0, 20));
         });
     }, 160);
   }
@@ -800,7 +1408,7 @@ function App() {
         parameter_name: parameterName,
         new_value: newValue,
       },
-      `Prepared ${architectureNode.node_id}.${parameterName}`,
+      `${tx("Prepared", "已准备")} ${architectureNode.node_id}.${parameterName}`,
     );
     setBottomTab("diff");
   }
@@ -815,7 +1423,7 @@ function App() {
         target_node_id: architectureNode.node_id,
         parameters,
       },
-      `Prepared ${operation} on ${architectureNode.node_id}`,
+      `${tx("Prepared", "已准备")} ${operation} ${tx("on", "作用于")} ${architectureNode.node_id}`,
     );
     setBottomTab("diff");
   }
@@ -832,7 +1440,7 @@ function App() {
         target_port_id: targetPortId,
         role: "main",
       },
-      `Proposed ${architectureNode.node_id} → ${targetNodeId}`,
+      `${tx("Proposed", "已提议")} ${architectureNode.node_id} → ${targetNodeId}`,
     );
   }
 
@@ -850,6 +1458,7 @@ function App() {
 
   function selectSearchResult(result = searchResults[0]) {
     if (!result) return;
+    setSelectedEdgeId(null);
     const binding = result.view_bindings.find(
       (item) => item.projection_id === activeProjectionId,
     );
@@ -878,7 +1487,10 @@ function App() {
     navigationTouched.current = true;
     setFocusedNavigationRowId(null);
     setProjection(next);
-    persistNavigation(next, expansionsRef.current, `${next === "module" ? "模块关系" : "源码关系"} view`);
+    persistNavigation(next, expansionsRef.current, tx(
+      `${next === "module" ? "Module" : "Source"} relations view`,
+      `${next === "module" ? "模块" : "源码"}关系视图`,
+    ));
   }
 
   function toggleNavigationRow(rowId: string) {
@@ -894,7 +1506,10 @@ function App() {
     const nextExpansions = { ...expansionsRef.current, [kind]: next };
     expansionsRef.current = nextExpansions;
     setExpansions(nextExpansions);
-    persistNavigation(kind, nextExpansions, `Navigation ${shouldExpand ? "expanded" : "collapsed"}`);
+    persistNavigation(kind, nextExpansions, tx(
+      `Navigation ${shouldExpand ? "expanded" : "collapsed"}`,
+      `导航${shouldExpand ? "已展开" : "已折叠"}`,
+    ));
   }
 
   function activateNavigationRow(item: NavigationNode) {
@@ -917,6 +1532,7 @@ function App() {
     additive = false,
     navigationRowId?: string | null,
   ) {
+    setSelectedEdgeId(null);
     const next = !nodeId
       ? []
       : additive
@@ -944,6 +1560,32 @@ function App() {
     }
   }
 
+  function chooseEdge(edgeId: string) {
+    const next = selectedEdgeId === edgeId ? null : edgeId;
+    setSelectedEdgeId(next);
+    setEdgeEndpointDrag(null);
+    setEdgeRoutePreview(null);
+    if (!next) return;
+    if (activeProjectionId) selections.current[activeProjectionId] = [];
+    setSelectedIds([]);
+    setFocusedNavigationRowId(null);
+  }
+
+  function chooseEdgeAtClient(clientX: number, clientY: number, fallbackEdgeId: string) {
+    const point = scenePointFromClient(clientX, clientY);
+    if (!scene || !point) {
+      chooseEdge(fallbackEdgeId);
+      return;
+    }
+    const nearest = scene.edges
+      .map((edge, index) => ({
+        edge,
+        distance: distanceToPolyline(point, previewEdgePoints(edge, scene.nodes, preview, index)),
+      }))
+      .sort((left, right) => left.distance - right.distance)[0];
+    chooseEdge(nearest?.edge.scene_edge_id ?? fallbackEdgeId);
+  }
+
   function zoom(factor: number) {
     if (!viewBox || !scene) return;
     const [x, y, width, height] = viewBox;
@@ -959,14 +1601,20 @@ function App() {
     persistCamera(next, scene);
   }
 
-  function pointerPosition(event: React.PointerEvent): Point | null {
+  function scenePointFromClient(clientX: number, clientY: number): Point | null {
     const svg = svgRef.current;
-    if (!svg || !viewBox) return null;
-    const rect = svg.getBoundingClientRect();
-    return {
-      x: (event.clientX - rect.left) * (viewBox[2] / rect.width),
-      y: (event.clientY - rect.top) * (viewBox[3] / rect.height),
-    };
+    if (!svg) return null;
+    const matrix = svg.getScreenCTM();
+    if (!matrix) return null;
+    const point = svg.createSVGPoint();
+    point.x = clientX;
+    point.y = clientY;
+    const transformed = point.matrixTransform(matrix.inverse());
+    return { x: transformed.x, y: transformed.y };
+  }
+
+  function pointerPosition(event: React.PointerEvent): Point | null {
+    return scenePointFromClient(event.clientX, event.clientY);
   }
 
   function beginDrag(event: React.PointerEvent, node: SceneNode) {
@@ -977,33 +1625,74 @@ function App() {
     const point = pointerPosition(event);
     if (!point) return;
     event.currentTarget.setPointerCapture(event.pointerId);
-    const movingIds = selectedIds.includes(node.scene_node_id) ? selectedIds : [node.scene_node_id];
+    const selectedRoots = selectedIds.includes(node.scene_node_id) ? selectedIds : [node.scene_node_id];
+    const movingRoots = selectedRoots.filter((nodeId) => !pinned.has(nodeId));
+    const movingIds = scene ? sceneDescendantIds(scene, movingRoots) : movingRoots;
     const baselines = Object.fromEntries(
       movingIds
-        .filter((nodeId) => !pinned.has(nodeId))
         .map((nodeId) => {
           const current = scene?.nodes.find((item) => item.scene_node_id === nodeId);
           return [nodeId, current?.bounds ?? node.bounds];
         }),
     );
-    setDrag({ startClient: point, baselines });
+    setDrag({ startClient: point, baselines, rootIds: movingRoots });
+  }
+
+  function beginEdgeEndpointDrag(
+    event: React.PointerEvent<SVGCircleElement>,
+    endpoint: "source" | "target",
+  ) {
+    if (mode !== "layout" || !selectedEdge || !scene) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const index = scene.edges.indexOf(selectedEdge);
+    const points = previewEdgePoints(selectedEdge, scene.nodes, preview, index);
+    setEdgeRoutePreview(points);
+    setEdgeEndpointDrag({ edgeId: selectedEdge.scene_edge_id, endpoint, points });
+  }
+
+  function moveEdgeEndpoint(event: React.PointerEvent) {
+    if (!edgeEndpointDrag || !edgeRoutePreview || !scene) return;
+    const point = pointerPosition(event);
+    const edge = scene.edges.find((item) => item.scene_edge_id === edgeEndpointDrag.edgeId);
+    if (!point || !edge) return;
+    const nodeId = edgeEndpointDrag.endpoint === "source"
+      ? edge.source_scene_node_id
+      : edge.target_scene_node_id;
+    const node = scene.nodes.find((item) => item.scene_node_id === nodeId);
+    if (!node) return;
+    setEdgeRoutePreview(moveRouteEndpoint(
+      edgeEndpointDrag.points,
+      edgeEndpointDrag.endpoint,
+      node.bounds,
+      point,
+      edge,
+      scene,
+      routeStrategy,
+    ));
   }
 
   function moveDrag(event: React.PointerEvent) {
     if (!drag) return;
     const point = pointerPosition(event);
     if (!point) return;
+    const bounds = Object.values(drag.baselines);
+    const deltaX = Math.max(point.x - drag.startClient.x, -Math.min(...bounds.map((item) => item.x)));
+    const deltaY = Math.max(point.y - drag.startClient.y, -Math.min(...bounds.map((item) => item.y)));
     setPreview(Object.fromEntries(Object.entries(drag.baselines).map(([nodeId, bounds]) => [
       nodeId,
       {
-        x: Math.max(0, bounds.x + point.x - drag.startClient.x),
-        y: Math.max(0, bounds.y + point.y - drag.startClient.y),
+        x: bounds.x + deltaX,
+        y: bounds.y + deltaY,
       },
     ])));
   }
 
   function beginPan(event: React.PointerEvent<SVGSVGElement>) {
+    if ((event.target as Element).closest(".scene-edge")) return;
     if ((event.target as Element).closest(".scene-node:not(.root)") || !viewBox) return;
+    setSelectedEdgeId(null);
     event.currentTarget.setPointerCapture(event.pointerId);
     setPan({
       startClient: { x: event.clientX, y: event.clientY },
@@ -1012,6 +1701,10 @@ function App() {
   }
 
   function movePointer(event: React.PointerEvent<SVGSVGElement>) {
+    if (edgeEndpointDrag) {
+      moveEdgeEndpoint(event);
+      return;
+    }
     if (drag) {
       moveDrag(event);
       return;
@@ -1038,7 +1731,9 @@ function App() {
     }));
     if (patches.length) void mutate("/api/patch-batch", {
       batch_id: patchId("drag").replace("patch:", "batch:"),
-      description: `Move ${patches.length} node${patches.length === 1 ? "" : "s"}`,
+      description: drag.rootIds.length === 1 && patches.length > 1
+        ? tx(`Move container with ${patches.length - 1} descendant${patches.length === 2 ? "" : "s"}`, `移动容器及 ${patches.length - 1} 个后代节点`)
+        : tx(`Move ${patches.length} node${patches.length === 1 ? "" : "s"}`, `移动 ${patches.length} 个节点`),
       patches,
     });
     setDrag(null);
@@ -1046,6 +1741,14 @@ function App() {
   }
 
   function endPointer() {
+    if (edgeEndpointDrag && edgeRoutePreview) {
+      const dragState = edgeEndpointDrag;
+      const route = edgeRoutePreview;
+      setEdgeEndpointDrag(null);
+      void submit("set-route-hint", dragState.edgeId, { points: route })
+        .finally(() => setEdgeRoutePreview(null));
+      return;
+    }
     if (drag) endDrag();
     if (pan && viewBox && scene) {
       void submit("set-camera", undefined, {
@@ -1059,6 +1762,8 @@ function App() {
 
   function cancelPointer() {
     setDrag(null);
+    setEdgeEndpointDrag(null);
+    setEdgeRoutePreview(null);
     setPan(null);
     setPreview({});
   }
@@ -1069,35 +1774,66 @@ function App() {
       batch_id: patchId(`align-${command}`).replace("patch:", "batch:"),
       selected_ids: selectedIds,
       command,
-    }, `Aligned ${selectedIds.length} nodes · ${command}`);
+    }, `${tx("Aligned", "已对齐")} ${selectedIds.length} ${tx("nodes", "个节点")} · ${command}`);
   }
 
   function runValidation() {
     void mutate("/api/validation-runs", {
       profile: validationProfile,
       runtime_execution_authorized: false,
-    }, `Validated · ${validationProfile}`);
+    }, `${tx("Validated", "已验证")} · ${validationProfile}`);
     setBottomTab("validation");
   }
 
   async function openProject() {
+    if (!projectRoot.trim() || !condaEnvironment) return;
+    setProjectScanning(true);
+    setProjectError("");
+    setPendingProject(null);
     try {
       const response = await fetch("/api/projects/open", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(data?.session_nonce ? { "X-ArchCanvas-Nonce": data.session_nonce } : {}) },
-        body: JSON.stringify({ root: projectRoot }),
+        body: JSON.stringify({ root: projectRoot.trim(), environment_path: condaEnvironment }),
       });
       if (!response.ok) throw new Error(await response.text());
-      const result = await response.json() as typeof pendingProject;
-      if (!result) return;
+      const result = await response.json() as PendingProject;
       setPendingProject(result);
-      const candidate = result.discovery.entrypoints[0];
+      const roots = result.discovery.entrypoints.filter((item) => item.depth === 0);
+      setProjectModelExpansions(new Set(roots.filter((item) => item.child_count > 0).map((item) => item.entrypoint)));
+      const candidate = result.discovery.entrypoints.find((item) => item.top_level) ?? roots[0] ?? result.discovery.entrypoints[0];
       setProjectEntrypoint(candidate?.entrypoint ?? "");
       setProjectFramework(candidate?.framework === "unknown" ? "auto" : candidate?.framework ?? "auto");
       setProjectConfig(result.discovery.configs[0]?.path ?? "");
     } catch (error) {
-      setActivity((items) => [`Project discovery failed · ${String(error)}`, ...items].slice(0, 20));
+      setProjectError(String(error));
+      setActivity((items) => [`${tx("Project discovery failed", "项目发现失败")} · ${String(error)}`, ...items].slice(0, 20));
+    } finally {
+      setProjectScanning(false);
     }
+  }
+
+  async function browseFolders(path?: string) {
+    setFolderLoading(true);
+    try {
+      const target = path ?? (projectRoot.trim() || "/home");
+      const response = await fetch(`/api/directories?path=${encodeURIComponent(target)}`, { cache: "no-store" });
+      if (!response.ok) throw new Error(await response.text());
+      setFolderPicker(await response.json() as DirectoryBrowserState);
+      setSelectedFolderPath(null);
+    } catch (error) {
+      setProjectError(String(error));
+    } finally {
+      setFolderLoading(false);
+    }
+  }
+
+  function selectProjectEntrypoint(candidate: ProjectEntrypoint) {
+    setProjectEntrypoint(candidate.entrypoint);
+    setProjectFramework(candidate.framework === "unknown" ? "auto" : candidate.framework);
+    const parent = candidate.path.includes("/") ? candidate.path.slice(0, candidate.path.lastIndexOf("/") + 1) : "";
+    const nearestConfig = pendingProject?.discovery.configs.find((item) => item.path.startsWith(parent));
+    setProjectConfig(nearestConfig?.path ?? pendingProject?.discovery.configs[0]?.path ?? "");
   }
 
   async function analyzeProject() {
@@ -1136,7 +1872,7 @@ function App() {
         }
       }, 300);
     } catch (error) {
-      setActivity((items) => [`Analysis start failed · ${String(error)}`, ...items].slice(0, 20));
+      setActivity((items) => [`${tx("Analysis start failed", "分析启动失败")} · ${String(error)}`, ...items].slice(0, 20));
     }
   }
 
@@ -1154,6 +1890,39 @@ function App() {
     ];
     setViewBox(next);
     void submit("set-camera", undefined, { x: 0, y: 0, zoom: 1 }, scene.scene_id);
+  }
+
+  function focusSelection() {
+    if (!scene || !selectedNode || !svgRef.current) return;
+    const horizontalPadding = Math.max(90, selectedNode.bounds.width * 0.12);
+    const verticalPadding = Math.max(70, selectedNode.bounds.height * 0.18);
+    let width = selectedNode.bounds.width + horizontalPadding * 2;
+    let height = selectedNode.bounds.height + verticalPadding * 2;
+    const viewportRatio = svgRef.current.clientWidth / Math.max(1, svgRef.current.clientHeight);
+    if (width / height > viewportRatio) height = width / viewportRatio;
+    else width = height * viewportRatio;
+    const target: [number, number, number, number] = [
+      selectedNode.bounds.x + selectedNode.bounds.width / 2 - width / 2,
+      selectedNode.bounds.y + selectedNode.bounds.height / 2 - height / 2,
+      width,
+      height,
+    ];
+    const start = viewBoxRef.current ?? target;
+    if (viewBoxAnimation.current !== null) cancelAnimationFrame(viewBoxAnimation.current);
+    const started = performance.now();
+    const animate = (now: number) => {
+      const progress = Math.min(1, (now - started) / 320);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const next = start.map((value, index) => value + (target[index] - value) * eased) as [number, number, number, number];
+      viewBoxRef.current = next;
+      setViewBox(next);
+      if (progress < 1) viewBoxAnimation.current = requestAnimationFrame(animate);
+      else {
+        viewBoxAnimation.current = null;
+        persistCamera(target, scene);
+      }
+    };
+    viewBoxAnimation.current = requestAnimationFrame(animate);
   }
 
   function expandInNavigation(node: SceneNode) {
@@ -1188,38 +1957,114 @@ function App() {
     setExpansions(nextExpansions);
     setProjection(targetProjection);
     setFocusedNavigationRowId(candidate.id);
-    persistNavigation(targetProjection, nextExpansions, `Expanded ${candidate.label}`);
+    persistNavigation(targetProjection, nextExpansions, `${tx("Expanded", "已展开")} ${candidate.label}`);
+  }
+
+  function constrainPanelSize(edge: PanelResizeEdge, value: number, sizes = panelSizes): number {
+    const horizontalRoom = Math.max(180, window.innerWidth - 360);
+    const verticalRoom = Math.max(90, window.innerHeight - 280);
+    if (edge === "left") return Math.max(180, Math.min(480, horizontalRoom - sizes.right, value));
+    if (edge === "right") return Math.max(240, Math.min(520, horizontalRoom - sizes.left, value));
+    if (edge === "top") return Math.max(42, Math.min(96, verticalRoom - sizes.bottom, value));
+    return Math.max(92, Math.min(360, verticalRoom - sizes.top, value));
+  }
+
+  function beginPanelResize(event: React.PointerEvent<HTMLDivElement>, edge: PanelResizeEdge) {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setPanelResize({
+      edge,
+      startClient: { x: event.clientX, y: event.clientY },
+      sizes: panelSizes,
+    });
+  }
+
+  function movePanelResize(event: React.PointerEvent<HTMLDivElement>) {
+    if (!panelResize) return;
+    const deltaX = event.clientX - panelResize.startClient.x;
+    const deltaY = event.clientY - panelResize.startClient.y;
+    const delta = panelResize.edge === "left"
+      ? deltaX
+      : panelResize.edge === "right"
+        ? -deltaX
+        : panelResize.edge === "top"
+          ? deltaY
+          : -deltaY;
+    const next = panelResize.sizes[panelResize.edge] + delta;
+    setPanelSizes({
+      ...panelResize.sizes,
+      [panelResize.edge]: constrainPanelSize(panelResize.edge, next, panelResize.sizes),
+    });
+  }
+
+  function resizePanelWithKeyboard(event: React.KeyboardEvent<HTMLDivElement>, edge: PanelResizeEdge) {
+    const step = event.shiftKey ? 24 : 8;
+    let delta = 0;
+    if (edge === "left" && event.key === "ArrowLeft") delta = -step;
+    if (edge === "left" && event.key === "ArrowRight") delta = step;
+    if (edge === "right" && event.key === "ArrowLeft") delta = step;
+    if (edge === "right" && event.key === "ArrowRight") delta = -step;
+    if (edge === "top" && event.key === "ArrowUp") delta = -step;
+    if (edge === "top" && event.key === "ArrowDown") delta = step;
+    if (edge === "bottom" && event.key === "ArrowUp") delta = step;
+    if (edge === "bottom" && event.key === "ArrowDown") delta = -step;
+    if (!delta && event.key !== "Home") return;
+    event.preventDefault();
+    setPanelSizes((current) => {
+      const next = event.key === "Home" ? DEFAULT_PANEL_SIZES[edge] : current[edge] + delta;
+      return { ...current, [edge]: constrainPanelSize(edge, next, current) };
+    });
+  }
+
+  function resetPanelSize(edge: PanelResizeEdge) {
+    setPanelSizes((current) => ({
+      ...current,
+      [edge]: constrainPanelSize(edge, DEFAULT_PANEL_SIZES[edge], current),
+    }));
   }
 
   if (!data || !scene || !view || !viewBox || !navigation) {
-    return <div className="loading">Loading Studio…</div>;
+    return <div className="loading">{tx("Loading Studio...", "正在加载 Studio...")}</div>;
   }
 
   const sourceDigest = data.document.source_digest.slice(0, 12);
   const selectedCanonical = selectedCanonicalIds[0];
   const architectureNode = data.architecture.nodes.find((node) => node.node_id === selectedCanonical);
+  const localizedProjectionName = projection === "module"
+    ? tx("Module relations", "模块关系")
+    : tx("Source relations", "源码关系");
   const breadcrumb = selectedViewNode
-    ? `${data.architecture.entrypoint.split(":").at(-1)} / ${view.name} / ${selectedViewNode.semantic_name}`
-    : `${data.architecture.entrypoint.split(":").at(-1)} / ${view.name}`;
+    ? `${data.architecture.entrypoint.split(":").at(-1)} / ${localizedProjectionName} / ${selectedViewNode.semantic_name}`
+    : `${data.architecture.entrypoint.split(":").at(-1)} / ${localizedProjectionName}`;
   const proofRank: Record<string, number> = { invalid: 7, stale: 6, unproven: 5, conditional: 4, checking: 3, proven: 2, "review-ready": 1 };
   const proofs = data.draft.proofs;
   const proofCounts = proofs.reduce<Record<string, number>>((counts, proof) => ({ ...counts, [proof.status]: (counts[proof.status] ?? 0) + 1 }), {});
   const writebackBlocked = data.draft.writeback_summary.eligibility === "blocked" && data.draft.writeback_summary.blocking_intent_ids.length > 0;
   const latestValidation = data.validation_runs.at(-1);
+  const screenScale = Math.min(canvasSize.width / viewBox[2], canvasSize.height / viewBox[3]);
+  const semanticZoom = screenScale < 0.35 ? "overview" : screenScale < 0.82 ? "standard" : "detail";
+  const labelScale = Math.min(2.5, Math.max(1, 0.78 / screenScale));
+  const containerLabelScale = Math.min(4, Math.max(1, 0.95 / screenScale));
+  const sceneDepths = sceneNodeDepths(scene);
   function renderSceneNode(original: SceneNode) {
     const position = preview[original.scene_node_id];
     const node = position ? { ...original, bounds: { ...original.bounds, ...position } } : original;
     const isRoot = !node.parent_scene_node_id;
     const isSelected = selectedIds.includes(node.scene_node_id);
+    const isEdgeSource = selectedEdge?.source_scene_node_id === node.scene_node_id;
+    const isEdgeTarget = selectedEdge?.target_scene_node_id === node.scene_node_id;
     const publicationNode = view!.nodes.find((item) => item.view_node_id === node.view_node_id);
+    const isStructuralContainer = node.shape === "container" && !publicationNode?.collapsed;
     const proof = proofs
       .filter((item) => item.affected_subject_ids.some((id) => node.canonical_node_ids.includes(id)))
       .sort((a, b) => proofRank[b.status] - proofRank[a.status])[0];
     return (
       <g
         key={node.scene_node_id}
-        className={`scene-node ${isRoot ? "root" : ""} ${isSelected ? "selected" : ""} ${collapsed.has(node.scene_node_id) ? "collapsed" : ""} ${publicationNode?.collapsed ? "publication-collapsed" : ""} ${proof ? `proof-${proof.status}` : ""}`}
+        className={`scene-node scene-depth-${Math.min(sceneDepths.get(node.scene_node_id) ?? 0, 4)} ${isRoot ? "root" : ""} ${isSelected ? "selected" : ""} ${isEdgeSource ? "edge-source" : ""} ${isEdgeTarget ? "edge-target" : ""} ${collapsed.has(node.scene_node_id) ? "collapsed" : ""} ${publicationNode?.collapsed ? "publication-collapsed" : ""} ${proof ? `proof-${proof.status}` : ""}`}
         data-scene-node-id={node.scene_node_id}
+        data-scene-depth={sceneDepths.get(node.scene_node_id) ?? 0}
+        data-node-shape={node.shape}
         tabIndex={isRoot ? -1 : 0}
         onPointerDown={(event) => beginDrag(event, node)}
         onClick={() => {
@@ -1229,12 +2074,12 @@ function App() {
         onKeyDown={(event) => { if (event.key === "Enter" && !isRoot) expandInNavigation(node); }}
       >
         {nodeShape(node)}
-        {isRoot ? (
-          <text className="container-label" x={node.bounds.x + 14} y={node.bounds.y + 23}>{node.label_lines.join(" ")}</text>
+        {isRoot || isStructuralContainer ? (
+          <text className="container-label" x={node.bounds.x + 14} y={isRoot ? node.bounds.y + 23 : node.bounds.y - 8}>{node.label_lines.join(" ")}</text>
         ) : (
           <>
             {node.label_lines.map((line, index) => (
-              <text key={line + index} className="node-label" textAnchor="middle" x={node.bounds.x + node.bounds.width / 2} y={node.bounds.y + node.bounds.height / 2 - ((node.label_lines.length - 1) * 15) / 2 + index * 15}>{line}</text>
+              <text key={line + index} className="node-label" textAnchor="middle" x={node.bounds.x + node.bounds.width / 2} y={node.bounds.y + node.bounds.height / 2 - ((node.label_lines.length - 1) * 15 * Math.min(labelScale, 1.7)) / 2 + index * 15 * Math.min(labelScale, 1.7)}>{line}</text>
             ))}
             {node.secondary_label && <text className="node-secondary" textAnchor="middle" x={node.bounds.x + node.bounds.width / 2} y={node.bounds.y + node.bounds.height - 14}>{node.secondary_label.slice(0, 28)}</text>}
           </>
@@ -1251,56 +2096,167 @@ function App() {
     );
   }
 
+  function renderSceneEdge(edge: SceneEdge, index: number, overlay = false) {
+    const points = selectedEdgeId === edge.scene_edge_id && edgeRoutePreview
+      ? edgeRoutePreview
+      : previewEdgePoints(edge, scene!.nodes, preview, index);
+    const previewEdge = { ...edge, points };
+    const labelPoint = edgeLabelPoint(previewEdge);
+    const criticalLabel = ["residual", "shape-transform", "memory-reference", "condition", "routing", "state-update"].includes(edge.visual_relation);
+    const showLabel = semanticZoom === "detail"
+      ? !scene!.layout_family.endsWith("-vertical") || !["sequence", "parallel-branch"].includes(edge.visual_relation)
+      : semanticZoom === "standard" ? !["sequence", "parallel-branch"].includes(edge.visual_relation) : false;
+    const related = selectedIds.includes(edge.source_scene_node_id) || selectedIds.includes(edge.target_scene_node_id);
+    const edgeSelected = selectedEdgeId === edge.scene_edge_id;
+    const start = points[0];
+    const end = points.at(-1)!;
+    const visibleLabel = semanticZoom === "detail"
+      ? edge.label.slice(0, 38)
+      : relationLabel(edge.visual_relation);
+    const sourceLabel = scene!.nodes.find((node) => node.scene_node_id === edge.source_scene_node_id)?.label_lines.join(" ") ?? edge.source_scene_node_id;
+    const targetLabel = scene!.nodes.find((node) => node.scene_node_id === edge.target_scene_node_id)?.label_lines.join(" ") ?? edge.target_scene_node_id;
+    const pointString = points.map((point) => `${point.x},${point.y}`).join(" ");
+    return (
+      <g
+        key={`${edge.scene_edge_id}-${overlay ? "overlay" : "base"}`}
+        className={`scene-edge relation-${edge.visual_relation} ${related ? "edge-related" : ""} ${edgeSelected ? "edge-selected" : ""} ${overlay ? "edge-overlay" : "edge-base"}`}
+        data-scene-edge-id={overlay ? undefined : edge.scene_edge_id}
+        data-visual-relation={edge.visual_relation}
+        role={overlay ? undefined : "button"}
+        tabIndex={overlay ? undefined : 0}
+        aria-label={overlay ? undefined : `${sourceLabel} ${tx("to", "到")} ${targetLabel}, ${relationLabel(edge.visual_relation)}`}
+        aria-pressed={overlay ? undefined : edgeSelected}
+        aria-hidden={overlay || undefined}
+        onPointerDown={overlay ? undefined : (event) => event.stopPropagation()}
+        onClick={overlay ? undefined : (event) => { event.stopPropagation(); chooseEdgeAtClient(event.clientX, event.clientY, edge.scene_edge_id); }}
+        onKeyDown={overlay ? undefined : (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            chooseEdge(edge.scene_edge_id);
+          }
+        }}
+      >
+        {!overlay && <polyline className="edge-hit-target" points={pointString} fill="none" stroke="transparent" vectorEffect="non-scaling-stroke" />}
+        {overlay && <polyline className="edge-highlight-halo" points={pointString} fill="none" vectorEffect="non-scaling-stroke" />}
+        <polyline className="edge-path" points={pointString} fill="none" stroke={edge.stroke} strokeWidth={Math.max(edge.width, related ? 3.2 : 2.15)} strokeDasharray={edge.dash} markerEnd="url(#studio-arrow)" vectorEffect="non-scaling-stroke" />
+        {edge.visual_relation === "parallel-branch" && <circle className="edge-junction" cx={start.x} cy={start.y} r={3.2} fill={edge.stroke} />}
+        {edge.visual_relation === "merge" && <circle className="edge-junction" cx={end.x} cy={end.y} r={3.2} fill="var(--paper)" stroke={edge.stroke} strokeWidth={1.5} />}
+        {showLabel && <text className={`edge-label ${criticalLabel ? "critical" : ""}`} textAnchor="middle" x={labelPoint.x} y={labelPoint.y}>{visibleLabel}</text>}
+        {!overlay && <title>{sourceLabel} → {targetLabel} · {relationLabel(edge.visual_relation)}</title>}
+      </g>
+    );
+  }
+
+  const modeLabels: Record<Mode, string> = {
+    explore: tx("Explore", "浏览"),
+    layout: tx("Layout", "布局"),
+    model: tx("Model", "模型"),
+  };
+  const inspectorLabels = {
+    inspect: tx("Overview", "概览"),
+    source: tx("Source", "源码"),
+    visual: tx("Visual", "视觉"),
+    model: tx("Model", "模型"),
+    evidence: tx("Evidence", "证据"),
+  };
+  const bottomLabels = {
+    problems: tx("Problems", "问题"),
+    diff: tx("Source Diff", "源码差异"),
+    validation: tx("Validation", "验证"),
+    jobs: tx("Jobs", "任务"),
+    activity: tx("Activity", "活动"),
+  };
+
   return (
-    <div className={`${dark ? "studio dark" : "studio"}${data.transaction ? " has-transaction" : ""}`}>
+    <LanguageContext.Provider value={{ locale, tx }}>
+    <div
+      className={`${dark ? "studio dark" : "studio"}${data.transaction ? " has-transaction" : ""}${panelResize ? ` resizing-panel resizing-${panelResize.edge}` : ""}`}
+      style={{
+        "--left-panel-width": `${panelSizes.left}px`,
+        "--right-panel-width": `${panelSizes.right}px`,
+        "--top-panel-height": `${panelSizes.top}px`,
+        "--bottom-panel-height": `${panelSizes.bottom}px`,
+      } as React.CSSProperties}
+    >
       <header className="topbar">
         <div className="product"><Box size={17} /> ArchCanvas</div>
-        <button className="project-meta" onClick={() => setProjectDialog(true)} title="Open or switch project">
+        <button className="project-meta" onClick={() => setProjectDialog(true)} title={tx("Open or switch project", "打开或切换项目")}>
           <strong>{data.architecture.entrypoint.split(":").at(-1)}</strong>
           <span>{data.snapshot.revision}</span>
         </button>
-        <div className="mode-switch" aria-label="Studio mode">
+        <div className="mode-switch" aria-label={tx("Studio mode", "Studio 模式")}>
           {(["explore", "layout", "model"] as Mode[]).map((item) => (
             <button key={item} className={mode === item ? "active" : ""} onClick={() => { setMode(item); if (item === "model") setInspectorTab("model"); }}>
               {item === "explore" ? <Eye size={14} /> : item === "layout" ? <Move size={14} /> : <Braces size={14} />}
-              {item[0].toUpperCase() + item.slice(1)}
+              {modeLabels[item]}
             </button>
           ))}
         </div>
         <div className="top-actions">
-          <button className="icon-button" title="Undo" aria-label="Undo" disabled={!data.document.visual_patches.length} onClick={() => void mutate("/api/undo")}><Undo2 /></button>
-          <button className="icon-button" title="Redo" aria-label="Redo" disabled={!data.document.redo_patches.length} onClick={() => void mutate("/api/redo")}><Redo2 /></button>
-          <div className={`writeback-gate ${writebackBlocked ? "blocked" : "ready"}`} title={writebackBlocked ? "Review blockers before committing" : "No draft blockers"}><ShieldCheck size={14} />{writebackBlocked ? `${proofCounts.invalid ?? 0} invalid · ${proofCounts.unproven ?? 0} unproven` : "Writeback clear"}</div>
-          <select className="profile-select" aria-label="Validation profile" value={validationProfile} onChange={(event) => setValidationProfile(event.target.value)}><option value="fast-static">Fast</option><option value="publication">Publication</option><option value="full">Full</option></select>
-          <button className="validate-button" onClick={runValidation}><Play size={14} /> Validate <span>{latestValidation?.diagnostics.length ?? data.diagnostics.length}</span></button>
-          <a className="primary-action" href="/api/export"><Download size={14} /> Export</a>
+          <div className="language-switch" role="group" aria-label={tx("Interface language", "界面语言")}>
+            <button className={locale === "en" ? "active" : ""} aria-pressed={locale === "en"} onClick={() => setLocale("en")}>EN</button>
+            <button className={locale === "zh" ? "active" : ""} aria-pressed={locale === "zh"} onClick={() => setLocale("zh")}>中文</button>
+          </div>
+          <button className="icon-button" title={tx("Undo", "撤销")} aria-label={tx("Undo", "撤销")} disabled={!data.document.visual_patches.length} onClick={() => void mutate("/api/undo")}><Undo2 /></button>
+          <button className="icon-button" title={tx("Redo", "重做")} aria-label={tx("Redo", "重做")} disabled={!data.document.redo_patches.length} onClick={() => void mutate("/api/redo")}><Redo2 /></button>
+          <div className={`writeback-gate ${writebackBlocked ? "blocked" : "ready"}`} title={writebackBlocked ? tx("Review blockers before committing", "提交前请检查阻断项") : tx("No draft blockers", "没有草稿阻断项")}><ShieldCheck size={14} />{writebackBlocked ? `${proofCounts.invalid ?? 0} ${tx("invalid", "无效")} · ${proofCounts.unproven ?? 0} ${tx("unproven", "未证明")}` : tx("Writeback clear", "可安全回写")}</div>
+          <select className="profile-select" aria-label={tx("Validation profile", "验证配置")} value={validationProfile} onChange={(event) => setValidationProfile(event.target.value)}><option value="fast-static">{tx("Fast", "快速")}</option><option value="publication">{tx("Publication", "发布")}</option><option value="full">{tx("Full", "完整")}</option></select>
+          <button className="validate-button" onClick={runValidation}><Play size={14} /> {tx("Validate", "验证")} <span>{latestValidation?.diagnostics.length ?? data.diagnostics.length}</span></button>
+          <a className="primary-action" href="/api/export"><Download size={14} /> {tx("Export", "导出")}</a>
         </div>
       </header>
 
+      {(["left", "right", "top", "bottom"] as PanelResizeEdge[]).map((edge) => {
+        const vertical = edge === "left" || edge === "right";
+        const label = {
+          left: tx("Resize left sidebar", "调整左侧栏宽度"),
+          right: tx("Resize right sidebar", "调整右侧栏宽度"),
+          top: tx("Resize top bar", "调整顶部栏高度"),
+          bottom: tx("Resize bottom panel", "调整底部面板高度"),
+        }[edge];
+        return <div
+          key={edge}
+          className={`panel-resizer resize-${edge}`}
+          role="separator"
+          aria-label={label}
+          aria-orientation={vertical ? "vertical" : "horizontal"}
+          aria-valuenow={panelSizes[edge]}
+          tabIndex={0}
+          title={`${label} · ${tx("Double-click to reset", "双击恢复默认")}`}
+          onPointerDown={(event) => beginPanelResize(event, edge)}
+          onPointerMove={movePanelResize}
+          onPointerUp={() => setPanelResize(null)}
+          onPointerCancel={() => setPanelResize(null)}
+          onDoubleClick={() => resetPanelSize(edge)}
+          onKeyDown={(event) => resizePanelWithKeyboard(event, edge)}
+        />;
+      })}
+
       <div className="workspace">
         <aside className="left-panel panel">
-          <div className="panel-title"><PanelLeft size={15} /> Model</div>
-          <div className="search-wrap"><div className="search-field"><Search size={14} /><input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => event.key === "Enter" && selectSearchResult()} placeholder="Find node, tensor, port, evidence" /></div>{searchResults.length > 0 && <div className="search-results">{searchResults.slice(0, 8).map((result) => <button key={result.id} onClick={() => selectSearchResult(result)}><span>{result.title}</span><small>{result.kind}</small></button>)}</div>}</div>
-          <div className="projection-switch" aria-label="Navigation projection">
-            {(["module", "source"] as const).map((item) => <button key={item} className={projection === item ? "active" : ""} aria-pressed={projection === item} onClick={() => switchProjection(item)}>{item === "module" ? <Layers3 size={14} /> : <FileCode2 size={14} />}<span>{item === "module" ? "模块关系" : "源码关系"}</span></button>)}
+          <div className="panel-title"><PanelLeft size={15} /> {tx("Model", "模型")}</div>
+          <div className="search-wrap"><div className="search-field"><Search size={14} /><input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => event.key === "Enter" && selectSearchResult()} placeholder={tx("Find node, tensor, port, evidence", "查找节点、张量、端口或证据")} /></div>{searchResults.length > 0 && <div className="search-results">{searchResults.slice(0, 8).map((result) => <button key={result.id} onClick={() => selectSearchResult(result)}><span>{result.title}</span><small>{result.kind}</small></button>)}</div>}</div>
+          <div className="projection-switch" aria-label={tx("Navigation projection", "导航投影")}>
+            {(["module", "source"] as const).map((item) => <button key={item} className={projection === item ? "active" : ""} aria-pressed={projection === item} onClick={() => switchProjection(item)}>{item === "module" ? <Layers3 size={14} /> : <FileCode2 size={14} />}<span>{item === "module" ? tx("Module relations", "模块关系") : tx("Source relations", "源码关系")}</span></button>)}
           </div>
-          <div className="section-label">{navigation.label}</div>
-          <div className="projection-description">{navigation.description}</div>
+          <div className="section-label">{projection === "module" ? tx("Module hierarchy", "模块层级") : tx("Source hierarchy", "源码层级")}</div>
+          <div className="projection-description">{projection === "module" ? tx("Expand modules to reveal their contained architecture.", "展开模块以显示其包含的架构。") : tx("Browse source containment, calls, assignments, and references.", "浏览源码包含、调用、赋值与引用关系。")}</div>
           <div className="tree-list navigation-tree">
             {visibleNavigation.map((item) => {
               const active = focusedNavigationRowId === item.id;
               const related = !active && item.canonical_ids.some((canonicalId) => selectedNode?.canonical_node_ids.includes(canonicalId));
               const childCount = item.child_count;
               const hasVisibleChildren = childCount > 0;
-              const relationLabel = navigationRelationLabel(item.relation);
+              const relationLabel = navigationRelationLabel(item.relation, locale);
               const sourceOrder = projection === "source" && item.sibling_count > 1
                 ? `${item.sibling_index}/${item.sibling_count}`
                 : null;
               const location = item.path
                 ? `${item.path}${item.span ? `:${item.span.start_line}:${item.span.start_column + 1}` : ""}`
                 : item.relation;
+              const secondaryLabel = navigationSecondaryLabel(item.secondary_label, tx);
               const indent = 4 + item.depth * 12;
-              return <div key={item.id} className={`navigation-row ${active ? "selected" : ""} ${related ? "canonical-related" : ""} ${item.reference ? "reference-row" : ""} ${item.parent_id === null ? "tree-root" : ""}`} style={{ paddingLeft: `${indent}px`, "--tree-indent": `${indent}px` } as React.CSSProperties}><button className="tree-chevron" disabled={!hasVisibleChildren} aria-label={`${expansions[projection].has(item.id) ? "Collapse" : "Expand"} ${item.label}`} onClick={() => toggleNavigationRow(item.id)}>{hasVisibleChildren ? expansions[projection].has(item.id) ? <ChevronDown size={13} /> : <ChevronRight size={13} /> : null}</button><button className="tree-subject" onClick={() => activateNavigationRow(item)} title={`${location} · 语义：${relationLabel}${sourceOrder ? ` · 同级 ${sourceOrder}（稳定源码次序，不代表执行顺序）` : ""}`}>{navigationIcon(item.kind)}<span><b>{item.label}</b><span className="tree-meta">{item.secondary_label && item.secondary_label !== item.label && <small>{item.secondary_label}</small>}<i>{relationLabel}</i>{sourceOrder && <i title="同父节点中的稳定源码次序，不代表执行顺序">同级 {sourceOrder}</i>}{item.binding_status === "ambiguous" && <i className="ambiguous" title="静态证据只能定位到候选集合">候选</i>}</span></span>{item.reference && <Link2 size={10} />}{childCount > 0 && <em>{childCount}</em>}{item.evidence_ids.length > 0 && <CircleDot size={9} />}</button></div>;
+              return <div key={item.id} className={`navigation-row ${active ? "selected" : ""} ${related ? "canonical-related" : ""} ${item.reference ? "reference-row" : ""} ${item.parent_id === null ? "tree-root" : ""}`} style={{ paddingLeft: `${indent}px`, "--tree-indent": `${indent}px` } as React.CSSProperties}><button className="tree-chevron" disabled={!hasVisibleChildren} aria-label={`${expansions[projection].has(item.id) ? tx("Collapse", "折叠") : tx("Expand", "展开")} ${item.label}`} onClick={() => toggleNavigationRow(item.id)}>{hasVisibleChildren ? expansions[projection].has(item.id) ? <ChevronDown size={13} /> : <ChevronRight size={13} /> : null}</button><button className="tree-subject" onClick={() => activateNavigationRow(item)} title={`${location} · ${tx("Relation", "关系")}：${relationLabel}${sourceOrder ? ` · ${tx("Sibling", "同级")} ${sourceOrder}（${tx("stable source order, not execution order", "稳定源码次序，不代表执行顺序")}）` : ""}`}>{navigationIcon(item.kind)}<span><b>{item.label}</b><span className="tree-meta">{secondaryLabel && secondaryLabel !== item.label && <small>{secondaryLabel}</small>}<i>{relationLabel}</i>{sourceOrder && <i title={tx("Stable source order under the same parent; not execution order", "同父节点中的稳定源码次序，不代表执行顺序")}>{tx("Sibling", "同级")} {sourceOrder}</i>}{item.binding_status === "ambiguous" && <i className="ambiguous" title={tx("Static evidence resolves only to a candidate set", "静态证据只能定位到候选集合")}>{tx("Candidate", "候选")}</i>}</span></span>{item.reference && <Link2 size={10} />}{childCount > 0 && <em>{childCount}</em>}{item.evidence_ids.length > 0 && <CircleDot size={9} />}</button></div>;
             })}
           </div>
         </aside>
@@ -1309,47 +2265,107 @@ function App() {
           <div className="canvas-toolbar">
             <div className="breadcrumb">{breadcrumb}</div>
             <div className="canvas-actions">
-              {mode === "layout" && <><button className="icon-button" title="Align left to primary" onClick={() => align("left")} disabled={selectedIds.length < 2}><Grip /></button><button className="icon-button" title="Distribute horizontally" onClick={() => align("distribute-horizontal")} disabled={selectedIds.length < 2}><Grip /></button><button className="open-full" onClick={() => void mutate("/api/layout", { batch_id: patchId("layout").replace("patch:", "batch:") }, "Auto layout")}><Layers3 size={14} /> Auto layout</button></>}
-              <button className="icon-button" title="Zoom out" aria-label="Zoom out" onClick={() => zoom(1.2)}><ZoomOut /></button>
-              <button className="icon-button" title="Zoom in" aria-label="Zoom in" onClick={() => zoom(0.82)}><ZoomIn /></button>
-              <button className="icon-button" title="Fit scene" aria-label="Fit scene" onClick={fitScene}><Maximize2 /></button>
-              <button className="icon-button mobile-only" title="Open inspector" aria-label="Open inspector" onClick={() => setMobileInspector(true)}><PanelRight /></button>
+              <label className="layout-strategy"><Layers3 size={14} /><select aria-label={tx("Diagram layout", "图形布局")} value={data.view_state.layout_mode ?? "auto"} onChange={(event) => void mutate("/api/layout-mode", { layout_mode: event.target.value }, `${tx("Layout", "布局")} · ${event.target.value}`)}><option value="auto">{tx("Auto", "自动")}</option><option value="dual-swimlane">{tx("Dual swimlane", "双泳道")}</option><option value="single-lane">{tx("Single lane", "单泳道")}</option><option value="hierarchical">{tx("Hierarchical DAG", "层级图")}</option><option value="branch-tree">{tx("Branch tree", "分支树")}</option><option value="force-directed">{tx("Force directed", "力导向")}</option><option value="radial">{tx("Radial", "径向")}</option><option value="orthogonal">{tx("Orthogonal", "正交")}</option></select></label>
+              {mode === "layout" && <><button className="icon-button" title={tx("Align left to primary", "向主节点左对齐")} onClick={() => align("left")} disabled={selectedIds.length < 2}><Grip /></button><button className="icon-button" title={tx("Distribute horizontally", "水平分布")} onClick={() => align("distribute-horizontal")} disabled={selectedIds.length < 2}><Grip /></button><label className="route-strategy"><Route size={14} /><select aria-label={tx("Auto-route strategy", "自动布线方案")} value={routeStrategy} onChange={(event) => setRouteStrategy(event.target.value as RouteStrategy)}><option value="avoid">{tx("Scheme 1 · Avoid obstacles", "方案 1 · 避障优先")}</option><option value="balanced">{tx("Scheme 2 · Balanced", "方案 2 · 平衡")}</option><option value="compact">{tx("Scheme 3 · Shortest path", "方案 3 · 最短路径")}</option></select></label><button className="open-full" title={tx("Apply the selected routing strategy", "应用所选布线方案")} onClick={() => void mutate("/api/route", { batch_id: patchId("route").replace("patch:", "batch:"), strategy: routeStrategy }, `${tx("Auto route", "自动布线")} · ${routeStrategy}`)}><Route size={14} /> {tx("Route", "布线")}</button><button className="open-full" onClick={() => void mutate("/api/layout", { batch_id: patchId("layout").replace("patch:", "batch:") }, tx("Auto layout", "自动布局"))}><Layers3 size={14} /> {tx("Auto layout", "自动布局")}</button></>}
+              <button className="icon-button" title={tx("Zoom out", "缩小")} aria-label={tx("Zoom out", "缩小")} onClick={() => zoom(1.2)}><ZoomOut /></button>
+              <button className="icon-button" title={tx("Zoom in", "放大")} aria-label={tx("Zoom in", "放大")} onClick={() => zoom(0.82)}><ZoomIn /></button>
+              <button className="icon-button" title={tx("Fit scene", "适应画布")} aria-label={tx("Fit scene", "适应画布")} onClick={fitScene}><Maximize2 /></button>
+              <button className="icon-button mobile-only" title={tx("Open inspector", "打开检查器")} aria-label={tx("Open inspector", "打开检查器")} onClick={() => setMobileInspector(true)}><PanelRight /></button>
             </div>
           </div>
           <div className="canvas-stage">
-            <svg ref={svgRef} className="scene" style={{ "--font-scale": data.view_state.font_scale ?? 1 } as React.CSSProperties} viewBox={viewBox.join(" ")} onPointerDown={beginPan} onPointerMove={movePointer} onPointerUp={endPointer} onPointerCancel={cancelPointer} onWheel={(event) => { event.preventDefault(); zoom(event.deltaY > 0 ? 1.1 : 0.9); }}>
-              <defs><marker id="studio-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="context-stroke" /></marker></defs>
+            <svg ref={svgRef} className={`scene semantic-${semanticZoom} ${selectedEdge ? "has-edge-selection" : ""}`} style={{ "--font-scale": data.view_state.font_scale ?? 1, "--label-scale": labelScale, "--container-label-scale": containerLabelScale } as React.CSSProperties} viewBox={viewBox.join(" ")} onPointerDown={beginPan} onPointerMove={movePointer} onPointerUp={endPointer} onPointerCancel={cancelPointer} onWheel={(event) => { event.preventDefault(); zoom(event.deltaY > 0 ? 1.1 : 0.9); }}>
+              <defs><marker id="studio-arrow" viewBox="0 0 10 10" refX="8.4" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="context-stroke" /></marker></defs>
               <rect className="paper" width={scene.paper_width} height={scene.paper_height} />
               <g className="root-layer">{scene.nodes.filter((node) => !node.parent_scene_node_id).map(renderSceneNode)}</g>
               <g className="container-layer">{scene.nodes.filter((node) => node.parent_scene_node_id && node.shape === "container").map(renderSceneNode)}</g>
-              <g className="edge-layer">{scene.edges.map((edge) => <g key={edge.scene_edge_id} data-scene-edge-id={edge.scene_edge_id}><polyline points={edge.points.map((point) => `${point.x},${point.y}`).join(" ")} fill="none" stroke={edge.stroke} strokeWidth={edge.width} strokeDasharray={edge.dash} markerEnd="url(#studio-arrow)" /></g>)}</g>
+              <g className="edge-layer">{scene.edges.map((edge, index) => renderSceneEdge(edge, index))}</g>
               <g className="node-layer">{scene.nodes.filter((node) => node.parent_scene_node_id && node.shape !== "container").map(renderSceneNode)}</g>
+              <g className="edge-overlay-layer">{selectedEdge && renderSceneEdge(selectedEdge, scene.edges.indexOf(selectedEdge), true)}</g>
+              {mode === "layout" && selectedEdge && (() => {
+                const points = edgeRoutePreview ?? previewEdgePoints(selectedEdge, scene.nodes, preview, scene.edges.indexOf(selectedEdge));
+                const radius = Math.min(20, Math.max(5, 6 / screenScale));
+                return <g className="edge-route-handles"><circle className={`edge-route-handle source ${edgeEndpointDrag?.endpoint === "source" ? "dragging" : ""}`} data-endpoint="source" cx={points[0].x} cy={points[0].y} r={radius} onPointerDown={(event) => beginEdgeEndpointDrag(event, "source")}><title>{tx("Move source connection", "移动起点连接")}</title></circle><circle className={`edge-route-handle target ${edgeEndpointDrag?.endpoint === "target" ? "dragging" : ""}`} data-endpoint="target" cx={points.at(-1)!.x} cy={points.at(-1)!.y} r={radius} onPointerDown={(event) => beginEdgeEndpointDrag(event, "target")}><title>{tx("Move target connection", "移动终点连接")}</title></circle></g>;
+              })()}
             </svg>
-            {selectedNode && <div className="context-bar"><button title="Focus selection"><Focus size={14} /></button><button title={pinned.has(selectedNode.scene_node_id) ? "Unpin" : "Pin"} onClick={() => void submit("set-pin", selectedNode.scene_node_id, { enabled: !pinned.has(selectedNode.scene_node_id) })}>{pinned.has(selectedNode.scene_node_id) ? <PinOff size={14} /> : <Pin size={14} />}</button><button title="Expand in navigation tree" onClick={() => expandInNavigation(selectedNode)}><Maximize2 size={14} /></button></div>}
+            <div className="relation-legend" aria-label={tx("Visible relation types", "可见关系类型")}>{[...new Map(scene.edges.map((edge) => [edge.visual_relation, edge])).values()].map((edge) => <span key={edge.visual_relation}><i className={edge.dash ? "dashed" : ""} style={{ "--relation-color": edge.stroke } as React.CSSProperties} />{relationLabel(edge.visual_relation)}</span>)}</div>
+            {selectedEdge && <div className="edge-flow-status" role="status"><strong>{scene.nodes.find((node) => node.scene_node_id === selectedEdge.source_scene_node_id)?.label_lines.join(" ")}</strong><ArrowRight size={13} /><strong>{scene.nodes.find((node) => node.scene_node_id === selectedEdge.target_scene_node_id)?.label_lines.join(" ")}</strong><span>{relationLabel(selectedEdge.visual_relation)}</span></div>}
+            {selectedNode && <div className="context-bar"><button title={tx("Focus selection", "聚焦所选内容")} aria-label={tx("Focus selection", "聚焦所选内容")} onClick={focusSelection}><Focus size={14} /></button><button title={pinned.has(selectedNode.scene_node_id) ? tx("Unpin", "取消固定") : tx("Pin", "固定")} onClick={() => void submit("set-pin", selectedNode.scene_node_id, { enabled: !pinned.has(selectedNode.scene_node_id) })}>{pinned.has(selectedNode.scene_node_id) ? <PinOff size={14} /> : <Pin size={14} />}</button><button title={tx("Expand in navigation tree", "在导航树中展开")} onClick={() => expandInNavigation(selectedNode)}><Maximize2 size={14} /></button></div>}
           </div>
         </main>
 
         <aside className={`right-panel panel ${mobileInspector ? "mobile-open" : ""}`}>
-          <div className="panel-title"><PanelRight size={15} /> Inspector<button className="icon-button mobile-only inspector-close" title="Close inspector" onClick={() => setMobileInspector(false)}><X /></button></div>
-          <div className="tab-strip">{(["inspect", "source", "visual", "model", "evidence"] as const).map((tab) => <button key={tab} className={inspectorTab === tab ? "active" : ""} onClick={() => setInspectorTab(tab)}>{tab === "inspect" ? "Overview" : tab[0].toUpperCase() + tab.slice(1)}</button>)}</div>
-          {!selectedNode || !selectedViewNode ? <div className="empty-state"><Focus size={20} /><span>No selection</span></div> : <div className="inspector-content">
+          <div className="panel-title"><PanelRight size={15} /> {tx("Inspector", "检查器")}<button className="icon-button mobile-only inspector-close" title={tx("Close inspector", "关闭检查器")} onClick={() => setMobileInspector(false)}><X /></button></div>
+          <div className="tab-strip">{(["inspect", "source", "visual", "model", "evidence"] as const).map((tab) => <button key={tab} className={inspectorTab === tab ? "active" : ""} onClick={() => setInspectorTab(tab)}>{inspectorLabels[tab]}</button>)}</div>
+          {!selectedNode || !selectedViewNode ? <div className="empty-state"><Focus size={20} /><span>{tx("No selection", "未选择内容")}</span></div> : <div className="inspector-content">
             {inspectorTab === "inspect" && <StructureInspector label={selectedViewNode.semantic_name} viewNode={selectedViewNode} sceneNode={selectedNode} nodes={selectedArchitectureNodes} tensors={data.architecture.tensors} evidence={selectedEvidence} />}
             {inspectorTab === "source" && <SourceInspector nodes={selectedArchitectureNodes} evidence={selectedEvidence} />}
             {inspectorTab === "visual" && <VisualInspector node={selectedNode} pinned={pinned.has(selectedNode.scene_node_id)} fontScale={data.view_state.font_scale ?? 1} lineWeight={data.view_state.line_weight ?? 1.5} onPatch={submit} onBatch={submitBatch} />}
-            {inspectorTab === "model" && <ModelInspector node={architectureNode} nodes={data.architecture.nodes} transaction={data.transaction} proposal={data.proposal} writebackBlocked={writebackBlocked} onPrepareParameter={prepareParameter} onPrepareStructural={prepareStructural} onProposeConnection={proposeConnection} onCommit={() => mutate("/api/transaction/commit", {}, "Committed source transaction")} onDiscard={() => mutate("/api/transaction/discard", {}, "Discarded source transaction")} />}
-            {inspectorTab === "evidence" && <div className="evidence-list">{selectedEvidence.length ? selectedEvidence.map((record) => <section key={record.evidence_id}><div><FileCode2 size={14} /><strong>{record.kind}</strong><span>{record.confidence}</span></div><code>{record.path ?? record.evidence_id}{record.span ? `:${record.span.start_line}` : ""}</code><p>{record.claim}</p></section>) : <div className="empty-state">No linked evidence</div>}</div>}
+            {inspectorTab === "model" && <ModelInspector node={architectureNode} nodes={data.architecture.nodes} transaction={data.transaction} proposal={data.proposal} writebackBlocked={writebackBlocked} onPrepareParameter={prepareParameter} onPrepareStructural={prepareStructural} onProposeConnection={proposeConnection} onCommit={() => mutate("/api/transaction/commit", {}, tx("Committed source transaction", "已提交源码事务"))} onDiscard={() => mutate("/api/transaction/discard", {}, tx("Discarded source transaction", "已放弃源码事务"))} />}
+            {inspectorTab === "evidence" && <div className="evidence-list">{selectedEvidence.length ? selectedEvidence.map((record) => <section key={record.evidence_id}><div><FileCode2 size={14} /><strong>{record.kind}</strong><span>{record.confidence}</span></div><code>{record.path ?? record.evidence_id}{record.span ? `:${record.span.start_line}` : ""}</code><p>{record.claim}</p></section>) : <div className="empty-state">{tx("No linked evidence", "没有关联证据")}</div>}</div>}
           </div>}
         </aside>
       </div>
 
       <section className="bottom-panel">
-        <div className="bottom-tabs"><PanelBottom size={14} />{(["problems", "diff", "validation", "jobs", "activity"] as const).map((tab) => <button key={tab} className={bottomTab === tab ? "active" : ""} onClick={() => setBottomTab(tab)}>{tab === "diff" ? "Source Diff" : tab[0].toUpperCase() + tab.slice(1)}{tab === "problems" && <span>{data.diagnostics.length}</span>}{tab === "jobs" && data.jobs?.some((job) => ["queued", "running"].includes(job.state)) && <span>1</span>}</button>)}</div>
-        <div className="bottom-content">{bottomTab === "problems" && ([...data.diagnostics, ...data.draft.proofs.map((proof) => ({ code: proof.reason_codes[0] ?? proof.status.toUpperCase(), severity: proof.status, message: proof.message, target_ids: proof.affected_subject_ids }))].length ? [...data.diagnostics, ...data.draft.proofs.map((proof) => ({ code: proof.reason_codes[0] ?? proof.status.toUpperCase(), severity: proof.status, message: proof.message, target_ids: proof.affected_subject_ids }))].map((item, index) => <button key={`${item.code}-${index}`} onClick={() => choose(scene.nodes.find((node) => node.canonical_node_ids.some((id) => item.target_ids.includes(id)))?.scene_node_id ?? null)}><AlertTriangle size={13} /><b>{item.severity}</b><span>{item.message}</span></button>) : <div className="ok-line"><CircleDot size={13} /> No geometry or writeback problems</div>)}{bottomTab === "diff" && (data.transaction ? <TransactionReview transaction={data.transaction} writebackBlocked={writebackBlocked} onCommit={() => mutate("/api/transaction/commit", {}, "Committed source transaction")} onDiscard={() => mutate("/api/transaction/discard", {}, "Discarded source transaction")} /> : <div className="ok-line"><LockKeyhole size={13} /> Source digest {sourceDigest} unchanged</div>)}{bottomTab === "validation" && (latestValidation ? <div className="gate-list">{latestValidation.gate_results.map((gate) => <span key={gate.gate} className={gate.status}>{gate.status} · {gate.gate} · {gate.message}</span>)}</div> : <div className="validation-line"><CircleDot size={13} /> Validation has not been run for this fingerprint</div>)}{bottomTab === "jobs" && <div className="job-list">{data.jobs?.length ? data.jobs.map((job) => <div key={job.job_id}><code>{job.job_id}</code><span>{job.profile}</span><b>{job.state} · {Math.round(job.progress * 100)}%</b></div>) : <div className="validation-line">No analysis jobs in this session</div>}</div>}{bottomTab === "activity" && <div className="activity-list">{activity.map((item, index) => <span key={`${item}-${index}`}><History size={12} />{item}</span>)}</div>}</div>
+        <div className="bottom-tabs"><PanelBottom size={14} />{(["problems", "diff", "validation", "jobs", "activity"] as const).map((tab) => <button key={tab} className={bottomTab === tab ? "active" : ""} onClick={() => setBottomTab(tab)}>{bottomLabels[tab]}{tab === "problems" && <span>{data.diagnostics.length}</span>}{tab === "jobs" && data.jobs?.some((job) => ["queued", "running"].includes(job.state)) && <span>1</span>}</button>)}</div>
+        <div className="bottom-content">{bottomTab === "problems" && ([...data.diagnostics, ...data.draft.proofs.map((proof) => ({ code: proof.reason_codes[0] ?? proof.status.toUpperCase(), severity: proof.status, message: proof.message, target_ids: proof.affected_subject_ids }))].length ? [...data.diagnostics, ...data.draft.proofs.map((proof) => ({ code: proof.reason_codes[0] ?? proof.status.toUpperCase(), severity: proof.status, message: proof.message, target_ids: proof.affected_subject_ids }))].map((item, index) => <button key={`${item.code}-${index}`} onClick={() => choose(scene.nodes.find((node) => node.canonical_node_ids.some((id) => item.target_ids.includes(id)))?.scene_node_id ?? null)}><AlertTriangle size={13} /><b>{item.severity}</b><span>{item.message}</span></button>) : <div className="ok-line"><CircleDot size={13} /> {tx("No geometry or writeback problems", "没有几何或回写问题")}</div>)}{bottomTab === "diff" && (data.transaction ? <TransactionReview transaction={data.transaction} writebackBlocked={writebackBlocked} onCommit={() => mutate("/api/transaction/commit", {}, tx("Committed source transaction", "已提交源码事务"))} onDiscard={() => mutate("/api/transaction/discard", {}, tx("Discarded source transaction", "已放弃源码事务"))} /> : <div className="ok-line"><LockKeyhole size={13} /> {tx(`Source digest ${sourceDigest} unchanged`, `源码摘要 ${sourceDigest} 未改变`)}</div>)}{bottomTab === "validation" && (latestValidation ? <div className="gate-list">{latestValidation.gate_results.map((gate) => <span key={gate.gate} className={gate.status}>{gate.status} · {gate.gate} · {gate.message}</span>)}</div> : <div className="validation-line"><CircleDot size={13} /> {tx("Validation has not been run for this fingerprint", "尚未为此指纹运行验证")}</div>)}{bottomTab === "jobs" && <div className="job-list">{data.jobs?.length ? data.jobs.map((job) => <div key={job.job_id}><code>{job.job_id}</code><span>{job.profile}</span><b>{job.state} · {Math.round(job.progress * 100)}%</b></div>) : <div className="validation-line">{tx("No analysis jobs in this session", "本会话中没有分析任务")}</div>}</div>}{bottomTab === "activity" && <div className="activity-list">{activity.map((item, index) => <span key={`${item}-${index}`}><History size={12} />{item}</span>)}</div>}</div>
       </section>
 
-      <button className="theme-toggle icon-button" title="Toggle theme" aria-label="Toggle theme" onClick={() => { const next = !dark; setDark(next); void submit("set-theme", undefined, { theme: next ? "studio-dark" : "paper-light" }); }}>{dark ? <Sun /> : <Moon />}</button>
-      {projectDialog && <div className="dialog-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setProjectDialog(false); }}><section className="project-dialog" role="dialog" aria-modal="true" aria-label="Open project"><header><div><strong>Open project</strong><span>Static discovery only</span></div><button className="icon-button" title="Close" onClick={() => setProjectDialog(false)}><X /></button></header><label className="model-field"><span>Project root</span><input value={projectRoot} onChange={(event) => setProjectRoot(event.target.value)} /></label><button className="prepare-button" onClick={() => void openProject()}><Search size={14} /> Discover</button>{pendingProject && <div className="project-options"><label className="model-field"><span>Entrypoint</span><select value={projectEntrypoint} onChange={(event) => { setProjectEntrypoint(event.target.value); const candidate = pendingProject.discovery.entrypoints.find((item) => item.entrypoint === event.target.value); if (candidate?.framework !== "unknown") setProjectFramework(candidate?.framework ?? "auto"); }}>{pendingProject.discovery.entrypoints.map((item) => <option key={item.entrypoint} value={item.entrypoint}>{item.entrypoint}</option>)}</select></label><label className="model-field"><span>Framework</span><select value={projectFramework} onChange={(event) => setProjectFramework(event.target.value)}>{["auto", "pytorch", "keras", "jax", "onnx"].map((item) => <option key={item}>{item}</option>)}</select></label><label className="model-field"><span>Config</span><select value={projectConfig} onChange={(event) => setProjectConfig(event.target.value)}><option value="">No config</option>{pendingProject.discovery.configs.map((item) => <option key={item.path}>{item.path}</option>)}</select></label><button className="primary-action analyze-action" disabled={!projectEntrypoint || projectFramework === "auto"} onClick={() => void analyzeProject()}><Play size={14} /> Analyze</button></div>}</section></div>}
+      <button className="theme-toggle icon-button" title={tx("Toggle theme", "切换主题")} aria-label={tx("Toggle theme", "切换主题")} onClick={() => { const next = !dark; setDark(next); void submit("set-theme", undefined, { theme: next ? "studio-dark" : "paper-light" }); }}>{dark ? <Sun /> : <Moon />}</button>
+      {projectDialog && <div className="dialog-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setProjectDialog(false); }}>
+        <section className="project-dialog project-launcher" role="dialog" aria-modal="true" aria-label={tx("Open model", "打开模型")}>
+          <header>
+            <div className="launcher-title"><Box size={18} /><div><strong>{tx("Open model", "打开模型")}</strong><span>ArchCanvas Model Architecture Studio</span></div></div>
+            <button className="icon-button" title={tx("Close", "关闭")} aria-label={tx("Close", "关闭")} onClick={() => setProjectDialog(false)}><X /></button>
+          </header>
+
+          <div className="launcher-field">
+            <div className="launcher-label"><span>1</span><div><strong>{tx("Conda environment", "Conda 环境")}</strong><small>{environmentLoading ? tx("Loading", "正在加载") : `${condaEnvironments.length} ${tx("available", "个可用")}`}</small></div><button className="icon-button launcher-refresh" aria-label={tx("Reload environments", "重新加载环境")} title={tx("Reload environments", "重新加载环境")} onClick={() => setCondaEnvironments([])} disabled={environmentLoading}><RefreshCw size={14} /></button></div>
+            <select aria-label={tx("Conda environment", "Conda 环境")} value={condaEnvironment} disabled={environmentLoading || !condaEnvironments.length} onChange={(event) => { setCondaEnvironment(event.target.value); setPendingProject(null); }}>
+              {!condaEnvironments.length && <option value="">{tx("No Conda environments found", "未发现 Conda 环境")}</option>}
+              {condaEnvironments.map((item) => <option key={item.path} value={item.path}>{item.active ? "● " : ""}{item.name} — {item.path}</option>)}
+            </select>
+          </div>
+
+          <div className="launcher-field">
+            <div className="launcher-label"><span>2</span><div><strong>{tx("Model location", "模型存放路径")}</strong><small>{tx("Parent folders are supported", "支持选择上级文件夹")}</small></div></div>
+            <div className="path-scan-row"><div className="path-input"><FolderOpen size={15} /><input aria-label={tx("Model location", "模型存放路径")} value={projectRoot} onChange={(event) => { setProjectRoot(event.target.value); setPendingProject(null); setProjectError(""); }} onKeyDown={(event) => { if (event.key === "Enter") void openProject(); }} /></div><button className="folder-button icon-button" aria-label={tx("Browse folders", "浏览文件夹")} title={tx("Browse folders", "浏览文件夹")} onClick={() => void browseFolders()}><FolderOpen size={14} /></button><button className="prepare-button" disabled={!projectRoot.trim() || !condaEnvironment || projectScanning} onClick={() => void openProject()}>{projectScanning ? <RefreshCw className="spin" size={14} /> : <Search size={14} />} {tx("Scan", "扫描")}</button></div>
+          </div>
+
+          {folderPicker && <div className="folder-picker" role="dialog" aria-label={tx("Choose model folder", "选择模型文件夹")}>
+            <div className="folder-picker-header"><strong>{tx("Choose folder", "选择文件夹")}</strong><button className="icon-button" aria-label={tx("Close folder picker", "关闭文件夹选择器")} onClick={() => { setFolderPicker(null); setSelectedFolderPath(null); }}><X size={14} /></button></div>
+            <div className="folder-breadcrumbs">{folderPicker.breadcrumbs.map((crumb) => <button key={crumb.path} onClick={() => void browseFolders(crumb.path)}>{crumb.name}</button>)}</div>
+            <div className="folder-picker-toolbar"><button className="icon-button" disabled={!folderPicker.parent || folderLoading} aria-label={tx("Parent folder", "上级文件夹")} title={tx("Parent folder", "上级文件夹")} onClick={() => folderPicker.parent && void browseFolders(folderPicker.parent)}><CornerDownLeft size={14} /></button><code>{folderPicker.path}</code></div>
+            <div className="folder-list">{folderPicker.directories.map((directory) => <button key={directory.path} className={selectedFolderPath === directory.path ? "selected" : ""} aria-pressed={selectedFolderPath === directory.path} onDoubleClick={() => void browseFolders(directory.path)} onClick={() => setSelectedFolderPath(directory.path)}><FolderOpen size={14} /><span>{directory.name}</span></button>)}{!folderPicker.directories.length && <span className="folder-empty">{tx("No subfolders", "没有子文件夹")}</span>}</div>
+            <div className="folder-picker-actions"><button onClick={() => { setFolderPicker(null); setSelectedFolderPath(null); }}>{tx("Cancel", "取消")}</button><button className="primary-action" onClick={() => { setProjectRoot(selectedFolderPath ?? folderPicker.path); setPendingProject(null); setFolderPicker(null); setSelectedFolderPath(null); }}>{selectedFolderPath ? tx("Choose selected folder", "选择已选文件夹") : tx("Choose this folder", "选择此文件夹")}</button></div>
+          </div>}
+
+          {projectError && <div className="launcher-error" role="alert"><AlertTriangle size={14} /><span>{projectError}</span></div>}
+
+          {pendingProject && <div className="project-options">
+            <div className="launcher-label"><span>3</span><div><strong>{tx("Detected model hierarchy", "检测到的模型层级")}</strong><small>{pendingProject.discovery.entrypoints.filter((item) => item.top_level).length} {tx("top-level models", "个顶层模型")} · {pendingProject.discovery.entrypoints.filter((item) => !item.top_level).length} {tx("components", "个组件")} · {pendingProject.discovery.scanned_files} {tx("files scanned", "个文件已扫描")}</small></div></div>
+            {pendingProject.discovery.entrypoints.length ? <div className="model-candidate-list" role="radiogroup" aria-label={tx("Detected models", "检测到的模型")}>
+              {visibleProjectEntrypoints(pendingProject.discovery.entrypoints, projectModelExpansions).map((item) => {
+                const selected = projectEntrypoint === item.entrypoint;
+                const symbolName = item.entrypoint.includes(":") ? item.entrypoint.split(":").at(-1)! : item.path.split("/").at(-1)!;
+                const sourceName = item.path.split("/").at(-1)!.replace(/\.py$/i, "");
+                const name = item.top_level && symbolName === "Model" && sourceName.toLowerCase() !== "model" ? sourceName : symbolName;
+                const categoryLabels: Record<ProjectEntrypoint["category"], string> = { model: tx("Model", "完整模型"), encoder: "Encoder", decoder: "Decoder", backbone: "Backbone", attention: "Attention", head: "Head", block: "Block", layer: "Layer", component: tx("Component", "组件") };
+                const expanded = projectModelExpansions.has(item.entrypoint);
+                return <div key={item.entrypoint} className={`model-candidate-row depth-${Math.min(item.depth, 8)}`} style={{ "--candidate-depth": item.depth } as React.CSSProperties}>
+                  <button className="candidate-chevron" aria-label={expanded ? tx("Collapse children", "收起子级") : tx("Expand children", "展开子级")} disabled={!item.child_count} onClick={() => setProjectModelExpansions((current) => { const next = new Set(current); if (next.has(item.entrypoint)) next.delete(item.entrypoint); else next.add(item.entrypoint); return next; })}>{item.child_count ? (expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />) : null}</button>
+                  <button className={`model-candidate ${selected ? "selected" : ""} ${item.top_level ? "top-level" : ""}`} role="radio" aria-checked={selected} onClick={() => selectProjectEntrypoint(item)}><span className="candidate-check">{selected ? <CircleDot size={15} /> : <span />}</span><span className="candidate-main"><strong>{name}</strong><span className={`category-badge category-${item.category}`}>{categoryLabels[item.category]}</span><code>{item.entrypoint}</code><small><FileCode2 size={12} />{item.path}</small></span><span className={`framework-badge framework-${item.framework}`}>{item.framework}</span></button>
+                </div>;
+              })}
+            </div> : <div className="launcher-empty"><Search size={18} /><span>{tx("No supported models found", "未找到支持的模型")}</span></div>}
+            {projectEntrypoint && <div className="launcher-options"><label><span>{tx("Framework", "框架")}</span><select value={projectFramework} onChange={(event) => setProjectFramework(event.target.value)}>{["auto", "pytorch", "keras", "jax", "onnx"].map((item) => <option key={item}>{item}</option>)}</select></label><label><span>{tx("Config", "配置")}</span><select value={projectConfig} onChange={(event) => setProjectConfig(event.target.value)}><option value="">{tx("No config", "无配置")}</option>{pendingProject.discovery.configs.map((item) => <option key={item.path}>{item.path}</option>)}</select></label></div>}
+            <div className="launcher-actions"><button onClick={() => setProjectDialog(false)}>{tx("Cancel", "取消")}</button><button className="primary-action" disabled={!projectEntrypoint || projectFramework === "auto"} onClick={() => void analyzeProject()}><Play size={14} /> {tx("Open model", "打开模型")}</button></div>
+          </div>}
+        </section>
+      </div>}
     </div>
+    </LanguageContext.Provider>
   );
 }
 
@@ -1357,21 +2373,35 @@ function Field({ label, value, mono = false }: { label: string; value: string; m
   return <div className="field"><label>{label}</label><div className={mono ? "mono" : ""}>{value}</div></div>;
 }
 
-function structureKind(label: string, nodes: ArchitectureNodeView[]): "tensor" | "encoder" | "decoder" | "ffn" | "norm" | "graph" {
+function structureKind(label: string, nodes: ArchitectureNodeView[]): "tensor" | "encoder" | "decoder" | "ffn" | "norm" | "attention" | "residual" | "convolution" | "pooling" | "recurrent" | "graph" | "moe" | "diffusion" | "state-space" | "embedding" | "activation" | "dropout" | "generic" {
   const normalizedLabel = label.trim().toLowerCase();
   const text = `${normalizedLabel} ${nodes.map((node) => `${node.semantic_name} ${String(node.attributes.op_type ?? "")}`).join(" ")}`.toLowerCase();
   if (["q", "k", "v", "query", "key", "value"].includes(normalizedLabel)) return "tensor";
+  if (normalizedLabel.includes("residual") || normalizedLabel.includes("skip") || normalizedLabel === "add") return "residual";
+  if (text.includes("diffusion") || text.includes("denois") || text.includes("timestep") || text.includes("noise schedule") || text.includes("unet")) return "diffusion";
+  if (text.includes("mixture of expert") || text.includes("moe") || text.includes("expert") || text.includes("router") || text.includes("gating")) return "moe";
+  if (text.includes("state space") || text.includes("ssm") || text.includes("mamba") || text.includes("selective scan")) return "state-space";
+  if (text.includes("lstm") || text.includes("gru") || text.includes("rnn") || text.includes("recurrent") || text.includes("hidden state")) return "recurrent";
+  if (text.includes("graph") || text.includes("gcn") || text.includes("gat") || text.includes("neighbor") || text.includes("message passing")) return "graph";
+  if (text.includes("conv1d") || text.includes("conv2d") || text.includes("convolution") || text.includes("conv ")) return "convolution";
+  if (text.includes("pool") || text.includes("adaptive avg") || text.includes("global avg")) return "pooling";
+  if (text.includes("residual") || text.includes("skip connection") || normalizedLabel === "add" || normalizedLabel === "skip") return "residual";
+  if (text.includes("multihead") || text.includes("multi-head") || text.includes("attention") || text.includes("qkv")) return "attention";
+  if (text.includes("embedding") || text.includes("positional") || text.includes("token embedding")) return "embedding";
+  if (text.includes("dropout")) return "dropout";
+  if (text.includes("activation") || text.includes("relu") || text.includes("gelu") || text.includes("silu") || text.includes("swish")) return "activation";
   if (normalizedLabel.includes("encoder")) return nodes.length > 2 ? "encoder" : "norm";
   if (normalizedLabel.includes("decoder") || normalizedLabel === "cross") return "decoder";
   if (text.includes("ffn") || text.includes("feed forward") || text.includes("mlp")) return "ffn";
   if (text.includes("norm")) return "norm";
   if (text.includes("split") || text.includes("transpose") || text.includes("projection")) return "tensor";
-  return "graph";
+  return "generic";
 }
 
 function StructureGlyph({ kind, label, count }: { kind: ReturnType<typeof structureKind>; label: string; count: number }) {
+  const { tx } = useLanguage();
   if (kind === "tensor") {
-    return <svg className="structure-glyph tensor-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} tensor structure`}>
+    return <svg className="structure-glyph tensor-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} ${tx("tensor structure", "张量结构")}`}>
       <g className="tensor-planes">
         <rect x="35" y="16" width="132" height="70" />
         <rect x="47" y="25" width="132" height="70" />
@@ -1379,48 +2409,202 @@ function StructureGlyph({ kind, label, count }: { kind: ReturnType<typeof struct
         {[81, 103, 125, 147, 169].map((x) => <line key={`x-${x}`} x1={x} y1="34" x2={x} y2="104" />)}
         {[51, 68, 85].map((y) => <line key={`y-${y}`} x1="59" y1={y} x2="191" y2={y} />)}
       </g>
-      <text x="202" y="45">heads</text><text x="202" y="64">tokens</text><text x="202" y="83">features</text>
-      <text className="glyph-title" x="35" y="112">stacked matrix</text>
+      <text x="202" y="45">{tx("heads", "头")}</text><text x="202" y="64">{tx("tokens", "词元")}</text><text x="202" y="83">{tx("features", "特征")}</text>
+      <text className="glyph-title" x="35" y="112">{tx("stacked matrix", "堆叠矩阵")}</text>
     </svg>;
   }
   if (kind === "encoder" || kind === "decoder") {
     const first = kind === "encoder" ? "Q / K / V" : "Self / Cross";
-    return <svg className="structure-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} module structure`}>
+    return <svg className="structure-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} ${tx("module structure", "模块结构")}`}>
       <g className="module-flow">
         <rect x="8" y="39" width="57" height="36" /><text x="36" y="61">{first}</text>
         <path d="M65 57H84" /><path d="m79 52 6 5-6 5" />
-        <rect x="85" y="32" width="72" height="50" /><text x="121" y="53">Attention</text><text x="121" y="69">context</text>
+        <rect x="85" y="32" width="72" height="50" /><text x="121" y="53">{tx("Attention", "注意力")}</text><text x="121" y="69">{tx("context", "上下文")}</text>
         <path d="M157 57H176" /><path d="m171 52 6 5-6 5" />
-        <rect x="177" y="39" width="74" height="36" /><text x="214" y="53">Add</text><text x="214" y="68">Norm</text>
+        <rect x="177" y="39" width="74" height="36" /><text x="214" y="53">{tx("Add", "相加")}</text><text x="214" y="68">{tx("Norm", "归一化")}</text>
       </g>
-      <text className="glyph-title" x="8" y="108">{count} executable operations</text>
+      <text className="glyph-title" x="8" y="108">{count} {tx("executable operations", "个可执行操作")}</text>
     </svg>;
   }
   if (kind === "ffn") {
-    return <svg className="structure-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} feed-forward structure`}>
+    return <svg className="structure-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} ${tx("feed-forward structure", "前馈结构")}`}>
       <g className="module-flow ffn-flow">
         <rect x="13" y="40" width="45" height="34" /><text x="35" y="61">D</text>
         <path d="M58 57H84" /><path d="m79 52 6 5-6 5" />
-        <rect x="85" y="25" width="78" height="64" /><text x="124" y="54">4D</text><text x="124" y="71">activation</text>
+        <rect x="85" y="25" width="78" height="64" /><text x="124" y="54">4D</text><text x="124" y="71">{tx("activation", "激活")}</text>
         <path d="M163 57H189" /><path d="m184 52 6 5-6 5" />
         <rect x="190" y="40" width="45" height="34" /><text x="212" y="61">D</text>
       </g>
-      <text className="glyph-title" x="13" y="108">expand · transform · project</text>
+      <text className="glyph-title" x="13" y="108">{tx("expand · transform · project", "扩展 · 变换 · 投影")}</text>
     </svg>;
   }
   if (kind === "norm") {
-    return <svg className="structure-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} normalization structure`}>
+    return <svg className="structure-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} ${tx("normalization structure", "归一化结构")}`}>
       <g className="module-flow">
-        <rect x="13" y="40" width="58" height="34" /><text x="42" y="61">input</text>
+        <rect x="13" y="40" width="58" height="34" /><text x="42" y="61">{tx("input", "输入")}</text>
         <path d="M71 57H96" /><path d="m91 52 6 5-6 5" />
         <circle cx="130" cy="57" r="29" /><text x="130" y="53">μ · σ</text><text x="130" y="68">γ · β</text>
         <path d="M159 57H184" /><path d="m179 52 6 5-6 5" />
-        <rect x="185" y="40" width="62" height="34" /><text x="216" y="61">normalized</text>
+        <rect x="185" y="40" width="62" height="34" /><text x="216" y="61">{tx("normalized", "已归一化")}</text>
       </g>
-      <text className="glyph-title" x="13" y="108">feature-wise normalization</text>
+      <text className="glyph-title" x="13" y="108">{tx("feature-wise normalization", "按特征归一化")}</text>
     </svg>;
   }
-  return <svg className="structure-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} contained structure`}>
+  if (kind === "attention") {
+    return <svg className="structure-glyph attention-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} attention structure`}>
+      <g className="glyph-flow">
+        <rect x="8" y="18" width="37" height="22" /><text x="26" y="32">Q</text>
+        <rect x="8" y="47" width="37" height="22" /><text x="26" y="61">K</text>
+        <rect x="8" y="76" width="37" height="22" /><text x="26" y="90">V</text>
+        <path d="M45 29H66M45 58H66M45 87H66" /><path d="m61 24 6 5-6 5M61 53 67 58 61 63M61 82 67 87 61 92" />
+        <rect className="attention-score" x="69" y="39" width="46" height="46" />
+        {[81, 93, 105].map((x) => <line key={`sx-${x}`} x1={x} y1="39" x2={x} y2="85" />)}
+        {[51, 63, 75].map((y) => <line key={`sy-${y}`} x1="69" y1={y} x2="115" y2={y} />)}
+        <text x="92" y="94">QKᵀ</text>
+        <path d="M115 62H132" /><path d="m127 57 6 5-6 5" />
+        <rect x="135" y="45" width="42" height="34" /><text x="156" y="59">softmax</text><text x="156" y="71">A</text>
+        <path d="M177 62H194" /><path d="m189 57 6 5-6 5" />
+        <rect x="197" y="45" width="46" height="34" /><text x="220" y="59">A V</text><text x="220" y="71">context</text>
+      </g>
+      <text className="glyph-title" x="8" y="112">multi-head attention · {count} ops</text>
+    </svg>;
+  }
+  if (kind === "residual") {
+    return <svg className="structure-glyph residual-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} residual structure`}>
+      <g className="glyph-flow">
+        <rect x="10" y="45" width="38" height="28" /><text x="29" y="62">x</text>
+        <path d="M48 59H74" /><path d="m68 54 6 5-6 5" />
+        <rect x="77" y="43" width="59" height="32" /><text x="106" y="57">F(x)</text><text x="106" y="69">block</text>
+        <path d="M136 59H166" /><path d="m160 54 6 5-6 5" />
+        <circle cx="184" cy="59" r="17" /><text x="184" y="64">+</text>
+        <path className="skip-path" d="M29 45V19H184V42" /><path d="m179 37 5 6 5-6" />
+        <path d="M201 59H247" /><path d="m241 54 6 5-6 5" /><text x="224" y="50">y</text>
+      </g>
+      <text className="glyph-title" x="10" y="108">identity skip + transform</text>
+    </svg>;
+  }
+  if (kind === "convolution") {
+    return <svg className="structure-glyph convolution-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} convolution structure`}>
+      <g className="glyph-flow">
+        <rect className="feature-grid" x="10" y="27" width="58" height="58" />
+        {[24, 38, 52].map((x) => <line key={`ix-${x}`} x1={x} y1="27" x2={x} y2="85" />)}
+        {[41, 55, 69].map((y) => <line key={`iy-${y}`} x1="10" y1={y} x2="68" y2={y} />)}
+        <rect className="kernel" x="24" y="41" width="28" height="28" /><text x="38" y="57">K</text>
+        <path d="M68 56H88" /><path d="m82 51 6 5-6 5" />
+        <rect x="92" y="39" width="61" height="35" /><text x="123" y="53">∑ wᵢxᵢ</text><text x="123" y="66">+ bias</text>
+        <path d="M153 56H173" /><path d="m167 51 6 5-6 5" />
+        <rect className="feature-grid output-grid" x="177" y="34" width="65" height="45" />
+        {[199, 221].map((x) => <line key={`ox-${x}`} x1={x} y1="34" x2={x} y2="79" />)}
+        {[49, 64].map((y) => <line key={`oy-${y}`} x1="177" y1={y} x2="242" y2={y} />)}
+      </g>
+      <text className="glyph-title" x="10" y="108">sliding kernel · feature map</text>
+    </svg>;
+  }
+  if (kind === "pooling") {
+    return <svg className="structure-glyph pooling-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} pooling structure`}>
+      <g className="glyph-flow">
+        <rect className="feature-grid" x="10" y="26" width="70" height="62" />
+        {[27, 44, 61].map((x) => <line key={`px-${x}`} x1={x} y1="26" x2={x} y2="88" />)}
+        {[41, 57, 73].map((y) => <line key={`py-${y}`} x1="10" y1={y} x2="80" y2={y} />)}
+        <rect className="pool-window" x="27" y="41" width="34" height="32" /><text x="44" y="60">max</text>
+        <path d="M80 57H109" /><path d="m103 52 6 5-6 5" />
+        <circle cx="137" cy="57" r="24" /><text x="137" y="53">max</text><text x="137" y="67">mean</text>
+        <path d="M161 57H188" /><path d="m182 52 6 5-6 5" />
+        <rect x="192" y="39" width="52" height="36" /><text x="218" y="55">H/2 ×</text><text x="218" y="68">W/2</text>
+      </g>
+      <text className="glyph-title" x="10" y="108">spatial aggregation</text>
+    </svg>;
+  }
+  if (kind === "recurrent") {
+    return <svg className="structure-glyph recurrent-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} recurrent structure`}>
+      <g className="glyph-flow">
+        <rect x="20" y="43" width="43" height="32" /><text x="41" y="56">cell</text><text x="41" y="68">t−1</text>
+        <rect x="91" y="43" width="43" height="32" /><text x="112" y="56">cell</text><text x="112" y="68">t</text>
+        <rect x="162" y="43" width="43" height="32" /><text x="183" y="56">cell</text><text x="183" y="68">t+1</text>
+        <path d="M63 59H91M134 59H162" /><path d="m85 54 6 5-6 5M156 54 162 59 156 64" />
+        <path className="state-loop" d="M41 43V20H183V43" /><path d="m177 37 6 6 6-6" /><text x="112" y="17">hidden state hₜ</text>
+        <path d="M41 75V91M112 75V91M183 75V91" /><text x="41" y="103">xₜ₋₁</text><text x="112" y="103">xₜ</text><text x="183" y="103">xₜ₊₁</text>
+      </g>
+      <text className="glyph-title" x="210" y="112">time</text>
+    </svg>;
+  }
+  if (kind === "graph") {
+    return <svg className="structure-glyph graph-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} graph structure`}>
+      <g className="graph-links">
+        <line x1="40" y1="34" x2="104" y2="57" /><line x1="40" y1="83" x2="104" y2="57" /><line x1="104" y1="57" x2="166" y2="31" /><line x1="104" y1="57" x2="166" y2="84" /><line x1="166" y1="31" x2="222" y2="57" /><line x1="166" y1="84" x2="222" y2="57" />
+      </g>
+      <g className="graph-nodes"><circle cx="40" cy="34" r="13" /><circle cx="40" cy="83" r="13" /><circle className="graph-center" cx="104" cy="57" r="17" /><circle cx="166" cy="31" r="13" /><circle cx="166" cy="84" r="13" /><circle cx="222" cy="57" r="13" /></g>
+      <text x="104" y="61">Σ</text><text className="glyph-title" x="10" y="108">neighbor message passing</text>
+    </svg>;
+  }
+  if (kind === "moe") {
+    return <svg className="structure-glyph moe-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} mixture of experts structure`}>
+      <g className="glyph-flow">
+        <rect x="10" y="43" width="38" height="30" /><text x="29" y="62">x</text>
+        <path d="M48 58H68M68 58V28H88M68 58V58H88M68 58V88H88" /><path d="m82 23 6 5-6 5M82 53 88 58 82 63M82 83 88 88 82 93" />
+        <rect className="router" x="88" y="43" width="42" height="30" /><text x="109" y="56">router</text><text x="109" y="67">gate</text>
+        <path d="M130 58H143M143 58V27H153M143 58V58H153M143 58V89H153" /><path d="m147 22 6 5-6 5M147 53 153 58 147 63M147 84 153 89 147 94" />
+        <rect x="153" y="16" width="42" height="22" /><text x="174" y="30">E1</text><rect x="153" y="47" width="42" height="22" /><text x="174" y="61">E2</text><rect x="153" y="78" width="42" height="22" /><text x="174" y="92">E3</text>
+        <path d="M195 27H213V58M195 58H213M195 89H213V58M213 58H244" /><path d="m238 53 6 5-6 5" /><text x="226" y="51">weighted sum</text>
+      </g>
+      <text className="glyph-title" x="10" y="112">sparse expert routing</text>
+    </svg>;
+  }
+  if (kind === "diffusion") {
+    return <svg className="structure-glyph diffusion-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} diffusion structure`}>
+      <g className="glyph-flow">
+        <rect x="8" y="43" width="42" height="30" /><text x="29" y="62">x₀</text>
+        <path d="M50 58H66" /><path d="m60 53 6 5-6 5" /><circle cx="83" cy="58" r="17" /><text x="83" y="55">+ ε</text><text x="83" y="68">noise</text>
+        <path d="M100 58H116" /><path d="m110 53 6 5-6 5" /><rect x="119" y="43" width="39" height="30" /><text x="138" y="56">xₜ</text><text x="138" y="68">t</text>
+        <path d="M158 58H176" /><path d="m170 53 6 5-6 5" /><rect x="179" y="35" width="44" height="46" /><text x="201" y="54">εθ</text><text x="201" y="67">denoise</text>
+        <path d="M223 58H247" /><path d="m241 53 6 5-6 5" /><text x="225" y="96">x̂₀</text>
+      </g>
+      <path className="time-axis" d="M17 19H242" /><path d="m236 14 6 5-6 5" /><text x="17" y="13">forward noise</text><text x="207" y="13">reverse t→0</text>
+    </svg>;
+  }
+  if (kind === "state-space") {
+    return <svg className="structure-glyph state-space-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} state space structure`}>
+      <g className="glyph-flow">
+        <rect x="10" y="45" width="40" height="28" /><text x="30" y="62">uₜ</text>
+        <path d="M50 59H73" /><path d="m67 54 6 5-6 5" /><rect x="76" y="39" width="64" height="40" /><text x="108" y="54">ΔA + B</text><text x="108" y="68">state xₜ</text>
+        <path d="M140 59H164" /><path d="m158 54 6 5-6 5" /><rect x="167" y="45" width="39" height="28" /><text x="186" y="62">C xₜ</text>
+        <path d="M108 39V20H220V59H206" /><path d="m200 54 6 5-6 5" /><text x="145" y="17">selective scan / memory</text>
+        <path d="M206 59H247" /><path d="m241 54 6 5-6 5" /><text x="225" y="84">yₜ</text>
+      </g>
+      <text className="glyph-title" x="10" y="108">continuous state update</text>
+    </svg>;
+  }
+  if (kind === "embedding") {
+    return <svg className="structure-glyph embedding-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} embedding structure`}>
+      <g className="glyph-flow">
+        <rect x="10" y="45" width="45" height="28" /><text x="32" y="62">token id</text>
+        <path d="M55 59H74" /><path d="m68 54 6 5-6 5" />
+        <rect className="lookup-table" x="78" y="20" width="65" height="78" />
+        {[40, 60, 80].map((y) => <line key={y} x1="78" y1={y} x2="143" y2={y} />)}
+        {[94, 110, 126].map((x) => <line key={x} x1={x} y1="20" x2={x} y2="98" />)}
+        <text x="111" y="112">lookup table</text>
+        <path d="M143 59H164" /><path d="m158 54 6 5-6 5" /><rect x="168" y="45" width="76" height="28" /><text x="206" y="62">vector eᵢ</text>
+      </g>
+      <text className="glyph-title" x="10" y="14">token / positional embedding</text>
+    </svg>;
+  }
+  if (kind === "activation") {
+    return <svg className="structure-glyph activation-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} activation structure`}>
+      <g className="activation-plot"><path d="M28 91H238M50 104V15" /><path className="activation-curve" d="M51 90C74 90 85 88 101 78S122 50 137 42 163 31 186 28 218 25 236 24" /><path className="activation-relu" d="M51 90H130L236 24" /></g>
+      <text x="219" y="101">x</text><text x="39" y="22">f(x)</text><text className="glyph-title" x="10" y="115">non-linear activation</text>
+    </svg>;
+  }
+  if (kind === "dropout") {
+    return <svg className="structure-glyph dropout-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} dropout structure`}>
+      <g className="dropout-nodes">
+        {[28, 53, 78].map((x, index) => <circle key={`di-${x}`} cx={x} cy="45" r="9" className={index === 1 ? "masked" : "kept"} />)}
+        {[28, 53, 78].map((x, index) => <circle key={`do-${x}`} cx={x + 151} cy="45" r="9" className={index === 1 ? "masked" : "kept"} />)}
+      </g>
+      <path d="M87 45H112" /><path d="m106 40 6 5-6 5" /><rect className="mask-box" x="116" y="27" width="38" height="36" /><text x="135" y="42">mask</text><text x="135" y="55">p=0.1</text>
+      <path d="M28 54V78H179V54" /><path d="m173 49 6 5-6 5" /><text className="glyph-title" x="10" y="108">stochastic feature masking</text>
+    </svg>;
+  }
+  return <svg className="structure-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} ${tx("contained structure", "包含结构")}`}>
     <g className="generic-glyph">
       <rect x="12" y="20" width="236" height="78" />
       {Array.from({ length: Math.min(5, Math.max(1, count)) }, (_, index) => {
@@ -1428,7 +2612,7 @@ function StructureGlyph({ kind, label, count }: { kind: ReturnType<typeof struct
         return <g key={x}><circle cx={x} cy="59" r="12" />{index > 0 && <line x1={x - 31} y1="59" x2={x - 12} y2="59" />}</g>;
       })}
     </g>
-    <text className="glyph-title" x="12" y="112">{count} contained operations</text>
+    <text className="glyph-title" x="12" y="112">{count} {tx("contained operations", "个包含操作")}</text>
   </svg>;
 }
 
@@ -1440,6 +2624,7 @@ function StructureInspector({ label, viewNode, sceneNode, nodes, tensors, eviden
   tensors: ArchitectureTensor[];
   evidence: Evidence[];
 }) {
+  const { tx } = useLanguage();
   const nodeIds = new Set(nodes.map((node) => node.node_id));
   const relevant = tensors.filter((tensor) =>
     nodeIds.has(tensor.producer_id) || tensor.consumer_ids.some((id) => nodeIds.has(id)),
@@ -1459,19 +2644,20 @@ function StructureInspector({ label, viewNode, sceneNode, nodes, tensors, eviden
     (left, right) => right.semantic_axes.length - left.semantic_axes.length,
   )[0];
   return <div className="structure-inspector">
-    <header className="inspector-heading"><div><h2>{label}</h2><span>{kind === "tensor" ? "Tensor transformation" : "Module structure"}</span></div><b>{nodes.length} ops</b></header>
+    <header className="inspector-heading"><div><h2>{label}</h2><span>{kind === "tensor" ? tx("Tensor transformation", "张量变换") : tx("Module structure", "模块结构")}</span></div><b>{nodes.length} {tx("ops", "个操作")}</b></header>
     <div className={`structure-preview preview-${kind}`}><StructureGlyph kind={kind} label={label} count={nodes.length} /></div>
-    {shapeStages.length > 0 && <section className="shape-flow"><div className="section-heading">Tensor shape flow</div><div className="shape-track">{shapeStages.map((tensor, index) => <React.Fragment key={tensor.tensor_id}>{index > 0 && <span className="shape-arrow">→</span>}<div className="shape-step"><strong>{tensor.role}</strong><code>{tensor.symbolic_shape.replaceAll(",", " × ").replace("[", "").replace("]", "")}</code></div></React.Fragment>)}</div></section>}
+    {shapeStages.length > 0 && <section className="shape-flow"><div className="section-heading">{tx("Tensor shape flow", "张量形状流")}</div><div className="shape-track">{shapeStages.map((tensor, index) => <React.Fragment key={tensor.tensor_id}>{index > 0 && <span className="shape-arrow">→</span>}<div className="shape-step"><strong>{tensor.role}</strong><code>{tensor.symbolic_shape.replaceAll(",", " × ").replace("[", "").replace("]", "")}</code></div></React.Fragment>)}</div></section>}
     {primaryTensor?.semantic_axes.length ? <div className="axis-legend">{primaryTensor.semantic_axes.map((axis, index) => <span key={axis}><b>{primaryTensor.symbolic_shape.replace(/[\[\]]/g, "").split(",")[index] ?? `d${index + 1}`}</b>{axis.replaceAll("_", " ")}</span>)}</div> : null}
-    <section className="operation-summary"><div className="section-heading">Contained operations</div><div className="operation-chips">{opTypes.slice(0, 8).map((item) => <span key={item}>{item}</span>)}</div></section>
-    <div className="status-row"><span>Exact IR</span><b>{nodes.length} canonical</b></div>
-    <Field label="Source symbols" value={[...new Set(nodes.map((node) => node.source_symbol).filter(Boolean))].join(", ") || "Structural container"} />
-    <Field label="Evidence" value={`${evidence.length} records · ${evidence[0]?.confidence ?? "exact"}`} mono />
-    <div className="resolution"><div className="section-label">Resolution</div><dl><dt>Implementation</dt><dd>{String(viewNode.attributes.resolution ? "resolved" : "exact")}</dd><dt>Semantics</dt><dd>{viewNode.collapsed ? "grouped" : "expanded"}</dd><dt>Execution</dt><dd>{sceneNode.canonical_node_ids.length ? "authored" : "structural"}</dd></dl></div>
+    <section className="operation-summary"><div className="section-heading">{tx("Contained operations", "包含的操作")}</div><div className="operation-chips">{opTypes.slice(0, 8).map((item) => <span key={item}>{item}</span>)}</div></section>
+    <div className="status-row"><span>Exact IR</span><b>{nodes.length} {tx("canonical", "个规范节点")}</b></div>
+    <Field label={tx("Source symbols", "源码符号")} value={[...new Set(nodes.map((node) => node.source_symbol).filter(Boolean))].join(", ") || tx("Structural container", "结构容器")} />
+    <Field label={tx("Evidence", "证据")} value={`${evidence.length} ${tx("records", "条记录")} · ${evidence[0]?.confidence ?? "exact"}`} mono />
+    <div className="resolution"><div className="section-label">{tx("Resolution", "解析状态")}</div><dl><dt>{tx("Implementation", "实现")}</dt><dd>{viewNode.attributes.resolution ? tx("resolved", "已解析") : tx("exact", "精确")}</dd><dt>{tx("Semantics", "语义")}</dt><dd>{viewNode.collapsed ? tx("grouped", "已分组") : tx("expanded", "已展开")}</dd><dt>{tx("Execution", "执行")}</dt><dd>{sceneNode.canonical_node_ids.length ? tx("authored", "源码定义") : tx("structural", "结构生成")}</dd></dl></div>
   </div>;
 }
 
 function SourceInspector({ nodes, evidence }: { nodes: ArchitectureNodeView[]; evidence: Evidence[] }) {
+  const { tx } = useLanguage();
   const sourceEvidence = useMemo(
     () => evidence.filter((record) => record.kind === "source" && record.path && record.span),
     [evidence],
@@ -1493,7 +2679,7 @@ function SourceInspector({ nodes, evidence }: { nodes: ArchitectureNodeView[]; e
     setSourceError("");
     fetch(`/api/source-excerpt?path=${encodeURIComponent(activeEvidence.path)}&start=${activeEvidence.span.start_line}&end=${activeEvidence.span.end_line}&context=4`, { signal: controller.signal, cache: "no-store" })
       .then(async (response) => {
-        if (!response.ok) throw new Error((await response.json() as { error?: string }).error ?? "Source excerpt unavailable");
+        if (!response.ok) throw new Error((await response.json() as { error?: string }).error ?? tx("Source excerpt unavailable", "源码片段不可用"));
         return response.json() as Promise<SourceExcerpt>;
       })
       .then(setExcerpt)
@@ -1503,8 +2689,8 @@ function SourceInspector({ nodes, evidence }: { nodes: ArchitectureNodeView[]; e
 
   const paths = [...new Set(sourceEvidence.map((record) => record.path).filter((path): path is string => Boolean(path)))];
   return <div className="source-inspector">
-    <header className="inspector-heading"><div><h2>Source structure</h2><span>{paths.length} files · {nodes.length} operations</span></div><FileCode2 size={17} /></header>
-    <section className="source-outline"><div className="section-heading">Containment</div>{paths.map((path) => {
+    <header className="inspector-heading"><div><h2>{tx("Source structure", "源码结构")}</h2><span>{paths.length} {tx("files", "个文件")} · {nodes.length} {tx("operations", "个操作")}</span></div><FileCode2 size={17} /></header>
+    <section className="source-outline"><div className="section-heading">{tx("Containment", "包含关系")}</div>{paths.map((path) => {
       const pathEvidence = sourceEvidence.filter((record) => record.path === path);
       const symbols = [...new Set(pathEvidence.map((record) => record.symbol).filter((symbol): symbol is string => Boolean(symbol)))];
       return <div className="source-file" key={path}><div className="source-file-row"><FileCode2 size={13} /><strong>{path}</strong></div>{symbols.map((symbol) => {
@@ -1514,9 +2700,9 @@ function SourceInspector({ nodes, evidence }: { nodes: ArchitectureNodeView[]; e
       })}</div>;
     })}</section>
     {sourceEvidence.length > 0 ? <>
-      <section className="source-locations"><div className="section-heading">Evidence locations</div>{sourceEvidence.slice(0, 20).map((record) => <button key={record.evidence_id} className={record.evidence_id === activeEvidence?.evidence_id ? "active" : ""} onClick={() => setActiveEvidenceId(record.evidence_id)}><code>{record.path}:{record.span?.start_line}</code><span>{record.symbol}</span></button>)}</section>
-      <section className="code-excerpt"><div className="code-header"><span>{excerpt?.path ?? activeEvidence?.path}</span><code>{activeEvidence?.symbol}</code></div>{sourceError ? <div className="source-error">{sourceError}</div> : excerpt ? <pre>{excerpt.lines.map((line) => <div key={line.number} className={line.number >= excerpt.highlight_start_line && line.number <= excerpt.highlight_end_line ? "highlight" : ""}><span>{line.number}</span><code>{line.text || " "}</code></div>)}</pre> : <div className="source-loading">Loading source…</div>}</section>
-    </> : <div className="empty-state"><FileCode2 size={20} /><span>No source evidence</span></div>}
+      <section className="source-locations"><div className="section-heading">{tx("Evidence locations", "证据位置")}</div>{sourceEvidence.slice(0, 20).map((record) => <button key={record.evidence_id} className={record.evidence_id === activeEvidence?.evidence_id ? "active" : ""} onClick={() => setActiveEvidenceId(record.evidence_id)}><code>{record.path}:{record.span?.start_line}</code><span>{record.symbol}</span></button>)}</section>
+      <section className="code-excerpt"><div className="code-header"><span>{excerpt?.path ?? activeEvidence?.path}</span><code>{activeEvidence?.symbol}</code></div>{sourceError ? <div className="source-error">{sourceError}</div> : excerpt ? <pre>{excerpt.lines.map((line) => <div key={line.number} className={line.number >= excerpt.highlight_start_line && line.number <= excerpt.highlight_end_line ? "highlight" : ""}><span>{line.number}</span><code>{line.text || " "}</code></div>)}</pre> : <div className="source-loading">{tx("Loading source...", "正在加载源码...")}</div>}</section>
+    </> : <div className="empty-state"><FileCode2 size={20} /><span>{tx("No source evidence", "没有源码证据")}</span></div>}
   </div>;
 }
 
@@ -1544,6 +2730,7 @@ function ModelInspector({ node, nodes, transaction, proposal, writebackBlocked, 
   onCommit: () => Promise<void>;
   onDiscard: () => Promise<void>;
 }) {
+  const { tx } = useLanguage();
   const parameters = node?.parameters ?? [];
   const parameterRequest = transaction?.request.operation === "set_parameter" ? transaction.request : null;
   const activeForNode = Boolean(transaction && transaction.request.target_node_id === node?.node_id);
@@ -1582,47 +2769,49 @@ function ModelInspector({ node, nodes, transaction, proposal, writebackBlocked, 
     setTargetPortId(targetNode?.input_ports[0]?.port_id ?? "");
   }, [targetNode?.node_id]);
   if (!node) {
-    return <div className="empty-state"><Braces size={20} /><span>No canonical node selected</span></div>;
+    return <div className="empty-state"><Braces size={20} /><span>{tx("No canonical node selected", "未选择规范节点")}</span></div>;
   }
   const active = transaction && transaction.request.target_node_id === node.node_id;
   const affected = active ? transaction.expected_delta.changed_nodes.length : 0;
   const transactionLocked = Boolean(transaction && !["discarded", "committed", "failed"].includes(transaction.state));
   const activationSupported = ["GELU", "ReLU", "SiLU"].includes(currentActivation);
   return <>
-    <div className="transaction-banner"><GitBranch size={15} /> Safe source transaction</div>
-    {parameter ? <section className="model-operation"><div className="section-heading">Parameter</div><label className="model-field"><span>Parameter</span><select value={parameter.name} onChange={(event) => setName(event.target.value)}>{parameters.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></label><Field label="Current / provenance" value={`${displayValue(parameter.value)} · ${parameter.origin}`} mono /><label className="model-field"><span>Target value</span><input value={value} onChange={(event) => setValue(event.target.value)} /></label><button className="prepare-button" disabled={transactionLocked || value === displayValue(parameter.value)} onClick={() => void onPrepareParameter(parameter.name, parseValue(value))}><GitBranch size={14} /> Prepare parameter</button></section> : <div className="operation-unavailable">No exact editable parameter on this node.</div>}
-    <section className="model-operation"><div className="section-heading">Registered transforms</div>{activationSupported && <><label className="model-field"><span>Activation</span><select value={replacement} onChange={(event) => setReplacement(event.target.value)}>{["GELU", "ReLU", "SiLU"].filter((item) => item !== currentActivation).map((item) => <option key={item}>{item}</option>)}</select></label><button className="prepare-button" disabled={transactionLocked} onClick={() => void onPrepareStructural("replace_activation", { replacement })}><GitBranch size={14} /> Replace activation</button></>}<label className="model-field"><span>LayerNorm module</span><input value={moduleName} onChange={(event) => setModuleName(event.target.value)} /></label><label className="model-field"><span>Normalized shape</span><input value={normalizedShape} onChange={(event) => setNormalizedShape(event.target.value)} /></label><button className="prepare-button" disabled={transactionLocked || !moduleName || !normalizedShape} onClick={() => void onPrepareStructural("insert_layer_norm", { module_name: moduleName, normalized_shape: parseValue(normalizedShape) })}><GitBranch size={14} /> Insert LayerNorm</button></section>
-    <section className="model-operation"><div className="section-heading">Proposed connection</div>{node.output_ports.length && targetNode ? <><label className="model-field"><span>Source output</span><select value={sourcePortId} onChange={(event) => setSourcePortId(event.target.value)}>{node.output_ports.map((port) => <option key={port.port_id} value={port.port_id}>{port.role} · {port.port_id}</option>)}</select></label><label className="model-field"><span>Target node</span><select value={targetNode.node_id} onChange={(event) => setTargetNodeId(event.target.value)}>{targetOptions.map((item) => <option key={item.node_id} value={item.node_id}>{item.semantic_name}</option>)}</select></label><label className="model-field"><span>Target input</span><select value={targetPortId} onChange={(event) => setTargetPortId(event.target.value)}>{targetNode.input_ports.map((port) => <option key={port.port_id} value={port.port_id}>{port.role} · {port.port_id}</option>)}</select></label><button className="prepare-button" onClick={() => void onProposeConnection(sourcePortId, targetNode.node_id, targetPortId)}><Link2 size={14} /> Create handoff</button></> : <div className="operation-unavailable">Select a node with an authored output port.</div>}</section>
-    {proposal && <div className="proposal-card"><div><ShieldCheck size={15} /><strong>Agent handoff</strong><code>{proposal.reason_code}</code></div><p>{proposal.summary}</p><dl><dt>Shell</dt><dd>Denied</dd><dt>Network</dt><dd>Denied</dd><dt>Source write</dt><dd>Denied</dd></dl></div>}
-    <Field label="Expected affected nodes / edges" value={active ? `${affected} / ${transaction.expected_delta.changed_edges.length}` : "Calculated during prepare"} />
+    <div className="transaction-banner"><GitBranch size={15} /> {tx("Safe source transaction", "安全源码事务")}</div>
+    {parameter ? <section className="model-operation"><div className="section-heading">{tx("Parameter", "参数")}</div><label className="model-field"><span>{tx("Parameter", "参数")}</span><select value={parameter.name} onChange={(event) => setName(event.target.value)}>{parameters.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></label><Field label={tx("Current / provenance", "当前值 / 来源")} value={`${displayValue(parameter.value)} · ${parameter.origin}`} mono /><label className="model-field"><span>{tx("Target value", "目标值")}</span><input value={value} onChange={(event) => setValue(event.target.value)} /></label><button className="prepare-button" disabled={transactionLocked || value === displayValue(parameter.value)} onClick={() => void onPrepareParameter(parameter.name, parseValue(value))}><GitBranch size={14} /> {tx("Prepare parameter", "准备参数修改")}</button></section> : <div className="operation-unavailable">{tx("No exact editable parameter on this node.", "此节点没有可精确编辑的参数。")}</div>}
+    <section className="model-operation"><div className="section-heading">{tx("Registered transforms", "已注册变换")}</div>{activationSupported && <><label className="model-field"><span>{tx("Activation", "激活函数")}</span><select value={replacement} onChange={(event) => setReplacement(event.target.value)}>{["GELU", "ReLU", "SiLU"].filter((item) => item !== currentActivation).map((item) => <option key={item}>{item}</option>)}</select></label><button className="prepare-button" disabled={transactionLocked} onClick={() => void onPrepareStructural("replace_activation", { replacement })}><GitBranch size={14} /> {tx("Replace activation", "替换激活函数")}</button></>}<label className="model-field"><span>{tx("LayerNorm module", "LayerNorm 模块")}</span><input value={moduleName} onChange={(event) => setModuleName(event.target.value)} /></label><label className="model-field"><span>{tx("Normalized shape", "归一化形状")}</span><input value={normalizedShape} onChange={(event) => setNormalizedShape(event.target.value)} /></label><button className="prepare-button" disabled={transactionLocked || !moduleName || !normalizedShape} onClick={() => void onPrepareStructural("insert_layer_norm", { module_name: moduleName, normalized_shape: parseValue(normalizedShape) })}><GitBranch size={14} /> {tx("Insert LayerNorm", "插入 LayerNorm")}</button></section>
+    <section className="model-operation"><div className="section-heading">{tx("Proposed connection", "连接提议")}</div>{node.output_ports.length && targetNode ? <><label className="model-field"><span>{tx("Source output", "源输出")}</span><select value={sourcePortId} onChange={(event) => setSourcePortId(event.target.value)}>{node.output_ports.map((port) => <option key={port.port_id} value={port.port_id}>{port.role} · {port.port_id}</option>)}</select></label><label className="model-field"><span>{tx("Target node", "目标节点")}</span><select value={targetNode.node_id} onChange={(event) => setTargetNodeId(event.target.value)}>{targetOptions.map((item) => <option key={item.node_id} value={item.node_id}>{item.semantic_name}</option>)}</select></label><label className="model-field"><span>{tx("Target input", "目标输入")}</span><select value={targetPortId} onChange={(event) => setTargetPortId(event.target.value)}>{targetNode.input_ports.map((port) => <option key={port.port_id} value={port.port_id}>{port.role} · {port.port_id}</option>)}</select></label><button className="prepare-button" onClick={() => void onProposeConnection(sourcePortId, targetNode.node_id, targetPortId)}><Link2 size={14} /> {tx("Create handoff", "创建交接")}</button></> : <div className="operation-unavailable">{tx("Select a node with an authored output port.", "请选择带源码定义输出端口的节点。")}</div>}</section>
+    {proposal && <div className="proposal-card"><div><ShieldCheck size={15} /><strong>{tx("Agent handoff", "代理交接")}</strong><code>{proposal.reason_code}</code></div><p>{proposal.summary}</p><dl><dt>{tx("Shell", "终端")}</dt><dd>{tx("Denied", "已拒绝")}</dd><dt>{tx("Network", "网络")}</dt><dd>{tx("Denied", "已拒绝")}</dd><dt>{tx("Source write", "源码写入")}</dt><dd>{tx("Denied", "已拒绝")}</dd></dl></div>}
+    <Field label={tx("Expected affected nodes / edges", "预计影响的节点 / 边")} value={active ? `${affected} / ${transaction.expected_delta.changed_edges.length}` : tx("Calculated during prepare", "在准备阶段计算")} />
     {active && <div className={`transaction-state ${transaction.state}`}>{transaction.state}</div>}
-    {active && transaction.state === "review-ready" && <div className="transaction-actions"><button className="commit-button" disabled={writebackBlocked} title={writebackBlocked ? "Resolve draft blockers before committing" : "Commit verified source transaction"} onClick={() => void onCommit()}><CircleDot size={14} /> Commit to source</button><button onClick={() => void onDiscard()}><X size={14} /> Discard</button></div>}
-    {active && transaction.state === "failed" && <div className="transaction-actions"><button disabled title="Agent handoff arrives with structural transforms"><Braces size={14} /> Fix with Agent</button><button onClick={() => void onDiscard()}><X size={14} /> Discard</button></div>}
+    {active && transaction.state === "review-ready" && <div className="transaction-actions"><button className="commit-button" disabled={writebackBlocked} title={writebackBlocked ? tx("Resolve draft blockers before committing", "提交前请解决草稿阻断项") : tx("Commit verified source transaction", "提交已验证的源码事务")} onClick={() => void onCommit()}><CircleDot size={14} /> {tx("Commit to source", "提交到源码")}</button><button onClick={() => void onDiscard()}><X size={14} /> {tx("Discard", "放弃")}</button></div>}
+    {active && transaction.state === "failed" && <div className="transaction-actions"><span className="agent-handoff-status"><Braces size={14} /> {tx("Agent handoff is unavailable for this failed transaction", "当前失败事务不提供代理交接")}</span><button onClick={() => void onDiscard()}><X size={14} /> {tx("Discard", "放弃")}</button></div>}
   </>;
 }
 
-function deltaSummary(delta?: GraphDelta): string {
-  if (!delta) return "Not available";
+function deltaSummary(delta: GraphDelta | undefined, tx: LanguageContextValue["tx"]): string {
+  if (!delta) return tx("Not available", "不可用");
   const nodes = delta.added_nodes.length + delta.removed_nodes.length + delta.changed_nodes.length;
   const edges = delta.added_edges.length + delta.removed_edges.length + delta.changed_edges.length;
-  return `${delta.changed_parameters.length} parameters · ${nodes} nodes · ${edges} edges · ${delta.changed_shapes.length} shapes`;
+  return `${delta.changed_parameters.length} ${tx("parameters", "个参数")} · ${nodes} ${tx("nodes", "个节点")} · ${edges} ${tx("edges", "条边")} · ${delta.changed_shapes.length} ${tx("shapes", "个形状")}`;
 }
 
 function TransactionReview({ transaction, writebackBlocked, onCommit, onDiscard }: { transaction: SourceTransaction; writebackBlocked: boolean; onCommit: () => Promise<void>; onDiscard: () => Promise<void> }) {
+  const { tx } = useLanguage();
   return <div className="transaction-review">
-    <section><h3>Source diff</h3><pre>{transaction.source_diff || "No textual change"}</pre></section>
-    <section><h3>Graph Delta</h3><dl><dt>Expected</dt><dd>{deltaSummary(transaction.expected_delta)}</dd><dt>Observed</dt><dd>{deltaSummary(transaction.observed_delta)}</dd></dl>{transaction.expected_delta.changed_parameters.map((item) => <code key={`${item.node_id}-${item.parameter_name}`}>{item.node_id}.{item.parameter_name}: {displayValue(item.before)} → {displayValue(item.after)}</code>)}</section>
-    <section><h3>Validation receipt</h3><div className="gate-list">{transaction.gates.map((gate) => <span key={gate.gate} className={gate.status}>{gate.status} · {gate.gate}</span>)}</div><div className="review-actions">{transaction.state === "review-ready" ? <button className="commit-button" disabled={writebackBlocked} title={writebackBlocked ? "Resolve draft blockers before committing" : "Commit verified source transaction"} onClick={() => void onCommit()}><CircleDot size={14} /> Commit to source</button> : <button disabled><Braces size={14} /> Fix with Agent</button>} {!['committed', 'discarded'].includes(transaction.state) && <button onClick={() => void onDiscard()}><X size={14} /> Discard</button>}</div></section>
+    <section><h3>{tx("Source diff", "源码差异")}</h3><pre>{transaction.source_diff || tx("No textual change", "没有文本变化")}</pre></section>
+    <section><h3>Graph Delta</h3><dl><dt>{tx("Expected", "预期")}</dt><dd>{deltaSummary(transaction.expected_delta, tx)}</dd><dt>{tx("Observed", "观测")}</dt><dd>{deltaSummary(transaction.observed_delta, tx)}</dd></dl>{transaction.expected_delta.changed_parameters.map((item) => <code key={`${item.node_id}-${item.parameter_name}`}>{item.node_id}.{item.parameter_name}: {displayValue(item.before)} → {displayValue(item.after)}</code>)}</section>
+    <section><h3>{tx("Validation receipt", "验证凭据")}</h3><div className="gate-list">{transaction.gates.map((gate) => <span key={gate.gate} className={gate.status}>{gate.status} · {gate.gate}</span>)}</div><div className="review-actions">{transaction.state === "review-ready" ? <button className="commit-button" disabled={writebackBlocked} title={writebackBlocked ? tx("Resolve draft blockers before committing", "提交前请解决草稿阻断项") : tx("Commit verified source transaction", "提交已验证的源码事务")} onClick={() => void onCommit()}><CircleDot size={14} /> {tx("Commit to source", "提交到源码")}</button> : <span className="agent-handoff-status"><Braces size={14} /> {tx("No commit action until every validation gate passes", "全部验证门通过后才可提交")}</span>} {!['committed', 'discarded'].includes(transaction.state) && <button onClick={() => void onDiscard()}><X size={14} /> {tx("Discard", "放弃")}</button>}</div></section>
   </div>;
 }
 
 function VisualInspector({ node, pinned, fontScale, lineWeight, onPatch, onBatch }: { node: SceneNode; pinned: boolean; fontScale: number; lineWeight: number; onPatch: (operation: string, targetId: string | undefined, value: Record<string, unknown>) => Promise<void>; onBatch: (description: string, patches: Array<{ operation: string; targetId?: string; value: Record<string, unknown> }>) => Promise<void> }) {
+  const { tx } = useLanguage();
   const [bounds, setBounds] = useState(node.bounds);
   const [label, setLabel] = useState(node.label_lines.join("\n"));
   useEffect(() => setBounds(node.bounds), [node.scene_node_id, node.bounds]);
   useEffect(() => setLabel(node.label_lines.join("\n")), [node.scene_node_id, node.label_lines]);
   const update = (key: keyof Rect, value: number) => setBounds((current) => ({ ...current, [key]: value }));
-  return <><div className="section-label">Geometry</div><div className="numeric-grid">{(["x", "y", "width", "height"] as const).map((key) => <label key={key}><span>{key.toUpperCase()}</span><input type="number" min={key === "width" || key === "height" ? 1 : 0} value={Math.round(bounds[key])} onChange={(event) => update(key, Number(event.target.value))} /></label>)}</div><button className="apply-visual" onClick={() => void onBatch("Apply geometry", [{ operation: "set-position", targetId: node.scene_node_id, value: { x: bounds.x, y: bounds.y } }, { operation: "set-size", targetId: node.scene_node_id, value: { width: bounds.width, height: bounds.height } }])}>Apply geometry</button><label className="toggle-row"><input type="checkbox" checked={pinned} onChange={() => void onPatch("set-pin", node.scene_node_id, { enabled: !pinned })} /><span>Pin during layout</span></label><label className="model-field"><span>Fill</span><input type="color" value={node.fill.startsWith("#") ? node.fill.slice(0, 7) : "#ffffff"} onChange={(event) => void onPatch("set-palette", undefined, { overrides: { [node.scene_node_id]: event.target.value } })} /></label><label className="model-field"><span>Label lines</span><textarea rows={3} value={label} onChange={(event) => setLabel(event.target.value)} /></label><button className="apply-visual" onClick={() => void onPatch("set-label-wrap", node.scene_node_id, { lines: label.split("\n").filter(Boolean).slice(0, 3) })}>Apply label wrap</button><label className="model-field"><span>Font scale · {fontScale.toFixed(2)}</span><input type="range" min="0.75" max="1.5" step="0.05" value={fontScale} onChange={(event) => void onPatch("set-font-scale", undefined, { scale: Number(event.target.value) })} /></label><label className="model-field"><span>Line weight · {lineWeight.toFixed(1)}</span><input type="range" min="0.5" max="5" step="0.5" value={lineWeight} onChange={(event) => void onPatch("set-line-weight", undefined, { width: Number(event.target.value) })} /></label><Field label="Stroke" value={node.stroke} mono /></>;
+  return <><div className="section-label">{tx("Geometry", "几何")}</div><div className="numeric-grid">{(["x", "y", "width", "height"] as const).map((key) => <label key={key}><span>{key.toUpperCase()}</span><input type="number" min={key === "width" || key === "height" ? 1 : 0} value={Math.round(bounds[key])} onChange={(event) => update(key, Number(event.target.value))} /></label>)}</div><button className="apply-visual" onClick={() => void onBatch(tx("Apply geometry", "应用几何设置"), [{ operation: "set-position", targetId: node.scene_node_id, value: { x: bounds.x, y: bounds.y } }, { operation: "set-size", targetId: node.scene_node_id, value: { width: bounds.width, height: bounds.height } }])}>{tx("Apply geometry", "应用几何设置")}</button><label className="toggle-row"><input type="checkbox" checked={pinned} onChange={() => void onPatch("set-pin", node.scene_node_id, { enabled: !pinned })} /><span>{tx("Pin during layout", "布局时固定")}</span></label><label className="model-field"><span>{tx("Fill", "填充色")}</span><input type="color" value={node.fill.startsWith("#") ? node.fill.slice(0, 7) : "#ffffff"} onChange={(event) => void onPatch("set-palette", undefined, { overrides: { [node.scene_node_id]: event.target.value } })} /></label><label className="model-field"><span>{tx("Label lines", "标签行")}</span><textarea rows={3} value={label} onChange={(event) => setLabel(event.target.value)} /></label><button className="apply-visual" onClick={() => void onPatch("set-label-wrap", node.scene_node_id, { lines: label.split("\n").filter(Boolean).slice(0, 3) })}>{tx("Apply label wrap", "应用标签换行")}</button><label className="model-field"><span>{tx("Font scale", "字体缩放")} · {fontScale.toFixed(2)}</span><input type="range" min="0.75" max="1.5" step="0.05" value={fontScale} onChange={(event) => void onPatch("set-font-scale", undefined, { scale: Number(event.target.value) })} /></label><label className="model-field"><span>{tx("Line weight", "线宽")} · {lineWeight.toFixed(1)}</span><input type="range" min="0.5" max="5" step="0.5" value={lineWeight} onChange={(event) => void onPatch("set-line-weight", undefined, { width: Number(event.target.value) })} /></label><Field label={tx("Stroke", "描边色")} value={node.stroke} mono /></>;
 }
 
 createRoot(document.getElementById("root")!).render(

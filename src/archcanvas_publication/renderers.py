@@ -30,6 +30,59 @@ def _shape(node: SceneNode) -> str:
             )
         )
         return f'<polygon points="{points}" {common}/>'
+    if node.shape in {"projection", "transform"}:
+        inset = min(22.0, bounds.width * 0.12)
+        points = " ".join(
+            f"{x:.1f},{y:.1f}"
+            for x, y in (
+                (bounds.x + inset, bounds.y),
+                (bounds.x + bounds.width, bounds.y),
+                (bounds.x + bounds.width - inset, bounds.y + bounds.height),
+                (bounds.x, bounds.y + bounds.height),
+            )
+        )
+        return f'<polygon points="{points}" {common}/>'
+    if node.shape == "condition":
+        inset = min(28.0, bounds.width * 0.16)
+        points = " ".join(
+            f"{x:.1f},{y:.1f}"
+            for x, y in (
+                (bounds.x + inset, bounds.y),
+                (bounds.x + bounds.width - inset, bounds.y),
+                (bounds.x + bounds.width, bounds.y + bounds.height / 2),
+                (bounds.x + bounds.width - inset, bounds.y + bounds.height),
+                (bounds.x + inset, bounds.y + bounds.height),
+                (bounds.x, bounds.y + bounds.height / 2),
+            )
+        )
+        return f'<polygon points="{points}" {common}/>'
+    if node.shape == "activation":
+        return (
+            f'<ellipse cx="{bounds.x + bounds.width / 2:.1f}" '
+            f'cy="{bounds.y + bounds.height / 2:.1f}" rx="{bounds.width / 2:.1f}" '
+            f'ry="{bounds.height / 2:.1f}" {common}/>'
+        )
+    if node.shape in {"tensor", "repeat"}:
+        offset = 8.0
+        return "".join(
+            f'<rect class="{"node-shape" if step == 0 else "shape-detail"}" '
+            f'x="{bounds.x + step:.1f}" y="{bounds.y - step:.1f}" '
+            f'width="{bounds.width - offset:.1f}" height="{bounds.height:.1f}" rx="5" '
+            f'fill="{_attribute(node.fill)}" stroke="{_attribute(node.stroke)}"/>'
+            for step in (offset, offset / 2, 0.0)
+        )
+    if node.shape in {"normalization", "attention"}:
+        outer = (
+            f'<rect x="{bounds.x:.1f}" y="{bounds.y:.1f}" width="{bounds.width:.1f}" '
+            f'height="{bounds.height:.1f}" rx="{18 if node.shape == "normalization" else 6}" {common}/>'
+        )
+        inner = (
+            f'<rect class="shape-detail" x="{bounds.x + 6:.1f}" y="{bounds.y + 6:.1f}" '
+            f'width="{bounds.width - 12:.1f}" height="{bounds.height - 12:.1f}" '
+            f'rx="{13 if node.shape == "normalization" else 3}" fill="none" '
+            f'stroke="{_attribute(node.stroke)}" stroke-width="1"/>'
+        )
+        return outer + inner
     radius = 28 if node.shape == "io" else 6 if node.shape != "container" else 3
     dash = ' stroke-dasharray="6 4"' if node.shape == "opaque" else ""
     return (
@@ -52,8 +105,10 @@ def _node_svg(node: SceneNode) -> str:
         ),
         _shape(node),
     ]
-    if node.parent_scene_node_id is None:
-        text_y = bounds.y + 24
+    if node.parent_scene_node_id is None or (
+        node.shape == "container" and not node.canonical_node_ids
+    ):
+        text_y = bounds.y + 24 if node.parent_scene_node_id is None else bounds.y - 8
         for index, label in enumerate(node.label_lines):
             lines.append(
                 f'<text class="container-title" x="{bounds.x + 14:.1f}" '
@@ -93,6 +148,7 @@ def _edge_svg(scene: VisualScene) -> str:
         canonical = " ".join(edge.canonical_edge_ids)
         chunks.append(
             f'<g id="{_attribute(edge.scene_edge_id)}" class="scene-edge" '
+            f'data-visual-relation="{_attribute(edge.visual_relation.value)}" '
             f'data-view-edge-id="{_attribute(edge.view_edge_id)}" '
             f'data-canonical-edge-ids="{_attribute(canonical)}" '
             f'data-source="{_attribute(edge.source_scene_node_id)}" '
@@ -102,6 +158,18 @@ def _edge_svg(scene: VisualScene) -> str:
             f'<polyline points="{points}" fill="none" stroke="{_attribute(edge.stroke)}" '
             f'stroke-width="{edge.width:.1f}"{dash} marker-end="url(#arrow)"/>'
         )
+        if edge.visual_relation.value == "parallel-branch":
+            start = edge.points[0]
+            chunks.append(
+                f'<circle class="edge-junction" cx="{start.x:.1f}" cy="{start.y:.1f}" '
+                f'r="3.2" fill="{_attribute(edge.stroke)}"/>'
+            )
+        elif edge.visual_relation.value == "merge":
+            end = edge.points[-1]
+            chunks.append(
+                f'<circle class="edge-junction" cx="{end.x:.1f}" cy="{end.y:.1f}" '
+                f'r="3.2" fill="#fff" stroke="{_attribute(edge.stroke)}" stroke-width="1.5"/>'
+            )
         placement = label_placements.get(edge.scene_edge_id)
         if placement:
             label = edge.label if len(edge.label) <= 28 else edge.label[:25] + "..."
@@ -141,8 +209,8 @@ def render_svg(scene: VisualScene) -> str:
         '<desc id="scene-desc">Canonical ArchCanvas publication scene.</desc>',
         "<defs>",
         (
-            '<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" '
-            'markerWidth="7" markerHeight="7" orient="auto-start-reverse">'
+            '<marker id="arrow" viewBox="0 0 10 10" refX="8.4" refY="5" '
+            'markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">'
         ),
         '<path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/>',
         "</marker>",
