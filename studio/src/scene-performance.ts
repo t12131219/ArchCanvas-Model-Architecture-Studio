@@ -60,6 +60,25 @@ export function buildSceneRenderIndex<Node extends IndexableSceneNode>(
   return { byId, depths, roots, containers, leaves };
 }
 
+export function previewNodeTransform(
+  node: IndexableSceneNode,
+  position: ScenePoint,
+): string {
+  return `translate(${position.x - node.bounds.x} ${position.y - node.bounds.y})`;
+}
+
+export function edgeLabelPoint(edge: { points: readonly ScenePoint[] }): ScenePoint {
+  const horizontal = edge.points.slice(0, -1).map((point, index) => ({
+    start: point,
+    end: edge.points[index + 1],
+    length: Math.abs(edge.points[index + 1].x - point.x),
+  })).filter((segment) => Math.abs(segment.start.y - segment.end.y) < 0.1).sort((a, b) => b.length - a.length)[0];
+  if (horizontal) return { x: (horizontal.start.x + horizontal.end.x) / 2, y: horizontal.start.y - 7 };
+  const start = edge.points[0];
+  const end = edge.points.at(-1)!;
+  return { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 - 7 };
+}
+
 export function previewEdgePoints(
   edge: RoutableSceneEdge,
   nodesById: ReadonlyMap<string, IndexableSceneNode>,

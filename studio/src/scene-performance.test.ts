@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { buildSceneRenderIndex, previewEdgePoints } from "./scene-performance";
+import {
+  buildSceneRenderIndex,
+  edgeLabelPoint,
+  previewEdgePoints,
+  previewNodeTransform,
+} from "./scene-performance";
 
 const nodes = [
   {
@@ -65,5 +70,12 @@ describe("previewEdgePoints", () => {
 
     expect(points[0]).toEqual({ x: 180, y: 120 });
     expect(points.at(-1)).toEqual({ x: 330, y: 170 });
+    expect(edgeLabelPoint({ points })).not.toEqual(edgeLabelPoint(edge));
+  });
+});
+
+describe("previewNodeTransform", () => {
+  it("uses SVG user-space translation so the complete node group tracks the route preview", () => {
+    expect(previewNodeTransform(nodes[2], { x: 105, y: 72 })).toBe("translate(35 -18)");
   });
 });

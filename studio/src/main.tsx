@@ -58,7 +58,7 @@ import {
   type SceneEdge,
   type SceneNode,
 } from "./scene-graphics";
-import { buildSceneRenderIndex, previewEdgePoints } from "./scene-performance";
+import { buildSceneRenderIndex, previewEdgePoints, previewNodeTransform } from "./scene-performance";
 import { nodesInSelection, selectionBounds } from "./selection";
 import {
   studioModelIdentity,
@@ -518,6 +518,7 @@ interface DragState {
 
 interface DragDomPreview {
   nodeElements: Map<string, SVGGElement>;
+  nodeTransforms: Map<string, string | null>;
   edgeElements: Map<string, SVGGElement[]>;
   affectedEdges: Array<{ edge: SceneEdge; index: number }>;
 }
@@ -1381,7 +1382,7 @@ function App() {
           },
           { opacity: 1, transform: "translate(0, 0) scale(1, 1)" },
         ],
-        { duration: 380, easing: "cubic-bezier(.22,.8,.24,1)", fill: "both" },
+        { duration: 380, easing: "cubic-bezier(.22,.8,.24,1)" },
       );
     }
     for (const edge of scene.edges) {
@@ -1389,7 +1390,7 @@ function App() {
       if (!element) continue;
       element.animate(
         [{ opacity: previous.edges.some((item) => item.scene_edge_id === edge.scene_edge_id) ? 0.35 : 0 }, { opacity: 1 }],
-        { duration: 300, delay: 70, easing: "ease-out", fill: "both" },
+        { duration: 300, delay: 70, easing: "ease-out" },
       );
     }
   }, [scene?.scene_id, scene?.layout_family]);
@@ -1842,9 +1843,13 @@ function App() {
     if (!svg || !scene) return null;
     const moving = new Set(movingIds);
     const nodeElements = new Map<string, SVGGElement>();
+    const nodeTransforms = new Map<string, string | null>();
     for (const element of svg.querySelectorAll<SVGGElement>("[data-scene-node-id]")) {
       const nodeId = element.dataset.sceneNodeId;
-      if (nodeId && moving.has(nodeId)) nodeElements.set(nodeId, element);
+      if (!nodeId || !moving.has(nodeId)) continue;
+      for (const animation of element.getAnimations()) animation.cancel();
+      nodeElements.set(nodeId, element);
+      nodeTransforms.set(nodeId, element.getAttribute("transform"));
     }
     const edgeElements = new Map<string, SVGGElement[]>();
     for (const element of svg.querySelectorAll<SVGGElement>("[data-scene-edge-id]")) {
@@ -1857,7 +1862,7 @@ function App() {
     const affectedEdges = scene.edges
       .map((edge, index) => ({ edge, index }))
       .filter(({ edge }) => moving.has(edge.source_scene_node_id) || moving.has(edge.target_scene_node_id));
-    return { nodeElements, edgeElements, affectedEdges };
+    return { nodeElements, nodeTransforms, edgeElements, affectedEdges };
   }
 
   function applyDragPreview(next: Record<string, Point>) {
@@ -1868,7 +1873,7 @@ function App() {
       const node = sceneRenderIndex.byId.get(nodeId);
       const element = dom.nodeElements.get(nodeId);
       if (!node || !element) continue;
-      element.style.transform = `translate(${position.x - node.bounds.x}px, ${position.y - node.bounds.y}px)`;
+      element.setAttribute("transform", previewNodeTransform(node, position));
     }
     for (const { edge, index } of dom.affectedEdges) {
       const points = previewEdgePoints(edge, sceneRenderIndex.byId, next, index);
@@ -1896,7 +1901,11 @@ function App() {
     pendingDragPreview.current = null;
     const dom = dragDomPreview.current;
     if (dom) {
-      for (const element of dom.nodeElements.values()) element.style.removeProperty("transform");
+      for (const [nodeId, element] of dom.nodeElements) {
+        const transform = dom.nodeTransforms.get(nodeId);
+        if (transform === null || transform === undefined) element.removeAttribute("transform");
+        else element.setAttribute("transform", transform);
+      }
       for (const { edge } of dom.affectedEdges) {
         for (const element of dom.edgeElements.get(edge.scene_edge_id) ?? []) {
           updatePreviewEdgeElement(element, edge, edge.points);

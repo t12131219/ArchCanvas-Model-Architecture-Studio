@@ -1,5 +1,7 @@
 import React from "react";
 
+import { edgeLabelPoint } from "./scene-performance";
+
 export type SceneMode = "explore" | "layout" | "model";
 
 export interface Rect {
@@ -75,18 +77,6 @@ function nodeShape(node: SceneNode): React.ReactNode {
     );
   }
   return <rect className="node-shape" x={x} y={y} width={width} height={height} rx={node.shape === "io" ? 28 : node.shape === "container" ? 3 : 6} fill={node.fill} stroke={node.stroke} strokeDasharray={node.shape === "opaque" ? "6 4" : undefined} />;
-}
-
-function edgeLabelPoint(edge: SceneEdge): Point {
-  const horizontal = edge.points.slice(0, -1).map((point, index) => ({
-    start: point,
-    end: edge.points[index + 1],
-    length: Math.abs(edge.points[index + 1].x - point.x),
-  })).filter((segment) => Math.abs(segment.start.y - segment.end.y) < 0.1).sort((a, b) => b.length - a.length)[0];
-  if (horizontal) return { x: (horizontal.start.x + horizontal.end.x) / 2, y: horizontal.start.y - 7 };
-  const start = edge.points[0];
-  const end = edge.points.at(-1)!;
-  return { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 - 7 };
 }
 
 export function relationLabel(relation: string): string {
