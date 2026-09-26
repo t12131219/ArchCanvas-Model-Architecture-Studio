@@ -2,12 +2,18 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
-from archcanvas_core.models import PatternDistribution, PatternPackLoad, PatternPackManifest
+from archcanvas_core.models import (
+    PatternDistribution,
+    PatternPackLoad,
+    PatternPackManifest,
+    VisualTemplateManifest,
+)
 
 BUILTIN_ROOT = Path(__file__).resolve().parent / "builtin"
+VISUAL_TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "archcanvas_publication" / "templates"
 
 
 def manifest_digest(payload: dict[str, object]) -> str:
@@ -55,6 +61,20 @@ def _read_manifest(
 class PatternRegistry:
     manifests: list[PatternPackManifest]
     loads: list[PatternPackLoad]
+    templates: dict[str, VisualTemplateManifest] = field(default_factory=dict)
+
+
+def _load_visual_templates() -> dict[str, VisualTemplateManifest]:
+    templates: dict[str, VisualTemplateManifest] = {}
+    for path in sorted(VISUAL_TEMPLATE_ROOT.glob("*.json")):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise TypeError(f"visual template manifest is not an object: {path}")
+        template = VisualTemplateManifest.model_validate(payload)
+        if template.template_id in templates:
+            raise ValueError(f"duplicate visual template id: {template.template_id}")
+        templates[template.template_id] = template
+    return templates
 
 
 def _lock_map(values: list[str] | None) -> dict[str, str]:
@@ -100,4 +120,18 @@ def load_registry(
     unused = sorted(set(locks) - {item.pack_id for item in manifests})
     if unused:
         raise ValueError("pattern locks do not match an enabled workspace pack: " + ", ".join(unused))
-    return PatternRegistry(manifests=manifests, loads=loads)
+    templates = _load_visual_templates()
+    for manifest in manifests:
+        for rule in manifest.template_rules:
+            template = templates.get(rule.template_id)
+            if template is None:
+                raise ValueError(
+                    f"Pattern Pack {manifest.pack_id} references missing visual template "
+                    f"{rule.template_id}"
+                )
+            if not set(manifest.supported_ir_versions) & set(template.supported_ir_versions):
+                raise ValueError(
+                    f"Pattern Pack {manifest.pack_id} and visual template {rule.template_id} "
+                    "have no shared IR version"
+                )
+    return PatternRegistry(manifests=manifests, loads=loads, templates=templates)

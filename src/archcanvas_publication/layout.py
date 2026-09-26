@@ -21,6 +21,8 @@ from archcanvas_core.models import (
     VisualSpec,
 )
 
+from .glyphs import resolve_node_glyph
+
 NODE_WIDTH = 210.0
 NODE_HEIGHT = 106.0
 ROW_GAP = 76.0
@@ -37,70 +39,8 @@ LAYOUT_MODES = (
 
 
 def _node_style(node: PublicationNode, fully_expanded: bool) -> tuple[str, str, str]:
-    source_kind = str(node.attributes.get("source_kind", node.kind.value))
-    lowered = " ".join(
-        str(value)
-        for value in (
-            node.semantic_name,
-            source_kind,
-            node.attributes.get("op_type", ""),
-            node.attributes.get("source_expression", ""),
-            node.attributes.get("transform", ""),
-            " ".join(str(part) for part in node.attributes.get("path", [])),
-        )
-    ).lower()
-    if node.parent_view_node_id is None and node.kind is NodeKind.MODULE_CONTAINER:
-        return "container", "#f7f9fc", "#52606d"
-    if node.kind is NodeKind.OPAQUE_COMPOSITE or "opaque" in lowered:
-        return "opaque", "#f1f3f5", "#59636e"
-    if node.kind is NodeKind.MERGE_EVENT:
-        return "merge", "#fff3bf", "#8d6b00"
-    if node.kind is NodeKind.TENSOR_VALUE:
-        return "tensor", "#e7f5ff", "#1971c2"
-    if node.kind is NodeKind.CONDITION_CONTROL:
-        return "condition", "#f3f0ff", "#7048a8"
-    if node.kind is NodeKind.REPEAT or node.attributes.get("repeat_id"):
-        return "repeat", "#edf6ff", "#356f9f"
-    if node.kind is NodeKind.STATE:
-        return "state", "#e6fcf5", "#087f5b"
-    if node.kind is NodeKind.INPUT_OUTPUT or node.attributes.get("io"):
-        return "io", "#f3f0ff", "#7048a8"
-    if node.kind is NodeKind.MODULE_CONTAINER or node.collapsed:
-        if "decoder" in lowered:
-            return "container", "#fff0f6", "#a61e4d"
-        if "encoder" in lowered:
-            return "container", "#e7f5ff", "#1971c2"
-        if "ffn" in lowered or "feed" in lowered:
-            return "container", "#e7f5ff", "#2b6f8a"
-        if "output" in lowered:
-            return "container", "#ebfbee", "#2b8a3e"
-        if "input" in lowered:
-            return "container", "#fff0f6", "#a61e4d"
-        return "container", "#edf6ff", "#3b6f98"
-    if any(word in lowered for word in ("layernorm", "batchnorm", "groupnorm", " rmsnorm", " norm")):
-        return "normalization", "#e6fcf5", "#087f5b"
-    if any(word in lowered for word in ("gelu", "relu", "silu", "sigmoid", "softmax", "activation")):
-        return "activation", "#fff9db", "#9c6f00"
-    if any(
-        word in lowered
-        for word in ("reshape", ".view", "transpose", "permute", "flatten", "split heads", "unfold")
-    ):
-        return "transform", "#f3f0ff", "#7048a8"
-    if any(word in lowered for word in ("attention", "matmul", "correlation", "state space", "selective scan")):
-        return "attention", "#fff0f0", "#c92a2a"
-    if any(word in lowered for word in ("linear", "projection", "_proj", "conv")):
-        return "projection", "#fff4e6", "#d9480f"
-    if any(word in lowered for word in ("decomp", "head", "forecast", "output")):
-        return "operator", "#ebfbee", "#2b8a3e"
-    if any(word in lowered for word in ("norm", "residual", "add", "merge", "concat")):
-        return "operator", "#fff9db", "#9c6f00"
-    if any(word in lowered for word in ("attention", "correlation", "mix", "fft")):
-        return "operator", "#fff0f0", "#c92a2a"
-    if any(word in lowered for word in ("embed", "projection", "linear", "conv")):
-        return "operator", "#fff4e6", "#d9480f"
-    if fully_expanded:
-        return "operator", "#e7f5ff", "#1864ab"
-    return "operator", "#eef2f7", "#4b6075"
+    style = resolve_node_glyph(node, fully_expanded)
+    return style.glyph, style.fill, style.stroke
 
 
 def _edge_style(relation: VisualRelation) -> tuple[str, str | None, float]:
@@ -1494,6 +1434,7 @@ def _build_vertical_dual_lane_scene(
                 dash=style.dash,
                 width=style.width,
                 label=style.label,
+                evidence_ids=edge.evidence_ids,
             )
         )
     return VisualScene(
@@ -2661,6 +2602,7 @@ def build_scene(
                 dash=style.dash,
                 width=style.width,
                 label=style.label,
+                evidence_ids=edge.evidence_ids,
             )
         )
     return VisualScene(

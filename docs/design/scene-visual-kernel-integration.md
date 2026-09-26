@@ -1002,6 +1002,8 @@ V1 可以先行，因为原子 glyph 不创建结构。V2 之后的复合模板�
 
 ### Phase 2：实现 IR/View 适配与自底向上投影
 
+当前状态（2026-09-26，视觉模板 V2 增量）：已增加 `VisualTemplateManifest`、`PatternCapture`、`PatternRelationConstraint`、`PatternTemplateRule` 和 `VisualTemplateBinding` 强类型合同，并导出独立模板 schema。Pattern Pack registry 会加载纯声明式模板，拒绝缺失模板和不兼容 IR 版本；matcher 依据真实 node/edge/port/tensor 事实、producer/consumer 关系和图可达性生成 assignment，名称只参与硬约束通过后的弱排序。同一 root 的最高分 assignment 同分时不会按 ID 或源码顺序选中，而是记录 `ambiguous_template_binding` 并拒绝该 binding。首个 `attention.qkv-v1` 模板已从 transformer fixture 生成 encoder self-attention、decoder self-attention 和 cross-attention 三个 exact binding；关系删除、等价候选复制、negative holdout、opaque 父节点和 Exact IR digest invariance 均有回归测试。binding 当前只进入 `SemanticAnnotationOverlay.template_bindings`，尚未进入 `PublicationView` 或 React，因此 V3 仍未完成。
+
 代码变化：
 
 - 新增 `routing_graph.py` 和 `routing_projection.py`。
@@ -1023,6 +1025,8 @@ V1 可以先行，因为原子 glyph 不创建结构。V2 之后的复合模板�
 
 ### Phase 3：Shadow 接入正式 scene build
 
+当前状态（2026-09-26）：已接入正式 Studio runtime，默认保持 legacy scene 为可见输出。`shadow` 在服务端对同一份 IR/View 和物化后节点几何执行，比较结果写入 state capability 与 `publication/current/routing-shadow.json`；影子异常会生成失败回执，不会阻断或替换旧场景。`atomic-v1` 已开放为显式 opt-in，但尚未默认放量。
+
 代码变化：
 
 - 在 `layout.build_scene()` 的边路由阶段接入 `RoutingEngine` facade。
@@ -1043,11 +1047,15 @@ V1 可以先行，因为原子 glyph 不创建结构。V2 之后的复合模板�
 
 ### Phase 4：正式前端预览接入
 
+当前状态（2026-09-26，第四增量）：已将拖动路由策略从 `scene-performance.ts` 抽取到正式 `scene-routing-preview.ts`。pointer down 会为受影响边锁定端口侧、端口相对位置、stub 长度和主走廊，pointer move 继续通过 `requestAnimationFrame` 只更新受影响的 SVG node/edge DOM，pointer up 后仍由 VisualPatch 和后端权威 scene 接管。`VisualScene 1.1` 为正式 `SceneEdge` 增加可选的 source/target port、Evidence、portal chain 和 route digest；`1.0` 输入继续兼容，legacy 不从几何伪造无法证明的端口或门户。Python 权威内核会生成固定 routing fixture，TypeScript 预览测试消费同一份端口侧与 portal signature，CI 同时检查 fixture 是否过期。Studio 现可通过 `ARCHCANVAS_ROUTING_ENGINE=atomic-v1` 显式启用权威路由：后端在每次 scene 物化时重建边几何并填充端口、Evidence、portal 和 route digest；手工 route hint 参与 input/route digest 与硬指标校验；异常或硬指标非零时整场景回退 legacy 并返回结构化报告。SVG 导出消费同一份物化 scene 和 route digest。新增由隔离的真实 Python Studio 服务驱动的 Playwright Chromium smoke，覆盖连续拖动、gesture lock、取消、undo/redo、展开、收起、reload 和窄视口非空画布，并在 Linux CI 中作为正式门禁执行。视觉模板 V2 已输出经过验证的 Attention binding，但 Publication/Scene/React 尚未消费这些 binding。默认模式仍为 legacy；exact/opaque/schematic 模板的浏览器交互回归尚未完成，因此本阶段仍不得视为全部通过。
+
 代码变化：
 
 - 新增 `scene-routing-preview.ts`，接管 `previewEdgePoints()` 的策略部分。
 - 在 pointer down 建立 gesture route lock；pointer move 只更新受影响节点和边 DOM。
 - `scene-graphics.tsx` 补全正式 `SceneEdge` 字段。
+- `VisualScene 1.1` 以可选字段携带 `source_port_id`、`target_port_id`、`evidence_ids`、`portal_ids` 和 `route_digest`，读取端兼容 `1.0`。
+- `routing_fixtures.py` 生成两级 portal chain 的权威 JSON；前端只消费 fixture，不引用最小原型实现。
 - 接入通用 atomic glyph 和 Attention template instance；不在 React 中重新匹配模板。
 - `main.tsx` 只负责协调 gesture、patch 和 scene replacement，逐步把 canvas 交互移到独立 hook/component。
 

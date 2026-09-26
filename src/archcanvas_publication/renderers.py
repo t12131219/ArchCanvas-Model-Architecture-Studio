@@ -146,11 +146,18 @@ def _edge_svg(scene: VisualScene) -> str:
         points = " ".join(f"{point.x:.1f},{point.y:.1f}" for point in edge.points)
         dash = f' stroke-dasharray="{_attribute(edge.dash)}"' if edge.dash else ""
         canonical = " ".join(edge.canonical_edge_ids)
+        evidence = " ".join(edge.evidence_ids)
+        portals = " ".join(edge.portal_ids)
         chunks.append(
             f'<g id="{_attribute(edge.scene_edge_id)}" class="scene-edge" '
             f'data-visual-relation="{_attribute(edge.visual_relation.value)}" '
             f'data-view-edge-id="{_attribute(edge.view_edge_id)}" '
             f'data-canonical-edge-ids="{_attribute(canonical)}" '
+            f'data-source-port-id="{_attribute(edge.source_port_id or "")}" '
+            f'data-target-port-id="{_attribute(edge.target_port_id or "")}" '
+            f'data-evidence-ids="{_attribute(evidence)}" '
+            f'data-portal-ids="{_attribute(portals)}" '
+            f'data-route-digest="{_attribute(edge.route_digest or "")}" '
             f'data-source="{_attribute(edge.source_scene_node_id)}" '
             f'data-target="{_attribute(edge.target_scene_node_id)}">'
         )

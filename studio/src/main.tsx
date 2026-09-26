@@ -58,7 +58,12 @@ import {
   type SceneEdge,
   type SceneNode,
 } from "./scene-graphics";
-import { buildSceneRenderIndex, previewEdgePoints, previewNodeTransform } from "./scene-performance";
+import { buildSceneRenderIndex, previewNodeTransform } from "./scene-performance";
+import {
+  createGestureRouteLock,
+  previewEdgePoints,
+  type GestureRouteLock,
+} from "./scene-routing-preview";
 import { nodesInSelection, selectionBounds } from "./selection";
 import {
   studioModelIdentity,
@@ -142,6 +147,7 @@ interface SceneAnnotation {
 }
 
 interface Scene {
+  schema_version: "1.0" | "1.1";
   scene_id: string;
   view_id: string;
   layout_family: string;
@@ -169,6 +175,69 @@ interface LayoutCandidate {
   supported_fixes: string[];
   diagnostics: Diagnostic[];
   scene: Scene;
+}
+
+interface RoutingMetrics {
+  invalid_endpoint_count: number;
+  obstacle_intersection_count: number;
+  obstacle_intersection_length: number;
+  crossing_count: number;
+  shared_segment_length: number;
+  bend_count: number;
+  reverse_departure_count: number;
+  total_length: number;
+}
+
+interface RoutingReceipt {
+  engine: "atomic-v1";
+  engine_version: string;
+  input_digest: string;
+  route_digest: string;
+  metrics: RoutingMetrics;
+  fallback_reasons: Array<[string, string]>;
+  diagnostics: string[];
+  duration_ms: Array<[string, number]>;
+}
+
+interface RoutingShadowReport {
+  mode: "shadow";
+  visible_engine: "legacy";
+  shadow_engine: "atomic-v1";
+  status: "compared" | "failed" | "not-sampled";
+  scene_id: string;
+  view_id: string;
+  legacy_metrics: RoutingMetrics | null;
+  shadow_receipt: RoutingReceipt | null;
+  delta: RoutingMetrics | null;
+  legacy_route_digest: string | null;
+  route_digest_matches: boolean | null;
+  compared_edge_count: number;
+  endpoint_displacement_total: number;
+  endpoint_displacement_max: number;
+  error_code?: string | null;
+  error_message?: string | null;
+}
+
+interface AtomicRoutingReport {
+  mode: "atomic-v1";
+  requested_engine: "atomic-v1";
+  visible_engine: "atomic-v1" | "legacy";
+  status: "routed" | "fallback";
+  scene_id: string;
+  view_id: string;
+  receipt: RoutingReceipt | null;
+  routed_edge_count: number;
+  fixed_route_count: number;
+  error_code?: string | null;
+  error_message?: string | null;
+}
+
+interface RoutingState {
+  mode: "legacy" | "shadow" | "atomic-v1";
+  visible_engine: "legacy" | "atomic-v1";
+  shadow_engine: "atomic-v1" | null;
+  shadow_sample_rate: number;
+  reports: Record<string, RoutingShadowReport | AtomicRoutingReport>;
 }
 
 interface PublicationNode {
@@ -402,6 +471,7 @@ interface StudioState {
   active_projection_id: string;
   views: Record<string, PublicationView>;
   scenes: Record<string, Scene>;
+  routing?: RoutingState;
   document: {
     source_digest: string;
     visual_patches: unknown[];
@@ -500,6 +570,12 @@ interface StudioState {
     semantic_transforms: string[];
     proposed_connection: boolean;
     layout_modes?: LayoutMode[];
+    routing_engines?: {
+      available: Array<"legacy" | "shadow" | "atomic-v1">;
+      selected: "legacy" | "shadow" | "atomic-v1";
+      visible: "legacy" | "atomic-v1";
+      atomic_v1_visible: boolean;
+    };
   };
 }
 
@@ -520,7 +596,7 @@ interface DragDomPreview {
   nodeElements: Map<string, SVGGElement>;
   nodeTransforms: Map<string, string | null>;
   edgeElements: Map<string, SVGGElement[]>;
-  affectedEdges: Array<{ edge: SceneEdge; index: number }>;
+  affectedEdges: Array<{ edge: SceneEdge; index: number; routeLock: GestureRouteLock | null }>;
 }
 
 interface EdgeEndpointDrag {
@@ -1840,7 +1916,7 @@ function App() {
 
   function collectDragDomPreview(movingIds: readonly string[]) {
     const svg = svgRef.current;
-    if (!svg || !scene) return null;
+    if (!svg || !scene || !sceneRenderIndex) return null;
     const moving = new Set(movingIds);
     const nodeElements = new Map<string, SVGGElement>();
     const nodeTransforms = new Map<string, string | null>();
@@ -1861,7 +1937,12 @@ function App() {
     }
     const affectedEdges = scene.edges
       .map((edge, index) => ({ edge, index }))
-      .filter(({ edge }) => moving.has(edge.source_scene_node_id) || moving.has(edge.target_scene_node_id));
+      .filter(({ edge }) => moving.has(edge.source_scene_node_id) || moving.has(edge.target_scene_node_id))
+      .map(({ edge, index }) => ({
+        edge,
+        index,
+        routeLock: createGestureRouteLock(edge, sceneRenderIndex.byId, index),
+      }));
     return { nodeElements, nodeTransforms, edgeElements, affectedEdges };
   }
 
@@ -1875,8 +1956,8 @@ function App() {
       if (!node || !element) continue;
       element.setAttribute("transform", previewNodeTransform(node, position));
     }
-    for (const { edge, index } of dom.affectedEdges) {
-      const points = previewEdgePoints(edge, sceneRenderIndex.byId, next, index);
+    for (const { edge, index, routeLock } of dom.affectedEdges) {
+      const points = previewEdgePoints(edge, sceneRenderIndex.byId, next, index, routeLock);
       for (const element of dom.edgeElements.get(edge.scene_edge_id) ?? []) {
         updatePreviewEdgeElement(element, edge, points);
       }

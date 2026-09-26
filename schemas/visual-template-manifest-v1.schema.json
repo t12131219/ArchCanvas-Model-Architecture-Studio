@@ -1,0 +1,216 @@
+{
+  "$defs": {
+    "TemplateLayoutConstraint": {
+      "additionalProperties": false,
+      "properties": {
+        "operation": {
+          "enum": [
+            "left-of",
+            "above",
+            "parallel",
+            "align-center",
+            "same-rank",
+            "contain",
+            "merge-before",
+            "flow-direction"
+          ],
+          "title": "Operation",
+          "type": "string"
+        },
+        "strength": {
+          "enum": [
+            "required",
+            "preferred"
+          ],
+          "title": "Strength",
+          "type": "string"
+        },
+        "subjects": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Subjects",
+          "type": "array"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "operation",
+        "subjects",
+        "strength"
+      ],
+      "title": "TemplateLayoutConstraint",
+      "type": "object"
+    },
+    "VisualTemplateSlot": {
+      "additionalProperties": false,
+      "properties": {
+        "accepts": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Accepts",
+          "type": "array"
+        },
+        "cardinality": {
+          "enum": [
+            "one",
+            "optional",
+            "one-or-more",
+            "many"
+          ],
+          "title": "Cardinality",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "node",
+            "edge",
+            "port",
+            "tensor"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "semantic_role": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Semantic Role"
+        },
+        "slot_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Slot Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "slot_id",
+        "kind",
+        "accepts",
+        "cardinality"
+      ],
+      "title": "VisualTemplateSlot",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "constraints": {
+      "items": {
+        "$ref": "#/$defs/TemplateLayoutConstraint"
+      },
+      "title": "Constraints",
+      "type": "array"
+    },
+    "entry_slots": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Entry Slots",
+      "type": "array"
+    },
+    "exit_slots": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Exit Slots",
+      "type": "array"
+    },
+    "fallback_glyph": {
+      "minLength": 1,
+      "title": "Fallback Glyph",
+      "type": "string"
+    },
+    "glyph_overrides": {
+      "patternProperties": {
+        "^[a-z][a-z0-9._:-]*$": {
+          "type": "string"
+        }
+      },
+      "title": "Glyph Overrides",
+      "type": "object"
+    },
+    "root_role": {
+      "minLength": 1,
+      "title": "Root Role",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "slots": {
+      "items": {
+        "$ref": "#/$defs/VisualTemplateSlot"
+      },
+      "minItems": 1,
+      "title": "Slots",
+      "type": "array"
+    },
+    "supported_ir_versions": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Supported Ir Versions",
+      "type": "array"
+    },
+    "template_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Template Id",
+      "type": "string"
+    },
+    "test_inventory": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Test Inventory",
+      "type": "array"
+    },
+    "version": {
+      "minLength": 1,
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "template_id",
+    "version",
+    "root_role",
+    "supported_ir_versions",
+    "slots",
+    "fallback_glyph",
+    "test_inventory"
+  ],
+  "title": "VisualTemplateManifest",
+  "type": "object"
+}

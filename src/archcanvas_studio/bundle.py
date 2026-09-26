@@ -4,7 +4,7 @@ import difflib
 import hashlib
 import json
 import shutil
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from pydantic import TypeAdapter
@@ -49,14 +49,23 @@ from archcanvas_core.models import (
 from archcanvas_patterns import exact_ir_digest
 from archcanvas_publication import (
     LAYOUT_MODES,
+    AtomicRoutingReport,
+    RoutingShadowComparison,
     build_scene,
     build_visual_spec,
+    compare_shadow_routing,
     compile_hierarchy,
     expandable_node_ids,
     project_hierarchy,
     relayout_scene,
     render_svg,
+    route_atomic_scene,
     validate_geometry,
+)
+from archcanvas_publication.routing_scene import failed_atomic_routing
+from archcanvas_publication.routing_shadow import (
+    failed_shadow_comparison,
+    skipped_shadow_comparison,
 )
 from archcanvas_transactions import (
     commit_transaction,
@@ -84,6 +93,7 @@ from .operations import (
     studio_fingerprint,
 )
 from .project import create_project_session, discover_project
+from .routing import ROUTING_MODES, routing_runtime_config
 
 STATIC_ROOT = Path(__file__).resolve().parent / "static"
 
@@ -150,15 +160,106 @@ class StudioBundle:
     search_index: list[SearchSubject]
     validation_runs: list[ValidationRun]
     navigation: dict[str, object]
+    routing_mode: str = "legacy"
+    routing_shadow_sample_rate: float = 1.0
+    routing_shadow_reports: dict[
+        str, RoutingShadowComparison | AtomicRoutingReport
+    ] = field(default_factory=dict)
     validation_generation: int = 0
     active_transaction: SourceTransaction | None = None
     active_proposal: AgentProposal | None = None
 
-    def materialized_scenes(self) -> dict[str, VisualScene]:
+    def _legacy_materialized_scenes(self) -> dict[str, VisualScene]:
         return {
             projection_id: materialize_scene(scene, self.document)
             for projection_id, scene in self.base_scenes.items()
         }
+
+    def _fixed_route_ids(self, scene: VisualScene) -> frozenset[str]:
+        return frozenset(
+            patch.target_id
+            for patch in self.document.visual_patches
+            if patch.operation == "set-route-hint"
+            and patch.target_id is not None
+            and patch.value.get("scene_id") in {None, scene.scene_id}
+        )
+
+    def materialized_scenes(self) -> dict[str, VisualScene]:
+        scenes = self._legacy_materialized_scenes()
+        if self.routing_mode != "atomic-v1":
+            return scenes
+        reports: dict[str, AtomicRoutingReport] = {}
+        routed: dict[str, VisualScene] = {}
+        for projection_id, scene in scenes.items():
+            view = self.views[projection_id]
+            try:
+                routed[projection_id], reports[projection_id] = route_atomic_scene(
+                    self.architecture,
+                    view,
+                    scene,
+                    fixed_scene_edge_ids=self._fixed_route_ids(scene),
+                )
+            except Exception as error:  # noqa: BLE001 - opt-in mode must retain rollback
+                routed[projection_id] = scene
+                reports[projection_id] = failed_atomic_routing(scene, view, error)
+        self.routing_shadow_reports = reports
+        return routed
+
+    def _shadow_selected(self, scene: VisualScene) -> bool:
+        if self.routing_shadow_sample_rate >= 1.0:
+            return True
+        if self.routing_shadow_sample_rate <= 0.0:
+            return False
+        value = int(hashlib.sha256(scene.scene_id.encode()).hexdigest()[:16], 16)
+        return value / float(0xFFFFFFFFFFFFFFFF) < self.routing_shadow_sample_rate
+
+    def refresh_routing_shadow(self) -> None:
+        reports: dict[str, RoutingShadowComparison | AtomicRoutingReport] = {}
+        if self.routing_mode == "shadow":
+            for projection_id, scene in self._legacy_materialized_scenes().items():
+                view = self.views[projection_id]
+                if not self._shadow_selected(scene):
+                    reports[projection_id] = skipped_shadow_comparison(scene, view)
+                    continue
+                try:
+                    reports[projection_id] = compare_shadow_routing(
+                        self.architecture,
+                        view,
+                        scene,
+                    )
+                except Exception as error:  # noqa: BLE001 - shadow must not block legacy
+                    reports[projection_id] = failed_shadow_comparison(scene, view, error)
+        elif self.routing_mode == "atomic-v1":
+            self.materialized_scenes()
+            reports = dict(self.routing_shadow_reports)
+        self.routing_shadow_reports = reports
+        visible_engine = self._visible_routing_engine()
+        _write_json(
+            self.workspace / "publication" / "current" / "routing-shadow.json",
+            {
+                "mode": self.routing_mode,
+                "visible_engine": visible_engine,
+                "shadow_engine": (
+                    "atomic-v1" if self.routing_mode == "shadow" else None
+                ),
+                "shadow_sample_rate": self.routing_shadow_sample_rate,
+                "reports": {
+                    projection_id: report.to_dict()
+                    for projection_id, report in reports.items()
+                },
+            },
+        )
+
+    def _visible_routing_engine(self) -> str:
+        if self.routing_mode != "atomic-v1":
+            return "legacy"
+        if self.routing_shadow_reports and all(
+            isinstance(report, AtomicRoutingReport)
+            and report.visible_engine == "atomic-v1"
+            for report in self.routing_shadow_reports.values()
+        ):
+            return "atomic-v1"
+        return "legacy"
 
     def _expanded_hierarchy_ids(self) -> set[str]:
         state = derive_view_state(self.document)
@@ -203,6 +304,7 @@ class StudioBundle:
         self.views = {view.projection_id: view}
         self.specs = {view.projection_id: spec}
         self.base_scenes = {view.projection_id: scene}
+        self.refresh_routing_shadow()
 
     def write_static(self) -> None:
         _write_static_bundle(self)
@@ -539,6 +641,18 @@ class StudioBundle:
             "view_state": view_state,
             "navigation": navigation,
             "diagnostics": [item.model_dump(mode="json") for item in self.diagnostics()],
+            "routing": {
+                "mode": self.routing_mode,
+                "visible_engine": self._visible_routing_engine(),
+                "shadow_engine": (
+                    "atomic-v1" if self.routing_mode == "shadow" else None
+                ),
+                "shadow_sample_rate": self.routing_shadow_sample_rate,
+                "reports": {
+                    projection_id: report.to_dict()
+                    for projection_id, report in self.routing_shadow_reports.items()
+                },
+            },
             "search_subject_count": len(self.search_index),
             "validation_runs": [
                 run.model_dump(mode="json") for run in self.validation_runs[-20:]
@@ -581,6 +695,12 @@ class StudioBundle:
                 },
                 "navigation_projections": list(PROJECTIONS),
                 "layout_modes": list(LAYOUT_MODES),
+                "routing_engines": {
+                    "available": list(ROUTING_MODES),
+                    "selected": self.routing_mode,
+                    "visible": self._visible_routing_engine(),
+                    "atomic_v1_visible": self._visible_routing_engine() == "atomic-v1",
+                },
                 "validation_profiles": [
                     "fast-static",
                     "publication",
@@ -1465,10 +1585,10 @@ class StudioBundle:
             raise ValueError("CanvasDocument source digest cannot change")
         persist_canvas_document(self.document_path, document)
         self.document = document
+        self.refresh_routing_shadow()
 
     def export_svg(self) -> str:
-        scene = next(iter(self.base_scenes.values()))
-        return render_svg(materialize_scene(scene, self.document))
+        return render_svg(next(iter(self.materialized_scenes().values())))
 
 
 def _render_index(template: str, state: dict[str, object]) -> str:
@@ -1517,9 +1637,15 @@ def prepare_studio_bundle(
     *,
     write_static: bool = True,
     replace_stale_bindings: bool = False,
+    routing_mode: str | None = None,
+    routing_shadow_sample_rate: float | None = None,
 ) -> StudioBundle:
     artifact = artifact.resolve()
     workspace = workspace.resolve()
+    routing_config = routing_runtime_config(
+        routing_mode,
+        routing_shadow_sample_rate,
+    )
     architecture = ArchitectureIR.model_validate_json(artifact.read_text(encoding="utf-8"))
     snapshot_path = artifact.parent / "source-snapshot.json"
     if not snapshot_path.is_file():
@@ -1763,12 +1889,18 @@ def prepare_studio_bundle(
         search_index=[],
         validation_runs=[],
         navigation=navigation,
+        routing_mode=routing_config.mode,
+        routing_shadow_sample_rate=routing_config.shadow_sample_rate,
     )
     bundle.search_index = build_search_index(bundle)
+    bundle.refresh_routing_shadow()
     _write_json(workspace / "publication" / "hierarchy.json", hierarchy)
     _write_json(workspace / "publication" / "current" / "publication-view.json", view)
     _write_json(workspace / "publication" / "current" / "visual-spec.json", spec)
-    _write_json(workspace / "publication" / "current" / "visual-scene.json", scene)
+    _write_json(
+        workspace / "publication" / "current" / "visual-scene.json",
+        next(iter(bundle.materialized_scenes().values())),
+    )
     if write_static:
         _write_static_bundle(bundle)
     return bundle

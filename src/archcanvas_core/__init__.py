@@ -14,6 +14,9 @@ from .models import (
     EvidenceRecord,
     FrameworkFormCapability,
     PatchBatch,
+    PatternCapture,
+    PatternRelationConstraint,
+    PatternTemplateRule,
     ProjectSession,
     ProposedConnection,
     PublicationHierarchy,
@@ -26,8 +29,12 @@ from .models import (
     SemanticStructuralPatch,
     SourceSnapshot,
     SourceTransaction,
+    TemplateLayoutConstraint,
     TransactionReceipt,
     ValidationRun,
+    VisualTemplateBinding,
+    VisualTemplateManifest,
+    VisualTemplateSlot,
 )
 
 __all__ = [
@@ -44,6 +51,9 @@ __all__ = [
     "EvidenceRecord",
     "FrameworkFormCapability",
     "PatchBatch",
+    "PatternCapture",
+    "PatternRelationConstraint",
+    "PatternTemplateRule",
     "ProjectSession",
     "ProposedConnection",
     "PublicationHierarchy",
@@ -56,6 +66,10 @@ __all__ = [
     "SemanticStructuralPatch",
     "SourceSnapshot",
     "SourceTransaction",
+    "TemplateLayoutConstraint",
     "TransactionReceipt",
     "ValidationRun",
+    "VisualTemplateBinding",
+    "VisualTemplateManifest",
+    "VisualTemplateSlot",
 ]

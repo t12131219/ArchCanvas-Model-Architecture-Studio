@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "template_id": "attention.qkv-v1",
+  "version": "1.0.0",
+  "root_role": "attention",
+  "supported_ir_versions": ["1.0"],
+  "slots": [
+    {"slot_id": "q_projection", "kind": "node", "accepts": ["nn.Linear", "linear", "projection"], "cardinality": "one", "semantic_role": "query projection"},
+    {"slot_id": "k_projection", "kind": "node", "accepts": ["nn.Linear", "linear", "projection"], "cardinality": "one", "semantic_role": "key projection"},
+    {"slot_id": "v_projection", "kind": "node", "accepts": ["nn.Linear", "linear", "projection"], "cardinality": "one", "semantic_role": "value projection"},
+    {"slot_id": "q_split", "kind": "node", "accepts": ["view.transpose", "shape-transform"], "cardinality": "one"},
+    {"slot_id": "k_split", "kind": "node", "accepts": ["view.transpose", "shape-transform"], "cardinality": "one"},
+    {"slot_id": "v_split", "kind": "node", "accepts": ["view.transpose", "shape-transform"], "cardinality": "one"},
+    {"slot_id": "key_transpose", "kind": "node", "accepts": ["transpose", "shape-transform"], "cardinality": "one"},
+    {"slot_id": "score_matmul", "kind": "node", "accepts": ["torch.matmul", "matmul"], "cardinality": "one"},
+    {"slot_id": "softmax", "kind": "node", "accepts": ["torch.softmax", "softmax"], "cardinality": "one"},
+    {"slot_id": "value_matmul", "kind": "node", "accepts": ["torch.matmul", "matmul"], "cardinality": "one"},
+    {"slot_id": "concat", "kind": "node", "accepts": ["contiguous.view", "shape-transform"], "cardinality": "one"},
+    {"slot_id": "output_projection", "kind": "node", "accepts": ["nn.Linear", "linear", "projection"], "cardinality": "one", "semantic_role": "output projection"}
+  ],
+  "constraints": [
+    {"operation": "parallel", "subjects": ["q_projection", "k_projection", "v_projection"], "strength": "required"},
+    {"operation": "left-of", "subjects": ["score_matmul", "softmax"], "strength": "required"},
+    {"operation": "merge-before", "subjects": ["value_matmul", "output_projection"], "strength": "preferred"},
+    {"operation": "flow-direction", "subjects": ["q_projection", "output_projection"], "strength": "required", "value": "left-to-right"}
+  ],
+  "glyph_overrides": {
+    "q_projection": "projection",
+    "k_projection": "projection",
+    "v_projection": "projection",
+    "score_matmul": "multiply",
+    "softmax": "normalization",
+    "value_matmul": "multiply",
+    "output_projection": "projection"
+  },
+  "entry_slots": ["q_projection", "k_projection", "v_projection"],
+  "exit_slots": ["output_projection"],
+  "fallback_glyph": "attention",
+  "test_inventory": ["attention-self", "attention-cross", "attention-negative", "attention-ambiguous", "attention-opaque"]
+}

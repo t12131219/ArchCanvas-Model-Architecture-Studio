@@ -28,9 +28,16 @@ jobs:
       - run: python -m pytest
       - run: python -m compileall -q src tools tests
       - run: python tools/export_schemas.py --check
+      - run: python tools/export_routing_fixtures.py --check
       - run: npm ci
         working-directory: studio
       - run: npm test
         working-directory: studio
       - run: npm run build
+        working-directory: studio
+      - run: npx playwright install --with-deps chromium
+        if: matrix.os == 'ubuntu-latest'
+        working-directory: studio
+      - run: npm run test:e2e
+        if: matrix.os == 'ubuntu-latest'
         working-directory: studio

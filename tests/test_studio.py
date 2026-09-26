@@ -59,6 +59,7 @@ from archcanvas_studio.project import (
     discover_conda_environments,
     discover_project,
 )
+from archcanvas_studio.routing import routing_runtime_config
 from archcanvas_studio.server import (
     StudioHTTPServer,
     StudioRequestHandler,
@@ -501,6 +502,233 @@ def test_visual_patch_history_preserves_source_and_reopens_layout(
     assert reopened.document.source_digest == digest
     assert load_canvas_document(reopened.document_path) == reopened.document
     assert _source_hashes() == before
+
+
+def test_shadow_routing_compares_without_replacing_visible_scene(
+    analysis_dir: Path, tmp_path: Path
+) -> None:
+    workspace = tmp_path / ".archcanvas-shadow"
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json",
+        workspace,
+        routing_mode="shadow",
+    )
+    state = bundle.state()
+    projection_id = state["active_projection_id"]
+    report = state["routing"]["reports"][projection_id]
+
+    assert state["routing"]["mode"] == "shadow"
+    assert state["routing"]["visible_engine"] == "legacy"
+    assert state["routing"]["shadow_engine"] == "atomic-v1"
+    assert report["status"] == "compared"
+    assert report["compared_edge_count"] == len(state["scenes"][projection_id]["edges"])
+    assert report["legacy_metrics"] is not None
+    assert report["shadow_receipt"]["engine"] == "atomic-v1"
+    assert report["shadow_receipt"]["metrics"] is not None
+    assert report["delta"] is not None
+    assert len(report["legacy_route_digest"]) == 64
+    assert report["route_digest_matches"] == (
+        report["legacy_route_digest"] == report["shadow_receipt"]["route_digest"]
+    )
+    assert state["scenes"][projection_id] == next(
+        iter(bundle.materialized_scenes().values())
+    ).model_dump(mode="json")
+    assert (workspace / "publication" / "current" / "routing-shadow.json").is_file()
+
+    before_digest = report["shadow_receipt"]["input_digest"]
+    patch, _, _ = _move_patch(bundle, suffix="shadow-move")
+    changed = apply_patch(
+        bundle.document,
+        patch,
+        {scene.scene_id: scene for scene in bundle.base_scenes.values()},
+    )
+    bundle.save_document(changed)
+    updated = bundle.state()["routing"]["reports"][projection_id]
+    assert updated["status"] == "compared"
+    assert updated["shadow_receipt"]["input_digest"] != before_digest
+
+
+def test_shadow_routing_sampling_and_visible_switch_guard(
+    analysis_dir: Path, tmp_path: Path
+) -> None:
+    workspace = tmp_path / ".archcanvas-shadow-skip"
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json",
+        workspace,
+        routing_mode="shadow",
+        routing_shadow_sample_rate=0.0,
+    )
+    state = bundle.state()
+    report = state["routing"]["reports"][state["active_projection_id"]]
+    assert report["status"] == "not-sampled"
+    assert state["capabilities"]["routing_engines"]["atomic_v1_visible"] is False
+
+    legacy = prepare_studio_bundle(
+        analysis_dir / "architecture.json",
+        workspace,
+        routing_mode="legacy",
+    )
+    persisted = json.loads(
+        (workspace / "publication" / "current" / "routing-shadow.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert legacy.routing_shadow_reports == {}
+    assert persisted["mode"] == "legacy"
+    assert persisted["shadow_engine"] is None
+    assert persisted["reports"] == {}
+
+    atomic = prepare_studio_bundle(
+        analysis_dir / "architecture.json",
+        tmp_path / ".archcanvas-atomic",
+        routing_mode="atomic-v1",
+    )
+    atomic_state = atomic.state()
+    atomic_projection = atomic_state["active_projection_id"]
+    atomic_report = atomic_state["routing"]["reports"][atomic_projection]
+    atomic_scene = atomic_state["scenes"][atomic_projection]
+
+    assert atomic_state["routing"]["visible_engine"] == "atomic-v1"
+    assert atomic_state["capabilities"]["routing_engines"] == {
+        "available": ["legacy", "shadow", "atomic-v1"],
+        "selected": "atomic-v1",
+        "visible": "atomic-v1",
+        "atomic_v1_visible": True,
+    }
+    assert atomic_report["status"] == "routed"
+    assert atomic_report["visible_engine"] == "atomic-v1"
+    assert atomic_report["receipt"]["metrics"]["invalid_endpoint_count"] == 0
+    assert atomic_report["receipt"]["metrics"]["obstacle_intersection_count"] == 0
+    assert atomic_scene["edges"]
+    assert all(edge["source_port_id"] for edge in atomic_scene["edges"])
+    assert all(edge["target_port_id"] for edge in atomic_scene["edges"])
+    assert all(
+        edge["route_digest"] == atomic_report["receipt"]["route_digest"]
+        for edge in atomic_scene["edges"]
+    )
+
+
+def test_routing_runtime_config_reads_and_validates_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ARCHCANVAS_ROUTING_ENGINE", "shadow")
+    monkeypatch.setenv("ARCHCANVAS_ROUTING_SHADOW_SAMPLE_RATE", "0.25")
+    assert routing_runtime_config().mode == "shadow"
+    assert routing_runtime_config().shadow_sample_rate == 0.25
+
+    monkeypatch.setenv("ARCHCANVAS_ROUTING_SHADOW_SAMPLE_RATE", "invalid")
+    with pytest.raises(ValueError, match="must be a number"):
+        routing_runtime_config()
+
+    monkeypatch.setenv("ARCHCANVAS_ROUTING_SHADOW_SAMPLE_RATE", "1.1")
+    with pytest.raises(ValueError, match="between 0 and 1"):
+        routing_runtime_config()
+
+    monkeypatch.setenv("ARCHCANVAS_ROUTING_ENGINE", "atomic-v1")
+    monkeypatch.setenv("ARCHCANVAS_ROUTING_SHADOW_SAMPLE_RATE", "1.0")
+    assert routing_runtime_config().mode == "atomic-v1"
+
+
+def test_atomic_routing_rebuilds_after_visual_patch_and_exports_same_geometry(
+    analysis_dir: Path, tmp_path: Path
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json",
+        tmp_path / ".archcanvas-atomic-patch",
+        routing_mode="atomic-v1",
+    )
+    state = bundle.state()
+    projection_id = state["active_projection_id"]
+    first_report = state["routing"]["reports"][projection_id]
+    first_digest = first_report["receipt"]["route_digest"]
+
+    patch, _, _ = _move_patch(bundle, suffix="atomic-move")
+    changed = apply_patch(
+        bundle.document,
+        patch,
+        {scene.scene_id: scene for scene in bundle.base_scenes.values()},
+    )
+    bundle.save_document(changed)
+    updated = bundle.state()
+    report = updated["routing"]["reports"][projection_id]
+    scene = updated["scenes"][projection_id]
+
+    assert report["status"] == "routed"
+    assert report["receipt"]["route_digest"] != first_digest
+    assert all(
+        edge["route_digest"] == report["receipt"]["route_digest"]
+        for edge in scene["edges"]
+    )
+    svg = bundle.export_svg()
+    for edge in scene["edges"]:
+        points = " ".join(
+            f'{point["x"]:.1f},{point["y"]:.1f}' for point in edge["points"]
+        )
+        assert f'points="{points}"' in svg
+        assert f'data-route-digest="{edge["route_digest"]}"' in svg
+
+
+def test_atomic_routing_failure_falls_back_to_legacy_scene(
+    analysis_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json",
+        tmp_path / ".archcanvas-atomic-fallback",
+        routing_mode="atomic-v1",
+    )
+    legacy = {
+        projection_id: materialize_scene(scene, bundle.document)
+        for projection_id, scene in bundle.base_scenes.items()
+    }
+
+    def fail_atomic(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("atomic exploded")
+
+    monkeypatch.setattr("archcanvas_studio.bundle.route_atomic_scene", fail_atomic)
+    state = bundle.state()
+    projection_id = state["active_projection_id"]
+    report = state["routing"]["reports"][projection_id]
+
+    assert state["routing"]["visible_engine"] == "legacy"
+    assert report["status"] == "fallback"
+    assert report["error_code"] == "atomic-routing-failed"
+    assert report["error_message"] == "atomic exploded"
+    assert state["scenes"][projection_id] == legacy[projection_id].model_dump(mode="json")
+
+
+def test_shadow_routing_failure_does_not_change_visible_scene(
+    analysis_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json",
+        tmp_path / ".archcanvas-shadow-failure",
+        routing_mode="shadow",
+    )
+    visible_before = {
+        projection_id: scene.model_dump(mode="json")
+        for projection_id, scene in bundle.materialized_scenes().items()
+    }
+
+    def fail_shadow(*_args: object) -> None:
+        raise RuntimeError("shadow exploded")
+
+    monkeypatch.setattr(
+        "archcanvas_studio.bundle.compare_shadow_routing",
+        fail_shadow,
+    )
+    bundle.refresh_routing_shadow()
+
+    state = bundle.state()
+    projection_id = state["active_projection_id"]
+    report = state["routing"]["reports"][projection_id]
+    assert report["status"] == "failed"
+    assert report["error_code"] == "shadow-routing-failed"
+    assert report["error_message"] == "shadow exploded"
+    assert state["scenes"] == visible_before
+    assert {
+        item: scene.model_dump(mode="json")
+        for item, scene in bundle.materialized_scenes().items()
+    } == visible_before
 
 
 def test_visual_patch_rejects_unknown_target(analysis_dir: Path, tmp_path: Path) -> None:

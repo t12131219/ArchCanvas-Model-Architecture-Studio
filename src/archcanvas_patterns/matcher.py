@@ -16,9 +16,12 @@ from archcanvas_core.models import (
     PatternStage,
     SemanticAnnotation,
     SemanticAnnotationOverlay,
+    VisualTemplateBinding,
+    VisualTemplateManifest,
 )
 
 from .registry import PatternRegistry
+from .template_matcher import build_template_bindings
 
 
 def exact_ir_digest(architecture: ArchitectureIR) -> str:
@@ -97,6 +100,8 @@ class _Evaluated:
     manifest: PatternPackManifest
     match: PatternMatch
     annotations: list[SemanticAnnotation]
+    template_bindings: list[VisualTemplateBinding]
+    template_reasons: list[str]
 
 
 _STAGE_ORDER = {
@@ -134,7 +139,13 @@ def _annotations(
     return result
 
 
-def _evaluate_pack(architecture: ArchitectureIR, manifest: PatternPackManifest) -> _Evaluated:
+def _evaluate_pack(
+    architecture: ArchitectureIR,
+    manifest: PatternPackManifest,
+    *,
+    templates: dict[str, VisualTemplateManifest] | None = None,
+    exact_digest: str | None = None,
+) -> _Evaluated:
     matched_ids: list[str] = []
     matched_predicates: list[str] = []
     reasons: list[str] = []
@@ -180,6 +191,15 @@ def _evaluate_pack(architecture: ArchitectureIR, manifest: PatternPackManifest) 
     status = "matched" if accepted else "rejected"
     if accepted and manifest.distribution is PatternDistribution.SESSION_CANDIDATE:
         status = "candidate-match"
+    template_bindings: list[VisualTemplateBinding] = []
+    template_reasons: list[str] = []
+    if accepted and manifest.distribution is not PatternDistribution.SESSION_CANDIDATE:
+        template_bindings, template_reasons = build_template_bindings(
+            architecture,
+            manifest,
+            templates or {},
+            exact_ir_digest=exact_digest or exact_ir_digest(architecture),
+        )
     return _Evaluated(
         manifest=manifest,
         match=PatternMatch(
@@ -192,6 +212,8 @@ def _evaluate_pack(architecture: ArchitectureIR, manifest: PatternPackManifest) 
             reasons=reasons,
         ),
         annotations=_annotations(architecture, manifest) if accepted else [],
+        template_bindings=template_bindings,
+        template_reasons=template_reasons,
     )
 
 
@@ -231,7 +253,15 @@ def apply_pattern_packs(
             exact_ir_digest_after=exact_ir_digest(architecture),
         )
 
-    evaluated = [_evaluate_pack(architecture, item) for item in registry.manifests]
+    evaluated = [
+        _evaluate_pack(
+            architecture,
+            item,
+            templates=registry.templates,
+            exact_digest=before,
+        )
+        for item in registry.manifests
+    ]
     eligible = [
         item
         for item in evaluated
@@ -260,6 +290,8 @@ def apply_pattern_packs(
                         }
                     ),
                     annotations=[],
+                    template_bindings=[],
+                    template_reasons=[],
                 )
                 if item.manifest.pack_id in insufficient_workspace_ids
                 else item
@@ -302,7 +334,16 @@ def apply_pattern_packs(
         ]
     status = "ambiguous" if ambiguous else "matched" if selected else "generic"
     annotations = [annotation for item in selected for annotation in item.annotations]
-    reasons = ["ambiguous_pattern"] if ambiguous else ([] if selected else ["no_pattern_matched"])
+    template_bindings = [
+        binding for item in selected for binding in item.template_bindings
+    ]
+    reasons = (
+        ["ambiguous_pattern"]
+        if ambiguous
+        else [reason for item in selected for reason in item.template_reasons]
+        if selected
+        else ["no_pattern_matched"]
+    )
     after = exact_ir_digest(architecture)
     overlay = SemanticAnnotationOverlay(
         architecture_id=architecture.architecture_id,
@@ -310,6 +351,7 @@ def apply_pattern_packs(
         status=status,
         applied_pack_ids=[item.manifest.pack_id for item in selected],
         annotations=annotations,
+        template_bindings=template_bindings,
         reasons=reasons,
     )
     receipt = PatternPackReceipt(

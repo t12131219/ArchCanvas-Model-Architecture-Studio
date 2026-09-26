@@ -574,6 +574,8 @@ class PatternPredicate(StrictModel):
     fact: Literal[
         "node-kind",
         "node-attribute",
+        "port-role",
+        "tensor-role",
         "edge-type",
         "edge-route",
         "shape-axis",
@@ -589,7 +591,12 @@ class PatternPredicate(StrictModel):
     @model_validator(mode="after")
     def stage_matches_fact(self) -> PatternPredicate:
         allowed = {
-            PatternStage.STRUCTURE: {"node-kind", "node-attribute"},
+            PatternStage.STRUCTURE: {
+                "node-kind",
+                "node-attribute",
+                "port-role",
+                "tensor-role",
+            },
             PatternStage.DATAFLOW: {"edge-type", "edge-route"},
             PatternStage.SHAPE: {"shape-axis"},
             PatternStage.SHARING_CONTROL: {"repeat-kind", "execution-predicate"},
@@ -634,6 +641,140 @@ class PatternAnnotationRule(StrictModel):
         return self
 
 
+class VisualTemplateSlot(StrictModel):
+    slot_id: Identifier
+    kind: Literal["node", "edge", "port", "tensor"]
+    accepts: list[str] = Field(min_length=1)
+    cardinality: Literal["one", "optional", "one-or-more", "many"]
+    semantic_role: str | None = None
+
+
+class TemplateLayoutConstraint(StrictModel):
+    operation: Literal[
+        "left-of",
+        "above",
+        "parallel",
+        "align-center",
+        "same-rank",
+        "contain",
+        "merge-before",
+        "flow-direction",
+    ]
+    subjects: list[Identifier] = Field(min_length=1)
+    strength: Literal["required", "preferred"]
+    value: str | float | None = None
+
+
+class VisualTemplateManifest(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    template_id: Identifier
+    version: str = Field(min_length=1)
+    root_role: str = Field(min_length=1)
+    supported_ir_versions: list[str] = Field(min_length=1)
+    slots: list[VisualTemplateSlot] = Field(min_length=1)
+    constraints: list[TemplateLayoutConstraint] = Field(default_factory=list)
+    glyph_overrides: dict[Identifier, str] = Field(default_factory=dict)
+    entry_slots: list[Identifier] = Field(default_factory=list)
+    exit_slots: list[Identifier] = Field(default_factory=list)
+    fallback_glyph: str = Field(min_length=1)
+    test_inventory: list[str] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def references_declared_slots(self) -> VisualTemplateManifest:
+        slot_ids = [slot.slot_id for slot in self.slots]
+        if len(slot_ids) != len(set(slot_ids)):
+            raise ValueError("visual template slot identifiers must be unique")
+        referenced = {
+            *self.entry_slots,
+            *self.exit_slots,
+            *self.glyph_overrides,
+            *(
+                subject
+                for constraint in self.constraints
+                for subject in constraint.subjects
+            ),
+        }
+        unknown = sorted(referenced - set(slot_ids))
+        if unknown:
+            raise ValueError(
+                "visual template references undeclared slots: " + ", ".join(unknown)
+            )
+        return self
+
+
+class PatternCapture(StrictModel):
+    capture_id: Identifier
+    entity: Literal["node", "edge", "port", "tensor"]
+    selector: PatternPredicate
+    cardinality: Literal["one", "optional", "one-or-more", "many"]
+
+    @model_validator(mode="after")
+    def selector_matches_entity(self) -> PatternCapture:
+        allowed = {
+            "node": {"node-kind", "node-attribute", "execution-predicate", "name-hint"},
+            "edge": {"edge-type", "edge-route", "shape-axis", "name-hint"},
+            "port": {"port-role", "name-hint"},
+            "tensor": {"tensor-role", "shape-axis", "name-hint"},
+        }
+        if self.selector.fact not in allowed[self.entity]:
+            raise ValueError(
+                f"{self.selector.fact} cannot select a {self.entity} capture"
+            )
+        return self
+
+
+class PatternRelationConstraint(StrictModel):
+    relation_id: Identifier
+    source_capture: Identifier
+    target_capture: Identifier
+    relation: Literal[
+        "produces",
+        "consumes",
+        "connects",
+        "contains",
+        "shares-input",
+        "shares-parameter",
+        "precedes",
+    ]
+    edge_type: str | None = None
+    port_role: str | None = None
+    required: bool = True
+
+
+class PatternTemplateRule(StrictModel):
+    rule_id: Identifier
+    template_id: Identifier
+    root_capture: Identifier
+    captures: list[PatternCapture] = Field(min_length=1)
+    relations: list[PatternRelationConstraint] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def references_declared_captures(self) -> PatternTemplateRule:
+        capture_ids = [capture.capture_id for capture in self.captures]
+        if len(capture_ids) != len(set(capture_ids)):
+            raise ValueError("pattern capture identifiers must be unique within a rule")
+        captures = {capture.capture_id: capture for capture in self.captures}
+        root = captures.get(self.root_capture)
+        if root is None or root.entity != "node" or root.cardinality != "one":
+            raise ValueError("template root_capture must be a declared one-node capture")
+        relation_ids = [relation.relation_id for relation in self.relations]
+        if len(relation_ids) != len(set(relation_ids)):
+            raise ValueError("pattern relation identifiers must be unique within a rule")
+        unknown = sorted(
+            {
+                capture_id
+                for relation in self.relations
+                for capture_id in (relation.source_capture, relation.target_capture)
+                if capture_id not in captures
+            }
+        )
+        if unknown:
+            raise ValueError(
+                "pattern relation references undeclared captures: " + ", ".join(unknown)
+            )
+        return self
+
+
 class PatternTestInventory(StrictModel):
     positive: list[str] = Field(min_length=1)
     negative: list[str] = Field(min_length=1)
@@ -659,12 +800,16 @@ class PatternPackManifest(StrictModel):
     fallback_policy: Literal["generic"] = "generic"
     known_limitations: list[str] = Field(default_factory=list)
     annotations: list[PatternAnnotationRule] = Field(default_factory=list)
+    template_rules: list[PatternTemplateRule] = Field(default_factory=list)
     tests: PatternTestInventory
 
     @model_validator(mode="after")
     def weak_hints_are_optional(self) -> PatternPackManifest:
         if any(item.stage is PatternStage.WEAK_NAME for item in self.required):
             raise ValueError("weak name hints cannot be required predicates")
+        rule_ids = [rule.rule_id for rule in self.template_rules]
+        if len(rule_ids) != len(set(rule_ids)):
+            raise ValueError("pattern template rule identifiers must be unique")
         return self
 
 
@@ -681,6 +826,46 @@ class SemanticAnnotation(StrictModel):
     predicate_ids: list[Identifier] = Field(min_length=1)
 
 
+class VisualTemplateBinding(StrictModel):
+    binding_id: Identifier
+    template_id: Identifier
+    template_version: str = Field(min_length=1)
+    root_canonical_node_ids: list[Identifier] = Field(min_length=1)
+    node_slots: dict[Identifier, list[Identifier]] = Field(default_factory=dict)
+    edge_slots: dict[Identifier, list[Identifier]] = Field(default_factory=dict)
+    port_slots: dict[Identifier, list[Identifier]] = Field(default_factory=dict)
+    tensor_slots: dict[Identifier, list[Identifier]] = Field(default_factory=dict)
+    evidence_ids: list[Identifier] = Field(default_factory=list)
+    predicate_ids: list[Identifier] = Field(default_factory=list)
+    fidelity: Literal["exact", "opaque", "schematic"]
+    binding_digest: Sha256
+
+    @model_validator(mode="after")
+    def canonical_mappings_are_unique(self) -> VisualTemplateBinding:
+        for label, mapping in (
+            ("node", self.node_slots),
+            ("edge", self.edge_slots),
+            ("port", self.port_slots),
+            ("tensor", self.tensor_slots),
+        ):
+            for slot_id, canonical_ids in mapping.items():
+                if len(canonical_ids) != len(set(canonical_ids)):
+                    raise ValueError(
+                        f"visual template {label} slot {slot_id} contains duplicate canonical IDs"
+                    )
+        if self.fidelity == "schematic" and any(
+            mapping
+            for mapping in (
+                self.node_slots,
+                self.edge_slots,
+                self.port_slots,
+                self.tensor_slots,
+            )
+        ):
+            raise ValueError("schematic bindings cannot own canonical entities")
+        return self
+
+
 class SemanticAnnotationOverlay(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     architecture_id: Identifier
@@ -688,7 +873,17 @@ class SemanticAnnotationOverlay(StrictModel):
     status: Literal["disabled", "generic", "matched", "ambiguous"]
     applied_pack_ids: list[Identifier] = Field(default_factory=list)
     annotations: list[SemanticAnnotation] = Field(default_factory=list)
+    template_bindings: list[VisualTemplateBinding] = Field(default_factory=list)
     reasons: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def binding_ids_are_unique(self) -> SemanticAnnotationOverlay:
+        binding_ids = [binding.binding_id for binding in self.template_bindings]
+        if len(binding_ids) != len(set(binding_ids)):
+            raise ValueError("visual template binding identifiers must be unique")
+        if self.status in {"disabled", "generic", "ambiguous"} and self.template_bindings:
+            raise ValueError(f"{self.status} overlays cannot expose visual template bindings")
+        return self
 
 
 class PatternPackLoad(StrictModel):
@@ -966,6 +1161,11 @@ class SceneEdge(StrictModel):
     dash: str | None = None
     width: float = Field(gt=0)
     label: str = Field(min_length=1)
+    source_port_id: Identifier | None = None
+    target_port_id: Identifier | None = None
+    evidence_ids: list[Identifier] = Field(default_factory=list)
+    portal_ids: list[Identifier] = Field(default_factory=list)
+    route_digest: Sha256 | None = None
 
 
 class SceneAnnotation(StrictModel):
@@ -977,7 +1177,7 @@ class SceneAnnotation(StrictModel):
 
 
 class VisualScene(StrictModel):
-    schema_version: Literal["1.0"] = "1.0"
+    schema_version: Literal["1.0", "1.1"] = "1.1"
     scene_id: Identifier
     view_id: Identifier
     spec_id: Identifier
@@ -1684,6 +1884,8 @@ SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "discrepancy-record-v1.schema.json": DiscrepancyRecord,
     "architecture-ir-v1.schema.json": ArchitectureIR,
     "pattern-pack-manifest-v1.schema.json": PatternPackManifest,
+    "visual-template-manifest-v1.schema.json": VisualTemplateManifest,
+    "visual-template-binding-v1.schema.json": VisualTemplateBinding,
     "semantic-annotation-overlay-v1.schema.json": SemanticAnnotationOverlay,
     "pattern-pack-receipt-v1.schema.json": PatternPackReceipt,
     "pattern-candidate-review-v1.schema.json": PatternCandidateReview,

@@ -87,6 +87,47 @@
       "title": "PatternAnnotationRule",
       "type": "object"
     },
+    "PatternCapture": {
+      "additionalProperties": false,
+      "properties": {
+        "capture_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Capture Id",
+          "type": "string"
+        },
+        "cardinality": {
+          "enum": [
+            "one",
+            "optional",
+            "one-or-more",
+            "many"
+          ],
+          "title": "Cardinality",
+          "type": "string"
+        },
+        "entity": {
+          "enum": [
+            "node",
+            "edge",
+            "port",
+            "tensor"
+          ],
+          "title": "Entity",
+          "type": "string"
+        },
+        "selector": {
+          "$ref": "#/$defs/PatternPredicate"
+        }
+      },
+      "required": [
+        "capture_id",
+        "entity",
+        "selector",
+        "cardinality"
+      ],
+      "title": "PatternCapture",
+      "type": "object"
+    },
     "PatternDistribution": {
       "enum": [
         "builtin",
@@ -103,6 +144,8 @@
           "enum": [
             "node-kind",
             "node-attribute",
+            "port-role",
+            "tensor-role",
             "edge-type",
             "edge-route",
             "shape-axis",
@@ -162,6 +205,76 @@
       "title": "PatternPredicate",
       "type": "object"
     },
+    "PatternRelationConstraint": {
+      "additionalProperties": false,
+      "properties": {
+        "edge_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Edge Type"
+        },
+        "port_role": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Port Role"
+        },
+        "relation": {
+          "enum": [
+            "produces",
+            "consumes",
+            "connects",
+            "contains",
+            "shares-input",
+            "shares-parameter",
+            "precedes"
+          ],
+          "title": "Relation",
+          "type": "string"
+        },
+        "relation_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Relation Id",
+          "type": "string"
+        },
+        "required": {
+          "default": true,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "source_capture": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Source Capture",
+          "type": "string"
+        },
+        "target_capture": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Target Capture",
+          "type": "string"
+        }
+      },
+      "required": [
+        "relation_id",
+        "source_capture",
+        "target_capture",
+        "relation"
+      ],
+      "title": "PatternRelationConstraint",
+      "type": "object"
+    },
     "PatternScore": {
       "additionalProperties": false,
       "properties": {
@@ -207,6 +320,49 @@
       ],
       "title": "PatternStage",
       "type": "string"
+    },
+    "PatternTemplateRule": {
+      "additionalProperties": false,
+      "properties": {
+        "captures": {
+          "items": {
+            "$ref": "#/$defs/PatternCapture"
+          },
+          "minItems": 1,
+          "title": "Captures",
+          "type": "array"
+        },
+        "relations": {
+          "items": {
+            "$ref": "#/$defs/PatternRelationConstraint"
+          },
+          "title": "Relations",
+          "type": "array"
+        },
+        "root_capture": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Root Capture",
+          "type": "string"
+        },
+        "rule_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Rule Id",
+          "type": "string"
+        },
+        "template_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Template Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "rule_id",
+        "template_id",
+        "root_capture",
+        "captures"
+      ],
+      "title": "PatternTemplateRule",
+      "type": "object"
     },
     "PatternTestInventory": {
       "additionalProperties": false,
@@ -353,6 +509,13 @@
       },
       "minItems": 1,
       "title": "Supported Ir Versions",
+      "type": "array"
+    },
+    "template_rules": {
+      "items": {
+        "$ref": "#/$defs/PatternTemplateRule"
+      },
+      "title": "Template Rules",
       "type": "array"
     },
     "tests": {

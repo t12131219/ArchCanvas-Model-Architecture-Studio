@@ -32,15 +32,23 @@ export interface SceneNode {
 
 export interface SceneEdge {
   scene_edge_id: string;
+  view_edge_id: string;
+  canonical_edge_ids: string[];
   source_scene_node_id: string;
   target_scene_node_id: string;
   points: Point[];
+  role: string;
   edge_type: string;
   visual_relation: string;
   stroke: string;
   dash?: string;
   width: number;
   label: string;
+  source_port_id?: string | null;
+  target_port_id?: string | null;
+  evidence_ids?: string[];
+  portal_ids?: string[];
+  route_digest?: string | null;
 }
 
 export interface SceneProof {
@@ -159,7 +167,7 @@ export const SceneEdgeGraphic = React.memo(function SceneEdgeGraphic({
   const pointString = points.map((point) => `${point.x},${point.y}`).join(" ");
   const visibleLabel = semanticZoom === "detail" ? edge.label.slice(0, 38) : relationLabel(edge.visual_relation);
   return (
-    <g className={`scene-edge relation-${edge.visual_relation} ${related ? "edge-related" : ""} ${selected ? "edge-selected" : ""} ${overlay ? "edge-overlay" : "edge-base"}`} data-scene-edge-id={edge.scene_edge_id} data-edge-layer={overlay ? "overlay" : "base"} data-visual-relation={edge.visual_relation} role={overlay ? undefined : "button"} tabIndex={overlay ? undefined : 0} aria-label={overlay ? undefined : `${sourceLabel} ${toLabel} ${targetLabel}, ${relationLabel(edge.visual_relation)}`} aria-pressed={overlay ? undefined : selected} aria-hidden={overlay || undefined} onPointerDown={overlay ? undefined : (event) => event.stopPropagation()} onClick={overlay ? undefined : (event) => { event.stopPropagation(); onChooseAtClient(event.clientX, event.clientY, edge.scene_edge_id); }} onKeyDown={overlay ? undefined : (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onChoose(edge.scene_edge_id); } }}>
+    <g className={`scene-edge relation-${edge.visual_relation} ${related ? "edge-related" : ""} ${selected ? "edge-selected" : ""} ${overlay ? "edge-overlay" : "edge-base"}`} data-scene-edge-id={edge.scene_edge_id} data-view-edge-id={edge.view_edge_id} data-canonical-edge-ids={edge.canonical_edge_ids.join(" ")} data-source-port-id={edge.source_port_id ?? undefined} data-target-port-id={edge.target_port_id ?? undefined} data-evidence-ids={edge.evidence_ids?.join(" ")} data-portal-ids={edge.portal_ids?.join(" ")} data-route-digest={edge.route_digest ?? undefined} data-edge-role={edge.role} data-edge-layer={overlay ? "overlay" : "base"} data-visual-relation={edge.visual_relation} role={overlay ? undefined : "button"} tabIndex={overlay ? undefined : 0} aria-label={overlay ? undefined : `${sourceLabel} ${toLabel} ${targetLabel}, ${relationLabel(edge.visual_relation)}`} aria-pressed={overlay ? undefined : selected} aria-hidden={overlay || undefined} onPointerDown={overlay ? undefined : (event) => event.stopPropagation()} onClick={overlay ? undefined : (event) => { event.stopPropagation(); onChooseAtClient(event.clientX, event.clientY, edge.scene_edge_id); }} onKeyDown={overlay ? undefined : (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onChoose(edge.scene_edge_id); } }}>
       {!overlay && <polyline className="edge-hit-target" points={pointString} fill="none" stroke="transparent" vectorEffect="non-scaling-stroke" />}
       {overlay && <polyline className="edge-highlight-halo" points={pointString} fill="none" vectorEffect="non-scaling-stroke" />}
       <polyline className="edge-path" points={pointString} fill="none" stroke={edge.stroke} strokeWidth={Math.max(edge.width, related ? 3.2 : 2.15)} strokeDasharray={edge.dash} markerEnd="url(#studio-arrow)" vectorEffect="non-scaling-stroke" />

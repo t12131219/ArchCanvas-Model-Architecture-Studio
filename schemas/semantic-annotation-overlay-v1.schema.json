@@ -108,6 +108,127 @@
       ],
       "title": "SemanticAnnotation",
       "type": "object"
+    },
+    "VisualTemplateBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "binding_digest": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Binding Digest",
+          "type": "string"
+        },
+        "binding_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Binding Id",
+          "type": "string"
+        },
+        "edge_slots": {
+          "patternProperties": {
+            "^[a-z][a-z0-9._:-]*$": {
+              "items": {
+                "pattern": "^[a-z][a-z0-9._:-]*$",
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "title": "Edge Slots",
+          "type": "object"
+        },
+        "evidence_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "fidelity": {
+          "enum": [
+            "exact",
+            "opaque",
+            "schematic"
+          ],
+          "title": "Fidelity",
+          "type": "string"
+        },
+        "node_slots": {
+          "patternProperties": {
+            "^[a-z][a-z0-9._:-]*$": {
+              "items": {
+                "pattern": "^[a-z][a-z0-9._:-]*$",
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "title": "Node Slots",
+          "type": "object"
+        },
+        "port_slots": {
+          "patternProperties": {
+            "^[a-z][a-z0-9._:-]*$": {
+              "items": {
+                "pattern": "^[a-z][a-z0-9._:-]*$",
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "title": "Port Slots",
+          "type": "object"
+        },
+        "predicate_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Predicate Ids",
+          "type": "array"
+        },
+        "root_canonical_node_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Root Canonical Node Ids",
+          "type": "array"
+        },
+        "template_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Template Id",
+          "type": "string"
+        },
+        "template_version": {
+          "minLength": 1,
+          "title": "Template Version",
+          "type": "string"
+        },
+        "tensor_slots": {
+          "patternProperties": {
+            "^[a-z][a-z0-9._:-]*$": {
+              "items": {
+                "pattern": "^[a-z][a-z0-9._:-]*$",
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "title": "Tensor Slots",
+          "type": "object"
+        }
+      },
+      "required": [
+        "binding_id",
+        "template_id",
+        "template_version",
+        "root_canonical_node_ids",
+        "fidelity",
+        "binding_digest"
+      ],
+      "title": "VisualTemplateBinding",
+      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -159,6 +280,13 @@
       ],
       "title": "Status",
       "type": "string"
+    },
+    "template_bindings": {
+      "items": {
+        "$ref": "#/$defs/VisualTemplateBinding"
+      },
+      "title": "Template Bindings",
+      "type": "array"
     }
   },
   "required": [

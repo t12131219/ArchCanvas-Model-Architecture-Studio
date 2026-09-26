@@ -15,12 +15,6 @@ export interface IndexableSceneNode {
   bounds: SceneBounds;
 }
 
-export interface RoutableSceneEdge {
-  source_scene_node_id: string;
-  target_scene_node_id: string;
-  points: ScenePoint[];
-}
-
 export interface SceneRenderIndex<Node extends IndexableSceneNode> {
   byId: ReadonlyMap<string, Node>;
   depths: ReadonlyMap<string, number>;
@@ -77,64 +71,4 @@ export function edgeLabelPoint(edge: { points: readonly ScenePoint[] }): ScenePo
   const start = edge.points[0];
   const end = edge.points.at(-1)!;
   return { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 - 7 };
-}
-
-export function previewEdgePoints(
-  edge: RoutableSceneEdge,
-  nodesById: ReadonlyMap<string, IndexableSceneNode>,
-  preview: Readonly<Record<string, ScenePoint>>,
-  index: number,
-): ScenePoint[] {
-  const source = nodesById.get(edge.source_scene_node_id);
-  const target = nodesById.get(edge.target_scene_node_id);
-  if (!source || !target) return edge.points;
-  const sourcePreview = preview[source.scene_node_id];
-  const targetPreview = preview[target.scene_node_id];
-  const sourceDelta = sourcePreview
-    ? { x: sourcePreview.x - source.bounds.x, y: sourcePreview.y - source.bounds.y }
-    : { x: 0, y: 0 };
-  const targetDelta = targetPreview
-    ? { x: targetPreview.x - target.bounds.x, y: targetPreview.y - target.bounds.y }
-    : { x: 0, y: 0 };
-  if (!sourcePreview && !targetPreview) return edge.points;
-  if (
-    sourcePreview
-    && targetPreview
-    && Math.abs(sourceDelta.x - targetDelta.x) < 0.01
-    && Math.abs(sourceDelta.y - targetDelta.y) < 0.01
-  ) {
-    return edge.points.map((point) => ({
-      x: point.x + sourceDelta.x,
-      y: point.y + sourceDelta.y,
-    }));
-  }
-  const sourceBounds = { ...source.bounds, ...(sourcePreview ?? {}) };
-  const targetBounds = { ...target.bounds, ...(targetPreview ?? {}) };
-  const start = {
-    x: sourceBounds.x + sourceBounds.width,
-    y: sourceBounds.y + sourceBounds.height / 2,
-  };
-  const end = {
-    x: targetBounds.x,
-    y: targetBounds.y + targetBounds.height / 2,
-  };
-  if (edge.points.length >= 6 || end.x <= start.x + 30) {
-    const corridorY = Math.min(...edge.points.map((point) => point.y));
-    const targetStubX = Math.max(24, end.x - 24);
-    return [
-      start,
-      { x: start.x + 24, y: start.y },
-      { x: start.x + 24, y: corridorY },
-      { x: targetStubX, y: corridorY },
-      { x: targetStubX, y: end.y },
-      end,
-    ];
-  }
-  const corridorX = (start.x + end.x) / 2 + ((index % 5) - 2) * 5;
-  return [
-    start,
-    { x: corridorX, y: start.y },
-    { x: corridorX, y: end.y },
-    end,
-  ];
 }

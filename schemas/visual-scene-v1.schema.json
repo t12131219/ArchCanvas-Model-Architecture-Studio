@@ -80,6 +80,14 @@
         "edge_type": {
           "$ref": "#/$defs/EdgeType"
         },
+        "evidence_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
         "label": {
           "minLength": 1,
           "title": "Label",
@@ -93,15 +101,49 @@
           "title": "Points",
           "type": "array"
         },
+        "portal_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Portal Ids",
+          "type": "array"
+        },
         "role": {
           "minLength": 1,
           "title": "Role",
           "type": "string"
         },
+        "route_digest": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Route Digest"
+        },
         "scene_edge_id": {
           "pattern": "^[a-z][a-z0-9._:-]*$",
           "title": "Scene Edge Id",
           "type": "string"
+        },
+        "source_port_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Port Id"
         },
         "source_scene_node_id": {
           "pattern": "^[a-z][a-z0-9._:-]*$",
@@ -112,6 +154,19 @@
           "minLength": 1,
           "title": "Stroke",
           "type": "string"
+        },
+        "target_port_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Port Id"
         },
         "target_scene_node_id": {
           "pattern": "^[a-z][a-z0-9._:-]*$",
@@ -407,8 +462,11 @@
       "type": "string"
     },
     "schema_version": {
-      "const": "1.0",
-      "default": "1.0",
+      "default": "1.1",
+      "enum": [
+        "1.0",
+        "1.1"
+      ],
       "title": "Schema Version",
       "type": "string"
     },

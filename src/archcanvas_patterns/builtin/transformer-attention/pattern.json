@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "authors": ["ArchCanvas maintainers"],
   "license": "Apache-2.0",
-  "pack_digest": "e1e0f8400a6ffb533a6778359e85514cbe8b1d58342042fdb7d8d1bac42164ec",
+  "pack_digest": "9caf25eac2c78a286990e32985aac41e55e6fbf6600199fe9e8d7155aa6e6cdb",
   "distribution": "builtin",
   "supported_ir_versions": ["1.0"],
   "supported_adapter_versions": [">=0.3,<1"],
@@ -23,6 +23,40 @@
   "known_limitations": ["Legacy source adapters may already expose specialized Exact IR."],
   "annotations": [
     {"rule_id": "projection-role", "selector": {"predicate_id": "projection-selector", "stage": "structure", "fact": "node-attribute", "field": "op_type", "value": "nn.Linear", "min_count": 6}, "semantic_role": "attention projection", "group_id": "group:attention", "recommended_depth": 3, "glyph": "operator", "layout_family": "dual-lane", "label": "Projection"}
+  ],
+  "template_rules": [
+    {
+      "rule_id": "attention-exact",
+      "template_id": "attention.qkv-v1",
+      "root_capture": "score_matmul",
+      "captures": [
+        {"capture_id": "q_projection", "entity": "node", "selector": {"predicate_id": "capture-q-projection", "stage": "structure", "fact": "node-attribute", "field": "op_type", "value": "nn.Linear"}, "cardinality": "one"},
+        {"capture_id": "k_projection", "entity": "node", "selector": {"predicate_id": "capture-k-projection", "stage": "structure", "fact": "node-attribute", "field": "op_type", "value": "nn.Linear"}, "cardinality": "one"},
+        {"capture_id": "v_projection", "entity": "node", "selector": {"predicate_id": "capture-v-projection", "stage": "structure", "fact": "node-attribute", "field": "op_type", "value": "nn.Linear"}, "cardinality": "one"},
+        {"capture_id": "q_split", "entity": "node", "selector": {"predicate_id": "capture-q-split", "stage": "structure", "fact": "node-attribute", "field": "op_type", "operator": "contains", "value": ".view.transpose"}, "cardinality": "one"},
+        {"capture_id": "k_split", "entity": "node", "selector": {"predicate_id": "capture-k-split", "stage": "structure", "fact": "node-attribute", "field": "op_type", "operator": "contains", "value": ".view.transpose"}, "cardinality": "one"},
+        {"capture_id": "v_split", "entity": "node", "selector": {"predicate_id": "capture-v-split", "stage": "structure", "fact": "node-attribute", "field": "op_type", "operator": "contains", "value": ".view.transpose"}, "cardinality": "one"},
+        {"capture_id": "key_transpose", "entity": "node", "selector": {"predicate_id": "capture-key-transpose", "stage": "structure", "fact": "node-attribute", "field": "op_type", "operator": "contains", "value": ".transpose"}, "cardinality": "one"},
+        {"capture_id": "score_matmul", "entity": "node", "selector": {"predicate_id": "capture-score-matmul", "stage": "structure", "fact": "node-attribute", "field": "op_type", "value": "torch.matmul"}, "cardinality": "one"},
+        {"capture_id": "softmax", "entity": "node", "selector": {"predicate_id": "capture-softmax", "stage": "structure", "fact": "node-attribute", "field": "op_type", "value": "torch.softmax"}, "cardinality": "one"},
+        {"capture_id": "value_matmul", "entity": "node", "selector": {"predicate_id": "capture-value-matmul", "stage": "structure", "fact": "node-attribute", "field": "op_type", "value": "torch.matmul"}, "cardinality": "one"},
+        {"capture_id": "concat", "entity": "node", "selector": {"predicate_id": "capture-concat", "stage": "structure", "fact": "node-attribute", "field": "op_type", "operator": "contains", "value": ".contiguous.view"}, "cardinality": "one"},
+        {"capture_id": "output_projection", "entity": "node", "selector": {"predicate_id": "capture-output-projection", "stage": "structure", "fact": "node-attribute", "field": "op_type", "value": "nn.Linear"}, "cardinality": "one"}
+      ],
+      "relations": [
+        {"relation_id": "q-projection-to-split", "source_capture": "q_projection", "target_capture": "q_split", "relation": "produces"},
+        {"relation_id": "q-split-to-score", "source_capture": "q_split", "target_capture": "score_matmul", "relation": "produces"},
+        {"relation_id": "k-projection-to-split", "source_capture": "k_projection", "target_capture": "k_split", "relation": "produces"},
+        {"relation_id": "k-split-to-transpose", "source_capture": "k_split", "target_capture": "key_transpose", "relation": "produces"},
+        {"relation_id": "k-transpose-to-score", "source_capture": "key_transpose", "target_capture": "score_matmul", "relation": "produces"},
+        {"relation_id": "v-projection-to-split", "source_capture": "v_projection", "target_capture": "v_split", "relation": "produces"},
+        {"relation_id": "score-before-softmax", "source_capture": "score_matmul", "target_capture": "softmax", "relation": "precedes"},
+        {"relation_id": "softmax-to-value", "source_capture": "softmax", "target_capture": "value_matmul", "relation": "produces"},
+        {"relation_id": "v-split-to-value", "source_capture": "v_split", "target_capture": "value_matmul", "relation": "produces"},
+        {"relation_id": "value-to-concat", "source_capture": "value_matmul", "target_capture": "concat", "relation": "produces"},
+        {"relation_id": "concat-to-output", "source_capture": "concat", "target_capture": "output_projection", "relation": "produces"}
+      ]
+    }
   ],
   "tests": {"positive": ["tier_a/transformer"], "negative": ["holdout/residual_mlp"], "mutation": ["remove residual routes"], "digest_invariance": ["exact IR before/after"]}
 }

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from archcanvas_core.models import VisualScene
 from archcanvas_publication import (
     LAYOUT_MODES,
     build_scene,
@@ -163,6 +164,40 @@ def test_builtin_layout_modes_preserve_identity_and_pass_geometry() -> None:
     assert len(coordinate_signatures) == len(LAYOUT_MODES) - 1
     with pytest.raises(ValueError, match="unknown layout mode"):
         build_scene(views[0], build_visual_spec(views[0]), "spiral")
+
+
+def test_visual_scene_v11_adds_routing_metadata_without_breaking_v10() -> None:
+    ir = _architecture("transformer", "model:Transformer", "inference", True)
+    view = compile_views(ir)[-1]
+    scene = build_scene(view, build_visual_spec(view))
+    evidence_by_view_edge = {
+        edge.view_edge_id: edge.evidence_ids for edge in view.edges
+    }
+
+    assert scene.schema_version == "1.1"
+    assert all(
+        edge.evidence_ids == evidence_by_view_edge[edge.view_edge_id]
+        for edge in scene.edges
+    )
+    assert all(edge.source_port_id is None for edge in scene.edges)
+    assert all(edge.target_port_id is None for edge in scene.edges)
+    assert all(edge.portal_ids == [] for edge in scene.edges)
+    assert all(edge.route_digest is None for edge in scene.edges)
+
+    legacy_payload = scene.model_dump(mode="json")
+    legacy_payload["schema_version"] = "1.0"
+    for edge in legacy_payload["edges"]:
+        for field in (
+            "source_port_id",
+            "target_port_id",
+            "evidence_ids",
+            "portal_ids",
+            "route_digest",
+        ):
+            edge.pop(field)
+    restored = VisualScene.model_validate(legacy_payload)
+    assert restored.schema_version == "1.0"
+    assert all(edge.evidence_ids == [] for edge in restored.edges)
 
 
 @pytest.mark.parametrize("view_index", [0, -1])
