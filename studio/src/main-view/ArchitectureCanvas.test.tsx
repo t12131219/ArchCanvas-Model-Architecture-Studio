@@ -132,6 +132,9 @@ describe("ArchitectureCanvas formal detail rendering", () => {
     expect(markup).toContain('id="kernel-detail-arrow"');
     expect(markup).toContain('data-detail-slot-id="q_projection"');
     expect(markup).toContain('data-detail-slot-id="visual:attention-weights"');
+    expect(markup).toContain(">×<");
+    expect(markup).toContain("detail-matrix");
+    expect(markup).toContain("node-grid");
     expect(markup).toContain('data-detail-binding-id="binding:attention:render"');
     expect(markup).toContain("Evidence: evidence:attention-binding");
     expect(markup.match(/class="kernel-detail-boundary-portal/g)).toHaveLength(2);

@@ -149,8 +149,8 @@ describe("kernel main-view export", () => {
     expect(artifact.svg).toContain('transform="translate(160 162.5) rotate(0)"');
     expect(artifact.svg).toContain('data-detail-primitive-id="binding:test:q_projection"');
     expect(artifact.svg).toContain('data-relation="residual"');
-    expect(artifact.svg.indexOf('class="kernel-detail-flow-layer"')).toBeLessThan(artifact.svg.indexOf('class="kernel-detail-primitive-layer"'));
-    expect(artifact.svg.indexOf('class="kernel-detail-primitive-layer"')).toBeLessThan(artifact.svg.indexOf('class="kernel-detail-boundary-layer"'));
+    expect(artifact.svg).toContain('class="kernel-detail-layer"');
+    expect([...artifact.svg.matchAll(/class="kernel-template-detail"/g)]).toHaveLength(1);
   });
 
   it("escapes model and detail labels as XML", () => {

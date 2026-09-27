@@ -747,7 +747,7 @@ SVG 中保留：
 
 ### Phase 1：拆出非画布应用壳
 
-实施状态（2026-09-27）：已完成。`main.tsx` 只负责 bootstrap；`StudioApp`、正式类型、状态接收、API client 和 shell 组件已经形成独立边界，TopBar、导航、Inspector、底部面板与 panel resizer 可独立渲染测试。项目分析、导航、Evidence、源码工作区、事务与任务链路由 Phase 5–8 浏览器回归覆盖。
+实施状态（2026-09-27）：已完成本阶段的运行边界拆分。`main.tsx` 只负责 bootstrap，`StudioShell`、正式类型、状态接收和 API client 已形成边界；源码工作区与事务审查已提取到 `studio/src/inspector/SourceWorkspacePanel.tsx`、`TransactionReview.tsx`，Inspector 的概览、源码、模型、视觉和边关系面板已提取到 `studio/src/inspector/InspectorPanels.tsx`，项目启动、文件夹选择、草稿节点/边和删除影响对话框已提取到 `studio/src/inspector/ProjectDialogs.tsx`。patch、kernel batch、事务参数/结构准备、连接提议和源码事务提交由 `studio/src/app/studio-actions.ts` 负责；项目/目录/搜索/验证/分析请求集中在 `studio/src/app/project-actions.ts`，导航序列化在 `navigation-actions.ts`，任务轮询和取消在 `job-actions.ts`。`StudioApp.tsx` 不再直接调用项目、搜索、验证或分析 API，只负责编排状态和渲染；所有请求继续通过 `studio-client` 保持 nonce、状态接收、导航恢复和 activity log 行为一致。
 
 工作：
 
@@ -779,7 +779,7 @@ SVG 中保留：
 
 ### Phase 3：建立正式纯视觉内核
 
-实施状态（2026-09-27）：已完成。正式内核已覆盖 26 个 topology × 45 个视觉组合、39 类 catalog/detail、完整 adaptive routing/metrics、父子展开五状态、portal、递归 detail 与同源 SVG export。14 组 build/production SVG/PNG 对和结构化报告位于 `docs/acceptance/main-view-p0`，所有自动检查通过；runtime 禁止原型 import 和 build 目录读取。
+实施状态（2026-09-27）：已完成。正式内核已覆盖 26 个 topology × 45 个视觉组合、39 类 catalog/detail、adaptive routing/metrics、父子展开五状态、portal、递归 detail 与同源 SVG export。prototype vocabulary 扫描实际读取 `build/scene-visual-lab/cases` 的 1170 个 SVG，锁定 `scene-node/scene-edge`、矩阵/操作 glyph、detail-shape/detail-flow、五类 tone 以及正式输出中的同名结构类；P0 结构报告 14/14 解析并通过，静态 12 组 PNG 对照通过，内部拖拽和递归交互态另有明确的 interaction-only 像素差报告。正式内核不依赖 React、DOM、API 或 prototype/build 目录。
 
 本阶段内部采用 P0 顺序，不以“基础节点已经能显示”作为完成信号：
 
@@ -812,7 +812,7 @@ SVG 中保留：
 
 ### Phase 5：重建 React 主视图
 
-实施状态（2026-09-27）：已完成。Phase 5 的交互几何保留在当前浏览器会话中；`VisualPatch` / `PatchBatch`、刷新恢复和服务器 undo/redo 仍属于 Phase 6，不在此处伪装为已完成。
+实施状态（2026-09-27）：已完成。静态 glyph/catalog/parent-child export 与 React 运行时已按原型 token、图例、展开容器和结构报告校验；正式 exact attention 的 Q/K/V 已使用矩阵、线性投影、圆圈 `×`、`h × Q/K/V`、`Output Wᴼ` 与 `1 / √d_k` 原型标记，同时保留 canonical slot 与拖动锚点 contract。运行时与导出态均保留 `node-surface`、`node-grid`、`detail-flow`、`detail-matrix`、`detail-symbol` 等原型兼容结构标识；交互拖动和递归嵌套按 interaction-only 证据单独验收，不把交互中的选择/拖拽状态误报为静态 SVG 差异。`VisualPatch` / `PatchBatch`、刷新恢复和服务器 undo/redo 属于 Phase 6。
 
 工作：
 
@@ -1107,7 +1107,7 @@ python tools/export_schemas.py --check
 15. `npm test`、`npm run build`、Python tests、compileall 和 schema check 全部通过。
 16. 生成静态资产中只保留当前构建引用的哈希文件。
 
-实施验收（2026-09-27）：以上 16 项均已满足。最终验证包含 21 个前端测试文件/110 项测试、完整 Python pytest、ruff、compileall、schema check、70/70 归档 checksum、1170 生产矩阵、14 组 P0 结构/浏览器对照以及 5/5 Playwright；生成目录只保留 `index-BsjqwwMX.js` 与 `index-CoLFAn-F.css`，且 `static/index.html` 仅引用这两个当前哈希资产。
+实施验收（2026-09-27）：以上 16 项的自动化验收门均已具备通过证据。当前证据为：前端 24 个测试文件、117 项测试通过；P0 结构 14/14 通过；静态 PNG 视觉门 12/12 通过，另外 2 个交互/递归案例生成明确的 interaction-only 像素差报告；Playwright 主视图与 Phase 5–8 5/5 通过；完整 Python pytest、ruff、compileall 和 schema check 通过；prototype vocabulary 扫描覆盖 1170 个原型 SVG，并为 39 个正式 detail kind 逐一绑定到本地原型标签。正式 SVG 与 React 运行时均输出原型兼容的节点/边/详情结构类，exact attention 的 Q/K/V formal slot contract、矩阵、乘法圆圈和中性 K^T 路由注释已与原型对齐，catalog expanded container 的语义配色已修正；exact/opaque/schematic 在数据、DOM 属性、徽标和边框样式中明确区分。构建和静态资产引用检查均通过。`StudioApp` 的项目、导航和任务 controller 已形成独立 action 模块；后续只需在新增业务边界时保持这些模块化测试，不再把旧主视图路径引回正式 runtime。
 
 ## 22. 推荐提交顺序
 

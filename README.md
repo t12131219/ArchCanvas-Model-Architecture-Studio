@@ -34,6 +34,17 @@ archcanvas studio build/transformer/architecture.json \
   --json
 ```
 
+For local Studio development, start the API and Vite frontend together with one command:
+
+```bash
+./start-studio.sh
+```
+
+The launcher selects the newest compatible local analysis artifact, waits for the API on port
+`4310`, and then starts the frontend on port `4323`. Open
+<http://127.0.0.1:4323/>. Choose another analyzed artifact with
+`./start-studio.sh --artifact build/my-model/architecture.json`.
+
 For a hash-locked Linux CPython 3.11 core development environment, install
 `pylock.dev-linux-py311.toml`, then add the separately constrained PyTorch runtime:
 

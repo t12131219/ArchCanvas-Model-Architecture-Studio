@@ -618,6 +618,34 @@ const sequenceGenerativeCatalog = detailCatalogScene(
   ],
 );
 
+/**
+ * Formal fixture for the prototype's single expanded bidirectional case.
+ *
+ * The catalog fixture above intentionally uses the compact atomic layout for
+ * the 26 x 45 production matrix.  Recursive P0 acceptance needs the exact
+ * expanded input from the Lab, including the parent bounds and the spacing
+ * reserved for the remaining atomic modules, so it is kept as a separate
+ * deterministic fixture instead of mutating the matrix fixture.
+ */
+export const RECURSIVE_BIDIRECTIONAL_FIXTURE: ProductionFixture = {
+  ...sequenceGenerativeCatalog,
+  sceneId: "sequence-generative-catalog-bidirectional-recurrent",
+  width: 2021,
+  height: 780,
+  nodes: sequenceGenerativeCatalog.nodes.map((candidate) => {
+    const boundsById: Record<string, ProductionFixtureNode["bounds"]> = {
+      "sequence-generative-catalog-input": { x: 32, y: 349, width: 118, height: 82 },
+      "sequence-generative-catalog-bidir": { x: 190, y: 220, width: 800, height: 340 },
+      "sequence-generative-catalog-seq2seq": { x: 1033, y: 344, width: 162, height: 92 },
+      "sequence-generative-catalog-ssm": { x: 1238, y: 344, width: 162, height: 92 },
+      "sequence-generative-catalog-ae": { x: 1443, y: 344, width: 162, height: 92 },
+      "sequence-generative-catalog-vae": { x: 1648, y: 344, width: 162, height: 92 },
+      "sequence-generative-catalog-output": { x: 1853, y: 349, width: 126, height: 82 },
+    };
+    return { ...candidate, bounds: boundsById[candidate.nodeId] ?? candidate.bounds };
+  }),
+};
+
 const generativeGraphCatalog = detailCatalogScene(
   "generative-graph-catalog",
   "生成、图与时间序列目录",

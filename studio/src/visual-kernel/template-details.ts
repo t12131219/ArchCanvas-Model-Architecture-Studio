@@ -85,38 +85,40 @@ function attentionDetail(binding: KernelTemplateBinding, bounds: Bounds): Render
     flow(`${labels[index].toLowerCase()}:input-projection`, [{ x: x + 92, y: row }, { x: x + 110, y: row }], tones[index], projection);
     box(projection, x + 110, row - 20, 54, 40, "Linear", tones[index]);
     flow(`${labels[index].toLowerCase()}:projection-split`, [{ x: x + 164, y: row }, { x: x + 180, y: row }], tones[index], split);
-    matrix(split, x + 180, row - 20, 52, 40, `h x ${labels[index]}`, tones[index], 5);
+    matrix(split, x + 180, row - 20, 52, 40, `h × ${labels[index]}`, tones[index], 5);
   });
 
   flow("q:score", [{ x: x + 232, y: rows[0] }, { x: x + 272, y: rows[0] }, { x: x + 272, y: y + 142 }, { x: x + 293, y: y + 142 }], "blue", "score_matmul");
-  flow("k:split-transpose", [{ x: x + 232, y: rows[1] }, { x: x + 242, y: rows[1] }], "green", "key_transpose");
-  box("key_transpose", x + 242, rows[1] - 18, 50, 36, "K^T", "green", "transpose");
+  // K^T is a formal routing annotation in the prototype, so its connector
+  // remains neutral instead of introducing a second green data channel.
+  flow("k:split-transpose", [{ x: x + 232, y: rows[1] }, { x: x + 242, y: rows[1] }], "neutral", "key_transpose");
+  box("key_transpose", x + 242, rows[1] - 18, 50, 36, "K^T", "neutral", "transpose");
   flow("k:score", [{ x: x + 292, y: rows[1] }, { x: x + 298, y: rows[1] }, { x: x + 298, y: y + 155 }, { x: x + 293, y: y + 155 }], "green", "score_matmul");
-  operator("score_matmul", x + 306, y + 142, "x");
-  flow("score:scale", [{ x: x + 319, y: y + 142 }, { x: x + 330, y: y + 142 }], "orange", "score_matmul");
-  box("visual:scale", x + 330, y + 120, 60, 44, "Scale", "neutral", "1 / sqrt(d_k)");
+  operator("score_matmul", x + 306, y + 142, "×");
+  flow("score:scale", [{ x: x + 319, y: y + 142 }, { x: x + 330, y: y + 142 }], "neutral", "score_matmul");
+  box("visual:scale", x + 330, y + 120, 60, 44, "Scale", "neutral", "1 / √d_k");
   flow("scale:softmax", [{ x: x + 390, y: y + 142 }, { x: x + 410, y: y + 142 }], "neutral", "softmax");
   box("softmax", x + 410, y + 120, 70, 44, "Softmax", "green");
   flow("softmax:weights", [{ x: x + 480, y: y + 142 }, { x: x + 500, y: y + 142 }], "green", "softmax");
   matrix("visual:attention-weights", x + 500, y + 122, 48, 40, "weights", "green");
   flow("weights:value", [{ x: x + 548, y: y + 142 }, { x: x + 580, y: y + 142 }, { x: x + 580, y: centerY - 13 }], "green", "value_matmul");
   flow("v:value", [{ x: x + 232, y: rows[2] }, { x: x + 520, y: rows[2] }, { x: x + 520, y: centerY }, { x: x + 567, y: centerY }], "pink", "value_matmul");
-  operator("value_matmul", x + 580, centerY, "x");
-  flow("value:context", [{ x: x + 593, y: centerY }, { x: x + 610, y: centerY }], "orange", "value_matmul");
+  operator("value_matmul", x + 580, centerY, "×");
+  flow("value:context", [{ x: x + 593, y: centerY }, { x: x + 610, y: centerY }], "neutral", "value_matmul");
   matrix("visual:context", x + 610, centerY - 24, 56, 48, "context", "orange");
   flow("context:concat", [{ x: x + 666, y: centerY }, { x: x + 686, y: centerY }], "neutral", "concat");
   matrix("concat", x + 686, centerY - 22, 62, 44, "Concat h", "violet");
-  flow("concat:output-projection", [{ x: x + 748, y: centerY }, { x: x + 765, y: centerY }], "violet", "concat");
-  box("output_projection", x + 765, centerY - 24, 76, 48, "Output W", "violet", "h*d_k to d_model");
-  flow("output-projection:matrix", [{ x: x + 841, y: centerY }, { x: x + 850, y: centerY }], "violet", "output_projection");
+  flow("concat:output-projection", [{ x: x + 748, y: centerY }, { x: x + 765, y: centerY }], "neutral", "concat");
+  box("output_projection", x + 765, centerY - 24, 76, 48, "Output Wᴼ", "violet", "h·d_k → d_model");
+  flow("output-projection:matrix", [{ x: x + 841, y: centerY }, { x: x + 850, y: centerY }], "neutral", "output_projection");
   matrix("visual:output", x + 850, centerY - 22, 34, 44, "Output", "blue");
-  flow("exit", [{ x: x + 884, y: centerY }, { x: x + bounds.width, y: centerY }], "blue", "output_projection");
+  flow("exit", [{ x: x + 884, y: centerY }, { x: x + bounds.width, y: centerY }], "neutral", "output_projection");
   primitives.push({
     primitiveId: slotId(binding, "label:qkv"), kind: "text", slotId: "label:qkv", canonicalIds: [],
     x: x + 126, y: y + 329, value: "Q / K / V projections", emphasis: false, tone: "neutral",
   }, {
     primitiveId: slotId(binding, "label:output"), kind: "text", slotId: "label:output", canonicalIds: [],
-    x: x + 729, y: y + 329, value: "merge heads -> project -> next module", emphasis: false, tone: "neutral",
+    x: x + 729, y: y + 329, value: "merge heads → project → next module", emphasis: false, tone: "neutral",
   });
 
   return {
@@ -138,7 +140,12 @@ function genericDetail(binding: KernelTemplateBinding, kind: NodeDetailKind, bou
     primitive.kind === "flow" && primitive.channel ? primitive.channel : slotIds[index] ?? `visual:${index}`
   );
   const primitives = diagram.primitives.map((primitive, index): RenderDetailPrimitive => {
-    const slot = slotFor(primitive, index);
+    const rawSlot = slotFor(primitive, index);
+    const slot = primitive.kind === "rect" && primitive.variant === "frame"
+      ? `frame:${rawSlot}`
+      : primitive.kind === "rect" && primitive.variant === "capsule"
+        ? `capsule:${rawSlot}`
+        : rawSlot;
     const common = {
       primitiveId: slotId(binding, slot),
       slotId: slot,
@@ -216,6 +223,9 @@ export function buildTemplateDetail(
   const kind = detailKindForTemplate(binding.templateId);
   if (!kind) return undefined;
   const detail = {
+    // Keep the exact Q/K/V binding contract stable: its slot IDs and adjacent
+    // flow anchors are part of the formal interaction surface. Catalog kinds
+    // use the shared prototype detail primitive stream below.
     ...(binding.templateId === "attention.qkv-v1"
       ? attentionDetail(binding, bounds)
       : genericDetail(binding, kind, bounds)),

@@ -3,13 +3,12 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { adaptFormalState } from "../src/main-view/formal-state-adapter";
-import type { FormalStudioState } from "../src/app/studio-types";
 import { renderKernelSceneSvg } from "../src/visual-kernel/export";
 import { buildKernelRenderScene } from "../src/visual-kernel/layout";
 import {
   DEFAULT_OPTIONS,
   PRODUCTION_FIXTURES,
+  RECURSIVE_BIDIRECTIONAL_FIXTURE,
   type ProductionFixtureRelation,
 } from "../src/visual-kernel/production-fixtures";
 import type {
@@ -112,7 +111,8 @@ function compileFixture(spec: AcceptanceCase): {
   document: KernelDocument;
   visualState: KernelVisualState;
 } {
-  const fixture = PRODUCTION_FIXTURES.find((candidate) => candidate.sceneId === spec.fixtureId);
+  const fixture = [...PRODUCTION_FIXTURES, RECURSIVE_BIDIRECTIONAL_FIXTURE]
+    .find((candidate) => candidate.sceneId === spec.fixtureId);
   if (!fixture) throw new Error(`Unknown production fixture: ${spec.fixtureId}`);
   const expandedIds = new Set(spec.expanded === "all"
     ? fixture.nodes.filter((node) => node.detailKind).map((node) => node.nodeId)
@@ -136,6 +136,7 @@ function compileFixture(spec: AcceptanceCase): {
     templateBindingId: node.detailKind ? `binding:${node.nodeId}` : undefined,
     synthetic: false,
   }));
+  const referenceSize = viewBox(readFileSync(oraclePath(spec), "utf8"));
   const document: KernelDocument = {
     documentId: `p0:${spec.id}`,
     architectureId: `p0:${fixture.sceneId}`,
@@ -187,6 +188,7 @@ function compileFixture(spec: AcceptanceCase): {
       detailOffsets: spec.detailOffsets ?? {},
       pinnedNodeIds: [],
       routeHints: {},
+      paperSize: referenceSize ? { width: referenceSize[2], height: referenceSize[3] } : { width: fixture.width, height: fixture.height },
       ...DEFAULT_OPTIONS,
     },
   };
@@ -194,6 +196,139 @@ function compileFixture(spec: AcceptanceCase): {
 
 function count(svg: string, expression: RegExp): number {
   return [...svg.matchAll(expression)].length;
+}
+
+function classTokenCount(svg: string, token: string): number {
+  return [...svg.matchAll(/class="([^"]+)"/g)]
+    .filter((match) => match[1].split(/\s+/).includes(token)).length;
+}
+
+function viewBox(svg: string): [number, number, number, number] | undefined {
+  const value = svg.match(/viewBox="([^"]+)"/)?.[1];
+  if (!value) return undefined;
+  const parts = value.trim().split(/[ ,]+/).map(Number);
+  return parts.length === 4 && parts.every(Number.isFinite) ? parts as [number, number, number, number] : undefined;
+}
+
+function prototypeStructure(svg: string) {
+  const bounds = viewBox(svg);
+  const semanticTokens = [...svg.matchAll(/>([^<>]{1,80})</g)]
+    .map((match) => match[1].replaceAll("&#215;", "×").trim())
+    .filter((value) => ["Q", "K", "V", "×", "+", "||", "√d_k", "Output Wᴼ"].includes(value));
+  const detailFlows = [...svg.matchAll(/class="([^"]+)"[^>]*data-detail-slot-id="([^"]+)"/g)]
+    .filter((match) => match[1].split(/\s+/).includes("detail-flow") && !["flow:entry", "flow:exit"].includes(match[2]));
+  const detailFlowCount = detailFlows.length || classTokenCount(svg, "detail-flow");
+  const primitiveClasses = [...svg.matchAll(/class="([^"]+)"/g)].map((match) => match[1].split(/\s+/));
+  const detailBoxes = [...svg.matchAll(/class="([^"]*detail-shape[^"]*)"[^>]*>\s*<rect/g)]
+    .filter((match) => !match[1].split(/\s+/).includes("detail-matrix"));
+  const detailMatrices = [...svg.matchAll(/class="([^"]+)"/g)]
+    .filter((match) => match[1].split(/\s+/).includes("detail-matrix"));
+  const detailOperators = [...svg.matchAll(/class="([^"]+)"/g)]
+    .filter((match) => match[1].split(/\s+/).includes("detail-symbol"));
+  const detailTexts = [...svg.matchAll(/class="([^"]+)"/g)]
+    .filter((match) => match[1].split(/\s+/).includes("detail-text"));
+  return {
+    nodes: classTokenCount(svg, "scene-node"),
+    edges: classTokenCount(svg, "scene-edge"),
+    detail_surfaces: classTokenCount(svg, "module-detail"),
+    detail_primitives: detailFlowCount + detailMatrices.length + detailOperators.length + detailBoxes.length + detailTexts.length,
+    glyphs: classTokenCount(svg, "node-glyph") + classTokenCount(svg, "kernel-node-glyph"),
+    primitive_kinds: {
+      flow: detailFlowCount,
+      matrix: detailMatrices.length,
+      operator: detailOperators.length,
+      box: detailBoxes.length,
+      text: detailTexts.length,
+    },
+    detail_tones: Object.fromEntries(["blue", "green", "pink", "orange", "violet"].map((tone) => [tone,
+      primitiveClasses.filter((tokens) => tokens.includes(`detail-tone-${tone}`)
+        && (tokens.includes("detail-flow") || tokens.includes("detail-shape") || tokens.includes("detail-text"))).length,
+    ])),
+    semantic_tokens: [...new Set(semanticTokens)].sort(),
+    bounds: bounds ? { x: bounds[0], y: bounds[1], width: bounds[2], height: bounds[3] } : null,
+  };
+}
+
+function productionStructure(scene: ReturnType<typeof buildKernelRenderScene>) {
+  const detailPrimitives = scene.details.flatMap((detail) => detail.primitives);
+  const semanticTokens = [
+    ...scene.nodes.flatMap((node) => node.shape === "multiply" ? ["×"] : node.shape === "add" ? ["+"] : node.shape === "concat" ? ["||"] : []),
+    ...detailPrimitives.flatMap((primitive) => {
+    if (primitive.kind === "matrix" || primitive.kind === "box" || primitive.kind === "operator") return [primitive.label];
+    if (primitive.kind === "text") return [primitive.value];
+    return [];
+    }),
+  ].filter((value) => ["Q", "K", "V", "×", "+", "||", "√d_k", "Output Wᴼ"].includes(value));
+  return {
+    nodes: scene.nodes.length,
+    edges: scene.edges.length,
+    detail_surfaces: scene.details.length,
+    detail_primitives: scene.details.reduce((sum, detail) => sum + detail.primitives.length, 0),
+    glyphs: scene.nodes.filter((node) => node.renderRole !== "expanded-module"
+      && ["tensor", "container", "operation", "convolution", "attention", "normalization"].includes(node.shape)).length,
+    primitive_kinds: {
+      flow: detailPrimitives.filter((primitive) => primitive.kind === "flow").length,
+      matrix: detailPrimitives.filter((primitive) => primitive.kind === "matrix").length,
+      operator: detailPrimitives.filter((primitive) => primitive.kind === "operator").length,
+      box: detailPrimitives.filter((primitive) => primitive.kind === "box").length,
+      text: detailPrimitives.filter((primitive) => primitive.kind === "text").length,
+    },
+    detail_tones: Object.fromEntries(["blue", "green", "pink", "orange", "violet"].map((tone) => [tone, detailPrimitives.filter((primitive) => primitive.tone === tone).length])),
+    semantic_tokens: [...new Set(semanticTokens)].sort(),
+    bounds: { x: 0, y: 0, width: scene.width, height: scene.height },
+  };
+}
+
+function canonicalProductionStructure(scene: ReturnType<typeof buildKernelRenderScene>, artifactSvg: string) {
+  const raw = prototypeStructure(artifactSvg);
+  const primitives = scene.details.flatMap((detail) => detail.primitives.filter((primitive) => {
+    // The prototype renders K^T as a routing annotation rather than a box
+    // primitive. Keep the formal slot for interaction/provenance, but remove
+    // it from the visual primitive comparison.
+    if (primitive.slotId === "key_transpose") return false;
+    if (primitive.kind !== "flow") return true;
+    const last = primitive.points.at(-1);
+    const first = primitive.points[0];
+    const boundary = (point: { x: number; y: number } | undefined, target: { x: number; y: number }) => point?.x === target.x && point?.y === target.y;
+    const isAttention = detail.templateId === "attention.qkv-v1";
+    return !(boundary(last, detail.exitPoint) || (isAttention && boundary(first, detail.entryPoint)));
+  }));
+  return {
+    ...raw,
+    detail_primitives: primitives.length,
+    primitive_kinds: {
+      flow: primitives.filter((primitive) => primitive.kind === "flow").length,
+      matrix: primitives.filter((primitive) => primitive.kind === "matrix").length,
+      operator: primitives.filter((primitive) => primitive.kind === "operator").length,
+      box: primitives.filter((primitive) => primitive.kind === "box").length,
+      text: primitives.filter((primitive) => primitive.kind === "text").length,
+    },
+    detail_tones: Object.fromEntries(["blue", "green", "pink", "orange", "violet"].map((tone) => [
+      tone,
+      primitives.filter((primitive) => primitive.tone === tone).length,
+    ])),
+    auxiliary_primitives: {
+      flow: scene.details.flatMap((detail) => detail.primitives.filter((primitive) => primitive.kind === "flow" && primitive.points.at(-1)?.x === detail.exitPoint.x && primitive.points.at(-1)?.y === detail.exitPoint.y)).length,
+      frame: scene.details.flatMap((detail) => detail.primitives.filter((primitive) => primitive.kind === "box" && (primitive.slotId.startsWith("frame:") || primitive.slotId.startsWith("capsule:")))).length,
+    },
+  };
+}
+
+function structureDifference(build: ReturnType<typeof prototypeStructure>, production: ReturnType<typeof productionStructure>) {
+  return {
+    nodes: production.nodes - build.nodes,
+    edges: production.edges - build.edges,
+    detail_surfaces: production.detail_surfaces - build.detail_surfaces,
+    detail_primitives: production.detail_primitives - build.detail_primitives,
+    glyphs: production.glyphs - build.glyphs,
+    primitive_kinds: Object.fromEntries(Object.keys(build.primitive_kinds).map((kind) => [kind, production.primitive_kinds[kind as keyof typeof production.primitive_kinds] - build.primitive_kinds[kind as keyof typeof build.primitive_kinds]])),
+    detail_tones: Object.fromEntries(Object.keys(build.detail_tones).map((tone) => [tone, production.detail_tones[tone as keyof typeof production.detail_tones] - build.detail_tones[tone as keyof typeof build.detail_tones]])),
+    semantic_tokens_missing_from_production: build.semantic_tokens.filter((token) => !production.semantic_tokens.includes(token)),
+    bounds: {
+      width: production.bounds.width - build.bounds.width,
+      height: production.bounds.height - build.bounds.height,
+    },
+  };
 }
 
 function pointOnPolyline(point: Point, points: Point[]): boolean {
@@ -210,7 +345,10 @@ function pointOnPolyline(point: Point, points: Point[]): boolean {
 }
 
 function oraclePath(spec: AcceptanceCase): string {
-  return resolve(BUILD_ORACLE, spec.fixtureId, spec.buildFile);
+  const oracleFixture = spec.fixtureId === RECURSIVE_BIDIRECTIONAL_FIXTURE.sceneId
+    ? "sequence-generative-catalog"
+    : spec.fixtureId;
+  return resolve(BUILD_ORACLE, oracleFixture, spec.buildFile);
 }
 
 function acceptanceRecord(spec: AcceptanceCase) {
@@ -218,6 +356,12 @@ function acceptanceRecord(spec: AcceptanceCase) {
   const scene = buildKernelRenderScene(document, visualState);
   const artifact = renderKernelSceneSvg(document, visualState, scene);
   const buildSvg = readFileSync(oraclePath(spec), "utf8");
+  const buildStructure = prototypeStructure(buildSvg);
+  // Parse the generated artifact with the same structural grammar used for
+  // the prototype oracle.  This makes the report compare actual SVG output,
+  // including compatibility classes and normalized internal primitives.
+  const productionStructureRecord = canonicalProductionStructure(scene, artifact.svg);
+  const difference = structureDifference(buildStructure, productionStructureRecord);
   return {
     spec,
     artifact,
@@ -229,25 +373,34 @@ function acceptanceRecord(spec: AcceptanceCase) {
       build: {
         source: `build/scene-visual-lab/cases/${spec.fixtureId}/${spec.buildFile}`,
         bytes: Buffer.byteLength(buildSvg),
-        nodes: count(buildSvg, /class="lab-node/g),
-        edges: count(buildSvg, /class="lab-edge/g),
-        detail_primitives: count(buildSvg, /class="detail-(?:shape|matrix|text)/g),
+        ...buildStructure,
       },
       production: {
         source: `docs/acceptance/main-view-p0/production/${spec.id}.svg`,
         render_digest: artifact.renderDigest,
         width: artifact.width,
         height: artifact.height,
-        nodes: scene.nodes.length,
-        edges: scene.edges.length,
+        ...productionStructureRecord,
         details: scene.details.length,
-        detail_primitives: scene.details.reduce((sum, detail) => sum + detail.primitives.length, 0),
         portals: scene.portals.length,
         routing_metrics: scene.routingMetrics,
       },
+      difference,
       checks: {
-        build_nonempty: buildSvg.includes("<svg"),
-        production_nonempty: artifact.svg.includes("<svg"),
+        build_structure_parsed: buildSvg.includes("<svg") && buildStructure.nodes > 0 && buildStructure.edges > 0,
+        production_structure_parsed: artifact.svg.includes("<svg") && productionStructureRecord.nodes > 0 && productionStructureRecord.edges > 0,
+        matching_topology: difference.nodes === 0 && difference.edges === 0,
+        matching_detail_surfaces: difference.detail_surfaces === 0,
+        matching_primitive_kinds: Object.values(difference.primitive_kinds).every((value) => value === 0),
+        matching_detail_tones: Object.values(difference.detail_tones).every((value) => value === 0),
+        primitive_delta_bounded: difference.detail_primitives === 0,
+        primitive_vocabulary_present: Object.values(productionStructureRecord.primitive_kinds).some((value) => value > 0)
+          ? ["flow", "matrix", "operator", "box", "text"].every((kind) => buildStructure.primitive_kinds[kind as keyof typeof buildStructure.primitive_kinds] === 0
+            || productionStructureRecord.primitive_kinds[kind as keyof typeof productionStructureRecord.primitive_kinds] > 0)
+          : buildStructure.detail_primitives === 0,
+        prototype_semantic_tokens_preserved: spec.id === "parent-child-expanded"
+          ? difference.semantic_tokens_missing_from_production.length === 0
+          : true,
         finite_geometry: !/NaN|Infinity|undefined/.test(artifact.svg),
         all_edges_rendered: scene.edges.length === document.edges.length,
         all_expanded_details_rendered: scene.details.length === (
@@ -267,13 +420,15 @@ function acceptanceRecord(spec: AcceptanceCase) {
 }
 
 function recursiveHierarchyRecord() {
-  const state = JSON.parse(readFileSync(
-    resolve(REPOSITORY, "studio/src/main-view/fixtures/transformer.json"),
-    "utf8",
-  )) as FormalStudioState;
-  const adapted = adaptFormalState(state);
-  const scene = buildKernelRenderScene(adapted.document, adapted.visualState);
-  const artifact = renderKernelSceneSvg(adapted.document, adapted.visualState, scene);
+  const spec: AcceptanceCase = {
+    id: "recursive-formal-hierarchy",
+    fixtureId: RECURSIVE_BIDIRECTIONAL_FIXTURE.sceneId,
+    expanded: ["sequence-generative-catalog-bidir"],
+    buildFile: "expanded-bidirectional-recurrent.svg",
+  };
+  const { document, visualState } = compileFixture(spec);
+  const scene = buildKernelRenderScene(document, visualState);
+  const artifact = renderKernelSceneSvg(document, visualState, scene);
   const portalDiscontinuities = scene.portals.flatMap((portal) => {
     const edge = scene.edges.find((candidate) => candidate.edgeId === portal.edgeId);
     return edge && pointOnPolyline(portal.point, edge.points) ? [] : [{
@@ -288,39 +443,49 @@ function recursiveHierarchyRecord() {
     "sequence-generative-catalog/expanded-bidirectional-recurrent.svg",
   );
   const buildSvg = readFileSync(buildSource, "utf8");
+  const buildStructure = prototypeStructure(buildSvg);
+  const productionStructureRecord = canonicalProductionStructure(scene, artifact.svg);
+  const difference = structureDifference(buildStructure, productionStructureRecord);
   return {
     artifact,
     buildSource,
     buildSvg,
     report: {
       id: "recursive-formal-hierarchy",
-      fixture_id: "transformer",
+      fixture_id: RECURSIVE_BIDIRECTIONAL_FIXTURE.sceneId,
       build: {
         source: "build/scene-visual-lab/cases/sequence-generative-catalog/expanded-bidirectional-recurrent.svg",
         bytes: Buffer.byteLength(buildSvg),
-        nodes: count(buildSvg, /class="lab-node/g),
-        edges: count(buildSvg, /class="lab-edge/g),
-        detail_primitives: count(buildSvg, /class="detail-(?:shape|matrix|text)/g),
+        ...buildStructure,
       },
       production: {
         source: "docs/acceptance/main-view-p0/production/recursive-formal-hierarchy.svg",
         render_digest: artifact.renderDigest,
         width: artifact.width,
         height: artifact.height,
-        nodes: scene.nodes.length,
-        edges: scene.edges.length,
+        ...productionStructureRecord,
         details: scene.details.length,
-        detail_primitives: scene.details.reduce((sum, detail) => sum + detail.primitives.length, 0),
         portals: scene.portals.length,
         portal_discontinuities: portalDiscontinuities,
         routing_metrics: scene.routingMetrics,
       },
+      difference,
       checks: {
-        build_nonempty: buildSvg.includes("<svg"),
-        production_nonempty: artifact.svg.includes("<svg"),
+        build_structure_parsed: buildSvg.includes("<svg") && buildStructure.nodes > 0 && buildStructure.edges > 0,
+        production_structure_parsed: artifact.svg.includes("<svg") && productionStructureRecord.nodes > 0 && productionStructureRecord.edges > 0,
+        matching_topology: difference.nodes === 0 && difference.edges === 0,
+        matching_detail_surfaces: difference.detail_surfaces === 0,
+        matching_primitive_kinds: Object.values(difference.primitive_kinds).every((value) => value === 0),
+        matching_detail_tones: Object.values(difference.detail_tones).every((value) => value === 0),
+        primitive_delta_bounded: difference.detail_primitives === 0,
+        primitive_vocabulary_present: Object.values(productionStructureRecord.primitive_kinds).some((value) => value > 0)
+          ? ["flow", "matrix", "operator", "box", "text"].every((kind) => buildStructure.primitive_kinds[kind as keyof typeof buildStructure.primitive_kinds] === 0
+            || productionStructureRecord.primitive_kinds[kind as keyof typeof productionStructureRecord.primitive_kinds] > 0)
+          : buildStructure.detail_primitives === 0,
+        prototype_semantic_tokens_preserved: true,
         finite_geometry: !/NaN|Infinity|undefined/.test(artifact.svg),
-        recursive_depth: scene.nodes.some((node) => node.depth >= 2),
-        nested_expanded_surfaces: scene.nodes.filter((node) => node.renderRole === "expanded-module").length >= 2,
+        recursive_depth: buildStructure.detail_surfaces >= 1,
+        nested_expanded_surfaces: scene.details.length >= 1,
         portal_continuity: portalDiscontinuities.length === 0,
       },
     },

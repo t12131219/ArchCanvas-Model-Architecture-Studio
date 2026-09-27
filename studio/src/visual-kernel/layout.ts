@@ -87,8 +87,10 @@ export function buildKernelRenderScene(
     detailBoundaryPorts,
   );
   const renderEdges = [...routed.edges, ...portalEdges].sort((left, right) => left.edgeId.localeCompare(right.edgeId));
-  const maxX = Math.max(640, ...renderNodes.map((node) => node.bounds.x + node.bounds.width + PAPER_PADDING));
-  const maxY = Math.max(520, ...renderNodes.map((node) => node.bounds.y + node.bounds.height + PAPER_PADDING));
+  const maxX = visualState.paperSize?.width
+    ?? Math.max(640, ...renderNodes.map((node) => node.bounds.x + node.bounds.width + PAPER_PADDING));
+  const maxY = visualState.paperSize?.height
+    ?? Math.max(520, ...renderNodes.map((node) => node.bounds.y + node.bounds.height + PAPER_PADDING));
   return {
     sceneId: `kernel:${document.architectureId}:${document.sourceDigest.slice(0, 12)}`,
     sourceDigest: document.sourceDigest,

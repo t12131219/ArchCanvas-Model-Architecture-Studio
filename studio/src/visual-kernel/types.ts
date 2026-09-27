@@ -182,6 +182,8 @@ export interface KernelVisualState {
   nodeStyle: NodeVisualStyle;
   labelStyle: EdgeLabelStyle;
   nodeShapeOverrides?: Record<string, KernelNodeShape>;
+  /** Optional fixture/reference paper size used for stable export framing. */
+  paperSize?: Size;
 }
 
 export interface RenderNode extends KernelNode {

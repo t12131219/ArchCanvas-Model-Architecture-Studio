@@ -26,7 +26,6 @@ import {
   Plus,
   RefreshCw,
   Route,
-  Save,
   Search,
   ShieldCheck,
   Sun,
@@ -39,12 +38,39 @@ import {
 
 import { JobPollingController, type StudioJob } from "../jobs";
 import { initialProjectSelection } from "../project-launch";
-import { getStudioJson, postStudioJson } from "../api/studio-client";
+import { createStudioActions, patchId } from "./studio-actions";
+import {
+  browseDirectories,
+  loadCondaEnvironments,
+  loadStudioState,
+  openProject as openProjectRequest,
+  previewCanonicalDelete,
+  searchStudio,
+  startAnalysis,
+  startValidation,
+  type AnalysisRequest,
+  type CondaEnvironment,
+  type DirectoryBrowserState,
+  type PendingProject,
+  type ProjectEntrypoint,
+} from "./project-actions";
+import { cancelStudioJob, pollStudioJob } from "./job-actions";
 import {
   visibleNavigationRows,
-  visibleProjectEntrypoints,
 } from "../tree";
 import { ArchitectureCanvas } from "../main-view/ArchitectureCanvas";
+import { SourceWorkspacePanel } from "../inspector/SourceWorkspacePanel";
+import { TransactionReview } from "../inspector/TransactionReview";
+import {
+  EdgeInspector,
+  Field,
+  InspectorLanguageContext,
+  ModelInspector,
+  SourceInspector,
+  StructureInspector,
+  VisualInspector,
+} from "../inspector/InspectorPanels";
+import { ProjectDialogs } from "../inspector/ProjectDialogs";
 import {
   downloadKernelPdf,
   downloadKernelPng,
@@ -74,14 +100,11 @@ import type {
   Diagnostic,
   DraftEdgePolicy,
   Evidence,
-  GraphDelta,
   LayoutMode,
   Projection,
   PublicationNode,
   SourceExcerpt,
   SourceTransaction,
-  SourceWorkspaceBuffer,
-  SourceWorkspaceFile,
   StudioState,
 } from "./studio-types";
 import { embeddedStudioState, initialExpansionState, StudioStateAcceptance } from "./studio-state";
@@ -95,50 +118,6 @@ interface LanguageContextValue {
   tx: (english: string, chinese: string) => string;
 }
 
-interface CondaEnvironment {
-  name: string;
-  path: string;
-  python: string;
-  active: boolean;
-}
-
-interface ProjectEntrypoint {
-  entrypoint: string;
-  path: string;
-  framework: string;
-  kind: string;
-  confidence: string;
-  parent_entrypoint: string | null;
-  parent_entrypoints: string[];
-  root_entrypoint: string;
-  depth: number;
-  contains: string[];
-  child_count: number;
-  top_level: boolean;
-  analysis_root: string;
-  analysis_entrypoint: string;
-  config_paths: string[];
-  category: "model" | "encoder" | "decoder" | "backbone" | "attention" | "head" | "block" | "layer" | "component";
-}
-
-interface PendingProject {
-  project: StudioState["project"];
-  discovery: {
-    entrypoints: ProjectEntrypoint[];
-    configs: Array<{ path: string }>;
-    scanned_files: number;
-    environment?: CondaEnvironment | null;
-  };
-}
-
-interface DirectoryBrowserState {
-  path: string;
-  parent: string | null;
-  breadcrumbs: Array<{ name: string; path: string }>;
-  directories: Array<{ name: string; path: string }>;
-  truncated: boolean;
-}
-
 const LanguageContext = React.createContext<LanguageContextValue>({
   locale: "zh",
   tx: (_english, chinese) => chinese,
@@ -149,13 +128,6 @@ function useLanguage(): LanguageContextValue {
 }
 
 
-
-interface VisualPatch {
-  patch_id: string;
-  operation: string;
-  target_id?: string;
-  value: Record<string, unknown>;
-}
 
 interface PanelSizes {
   left: number;
@@ -198,12 +170,6 @@ interface NavigationNode {
   sibling_index: number;
   sibling_count: number;
 }
-
-function patchId(operation: string): string {
-  const random = crypto.getRandomValues(new Uint32Array(2));
-  return `patch:${operation}.${Date.now().toString(36)}.${random[0].toString(36)}${random[1].toString(36)}`;
-}
-
 
 function navigationIcon(kind: string): React.ReactNode {
   if (["file", "directory", "repository"].includes(kind)) return <FileCode2 size={12} />;
@@ -359,7 +325,7 @@ export function StudioApp() {
     const controller = new AbortController();
     setEnvironmentLoading(true);
     setProjectError("");
-      getStudioJson<{ environments: CondaEnvironment[]; selected: string | null }>("/api/environments/conda", { signal: controller.signal })
+      loadCondaEnvironments(controller.signal)
       .then((result) => {
         setCondaEnvironments(result.environments);
         setCondaEnvironment(result.selected ?? result.environments[0]?.path ?? "");
@@ -380,7 +346,7 @@ export function StudioApp() {
   const activeProjectionId = data?.active_projection_id;
 
   useEffect(() => {
-    getStudioJson<StudioState>("/api/state")
+    loadStudioState()
       .then((state: StudioState) => {
         if (!navigationTouched.current) {
           restoreNavigationState(state);
@@ -418,7 +384,7 @@ export function StudioApp() {
     }
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
-      getStudioJson<{ results: SearchResult[] }>(`/api/search?q=${encodeURIComponent(query)}`, { signal: controller.signal })
+      searchStudio(query, controller.signal)
         .then((payload) => setSearchResults(payload.results))
         .catch(() => undefined);
     }, 120);
@@ -490,198 +456,20 @@ export function StudioApp() {
     (intent) => intent.kind === "delete-node",
   ) ?? [];
 
-  async function mutate(
-    endpoint: string,
-    payload?: object,
-    activityLabel?: string,
-  ): Promise<StudioState | null> {
-    try {
-      const state = await postStudioJson<StudioState>(endpoint, payload ?? {}, { nonce: data?.session_nonce });
-      acceptStudioState(state);
-      if (["/api/patch", "/api/patch-batch", "/api/undo", "/api/redo"].includes(endpoint)) {
-        restoreNavigationState(state);
-      }
-      const visualPatch = payload as VisualPatch | undefined;
-      const label = activityLabel ?? (visualPatch?.operation ? `${visualPatch.operation} · ${visualPatch.target_id ?? "document"}` : endpoint.slice(5));
-      setActivity((items) => [label, ...items].slice(0, 20));
-      return state;
-    } catch (error) {
-      setActivity((items) => [`${tx("Request failed", "请求失败")} · ${String(error)}`, ...items].slice(0, 20));
-      return null;
-    }
-  }
-
   async function refreshState(): Promise<StudioState | null> {
     return jobController.current?.refreshState() ?? null;
   }
 
   function pollJob(jobId: string, onSuccess?: () => void) {
-    jobController.current?.start(jobId, (job) => {
-      if (job.state === "succeeded") onSuccess?.();
-    });
+    if (jobController.current) pollStudioJob(jobController.current, jobId, onSuccess);
   }
 
   async function cancelJob(jobId: string) {
-    try {
-      await jobController.current?.cancel(jobId, data?.session_nonce);
-      setActivity((items) => [`${tx("Cancellation requested", "已请求取消")} · ${jobId}`, ...items].slice(0, 20));
-    } catch (error) {
-      setActivity((items) => [`${tx("Cancellation failed", "取消失败")} · ${String(error)}`, ...items].slice(0, 20));
-    }
-  }
-
-  async function commitSourceTransaction() {
-    try {
-      const response = await fetch("/api/transaction/commit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(data?.session_nonce ? { "X-ArchCanvas-Nonce": data.session_nonce } : {}),
-        },
-        body: "{}",
-      });
-      if (!response.ok) throw new Error(await response.text());
-      const state = await response.json() as StudioState & { reanalysis_job_id?: string | null };
-      setData(state);
-      setActivity((items) => [tx("Committed source transaction", "已提交源码事务"), ...items].slice(0, 20));
-      if (state.reanalysis_job_id) {
-        setBottomTab("jobs");
-        pollJob(state.reanalysis_job_id, () => {
-          setActivity((items) => [tx("Reanalysis completed on the committed source", "已基于提交后的源码完成重新分析"), ...items].slice(0, 20));
-          setBottomTab("problems");
-        });
-      }
-    } catch (error) {
-      setActivity((items) => [`${tx("Source commit failed", "源码提交失败")} · ${String(error)}`, ...items].slice(0, 20));
-    }
-  }
-
-  function persistNavigation(
-    nextProjection: Projection,
-    nextExpansions: Record<Projection, Set<string>>,
-    activityLabel: string,
-  ) {
-    if (navigationTimer.current !== null) window.clearTimeout(navigationTimer.current);
-    const payload = {
-      projection: nextProjection,
-      expansions: {
-        module: [...nextExpansions.module].sort(),
-        source: [...nextExpansions.source].sort(),
-      },
-    };
-    navigationTimer.current = window.setTimeout(() => {
-      navigationTimer.current = null;
-      navigationQueue.current = navigationQueue.current
-        .then(async () => {
-          const response = await fetch("/api/navigation", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(data?.session_nonce ? { "X-ArchCanvas-Nonce": data.session_nonce } : {}),
-            },
-            body: JSON.stringify(payload),
-          });
-          if (!response.ok) throw new Error(await response.text());
-          const state = (await response.json()) as StudioState;
-          acceptStudioState(state);
-          setActivity((items) => [activityLabel, ...items].slice(0, 20));
-        })
-        .catch((error) => {
-          setActivity((items) => [`${tx("Navigation persistence failed", "导航状态保存失败")} · ${String(error)}`, ...items].slice(0, 20));
-        });
-    }, 160);
-  }
-
-  async function submitGlobal(operation: string, targetId: string | undefined, value: Record<string, unknown>) {
-    await mutate("/api/patch", {
-      patch_id: patchId(operation),
-      operation,
-      target_id: targetId,
-      value,
+    if (!jobController.current) return;
+    await cancelStudioJob(jobController.current, jobId, data?.session_nonce, setActivity, {
+      success: tx("Cancellation requested", "已请求取消"),
+      failure: tx("Cancellation failed", "取消失败"),
     });
-  }
-
-  async function submitKernel(operation: string, targetId: string | undefined, value: Record<string, unknown>) {
-    if (!data) return;
-    const kernelSceneId = `kernel:${data.architecture.architecture_id}:${data.document.source_digest.slice(0, 12)}`;
-    await mutate("/api/patch", {
-      patch_id: patchId(operation),
-      operation,
-      target_id: targetId,
-      value: {
-        ...value,
-        kernel_scene_id: kernelSceneId,
-        architecture_id: data.architecture.architecture_id,
-        source_digest: data.document.source_digest,
-      },
-    });
-  }
-
-  async function submitKernelBatch(description: string, patches: Array<{ operation: string; targetId?: string; value: Record<string, unknown> }>) {
-    if (!data) return;
-    const batchId = patchId("kernel-batch").replace("patch:", "batch:");
-    const kernelSceneId = `kernel:${data.architecture.architecture_id}:${data.document.source_digest.slice(0, 12)}`;
-    await mutate("/api/patch-batch", {
-      batch_id: batchId,
-      description,
-      patches: patches.map((patch, index) => ({
-        patch_id: `${batchId.replace("batch:", "patch:")}.${index}`,
-        operation: patch.operation,
-        target_id: patch.targetId,
-        value: {
-          ...patch.value,
-          kernel_scene_id: kernelSceneId,
-          architecture_id: data.architecture.architecture_id,
-          source_digest: data.document.source_digest,
-        },
-      })),
-    }, description);
-  }
-
-  async function prepareParameter(parameterName: string, newValue: unknown) {
-    if (!architectureNode) return;
-    await mutate(
-      "/api/transaction/prepare",
-      {
-        patch_id: patchId("set-parameter"),
-        target_node_id: architectureNode.node_id,
-        parameter_name: parameterName,
-        new_value: newValue,
-      },
-      `${tx("Prepared", "已准备")} ${architectureNode.node_id}.${parameterName}`,
-    );
-    setBottomTab("diff");
-  }
-
-  async function prepareStructural(operation: string, parameters: Record<string, unknown>) {
-    if (!architectureNode) return;
-    await mutate(
-      "/api/transaction/prepare-structural",
-      {
-        patch_id: patchId(operation.replaceAll("_", "-")),
-        operation,
-        target_node_id: architectureNode.node_id,
-        parameters,
-      },
-      `${tx("Prepared", "已准备")} ${operation} ${tx("on", "作用于")} ${architectureNode.node_id}`,
-    );
-    setBottomTab("diff");
-  }
-
-  async function proposeConnection(sourcePortId: string, targetNodeId: string, targetPortId: string) {
-    if (!architectureNode) return;
-    await mutate(
-      "/api/proposal/connection",
-      {
-        proposal_id: patchId("connection").replace("patch:", "proposal:"),
-        source_node_id: architectureNode.node_id,
-        source_port_id: sourcePortId,
-        target_node_id: targetNodeId,
-        target_port_id: targetPortId,
-        role: "main",
-      },
-      `${tx("Proposed", "已提议")} ${architectureNode.node_id} → ${targetNodeId}`,
-    );
   }
 
   function selectSearchResult(result = searchResults[0]) {
@@ -834,16 +622,7 @@ export function StudioApp() {
   async function reviewCanonicalDelete(nodeId: string) {
     setDeleteImpactLoading(true);
     try {
-      const response = await fetch("/api/proposal/delete-node/preview", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(data?.session_nonce ? { "X-ArchCanvas-Nonce": data.session_nonce } : {}),
-        },
-        body: JSON.stringify({ node_id: nodeId }),
-      });
-      if (!response.ok) throw new Error(await response.text());
-      const result = await response.json() as { impact: CanonicalDeleteImpact };
+      const result = await previewCanonicalDelete(nodeId, data?.session_nonce);
       setDeleteImpact(result.impact);
     } catch (error) {
       setActivity((items) => [`${tx("Impact preview failed", "影响预览失败")} · ${String(error)}`, ...items].slice(0, 20));
@@ -879,19 +658,7 @@ export function StudioApp() {
 
   async function runValidation() {
     try {
-      const response = await fetch("/api/validation-runs", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(data?.session_nonce ? { "X-ArchCanvas-Nonce": data.session_nonce } : {}),
-        },
-        body: JSON.stringify({
-          profile: validationProfile,
-          runtime_execution_authorized: false,
-        }),
-      });
-      if (!response.ok) throw new Error(await response.text());
-      const job = await response.json() as { job_id: string };
+      const job = await startValidation(validationProfile, data?.session_nonce);
       setBottomTab("jobs");
       pollJob(job.job_id, () => setBottomTab("validation"));
       await refreshState();
@@ -906,13 +673,7 @@ export function StudioApp() {
     setProjectError("");
     setPendingProject(null);
     try {
-      const response = await fetch("/api/projects/open", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(data?.session_nonce ? { "X-ArchCanvas-Nonce": data.session_nonce } : {}) },
-        body: JSON.stringify({ root: projectRoot.trim(), environment_path: condaEnvironment || null }),
-      });
-      if (!response.ok) throw new Error(await response.text());
-      const result = await response.json() as PendingProject;
+      const result = await openProjectRequest(projectRoot.trim(), condaEnvironment || null, data?.session_nonce);
       setPendingProject(result);
       const roots = result.discovery.entrypoints.filter((item) => item.depth === 0);
       setProjectModelExpansions(new Set(roots.filter((item) => item.child_count > 0).map((item) => item.entrypoint)));
@@ -932,9 +693,7 @@ export function StudioApp() {
     setFolderLoading(true);
     try {
       const target = path ?? (projectRoot.trim() || "/home");
-      const response = await fetch(`/api/directories?path=${encodeURIComponent(target)}`, { cache: "no-store" });
-      if (!response.ok) throw new Error(await response.text());
-      setFolderPicker(await response.json() as DirectoryBrowserState);
+      setFolderPicker(await browseDirectories(target));
       setSelectedFolderPath(null);
     } catch (error) {
       setProjectError(String(error));
@@ -956,23 +715,18 @@ export function StudioApp() {
   async function analyzeProject() {
     if (!pendingProject || !projectEntrypoint) return;
     try {
-      const response = await fetch("/api/analyses", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(data?.session_nonce ? { "X-ArchCanvas-Nonce": data.session_nonce } : {}) },
-        body: JSON.stringify({
-          project_id: pendingProject.project.project_id,
-          project_generation: pendingProject.project.generation,
-          entrypoint: projectEntrypoint,
-          framework: projectFramework,
-          task: "inference",
-          config_path: projectConfig || null,
-          execution_mode: "static",
-          pattern_packs_enabled: true,
-          request_id: `request:${Date.now().toString(36)}`,
-        }),
-      });
-      if (!response.ok) throw new Error(await response.text());
-      const job = await response.json() as { job_id: string };
+      const request: AnalysisRequest = {
+        project_id: pendingProject.project.project_id,
+        project_generation: pendingProject.project.generation,
+        entrypoint: projectEntrypoint,
+        framework: projectFramework,
+        task: "inference",
+        config_path: projectConfig || null,
+        execution_mode: "static",
+        pattern_packs_enabled: true,
+        request_id: `request:${Date.now().toString(36)}`,
+      };
+      const job = await startAnalysis(request, data?.session_nonce);
       setBottomTab("jobs");
       pollJob(job.job_id, () => {
         setProjectDialog(false);
@@ -1091,6 +845,29 @@ export function StudioApp() {
     ? focusedCanonicalId
     : selectedCanonicalIds[0];
   const architectureNode = data.architecture.nodes.find((node) => node.node_id === selectedCanonical);
+  const {
+    mutate,
+    submitGlobal,
+    submitKernel,
+    submitKernelBatch,
+    prepareParameter,
+    prepareStructural,
+    proposeConnection,
+    persistNavigation,
+    commitSourceTransaction,
+  } = createStudioActions({
+    data,
+    architectureNode,
+    tx,
+    acceptStudioState,
+    restoreNavigationState,
+    setActivity,
+    setBottomTab,
+    setData,
+    navigationTimer,
+    navigationQueue,
+    pollJob,
+  });
   const localizedProjectionName = projection === "module"
     ? tx("Module relations", "模块关系")
     : tx("Source relations", "源码关系");
@@ -1169,6 +946,7 @@ export function StudioApp() {
 
   return (
     <LanguageContext.Provider value={{ locale, tx }}>
+    <InspectorLanguageContext.Provider value={{ tx }}>
     <div
       className={`${dark ? "studio dark" : "studio"}${data.transaction ? " has-transaction" : ""}${panelResize ? ` resizing-panel resizing-${panelResize.edge}` : ""}`}
       style={shellLayoutStyle(panelSizes, bottomTab === "source")}
@@ -1325,773 +1103,73 @@ export function StudioApp() {
         onTabChange={(tab) => setBottomTab(tab as typeof bottomTab)}
       >
           {bottomTab === "problems" && ([...data.diagnostics, ...data.draft.proofs.map((proof) => ({ code: proof.reason_codes[0] ?? proof.status.toUpperCase(), severity: proof.status, message: proof.message, target_ids: proof.affected_subject_ids }))].length ? [...data.diagnostics, ...data.draft.proofs.map((proof) => ({ code: proof.reason_codes[0] ?? proof.status.toUpperCase(), severity: proof.status, message: proof.message, target_ids: proof.affected_subject_ids }))].map((item, index) => <button key={`${item.code}-${index}`} onClick={() => chooseCanonical(item.target_ids)}><AlertTriangle size={13} /><b>{item.severity}</b><span>{item.message}</span></button>) : <div className="ok-line"><CircleDot size={13} /> {tx("No geometry or writeback problems", "没有几何或回写问题")}</div>)}
-          {bottomTab === "source" && <SourceWorkspacePanel workspace={data.source_workspace} transaction={data.transaction} sessionNonce={data.session_nonce} onState={setData} onActivity={(message) => setActivity((items) => [message, ...items].slice(0, 20))} onShowDiff={() => setBottomTab("diff")} />}
-          {bottomTab === "diff" && (data.transaction ? <TransactionReview transaction={data.transaction} writebackBlocked={writebackBlocked} onCommit={commitSourceTransaction} onDiscard={async () => { await mutate("/api/transaction/discard", {}, tx("Discarded source transaction", "已放弃源码事务")); }} /> : <div className="ok-line"><LockKeyhole size={13} /> {tx(`Source digest ${sourceDigest} unchanged`, `源码摘要 ${sourceDigest} 未改变`)}</div>)}
+          {bottomTab === "source" && <SourceWorkspacePanel workspace={data.source_workspace} transaction={data.transaction} sessionNonce={data.session_nonce} tx={tx} onState={setData} onActivity={(message) => setActivity((items) => [message, ...items].slice(0, 20))} onShowDiff={() => setBottomTab("diff")} />}
+          {bottomTab === "diff" && (data.transaction ? <TransactionReview transaction={data.transaction} writebackBlocked={writebackBlocked} tx={tx} onCommit={commitSourceTransaction} onDiscard={async () => { await mutate("/api/transaction/discard", {}, tx("Discarded source transaction", "已放弃源码事务")); }} /> : <div className="ok-line"><LockKeyhole size={13} /> {tx(`Source digest ${sourceDigest} unchanged`, `源码摘要 ${sourceDigest} 未改变`)}</div>)}
           {bottomTab === "validation" && (latestValidation ? <div className="gate-list">{latestValidation.gate_results.map((gate) => <span key={gate.gate} className={gate.status}>{gate.status} · {gate.gate} · {gate.message}</span>)}</div> : <div className="validation-line"><CircleDot size={13} /> {tx("Validation has not been run for this fingerprint", "尚未为此指纹运行验证")}</div>)}
           {bottomTab === "jobs" && <div className="job-list">{data.jobs?.length ? data.jobs.map((job) => <div key={job.job_id}><code>{job.job_id}</code><span>{job.profile}</span><b>{job.state} · {Math.round(job.progress * 100)}%</b>{["queued", "running", "cancelling"].includes(job.state) && <button className="icon-button" title={tx("Cancel job", "取消任务")} aria-label={tx("Cancel job", "取消任务")} onClick={() => void cancelJob(job.job_id)}><X size={12} /></button>}</div>) : <div className="validation-line">{tx("No jobs in this session", "本会话中没有任务")}</div>}</div>}
           {bottomTab === "activity" && <div className="activity-list">{activity.map((item, index) => <span key={`${item}-${index}`}><History size={12} />{item}</span>)}</div>}
       </BottomPanel>
 
       <button className="theme-toggle icon-button" title={tx("Toggle theme", "切换主题")} aria-label={tx("Toggle theme", "切换主题")} onClick={() => { const next = !dark; setDark(next); void submitGlobal("set-theme", undefined, { theme: next ? "studio-dark" : "paper-light" }); }}>{dark ? <Sun /> : <Moon />}</button>
-      {projectDialog && <div className="dialog-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setProjectDialog(false); }}>
-        <section className="project-dialog project-launcher" role="dialog" aria-modal="true" aria-label={tx("Open model", "打开模型")}>
-          <header>
-            <div className="launcher-title"><Box size={18} /><div><strong>{tx("Open model", "打开模型")}</strong><span>ArchCanvas Model Architecture Studio</span></div></div>
-            <button className="icon-button" title={tx("Close", "关闭")} aria-label={tx("Close", "关闭")} onClick={() => setProjectDialog(false)}><X /></button>
-          </header>
-
-          <div className="launcher-field">
-            <div className="launcher-label"><span>1</span><div><strong>{tx("Conda environment", "Conda 环境")}</strong><small>{environmentLoading ? tx("Loading", "正在加载") : `${condaEnvironments.length} ${tx("available", "个可用")}`}</small></div><button className="icon-button launcher-refresh" aria-label={tx("Reload environments", "重新加载环境")} title={tx("Reload environments", "重新加载环境")} onClick={() => setCondaEnvironments([])} disabled={environmentLoading}><RefreshCw size={14} /></button></div>
-            <select aria-label={tx("Conda environment", "Conda 环境")} value={condaEnvironment} disabled={environmentLoading} onChange={(event) => { setCondaEnvironment(event.target.value); setPendingProject(null); }}>
-              <option value="">{tx("Studio environment (static analysis)", "Studio 环境（静态分析）")}</option>
-              {condaEnvironments.map((item) => <option key={item.path} value={item.path}>{item.active ? "● " : ""}{item.name} — {item.path}</option>)}
-            </select>
-          </div>
-
-          <div className="launcher-field">
-            <div className="launcher-label"><span>2</span><div><strong>{tx("Model location", "模型存放路径")}</strong><small>{tx("Parent folders are supported", "支持选择上级文件夹")}</small></div></div>
-            <div className="path-scan-row"><div className="path-input"><FolderOpen size={15} /><input aria-label={tx("Model location", "模型存放路径")} value={projectRoot} onChange={(event) => { setProjectRoot(event.target.value); setPendingProject(null); setProjectError(""); }} onKeyDown={(event) => { if (event.key === "Enter") void openProject(); }} /></div><button className="folder-button icon-button" aria-label={tx("Browse folders", "浏览文件夹")} title={tx("Browse folders", "浏览文件夹")} onClick={() => void browseFolders()}><FolderOpen size={14} /></button><button className="prepare-button" disabled={!projectRoot.trim() || projectScanning} onClick={() => void openProject()}>{projectScanning ? <RefreshCw className="spin" size={14} /> : <Search size={14} />} {tx("Scan", "扫描")}</button></div>
-          </div>
-
-          {folderPicker && <div className="folder-picker" role="dialog" aria-label={tx("Choose model folder", "选择模型文件夹")}>
-            <div className="folder-picker-header"><strong>{tx("Choose folder", "选择文件夹")}</strong><button className="icon-button" aria-label={tx("Close folder picker", "关闭文件夹选择器")} onClick={() => { setFolderPicker(null); setSelectedFolderPath(null); }}><X size={14} /></button></div>
-            <div className="folder-breadcrumbs">{folderPicker.breadcrumbs.map((crumb) => <button key={crumb.path} onClick={() => void browseFolders(crumb.path)}>{crumb.name}</button>)}</div>
-            <div className="folder-picker-toolbar"><button className="icon-button" disabled={!folderPicker.parent || folderLoading} aria-label={tx("Parent folder", "上级文件夹")} title={tx("Parent folder", "上级文件夹")} onClick={() => folderPicker.parent && void browseFolders(folderPicker.parent)}><CornerDownLeft size={14} /></button><code>{folderPicker.path}</code></div>
-            <div className="folder-list">{folderPicker.directories.map((directory) => <button key={directory.path} className={selectedFolderPath === directory.path ? "selected" : ""} aria-pressed={selectedFolderPath === directory.path} onDoubleClick={() => void browseFolders(directory.path)} onClick={() => setSelectedFolderPath(directory.path)}><FolderOpen size={14} /><span>{directory.name}</span></button>)}{!folderPicker.directories.length && <span className="folder-empty">{tx("No subfolders", "没有子文件夹")}</span>}</div>
-            <div className="folder-picker-actions"><button onClick={() => { setFolderPicker(null); setSelectedFolderPath(null); }}>{tx("Cancel", "取消")}</button><button className="primary-action" onClick={() => { setProjectRoot(selectedFolderPath ?? folderPicker.path); setPendingProject(null); setFolderPicker(null); setSelectedFolderPath(null); }}>{selectedFolderPath ? tx("Choose selected folder", "选择已选文件夹") : tx("Choose this folder", "选择此文件夹")}</button></div>
-          </div>}
-
-          {projectError && <div className="launcher-error" role="alert"><AlertTriangle size={14} /><span>{projectError}</span></div>}
-
-          {pendingProject && <div className="project-options">
-            <div className="launcher-label"><span>3</span><div><strong>{tx("Detected model hierarchy", "检测到的模型层级")}</strong><small>{pendingProject.discovery.entrypoints.filter((item) => item.top_level).length} {tx("top-level models", "个顶层模型")} · {pendingProject.discovery.entrypoints.filter((item) => !item.top_level).length} {tx("components", "个组件")} · {pendingProject.discovery.scanned_files} {tx("files scanned", "个文件已扫描")}</small></div></div>
-            {pendingProject.discovery.entrypoints.length ? <div className="model-candidate-list" role="radiogroup" aria-label={tx("Detected models", "检测到的模型")}>
-              {visibleProjectEntrypoints(pendingProject.discovery.entrypoints, projectModelExpansions).map((item) => {
-                const selected = projectEntrypoint === item.entrypoint;
-                const symbolName = item.entrypoint.includes(":") ? item.entrypoint.split(":").at(-1)! : item.path.split("/").at(-1)!;
-                const sourceName = item.path.split("/").at(-1)!.replace(/\.py$/i, "");
-                const name = item.top_level && symbolName === "Model" && sourceName.toLowerCase() !== "model" ? sourceName : symbolName;
-                const categoryLabels: Record<ProjectEntrypoint["category"], string> = { model: tx("Model", "完整模型"), encoder: "Encoder", decoder: "Decoder", backbone: "Backbone", attention: "Attention", head: "Head", block: "Block", layer: "Layer", component: tx("Component", "组件") };
-                const expanded = projectModelExpansions.has(item.entrypoint);
-                return <div key={item.entrypoint} className={`model-candidate-row depth-${Math.min(item.depth, 8)}`} style={{ "--candidate-depth": item.depth } as React.CSSProperties}>
-                  <button className="candidate-chevron" aria-label={expanded ? tx("Collapse children", "收起子级") : tx("Expand children", "展开子级")} disabled={!item.child_count} onClick={() => setProjectModelExpansions((current) => { const next = new Set(current); if (next.has(item.entrypoint)) next.delete(item.entrypoint); else next.add(item.entrypoint); return next; })}>{item.child_count ? (expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />) : null}</button>
-                  <button className={`model-candidate ${selected ? "selected" : ""} ${item.top_level ? "top-level" : ""}`} role="radio" aria-checked={selected} onClick={() => selectProjectEntrypoint(item)}><span className="candidate-check">{selected ? <CircleDot size={15} /> : <span />}</span><span className="candidate-main"><strong>{name}</strong><span className={`category-badge category-${item.category}`}>{categoryLabels[item.category]}</span><code>{item.entrypoint}</code><small><FileCode2 size={12} />{item.path}</small></span><span className={`framework-badge framework-${item.framework}`}>{item.framework}</span></button>
-                </div>;
-              })}
-            </div> : <div className="launcher-empty"><Search size={18} /><span>{tx("No supported models found", "未找到支持的模型")}</span></div>}
-            {projectEntrypoint && <div className="launcher-options"><label><span>{tx("Framework", "框架")}</span><select value={projectFramework} onChange={(event) => setProjectFramework(event.target.value)}>{["auto", "pytorch", "keras", "jax", "onnx", "python"].map((item) => <option key={item}>{item}</option>)}</select></label><label><span>{tx("Config", "配置")}</span><select value={projectConfig} onChange={(event) => setProjectConfig(event.target.value)}><option value="">{tx("No config", "无配置")}</option>{pendingProject.discovery.configs.filter((item) => pendingProject.discovery.entrypoints.find((candidate) => candidate.entrypoint === projectEntrypoint)?.config_paths.includes(item.path)).map((item) => <option key={item.path}>{item.path}</option>)}</select></label></div>}
-            <div className="launcher-actions"><button onClick={() => setProjectDialog(false)}>{tx("Cancel", "取消")}</button><button className="primary-action" disabled={!projectEntrypoint} onClick={() => void analyzeProject()}><Play size={14} /> {tx("Open model", "打开模型")}</button></div>
-          </div>}
-        </section>
-      </div>}
-      {draftDialog && <div className="dialog-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setDraftDialog(false); }}>
-        <section className="project-dialog draft-dialog" role="dialog" aria-modal="true" aria-label={tx("Create draft node", "创建草稿节点")}>
-          <header><div><strong>{tx("Create draft node", "创建草稿节点")}</strong><span>{data.project.framework} · DraftGraphDocument</span></div><button className="icon-button" title={tx("Close", "关闭")} aria-label={tx("Close", "关闭")} onClick={() => setDraftDialog(false)}><X /></button></header>
-          <label className="model-field"><span>{tx("Semantic name", "语义名称")}</span><input autoFocus value={draftName} onChange={(event) => setDraftName(event.target.value)} /></label>
-          <label className="model-field"><span>{tx("Node type", "节点类型")}</span><input value={draftType} onChange={(event) => setDraftType(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void createDraftNode(); }} /></label>
-          <Field label={tx("Parent anchor", "父级锚点")} value={selectedCanonicalIds[0] ?? tx("Architecture root", "架构根节点")} mono />
-          <div className="launcher-actions"><button onClick={() => setDraftDialog(false)}>{tx("Cancel", "取消")}</button><button className="primary-action" disabled={!draftName.trim() || !draftType.trim()} onClick={() => void createDraftNode()}><Plus size={14} /> {tx("Create draft", "创建草稿")}</button></div>
-        </section>
-      </div>}
-      {draftEdgeDialog && <div className="dialog-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setDraftEdgeDialog(false); }}>
-        <section className="project-dialog draft-dialog" role="dialog" aria-modal="true" aria-label={tx("Create draft connection", "创建草稿连接")}>
-          <header><div><strong>{tx("Create draft connection", "创建草稿连接")}</strong><span>DraftGraphDocument · {tx("source remains unchanged", "不修改源码")}</span></div><button className="icon-button" title={tx("Close", "关闭")} aria-label={tx("Close", "关闭")} onClick={() => setDraftEdgeDialog(false)}><X /></button></header>
-          <label className="model-field"><span>{tx("Source output", "源输出端口")}</span><select autoFocus value={draftEdgeSource} onChange={(event) => setDraftEdgeSource(event.target.value)}>{draftSourcePorts.map((port) => <option key={port.port_id} value={port.port_id}>{draftPortLabels.get(port.port_id)} · {port.role}</option>)}</select></label>
-          <label className="model-field"><span>{tx("Target input", "目标输入端口")}</span><select value={draftEdgeTarget} onChange={(event) => setDraftEdgeTarget(event.target.value)}>{draftTargetPorts.map((port) => <option key={port.port_id} value={port.port_id}>{draftPortLabels.get(port.port_id)} · {port.role}</option>)}</select></label>
-          <label className="model-field"><span>{tx("Connection policy", "连接策略")}</span><select value={draftEdgePolicy} onChange={(event) => setDraftEdgePolicy(event.target.value as DraftEdgePolicy)}><option value="replace-input">{tx("Replace input", "替换输入")}</option><option value="add-residual">{tx("Add residual", "添加残差")}</option><option value="concat">{tx("Concatenate", "拼接")}</option><option value="fanout">{tx("Fan out", "扇出")}</option><option value="disconnect">{tx("Disconnect", "断开")}</option></select></label>
-          <div className="launcher-actions"><button onClick={() => setDraftEdgeDialog(false)}>{tx("Cancel", "取消")}</button><button className="primary-action" disabled={!draftEdgeSource || !draftEdgeTarget} onClick={() => void createDraftEdge()}><Link2 size={14} /> {tx("Create connection", "创建连接")}</button></div>
-        </section>
-      </div>}
-      {deleteImpact && <div className="dialog-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setDeleteImpact(null); }}>
-        <section className="project-dialog impact-dialog" role="dialog" aria-modal="true" aria-label={tx("Deletion impact preview", "删除影响预览")}>
-          <header><div><strong>{tx("Deletion impact preview", "删除影响预览")}</strong><span>{deleteImpact.semantic_name} · {deleteImpact.node_id}</span></div><button className="icon-button" title={tx("Close", "关闭")} aria-label={tx("Close", "关闭")} onClick={() => setDeleteImpact(null)}><X /></button></header>
-          <div className="impact-warning"><AlertTriangle size={16} /><span>{tx("This preview creates an intent only. Exact IR and source stay unchanged.", "此预览只会创建意图，Exact IR 与源码保持不变。")}</span></div>
-          <div className="impact-metrics"><div><strong>{deleteImpact.incoming_edge_ids.length}</strong><span>{tx("incoming edges", "条入边")}</span></div><div><strong>{deleteImpact.outgoing_edge_ids.length}</strong><span>{tx("outgoing edges", "条出边")}</span></div><div><strong>{deleteImpact.produced_tensor_ids.length}</strong><span>{tx("produced tensors", "个输出 Tensor")}</span></div><div><strong>{deleteImpact.downstream_node_ids.length}</strong><span>{tx("downstream nodes", "个下游节点")}</span></div></div>
-          <section className="impact-details"><h3>{tx("Structural impact", "结构影响")}</h3><dl><dt>Fanout</dt><dd>{deleteImpact.fanout_ids.length}</dd><dt>{tx("Shared parameters", "共享参数节点")}</dt><dd>{deleteImpact.shared_parameter_node_ids.length}</dd><dt>{tx("Children", "子节点")}</dt><dd>{deleteImpact.child_node_ids.length}</dd><dt>Repeat</dt><dd>{deleteImpact.repeat_id ?? tx("None", "无")}</dd><dt>{tx("Source anchors", "源码锚点")}</dt><dd>{deleteImpact.source_evidence_ids.length}</dd><dt>{tx("Runtime evidence", "运行时证据")}</dt><dd>{deleteImpact.runtime_evidence_ids.length}</dd></dl></section>
-          <section className="impact-details"><h3>{tx("Required decisions", "必须决策")}</h3><p>{deleteImpact.required_action}</p>{deleteImpact.blocking_reasons.length ? <ul>{deleteImpact.blocking_reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul> : <p>{tx("Adapter lowering proof is still required.", "仍需适配器 lowering 证明。")}</p>}</section>
-          <div className="launcher-actions"><button onClick={() => setDeleteImpact(null)}>{tx("Cancel", "取消")}</button><button className="danger-action" onClick={() => void createCanonicalDeleteIntent()}><Trash2 size={14} /> {tx("Create blocked intent", "创建阻断意图")}</button></div>
-        </section>
-      </div>}
+      <ProjectDialogs
+        tx={tx}
+        projectDialog={projectDialog}
+        setProjectDialog={setProjectDialog}
+        condaEnvironments={condaEnvironments}
+        environmentLoading={environmentLoading}
+        condaEnvironment={condaEnvironment}
+        setCondaEnvironment={setCondaEnvironment}
+        setCondaEnvironments={setCondaEnvironments}
+        projectRoot={projectRoot}
+        setProjectRoot={setProjectRoot}
+        projectScanning={projectScanning}
+        setProjectError={setProjectError}
+        projectError={projectError}
+        openProject={() => void openProject()}
+        pendingProject={pendingProject}
+        setPendingProject={setPendingProject}
+        folderPicker={folderPicker}
+        setFolderPicker={setFolderPicker}
+        selectedFolderPath={selectedFolderPath}
+        setSelectedFolderPath={setSelectedFolderPath}
+        folderLoading={folderLoading}
+        browseFolders={(path) => void browseFolders(path)}
+        projectModelExpansions={projectModelExpansions}
+        setProjectModelExpansions={setProjectModelExpansions}
+        projectEntrypoint={projectEntrypoint}
+        setProjectEntrypoint={setProjectEntrypoint}
+        projectFramework={projectFramework}
+        setProjectFramework={setProjectFramework}
+        projectConfig={projectConfig}
+        setProjectConfig={setProjectConfig}
+        selectProjectEntrypoint={selectProjectEntrypoint}
+        analyzeProject={() => void analyzeProject()}
+        draftDialog={draftDialog}
+        setDraftDialog={setDraftDialog}
+        draftName={draftName}
+        setDraftName={setDraftName}
+        draftType={draftType}
+        setDraftType={setDraftType}
+        selectedCanonicalIds={selectedCanonicalIds}
+        createDraftNode={() => void createDraftNode()}
+        draftEdgeDialog={draftEdgeDialog}
+        setDraftEdgeDialog={setDraftEdgeDialog}
+        draftEdgeSource={draftEdgeSource}
+        setDraftEdgeSource={setDraftEdgeSource}
+        draftEdgeTarget={draftEdgeTarget}
+        setDraftEdgeTarget={setDraftEdgeTarget}
+        draftEdgePolicy={draftEdgePolicy}
+        setDraftEdgePolicy={setDraftEdgePolicy}
+        draftSourcePorts={draftSourcePorts}
+        draftTargetPorts={draftTargetPorts}
+        draftPortLabels={draftPortLabels}
+        createDraftEdge={() => void createDraftEdge()}
+        deleteImpact={deleteImpact}
+        setDeleteImpact={setDeleteImpact}
+        createCanonicalDeleteIntent={() => void createCanonicalDeleteIntent()}
+      />
     </div>
+    </InspectorLanguageContext.Provider>
     </LanguageContext.Provider>
   );
-}
-
-function Field({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
-  return <div className="field"><label>{label}</label><div className={mono ? "mono" : ""}>{value}</div></div>;
-}
-
-function EdgeInspector({ edge, evidence }: { edge: RenderEdge; evidence: Evidence[] }) {
-  const { tx } = useLanguage();
-  return <div className="structure-inspector edge-inspector">
-    <header className="inspector-heading"><div><h2>{edge.label || tx("Connection", "连接")}</h2><span>{tx("Canonical architecture relation", "规范架构关系")}</span></div><Link2 size={18} /></header>
-    <div className="status-row"><span>{edge.relation}</span><b>{edge.semanticChannel}</b></div>
-    <Field label={tx("Source port", "源端口")} value={edge.sourcePortId} mono />
-    <Field label={tx("Target port", "目标端口")} value={edge.targetPortId} mono />
-    <Field label={tx("Role / channel", "角色 / 通道")} value={`${edge.semanticChannel} / ${edge.relation}`} />
-    <Field label={tx("Canonical edge IDs", "规范边 ID")} value={edge.canonicalEdgeIds.join(", ") || tx("Projected relation", "投影关系")} mono />
-    <Field label={tx("Evidence", "证据")} value={`${evidence.length} ${tx("records", "条记录")} · ${evidence[0]?.confidence ?? tx("not linked", "未关联")}`} mono />
-  </div>;
-}
-
-function structureKind(label: string, nodes: ArchitectureNodeView[]): "tensor" | "encoder" | "decoder" | "ffn" | "norm" | "attention" | "residual" | "convolution" | "pooling" | "recurrent" | "graph" | "moe" | "diffusion" | "state-space" | "embedding" | "activation" | "dropout" | "generic" {
-  const normalizedLabel = label.trim().toLowerCase();
-  const text = `${normalizedLabel} ${nodes.map((node) => `${node.semantic_name} ${String(node.attributes.op_type ?? "")}`).join(" ")}`.toLowerCase();
-  if (["q", "k", "v", "query", "key", "value"].includes(normalizedLabel)) return "tensor";
-  if (normalizedLabel.includes("residual") || normalizedLabel.includes("skip") || normalizedLabel === "add") return "residual";
-  if (text.includes("diffusion") || text.includes("denois") || text.includes("timestep") || text.includes("noise schedule") || text.includes("unet")) return "diffusion";
-  if (text.includes("mixture of expert") || text.includes("moe") || text.includes("expert") || text.includes("router") || text.includes("gating")) return "moe";
-  if (text.includes("state space") || text.includes("ssm") || text.includes("mamba") || text.includes("selective scan")) return "state-space";
-  if (text.includes("lstm") || text.includes("gru") || text.includes("rnn") || text.includes("recurrent") || text.includes("hidden state")) return "recurrent";
-  if (text.includes("graph") || text.includes("gcn") || text.includes("gat") || text.includes("neighbor") || text.includes("message passing")) return "graph";
-  if (text.includes("conv1d") || text.includes("conv2d") || text.includes("convolution") || text.includes("conv ")) return "convolution";
-  if (text.includes("pool") || text.includes("adaptive avg") || text.includes("global avg")) return "pooling";
-  if (text.includes("residual") || text.includes("skip connection") || normalizedLabel === "add" || normalizedLabel === "skip") return "residual";
-  if (text.includes("multihead") || text.includes("multi-head") || text.includes("attention") || text.includes("qkv")) return "attention";
-  if (text.includes("embedding") || text.includes("positional") || text.includes("token embedding")) return "embedding";
-  if (text.includes("dropout")) return "dropout";
-  if (text.includes("activation") || text.includes("relu") || text.includes("gelu") || text.includes("silu") || text.includes("swish")) return "activation";
-  if (normalizedLabel.includes("encoder")) return nodes.length > 2 ? "encoder" : "norm";
-  if (normalizedLabel.includes("decoder") || normalizedLabel === "cross") return "decoder";
-  if (text.includes("ffn") || text.includes("feed forward") || text.includes("mlp")) return "ffn";
-  if (text.includes("norm")) return "norm";
-  if (text.includes("split") || text.includes("transpose") || text.includes("projection")) return "tensor";
-  return "generic";
-}
-
-function StructureGlyph({ kind, label, count }: { kind: ReturnType<typeof structureKind>; label: string; count: number }) {
-  const { tx } = useLanguage();
-  if (kind === "tensor") {
-    return <svg className="structure-glyph tensor-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} ${tx("tensor structure", "张量结构")}`}>
-      <g className="tensor-planes">
-        <rect x="35" y="16" width="132" height="70" />
-        <rect x="47" y="25" width="132" height="70" />
-        <rect x="59" y="34" width="132" height="70" />
-        {[81, 103, 125, 147, 169].map((x) => <line key={`x-${x}`} x1={x} y1="34" x2={x} y2="104" />)}
-        {[51, 68, 85].map((y) => <line key={`y-${y}`} x1="59" y1={y} x2="191" y2={y} />)}
-      </g>
-      <text x="202" y="45">{tx("heads", "头")}</text><text x="202" y="64">{tx("tokens", "词元")}</text><text x="202" y="83">{tx("features", "特征")}</text>
-      <text className="glyph-title" x="35" y="112">{tx("stacked matrix", "堆叠矩阵")}</text>
-    </svg>;
-  }
-  if (kind === "encoder" || kind === "decoder") {
-    const first = kind === "encoder" ? "Q / K / V" : "Self / Cross";
-    return <svg className="structure-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} ${tx("module structure", "模块结构")}`}>
-      <g className="module-flow">
-        <rect x="8" y="39" width="57" height="36" /><text x="36" y="61">{first}</text>
-        <path d="M65 57H84" /><path d="m79 52 6 5-6 5" />
-        <rect x="85" y="32" width="72" height="50" /><text x="121" y="53">{tx("Attention", "注意力")}</text><text x="121" y="69">{tx("context", "上下文")}</text>
-        <path d="M157 57H176" /><path d="m171 52 6 5-6 5" />
-        <rect x="177" y="39" width="74" height="36" /><text x="214" y="53">{tx("Add", "相加")}</text><text x="214" y="68">{tx("Norm", "归一化")}</text>
-      </g>
-      <text className="glyph-title" x="8" y="108">{count} {tx("executable operations", "个可执行操作")}</text>
-    </svg>;
-  }
-  if (kind === "ffn") {
-    return <svg className="structure-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} ${tx("feed-forward structure", "前馈结构")}`}>
-      <g className="module-flow ffn-flow">
-        <rect x="13" y="40" width="45" height="34" /><text x="35" y="61">D</text>
-        <path d="M58 57H84" /><path d="m79 52 6 5-6 5" />
-        <rect x="85" y="25" width="78" height="64" /><text x="124" y="54">4D</text><text x="124" y="71">{tx("activation", "激活")}</text>
-        <path d="M163 57H189" /><path d="m184 52 6 5-6 5" />
-        <rect x="190" y="40" width="45" height="34" /><text x="212" y="61">D</text>
-      </g>
-      <text className="glyph-title" x="13" y="108">{tx("expand · transform · project", "扩展 · 变换 · 投影")}</text>
-    </svg>;
-  }
-  if (kind === "norm") {
-    return <svg className="structure-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} ${tx("normalization structure", "归一化结构")}`}>
-      <g className="module-flow">
-        <rect x="13" y="40" width="58" height="34" /><text x="42" y="61">{tx("input", "输入")}</text>
-        <path d="M71 57H96" /><path d="m91 52 6 5-6 5" />
-        <circle cx="130" cy="57" r="29" /><text x="130" y="53">μ · σ</text><text x="130" y="68">γ · β</text>
-        <path d="M159 57H184" /><path d="m179 52 6 5-6 5" />
-        <rect x="185" y="40" width="62" height="34" /><text x="216" y="61">{tx("normalized", "已归一化")}</text>
-      </g>
-      <text className="glyph-title" x="13" y="108">{tx("feature-wise normalization", "按特征归一化")}</text>
-    </svg>;
-  }
-  if (kind === "attention") {
-    return <svg className="structure-glyph attention-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} attention structure`}>
-      <g className="glyph-flow">
-        <rect x="8" y="18" width="37" height="22" /><text x="26" y="32">Q</text>
-        <rect x="8" y="47" width="37" height="22" /><text x="26" y="61">K</text>
-        <rect x="8" y="76" width="37" height="22" /><text x="26" y="90">V</text>
-        <path d="M45 29H66M45 58H66M45 87H66" /><path d="m61 24 6 5-6 5M61 53 67 58 61 63M61 82 67 87 61 92" />
-        <rect className="attention-score" x="69" y="39" width="46" height="46" />
-        {[81, 93, 105].map((x) => <line key={`sx-${x}`} x1={x} y1="39" x2={x} y2="85" />)}
-        {[51, 63, 75].map((y) => <line key={`sy-${y}`} x1="69" y1={y} x2="115" y2={y} />)}
-        <text x="92" y="94">QKᵀ</text>
-        <path d="M115 62H132" /><path d="m127 57 6 5-6 5" />
-        <rect x="135" y="45" width="42" height="34" /><text x="156" y="59">softmax</text><text x="156" y="71">A</text>
-        <path d="M177 62H194" /><path d="m189 57 6 5-6 5" />
-        <rect x="197" y="45" width="46" height="34" /><text x="220" y="59">A V</text><text x="220" y="71">context</text>
-      </g>
-      <text className="glyph-title" x="8" y="112">multi-head attention · {count} ops</text>
-    </svg>;
-  }
-  if (kind === "residual") {
-    return <svg className="structure-glyph residual-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} residual structure`}>
-      <g className="glyph-flow">
-        <rect x="10" y="45" width="38" height="28" /><text x="29" y="62">x</text>
-        <path d="M48 59H74" /><path d="m68 54 6 5-6 5" />
-        <rect x="77" y="43" width="59" height="32" /><text x="106" y="57">F(x)</text><text x="106" y="69">block</text>
-        <path d="M136 59H166" /><path d="m160 54 6 5-6 5" />
-        <circle cx="184" cy="59" r="17" /><text x="184" y="64">+</text>
-        <path className="skip-path" d="M29 45V19H184V42" /><path d="m179 37 5 6 5-6" />
-        <path d="M201 59H247" /><path d="m241 54 6 5-6 5" /><text x="224" y="50">y</text>
-      </g>
-      <text className="glyph-title" x="10" y="108">identity skip + transform</text>
-    </svg>;
-  }
-  if (kind === "convolution") {
-    return <svg className="structure-glyph convolution-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} convolution structure`}>
-      <g className="glyph-flow">
-        <rect className="feature-grid" x="10" y="27" width="58" height="58" />
-        {[24, 38, 52].map((x) => <line key={`ix-${x}`} x1={x} y1="27" x2={x} y2="85" />)}
-        {[41, 55, 69].map((y) => <line key={`iy-${y}`} x1="10" y1={y} x2="68" y2={y} />)}
-        <rect className="kernel" x="24" y="41" width="28" height="28" /><text x="38" y="57">K</text>
-        <path d="M68 56H88" /><path d="m82 51 6 5-6 5" />
-        <rect x="92" y="39" width="61" height="35" /><text x="123" y="53">∑ wᵢxᵢ</text><text x="123" y="66">+ bias</text>
-        <path d="M153 56H173" /><path d="m167 51 6 5-6 5" />
-        <rect className="feature-grid output-grid" x="177" y="34" width="65" height="45" />
-        {[199, 221].map((x) => <line key={`ox-${x}`} x1={x} y1="34" x2={x} y2="79" />)}
-        {[49, 64].map((y) => <line key={`oy-${y}`} x1="177" y1={y} x2="242" y2={y} />)}
-      </g>
-      <text className="glyph-title" x="10" y="108">sliding kernel · feature map</text>
-    </svg>;
-  }
-  if (kind === "pooling") {
-    return <svg className="structure-glyph pooling-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} pooling structure`}>
-      <g className="glyph-flow">
-        <rect className="feature-grid" x="10" y="26" width="70" height="62" />
-        {[27, 44, 61].map((x) => <line key={`px-${x}`} x1={x} y1="26" x2={x} y2="88" />)}
-        {[41, 57, 73].map((y) => <line key={`py-${y}`} x1="10" y1={y} x2="80" y2={y} />)}
-        <rect className="pool-window" x="27" y="41" width="34" height="32" /><text x="44" y="60">max</text>
-        <path d="M80 57H109" /><path d="m103 52 6 5-6 5" />
-        <circle cx="137" cy="57" r="24" /><text x="137" y="53">max</text><text x="137" y="67">mean</text>
-        <path d="M161 57H188" /><path d="m182 52 6 5-6 5" />
-        <rect x="192" y="39" width="52" height="36" /><text x="218" y="55">H/2 ×</text><text x="218" y="68">W/2</text>
-      </g>
-      <text className="glyph-title" x="10" y="108">spatial aggregation</text>
-    </svg>;
-  }
-  if (kind === "recurrent") {
-    return <svg className="structure-glyph recurrent-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} recurrent structure`}>
-      <g className="glyph-flow">
-        <rect x="20" y="43" width="43" height="32" /><text x="41" y="56">cell</text><text x="41" y="68">t−1</text>
-        <rect x="91" y="43" width="43" height="32" /><text x="112" y="56">cell</text><text x="112" y="68">t</text>
-        <rect x="162" y="43" width="43" height="32" /><text x="183" y="56">cell</text><text x="183" y="68">t+1</text>
-        <path d="M63 59H91M134 59H162" /><path d="m85 54 6 5-6 5M156 54 162 59 156 64" />
-        <path className="state-loop" d="M41 43V20H183V43" /><path d="m177 37 6 6 6-6" /><text x="112" y="17">hidden state hₜ</text>
-        <path d="M41 75V91M112 75V91M183 75V91" /><text x="41" y="103">xₜ₋₁</text><text x="112" y="103">xₜ</text><text x="183" y="103">xₜ₊₁</text>
-      </g>
-      <text className="glyph-title" x="210" y="112">time</text>
-    </svg>;
-  }
-  if (kind === "graph") {
-    return <svg className="structure-glyph graph-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} graph structure`}>
-      <g className="graph-links">
-        <line x1="40" y1="34" x2="104" y2="57" /><line x1="40" y1="83" x2="104" y2="57" /><line x1="104" y1="57" x2="166" y2="31" /><line x1="104" y1="57" x2="166" y2="84" /><line x1="166" y1="31" x2="222" y2="57" /><line x1="166" y1="84" x2="222" y2="57" />
-      </g>
-      <g className="graph-nodes"><circle cx="40" cy="34" r="13" /><circle cx="40" cy="83" r="13" /><circle className="graph-center" cx="104" cy="57" r="17" /><circle cx="166" cy="31" r="13" /><circle cx="166" cy="84" r="13" /><circle cx="222" cy="57" r="13" /></g>
-      <text x="104" y="61">Σ</text><text className="glyph-title" x="10" y="108">neighbor message passing</text>
-    </svg>;
-  }
-  if (kind === "moe") {
-    return <svg className="structure-glyph moe-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} mixture of experts structure`}>
-      <g className="glyph-flow">
-        <rect x="10" y="43" width="38" height="30" /><text x="29" y="62">x</text>
-        <path d="M48 58H68M68 58V28H88M68 58V58H88M68 58V88H88" /><path d="m82 23 6 5-6 5M82 53 88 58 82 63M82 83 88 88 82 93" />
-        <rect className="router" x="88" y="43" width="42" height="30" /><text x="109" y="56">router</text><text x="109" y="67">gate</text>
-        <path d="M130 58H143M143 58V27H153M143 58V58H153M143 58V89H153" /><path d="m147 22 6 5-6 5M147 53 153 58 147 63M147 84 153 89 147 94" />
-        <rect x="153" y="16" width="42" height="22" /><text x="174" y="30">E1</text><rect x="153" y="47" width="42" height="22" /><text x="174" y="61">E2</text><rect x="153" y="78" width="42" height="22" /><text x="174" y="92">E3</text>
-        <path d="M195 27H213V58M195 58H213M195 89H213V58M213 58H244" /><path d="m238 53 6 5-6 5" /><text x="226" y="51">weighted sum</text>
-      </g>
-      <text className="glyph-title" x="10" y="112">sparse expert routing</text>
-    </svg>;
-  }
-  if (kind === "diffusion") {
-    return <svg className="structure-glyph diffusion-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} diffusion structure`}>
-      <g className="glyph-flow">
-        <rect x="8" y="43" width="42" height="30" /><text x="29" y="62">x₀</text>
-        <path d="M50 58H66" /><path d="m60 53 6 5-6 5" /><circle cx="83" cy="58" r="17" /><text x="83" y="55">+ ε</text><text x="83" y="68">noise</text>
-        <path d="M100 58H116" /><path d="m110 53 6 5-6 5" /><rect x="119" y="43" width="39" height="30" /><text x="138" y="56">xₜ</text><text x="138" y="68">t</text>
-        <path d="M158 58H176" /><path d="m170 53 6 5-6 5" /><rect x="179" y="35" width="44" height="46" /><text x="201" y="54">εθ</text><text x="201" y="67">denoise</text>
-        <path d="M223 58H247" /><path d="m241 53 6 5-6 5" /><text x="225" y="96">x̂₀</text>
-      </g>
-      <path className="time-axis" d="M17 19H242" /><path d="m236 14 6 5-6 5" /><text x="17" y="13">forward noise</text><text x="207" y="13">reverse t→0</text>
-    </svg>;
-  }
-  if (kind === "state-space") {
-    return <svg className="structure-glyph state-space-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} state space structure`}>
-      <g className="glyph-flow">
-        <rect x="10" y="45" width="40" height="28" /><text x="30" y="62">uₜ</text>
-        <path d="M50 59H73" /><path d="m67 54 6 5-6 5" /><rect x="76" y="39" width="64" height="40" /><text x="108" y="54">ΔA + B</text><text x="108" y="68">state xₜ</text>
-        <path d="M140 59H164" /><path d="m158 54 6 5-6 5" /><rect x="167" y="45" width="39" height="28" /><text x="186" y="62">C xₜ</text>
-        <path d="M108 39V20H220V59H206" /><path d="m200 54 6 5-6 5" /><text x="145" y="17">selective scan / memory</text>
-        <path d="M206 59H247" /><path d="m241 54 6 5-6 5" /><text x="225" y="84">yₜ</text>
-      </g>
-      <text className="glyph-title" x="10" y="108">continuous state update</text>
-    </svg>;
-  }
-  if (kind === "embedding") {
-    return <svg className="structure-glyph embedding-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} embedding structure`}>
-      <g className="glyph-flow">
-        <rect x="10" y="45" width="45" height="28" /><text x="32" y="62">token id</text>
-        <path d="M55 59H74" /><path d="m68 54 6 5-6 5" />
-        <rect className="lookup-table" x="78" y="20" width="65" height="78" />
-        {[40, 60, 80].map((y) => <line key={y} x1="78" y1={y} x2="143" y2={y} />)}
-        {[94, 110, 126].map((x) => <line key={x} x1={x} y1="20" x2={x} y2="98" />)}
-        <text x="111" y="112">lookup table</text>
-        <path d="M143 59H164" /><path d="m158 54 6 5-6 5" /><rect x="168" y="45" width="76" height="28" /><text x="206" y="62">vector eᵢ</text>
-      </g>
-      <text className="glyph-title" x="10" y="14">token / positional embedding</text>
-    </svg>;
-  }
-  if (kind === "activation") {
-    return <svg className="structure-glyph activation-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} activation structure`}>
-      <g className="activation-plot"><path d="M28 91H238M50 104V15" /><path className="activation-curve" d="M51 90C74 90 85 88 101 78S122 50 137 42 163 31 186 28 218 25 236 24" /><path className="activation-relu" d="M51 90H130L236 24" /></g>
-      <text x="219" y="101">x</text><text x="39" y="22">f(x)</text><text className="glyph-title" x="10" y="115">non-linear activation</text>
-    </svg>;
-  }
-  if (kind === "dropout") {
-    return <svg className="structure-glyph dropout-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} dropout structure`}>
-      <g className="dropout-nodes">
-        {[28, 53, 78].map((x, index) => <circle key={`di-${x}`} cx={x} cy="45" r="9" className={index === 1 ? "masked" : "kept"} />)}
-        {[28, 53, 78].map((x, index) => <circle key={`do-${x}`} cx={x + 151} cy="45" r="9" className={index === 1 ? "masked" : "kept"} />)}
-      </g>
-      <path d="M87 45H112" /><path d="m106 40 6 5-6 5" /><rect className="mask-box" x="116" y="27" width="38" height="36" /><text x="135" y="42">mask</text><text x="135" y="55">p=0.1</text>
-      <path d="M28 54V78H179V54" /><path d="m173 49 6 5-6 5" /><text className="glyph-title" x="10" y="108">stochastic feature masking</text>
-    </svg>;
-  }
-  return <svg className="structure-glyph" viewBox="0 0 260 118" role="img" aria-label={`${label} ${tx("contained structure", "包含结构")}`}>
-    <g className="generic-glyph">
-      <rect x="12" y="20" width="236" height="78" />
-      {Array.from({ length: Math.min(5, Math.max(1, count)) }, (_, index) => {
-        const x = 29 + index * 43;
-        return <g key={x}><circle cx={x} cy="59" r="12" />{index > 0 && <line x1={x - 31} y1="59" x2={x - 12} y2="59" />}</g>;
-      })}
-    </g>
-    <text className="glyph-title" x="12" y="112">{count} {tx("contained operations", "个包含操作")}</text>
-  </svg>;
-}
-
-function StructureInspector({ label, viewNode, sceneNode, nodes, tensors, evidence }: {
-  label: string;
-  viewNode: PublicationNode;
-  sceneNode: RenderNode;
-  nodes: ArchitectureNodeView[];
-  tensors: ArchitectureTensor[];
-  evidence: Evidence[];
-}) {
-  const { tx } = useLanguage();
-  const nodeIds = new Set(nodes.map((node) => node.node_id));
-  const relevant = tensors.filter((tensor) =>
-    nodeIds.has(tensor.producer_id) || tensor.consumer_ids.some((id) => nodeIds.has(id)),
-  );
-  const nodeOrder = new Map(nodes.map((node, index) => [node.node_id, index]));
-  const orderedTensors = [...relevant].sort((left, right) => {
-    const leftRank = nodeIds.has(left.producer_id) ? (nodeOrder.get(left.producer_id) ?? 0) + 1 : 0;
-    const rightRank = nodeIds.has(right.producer_id) ? (nodeOrder.get(right.producer_id) ?? 0) + 1 : 0;
-    return leftRank - rightRank || left.tensor_id.localeCompare(right.tensor_id);
-  });
-  const shapeStages = orderedTensors.filter(
-    (tensor, index, all) => all.findIndex((item) => item.role === tensor.role && item.symbolic_shape === tensor.symbolic_shape) === index,
-  ).slice(0, 6);
-  const opTypes = [...new Set(nodes.map((node) => String(node.attributes.op_type ?? node.kind)))];
-  const kind = structureKind(label, nodes);
-  const primaryTensor = [...shapeStages].sort(
-    (left, right) => right.semantic_axes.length - left.semantic_axes.length,
-  )[0];
-  return <div className="structure-inspector">
-    <header className="inspector-heading"><div><h2>{label}</h2><span>{kind === "tensor" ? tx("Tensor transformation", "张量变换") : tx("Module structure", "模块结构")}</span></div><b>{nodes.length} {tx("ops", "个操作")}</b></header>
-    <div className={`structure-preview preview-${kind}`}><StructureGlyph kind={kind} label={label} count={nodes.length} /></div>
-    {shapeStages.length > 0 && <section className="shape-flow"><div className="section-heading">{tx("Tensor shape flow", "张量形状流")}</div><div className="shape-track">{shapeStages.map((tensor, index) => <React.Fragment key={tensor.tensor_id}>{index > 0 && <span className="shape-arrow">→</span>}<div className="shape-step"><strong>{tensor.role}</strong><code>{tensor.symbolic_shape.replaceAll(",", " × ").replace("[", "").replace("]", "")}</code></div></React.Fragment>)}</div></section>}
-    {primaryTensor?.semantic_axes.length ? <div className="axis-legend">{primaryTensor.semantic_axes.map((axis, index) => <span key={axis}><b>{primaryTensor.symbolic_shape.replace(/[\[\]]/g, "").split(",")[index] ?? `d${index + 1}`}</b>{axis.replaceAll("_", " ")}</span>)}</div> : null}
-    <section className="operation-summary"><div className="section-heading">{tx("Contained operations", "包含的操作")}</div><div className="operation-chips">{opTypes.slice(0, 8).map((item) => <span key={item}>{item}</span>)}</div></section>
-    <div className="status-row"><span>Exact IR</span><b>{nodes.length} {tx("canonical", "个规范节点")}</b></div>
-    <Field label={tx("Source symbols", "源码符号")} value={[...new Set(nodes.map((node) => node.source_symbol).filter(Boolean))].join(", ") || tx("Structural container", "结构容器")} />
-    <Field label={tx("Evidence", "证据")} value={`${evidence.length} ${tx("records", "条记录")} · ${evidence[0]?.confidence ?? "exact"}`} mono />
-    <div className="resolution"><div className="section-label">{tx("Resolution", "解析状态")}</div><dl><dt>{tx("Implementation", "实现")}</dt><dd>{viewNode.attributes.resolution ? tx("resolved", "已解析") : tx("exact", "精确")}</dd><dt>{tx("Semantics", "语义")}</dt><dd>{viewNode.collapsed ? tx("grouped", "已分组") : tx("expanded", "已展开")}</dd><dt>{tx("Execution", "执行")}</dt><dd>{sceneNode.canonicalNodeIds.length ? tx("authored", "源码定义") : tx("structural", "结构生成")}</dd></dl></div>
-  </div>;
-}
-
-function SourceInspector({ nodes, evidence }: { nodes: ArchitectureNodeView[]; evidence: Evidence[] }) {
-  const { tx } = useLanguage();
-  const sourceEvidence = useMemo(
-    () => evidence.filter((record) => record.kind === "source" && record.path && record.span),
-    [evidence],
-  );
-  const sourceKey = sourceEvidence.map((record) => record.evidence_id).join("|");
-  const [activeEvidenceId, setActiveEvidenceId] = useState(sourceEvidence[0]?.evidence_id ?? "");
-  const [excerpt, setExcerpt] = useState<SourceExcerpt | null>(null);
-  const [sourceError, setSourceError] = useState("");
-  useEffect(() => {
-    setActiveEvidenceId(sourceEvidence[0]?.evidence_id ?? "");
-  }, [sourceKey]);
-  const activeEvidence = sourceEvidence.find((record) => record.evidence_id === activeEvidenceId) ?? sourceEvidence[0];
-  useEffect(() => {
-    if (!activeEvidence?.path || !activeEvidence.span) {
-      setExcerpt(null);
-      return;
-    }
-    const controller = new AbortController();
-    setSourceError("");
-    fetch(`/api/source-excerpt?path=${encodeURIComponent(activeEvidence.path)}&start=${activeEvidence.span.start_line}&end=${activeEvidence.span.end_line}&context=4`, { signal: controller.signal, cache: "no-store" })
-      .then(async (response) => {
-        if (!response.ok) throw new Error((await response.json() as { error?: string }).error ?? tx("Source excerpt unavailable", "源码片段不可用"));
-        return response.json() as Promise<SourceExcerpt>;
-      })
-      .then(setExcerpt)
-      .catch((error) => { if (!controller.signal.aborted) setSourceError(String(error)); });
-    return () => controller.abort();
-  }, [activeEvidence?.evidence_id]);
-
-  const paths = [...new Set(sourceEvidence.map((record) => record.path).filter((path): path is string => Boolean(path)))];
-  return <div className="source-inspector">
-    <header className="inspector-heading"><div><h2>{tx("Source structure", "源码结构")}</h2><span>{paths.length} {tx("files", "个文件")} · {nodes.length} {tx("operations", "个操作")}</span></div><FileCode2 size={17} /></header>
-    <section className="source-outline"><div className="section-heading">{tx("Containment", "包含关系")}</div>{paths.map((path) => {
-      const pathEvidence = sourceEvidence.filter((record) => record.path === path);
-      const symbols = [...new Set(pathEvidence.map((record) => record.symbol).filter((symbol): symbol is string => Boolean(symbol)))];
-      return <div className="source-file" key={path}><div className="source-file-row"><FileCode2 size={13} /><strong>{path}</strong></div>{symbols.map((symbol) => {
-        const symbolEvidenceIds = new Set(pathEvidence.filter((record) => record.symbol === symbol).map((record) => record.evidence_id));
-        const symbolNodes = nodes.filter((node) => node.evidence_ids.some((id) => symbolEvidenceIds.has(id)));
-        return <div className="source-symbol" key={symbol}><div><Braces size={12} /><b>{symbol}</b></div><div className="source-node-list">{symbolNodes.map((node) => <span key={node.node_id}><CircleDot size={8} />{node.semantic_name}</span>)}</div></div>;
-      })}</div>;
-    })}</section>
-    {sourceEvidence.length > 0 ? <>
-      <section className="source-locations"><div className="section-heading">{tx("Evidence locations", "证据位置")}</div>{sourceEvidence.slice(0, 20).map((record) => <button key={record.evidence_id} className={record.evidence_id === activeEvidence?.evidence_id ? "active" : ""} onClick={() => setActiveEvidenceId(record.evidence_id)}><code>{record.path}:{record.span?.start_line}</code><span>{record.symbol}</span></button>)}</section>
-      <section className="code-excerpt"><div className="code-header"><span>{excerpt?.path ?? activeEvidence?.path}</span><code>{activeEvidence?.symbol}</code></div>{sourceError ? <div className="source-error">{sourceError}</div> : excerpt ? <pre>{excerpt.lines.map((line) => <div key={line.number} className={line.number >= excerpt.highlight_start_line && line.number <= excerpt.highlight_end_line ? "highlight" : ""}><span>{line.number}</span><code>{line.text || " "}</code></div>)}</pre> : <div className="source-loading">{tx("Loading source...", "正在加载源码...")}</div>}</section>
-    </> : <div className="empty-state"><FileCode2 size={20} /><span>{tx("No source evidence", "没有源码证据")}</span></div>}
-  </div>;
-}
-
-function displayValue(value: unknown): string {
-  return typeof value === "string" ? value : JSON.stringify(value);
-}
-
-function parseValue(value: string): unknown {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
-}
-
-function ModelInspector({ node, nodes, transaction, proposal, writebackBlocked, deleteIntentActive, deleteImpactLoading, onPrepareParameter, onPrepareStructural, onProposeConnection, onReviewDelete, onCommit, onDiscard }: {
-  node?: StudioState["architecture"]["nodes"][number];
-  nodes: StudioState["architecture"]["nodes"];
-  transaction: SourceTransaction | null;
-  proposal: AgentProposal | null;
-  writebackBlocked: boolean;
-  deleteIntentActive: boolean;
-  deleteImpactLoading: boolean;
-  onPrepareParameter: (parameterName: string, newValue: unknown) => Promise<void>;
-  onPrepareStructural: (operation: string, parameters: Record<string, unknown>) => Promise<void>;
-  onProposeConnection: (sourcePortId: string, targetNodeId: string, targetPortId: string) => Promise<void>;
-  onReviewDelete: (nodeId: string) => Promise<void>;
-  onCommit: () => Promise<void>;
-  onDiscard: () => Promise<void>;
-}) {
-  const { tx } = useLanguage();
-  const parameters = node?.parameters ?? [];
-  const parameterRequest = transaction?.request.operation === "set_parameter" ? transaction.request : null;
-  const activeForNode = Boolean(transaction && transaction.request.target_node_id === node?.node_id);
-  const initialName = activeForNode && parameterRequest ? parameterRequest.parameter_name : parameters[0]?.name;
-  const [name, setName] = useState(initialName ?? "");
-  const parameter = parameters.find((item) => item.name === name) ?? parameters[0];
-  const [value, setValue] = useState(
-    activeForNode && parameterRequest ? displayValue(parameterRequest.new_value) : parameter ? displayValue(parameter.value) : "",
-  );
-  const currentActivation = String(node?.attributes.op_type ?? "").replace("nn.", "");
-  const [replacement, setReplacement] = useState(currentActivation === "ReLU" ? "GELU" : "ReLU");
-  const [moduleName, setModuleName] = useState(`${String(node?.attributes.module_path ?? "layer").replace("self.", "")}_norm`);
-  const [normalizedShape, setNormalizedShape] = useState("d_model");
-  const targetOptions = nodes.filter((item) => item.node_id !== node?.node_id && item.input_ports.length);
-  const [targetNodeId, setTargetNodeId] = useState(targetOptions[0]?.node_id ?? "");
-  const targetNode = targetOptions.find((item) => item.node_id === targetNodeId) ?? targetOptions[0];
-  const [sourcePortId, setSourcePortId] = useState(node?.output_ports[0]?.port_id ?? "");
-  const [targetPortId, setTargetPortId] = useState(targetNode?.input_ports[0]?.port_id ?? "");
-  useEffect(() => {
-    const transactionName = parameterRequest?.parameter_name;
-    const transactionParameter = parameterRequest?.target_node_id === node?.node_id && transactionName
-      ? node?.parameters.find((item) => item.name === transactionName)
-      : undefined;
-    const next = transactionParameter ?? node?.parameters[0];
-    setName(next?.name ?? "");
-    setValue(transactionParameter ? displayValue(parameterRequest?.new_value) : next ? displayValue(next.value) : "");
-    const activation = String(node?.attributes.op_type ?? "").replace("nn.", "");
-    setReplacement(activation === "ReLU" ? "GELU" : "ReLU");
-    setModuleName(`${String(node?.attributes.module_path ?? "layer").replace("self.", "")}_norm`);
-    setSourcePortId(node?.output_ports[0]?.port_id ?? "");
-  }, [node?.node_id, transaction?.transaction_id]);
-  useEffect(() => {
-    if (parameter && !activeForNode) setValue(displayValue(parameter.value));
-  }, [parameter?.name]);
-  useEffect(() => {
-    setTargetPortId(targetNode?.input_ports[0]?.port_id ?? "");
-  }, [targetNode?.node_id]);
-  if (!node) {
-    return <div className="empty-state"><Braces size={20} /><span>{tx("No canonical node selected", "未选择规范节点")}</span></div>;
-  }
-  const active = transaction && transaction.request.target_node_id === node.node_id;
-  const affected = active ? transaction.expected_delta.changed_nodes.length : 0;
-  const transactionLocked = Boolean(transaction && !["discarded", "committed", "failed"].includes(transaction.state));
-  const activationSupported = ["GELU", "ReLU", "SiLU"].includes(currentActivation);
-  return <>
-    <div className="transaction-banner"><GitBranch size={15} /> {tx("Safe source transaction", "安全源码事务")}</div>
-    {parameter ? <section className="model-operation"><div className="section-heading">{tx("Parameter", "参数")}</div><label className="model-field"><span>{tx("Parameter", "参数")}</span><select value={parameter.name} onChange={(event) => setName(event.target.value)}>{parameters.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></label><Field label={tx("Current / provenance", "当前值 / 来源")} value={`${displayValue(parameter.value)} · ${parameter.origin}`} mono /><label className="model-field"><span>{tx("Target value", "目标值")}</span><input value={value} onChange={(event) => setValue(event.target.value)} /></label><button className="prepare-button" disabled={transactionLocked || value === displayValue(parameter.value)} onClick={() => void onPrepareParameter(parameter.name, parseValue(value))}><GitBranch size={14} /> {tx("Prepare parameter", "准备参数修改")}</button></section> : <div className="operation-unavailable">{tx("No exact editable parameter on this node.", "此节点没有可精确编辑的参数。")}</div>}
-    <section className="model-operation"><div className="section-heading">{tx("Registered transforms", "已注册变换")}</div>{activationSupported && <><label className="model-field"><span>{tx("Activation", "激活函数")}</span><select value={replacement} onChange={(event) => setReplacement(event.target.value)}>{["GELU", "ReLU", "SiLU"].filter((item) => item !== currentActivation).map((item) => <option key={item}>{item}</option>)}</select></label><button className="prepare-button" disabled={transactionLocked} onClick={() => void onPrepareStructural("replace_activation", { replacement })}><GitBranch size={14} /> {tx("Replace activation", "替换激活函数")}</button></>}<label className="model-field"><span>{tx("LayerNorm module", "LayerNorm 模块")}</span><input value={moduleName} onChange={(event) => setModuleName(event.target.value)} /></label><label className="model-field"><span>{tx("Normalized shape", "归一化形状")}</span><input value={normalizedShape} onChange={(event) => setNormalizedShape(event.target.value)} /></label><button className="prepare-button" disabled={transactionLocked || !moduleName || !normalizedShape} onClick={() => void onPrepareStructural("insert_layer_norm", { module_name: moduleName, normalized_shape: parseValue(normalizedShape) })}><GitBranch size={14} /> {tx("Insert LayerNorm", "插入 LayerNorm")}</button></section>
-    <section className="model-operation"><div className="section-heading">{tx("Proposed connection", "连接提议")}</div>{node.output_ports.length && targetNode ? <><label className="model-field"><span>{tx("Source output", "源输出")}</span><select value={sourcePortId} onChange={(event) => setSourcePortId(event.target.value)}>{node.output_ports.map((port) => <option key={port.port_id} value={port.port_id}>{port.role} · {port.port_id}</option>)}</select></label><label className="model-field"><span>{tx("Target node", "目标节点")}</span><select value={targetNode.node_id} onChange={(event) => setTargetNodeId(event.target.value)}>{targetOptions.map((item) => <option key={item.node_id} value={item.node_id}>{item.semantic_name}</option>)}</select></label><label className="model-field"><span>{tx("Target input", "目标输入")}</span><select value={targetPortId} onChange={(event) => setTargetPortId(event.target.value)}>{targetNode.input_ports.map((port) => <option key={port.port_id} value={port.port_id}>{port.role} · {port.port_id}</option>)}</select></label><button className="prepare-button" onClick={() => void onProposeConnection(sourcePortId, targetNode.node_id, targetPortId)}><Link2 size={14} /> {tx("Create handoff", "创建交接")}</button></> : <div className="operation-unavailable">{tx("Select a node with an authored output port.", "请选择带源码定义输出端口的节点。")}</div>}</section>
-    <section className="model-operation danger-zone"><div className="section-heading">{tx("Canonical deletion", "规范节点删除")}</div><p>{tx("Review graph impact before creating a typed delete intent.", "创建类型化删除意图前先审查图影响。")}</p><button className="prepare-button danger-action" disabled={deleteIntentActive || deleteImpactLoading} onClick={() => void onReviewDelete(node.node_id)}><Trash2 size={14} /> {deleteIntentActive ? tx("Delete intent pending", "删除意图待处理") : deleteImpactLoading ? tx("Calculating impact", "正在计算影响") : tx("Review deletion impact", "审查删除影响")}</button></section>
-    {proposal && <div className="proposal-card"><div><ShieldCheck size={15} /><strong>{tx("Agent handoff", "代理交接")}</strong><code>{proposal.reason_code}</code></div><p>{proposal.summary}</p><dl><dt>{tx("Shell", "终端")}</dt><dd>{tx("Denied", "已拒绝")}</dd><dt>{tx("Network", "网络")}</dt><dd>{tx("Denied", "已拒绝")}</dd><dt>{tx("Source write", "源码写入")}</dt><dd>{tx("Denied", "已拒绝")}</dd></dl></div>}
-    <Field label={tx("Expected affected nodes / edges", "预计影响的节点 / 边")} value={active ? `${affected} / ${transaction.expected_delta.changed_edges.length}` : tx("Calculated during prepare", "在准备阶段计算")} />
-    {active && <div className={`transaction-state ${transaction.state}`}>{transaction.state}</div>}
-    {active && transaction.state === "review-ready" && <div className="transaction-actions"><button className="commit-button" disabled={writebackBlocked} title={writebackBlocked ? tx("Resolve draft blockers before committing", "提交前请解决草稿阻断项") : tx("Commit verified source transaction", "提交已验证的源码事务")} onClick={() => void onCommit()}><CircleDot size={14} /> {tx("Commit to source", "提交到源码")}</button><button onClick={() => void onDiscard()}><X size={14} /> {tx("Discard", "放弃")}</button></div>}
-    {active && transaction.state === "failed" && <div className="transaction-actions"><span className="agent-handoff-status"><Braces size={14} /> {tx("Agent handoff is unavailable for this failed transaction", "当前失败事务不提供代理交接")}</span><button onClick={() => void onDiscard()}><X size={14} /> {tx("Discard", "放弃")}</button></div>}
-  </>;
-}
-
-function deltaSummary(delta: GraphDelta | undefined, tx: LanguageContextValue["tx"]): string {
-  if (!delta) return tx("Not available", "不可用");
-  const nodes = delta.added_nodes.length + delta.removed_nodes.length + delta.changed_nodes.length;
-  const edges = delta.added_edges.length + delta.removed_edges.length + delta.changed_edges.length;
-  return `${delta.changed_parameters.length} ${tx("parameters", "个参数")} · ${nodes} ${tx("nodes", "个节点")} · ${edges} ${tx("edges", "条边")} · ${delta.changed_shapes.length} ${tx("shapes", "个形状")}`;
-}
-
-function SourceWorkspacePanel({ workspace, transaction, sessionNonce, onState, onActivity, onShowDiff }: {
-  workspace: StudioState["source_workspace"];
-  transaction: SourceTransaction | null;
-  sessionNonce?: string;
-  onState: (state: StudioState) => void;
-  onActivity: (message: string) => void;
-  onShowDiff: () => void;
-}) {
-  const { tx } = useLanguage();
-  const [selectedPath, setSelectedPath] = useState("");
-  const [buffer, setBuffer] = useState<SourceWorkspaceBuffer | null>(null);
-  const [content, setContent] = useState("");
-  const [view, setView] = useState<"editor" | "diff">("editor");
-  const [busy, setBusy] = useState<"open" | "save" | "validate" | "discard-file" | "discard-all" | null>(null);
-  const [error, setError] = useState("");
-  const lineNumbers = useRef<HTMLPreElement>(null);
-  const requestSequence = useRef(0);
-  const selectedFile = workspace.files.find((file) => file.path === selectedPath);
-  const transactionActive = Boolean(transaction && !["committed", "discarded", "failed"].includes(transaction.state));
-  const sourceReviewReady = transaction?.request.operation === "edit_source_buffers" && transaction.state === "review-ready";
-  const localDirty = Boolean(buffer && content !== buffer.staged_content);
-  const modifiedCount = workspace.files.filter((file) => file.state === "modified").length;
-
-  async function request<T>(endpoint: string, payload: object): Promise<T> {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(sessionNonce ? { "X-ArchCanvas-Nonce": sessionNonce } : {}),
-      },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) {
-      const detail = await response.text();
-      try {
-        const parsed = JSON.parse(detail) as { error?: string };
-        throw new Error(parsed.error ?? detail);
-      } catch (parseError) {
-        if (parseError instanceof SyntaxError) throw new Error(detail || response.statusText);
-        throw parseError;
-      }
-    }
-    return await response.json() as T;
-  }
-
-  async function openPath(path: string) {
-    if (!path) return;
-    const sequence = ++requestSequence.current;
-    setBusy("open");
-    setError("");
-    setSelectedPath(path);
-    try {
-      const result = await request<{ buffer: SourceWorkspaceBuffer; state: StudioState }>(
-        "/api/source-workspace/open",
-        { path },
-      );
-      if (sequence !== requestSequence.current) return;
-      setBuffer(result.buffer);
-      setContent(result.buffer.staged_content);
-      onState({ ...result.state, session_nonce: result.state.session_nonce ?? sessionNonce });
-    } catch (requestError) {
-      if (sequence !== requestSequence.current) return;
-      setBuffer(null);
-      setError(String(requestError));
-    } finally {
-      if (sequence === requestSequence.current) setBusy(null);
-    }
-  }
-
-  useEffect(() => {
-    const initial = workspace.files.find((file) => file.opened && file.state !== "readonly")
-      ?? workspace.files.find((file) => file.state !== "readonly");
-    setSelectedPath(initial?.path ?? "");
-    setBuffer(null);
-    setContent("");
-    setView("editor");
-    setError("");
-    if (initial) void openPath(initial.path);
-  }, [workspace.workspace_id]);
-
-  async function saveDraft(): Promise<SourceWorkspaceBuffer | null> {
-    if (!buffer || !localDirty) return buffer;
-    setBusy("save");
-    setError("");
-    try {
-      const result = await request<{ buffer: SourceWorkspaceBuffer; state: StudioState }>(
-        "/api/source-workspace/save",
-        {
-          path: buffer.path,
-          content,
-          base_sha256: buffer.base_sha256,
-          expected_revision: workspace.revision,
-        },
-      );
-      setBuffer(result.buffer);
-      setContent(result.buffer.staged_content);
-      onState({ ...result.state, session_nonce: result.state.session_nonce ?? sessionNonce });
-      onActivity(`${tx("Saved source draft", "已保存源码草稿")} · ${buffer.path}`);
-      return result.buffer;
-    } catch (requestError) {
-      setError(String(requestError));
-      return null;
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function validateChanges() {
-    if (sourceReviewReady) {
-      onShowDiff();
-      return;
-    }
-    if (localDirty && !await saveDraft()) return;
-    setBusy("validate");
-    setError("");
-    try {
-      const state = await request<StudioState>("/api/source-workspace/validate", {});
-      onState(state);
-      onActivity(tx("Source workspace passed validation and is ready for review", "源码工作区已通过验证，可以审查"));
-      onShowDiff();
-    } catch (requestError) {
-      setError(String(requestError));
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function discardFile() {
-    if (!buffer) return;
-    setBusy("discard-file");
-    setError("");
-    try {
-      const state = await request<StudioState>("/api/source-workspace/buffer/discard", {
-        path: buffer.path,
-        expected_revision: workspace.revision,
-      });
-      onState(state);
-      onActivity(`${tx("Discarded source draft", "已丢弃源码草稿")} · ${buffer.path}`);
-      setBuffer(null);
-      setContent("");
-    } catch (requestError) {
-      setError(String(requestError));
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function discardWorkspace() {
-    setBusy("discard-all");
-    setError("");
-    try {
-      const state = await request<StudioState>("/api/source-workspace/discard", {});
-      onState(state);
-      onActivity(tx("Discarded all staged source changes", "已丢弃全部暂存源码修改"));
-      setBuffer(null);
-      setContent("");
-    } catch (requestError) {
-      setError(String(requestError));
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  const shortHash = (value: string | null) => value ? value.slice(0, 12) : tx("Unavailable", "不可用");
-  const stateLabel = (state: SourceWorkspaceFile["state"]) => ({
-    clean: tx("Clean", "干净"),
-    modified: tx("Modified", "已修改"),
-    stale: tx("Stale", "已过期"),
-    readonly: tx("Read only", "只读"),
-  })[state];
-  const lineCount = Math.max(1, content.split("\n").length);
-
-  return <div className="source-workspace">
-    <aside className="source-workspace-files">
-      <header><strong>{tx("Snapshot files", "快照文件")}</strong><span className={`source-workspace-state ${workspace.state}`}>{workspace.state}</span></header>
-      <div className="source-file-list">
-        {workspace.files.map((file) => <button key={file.path} className={`${file.path === selectedPath ? "active" : ""} ${file.state}`} title={file.readonly_reason ?? file.path} onClick={() => { setBuffer(null); setContent(""); void openPath(file.path); }} disabled={busy !== null || file.state === "readonly"}>
-          <FileCode2 size={13} /><span>{file.path}</span><b>{stateLabel(file.state)}</b>
-        </button>)}
-      </div>
-      <footer><span>{workspace.files.length} {tx("files", "个文件")} · {modifiedCount} {tx("modified", "个已修改")}</span><button disabled={busy !== null || (!modifiedCount && !transactionActive)} onClick={() => void discardWorkspace()}><Trash2 size={13} />{tx("Discard all", "全部丢弃")}</button></footer>
-    </aside>
-    <section className="source-workspace-editor">
-      <header className="source-editor-toolbar">
-        <div><strong>{selectedPath || tx("No source file", "没有源码文件")}</strong>{selectedFile && <span>{selectedFile.size.toLocaleString()} B</span>}</div>
-        <div className="source-view-switch"><button className={view === "editor" ? "active" : ""} onClick={() => setView("editor")}>{tx("Editor", "编辑器")}</button><button className={view === "diff" ? "active" : ""} onClick={() => setView("diff")}>{tx("Staged diff", "暂存差异")}</button></div>
-        <button className="source-action" disabled={!buffer || !localDirty || busy !== null || transactionActive || buffer?.state === "stale"} onClick={() => void saveDraft()}><Save size={13} />{tx("Save draft", "保存草稿")}</button>
-        <button className="source-action primary" disabled={busy !== null || workspace.state === "stale" || (!modifiedCount && !localDirty && !sourceReviewReady) || (transactionActive && !sourceReviewReady)} onClick={() => void validateChanges()}><ShieldCheck size={13} />{sourceReviewReady ? tx("Review changes", "审查修改") : busy === "validate" ? tx("Validating", "正在验证") : tx("Validate changes", "验证修改")}</button>
-        <button className="icon-button" title={tx("Discard selected buffer", "丢弃所选缓冲区")} aria-label={tx("Discard selected buffer", "丢弃所选缓冲区")} disabled={!buffer || busy !== null} onClick={() => void discardFile()}><X size={13} /></button>
-      </header>
-      {error && <div className="source-workspace-error"><AlertTriangle size={13} />{error}</div>}
-      {buffer ? <>
-        <div className="source-hashes"><span>Base <code title={buffer.base_sha256}>{shortHash(buffer.base_sha256)}</code></span><span>Staged <code title={buffer.staged_sha256}>{shortHash(buffer.staged_sha256)}</code></span><span>Working <code title={buffer.working_sha256}>{shortHash(buffer.working_sha256)}</code></span><b className={buffer.state}>{buffer.state}</b></div>
-        {view === "editor" ? <div className="source-code-editor"><pre ref={lineNumbers} aria-hidden="true">{Array.from({ length: lineCount }, (_, index) => index + 1).join("\n")}</pre><textarea aria-label={tx("Staged source content", "暂存源码内容")} spellCheck={false} wrap="off" value={content} readOnly={transactionActive || buffer.state === "stale"} onScroll={(event) => { if (lineNumbers.current) lineNumbers.current.scrollTop = event.currentTarget.scrollTop; }} onChange={(event) => setContent(event.target.value)} /></div> : <pre className="source-staged-diff">{buffer.diff || tx("No staged textual changes", "没有暂存文本修改")}</pre>}
-      </> : selectedFile?.state === "readonly" ? <div className="source-workspace-empty"><LockKeyhole size={18} /><span>{selectedFile.readonly_reason}</span></div> : <div className="source-workspace-empty"><FileCode2 size={18} /><span>{busy === "open" ? tx("Opening source buffer", "正在打开源码缓冲区") : tx("Buffer is closed", "缓冲区已关闭")}</span>{busy !== "open" && selectedPath && <button onClick={() => void openPath(selectedPath)}>{tx("Open file", "打开文件")}</button>}</div>}
-    </section>
-  </div>;
-}
-
-function TransactionReview({ transaction, writebackBlocked, onCommit, onDiscard }: { transaction: SourceTransaction; writebackBlocked: boolean; onCommit: () => Promise<void>; onDiscard: () => Promise<void> }) {
-  const { tx } = useLanguage();
-  return <div className="transaction-review">
-    <section><h3>{tx("Source diff", "源码差异")}</h3><pre>{transaction.source_diff || tx("No textual change", "没有文本变化")}</pre></section>
-    <section><h3>Graph Delta</h3><dl><dt>{tx("Expected", "预期")}</dt><dd>{deltaSummary(transaction.expected_delta, tx)}</dd><dt>{tx("Observed", "观测")}</dt><dd>{deltaSummary(transaction.observed_delta, tx)}</dd></dl>{transaction.expected_delta.changed_parameters.map((item) => <code key={`${item.node_id}-${item.parameter_name}`}>{item.node_id}.{item.parameter_name}: {displayValue(item.before)} → {displayValue(item.after)}</code>)}</section>
-    <section><h3>{tx("Validation receipt", "验证凭据")}</h3><div className="gate-list">{transaction.gates.map((gate) => <span key={gate.gate} className={gate.status}>{gate.status} · {gate.gate}</span>)}</div><div className="review-actions">{transaction.state === "review-ready" ? <button className="commit-button" disabled={writebackBlocked} title={writebackBlocked ? tx("Resolve draft blockers before committing", "提交前请解决草稿阻断项") : tx("Commit verified source transaction", "提交已验证的源码事务")} onClick={() => void onCommit()}><CircleDot size={14} /> {tx("Commit to source", "提交到源码")}</button> : <span className="agent-handoff-status"><Braces size={14} /> {tx("No commit action until every validation gate passes", "全部验证门通过后才可提交")}</span>} {!['committed', 'discarded'].includes(transaction.state) && <button onClick={() => void onDiscard()}><X size={14} /> {tx("Discard", "放弃")}</button>}</div></section>
-  </div>;
-}
-
-function VisualInspector({ node, fidelity, pinned, onPatch, onBatch }: {
-  node: RenderNode;
-  fidelity?: "exact" | "opaque" | "schematic";
-  pinned: boolean;
-  onPatch: (operation: string, targetId: string | undefined, value: Record<string, unknown>) => Promise<void>;
-  onBatch: (description: string, patches: Array<{ operation: string; targetId?: string; value: Record<string, unknown> }>) => Promise<void>;
-}) {
-  const { tx } = useLanguage();
-  const [bounds, setBounds] = useState(node.bounds);
-  useEffect(() => setBounds(node.bounds), [node.nodeId, node.bounds]);
-  const update = (key: keyof Rect, value: number) => setBounds((current) => ({ ...current, [key]: value }));
-  return <>
-    <div className="section-label">{tx("Kernel geometry", "内核几何")}</div>
-    <div className="numeric-grid">{(["x", "y", "width", "height"] as const).map((key) => <label key={key}><span>{key.toUpperCase()}</span><input type="number" min={key === "width" || key === "height" ? 1 : 0} value={Math.round(bounds[key])} onChange={(event) => update(key, Number(event.target.value))} /></label>)}</div>
-    <button className="apply-visual" onClick={() => void onBatch(tx("Apply geometry", "应用几何设置"), [
-      { operation: "set-position", targetId: node.nodeId, value: { x: bounds.x, y: bounds.y } },
-      { operation: "set-size", targetId: node.nodeId, value: { width: bounds.width, height: bounds.height } },
-    ])}>{tx("Apply geometry", "应用几何设置")}</button>
-    <label className="toggle-row"><input type="checkbox" checked={pinned} onChange={() => void onPatch("set-pin", node.nodeId, { enabled: !pinned })} /><span>{tx("Pin during layout", "布局时固定")}</span></label>
-    <div className="section-label">{tx("Visual provenance", "视觉来源")}</div>
-    <Field label={tx("Kernel node", "内核节点")} value={node.nodeId} mono />
-    <Field label={tx("Shape", "图元")} value={node.shape} />
-    <Field label={tx("Render role", "渲染角色")} value={node.renderRole} />
-    <Field label={tx("Template binding", "模板绑定")} value={node.templateBindingId ?? tx("Generic", "通用")} mono />
-    <Field label={tx("Template fidelity", "模板保真度")} value={fidelity ?? tx("Unbound", "未绑定")} />
-  </>;
 }

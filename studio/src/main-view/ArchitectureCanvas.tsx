@@ -94,8 +94,8 @@ function detailPrimitiveBounds(primitive: Exclude<RenderDetailPrimitive, { kind:
 }
 
 function OperatorSymbol({ node }: { node: RenderNode }) {
-  const symbol = node.shape === "concat" ? "||" : node.shape === "multiply" ? "x" : "+";
-  return <text className="kernel-node-symbol" textAnchor="middle" x={node.bounds.x + node.bounds.width / 2} y={node.bounds.y + 39}>{symbol}</text>;
+  const symbol = node.shape === "concat" ? "||" : node.shape === "multiply" ? "×" : "+";
+  return <text className="kernel-node-symbol node-symbol" textAnchor="middle" x={node.bounds.x + node.bounds.width / 2} y={node.bounds.y + 39}>{symbol}</text>;
 }
 
 function MatrixGlyph({ node }: { node: RenderNode }) {
@@ -167,7 +167,7 @@ function ContainerGlyph({ node }: { node: RenderNode }) {
 function NodeShape({ node, selected }: { node: RenderNode; selected: boolean }) {
   const { x, y, width, height } = node.bounds;
   const token = NODE_TOKENS[node.shape];
-  const common = { fill: token.fill, stroke: token.stroke, className: selected ? "kernel-node-body selected" : "kernel-node-body" };
+  const common = { fill: token.fill, stroke: token.stroke, className: selected ? "kernel-node-body node-surface selected" : "kernel-node-body node-surface" };
   if (node.shape === "condition") {
     const inset = Math.min(24, width * 0.15);
     return <polygon {...common} points={`${x + inset},${y} ${x + width - inset},${y} ${x + width},${y + height / 2} ${x + width - inset},${y + height} ${x + inset},${y + height} ${x},${y + height / 2}`} />;
@@ -190,10 +190,10 @@ function ExpandedModule({ node, fidelity, selected, onSelect, onToggle, onPointe
   onPointerDown?: (event: React.PointerEvent<SVGGElement>, node: RenderNode) => void;
   tx: ArchitectureCanvasProps["tx"];
 }) {
-  return <g className={`kernel-expanded-module${fidelity ? ` fidelity-${fidelity}` : ""}${selected ? " selected" : ""}`} data-kernel-node-id={node.nodeId} data-hierarchy-node-id={node.hierarchyNodeId} data-template-fidelity={fidelity} role="button" tabIndex={0} aria-label={`${node.label}, ${node.containedCanonicalNodeIds.length} canonical`} onPointerDown={(event) => onPointerDown?.(event, node)} onClick={(event) => { event.stopPropagation(); if (event.detail === 0) onSelect(node, event.shiftKey); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onSelect(node, event.shiftKey); }}>
-    <rect className="kernel-expanded-surface" x={node.bounds.x} y={node.bounds.y} width={node.bounds.width} height={node.bounds.height} rx={6} />
-    <path className="kernel-expanded-header" d={`M${node.bounds.x + 6} ${node.bounds.y}h${node.bounds.width - 12}a6 6 0 0 1 6 6v44h-${node.bounds.width}v-44a6 6 0 0 1 6-6z`} />
-    <line className="kernel-expanded-divider" x1={node.bounds.x} y1={node.bounds.y + 50} x2={node.bounds.x + node.bounds.width} y2={node.bounds.y + 50} />
+  return <g className={`kernel-expanded-module module-detail scene-node shape-${node.shape} role-${node.renderRole}${fidelity ? ` fidelity-${fidelity}` : ""}${selected ? " selected" : ""}`} data-kernel-node-id={node.nodeId} data-hierarchy-node-id={node.hierarchyNodeId} data-template-fidelity={fidelity} role="button" tabIndex={0} aria-label={`${node.label}, ${node.containedCanonicalNodeIds.length} canonical`} onPointerDown={(event) => onPointerDown?.(event, node)} onClick={(event) => { event.stopPropagation(); if (event.detail === 0) onSelect(node, event.shiftKey); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onSelect(node, event.shiftKey); }}>
+    <rect className="kernel-expanded-surface nested-inline-surface" x={node.bounds.x} y={node.bounds.y} width={node.bounds.width} height={node.bounds.height} rx={6} />
+    <path className="kernel-expanded-header nested-inline-header" d={`M${node.bounds.x + 6} ${node.bounds.y}h${node.bounds.width - 12}a6 6 0 0 1 6 6v44h-${node.bounds.width}v-44a6 6 0 0 1 6-6z`} />
+    <line className="kernel-expanded-divider nested-inline-divider" x1={node.bounds.x} y1={node.bounds.y + 50} x2={node.bounds.x + node.bounds.width} y2={node.bounds.y + 50} />
     <text className="kernel-expanded-title" x={node.bounds.x + 16} y={node.bounds.y + 22}>{node.label}</text>
     <text className="kernel-expanded-subtitle" x={node.bounds.x + 16} y={node.bounds.y + 39}>{node.childNodeIds.length} {tx("visible modules", "个可见子模块")} · {node.containedCanonicalNodeIds.length} canonical</text>
     {fidelity && <g className={`kernel-fidelity-badge fidelity-${fidelity}`} transform={`translate(${node.bounds.x + node.bounds.width - 82} ${node.bounds.y + 16})`}><rect width={44} height={18} rx={3} /><text x={22} y={12} textAnchor="middle">{fidelity}</text></g>}
@@ -218,7 +218,7 @@ function StandardNode({ node, fidelity, selected, nodeStyle, incoming, outgoing,
   const symbolNode = ["add", "multiply", "concat"].includes(node.shape);
   const hasSideGlyph = ["tensor", "container", "operation", "convolution", "attention", "normalization"].includes(node.shape);
   const textX = hasSideGlyph ? node.bounds.x + node.bounds.width * 0.69 : node.bounds.x + node.bounds.width / 2;
-  return <g className={`kernel-node shape-${node.shape} role-${node.renderRole}${fidelity ? ` fidelity-${fidelity}` : ""}${selected ? " selected" : ""}`} data-kernel-node-id={node.nodeId} data-hierarchy-node-id={node.hierarchyNodeId} data-canonical-node-ids={node.canonicalNodeIds.join(" ")} data-template-fidelity={fidelity} role="button" tabIndex={0} aria-label={`${node.label}, ${node.secondaryLabel ?? node.semanticKind}`} onPointerDown={(event) => onPointerDown?.(event, node)} onClick={(event) => { event.stopPropagation(); if (event.detail === 0) onSelect(node, event.shiftKey); }} onDoubleClick={(event) => { if (node.renderRole === "collapsed-module") { event.stopPropagation(); onToggle(node); } }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onSelect(node, event.shiftKey); }}>
+  return <g className={`kernel-node scene-node shape-${node.shape} role-${node.renderRole}${fidelity ? ` fidelity-${fidelity}` : ""}${selected ? " selected" : ""}`} data-kernel-node-id={node.nodeId} data-hierarchy-node-id={node.hierarchyNodeId} data-canonical-node-ids={node.canonicalNodeIds.join(" ")} data-template-fidelity={fidelity} role="button" tabIndex={0} aria-label={`${node.label}, ${node.secondaryLabel ?? node.semanticKind}`} onPointerDown={(event) => onPointerDown?.(event, node)} onClick={(event) => { event.stopPropagation(); if (event.detail === 0) onSelect(node, event.shiftKey); }} onDoubleClick={(event) => { if (node.renderRole === "collapsed-module") { event.stopPropagation(); onToggle(node); } }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onSelect(node, event.shiftKey); }}>
     <NodeShape node={node} selected={selected} />
     {node.shape === "tensor" && <MatrixGlyph node={node} />}
     {node.shape === "container" && <ContainerGlyph node={node} />}
@@ -246,7 +246,7 @@ function detailTitle(detail: RenderTemplateDetail, primitive: RenderDetailPrimit
 function DetailFlow({ detail, primitive }: { detail: RenderTemplateDetail; primitive: Extract<RenderDetailPrimitive, { kind: "flow" }> }) {
   const points = primitive.points.map((point) => `${point.x},${point.y}`).join(" ");
   return <polyline
-    className={`kernel-detail-flow tone-${primitive.tone}`}
+    className={`kernel-detail-flow detail-flow tone-${primitive.tone} detail-tone-${primitive.tone}`}
     data-detail-slot-id={primitive.slotId}
     points={points}
     markerEnd={primitive.marker ? "url(#kernel-detail-arrow)" : undefined}
@@ -264,29 +264,31 @@ function DetailPrimitive({ detail, primitive, selected, onSelect, onPointerDown 
   let graphic: React.ReactNode;
   if (primitive.kind === "box") {
     const isFrame = primitive.slotId.startsWith("frame:");
-    graphic = <g className={`kernel-detail-box tone-${primitive.tone}${isFrame ? " kernel-detail-frame" : ""}`} data-detail-slot-id={primitive.slotId}>
+    graphic = <g className={`kernel-detail-box detail-shape detail-box tone-${primitive.tone} detail-tone-${primitive.tone}${isFrame ? " kernel-detail-frame detail-frame" : ""}`} data-detail-slot-id={primitive.slotId}>
       {title}
       <rect x={primitive.x} y={primitive.y} width={primitive.width} height={primitive.height} rx={isFrame ? 5 : 3} />
-      {primitive.label && <text className="kernel-detail-label" textAnchor="middle" x={primitive.x + primitive.width / 2} y={primitive.y + primitive.height / 2 + (primitive.note ? -3 : 4)}>{primitive.label}</text>}
-      {primitive.note && <text className="kernel-detail-note" textAnchor="middle" x={primitive.x + primitive.width / 2} y={primitive.y + primitive.height / 2 + 12}>{primitive.note}</text>}
+      {primitive.label && <text className="kernel-detail-label detail-box-label" textAnchor="middle" x={primitive.x + primitive.width / 2} y={primitive.y + primitive.height / 2 + (primitive.note ? -3 : 4)}>{primitive.label}</text>}
+      {primitive.note && <text className="kernel-detail-note detail-note" textAnchor="middle" x={primitive.x + primitive.width / 2} y={primitive.y + primitive.height / 2 + 12}>{primitive.note}</text>}
     </g>;
   } else if (primitive.kind === "matrix") {
     const columnWidth = primitive.width / primitive.columns;
     const rowHeight = primitive.height / primitive.rows;
-    graphic = <g className={`kernel-detail-matrix tone-${primitive.tone}`} data-detail-slot-id={primitive.slotId}>
+    graphic = <g className={`kernel-detail-matrix detail-shape detail-matrix tone-${primitive.tone} detail-tone-${primitive.tone}`} data-detail-slot-id={primitive.slotId}>
       {title}
       {primitive.depth > 0 && <path className="kernel-detail-matrix-depth" d={`M${primitive.x + primitive.depth} ${primitive.y - primitive.depth}h${primitive.width}v${primitive.height}M${primitive.x + primitive.width} ${primitive.y}l${primitive.depth} -${primitive.depth}M${primitive.x + primitive.width} ${primitive.y + primitive.height}l${primitive.depth} -${primitive.depth}`} />}
       <rect x={primitive.x} y={primitive.y} width={primitive.width} height={primitive.height} rx={2} />
-      {Array.from({ length: primitive.columns - 1 }, (_, index) => <line key={`c-${index}`} x1={primitive.x + columnWidth * (index + 1)} y1={primitive.y} x2={primitive.x + columnWidth * (index + 1)} y2={primitive.y + primitive.height} />)}
-      {Array.from({ length: primitive.rows - 1 }, (_, index) => <line key={`r-${index}`} x1={primitive.x} y1={primitive.y + rowHeight * (index + 1)} x2={primitive.x + primitive.width} y2={primitive.y + rowHeight * (index + 1)} />)}
-      <text textAnchor="middle" x={primitive.x + primitive.width / 2} y={primitive.y - 7}>{primitive.label}</text>
+      <g className="node-grid">
+        {Array.from({ length: primitive.columns - 1 }, (_, index) => <line key={`c-${index}`} x1={primitive.x + columnWidth * (index + 1)} y1={primitive.y} x2={primitive.x + columnWidth * (index + 1)} y2={primitive.y + primitive.height} />)}
+        {Array.from({ length: primitive.rows - 1 }, (_, index) => <line key={`r-${index}`} x1={primitive.x} y1={primitive.y + rowHeight * (index + 1)} x2={primitive.x + primitive.width} y2={primitive.y + rowHeight * (index + 1)} />)}
+      </g>
+      <text className="detail-matrix-label" textAnchor="middle" x={primitive.x + primitive.width / 2} y={primitive.y - 7}>{primitive.label}</text>
     </g>;
   } else if (primitive.kind === "operator") {
-    graphic = <g className={`kernel-detail-operator tone-${primitive.tone}`} data-detail-slot-id={primitive.slotId}>
-      {title}<circle cx={primitive.cx} cy={primitive.cy} r={primitive.radius} /><text textAnchor="middle" x={primitive.cx} y={primitive.cy + 4}>{primitive.label}</text>
+    graphic = <g className={`kernel-detail-operator detail-shape tone-${primitive.tone} detail-tone-${primitive.tone}`} data-detail-slot-id={primitive.slotId}>
+      {title}<circle cx={primitive.cx} cy={primitive.cy} r={primitive.radius} /><text className="detail-symbol" textAnchor="middle" x={primitive.cx} y={primitive.cy + 4}>{primitive.label}</text>
     </g>;
   } else {
-    graphic = <text className={`kernel-detail-text tone-${primitive.tone}${primitive.emphasis ? " emphasis" : ""}`} data-detail-slot-id={primitive.slotId} textAnchor="middle" x={primitive.x} y={primitive.y}>{title}{primitive.value}</text>;
+    graphic = <text className={`kernel-detail-text detail-text tone-${primitive.tone}${primitive.emphasis ? " emphasis" : ""}`} data-detail-slot-id={primitive.slotId} textAnchor="middle" x={primitive.x} y={primitive.y}>{title}{primitive.value}</text>;
   }
   if (primitive.canonicalIds.length === 0 || primitive.kind === "text") return graphic;
   const activate = (additive = false) => onSelect?.(primitive.canonicalIds, { additive });
@@ -722,7 +724,7 @@ export function ArchitectureCanvas({ state, selectedCanonicalIds, selectedCanoni
       <g className="kernel-edge-layer">{scene.edges.map((edge) => {
         const token = RELATION_TOKENS[edge.relation];
         const edgeSelected = edge.canonicalEdgeIds.some((id) => selectedEdges.has(id));
-        return <g key={edge.edgeId} className={`kernel-edge${edgeSelected ? " selected" : ""}`} data-kernel-edge-id={edge.edgeId} data-canonical-edge-ids={edge.canonicalEdgeIds.join(" ")}>
+        return <g key={edge.edgeId} className={`kernel-edge${edgeSelected ? " selected" : ""}`} data-prototype-class="scene-edge" data-kernel-edge-id={edge.edgeId} data-canonical-edge-ids={edge.canonicalEdgeIds.join(" ")}>
           <path d={edge.path} stroke={token.color} strokeDasharray={token.dash} markerEnd="url(#kernel-arrow)" />
           <path className="kernel-edge-hit" d={edge.path} onClick={(event) => { event.stopPropagation(); setActiveRenderNodeId(null); onSelectEdge?.(edge.canonicalEdgeIds, event.shiftKey); }} />
           {labelStyle !== "endpoint" && <g className={`kernel-edge-label ${labelStyle}`} transform={`translate(${edge.labelPoint.x} ${edge.labelPoint.y}) rotate(${edge.labelAngle})`}>
