@@ -46,11 +46,41 @@ await page.getByRole("button", { name: "Expand encoder" }).click();
 await page.waitForTimeout(250);
 await page.screenshot({ path: resolve(baselineRoot, "expanded-module.png") });
 
+const node = page.locator(".scene-node:not(.root)").first();
+await node.click();
+await page.screenshot({ path: resolve(baselineRoot, "selected-node.png") });
+
+for (const tab of ["Overview", "Source", "Visual", "Model", "Evidence"]) {
+  await page.locator(".tab-strip").getByRole("button", { name: tab, exact: true }).click();
+  await page.screenshot({ path: resolve(baselineRoot, `inspector-${tab.toLowerCase()}.png`) });
+}
+await page.locator(".tab-strip").getByRole("button", { name: "Overview", exact: true }).click();
+
+for (const [tab, file] of [["Problems", "problems"], ["Validation", "validation"], ["Jobs", "jobs"]]) {
+  await page.locator(".bottom-tabs").getByRole("button", { name: new RegExp(`^${tab}`) }).click();
+  await page.screenshot({ path: resolve(baselineRoot, `bottom-${file}.png`) });
+}
+
+const sceneBox = await page.locator("svg.scene").boundingBox();
+const candidateBoxes = await page.locator(".scene-node:not(.root)").evaluateAll((elements) =>
+  elements.slice(0, 3).map((element) => element.getBoundingClientRect().toJSON()),
+);
+if (sceneBox && candidateBoxes.length) {
+  const targetX = Math.min(...candidateBoxes.map((box) => box.x)) - 6;
+  const targetY = Math.min(...candidateBoxes.map((box) => box.y)) - 6;
+  await page.keyboard.down("Shift");
+  await page.mouse.move(sceneBox.x + sceneBox.width - 12, sceneBox.y + sceneBox.height - 12);
+  await page.mouse.down();
+  await page.mouse.move(targetX, targetY, { steps: 10 });
+  await page.mouse.up();
+  await page.keyboard.up("Shift");
+  await page.screenshot({ path: resolve(baselineRoot, "post-marquee.png") });
+}
+
 const edge = page.locator('[data-scene-edge-id][data-edge-layer="base"]').first();
 await edge.click({ force: true });
 await page.screenshot({ path: resolve(baselineRoot, "selected-edge.png") });
 
-const node = page.locator(".scene-node:not(.root)").first();
 const nodeBox = await node.boundingBox();
 if (nodeBox) {
   const startX = nodeBox.x + nodeBox.width / 2;
@@ -64,5 +94,9 @@ if (nodeBox) {
 
 await page.setViewportSize({ width: 390, height: 844 });
 await page.screenshot({ path: resolve(baselineRoot, "mobile.png") });
+
+const exportResponse = await page.request.get(`${baseUrl}/api/export`);
+if (!exportResponse.ok()) throw new Error(await exportResponse.text());
+await writeFile(resolve(baselineRoot, "main-view.svg"), await exportResponse.body());
 
 await browser.close();

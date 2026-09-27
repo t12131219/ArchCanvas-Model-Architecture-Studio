@@ -40,7 +40,14 @@ after capture.
 - `mobile.png`: responsive layout at 390 x 844.
 - `expanded-module.png`: module navigation and canvas after expanding encoder.
 - `selected-edge.png`: selected relation and inspector state.
+- `selected-node.png`: selected node and overview inspector state.
 - `dragging-node.png`: in-progress node drag and route preview.
+- `post-marquee.png`: multi-selection after a Shift marquee gesture.
+- `inspector-overview.png`, `inspector-source.png`, `inspector-visual.png`,
+  `inspector-model.png`, `inspector-evidence.png`: every Inspector tab.
+- `bottom-problems.png`, `bottom-validation.png`, `bottom-jobs.png`: required
+  bottom-panel states.
+- `main-view.svg`: old publication-backed SVG export baseline.
 
 Run `node docs/archive/main-view-v1/capture-baselines.mjs` while the isolated
 fixture server is listening on port 4311 to refresh the state and screenshots.
