@@ -37,6 +37,47 @@ export type KernelNodeShape =
   | "concat"
   | "io";
 
+export type NodeDetailKind =
+  | "attention"
+  | "feedforward"
+  | "add-norm"
+  | "convolution"
+  | "tensor-transform"
+  | "embedding"
+  | "recurrent"
+  | "mixture-of-experts"
+  | "pooling"
+  | "linear-model"
+  | "kernel-machine"
+  | "decision-tree"
+  | "ensemble"
+  | "clustering"
+  | "decomposition"
+  | "mlp"
+  | "normalization"
+  | "residual-block"
+  | "dense-connection"
+  | "inception"
+  | "depthwise-convolution"
+  | "unet"
+  | "vision-transformer"
+  | "gru"
+  | "bidirectional-recurrent"
+  | "seq2seq"
+  | "state-space"
+  | "autoencoder"
+  | "variational-autoencoder"
+  | "gan"
+  | "diffusion"
+  | "normalizing-flow"
+  | "graph-message-passing"
+  | "time-series-forecast"
+  | "dual-encoder"
+  | "dqn"
+  | "actor-critic"
+  | "distillation"
+  | "adapter-lora";
+
 export type RouteStyle = "adaptive" | "direct" | "orthogonal" | "channel" | "curve";
 export type NodeVisualStyle = "semantic" | "technical" | "compact";
 export type EdgeLabelStyle = "plain" | "plate" | "endpoint";
@@ -191,5 +232,17 @@ export interface KernelRenderScene {
   edges: RenderEdge[];
   portals: RenderPortal[];
   details: RenderTemplateDetail[];
+  routingMetrics?: {
+    crossings: number;
+    overlaps: number;
+    nodeIntersections: number;
+    labelIntersections: number;
+    clearanceViolations: number;
+    endpointCongestion: number;
+    reverseExits: number;
+    sharedLength: number;
+    bends: number;
+    routeLength: number;
+  };
   diagnostics: KernelDiagnostic[];
 }

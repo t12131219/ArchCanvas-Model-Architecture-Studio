@@ -94,6 +94,14 @@
           "title": "Attributes",
           "type": "object"
         },
+        "children": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Children",
+          "type": "array"
+        },
         "confidence": {
           "$ref": "#/$defs/Confidence"
         },
@@ -138,6 +146,13 @@
           "title": "Parameter Identity",
           "type": "string"
         },
+        "parameters": {
+          "items": {
+            "$ref": "#/$defs/ArchitectureParameter"
+          },
+          "title": "Parameters",
+          "type": "array"
+        },
         "parent_id": {
           "anyOf": [
             {
@@ -150,6 +165,19 @@
           ],
           "default": null,
           "title": "Parent Id"
+        },
+        "repeat_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Repeat Id"
         },
         "semantic_name": {
           "minLength": 1,
@@ -179,6 +207,45 @@
       "title": "ArchitectureNode",
       "type": "object"
     },
+    "ArchitectureParameter": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "origin": {
+          "$ref": "#/$defs/ParameterOrigin"
+        },
+        "source_expression": {
+          "minLength": 1,
+          "title": "Source Expression",
+          "type": "string"
+        },
+        "value": {
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "name",
+        "source_expression",
+        "origin",
+        "evidence_ids"
+      ],
+      "title": "ArchitectureParameter",
+      "type": "object"
+    },
     "Confidence": {
       "enum": [
         "exact",
@@ -191,6 +258,49 @@
       ],
       "title": "Confidence",
       "type": "string"
+    },
+    "ConfigPredicate": {
+      "additionalProperties": false,
+      "properties": {
+        "affected_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Affected Ids",
+          "type": "array"
+        },
+        "evidence_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "expression": {
+          "minLength": 1,
+          "title": "Expression",
+          "type": "string"
+        },
+        "predicate_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Predicate Id",
+          "type": "string"
+        },
+        "resolved_value": {
+          "title": "Resolved Value"
+        }
+      },
+      "required": [
+        "predicate_id",
+        "expression",
+        "resolved_value",
+        "evidence_ids"
+      ],
+      "title": "ConfigPredicate",
+      "type": "object"
     },
     "EdgeType": {
       "enum": [
@@ -207,16 +317,80 @@
       "title": "EdgeType",
       "type": "string"
     },
+    "FanoutRelation": {
+      "additionalProperties": false,
+      "properties": {
+        "consumer_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Consumer Ids",
+          "type": "array"
+        },
+        "evidence_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "producer_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Producer Id",
+          "type": "string"
+        },
+        "relation_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Relation Id",
+          "type": "string"
+        },
+        "tensor_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Tensor Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "relation_id",
+        "tensor_id",
+        "producer_id",
+        "consumer_ids",
+        "evidence_ids"
+      ],
+      "title": "FanoutRelation",
+      "type": "object"
+    },
     "NodeKind": {
       "enum": [
         "module_container",
         "operator",
+        "opaque_composite",
+        "tensor_value",
         "merge_event",
+        "fanout_relation",
         "condition_control",
         "state",
-        "input_output"
+        "repeat",
+        "parameter_share",
+        "input_output",
+        "reference_only"
       ],
       "title": "NodeKind",
+      "type": "string"
+    },
+    "ParameterOrigin": {
+      "enum": [
+        "literal",
+        "constructor-default",
+        "config",
+        "computed",
+        "unresolved"
+      ],
+      "title": "ParameterOrigin",
       "type": "string"
     },
     "Port": {
@@ -455,6 +629,13 @@
       "title": "Architecture Id",
       "type": "string"
     },
+    "config_predicates": {
+      "items": {
+        "$ref": "#/$defs/ConfigPredicate"
+      },
+      "title": "Config Predicates",
+      "type": "array"
+    },
     "edges": {
       "items": {
         "$ref": "#/$defs/ArchitectureEdge"
@@ -466,6 +647,13 @@
       "minLength": 3,
       "title": "Entrypoint",
       "type": "string"
+    },
+    "fanouts": {
+      "items": {
+        "$ref": "#/$defs/FanoutRelation"
+      },
+      "title": "Fanouts",
+      "type": "array"
     },
     "framework": {
       "minLength": 1,

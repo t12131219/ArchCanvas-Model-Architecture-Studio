@@ -24,7 +24,6 @@ from archcanvas_core.models import (
     FreeformSourceBufferPatch,
     FreeformSourcePatch,
     GraphDelta,
-    PatchBatch,
     ProjectSession,
     ProposedConnection,
     PublicationHierarchy,
@@ -41,7 +40,6 @@ from archcanvas_core.models import (
     StagedSourceBuffer,
     TransactionState,
     ValidationRun,
-    VisualPatch,
     WritebackSummary,
 )
 from archcanvas_patterns import exact_ir_digest
@@ -63,7 +61,6 @@ from archcanvas_transactions import (
 )
 
 from .document import (
-    apply_patch_batch,
     create_canvas_document,
     derive_view_state,
     load_canvas_document,

@@ -45,6 +45,8 @@ interface ArchitectureCanvasProps {
   tx: (english: string, chinese: string) => string;
 }
 
+type TemplateFidelity = "exact" | "opaque" | "schematic";
+
 type ViewBox = [number, number, number, number];
 
 type GestureSession = {
@@ -179,28 +181,31 @@ function NodeShape({ node, selected }: { node: RenderNode; selected: boolean }) 
   return <rect {...common} x={x} y={y} width={width} height={height} rx={node.shape === "io" ? Math.min(28, height / 2) : node.shape === "normalization" ? 14 : node.shape === "container" ? 6 : 5} />;
 }
 
-function ExpandedModule({ node, selected, onSelect, onToggle, onPointerDown, tx }: {
+function ExpandedModule({ node, fidelity, selected, onSelect, onToggle, onPointerDown, tx }: {
   node: RenderNode;
+  fidelity?: TemplateFidelity;
   selected: boolean;
   onSelect: (node: RenderNode, additive?: boolean) => void;
   onToggle: (node: RenderNode) => void;
   onPointerDown?: (event: React.PointerEvent<SVGGElement>, node: RenderNode) => void;
   tx: ArchitectureCanvasProps["tx"];
 }) {
-  return <g className={`kernel-expanded-module${selected ? " selected" : ""}`} data-kernel-node-id={node.nodeId} data-hierarchy-node-id={node.hierarchyNodeId} role="button" tabIndex={0} aria-label={`${node.label}, ${node.containedCanonicalNodeIds.length} canonical`} onPointerDown={(event) => onPointerDown?.(event, node)} onClick={(event) => { event.stopPropagation(); if (event.detail === 0) onSelect(node, event.shiftKey); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onSelect(node, event.shiftKey); }}>
+  return <g className={`kernel-expanded-module${fidelity ? ` fidelity-${fidelity}` : ""}${selected ? " selected" : ""}`} data-kernel-node-id={node.nodeId} data-hierarchy-node-id={node.hierarchyNodeId} data-template-fidelity={fidelity} role="button" tabIndex={0} aria-label={`${node.label}, ${node.containedCanonicalNodeIds.length} canonical`} onPointerDown={(event) => onPointerDown?.(event, node)} onClick={(event) => { event.stopPropagation(); if (event.detail === 0) onSelect(node, event.shiftKey); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onSelect(node, event.shiftKey); }}>
     <rect className="kernel-expanded-surface" x={node.bounds.x} y={node.bounds.y} width={node.bounds.width} height={node.bounds.height} rx={6} />
     <path className="kernel-expanded-header" d={`M${node.bounds.x + 6} ${node.bounds.y}h${node.bounds.width - 12}a6 6 0 0 1 6 6v44h-${node.bounds.width}v-44a6 6 0 0 1 6-6z`} />
     <line className="kernel-expanded-divider" x1={node.bounds.x} y1={node.bounds.y + 50} x2={node.bounds.x + node.bounds.width} y2={node.bounds.y + 50} />
     <text className="kernel-expanded-title" x={node.bounds.x + 16} y={node.bounds.y + 22}>{node.label}</text>
     <text className="kernel-expanded-subtitle" x={node.bounds.x + 16} y={node.bounds.y + 39}>{node.childNodeIds.length} {tx("visible modules", "个可见子模块")} · {node.containedCanonicalNodeIds.length} canonical</text>
+    {fidelity && <g className={`kernel-fidelity-badge fidelity-${fidelity}`} transform={`translate(${node.bounds.x + node.bounds.width - 82} ${node.bounds.y + 16})`}><rect width={44} height={18} rx={3} /><text x={22} y={12} textAnchor="middle">{fidelity}</text></g>}
     {node.parentNodeId && <g className="kernel-module-toggle" role="button" tabIndex={0} aria-label={`${tx("Collapse", "收起")} ${node.label}`} transform={`translate(${node.bounds.x + node.bounds.width - 33} ${node.bounds.y + 13})`} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); onToggle(node); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onToggle(node); }}>
       <rect width={20} height={20} rx={3} /><ChevronDown x={3} y={3} size={14} />
     </g>}
   </g>;
 }
 
-function StandardNode({ node, selected, nodeStyle, incoming, outgoing, onSelect, onToggle, onPointerDown, tx }: {
+function StandardNode({ node, fidelity, selected, nodeStyle, incoming, outgoing, onSelect, onToggle, onPointerDown, tx }: {
   node: RenderNode;
+  fidelity?: TemplateFidelity;
   selected: boolean;
   nodeStyle: NodeVisualStyle;
   incoming: number;
@@ -213,7 +218,7 @@ function StandardNode({ node, selected, nodeStyle, incoming, outgoing, onSelect,
   const symbolNode = ["add", "multiply", "concat"].includes(node.shape);
   const hasSideGlyph = ["tensor", "container", "operation", "convolution", "attention", "normalization"].includes(node.shape);
   const textX = hasSideGlyph ? node.bounds.x + node.bounds.width * 0.69 : node.bounds.x + node.bounds.width / 2;
-  return <g className={`kernel-node shape-${node.shape} role-${node.renderRole}${selected ? " selected" : ""}`} data-kernel-node-id={node.nodeId} data-hierarchy-node-id={node.hierarchyNodeId} data-canonical-node-ids={node.canonicalNodeIds.join(" ")} role="button" tabIndex={0} aria-label={`${node.label}, ${node.secondaryLabel ?? node.semanticKind}`} onPointerDown={(event) => onPointerDown?.(event, node)} onClick={(event) => { event.stopPropagation(); if (event.detail === 0) onSelect(node, event.shiftKey); }} onDoubleClick={(event) => { if (node.renderRole === "collapsed-module") { event.stopPropagation(); onToggle(node); } }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onSelect(node, event.shiftKey); }}>
+  return <g className={`kernel-node shape-${node.shape} role-${node.renderRole}${fidelity ? ` fidelity-${fidelity}` : ""}${selected ? " selected" : ""}`} data-kernel-node-id={node.nodeId} data-hierarchy-node-id={node.hierarchyNodeId} data-canonical-node-ids={node.canonicalNodeIds.join(" ")} data-template-fidelity={fidelity} role="button" tabIndex={0} aria-label={`${node.label}, ${node.secondaryLabel ?? node.semanticKind}`} onPointerDown={(event) => onPointerDown?.(event, node)} onClick={(event) => { event.stopPropagation(); if (event.detail === 0) onSelect(node, event.shiftKey); }} onDoubleClick={(event) => { if (node.renderRole === "collapsed-module") { event.stopPropagation(); onToggle(node); } }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onSelect(node, event.shiftKey); }}>
     <NodeShape node={node} selected={selected} />
     {node.shape === "tensor" && <MatrixGlyph node={node} />}
     {node.shape === "container" && <ContainerGlyph node={node} />}
@@ -225,6 +230,7 @@ function StandardNode({ node, selected, nodeStyle, incoming, outgoing, onSelect,
     <text className={`kernel-node-title${symbolNode ? " symbol-label" : ""}`} textAnchor="middle" x={symbolNode ? node.bounds.x + node.bounds.width / 2 : textX} y={symbolNode ? node.bounds.y + 72 : node.bounds.y + node.bounds.height / 2 - (node.secondaryLabel ? 6 : 0)}>{node.label}</text>
     {!symbolNode && node.secondaryLabel && <text className="kernel-node-secondary" textAnchor="middle" x={textX} y={node.bounds.y + node.bounds.height / 2 + 14}>{node.secondaryLabel}</text>}
     {nodeStyle === "technical" && <text className="kernel-node-ports" textAnchor="middle" x={textX} y={node.bounds.y + node.bounds.height - 9}>{incoming} in · {outgoing} out</text>}
+    {fidelity && <g className={`kernel-fidelity-badge fidelity-${fidelity}`} transform={`translate(${node.bounds.x + 7} ${node.bounds.y + 7})`}><rect width={fidelity === "schematic" ? 54 : 44} height={17} rx={3} /><text x={fidelity === "schematic" ? 27 : 22} y={11.5} textAnchor="middle">{fidelity}</text></g>}
     {node.renderRole === "collapsed-module" && <g className="kernel-module-toggle collapsed" role="button" tabIndex={0} aria-label={`${tx("Expand", "展开")} ${node.label}`} transform={`translate(${node.bounds.x + node.bounds.width - 29} ${node.bounds.y + 9})`} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); onToggle(node); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onToggle(node); }}>
       <rect width={20} height={20} rx={3} /><ChevronRight x={3} y={3} size={14} />
     </g>}
@@ -320,6 +326,10 @@ export function ArchitectureCanvas({ state, selectedCanonicalIds, selectedCanoni
     detailOffsets: { ...adapted.visualState.detailOffsets, ...localDetailOffsets },
   }), [adapted.visualState, labelStyle, localDetailOffsets, localNodePositions, localNodeSizes, nodeStyle, routeStyle]);
   const scene = useMemo(() => buildKernelRenderScene(adapted.document, visualState), [adapted.document, visualState]);
+  const fidelityByBinding = useMemo(
+    () => new Map(adapted.document.templateBindings.map((binding) => [binding.bindingId, binding.fidelity])),
+    [adapted.document.templateBindings],
+  );
   const exportArtifact = useMemo(
     () => renderKernelSceneSvg(adapted.document, visualState, scene),
     [adapted.document, scene, visualState],
@@ -708,7 +718,7 @@ export function ArchitectureCanvas({ state, selectedCanonicalIds, selectedCanoni
       </defs>
       <rect className="kernel-paper" width={scene.width} height={scene.height} />
       <rect className="kernel-grid" x={12} y={12} width={Math.max(0, scene.width - 24)} height={Math.max(0, scene.height - 24)} fill="url(#kernel-grid)" />
-      <g className="kernel-expanded-layer">{expandedNodes.map((node) => <ExpandedModule key={node.nodeId} node={node} selected={renderNodeSelected(node)} onSelect={selectRenderNode} onToggle={toggleModule} onPointerDown={beginNodeGesture} tx={tx} />)}</g>
+      <g className="kernel-expanded-layer">{expandedNodes.map((node) => <ExpandedModule key={node.nodeId} node={node} fidelity={node.templateBindingId ? fidelityByBinding.get(node.templateBindingId) : undefined} selected={renderNodeSelected(node)} onSelect={selectRenderNode} onToggle={toggleModule} onPointerDown={beginNodeGesture} tx={tx} />)}</g>
       <g className="kernel-edge-layer">{scene.edges.map((edge) => {
         const token = RELATION_TOKENS[edge.relation];
         const edgeSelected = edge.canonicalEdgeIds.some((id) => selectedEdges.has(id));
@@ -728,7 +738,7 @@ export function ArchitectureCanvas({ state, selectedCanonicalIds, selectedCanoni
         <circle key={`${detail.bindingId}:exit`} className="kernel-detail-boundary-portal exit" cx={detail.exitPoint.x} cy={detail.exitPoint.y} r={4} data-detail-binding-id={detail.bindingId}><title>{`Exit portal: ${detail.templateId}`}</title></circle>,
       ])}</g>
       <g className="kernel-portal-layer">{scene.portals.map((portal) => <circle key={portal.portalId} className={`kernel-portal ${portal.direction}`} cx={portal.point.x} cy={portal.point.y} r={3.4} data-portal-id={portal.portalId} data-module-node-id={portal.moduleNodeId} data-edge-id={portal.edgeId} />)}</g>
-      <g className="kernel-node-layer">{standardNodes.map((node) => <StandardNode key={node.nodeId} node={node} selected={renderNodeSelected(node)} nodeStyle={nodeStyle} incoming={scene.edges.filter((edge) => nodeByPort.get(edge.targetPortId) === node.nodeId).length} outgoing={scene.edges.filter((edge) => nodeByPort.get(edge.sourcePortId) === node.nodeId).length} onSelect={selectRenderNode} onToggle={toggleModule} onPointerDown={beginNodeGesture} tx={tx} />)}</g>
+      <g className="kernel-node-layer">{standardNodes.map((node) => <StandardNode key={node.nodeId} node={node} fidelity={node.templateBindingId ? fidelityByBinding.get(node.templateBindingId) : undefined} selected={renderNodeSelected(node)} nodeStyle={nodeStyle} incoming={scene.edges.filter((edge) => nodeByPort.get(edge.targetPortId) === node.nodeId).length} outgoing={scene.edges.filter((edge) => nodeByPort.get(edge.sourcePortId) === node.nodeId).length} onSelect={selectRenderNode} onToggle={toggleModule} onPointerDown={beginNodeGesture} tx={tx} />)}</g>
       <g className="kernel-resize-layer">{selectedRenderNodes.filter((node) => !scene.details.some((detail) => detail.nodeId === node.nodeId)).map((node) => <rect
         key={node.nodeId}
         className="kernel-resize-handle"

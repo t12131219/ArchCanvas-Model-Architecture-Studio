@@ -47,7 +47,12 @@ GLOBAL_OPERATIONS = {
     "add-annotation",
     "set-kernel-options",
 }
-KERNEL_NODE_OPERATIONS = {"set-position", "set-size", "set-node-shape-override"}
+KERNEL_NODE_OPERATIONS = {
+    "set-position",
+    "set-size",
+    "set-pin",
+    "set-node-shape-override",
+}
 KERNEL_DETAIL_OPERATIONS = {"set-detail-offset"}
 KERNEL_EXPANSION_OPERATIONS = {"set-detail-expansion"}
 KERNEL_OPERATIONS = (

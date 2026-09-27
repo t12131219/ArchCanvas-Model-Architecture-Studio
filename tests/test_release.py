@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.metadata
 import json
 import os
 import subprocess
@@ -158,15 +159,29 @@ def test_installer_refuses_overwrite_and_support_matrix_is_honest(tmp_path: Path
     assert hosts["claude.ai"].status == "unsupported"
     adapters = {item.framework: item for item in matrix.adapters}
     assert adapters["pytorch"].runtime_evidence is True
-    assert adapters["keras"].runtime_evidence is True
-    assert adapters["keras"].capability_status["runtime"] == "experimental"
+    installed_packages = {
+        distribution.metadata["Name"].lower()
+        for distribution in importlib.metadata.distributions()
+    }
+    keras_installed = "keras" in installed_packages
+    onnx_installed = "onnx" in installed_packages
+    onnxruntime_installed = "onnxruntime" in installed_packages
+    assert adapters["keras"].runtime_evidence is keras_installed
+    assert adapters["keras"].capability_status["runtime"] == (
+        "experimental" if keras_installed else "unavailable"
+    )
+    assert adapters["keras"].supported_targets == (["cpu"] if keras_installed else [])
     assert adapters["keras"].capability_status["structural_transaction"] == "partial"
     assert adapters["jax"].source_transactions is True
     assert adapters["jax"].capability_status["parameter_transaction"] == "partial"
     assert adapters["onnx"].source_transactions is False
-    assert adapters["onnx"].capability_status["runtime"] == "experimental"
-    assert adapters["onnx"].artifact_commit is True
-    assert adapters["onnx"].capability_status["parameter_transaction"] == "partial"
+    assert adapters["onnx"].capability_status["runtime"] == (
+        "experimental" if onnxruntime_installed else "unavailable"
+    )
+    assert adapters["onnx"].artifact_commit is onnx_installed
+    assert adapters["onnx"].capability_status["parameter_transaction"] == (
+        "partial" if onnx_installed else "unavailable"
+    )
     assert {form.form_id for form in adapters["keras"].forms} >= {
         "form:keras-subclass-call",
         "form:keras-functional",

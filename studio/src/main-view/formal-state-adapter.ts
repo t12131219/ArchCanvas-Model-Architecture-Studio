@@ -10,6 +10,7 @@ import type {
   KernelTemplateBinding,
   KernelVisualState,
 } from "../visual-kernel/types";
+import { templateDetailSize } from "../visual-kernel/template-details";
 
 export interface FormalPort {
   port_id: string;
@@ -179,7 +180,10 @@ function visibleHierarchy(
     ?? hierarchy.nodes.find((item) => !item.parent_hierarchy_node_id);
   if (!root) return [];
   const result: VisibleHierarchyNode[] = [];
+  const visited = new Set<string>();
   const visit = (item: FormalHierarchyNode, forceExpanded = false) => {
+    if (visited.has(item.hierarchy_node_id)) return;
+    visited.add(item.hierarchy_node_id);
     const children = byParent.get(item.hierarchy_node_id) ?? [];
     const hasExactDetail = item.canonical_node_ids.some((id) => exactTemplateRoots.has(id));
     const isExpanded = (children.length > 0 || hasExactDetail) && (forceExpanded || expanded.has(item.hierarchy_node_id));
@@ -188,6 +192,75 @@ function visibleHierarchy(
   };
   visit(root, true);
   return result;
+}
+
+function validateFormalState(state: FormalStudioState): KernelDiagnostic[] {
+  const diagnostics: KernelDiagnostic[] = [];
+  const push = (code: string, message: string, targetIds: string[], severity: KernelDiagnostic["severity"] = "warning") => {
+    diagnostics.push({ code, message, targetIds: unique(targetIds), severity });
+  };
+  const duplicateIds = (values: string[]) => [...new Set(values.filter((value, index) => values.indexOf(value) !== index))];
+  const formalNodeIds = state.architecture.nodes.map((node) => node.node_id);
+  const nodeIds = new Set(formalNodeIds);
+  const duplicateNodes = duplicateIds(formalNodeIds);
+  if (duplicateNodes.length) push("duplicate-canonical-node", "Architecture contains duplicate canonical node IDs.", duplicateNodes, "blocking");
+
+  const hierarchyIds = state.hierarchy.nodes.map((node) => node.hierarchy_node_id);
+  const hierarchyIdSet = new Set(hierarchyIds);
+  const duplicateHierarchy = duplicateIds(hierarchyIds);
+  if (duplicateHierarchy.length) push("duplicate-hierarchy-node", "Hierarchy contains duplicate node IDs.", duplicateHierarchy, "blocking");
+  if (!hierarchyIdSet.has(state.hierarchy.root_node_id)) {
+    push("missing-hierarchy-root", `Hierarchy root ${state.hierarchy.root_node_id} does not exist.`, [state.hierarchy.root_node_id], "blocking");
+  }
+  for (const node of state.hierarchy.nodes) {
+    if (node.parent_hierarchy_node_id && !hierarchyIdSet.has(node.parent_hierarchy_node_id)) {
+      push("dangling-hierarchy-parent", `Hierarchy node ${node.hierarchy_node_id} references a missing parent.`, [node.hierarchy_node_id, node.parent_hierarchy_node_id]);
+    }
+    const missingCanonical = node.canonical_node_ids.filter((id) => !nodeIds.has(id));
+    if (missingCanonical.length) {
+      push("dangling-hierarchy-canonical", `Hierarchy node ${node.hierarchy_node_id} references missing canonical nodes.`, [node.hierarchy_node_id, ...missingCanonical]);
+    }
+    const chain = new Set<string>([node.hierarchy_node_id]);
+    let parentId = node.parent_hierarchy_node_id ?? undefined;
+    while (parentId) {
+      if (chain.has(parentId)) {
+        push("cyclic-hierarchy", `Hierarchy containment cycle includes ${parentId}.`, [...chain, parentId], "blocking");
+        break;
+      }
+      chain.add(parentId);
+      parentId = state.hierarchy.nodes.find((candidate) => candidate.hierarchy_node_id === parentId)?.parent_hierarchy_node_id ?? undefined;
+    }
+  }
+
+  const formalById = new Map(state.architecture.nodes.map((node) => [node.node_id, node]));
+  for (const edge of state.architecture.edges) {
+    const producer = formalById.get(edge.producer_id);
+    const consumer = formalById.get(edge.consumer_id);
+    if (!producer || !consumer) {
+      push("dangling-canonical-edge", `Canonical edge ${edge.edge_id} has a missing endpoint.`, [edge.edge_id, edge.producer_id, edge.consumer_id], "blocking");
+      continue;
+    }
+    if (!producer.output_ports.some((port) => port.port_id === edge.producer_port)) {
+      push("missing-producer-port", `Canonical edge ${edge.edge_id} references a missing producer port.`, [edge.edge_id, edge.producer_port]);
+    }
+    if (!consumer.input_ports.some((port) => port.port_id === edge.consumer_port)) {
+      push("missing-consumer-port", `Canonical edge ${edge.edge_id} references a missing consumer port.`, [edge.edge_id, edge.consumer_port]);
+    }
+  }
+
+  for (const binding of state.semantic_overlay?.template_bindings ?? []) {
+    if (binding.source_digest && binding.source_digest !== state.document.source_digest) {
+      push("stale-template-binding", `Template binding ${binding.binding_id} is stale and will render as opaque.`, [binding.binding_id]);
+    }
+    const referencedNodes = [
+      ...(binding.root_canonical_node_ids ?? []),
+      ...(binding.canonical_node_ids ?? []),
+      ...Object.values(binding.node_slots ?? {}).flat(),
+    ];
+    const missing = unique(referencedNodes.filter((id) => !nodeIds.has(id)));
+    if (missing.length) push("dangling-template-slot", `Template binding ${binding.binding_id} references missing canonical nodes.`, [binding.binding_id, ...missing]);
+  }
+  return diagnostics.sort((left, right) => left.code.localeCompare(right.code) || left.targetIds.join("|").localeCompare(right.targetIds.join("|")));
 }
 
 function canonicalClosure(hierarchy: FormalStudioState["hierarchy"]): Map<string, string[]> {
@@ -246,7 +319,7 @@ export function adaptFormalState(state: FormalStudioState): {
   document: KernelDocument;
   visualState: KernelVisualState;
 } {
-  const diagnostics: KernelDiagnostic[] = [];
+  const diagnostics: KernelDiagnostic[] = validateFormalState(state);
   const expanded = new Set(state.view_state.module_expansion ?? []);
   const bindings = templateBindings(state);
   const annotationGlyphsByCanonical = new Map<string, Set<string>>();
@@ -272,7 +345,7 @@ export function adaptFormalState(state: FormalStudioState): {
     const primary = facts[0];
     const evidenceIds = unique([...(item.evidence_ids ?? []), ...containedFacts.flatMap((node) => node.evidence_ids)]);
     const binding = bindings.find((candidate) => candidate.rootCanonicalNodeIds.some((id) => canonicalNodeIds.includes(id)));
-    const hasTemplateDetail = binding?.fidelity === "exact" && binding.templateId === "attention.qkv-v1";
+    const hasTemplateDetail = Boolean(templateDetailSize(binding));
     const annotationGlyphs = unique(canonicalNodeIds.flatMap((id) => [...(annotationGlyphsByCanonical.get(id) ?? [])]));
     const annotationGlyph = annotationGlyphs.length === 1 ? annotationGlyphs[0] : undefined;
     const hasChildren = hasTemplateDetail || childIds.length > 0 || state.hierarchy.nodes.some((candidate) => candidate.parent_hierarchy_node_id === item.hierarchy_node_id);

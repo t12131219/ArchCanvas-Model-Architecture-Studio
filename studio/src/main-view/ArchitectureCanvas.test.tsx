@@ -143,6 +143,42 @@ describe("ArchitectureCanvas formal detail rendering", () => {
     expect(markup).not.toContain('aria-label="Focus selection" title="Focus selection" disabled=""');
   });
 
+  it("distinguishes exact, opaque, and schematic template fidelity without inventing internals", () => {
+    for (const fidelity of ["exact", "opaque", "schematic"] as const) {
+      const state = exactAttentionState();
+      state.semantic_overlay!.template_bindings![0].fidelity = fidelity;
+      const markup = renderToStaticMarkup(<ArchitectureCanvas
+        state={state}
+        selectedCanonicalIds={[]}
+        onSelectNode={() => undefined}
+        tx={(english) => english}
+      />);
+
+      expect(markup).toContain(`data-template-fidelity="${fidelity}"`);
+      expect(markup).toContain(`fidelity-${fidelity}`);
+      if (fidelity === "exact") expect(markup).toContain('data-detail-binding-id="binding:attention:render"');
+      else expect(markup).not.toContain('data-detail-binding-id="binding:attention:render"');
+    }
+  });
+
+  it("renders migrated catalog details for supported exact bindings", () => {
+    const state = exactAttentionState();
+    const binding = state.semantic_overlay!.template_bindings![0];
+    binding.binding_id = "binding:feedforward:render";
+    binding.template_id = "catalog.feedforward-v1";
+    binding.node_slots = {};
+    const markup = renderToStaticMarkup(<ArchitectureCanvas
+      state={state}
+      selectedCanonicalIds={[]}
+      onSelectNode={() => undefined}
+      tx={(english) => english}
+    />);
+
+    expect(markup).toContain('data-detail-binding-id="binding:feedforward:render"');
+    expect(markup).toContain('data-detail-slot-id="visual:');
+    expect(markup).toContain("position-wise channel expansion and contraction");
+  });
+
   it("renders edge hit areas, edge selection, and node resize handles", () => {
     const markup = renderToStaticMarkup(<ArchitectureCanvas
       state={connectedState()}

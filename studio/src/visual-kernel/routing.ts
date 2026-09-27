@@ -1,4 +1,11 @@
 import type { Bounds, Point, RenderEdge, RenderNode, RouteStyle } from "./types";
+import {
+  measureScene,
+  routeScene,
+  type RoutingBoundaryPortMap,
+  type RoutingInputScene,
+  type RoutingMetrics,
+} from "./routing-engine";
 
 function compact(points: Point[]): Point[] {
   const result: Point[] = [];
@@ -7,9 +14,14 @@ function compact(points: Point[]): Point[] {
     if (previous && previous.x === point.x && previous.y === point.y) continue;
     const before = result.at(-2);
     if (before && previous) {
-      const collinear = (before.x === previous.x && previous.x === point.x)
-        || (before.y === previous.y && previous.y === point.y);
-      if (collinear) result.pop();
+      const between = (value: number, first: number, second: number) => (
+        value >= Math.min(first, second) && value <= Math.max(first, second)
+      );
+      const redundantVertical = before.x === previous.x && previous.x === point.x
+        && between(previous.y, before.y, point.y);
+      const redundantHorizontal = before.y === previous.y && previous.y === point.y
+        && between(previous.x, before.x, point.x);
+      if (redundantVertical || redundantHorizontal) result.pop();
     }
     result.push(point);
   }
@@ -129,5 +141,49 @@ export function routeRenderEdge(
     path: style === "curve" ? curvePath(points) : roundedPath(points),
     labelPoint: label.point,
     labelAngle: label.angle,
+  };
+}
+
+export function routeRenderEdges(
+  records: Array<{
+    edge: Omit<RenderEdge, "points" | "path" | "labelPoint" | "labelAngle">;
+    source: RenderNode;
+    target: RenderNode;
+  }>,
+  nodes: RenderNode[],
+  style: RouteStyle,
+  boundaryPorts?: RoutingBoundaryPortMap,
+): { edges: RenderEdge[]; metrics: RoutingMetrics } {
+  const scene: RoutingInputScene = {
+    sceneId: "kernel-routing",
+    width: Math.max(640, ...nodes.map((node) => node.bounds.x + node.bounds.width + 72)),
+    height: Math.max(520, ...nodes.map((node) => node.bounds.y + node.bounds.height + 72)),
+    nodes: nodes.map((node) => ({
+      nodeId: node.nodeId,
+      bounds: node.bounds,
+      detailExpanded: node.renderRole === "expanded-module",
+    })),
+    edges: records.map(({ edge, source, target }) => ({
+      edgeId: edge.edgeId,
+      sourceNodeId: source.nodeId,
+      targetNodeId: target.nodeId,
+      relation: edge.relation,
+      label: edge.label,
+    })),
+  };
+  const routed = routeScene(scene, style, boundaryPorts);
+  const edgeById = new Map(records.map(({ edge }) => [edge.edgeId, edge]));
+  return {
+    edges: routed.flatMap((route) => {
+      const edge = edgeById.get(route.edge.edgeId);
+      return edge ? [{
+        ...edge,
+        points: route.points,
+        path: route.path,
+        labelPoint: route.labelPoint,
+        labelAngle: route.labelAngle,
+      }] : [];
+    }),
+    metrics: measureScene(scene, routed),
   };
 }

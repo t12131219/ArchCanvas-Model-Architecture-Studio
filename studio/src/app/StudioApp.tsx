@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -8,8 +8,6 @@ import {
   ChevronRight,
   CircleDot,
   CornerDownLeft,
-  Download,
-  Eye,
   FileCode2,
   FolderOpen,
   Focus,
@@ -21,15 +19,11 @@ import {
   LockKeyhole,
   Maximize2,
   Moon,
-  Move,
-  PanelBottom,
-  PanelLeft,
   PanelRight,
   Pin,
   PinOff,
   Play,
   Plus,
-  Redo2,
   RefreshCw,
   Route,
   Save,
@@ -37,7 +31,6 @@ import {
   ShieldCheck,
   Sun,
   Trash2,
-  Undo2,
   Variable,
   X,
   ZoomIn,
@@ -46,23 +39,8 @@ import {
 
 import { JobPollingController, type StudioJob } from "../jobs";
 import { initialProjectSelection } from "../project-launch";
-import { constrainDragDelta } from "../drag";
+import { getStudioJson, postStudioJson } from "../api/studio-client";
 import {
-  updatePreviewEdgeElement,
-  type Point,
-  type Rect,
-  type SceneEdge,
-  type SceneNode,
-} from "../scene-graphics";
-import { buildSceneRenderIndex, previewNodeTransform } from "../scene-performance";
-import {
-  createGestureRouteLock,
-  previewEdgePoints,
-  type GestureRouteLock,
-} from "../scene-routing-preview";
-import { nodesInSelection, selectionBounds } from "../selection";
-import {
-  studioModelIdentity,
   visibleNavigationRows,
   visibleProjectEntrypoints,
 } from "../tree";
@@ -75,15 +53,42 @@ import {
 import { adaptFormalState, type FormalStudioState } from "../main-view/formal-state-adapter";
 import type { KernelExportArtifact } from "../visual-kernel/export";
 import { buildKernelRenderScene } from "../visual-kernel/layout";
+import type { Bounds as Rect, Point, RenderEdge, RenderNode } from "../visual-kernel/types";
+import {
+  BottomPanel,
+  InspectorPanel,
+  NavigationPanel,
+  PanelResizers,
+  shellLayoutStyle,
+  TopBar,
+  type PanelResizeEdge,
+  type StudioLocale,
+  type StudioMode,
+} from "../shell/StudioShell";
+import type {
+  AgentProposal,
+  ArchitectureNodeView,
+  ArchitectureParameter,
+  ArchitectureTensor,
+  CanonicalDeleteImpact,
+  Diagnostic,
+  DraftEdgePolicy,
+  Evidence,
+  GraphDelta,
+  LayoutMode,
+  Projection,
+  PublicationNode,
+  SourceExcerpt,
+  SourceTransaction,
+  SourceWorkspaceBuffer,
+  SourceWorkspaceFile,
+  StudioState,
+} from "./studio-types";
+import { embeddedStudioState, initialExpansionState, StudioStateAcceptance } from "./studio-state";
 import "../styles.css";
 
-type Mode = "explore" | "layout" | "model";
-type Projection = "module" | "source";
-type RouteStrategy = "avoid" | "balanced" | "compact";
-type LayoutMode = "auto" | "dual-swimlane" | "single-lane" | "hierarchical" | "branch-tree" | "force-directed" | "radial" | "orthogonal";
-type RouteSide = "left" | "right" | "top" | "bottom";
-type Locale = "en" | "zh";
-type DraftEdgePolicy = "replace-input" | "add-residual" | "concat" | "fanout" | "disconnect";
+type Mode = StudioMode;
+type Locale = StudioLocale;
 
 interface LanguageContextValue {
   locale: Locale;
@@ -143,421 +148,7 @@ function useLanguage(): LanguageContextValue {
   return React.useContext(LanguageContext);
 }
 
-interface SceneAnnotation {
-  annotation_id: string;
-  text: string;
-  bounds: Rect;
-  fill: string;
-  stroke: string;
-}
 
-interface Scene {
-  schema_version: "1.0" | "1.1";
-  scene_id: string;
-  view_id: string;
-  layout_family: string;
-  paper_width: number;
-  paper_height: number;
-  nodes: SceneNode[];
-  edges: SceneEdge[];
-  caption?: string;
-  legend_placement?: "top-left" | "top-right" | "bottom-left" | "bottom-right" | "hidden";
-  annotations: SceneAnnotation[];
-}
-
-interface RoutingMetrics {
-  invalid_endpoint_count: number;
-  obstacle_intersection_count: number;
-  obstacle_intersection_length: number;
-  crossing_count: number;
-  shared_segment_length: number;
-  bend_count: number;
-  reverse_departure_count: number;
-  total_length: number;
-}
-
-interface RoutingReceipt {
-  engine: "atomic-v1";
-  engine_version: string;
-  input_digest: string;
-  route_digest: string;
-  metrics: RoutingMetrics;
-  fallback_reasons: Array<[string, string]>;
-  diagnostics: string[];
-  duration_ms: Array<[string, number]>;
-}
-
-interface RoutingShadowReport {
-  mode: "shadow";
-  visible_engine: "legacy";
-  shadow_engine: "atomic-v1";
-  status: "compared" | "failed" | "not-sampled";
-  scene_id: string;
-  view_id: string;
-  legacy_metrics: RoutingMetrics | null;
-  shadow_receipt: RoutingReceipt | null;
-  delta: RoutingMetrics | null;
-  legacy_route_digest: string | null;
-  route_digest_matches: boolean | null;
-  compared_edge_count: number;
-  endpoint_displacement_total: number;
-  endpoint_displacement_max: number;
-  error_code?: string | null;
-  error_message?: string | null;
-}
-
-interface AtomicRoutingReport {
-  mode: "atomic-v1";
-  requested_engine: "atomic-v1";
-  visible_engine: "atomic-v1" | "legacy";
-  status: "routed" | "fallback";
-  scene_id: string;
-  view_id: string;
-  receipt: RoutingReceipt | null;
-  routed_edge_count: number;
-  fixed_route_count: number;
-  error_code?: string | null;
-  error_message?: string | null;
-}
-
-interface RoutingState {
-  mode: "legacy" | "shadow" | "atomic-v1";
-  visible_engine: "legacy" | "atomic-v1";
-  shadow_engine: "atomic-v1" | null;
-  shadow_sample_rate: number;
-  reports: Record<string, RoutingShadowReport | AtomicRoutingReport>;
-}
-
-interface PublicationNode {
-  view_node_id: string;
-  semantic_name: string;
-  canonical_node_ids: string[];
-  collapsed: boolean;
-  attributes: Record<string, unknown>;
-}
-
-interface PublicationView {
-  projection_id: string;
-  frontier_digest: string;
-  visible_depth: number;
-  max_depth: number;
-  fully_expanded: boolean;
-  name: string;
-  nodes: PublicationNode[];
-}
-
-interface Evidence {
-  evidence_id: string;
-  kind: string;
-  path?: string;
-  symbol?: string;
-  claim: string;
-  confidence: string;
-  span?: { start_line: number; end_line: number };
-  runtime_trace_id?: string;
-  runtime_observation_ids?: string[];
-}
-
-interface Diagnostic {
-  code: string;
-  severity: string;
-  message: string;
-  target_ids: string[];
-}
-
-interface ArchitectureParameter {
-  name: string;
-  source_expression: string;
-  value: unknown;
-  origin: string;
-  evidence_ids: string[];
-}
-
-interface ArchitecturePort {
-  port_id: string;
-  name: string;
-  direction: "input" | "output";
-  role: string;
-}
-
-interface ArchitectureNodeView {
-  node_id: string;
-  semantic_name: string;
-  kind: string;
-  source_symbol?: string;
-  parent_id?: string;
-  confidence: string;
-  evidence_ids: string[];
-  attributes: Record<string, unknown>;
-  parameters: ArchitectureParameter[];
-  input_ports: ArchitecturePort[];
-  output_ports: ArchitecturePort[];
-}
-
-interface ArchitectureTensor {
-  tensor_id: string;
-  role: string;
-  producer_id: string;
-  consumer_ids: string[];
-  symbolic_shape: string;
-  semantic_axes: string[];
-  dtype: string;
-  confidence: string;
-}
-
-interface HierarchyNode {
-  hierarchy_node_id: string;
-  parent_hierarchy_node_id?: string;
-  semantic_name: string;
-  depth: number;
-  canonical_node_ids: string[];
-}
-
-interface SourceExcerpt {
-  path: string;
-  sha256: string;
-  revision: string;
-  start_line: number;
-  end_line: number;
-  highlight_start_line: number;
-  highlight_end_line: number;
-  lines: Array<{ number: number; text: string }>;
-}
-
-interface GraphDelta {
-  added_nodes: string[];
-  removed_nodes: string[];
-  changed_nodes: string[];
-  added_edges: string[];
-  removed_edges: string[];
-  changed_edges: string[];
-  added_ports: string[];
-  removed_ports: string[];
-  changed_ports: string[];
-  added_tensors: string[];
-  removed_tensors: string[];
-  changed_tensors: string[];
-  added_fanouts: string[];
-  removed_fanouts: string[];
-  changed_fanouts: string[];
-  added_config_predicates: string[];
-  removed_config_predicates: string[];
-  changed_config_predicates: string[];
-  changed_parameters: Array<{
-    node_id: string;
-    parameter_name: string;
-    before: unknown;
-    after: unknown;
-    source_expression: string;
-  }>;
-  changed_shapes: Array<{ subject_id: string; before: string; after: string }>;
-}
-
-interface SourceTransaction {
-  transaction_id: string;
-  state: string;
-  request: {
-    target_node_id?: string;
-    operation: "set_parameter" | "replace_activation" | "insert_layer_norm" | "edit_source_buffers";
-    parameter_name?: string;
-    new_value?: unknown;
-    parameters?: Record<string, unknown>;
-    buffers?: Array<{ path: string; base_sha256: string; content: string }>;
-  };
-  source_diff: string;
-  expected_delta: GraphDelta;
-  observed_delta?: GraphDelta;
-  gates: Array<{ gate: string; status: string; message: string }>;
-  diagnostics: Diagnostic[];
-}
-
-interface AgentProposal {
-  proposal_id: string;
-  status: "handoff-required";
-  reason_code: string;
-  summary: string;
-  source_context: Record<string, unknown>;
-  permissions: { shell: false; network: false; source_write: false };
-}
-
-interface SourceWorkspaceFile {
-  path: string;
-  base_sha256: string;
-  staged_sha256: string | null;
-  working_sha256: string | null;
-  state: "clean" | "modified" | "stale" | "readonly";
-  opened: boolean;
-  size: number;
-  readonly_reason: string | null;
-}
-
-interface SourceWorkspaceBuffer {
-  path: string;
-  revision: number;
-  base_sha256: string;
-  staged_sha256: string;
-  working_sha256: string;
-  state: "clean" | "modified" | "stale";
-  base_content: string;
-  staged_content: string;
-  working_content: string;
-  diff: string;
-}
-
-interface CanonicalDeleteImpact {
-  node_id: string;
-  semantic_name: string;
-  input_fingerprint: string;
-  incoming_edge_ids: string[];
-  outgoing_edge_ids: string[];
-  produced_tensor_ids: string[];
-  downstream_node_ids: string[];
-  fanout_ids: string[];
-  shared_parameter_node_ids: string[];
-  child_node_ids: string[];
-  repeat_id: string | null;
-  execution_predicate: string;
-  source_evidence_ids: string[];
-  runtime_evidence_ids: string[];
-  expected_delta: GraphDelta;
-  required_action: string;
-  blocking_reasons: string[];
-}
-
-interface StudioState {
-  session_nonce?: string;
-  project: {
-    project_id: string;
-    root: string;
-    generation: number;
-    framework: string;
-    environment_path?: string | null;
-    python_executable?: string | null;
-  };
-  architecture: {
-    architecture_id: string;
-    entrypoint: string;
-    nodes: ArchitectureNodeView[];
-    tensors: ArchitectureTensor[];
-  };
-  snapshot: {
-    project_root: string;
-    entrypoint: string;
-    revision: string;
-    source_files: Array<{ path: string; sha256: string }>;
-  };
-  hierarchy: { root_node_id: string; max_depth: number; nodes: HierarchyNode[] };
-  evidence: Evidence[];
-  runtime: {
-    trace: {
-      trace_id: string;
-      environment: { selected_device: string; torch_version: string };
-      observations: unknown[];
-    };
-    node_evidence: Record<string, string[]>;
-  } | null;
-  active_projection_id: string;
-  views: Record<string, PublicationView>;
-  document: {
-    source_digest: string;
-    visual_patches: unknown[];
-    redo_patches: unknown[];
-  };
-  integrity?: { source_digest: string; exact_ir_digest: string };
-  view_state: {
-    navigation_view?: Projection;
-    layout_mode?: LayoutMode;
-    pinned_node_ids?: string[];
-    collapsed_node_ids?: string[];
-    theme?: string;
-    cameras?: Record<string, { x: number; y: number; zoom: number }>;
-    module_expansion?: string[];
-    source_expansion?: string[];
-    font_scale?: number;
-    line_weight?: number;
-    palette_overrides?: Record<string, string>;
-    caption?: string;
-    legend_placement?: "top-left" | "top-right" | "bottom-left" | "bottom-right" | "hidden";
-  };
-  navigation: {
-    active_projection: Projection;
-    projections: Record<Projection, {
-      projection_id: Projection;
-      label: string;
-      description: string;
-      nodes: NavigationNode[];
-    }>;
-  };
-  draft: {
-    draft_id: string;
-    revision: number;
-    nodes: Array<{
-      node_id: string;
-      semantic_name: string;
-      framework: string;
-      node_type: string;
-      parent_id?: string | null;
-      source_anchor?: string | null;
-      parameters: Record<string, unknown>;
-      ports: Array<{
-        port_id: string;
-        name: string;
-        direction: "input" | "output";
-        role: string;
-      }>;
-    }>;
-    edges: Array<{
-      edge_id: string;
-      source_port_id: string;
-      target_port_id: string;
-      policy: DraftEdgePolicy;
-      parameters: Record<string, unknown>;
-    }>;
-    intents: Array<{
-      intent_id: string;
-      kind: "create-node" | "delete-node" | "connect-ports" | "disconnect-edge" | "replace-node" | "set-parameter" | "edit-source-buffer" | "edit-onnx-initializer" | "edit-onnx-attribute";
-      target_ids: string[];
-      expected_delta: GraphDelta | null;
-      user_input: Record<string, unknown>;
-      capability_requirement: string;
-    }>;
-    lowering_status: "not-planned" | "checking" | "planned" | "blocked";
-    proofs: Array<{
-      intent_id: string;
-      status: "checking" | "conditional" | "unproven" | "invalid" | "stale" | "proven" | "review-ready";
-      message: string;
-      reason_codes: string[];
-      affected_subject_ids: string[];
-    }>;
-    writeback_summary: { eligibility: "blocked" | "prepare" | "commit"; blocking_intent_ids: string[] };
-  };
-  source_workspace: {
-    workspace_id: string;
-    revision: number;
-    base_revision: string;
-    state: "clean" | "modified" | "stale";
-    files: SourceWorkspaceFile[];
-  };
-  validation_runs: Array<{
-    validation_id: string;
-    profile: string;
-    state: string;
-    input_fingerprint: string;
-    gate_results: Array<{ gate: string; status: string; message: string }>;
-    diagnostics: Diagnostic[];
-  }>;
-  jobs?: StudioJob<Diagnostic>[];
-  diagnostics: Diagnostic[];
-  transaction: SourceTransaction | null;
-  proposal: AgentProposal | null;
-  capabilities: {
-    visual_editing: boolean;
-    source_editing: boolean;
-    runtime_evidence: boolean;
-    semantic_transforms: string[];
-    proposed_connection: boolean;
-  };
-}
 
 interface VisualPatch {
   patch_id: string;
@@ -566,33 +157,12 @@ interface VisualPatch {
   value: Record<string, unknown>;
 }
 
-interface DragState {
-  startClient: Point;
-  baselines: Record<string, Rect>;
-  rootIds: string[];
-}
-
-interface DragDomPreview {
-  nodeElements: Map<string, SVGGElement>;
-  nodeTransforms: Map<string, string | null>;
-  edgeElements: Map<string, SVGGElement[]>;
-  affectedEdges: Array<{ edge: SceneEdge; index: number; routeLock: GestureRouteLock | null }>;
-}
-
-interface EdgeEndpointDrag {
-  edgeId: string;
-  endpoint: "source" | "target";
-  points: Point[];
-}
-
 interface PanelSizes {
   left: number;
   right: number;
   top: number;
   bottom: number;
 }
-
-type PanelResizeEdge = keyof PanelSizes;
 
 interface PanelResizeState {
   edge: PanelResizeEdge;
@@ -608,16 +178,6 @@ interface SearchResult {
   canonical_ids: string[];
   view_bindings: Array<{ projection_id: string; scene_id: string; scene_node_id: string }>;
   facets: Record<string, string>;
-}
-
-interface PanState {
-  startClient: Point;
-  startViewBox: [number, number, number, number];
-}
-
-interface MarqueeState {
-  start: Point;
-  current: Point;
 }
 
 interface NavigationNode {
@@ -639,475 +199,11 @@ interface NavigationNode {
   sibling_count: number;
 }
 
-const PROOF_RANK: Readonly<Record<string, number>> = {
-  invalid: 7,
-  stale: 6,
-  unproven: 5,
-  conditional: 4,
-  checking: 3,
-  proven: 2,
-  "review-ready": 1,
-};
-
-function embeddedState(): StudioState | null {
-  const element = document.getElementById("archcanvas-studio-data");
-  if (!element?.textContent) return null;
-  return JSON.parse(element.textContent) as StudioState;
-}
-
-function deriveKernelSceneIndex(state: StudioState): Scene {
-  const formalState = state as unknown as FormalStudioState;
-  const adapted = adaptFormalState(formalState);
-  const kernelScene = buildKernelRenderScene(adapted.document, adapted.visualState);
-  const activeView = state.views[state.active_projection_id];
-  const viewNodeByHierarchy = new Map(
-    (activeView?.nodes ?? []).map((node) => [
-      String(node.attributes.hierarchy_node_id ?? ""),
-      node.view_node_id,
-    ]),
-  );
-  const ownerByPort = new Map(
-    adapted.document.ports.map((port) => [port.portId, port.ownerNodeId]),
-  );
-  const shape = (value: string): SceneNode["shape"] => {
-    if (["container", "tensor", "attention", "normalization", "condition", "merge", "io"].includes(value)) {
-      return value as SceneNode["shape"];
-    }
-    if (["add", "multiply", "concat"].includes(value)) return "merge";
-    return "rect";
-  };
-  return {
-    schema_version: "1.1",
-    scene_id: kernelScene.sceneId,
-    view_id: state.active_projection_id,
-    layout_family: "visual-kernel-v1",
-    paper_width: kernelScene.width,
-    paper_height: kernelScene.height,
-    caption: state.view_state.caption,
-    legend_placement: state.view_state.legend_placement,
-    annotations: [],
-    nodes: kernelScene.nodes.map((node) => ({
-      scene_node_id: node.nodeId,
-      view_node_id: viewNodeByHierarchy.get(node.hierarchyNodeId) ?? node.nodeId,
-      canonical_node_ids: node.canonicalNodeIds,
-      bounds: node.bounds,
-      shape: shape(node.shape),
-      label_lines: [node.label],
-      secondary_label: node.secondaryLabel,
-      fill: "transparent",
-      stroke: "currentColor",
-      parent_scene_node_id: node.parentNodeId,
-      evidence_ids: node.evidenceIds,
-    })),
-    edges: kernelScene.edges.map((edge) => ({
-      scene_edge_id: edge.edgeId,
-      view_edge_id: edge.edgeId,
-      canonical_edge_ids: edge.canonicalEdgeIds,
-      source_scene_node_id: ownerByPort.get(edge.sourcePortId) ?? "",
-      target_scene_node_id: ownerByPort.get(edge.targetPortId) ?? "",
-      points: edge.points,
-      role: edge.semanticChannel,
-      edge_type: edge.relation,
-      visual_relation: edge.relation,
-      stroke: "currentColor",
-      width: 1.5,
-      label: edge.label,
-      source_port_id: edge.sourcePortId,
-      target_port_id: edge.targetPortId,
-      evidence_ids: edge.evidenceIds,
-    })),
-  };
-}
-
-function expansionState(state: StudioState | null): Record<Projection, Set<string>> {
-  const defaults = (kind: Projection) => new Set(
-    state?.navigation?.projections[kind].nodes
-      .filter((item) => item.depth === 0 && item.child_count > 0)
-      .map((item) => item.id) ?? [],
-  );
-  return {
-    module: state?.view_state.module_expansion
-      ? new Set(state.view_state.module_expansion)
-      : defaults("module"),
-    source: state?.view_state.source_expansion
-      ? new Set(state.view_state.source_expansion)
-      : defaults("source"),
-  };
-}
-
 function patchId(operation: string): string {
   const random = crypto.getRandomValues(new Uint32Array(2));
   return `patch:${operation}.${Date.now().toString(36)}.${random[0].toString(36)}${random[1].toString(36)}`;
 }
 
-function sceneDescendantIds(scene: Scene, rootIds: string[]): string[] {
-  const children = new Map<string, string[]>();
-  for (const node of scene.nodes) {
-    if (!node.parent_scene_node_id) continue;
-    children.set(node.parent_scene_node_id, [
-      ...(children.get(node.parent_scene_node_id) ?? []),
-      node.scene_node_id,
-    ]);
-  }
-  const collected = new Set<string>();
-  const visit = (nodeId: string) => {
-    if (collected.has(nodeId)) return;
-    collected.add(nodeId);
-    for (const childId of children.get(nodeId) ?? []) visit(childId);
-  };
-  for (const rootId of rootIds) visit(rootId);
-  return scene.nodes
-    .map((node) => node.scene_node_id)
-    .filter((nodeId) => collected.has(nodeId));
-}
-
-function distanceToPolyline(point: Point, points: Point[]): number {
-  let nearest = Number.POSITIVE_INFINITY;
-  for (let index = 0; index < points.length - 1; index += 1) {
-    const start = points[index];
-    const end = points[index + 1];
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    const lengthSquared = dx * dx + dy * dy;
-    const projection = lengthSquared === 0
-      ? 0
-      : Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared));
-    const x = start.x + projection * dx;
-    const y = start.y + projection * dy;
-    nearest = Math.min(nearest, Math.hypot(point.x - x, point.y - y));
-  }
-  return nearest;
-}
-
-function boundarySide(point: Point, bounds: Rect): RouteSide {
-  const distances: Array<[number, RouteSide]> = [
-    [Math.abs(point.x - bounds.x), "left"],
-    [Math.abs(point.x - bounds.x - bounds.width), "right"],
-    [Math.abs(point.y - bounds.y), "top"],
-    [Math.abs(point.y - bounds.y - bounds.height), "bottom"],
-  ];
-  return distances.sort((left, right) => left[0] - right[0])[0][1];
-}
-
-function routeStub(point: Point, side: RouteSide, distance = 24): Point {
-  if (side === "left") return { x: point.x - distance, y: point.y };
-  if (side === "right") return { x: point.x + distance, y: point.y };
-  if (side === "top") return { x: point.x, y: point.y - distance };
-  return { x: point.x, y: point.y + distance };
-}
-
-function compactRoute(route: Point[]): Point[] {
-  const compact: Point[] = [];
-  for (const point of route) {
-    if (compact.length && compact.at(-1)!.x === point.x && compact.at(-1)!.y === point.y) continue;
-    compact.push(point);
-    while (compact.length >= 3) {
-      const [first, middle, last] = compact.slice(-3);
-      if ((first.x === middle.x && middle.x === last.x) || (first.y === middle.y && middle.y === last.y)) {
-        compact.splice(-2, 1);
-      } else break;
-    }
-  }
-  return compact;
-}
-
-function segmentLengthInside(start: Point, end: Point, bounds: Rect): number {
-  if (Math.abs(start.x - end.x) < 0.001) {
-    if (!(bounds.x < start.x && start.x < bounds.x + bounds.width)) return 0;
-    return Math.max(0, Math.min(Math.max(start.y, end.y), bounds.y + bounds.height) - Math.max(Math.min(start.y, end.y), bounds.y));
-  }
-  if (Math.abs(start.y - end.y) < 0.001) {
-    if (!(bounds.y < start.y && start.y < bounds.y + bounds.height)) return 0;
-    return Math.max(0, Math.min(Math.max(start.x, end.x), bounds.x + bounds.width) - Math.max(Math.min(start.x, end.x), bounds.x));
-  }
-  return Math.hypot(end.x - start.x, end.y - start.y);
-}
-
-function orthogonalSegmentInteraction(firstStart: Point, firstEnd: Point, secondStart: Point, secondEnd: Point): [number, number] {
-  const firstVertical = Math.abs(firstStart.x - firstEnd.x) < 0.001;
-  const secondVertical = Math.abs(secondStart.x - secondEnd.x) < 0.001;
-  if (firstVertical === secondVertical) {
-    const firstAxis = firstVertical ? firstStart.x : firstStart.y;
-    const secondAxis = secondVertical ? secondStart.x : secondStart.y;
-    if (Math.abs(firstAxis - secondAxis) >= 0.001) return [0, 0];
-    const firstInterval = firstVertical
-      ? [Math.min(firstStart.y, firstEnd.y), Math.max(firstStart.y, firstEnd.y)]
-      : [Math.min(firstStart.x, firstEnd.x), Math.max(firstStart.x, firstEnd.x)];
-    const secondInterval = secondVertical
-      ? [Math.min(secondStart.y, secondEnd.y), Math.max(secondStart.y, secondEnd.y)]
-      : [Math.min(secondStart.x, secondEnd.x), Math.max(secondStart.x, secondEnd.x)];
-    return [0, Math.max(0, Math.min(firstInterval[1], secondInterval[1]) - Math.max(firstInterval[0], secondInterval[0]))];
-  }
-  const [verticalStart, verticalEnd] = firstVertical ? [firstStart, firstEnd] : [secondStart, secondEnd];
-  const [horizontalStart, horizontalEnd] = firstVertical ? [secondStart, secondEnd] : [firstStart, firstEnd];
-  const crossing = horizontalStart.x <= verticalStart.x && verticalStart.x <= horizontalEnd.x
-    || horizontalEnd.x <= verticalStart.x && verticalStart.x <= horizontalStart.x;
-  const withinVertical = verticalStart.y <= horizontalStart.y && horizontalStart.y <= verticalEnd.y
-    || verticalEnd.y <= horizontalStart.y && horizontalStart.y <= verticalStart.y;
-  if (!crossing || !withinVertical) return [0, 0];
-  const point = { x: verticalStart.x, y: horizontalStart.y };
-  const isEndpoint = (candidate: Point, start: Point, end: Point) => (
-    (candidate.x === start.x && candidate.y === start.y) || (candidate.x === end.x && candidate.y === end.y)
-  );
-  return [isEndpoint(point, firstStart, firstEnd) && isEndpoint(point, secondStart, secondEnd) ? 0 : 1, 0];
-}
-
-interface RouteReference {
-  points: Point[];
-  sourceId: string;
-  targetId: string;
-}
-
-function routeInteractions(
-  route: Point[],
-  otherRoutes: RouteReference[],
-  sourceId: string,
-  targetId: string,
-): [number, number] {
-  let crossings = 0;
-  let overlap = 0;
-  for (const other of otherRoutes) {
-    const routeSegments = route.length - 1;
-    const otherSegments = other.points.length - 1;
-    for (let index = 0; index < route.length - 1; index += 1) {
-      for (let otherIndex = 0; otherIndex < other.points.length - 1; otherIndex += 1) {
-        const segmentLength = Math.abs(route[index + 1].x - route[index].x)
-          + Math.abs(route[index + 1].y - route[index].y);
-        const otherSegmentLength = Math.abs(other.points[otherIndex + 1].x - other.points[otherIndex].x)
-          + Math.abs(other.points[otherIndex + 1].y - other.points[otherIndex].y);
-        const shortStubs = segmentLength <= 32 && otherSegmentLength <= 32;
-        if (
-          (shortStubs && sourceId === other.sourceId && index === 0 && otherIndex === 0)
-          || (
-            shortStubs
-            &&
-            targetId === other.targetId
-            && index === routeSegments - 1
-            && otherIndex === otherSegments - 1
-          )
-        ) continue;
-        const [segmentCrossings, segmentOverlap] = orthogonalSegmentInteraction(
-          route[index], route[index + 1], other.points[otherIndex], other.points[otherIndex + 1],
-        );
-        crossings += segmentCrossings;
-        overlap += segmentOverlap;
-      }
-    }
-  }
-  return [crossings, overlap];
-}
-
-function routeMetric(
-  route: Point[],
-  nodes: SceneNode[],
-  relatedIds: Set<string>,
-  strategy: RouteStrategy,
-  otherRoutes: RouteReference[] = [],
-  sourceId = "",
-  targetId = "",
-): number[] {
-  const crossedNodeIds = new Set<string>();
-  const crossedContainerIds = new Set<string>();
-  let nodeLength = 0;
-  let containerLength = 0;
-  let clearanceLength = 0;
-  let length = 0;
-  for (let index = 0; index < route.length - 1; index += 1) {
-    const start = route[index];
-    const end = route[index + 1];
-    length += Math.abs(end.x - start.x) + Math.abs(end.y - start.y);
-    for (const node of nodes) {
-      if (relatedIds.has(node.scene_node_id)) continue;
-      const inside = segmentLengthInside(start, end, node.bounds);
-      if (node.shape === "container") {
-        containerLength += inside;
-        if (inside > 0.001) crossedContainerIds.add(node.scene_node_id);
-      }
-      else {
-        nodeLength += inside;
-        if (inside > 0.001) crossedNodeIds.add(node.scene_node_id);
-        clearanceLength += segmentLengthInside(start, end, {
-          x: node.bounds.x - 10,
-          y: node.bounds.y - 10,
-          width: node.bounds.width + 20,
-          height: node.bounds.height + 20,
-        });
-      }
-    }
-  }
-  const bends = Math.max(0, route.length - 2);
-  const nodeCount = crossedNodeIds.size;
-  const containerCount = crossedContainerIds.size;
-  const [crossings, overlap] = routeInteractions(route, otherRoutes, sourceId, targetId);
-  if (strategy === "avoid") {
-    return [
-      nodeCount,
-      nodeLength,
-      containerCount,
-      containerLength,
-      overlap,
-      crossings,
-      clearanceLength,
-      length,
-      bends,
-    ];
-  }
-  if (strategy === "balanced") {
-    return [
-      nodeCount * 1200 + nodeLength * 24 + containerCount * 300 + clearanceLength * 3
-        + containerLength * 5 + crossings * 240 + overlap * 6 + length,
-      nodeCount + containerCount,
-      crossings,
-      overlap,
-      bends,
-    ];
-  }
-  return [
-    length + nodeCount * 300 + nodeLength * 8 + containerCount * 80 + clearanceLength * 1.5
-      + containerLength + crossings * 90 + overlap * 2.5,
-    nodeCount + containerCount,
-    crossings,
-    overlap,
-    bends,
-  ];
-}
-
-function compareMetric(left: number[], right: number[]): number {
-  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
-    const difference = (left[index] ?? 0) - (right[index] ?? 0);
-    if (difference) return difference;
-  }
-  return 0;
-}
-
-function routeDirectionsValid(route: Point[], sourceSide: RouteSide, targetSide: RouteSide): boolean {
-  if (route.length < 2) return false;
-  const [first, second] = route;
-  const penultimate = route.at(-2)!;
-  const last = route.at(-1)!;
-  const sourceValid = {
-    left: second.y === first.y && second.x <= first.x,
-    right: second.y === first.y && second.x >= first.x,
-    top: second.x === first.x && second.y <= first.y,
-    bottom: second.x === first.x && second.y >= first.y,
-  }[sourceSide];
-  const targetValid = {
-    left: penultimate.y === last.y && penultimate.x <= last.x,
-    right: penultimate.y === last.y && penultimate.x >= last.x,
-    top: penultimate.x === last.x && penultimate.y <= last.y,
-    bottom: penultimate.x === last.x && penultimate.y >= last.y,
-  }[targetSide];
-  return sourceValid && targetValid;
-}
-
-function moveRouteEndpoint(
-  points: Point[],
-  endpoint: "source" | "target",
-  bounds: Rect,
-  pointer: Point,
-  edge: SceneEdge,
-  scene: Scene,
-  strategy: RouteStrategy,
-): Point[] {
-  const clamp = (value: number, minimum: number, maximum: number) => Math.max(minimum, Math.min(maximum, value));
-  const inset = Math.min(8, bounds.width / 4, bounds.height / 4);
-  const borderCandidates: Array<{ point: Point; side: RouteSide }> = [
-    { point: { x: bounds.x, y: clamp(pointer.y, bounds.y + inset, bounds.y + bounds.height - inset) }, side: "left" },
-    { point: { x: bounds.x + bounds.width, y: clamp(pointer.y, bounds.y + inset, bounds.y + bounds.height - inset) }, side: "right" },
-    { point: { x: clamp(pointer.x, bounds.x + inset, bounds.x + bounds.width - inset), y: bounds.y }, side: "top" },
-    { point: { x: clamp(pointer.x, bounds.x + inset, bounds.x + bounds.width - inset), y: bounds.y + bounds.height }, side: "bottom" },
-  ];
-  const snapped = borderCandidates.sort((left, right) => (
-    Math.hypot(pointer.x - left.point.x, pointer.y - left.point.y)
-    - Math.hypot(pointer.x - right.point.x, pointer.y - right.point.y)
-  ))[0];
-  const start = endpoint === "source" ? snapped.point : points[0];
-  const end = endpoint === "target" ? snapped.point : points.at(-1)!;
-  const sourceNode = scene.nodes.find((node) => node.scene_node_id === edge.source_scene_node_id)!;
-  const targetNode = scene.nodes.find((node) => node.scene_node_id === edge.target_scene_node_id)!;
-  const sourceSide = endpoint === "source" ? snapped.side : boundarySide(start, sourceNode.bounds);
-  const targetSide = endpoint === "target" ? snapped.side : boundarySide(end, targetNode.bounds);
-  const sourceStub = routeStub(start, sourceSide);
-  const targetStub = routeStub(end, targetSide);
-  const routes: Point[][] = [
-    [start, sourceStub, { x: sourceStub.x, y: targetStub.y }, targetStub, end],
-    [start, sourceStub, { x: targetStub.x, y: sourceStub.y }, targetStub, end],
-  ];
-  const middleX = (sourceStub.x + targetStub.x) / 2;
-  const middleY = (sourceStub.y + targetStub.y) / 2;
-  routes.push(
-    [start, sourceStub, { x: middleX, y: sourceStub.y }, { x: middleX, y: targetStub.y }, targetStub, end],
-    [start, sourceStub, { x: sourceStub.x, y: middleY }, { x: targetStub.x, y: middleY }, targetStub, end],
-  );
-  const margin = 18;
-  const corridorXs = new Set([8, scene.paper_width - 8]);
-  const corridorYs = new Set([8, scene.paper_height - 8]);
-  for (const node of scene.nodes) {
-    const nodeMargin = node.shape === "container" || node.shape === "opaque" ? margin : 10;
-    corridorXs.add(Math.max(8, node.bounds.x - nodeMargin));
-    corridorXs.add(Math.min(scene.paper_width - 8, node.bounds.x + node.bounds.width + nodeMargin));
-    corridorYs.add(Math.max(8, node.bounds.y - nodeMargin));
-    corridorYs.add(Math.min(scene.paper_height - 8, node.bounds.y + node.bounds.height + nodeMargin));
-  }
-  const otherRoutes: RouteReference[] = scene.edges
-    .filter((candidate) => candidate.scene_edge_id !== edge.scene_edge_id)
-    .map((candidate) => ({
-      points: candidate.points,
-      sourceId: candidate.source_scene_node_id,
-      targetId: candidate.target_scene_node_id,
-    }));
-  const laneOffsets = [-16, -8, 8, 16];
-  for (const other of otherRoutes) {
-    for (let index = 0; index < other.points.length - 1; index += 1) {
-      const routeStart = other.points[index];
-      const routeEnd = other.points[index + 1];
-      if (Math.abs(routeEnd.x - routeStart.x) + Math.abs(routeEnd.y - routeStart.y) < 32) continue;
-      if (Math.abs(routeStart.x - routeEnd.x) < 0.001) {
-        for (const offset of laneOffsets) corridorXs.add(routeStart.x + offset);
-      } else if (Math.abs(routeStart.y - routeEnd.y) < 0.001) {
-        for (const offset of laneOffsets) corridorYs.add(routeStart.y + offset);
-      }
-    }
-  }
-  for (const x of corridorXs) routes.push([start, sourceStub, { x, y: sourceStub.y }, { x, y: targetStub.y }, targetStub, end]);
-  for (const y of corridorYs) routes.push([start, sourceStub, { x: sourceStub.x, y }, { x: targetStub.x, y }, targetStub, end]);
-  const byId = new Map(scene.nodes.map((node) => [node.scene_node_id, node]));
-  const ancestorSets = [edge.source_scene_node_id, edge.target_scene_node_id].map((endpointId) => {
-    const ancestors = new Set<string>();
-    let current: SceneNode | undefined = byId.get(endpointId);
-    while (current) {
-      ancestors.add(current.scene_node_id);
-      current = current.parent_scene_node_id ? byId.get(current.parent_scene_node_id) : undefined;
-    }
-    return ancestors;
-  });
-  const relatedIds = new Set<string>([edge.source_scene_node_id, edge.target_scene_node_id]);
-  for (const nodeId of ancestorSets[0]) if (ancestorSets[1].has(nodeId)) relatedIds.add(nodeId);
-  return routes
-    .map(compactRoute)
-    .filter((route) => route.every((point) => point.x >= 0 && point.y >= 0 && point.x <= scene.paper_width && point.y <= scene.paper_height))
-    .filter((route) => routeDirectionsValid(route, sourceSide, targetSide))
-    .sort((left, right) => compareMetric(
-      routeMetric(
-        left,
-        scene.nodes,
-        relatedIds,
-        strategy,
-        otherRoutes,
-        edge.source_scene_node_id,
-        edge.target_scene_node_id,
-      ),
-      routeMetric(
-        right,
-        scene.nodes,
-        relatedIds,
-        strategy,
-        otherRoutes,
-        edge.source_scene_node_id,
-        edge.target_scene_node_id,
-      ),
-    ))[0];
-}
 
 function navigationIcon(kind: string): React.ReactNode {
   if (["file", "directory", "repository"].includes(kind)) return <FileCode2 size={12} />;
@@ -1157,20 +253,20 @@ function storedPanelSizes(): PanelSizes {
 }
 
 export function StudioApp() {
+  const initialState = useMemo(() => embeddedStudioState(), []);
   const [locale, setLocale] = useState<Locale>(() => {
     const stored = window.localStorage.getItem("archcanvas.locale");
     return stored === "en" || stored === "zh" ? stored : "zh";
   });
   const tx = (english: string, chinese: string) => locale === "zh" ? chinese : english;
-  const [data, setData] = useState<StudioState | null>(() => embeddedState());
+  const [data, setData] = useState<StudioState | null>(initialState);
   const [projection, setProjection] = useState<Projection>(
-    () => embeddedState()?.navigation?.active_projection ?? embeddedState()?.view_state.navigation_view ?? "module",
+    () => initialState?.navigation?.active_projection ?? initialState?.view_state.navigation_view ?? "module",
   );
-  const [expansions, setExpansions] = useState<Record<Projection, Set<string>>>(() => expansionState(embeddedState()));
+  const [expansions, setExpansions] = useState<Record<Projection, Set<string>>>(() => initialExpansionState(initialState));
   const [mode, setMode] = useState<Mode>("explore");
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedCanonicalIds, setSelectedCanonicalIds] = useState<string[]>([]);
-  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [selectedCanonicalEdgeIds, setSelectedCanonicalEdgeIds] = useState<string[]>([]);
   const [focusedCanonicalId, setFocusedCanonicalId] = useState<string | null>(null);
   const [focusedNavigationRowId, setFocusedNavigationRowId] = useState<string | null>(null);
   const [inspectorTab, setInspectorTab] = useState<"inspect" | "source" | "visual" | "model" | "evidence">("inspect");
@@ -1178,7 +274,6 @@ export function StudioApp() {
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [validationProfile, setValidationProfile] = useState("fast-static");
-  const [routeStrategy, setRouteStrategy] = useState<RouteStrategy>("avoid");
   const [projectDialog, setProjectDialog] = useState(true);
   const [draftDialog, setDraftDialog] = useState(false);
   const [draftName, setDraftName] = useState("");
@@ -1189,7 +284,7 @@ export function StudioApp() {
   const [draftEdgePolicy, setDraftEdgePolicy] = useState<DraftEdgePolicy>("fanout");
   const [deleteImpact, setDeleteImpact] = useState<CanonicalDeleteImpact | null>(null);
   const [deleteImpactLoading, setDeleteImpactLoading] = useState(false);
-  const [projectRoot, setProjectRoot] = useState(() => embeddedState()?.project.root ?? "");
+  const [projectRoot, setProjectRoot] = useState(() => initialState?.project.root ?? "");
   const [pendingProject, setPendingProject] = useState<PendingProject | null>(null);
   const [condaEnvironments, setCondaEnvironments] = useState<CondaEnvironment[]>([]);
   const [condaEnvironment, setCondaEnvironment] = useState("");
@@ -1204,14 +299,7 @@ export function StudioApp() {
   const [projectFramework, setProjectFramework] = useState("auto");
   const [projectConfig, setProjectConfig] = useState("");
   const [mobileInspector, setMobileInspector] = useState(false);
-  const [dark, setDark] = useState(() => embeddedState()?.view_state.theme === "studio-dark");
-  const [viewBox, setViewBox] = useState<[number, number, number, number] | null>(null);
-  const [canvasSize, setCanvasSize] = useState({ width: 1, height: 1 });
-  const [drag, setDrag] = useState<DragState | null>(null);
-  const [pan, setPan] = useState<PanState | null>(null);
-  const [marquee, setMarquee] = useState<MarqueeState | null>(null);
-  const [edgeEndpointDrag, setEdgeEndpointDrag] = useState<EdgeEndpointDrag | null>(null);
-  const [edgeRoutePreview, setEdgeRoutePreview] = useState<Point[] | null>(null);
+  const [dark, setDark] = useState(() => initialState?.view_state.theme === "studio-dark");
   const [panelSizes, setPanelSizes] = useState<PanelSizes>(storedPanelSizes);
   const [panelResize, setPanelResize] = useState<PanelResizeState | null>(null);
   const [activity, setActivity] = useState<string[]>([tx("Studio document opened", "Studio 文档已打开")]);
@@ -1221,24 +309,11 @@ export function StudioApp() {
   const acceptKernelExport = useCallback((artifact: KernelExportArtifact) => {
     setKernelExport((current) => current?.renderDigest === artifact.renderDigest ? current : artifact);
   }, []);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const selections = useRef<Record<string, string[]>>({});
-  const cameraTimer = useRef<number | null>(null);
   const navigationTimer = useRef<number | null>(null);
   const navigationQueue = useRef<Promise<void>>(Promise.resolve());
   const expansionsRef = useRef(expansions);
   const navigationTouched = useRef(false);
-  const activeModelIdentity = useRef(studioModelIdentity(embeddedState()));
-  const previousScene = useRef<Scene | null>(null);
-  const framedLayoutFamily = useRef<string | null>(null);
-  const viewBoxRef = useRef<[number, number, number, number] | null>(null);
-  const viewBoxAnimation = useRef<number | null>(null);
-  const dragPreviewFrame = useRef<number | null>(null);
-  const dragPreview = useRef<Record<string, Point>>({});
-  const pendingDragPreview = useRef<Record<string, Point> | null>(null);
-  const dragDomPreview = useRef<DragDomPreview | null>(null);
-  const edgePreviewFrame = useRef<number | null>(null);
-  const edgeRoutePreviewRef = useRef<Point[] | null>(null);
+  const stateAcceptance = useRef(new StudioStateAcceptance(initialState));
   const pendingHierarchyFocus = useRef<string | null>(null);
   const jobController = useRef<JobPollingController<StudioState> | null>(null);
   if (jobController.current === null) {
@@ -1249,23 +324,19 @@ export function StudioApp() {
   }
 
   function restoreNavigationState(state: StudioState) {
-    const restored = expansionState(state);
+    const restored = initialExpansionState(state);
     expansionsRef.current = restored;
     setExpansions(restored);
     setProjection(state.navigation.active_projection ?? state.view_state.navigation_view ?? "module");
   }
 
   function acceptStudioState(state: StudioState): boolean {
-    const nextIdentity = studioModelIdentity(state);
-    const modelChanged = activeModelIdentity.current !== nextIdentity;
+    const { modelChanged } = stateAcceptance.current.accept(state);
     if (modelChanged) {
-      activeModelIdentity.current = nextIdentity;
       navigationTouched.current = false;
       restoreNavigationState(state);
-      selections.current = {};
-      setSelectedIds([]);
       setSelectedCanonicalIds([]);
-      setSelectedEdgeId(null);
+      setSelectedCanonicalEdgeIds([]);
       setFocusedCanonicalId(null);
       setFocusedNavigationRowId(null);
       pendingHierarchyFocus.current = null;
@@ -1288,11 +359,7 @@ export function StudioApp() {
     const controller = new AbortController();
     setEnvironmentLoading(true);
     setProjectError("");
-    fetch("/api/environments/conda", { signal: controller.signal, cache: "no-store" })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(await response.text());
-        return response.json() as Promise<{ environments: CondaEnvironment[]; selected: string | null }>;
-      })
+      getStudioJson<{ environments: CondaEnvironment[]; selected: string | null }>("/api/environments/conda", { signal: controller.signal })
       .then((result) => {
         setCondaEnvironments(result.environments);
         setCondaEnvironment(result.selected ?? result.environments[0]?.path ?? "");
@@ -1313,8 +380,7 @@ export function StudioApp() {
   const activeProjectionId = data?.active_projection_id;
 
   useEffect(() => {
-    fetch("/api/state", { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : Promise.reject()))
+    getStudioJson<StudioState>("/api/state")
       .then((state: StudioState) => {
         if (!navigationTouched.current) {
           restoreNavigationState(state);
@@ -1325,190 +391,21 @@ export function StudioApp() {
   }, []);
 
   useEffect(() => () => {
-    if (cameraTimer.current !== null) window.clearTimeout(cameraTimer.current);
     if (navigationTimer.current !== null) window.clearTimeout(navigationTimer.current);
-    if (viewBoxAnimation.current !== null) cancelAnimationFrame(viewBoxAnimation.current);
-    if (dragPreviewFrame.current !== null) cancelAnimationFrame(dragPreviewFrame.current);
-    if (edgePreviewFrame.current !== null) cancelAnimationFrame(edgePreviewFrame.current);
     jobController.current?.dispose();
   }, []);
 
-  const scene = useMemo(
-    () => data ? deriveKernelSceneIndex(data) : undefined,
-    [data],
-  );
-  const view = activeProjectionId ? data?.views[activeProjectionId] : undefined;
-  const camera = scene ? data?.view_state.cameras?.[scene.scene_id] : undefined;
-  const sceneRenderIndex = useMemo(
-    () => scene ? buildSceneRenderIndex(scene.nodes) : null,
-    [scene?.nodes],
-  );
-  const publicationNodesById = useMemo(
-    () => new Map(view?.nodes.map((node) => [node.view_node_id, node]) ?? []),
-    [view?.nodes],
-  );
-  const proofBySceneNodeId = useMemo(() => {
-    const result = new Map<string, StudioState["draft"]["proofs"][number]>();
-    if (!scene || !data) return result;
-    const proofsBySubject = new Map<string, StudioState["draft"]["proofs"]>();
-    for (const proof of data.draft.proofs) {
-      for (const subjectId of proof.affected_subject_ids) {
-        const matches = proofsBySubject.get(subjectId);
-        if (matches) matches.push(proof);
-        else proofsBySubject.set(subjectId, [proof]);
-      }
-    }
-    for (const node of scene.nodes) {
-      let strongest: StudioState["draft"]["proofs"][number] | undefined;
-      for (const canonicalId of node.canonical_node_ids) {
-        for (const proof of proofsBySubject.get(canonicalId) ?? []) {
-          if (!strongest || PROOF_RANK[proof.status] > PROOF_RANK[strongest.status]) strongest = proof;
-        }
-      }
-      if (strongest) result.set(node.scene_node_id, strongest);
-    }
-    return result;
-  }, [data?.draft.proofs, scene?.nodes]);
-  const pinned = useMemo(() => new Set(data?.view_state.pinned_node_ids ?? []), [data?.view_state.pinned_node_ids]);
-  const collapsed = useMemo(() => new Set(data?.view_state.collapsed_node_ids ?? []), [data?.view_state.collapsed_node_ids]);
-
-  function writeViewBox(next: [number, number, number, number]) {
-    viewBoxRef.current = next;
-    svgRef.current?.setAttribute("viewBox", next.join(" "));
-  }
-
-  function commitViewBox(next: [number, number, number, number]) {
-    writeViewBox(next);
-    setViewBox(next);
-  }
-
-  useEffect(() => {
-    let focusedSceneNodeId: string | null = null;
-    if (scene) {
-      const layoutChanged = framedLayoutFamily.current !== null
-        && framedLayoutFamily.current !== scene.layout_family;
-      framedLayoutFamily.current = scene.layout_family;
-      let target: [number, number, number, number] = camera
-        ? [camera.x, camera.y, scene.paper_width / camera.zoom, scene.paper_height / camera.zoom]
-        : [0, 0, scene.paper_width, scene.paper_height];
-      const focusId = pendingHierarchyFocus.current;
-      const focusViewNode = focusId
-        ? view?.nodes.find((node) => node.attributes.hierarchy_node_id === focusId)
-        : undefined;
-      const hierarchyFocusNode = focusViewNode
-        ? scene.nodes.find((node) => node.view_node_id === focusViewNode.view_node_id)
-        : undefined;
-      const focusNode = hierarchyFocusNode ?? (layoutChanged
-        ? scene.nodes.find((node) => node.scene_node_id === selectedIds.at(-1))
-        : undefined);
-      if (focusNode && svgRef.current) {
-        focusedSceneNodeId = focusNode.scene_node_id;
-        const horizontalPadding = Math.max(90, focusNode.bounds.width * 0.06);
-        const verticalPadding = Math.max(70, focusNode.bounds.height * 0.14);
-        let width = focusNode.bounds.width + horizontalPadding * 2;
-        let height = focusNode.bounds.height + verticalPadding * 2;
-        const viewportRatio = svgRef.current.clientWidth / Math.max(1, svgRef.current.clientHeight);
-        if (width / height > viewportRatio) height = width / viewportRatio;
-        else width = height * viewportRatio;
-        target = [
-          focusNode.bounds.x + focusNode.bounds.width / 2 - width / 2,
-          focusNode.bounds.y + focusNode.bounds.height / 2 - height / 2,
-          width,
-          height,
-        ];
-      }
-      pendingHierarchyFocus.current = null;
-      const start = viewBoxRef.current;
-      if (viewBoxAnimation.current !== null) cancelAnimationFrame(viewBoxAnimation.current);
-      if (!start || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        commitViewBox(target);
-      } else {
-        const started = performance.now();
-        const animate = (now: number) => {
-          const progress = Math.min(1, (now - started) / 360);
-          const eased = 1 - Math.pow(1 - progress, 3);
-          const next = start.map((value, index) =>
-            value + (target[index] - value) * eased,
-          ) as [number, number, number, number];
-          writeViewBox(next);
-          if (progress < 1) viewBoxAnimation.current = requestAnimationFrame(animate);
-          else {
-            viewBoxAnimation.current = null;
-            setViewBox(target);
-          }
-        };
-        viewBoxAnimation.current = requestAnimationFrame(animate);
-      }
-    }
-    setSelectedIds((current) => {
-      const remembered = activeProjectionId ? selections.current[activeProjectionId] : undefined;
-      const next = focusedSceneNodeId
-        ? [focusedSceneNodeId]
-        : remembered ?? current.filter((id) => scene?.nodes.some((node) => node.scene_node_id === id));
-      if (activeProjectionId) selections.current[activeProjectionId] = next;
-      return next;
-    });
-    setSelectedEdgeId(null);
-    setEdgeEndpointDrag(null);
-    setEdgeRoutePreview(null);
-    edgeRoutePreviewRef.current = null;
-    clearDragPreview();
-  }, [activeProjectionId, scene?.scene_id, scene?.layout_family, scene?.paper_width, scene?.paper_height, camera?.x, camera?.y, camera?.zoom]);
-
-  useEffect(() => {
-    viewBoxRef.current = viewBox;
-  }, [viewBox]);
-
-  useLayoutEffect(() => {
-    const svg = svgRef.current;
-    if (!svg) return;
-    const updateSize = () => {
-      const bounds = svg.getBoundingClientRect();
-      setCanvasSize({ width: Math.max(1, bounds.width), height: Math.max(1, bounds.height) });
+  const kernel = useMemo(() => {
+    if (!data) return undefined;
+    const adapted = adaptFormalState(data as unknown as FormalStudioState);
+    return {
+      ...adapted,
+      scene: buildKernelRenderScene(adapted.document, adapted.visualState),
     };
-    updateSize();
-    const observer = new ResizeObserver(updateSize);
-    observer.observe(svg);
-    return () => observer.disconnect();
-  }, [scene?.scene_id, Boolean(viewBox)]);
-
-  useLayoutEffect(() => {
-    if (!scene || !svgRef.current) return;
-    const previous = previousScene.current;
-    previousScene.current = scene;
-    if (!previous || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const oldNodes = new Map(previous.nodes.map((node) => [node.scene_node_id, node]));
-    for (const node of scene.nodes) {
-      const element = svgRef.current.querySelector<SVGGElement>(`[data-scene-node-id="${node.scene_node_id}"]`);
-      if (!element) continue;
-      const old = oldNodes.get(node.scene_node_id);
-      const origin = old ?? (node.parent_scene_node_id ? oldNodes.get(node.parent_scene_node_id) : undefined);
-      const oldCenter = origin
-        ? { x: origin.bounds.x + origin.bounds.width / 2, y: origin.bounds.y + origin.bounds.height / 2 }
-        : { x: node.bounds.x + node.bounds.width / 2, y: node.bounds.y + node.bounds.height / 2 };
-      const nextCenter = { x: node.bounds.x + node.bounds.width / 2, y: node.bounds.y + node.bounds.height / 2 };
-      const scaleX = old ? Math.max(0.2, old.bounds.width / node.bounds.width) : 0.72;
-      const scaleY = old ? Math.max(0.2, old.bounds.height / node.bounds.height) : 0.72;
-      element.animate(
-        [
-          {
-            opacity: old ? 0.72 : 0,
-            transform: `translate(${oldCenter.x - nextCenter.x}px, ${oldCenter.y - nextCenter.y}px) scale(${scaleX}, ${scaleY})`,
-          },
-          { opacity: 1, transform: "translate(0, 0) scale(1, 1)" },
-        ],
-        { duration: 380, easing: "cubic-bezier(.22,.8,.24,1)" },
-      );
-    }
-    for (const edge of scene.edges) {
-      const element = svgRef.current.querySelector<SVGGElement>(`[data-scene-edge-id="${edge.scene_edge_id}"]`);
-      if (!element) continue;
-      element.animate(
-        [{ opacity: previous.edges.some((item) => item.scene_edge_id === edge.scene_edge_id) ? 0.35 : 0 }, { opacity: 1 }],
-        { duration: 300, delay: 70, easing: "ease-out" },
-      );
-    }
-  }, [scene?.scene_id, scene?.layout_family]);
+  }, [data]);
+  const scene = kernel?.scene;
+  const view = activeProjectionId ? data?.views[activeProjectionId] : undefined;
+  const pinned = useMemo(() => new Set(data?.view_state.pinned_node_ids ?? []), [data?.view_state.pinned_node_ids]);
 
   useEffect(() => {
     setDark(data?.view_state.theme === "studio-dark");
@@ -1521,19 +418,25 @@ export function StudioApp() {
     }
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
-      fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal: controller.signal, cache: "no-store" })
-        .then((response) => response.ok ? response.json() : Promise.reject())
-        .then((payload: { results: SearchResult[] }) => setSearchResults(payload.results))
+      getStudioJson<{ results: SearchResult[] }>(`/api/search?q=${encodeURIComponent(query)}`, { signal: controller.signal })
+        .then((payload) => setSearchResults(payload.results))
         .catch(() => undefined);
     }, 120);
     return () => { window.clearTimeout(timer); controller.abort(); };
   }, [query, data?.document.source_digest]);
 
-  const selected = selectedIds.at(-1) ?? null;
-  const selectedNode = scene?.nodes.find((node) => node.scene_node_id === selected) ?? null;
-  const selectedEdge = scene?.edges.find((edge) => edge.scene_edge_id === selectedEdgeId) ?? null;
+  const selectedNode = [...(scene?.nodes ?? [])]
+    .sort((left, right) => right.depth - left.depth)
+    .find((node) => [...node.canonicalNodeIds, ...node.containedCanonicalNodeIds]
+      .some((id) => selectedCanonicalIds.includes(id))) ?? null;
+  const selectedTemplateFidelity = selectedNode?.templateBindingId
+    ? kernel?.document.templateBindings.find((binding) => binding.bindingId === selectedNode.templateBindingId)?.fidelity
+    : undefined;
+  const selectedEdge = scene?.edges.find((edge) =>
+    edge.canonicalEdgeIds.some((id) => selectedCanonicalEdgeIds.includes(id)),
+  ) ?? null;
   const selectedViewNode = view?.nodes.find(
-    (node) => node.view_node_id === selectedNode?.view_node_id,
+    (node) => node.attributes.hierarchy_node_id === selectedNode?.hierarchyNodeId,
   );
   const selectedArchitectureNodes = useMemo(() => {
     const ids = new Set(selectedCanonicalIds);
@@ -1546,11 +449,11 @@ export function StudioApp() {
     const runtimeIds = selectedCanonicalIds.flatMap(
       (nodeId) => data?.runtime?.node_evidence[nodeId] ?? [],
     );
-    const ids = new Set([...(selectedNode?.evidence_ids ?? []), ...staticIds, ...runtimeIds]);
+    const ids = new Set([...(selectedNode?.evidenceIds ?? []), ...staticIds, ...runtimeIds]);
     return data?.evidence.filter((record) => ids.has(record.evidence_id)) ?? [];
   }, [data?.architecture.nodes, data?.evidence, data?.runtime, selectedCanonicalIds, selectedNode]);
   const selectedEdgeEvidence = useMemo(() => {
-    const ids = new Set(selectedEdge?.evidence_ids ?? []);
+    const ids = new Set(selectedEdge?.evidenceIds ?? []);
     return data?.evidence.filter((record) => ids.has(record.evidence_id)) ?? [];
   }, [data?.evidence, selectedEdge]);
   const draftPortOptions = [
@@ -1593,16 +496,7 @@ export function StudioApp() {
     activityLabel?: string,
   ): Promise<StudioState | null> {
     try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(data?.session_nonce ? { "X-ArchCanvas-Nonce": data.session_nonce } : {}),
-        },
-        body: JSON.stringify(payload ?? {}),
-      });
-      if (!response.ok) throw new Error(await response.text());
-      const state = (await response.json()) as StudioState;
+      const state = await postStudioJson<StudioState>(endpoint, payload ?? {}, { nonce: data?.session_nonce });
       acceptStudioState(state);
       if (["/api/patch", "/api/patch-batch", "/api/undo", "/api/redo"].includes(endpoint)) {
         restoreNavigationState(state);
@@ -1698,29 +592,29 @@ export function StudioApp() {
     }, 160);
   }
 
-  async function submit(operation: string, targetId: string | undefined, value: Record<string, unknown>, sceneId = scene?.scene_id) {
-    if (!sceneId) return;
+  async function submitGlobal(operation: string, targetId: string | undefined, value: Record<string, unknown>) {
     await mutate("/api/patch", {
       patch_id: patchId(operation),
       operation,
       target_id: targetId,
-      value: { ...value, scene_id: sceneId },
+      value,
     });
   }
 
-  async function submitBatch(description: string, patches: Array<{ operation: string; targetId?: string; value: Record<string, unknown> }>) {
-    if (!scene) return;
-    const batchId = patchId("visual-batch").replace("patch:", "batch:");
-    await mutate("/api/patch-batch", {
-      batch_id: batchId,
-      description,
-      patches: patches.map((patch, index) => ({
-        patch_id: `${batchId.replace("batch:", "patch:")}.${index}`,
-        operation: patch.operation,
-        target_id: patch.targetId,
-        value: { ...patch.value, scene_id: scene.scene_id },
-      })),
-    }, description);
+  async function submitKernel(operation: string, targetId: string | undefined, value: Record<string, unknown>) {
+    if (!data) return;
+    const kernelSceneId = `kernel:${data.architecture.architecture_id}:${data.document.source_digest.slice(0, 12)}`;
+    await mutate("/api/patch", {
+      patch_id: patchId(operation),
+      operation,
+      target_id: targetId,
+      value: {
+        ...value,
+        kernel_scene_id: kernelSceneId,
+        architecture_id: data.architecture.architecture_id,
+        source_digest: data.document.source_digest,
+      },
+    });
   }
 
   async function submitKernelBatch(description: string, patches: Array<{ operation: string; targetId?: string; value: Record<string, unknown> }>) {
@@ -1790,37 +684,18 @@ export function StudioApp() {
     );
   }
 
-  function persistCamera(next: [number, number, number, number], currentScene: Scene) {
-    if (cameraTimer.current !== null) window.clearTimeout(cameraTimer.current);
-    cameraTimer.current = window.setTimeout(() => {
-      cameraTimer.current = null;
-      void submit("set-camera", undefined, {
-        x: next[0],
-        y: next[1],
-        zoom: currentScene.paper_width / next[2],
-      }, currentScene.scene_id);
-    }, 180);
-  }
-
   function selectSearchResult(result = searchResults[0]) {
     if (!result) return;
-    setSelectedEdgeId(null);
+    setSelectedCanonicalEdgeIds([]);
     chooseCanonical(result.canonical_ids);
     setSearchResults([]);
   }
 
   function chooseCanonical(canonicalIds: string[], navigationRowId?: string) {
     setSelectedCanonicalIds([...new Set(canonicalIds)]);
-    const target = canonicalIds.find((canonicalId) =>
-      scene?.nodes.some((node) => node.canonical_node_ids.includes(canonicalId)),
-    );
-    if (target) {
-      const sceneNode = scene?.nodes.find((node) => node.canonical_node_ids.includes(target));
-      if (sceneNode) choose(sceneNode.scene_node_id, false, navigationRowId, target);
-    } else if (navigationRowId) {
-      setFocusedNavigationRowId(navigationRowId);
-      setSelectedIds([]);
-    }
+    setSelectedCanonicalEdgeIds([]);
+    setFocusedCanonicalId(canonicalIds[0] ?? null);
+    if (navigationRowId !== undefined) setFocusedNavigationRowId(navigationRowId);
   }
 
   function switchProjection(next: Projection) {
@@ -1864,417 +739,12 @@ export function StudioApp() {
   }
 
   function activateNavigationRow(item: NavigationNode) {
-    const hierarchyViewNode = view?.nodes.find(
-      (node) => node.attributes.hierarchy_node_id === item.id,
-    );
-    const hierarchySceneNode = hierarchyViewNode
-      ? scene?.nodes.find((node) => node.view_node_id === hierarchyViewNode.view_node_id)
-      : undefined;
-    if (hierarchySceneNode) choose(
-      hierarchySceneNode.scene_node_id,
-      false,
-      item.id,
-      item.canonical_ids.length === 1 ? item.canonical_ids[0] : null,
-    );
-    else if (item.canonical_ids.length) chooseCanonical(item.canonical_ids, item.id);
-    else choose(null, false, item.id);
+    chooseCanonical(item.canonical_ids, item.id);
     if (item.child_count > 0 && !expansionsRef.current[projection].has(item.id)) {
       setNavigationRowExpanded(projection, item.id, true);
     }
   }
 
-  function choose(
-    nodeId: string | null,
-    additive = false,
-    navigationRowId?: string | null,
-    preferredCanonicalId: string | null = null,
-  ) {
-    setSelectedEdgeId(null);
-    setFocusedCanonicalId(preferredCanonicalId);
-    const targetNode = scene?.nodes.find((item) => item.scene_node_id === nodeId);
-    const targetCanonicalIds = targetNode?.canonical_node_ids ?? [];
-    setSelectedCanonicalIds((current) => {
-      if (!nodeId) return [];
-      if (!additive) return targetCanonicalIds;
-      const next = new Set(current);
-      const remove = targetCanonicalIds.every((id) => next.has(id));
-      for (const id of targetCanonicalIds) {
-        if (remove) next.delete(id); else next.add(id);
-      }
-      return [...next];
-    });
-    const next = !nodeId
-      ? []
-      : additive
-        ? selectedIds.includes(nodeId)
-          ? selectedIds.filter((item) => item !== nodeId)
-          : [...selectedIds, nodeId]
-        : [nodeId];
-    if (activeProjectionId) selections.current[activeProjectionId] = next;
-    setSelectedIds(next);
-    if (navigationRowId !== undefined) {
-      setFocusedNavigationRowId(navigationRowId);
-    } else if (!additive) {
-      const candidates = targetNode
-        ? visibleNavigation
-          .filter((item) => item.canonical_ids.some((id) => targetNode.canonical_node_ids.includes(id)))
-          .sort((left, right) => {
-            if (left.reference !== right.reference) return Number(left.reference) - Number(right.reference);
-            if (left.canonical_ids.length !== right.canonical_ids.length) return left.canonical_ids.length - right.canonical_ids.length;
-            if (left.depth !== right.depth) return right.depth - left.depth;
-            return left.id.localeCompare(right.id);
-          })
-        : [];
-      setFocusedNavigationRowId(candidates[0]?.id ?? null);
-    }
-  }
-
-  function collectDragDomPreview(movingIds: readonly string[]) {
-    const svg = svgRef.current;
-    if (!svg || !scene || !sceneRenderIndex) return null;
-    const moving = new Set(movingIds);
-    const nodeElements = new Map<string, SVGGElement>();
-    const nodeTransforms = new Map<string, string | null>();
-    for (const element of svg.querySelectorAll<SVGGElement>("[data-scene-node-id]")) {
-      const nodeId = element.dataset.sceneNodeId;
-      if (!nodeId || !moving.has(nodeId)) continue;
-      for (const animation of element.getAnimations()) animation.cancel();
-      nodeElements.set(nodeId, element);
-      nodeTransforms.set(nodeId, element.getAttribute("transform"));
-    }
-    const edgeElements = new Map<string, SVGGElement[]>();
-    for (const element of svg.querySelectorAll<SVGGElement>("[data-scene-edge-id]")) {
-      const edgeId = element.dataset.sceneEdgeId;
-      if (!edgeId) continue;
-      const matches = edgeElements.get(edgeId);
-      if (matches) matches.push(element);
-      else edgeElements.set(edgeId, [element]);
-    }
-    const affectedEdges = scene.edges
-      .map((edge, index) => ({ edge, index }))
-      .filter(({ edge }) => moving.has(edge.source_scene_node_id) || moving.has(edge.target_scene_node_id))
-      .map(({ edge, index }) => ({
-        edge,
-        index,
-        routeLock: createGestureRouteLock(edge, sceneRenderIndex.byId, index),
-      }));
-    return { nodeElements, nodeTransforms, edgeElements, affectedEdges };
-  }
-
-  function applyDragPreview(next: Record<string, Point>) {
-    dragPreview.current = next;
-    const dom = dragDomPreview.current;
-    if (!dom || !sceneRenderIndex) return;
-    for (const [nodeId, position] of Object.entries(next)) {
-      const node = sceneRenderIndex.byId.get(nodeId);
-      const element = dom.nodeElements.get(nodeId);
-      if (!node || !element) continue;
-      element.setAttribute("transform", previewNodeTransform(node, position));
-    }
-    for (const { edge, index, routeLock } of dom.affectedEdges) {
-      const points = previewEdgePoints(edge, sceneRenderIndex.byId, next, index, routeLock);
-      for (const element of dom.edgeElements.get(edge.scene_edge_id) ?? []) {
-        updatePreviewEdgeElement(element, edge, points);
-      }
-    }
-  }
-
-  function scheduleDragPreview(next: Record<string, Point>) {
-    pendingDragPreview.current = next;
-    dragPreview.current = next;
-    if (dragPreviewFrame.current !== null) return;
-    dragPreviewFrame.current = requestAnimationFrame(() => {
-      dragPreviewFrame.current = null;
-      const pending = pendingDragPreview.current;
-      pendingDragPreview.current = null;
-      if (pending) applyDragPreview(pending);
-    });
-  }
-
-  function clearDragPreview() {
-    if (dragPreviewFrame.current !== null) cancelAnimationFrame(dragPreviewFrame.current);
-    dragPreviewFrame.current = null;
-    pendingDragPreview.current = null;
-    const dom = dragDomPreview.current;
-    if (dom) {
-      for (const [nodeId, element] of dom.nodeElements) {
-        const transform = dom.nodeTransforms.get(nodeId);
-        if (transform === null || transform === undefined) element.removeAttribute("transform");
-        else element.setAttribute("transform", transform);
-      }
-      for (const { edge } of dom.affectedEdges) {
-        for (const element of dom.edgeElements.get(edge.scene_edge_id) ?? []) {
-          updatePreviewEdgeElement(element, edge, edge.points);
-        }
-      }
-    }
-    dragPreview.current = {};
-    dragDomPreview.current = null;
-  }
-
-  function scheduleEdgeRoutePreview(next: Point[]) {
-    edgeRoutePreviewRef.current = next;
-    if (edgePreviewFrame.current !== null) return;
-    edgePreviewFrame.current = requestAnimationFrame(() => {
-      edgePreviewFrame.current = null;
-      setEdgeRoutePreview(edgeRoutePreviewRef.current);
-    });
-  }
-
-  function chooseEdge(edgeId: string) {
-    const next = selectedEdgeId === edgeId ? null : edgeId;
-    setSelectedEdgeId(next);
-    setFocusedCanonicalId(null);
-    setEdgeEndpointDrag(null);
-    setEdgeRoutePreview(null);
-    if (!next) return;
-    if (activeProjectionId) selections.current[activeProjectionId] = [];
-    setSelectedIds([]);
-    setSelectedCanonicalIds([]);
-    setFocusedNavigationRowId(null);
-  }
-
-  function chooseEdgeAtClient(clientX: number, clientY: number, fallbackEdgeId: string) {
-    const point = scenePointFromClient(clientX, clientY);
-    if (!scene || !sceneRenderIndex || !point) {
-      chooseEdge(fallbackEdgeId);
-      return;
-    }
-    const nearest = scene.edges
-      .map((edge, index) => ({
-        edge,
-        distance: distanceToPolyline(point, previewEdgePoints(edge, sceneRenderIndex.byId, dragPreview.current, index)),
-      }))
-      .sort((left, right) => left.distance - right.distance)[0];
-    chooseEdge(nearest?.edge.scene_edge_id ?? fallbackEdgeId);
-  }
-
-  function zoom(factor: number) {
-    const current = viewBoxRef.current ?? viewBox;
-    if (!current || !scene) return;
-    const [x, y, width, height] = current;
-    const nextWidth = width * factor;
-    const nextHeight = height * factor;
-    const next: [number, number, number, number] = [
-      x + (width - nextWidth) / 2,
-      y + (height - nextHeight) / 2,
-      nextWidth,
-      nextHeight,
-    ];
-    commitViewBox(next);
-    persistCamera(next, scene);
-  }
-
-  function scenePointFromClient(clientX: number, clientY: number): Point | null {
-    const svg = svgRef.current;
-    if (!svg) return null;
-    const matrix = svg.getScreenCTM();
-    if (!matrix) return null;
-    const point = svg.createSVGPoint();
-    point.x = clientX;
-    point.y = clientY;
-    const transformed = point.matrixTransform(matrix.inverse());
-    return { x: transformed.x, y: transformed.y };
-  }
-
-  function pointerPosition(event: React.PointerEvent): Point | null {
-    return scenePointFromClient(event.clientX, event.clientY);
-  }
-
-  function beginDrag(event: React.PointerEvent, node: SceneNode) {
-    if (!node.parent_scene_node_id) return;
-    choose(node.scene_node_id, event.shiftKey);
-    if (event.shiftKey) return;
-    if (mode === "explore" || pinned.has(node.scene_node_id)) return;
-    const point = pointerPosition(event);
-    if (!point) return;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    const selectedRoots = selectedIds.includes(node.scene_node_id) ? selectedIds : [node.scene_node_id];
-    const movingRoots = selectedRoots.filter((nodeId) => !pinned.has(nodeId));
-    const movingIds = scene ? sceneDescendantIds(scene, movingRoots) : movingRoots;
-    const baselines = Object.fromEntries(
-      movingIds
-        .map((nodeId) => {
-          const current = scene?.nodes.find((item) => item.scene_node_id === nodeId);
-          return [nodeId, current?.bounds ?? node.bounds];
-        }),
-    );
-    dragDomPreview.current = collectDragDomPreview(movingIds);
-    dragPreview.current = {};
-    setDrag({ startClient: point, baselines, rootIds: movingRoots });
-  }
-
-  function beginEdgeEndpointDrag(
-    event: React.PointerEvent<SVGCircleElement>,
-    endpoint: "source" | "target",
-  ) {
-    if (mode !== "layout" || !selectedEdge || !scene) return;
-    event.preventDefault();
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    const index = scene.edges.indexOf(selectedEdge);
-    if (!sceneRenderIndex) return;
-    const points = previewEdgePoints(selectedEdge, sceneRenderIndex.byId, dragPreview.current, index);
-    edgeRoutePreviewRef.current = points;
-    setEdgeRoutePreview(points);
-    setEdgeEndpointDrag({ edgeId: selectedEdge.scene_edge_id, endpoint, points });
-  }
-
-  function moveEdgeEndpoint(event: React.PointerEvent) {
-    if (!edgeEndpointDrag || !edgeRoutePreviewRef.current || !scene) return;
-    const point = pointerPosition(event);
-    const edge = scene.edges.find((item) => item.scene_edge_id === edgeEndpointDrag.edgeId);
-    if (!point || !edge) return;
-    const nodeId = edgeEndpointDrag.endpoint === "source"
-      ? edge.source_scene_node_id
-      : edge.target_scene_node_id;
-    const node = scene.nodes.find((item) => item.scene_node_id === nodeId);
-    if (!node) return;
-    scheduleEdgeRoutePreview(moveRouteEndpoint(
-      edgeEndpointDrag.points,
-      edgeEndpointDrag.endpoint,
-      node.bounds,
-      point,
-      edge,
-      scene,
-      routeStrategy,
-    ));
-  }
-
-  function moveDrag(event: React.PointerEvent) {
-    if (!drag || !scene) return;
-    const point = pointerPosition(event);
-    if (!point) return;
-    const delta = constrainDragDelta(
-      scene.nodes,
-      Object.keys(drag.baselines),
-      {
-        x: point.x - drag.startClient.x,
-        y: point.y - drag.startClient.y,
-      },
-    );
-    scheduleDragPreview(Object.fromEntries(Object.entries(drag.baselines).map(([nodeId, bounds]) => [
-      nodeId,
-      {
-        x: bounds.x + delta.x,
-        y: bounds.y + delta.y,
-      },
-    ])));
-  }
-
-  function beginPan(event: React.PointerEvent<SVGSVGElement>) {
-    if ((event.target as Element).closest(".scene-edge")) return;
-    const currentViewBox = viewBoxRef.current ?? viewBox;
-    if ((event.target as Element).closest(".scene-node:not(.root)") || !currentViewBox) return;
-    setSelectedEdgeId(null);
-    event.currentTarget.setPointerCapture(event.pointerId);
-    if (event.shiftKey) {
-      const point = pointerPosition(event);
-      if (point) setMarquee({ start: point, current: point });
-      return;
-    }
-    setPan({
-      startClient: { x: event.clientX, y: event.clientY },
-      startViewBox: currentViewBox,
-    });
-  }
-
-  function movePointer(event: React.PointerEvent<SVGSVGElement>) {
-    if (edgeEndpointDrag) {
-      moveEdgeEndpoint(event);
-      return;
-    }
-    if (drag) {
-      moveDrag(event);
-      return;
-    }
-    if (marquee) {
-      const point = pointerPosition(event);
-      if (point) setMarquee({ ...marquee, current: point });
-      return;
-    }
-    if (!pan || !svgRef.current) return;
-    const rect = svgRef.current.getBoundingClientRect();
-    const scaleX = pan.startViewBox[2] / rect.width;
-    const scaleY = pan.startViewBox[3] / rect.height;
-    writeViewBox([
-      pan.startViewBox[0] - (event.clientX - pan.startClient.x) * scaleX,
-      pan.startViewBox[1] - (event.clientY - pan.startClient.y) * scaleY,
-      pan.startViewBox[2],
-      pan.startViewBox[3],
-    ]);
-  }
-
-  function endDrag() {
-    if (!drag) return;
-    const patches = Object.entries(dragPreview.current).map(([nodeId, position], index) => ({
-      patch_id: `${patchId("move-batch")}.${index}`,
-      operation: "set-position",
-      target_id: nodeId,
-      value: { scene_id: scene?.scene_id, x: position.x, y: position.y },
-    }));
-    if (patches.length) void mutate("/api/patch-batch", {
-      batch_id: patchId("drag").replace("patch:", "batch:"),
-      description: drag.rootIds.length === 1 && patches.length > 1
-        ? tx(`Move container with ${patches.length - 1} descendant${patches.length === 2 ? "" : "s"}`, `移动容器及 ${patches.length - 1} 个后代节点`)
-        : tx(`Move ${patches.length} node${patches.length === 1 ? "" : "s"}`, `移动 ${patches.length} 个节点`),
-      patches,
-    });
-    clearDragPreview();
-    setDrag(null);
-  }
-
-  function endPointer() {
-    if (edgeEndpointDrag && edgeRoutePreviewRef.current) {
-      const dragState = edgeEndpointDrag;
-      const route = edgeRoutePreviewRef.current;
-      if (edgePreviewFrame.current !== null) cancelAnimationFrame(edgePreviewFrame.current);
-      edgePreviewFrame.current = null;
-      setEdgeEndpointDrag(null);
-      void submit("set-route-hint", dragState.edgeId, { points: route })
-        .finally(() => {
-          edgeRoutePreviewRef.current = null;
-          setEdgeRoutePreview(null);
-        });
-      return;
-    }
-    if (marquee && scene) {
-      const enclosed = nodesInSelection(
-        scene.nodes,
-        selectionBounds(marquee.start, marquee.current),
-      );
-      const next = [...new Set([...selectedIds, ...enclosed])];
-      if (activeProjectionId) selections.current[activeProjectionId] = next;
-      setSelectedIds(next);
-      setFocusedCanonicalId(null);
-      setFocusedNavigationRowId(null);
-      setMarquee(null);
-      return;
-    }
-    if (drag) endDrag();
-    const finalViewBox = viewBoxRef.current;
-    if (pan && finalViewBox && scene) {
-      setViewBox(finalViewBox);
-      void submit("set-camera", undefined, {
-        x: finalViewBox[0],
-        y: finalViewBox[1],
-        zoom: scene.paper_width / finalViewBox[2],
-      });
-    }
-    setPan(null);
-  }
-
-  function cancelPointer() {
-    clearDragPreview();
-    if (edgePreviewFrame.current !== null) cancelAnimationFrame(edgePreviewFrame.current);
-    edgePreviewFrame.current = null;
-    edgeRoutePreviewRef.current = null;
-    setDrag(null);
-    setEdgeEndpointDrag(null);
-    setEdgeRoutePreview(null);
-    setPan(null);
-    setMarquee(null);
-  }
 
   async function createDraftNode() {
     const semanticName = draftName.trim();
@@ -2514,64 +984,15 @@ export function StudioApp() {
     }
   }
 
-  function fitScene() {
-    if (!scene) return;
-    if (cameraTimer.current !== null) {
-      window.clearTimeout(cameraTimer.current);
-      cameraTimer.current = null;
-    }
-    const next: [number, number, number, number] = [
-      0,
-      0,
-      scene.paper_width,
-      scene.paper_height,
-    ];
-    commitViewBox(next);
-    void submit("set-camera", undefined, { x: 0, y: 0, zoom: 1 }, scene.scene_id);
-  }
 
-  function focusSelection() {
-    if (!scene || !selectedNode || !svgRef.current) return;
-    const horizontalPadding = Math.max(90, selectedNode.bounds.width * 0.12);
-    const verticalPadding = Math.max(70, selectedNode.bounds.height * 0.18);
-    let width = selectedNode.bounds.width + horizontalPadding * 2;
-    let height = selectedNode.bounds.height + verticalPadding * 2;
-    const viewportRatio = svgRef.current.clientWidth / Math.max(1, svgRef.current.clientHeight);
-    if (width / height > viewportRatio) height = width / viewportRatio;
-    else width = height * viewportRatio;
-    const target: [number, number, number, number] = [
-      selectedNode.bounds.x + selectedNode.bounds.width / 2 - width / 2,
-      selectedNode.bounds.y + selectedNode.bounds.height / 2 - height / 2,
-      width,
-      height,
-    ];
-    const start = viewBoxRef.current ?? target;
-    if (viewBoxAnimation.current !== null) cancelAnimationFrame(viewBoxAnimation.current);
-    const started = performance.now();
-    const animate = (now: number) => {
-      const progress = Math.min(1, (now - started) / 320);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const next = start.map((value, index) => value + (target[index] - value) * eased) as [number, number, number, number];
-      writeViewBox(next);
-      if (progress < 1) viewBoxAnimation.current = requestAnimationFrame(animate);
-      else {
-        viewBoxAnimation.current = null;
-        setViewBox(target);
-        persistCamera(target, scene);
-      }
-    };
-    viewBoxAnimation.current = requestAnimationFrame(animate);
-  }
-
-  function expandInNavigation(node: SceneNode) {
-    if (!data || !view) return;
+  function expandInNavigation(node: RenderNode) {
+    if (!data) return;
     navigationTouched.current = true;
     const targetProjection: Projection = "module";
     const targetNavigation = data.navigation.projections[targetProjection];
-    const viewNode = view.nodes.find((item) => item.view_node_id === node.view_node_id);
-    const hierarchyNodeId = String(viewNode?.attributes.hierarchy_node_id ?? "");
+    const hierarchyNodeId = node.hierarchyNodeId;
     const candidates = targetNavigation.nodes
-      .filter((item) => item.child_count > 0 && item.canonical_ids.some((id) => node.canonical_node_ids.includes(id)))
+      .filter((item) => item.child_count > 0 && item.canonical_ids.some((id) => node.containedCanonicalNodeIds.includes(id)))
       .sort((left, right) => {
         const exactHierarchy = Number(right.id === hierarchyNodeId) - Number(left.id === hierarchyNodeId);
         if (exactHierarchy) return exactHierarchy;
@@ -2661,7 +1082,7 @@ export function StudioApp() {
     }));
   }
 
-  if (!data || !scene || !view || !viewBox || !navigation) {
+  if (!data || !scene || !view || !navigation) {
     return <div className="loading">{tx("Loading Studio...", "正在加载 Studio...")}</div>;
   }
 
@@ -2697,7 +1118,7 @@ export function StudioApp() {
     canonicalIds: string[],
     fallbackCanonicalIds = canonicalIds,
     additive = false,
-    selectAllMatches = true,
+    _selectAllMatches = true,
   ) {
     const canonicalId = canonicalIds[0] ?? fallbackCanonicalIds[0] ?? null;
     const candidates = new Set([...canonicalIds, ...fallbackCanonicalIds]);
@@ -2711,20 +1132,8 @@ export function StudioApp() {
       }
       return [...next];
     });
-    const matches = scene?.nodes.filter((node) => node.canonical_node_ids.some((id) => candidates.has(id))) ?? [];
-    const matchIds = (selectAllMatches ? matches : matches.slice(0, 1)).map((node) => node.scene_node_id);
-    if (matchIds.length === 0) {
-      setSelectedEdgeId(null);
-      setFocusedCanonicalId(canonicalId);
-      return;
-    }
-    const next = additive
-      ? matchIds.reduce((current, id) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id], selectedIds)
-      : matchIds;
-    setSelectedEdgeId(null);
+    setSelectedCanonicalEdgeIds([]);
     setFocusedCanonicalId(canonicalId);
-    if (activeProjectionId) selections.current[activeProjectionId] = next;
-    setSelectedIds(next);
     const navigationMatch = visibleNavigation.find((item) => item.canonical_ids.some((id) => candidates.has(id)));
     setFocusedNavigationRowId(navigationMatch?.id ?? null);
   }
@@ -2762,78 +1171,47 @@ export function StudioApp() {
     <LanguageContext.Provider value={{ locale, tx }}>
     <div
       className={`${dark ? "studio dark" : "studio"}${data.transaction ? " has-transaction" : ""}${panelResize ? ` resizing-panel resizing-${panelResize.edge}` : ""}`}
-      style={{
-        "--left-panel-width": `${panelSizes.left}px`,
-        "--right-panel-width": `${panelSizes.right}px`,
-        "--top-panel-height": `${panelSizes.top}px`,
-        "--bottom-panel-height": `${bottomTab === "source" ? Math.max(320, panelSizes.bottom) : panelSizes.bottom}px`,
-      } as React.CSSProperties}
+      style={shellLayoutStyle(panelSizes, bottomTab === "source")}
     >
-      <header className="topbar">
-        <div className="product"><Box size={17} /> ArchCanvas</div>
-        <button className="project-meta" onClick={() => setProjectDialog(true)} title={tx("Open or switch project", "打开或切换项目")}>
-          <strong>{data.architecture.entrypoint.split(":").at(-1)}</strong>
-          <span>{data.snapshot.revision}</span>
-        </button>
-        <div className="mode-switch" aria-label={tx("Studio mode", "Studio 模式")}>
-          {(["explore", "layout", "model"] as Mode[]).map((item) => (
-            <button key={item} className={mode === item ? "active" : ""} onClick={() => { setMode(item); if (item === "model") setInspectorTab("model"); }}>
-              {item === "explore" ? <Eye size={14} /> : item === "layout" ? <Move size={14} /> : <Braces size={14} />}
-              {modeLabels[item]}
-            </button>
-          ))}
-        </div>
-        <div className="top-actions">
-          <div className="language-switch" role="group" aria-label={tx("Interface language", "界面语言")}>
-            <button className={locale === "en" ? "active" : ""} aria-pressed={locale === "en"} onClick={() => setLocale("en")}>EN</button>
-            <button className={locale === "zh" ? "active" : ""} aria-pressed={locale === "zh"} onClick={() => setLocale("zh")}>中文</button>
-          </div>
-          <button className="icon-button" title={tx("Undo", "撤销")} aria-label={tx("Undo", "撤销")} disabled={!data.document.visual_patches.length} onClick={() => void mutate("/api/undo")}><Undo2 /></button>
-          <button className="icon-button" title={tx("Redo", "重做")} aria-label={tx("Redo", "重做")} disabled={!data.document.redo_patches.length} onClick={() => void mutate("/api/redo")}><Redo2 /></button>
-          <div className={`writeback-gate ${writebackBlocked ? "blocked" : "ready"}`} title={writebackBlocked ? tx("Review blockers before committing", "提交前请检查阻断项") : tx("No draft blockers", "没有草稿阻断项")}><ShieldCheck size={14} />{writebackBlocked ? `${proofCounts.invalid ?? 0} ${tx("invalid", "无效")} · ${proofCounts.unproven ?? 0} ${tx("unproven", "未证明")}` : tx("Writeback clear", "可安全回写")}</div>
-          <select className="profile-select" aria-label={tx("Validation profile", "验证配置")} value={validationProfile} onChange={(event) => setValidationProfile(event.target.value)}><option value="fast-static">{tx("Fast", "快速")}</option><option value="publication">{tx("Publication", "发布")}</option><option value="full">{tx("Full", "完整")}</option></select>
-          <button className="validate-button" onClick={runValidation}><Play size={14} /> {tx("Validate", "验证")} <span>{latestValidation?.diagnostics.length ?? data.diagnostics.length}</span></button>
-          <details className="export-menu" ref={exportMenuRef}>
-            <summary className="primary-action" aria-label={tx("Export main view", "导出主视图")}><Download size={14} /> {tx("Export", "导出")}</summary>
-            <div className="export-menu-popover" role="menu">
-              <button type="button" role="menuitem" disabled={!kernelExport} onClick={() => void exportMainView("svg")}><strong>SVG</strong><span>{tx("Main view vector", "主视图矢量图")}</span></button>
-              <button type="button" role="menuitem" disabled={!kernelExport || exportBusy !== null} onClick={() => void exportMainView("png")}><strong>PNG</strong><span>{exportBusy === "png" ? tx("Rendering", "正在渲染") : tx("Main view image", "主视图图片")}</span></button>
-              <button type="button" role="menuitem" disabled={!kernelExport || exportBusy !== null} onClick={() => void exportMainView("pdf")}><strong>PDF</strong><span>{exportBusy === "pdf" ? tx("Rendering", "正在渲染") : tx("Main view document", "主视图文档")}</span></button>
-              <a role="menuitem" href="/api/publication-export"><strong>SVG</strong><span>{tx("Publication export", "出版导出")}</span></a>
-            </div>
-          </details>
-        </div>
-      </header>
+      <TopBar
+        entrypointName={data.architecture.entrypoint.split(":").at(-1) ?? data.architecture.entrypoint}
+        revision={data.snapshot.revision}
+        mode={mode}
+        modeLabels={modeLabels}
+        locale={locale}
+        canUndo={data.document.visual_patches.length > 0}
+        canRedo={data.document.redo_patches.length > 0}
+        writebackBlocked={writebackBlocked}
+        invalidProofs={proofCounts.invalid ?? 0}
+        unprovenProofs={proofCounts.unproven ?? 0}
+        validationProfile={validationProfile}
+        diagnosticCount={latestValidation?.diagnostics.length ?? data.diagnostics.length}
+        kernelExport={kernelExport}
+        exportBusy={exportBusy}
+        exportMenuRef={exportMenuRef}
+        tx={tx}
+        onOpenProject={() => setProjectDialog(true)}
+        onModeChange={(item) => { setMode(item); if (item === "model") setInspectorTab("model"); }}
+        onLocaleChange={setLocale}
+        onUndo={() => void mutate("/api/undo")}
+        onRedo={() => void mutate("/api/redo")}
+        onValidationProfileChange={setValidationProfile}
+        onValidate={runValidation}
+        onExport={(format) => void exportMainView(format)}
+      />
 
-      {(["left", "right", "top", "bottom"] as PanelResizeEdge[]).map((edge) => {
-        const vertical = edge === "left" || edge === "right";
-        const label = {
-          left: tx("Resize left sidebar", "调整左侧栏宽度"),
-          right: tx("Resize right sidebar", "调整右侧栏宽度"),
-          top: tx("Resize top bar", "调整顶部栏高度"),
-          bottom: tx("Resize bottom panel", "调整底部面板高度"),
-        }[edge];
-        return <div
-          key={edge}
-          className={`panel-resizer resize-${edge}`}
-          role="separator"
-          aria-label={label}
-          aria-orientation={vertical ? "vertical" : "horizontal"}
-          aria-valuenow={panelSizes[edge]}
-          tabIndex={0}
-          title={`${label} · ${tx("Double-click to reset", "双击恢复默认")}`}
-          onPointerDown={(event) => beginPanelResize(event, edge)}
-          onPointerMove={movePanelResize}
-          onPointerUp={() => setPanelResize(null)}
-          onPointerCancel={() => setPanelResize(null)}
-          onDoubleClick={() => resetPanelSize(edge)}
-          onKeyDown={(event) => resizePanelWithKeyboard(event, edge)}
-        />;
-      })}
+      <PanelResizers
+        sizes={panelSizes}
+        tx={tx}
+        onPointerDown={beginPanelResize}
+        onPointerMove={movePanelResize}
+        onPointerEnd={() => setPanelResize(null)}
+        onReset={resetPanelSize}
+        onKeyDown={resizePanelWithKeyboard}
+      />
 
       <div className="workspace">
-        <aside className="left-panel panel">
-          <div className="panel-title"><PanelLeft size={15} /> {tx("Model", "模型")}</div>
+        <NavigationPanel tx={tx}>
           <div className="search-wrap"><div className="search-field"><Search size={14} /><input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => event.key === "Enter" && selectSearchResult()} placeholder={tx("Find node, tensor, port, evidence", "查找节点、张量、端口或证据")} /></div>{searchResults.length > 0 && <div className="search-results">{searchResults.slice(0, 8).map((result) => <button key={result.id} onClick={() => selectSearchResult(result)}><span>{result.title}</span><small>{result.kind}</small></button>)}</div>}</div>
           <div className="projection-switch" aria-label={tx("Navigation projection", "导航投影")}>
             {(["module", "source"] as const).map((item) => <button key={item} className={projection === item ? "active" : ""} aria-pressed={projection === item} onClick={() => switchProjection(item)}>{item === "module" ? <Layers3 size={14} /> : <FileCode2 size={14} />}<span>{item === "module" ? tx("Module relations", "模块关系") : tx("Source relations", "源码关系")}</span></button>)}
@@ -2843,7 +1221,7 @@ export function StudioApp() {
           <div className="tree-list navigation-tree">
             {visibleNavigation.map((item) => {
               const active = focusedNavigationRowId === item.id;
-              const related = !active && item.canonical_ids.some((canonicalId) => selectedNode?.canonical_node_ids.includes(canonicalId));
+              const related = !active && item.canonical_ids.some((canonicalId) => selectedNode?.containedCanonicalNodeIds.includes(canonicalId));
               const childCount = item.child_count;
               const hasVisibleChildren = childCount > 0;
               const relationLabel = navigationRelationLabel(item.relation, locale);
@@ -2872,7 +1250,7 @@ export function StudioApp() {
               return <div className="draft-item draft-delete" key={intent.intent_id}><Trash2 size={13} /><span><b>{tx("Delete", "删除")} · {impact?.semantic_name ?? intent.target_ids[0]}</b><small>{intent.expected_delta?.removed_edges.length ?? 0} {tx("edges", "条边")} · {intent.expected_delta?.removed_tensors.length ?? 0} Tensor</small></span><i className={proof?.status}>{proof?.status ?? data.draft.lowering_status}</i><button className="icon-button" title={tx("Discard delete intent", "丢弃删除意图")} aria-label={tx("Discard delete intent", "丢弃删除意图")} onClick={() => void discardCanonicalDeleteIntent(intent.intent_id)}><X size={12} /></button></div>;
             })}</div> : <div className="draft-empty">{tx("No draft changes", "没有草稿变更")}</div>}
           </section>
-        </aside>
+        </NavigationPanel>
 
         <main className="canvas-column">
           <div className="canvas-toolbar">
@@ -2885,7 +1263,7 @@ export function StudioApp() {
             <ArchitectureCanvas
               state={data as unknown as FormalStudioState}
               selectedCanonicalIds={selectedCanonicalIds}
-              selectedCanonicalEdgeIds={selectedEdge?.canonical_edge_ids ?? []}
+              selectedCanonicalEdgeIds={selectedCanonicalEdgeIds}
               tx={tx}
               onToggleModule={(hierarchyNodeId, expanded) => {
                 setKernelExpansionLocal(hierarchyNodeId, expanded);
@@ -2894,24 +1272,33 @@ export function StudioApp() {
               onExportArtifactChange={acceptKernelExport}
               onSelectCanonicalIds={(canonicalIds, options) => selectKernelCanonical(canonicalIds, canonicalIds, options?.additive)}
               onSelectEdge={(canonicalEdgeIds) => {
-                const edge = scene.edges.find((item) => item.canonical_edge_ids.some((id) => canonicalEdgeIds.includes(id)));
-                if (edge) chooseEdge(edge.scene_edge_id);
+                setSelectedCanonicalEdgeIds(canonicalEdgeIds);
+                setSelectedCanonicalIds([]);
+                setFocusedCanonicalId(null);
+                setFocusedNavigationRowId(null);
               }}
               onSelectNode={(kernelNode, additive) => {
                 if (!kernelNode) {
-                  choose(null);
+                  setSelectedCanonicalIds([]);
+                  setSelectedCanonicalEdgeIds([]);
+                  setFocusedCanonicalId(null);
                   return;
                 }
                 selectKernelCanonical(kernelNode.canonicalNodeIds, kernelNode.containedCanonicalNodeIds, additive, false);
               }}
             />
-            {selectedNode && <div className="context-bar"><button title={tx("Focus selection", "聚焦所选内容")} aria-label={tx("Focus selection", "聚焦所选内容")} onClick={focusSelection}><Focus size={14} /></button><button title={pinned.has(selectedNode.scene_node_id) ? tx("Unpin", "取消固定") : tx("Pin", "固定")} onClick={() => void submit("set-pin", selectedNode.scene_node_id, { enabled: !pinned.has(selectedNode.scene_node_id) })}>{pinned.has(selectedNode.scene_node_id) ? <PinOff size={14} /> : <Pin size={14} />}</button><button title={tx("Expand in navigation tree", "在导航树中展开")} onClick={() => expandInNavigation(selectedNode)}><Maximize2 size={14} /></button></div>}
+            {selectedNode && <div className="context-bar"><button title={pinned.has(selectedNode.nodeId) ? tx("Unpin", "取消固定") : tx("Pin", "固定")} onClick={() => void submitKernel("set-pin", selectedNode.nodeId, { enabled: !pinned.has(selectedNode.nodeId) })}>{pinned.has(selectedNode.nodeId) ? <PinOff size={14} /> : <Pin size={14} />}</button><button title={tx("Expand in navigation tree", "在导航树中展开")} onClick={() => expandInNavigation(selectedNode)}><Maximize2 size={14} /></button></div>}
           </div>
         </main>
 
-        <aside className={`right-panel panel ${mobileInspector ? "mobile-open" : ""}`}>
-          <div className="panel-title"><PanelRight size={15} /> {tx("Inspector", "检查器")}<button className="icon-button mobile-only inspector-close" title={tx("Close inspector", "关闭检查器")} onClick={() => setMobileInspector(false)}><X /></button></div>
-          <div className="tab-strip">{(["inspect", "source", "visual", "model", "evidence"] as const).map((tab) => <button key={tab} className={inspectorTab === tab ? "active" : ""} onClick={() => setInspectorTab(tab)}>{inspectorLabels[tab]}</button>)}</div>
+        <InspectorPanel
+          mobileOpen={mobileInspector}
+          activeTab={inspectorTab}
+          labels={inspectorLabels}
+          onTabChange={(tab) => setInspectorTab(tab as typeof inspectorTab)}
+          onClose={() => setMobileInspector(false)}
+          tx={tx}
+        >
           {selectedEdge ? <div className="inspector-content">
             {(inspectorTab === "inspect" || inspectorTab === "visual") && <EdgeInspector edge={selectedEdge} evidence={selectedEdgeEvidence} />}
             {inspectorTab === "source" && <SourceInspector nodes={[]} evidence={selectedEdgeEvidence} />}
@@ -2920,26 +1307,32 @@ export function StudioApp() {
           </div> : !selectedNode || !selectedViewNode ? <div className="empty-state"><Focus size={20} /><span>{tx("No selection", "未选择内容")}</span></div> : <div className="inspector-content">
             {inspectorTab === "inspect" && <StructureInspector label={selectedViewNode.semantic_name} viewNode={selectedViewNode} sceneNode={selectedNode} nodes={selectedArchitectureNodes} tensors={data.architecture.tensors} evidence={selectedEvidence} />}
             {inspectorTab === "source" && <SourceInspector nodes={selectedArchitectureNodes} evidence={selectedEvidence} />}
-            {inspectorTab === "visual" && <VisualInspector node={selectedNode} pinned={pinned.has(selectedNode.scene_node_id)} fontScale={data.view_state.font_scale ?? 1} lineWeight={data.view_state.line_weight ?? 1.5} caption={scene.caption ?? ""} legendPlacement={scene.legend_placement ?? "top-left"} onPatch={submit} onBatch={submitBatch} />}
+            {inspectorTab === "visual" && <VisualInspector node={selectedNode} fidelity={selectedTemplateFidelity} pinned={pinned.has(selectedNode.nodeId)} onPatch={submitKernel} onBatch={submitKernelBatch} />}
             {inspectorTab === "model" && <ModelInspector node={architectureNode} nodes={data.architecture.nodes} transaction={data.transaction} proposal={data.proposal} writebackBlocked={writebackBlocked} deleteIntentActive={canonicalDeleteIntents.some((intent) => intent.target_ids[0] === architectureNode?.node_id)} deleteImpactLoading={deleteImpactLoading} onPrepareParameter={prepareParameter} onPrepareStructural={prepareStructural} onProposeConnection={proposeConnection} onReviewDelete={reviewCanonicalDelete} onCommit={commitSourceTransaction} onDiscard={async () => { await mutate("/api/transaction/discard", {}, tx("Discarded source transaction", "已放弃源码事务")); }} />}
             {inspectorTab === "evidence" && <div className="evidence-list">{selectedEvidence.length ? selectedEvidence.map((record) => <section key={record.evidence_id}><div><FileCode2 size={14} /><strong>{record.kind}</strong><span>{record.confidence}</span></div><code>{record.path ?? record.evidence_id}{record.span ? `:${record.span.start_line}` : ""}</code><p>{record.claim}</p></section>) : <div className="empty-state">{tx("No linked evidence", "没有关联证据")}</div>}</div>}
           </div>}
-        </aside>
+        </InspectorPanel>
       </div>
 
-      <section className="bottom-panel">
-        <div className="bottom-tabs"><PanelBottom size={14} />{(["problems", "source", "diff", "validation", "jobs", "activity"] as const).map((tab) => <button key={tab} className={bottomTab === tab ? "active" : ""} onClick={() => setBottomTab(tab)}>{bottomLabels[tab]}{tab === "problems" && <span>{data.diagnostics.length}</span>}{tab === "source" && data.source_workspace.state !== "clean" && <span>{data.source_workspace.files.filter((file) => file.state !== "clean").length}</span>}{tab === "jobs" && data.jobs?.some((job) => ["queued", "running"].includes(job.state)) && <span>1</span>}</button>)}</div>
-        <div className="bottom-content">
-          {bottomTab === "problems" && ([...data.diagnostics, ...data.draft.proofs.map((proof) => ({ code: proof.reason_codes[0] ?? proof.status.toUpperCase(), severity: proof.status, message: proof.message, target_ids: proof.affected_subject_ids }))].length ? [...data.diagnostics, ...data.draft.proofs.map((proof) => ({ code: proof.reason_codes[0] ?? proof.status.toUpperCase(), severity: proof.status, message: proof.message, target_ids: proof.affected_subject_ids }))].map((item, index) => <button key={`${item.code}-${index}`} onClick={() => choose(scene.nodes.find((node) => node.canonical_node_ids.some((id) => item.target_ids.includes(id)))?.scene_node_id ?? null)}><AlertTriangle size={13} /><b>{item.severity}</b><span>{item.message}</span></button>) : <div className="ok-line"><CircleDot size={13} /> {tx("No geometry or writeback problems", "没有几何或回写问题")}</div>)}
+      <BottomPanel
+        activeTab={bottomTab}
+        labels={bottomLabels}
+        badges={{
+          problems: data.diagnostics.length,
+          source: data.source_workspace.state !== "clean" ? data.source_workspace.files.filter((file) => file.state !== "clean").length : 0,
+          jobs: data.jobs?.some((job) => ["queued", "running"].includes(job.state)),
+        }}
+        onTabChange={(tab) => setBottomTab(tab as typeof bottomTab)}
+      >
+          {bottomTab === "problems" && ([...data.diagnostics, ...data.draft.proofs.map((proof) => ({ code: proof.reason_codes[0] ?? proof.status.toUpperCase(), severity: proof.status, message: proof.message, target_ids: proof.affected_subject_ids }))].length ? [...data.diagnostics, ...data.draft.proofs.map((proof) => ({ code: proof.reason_codes[0] ?? proof.status.toUpperCase(), severity: proof.status, message: proof.message, target_ids: proof.affected_subject_ids }))].map((item, index) => <button key={`${item.code}-${index}`} onClick={() => chooseCanonical(item.target_ids)}><AlertTriangle size={13} /><b>{item.severity}</b><span>{item.message}</span></button>) : <div className="ok-line"><CircleDot size={13} /> {tx("No geometry or writeback problems", "没有几何或回写问题")}</div>)}
           {bottomTab === "source" && <SourceWorkspacePanel workspace={data.source_workspace} transaction={data.transaction} sessionNonce={data.session_nonce} onState={setData} onActivity={(message) => setActivity((items) => [message, ...items].slice(0, 20))} onShowDiff={() => setBottomTab("diff")} />}
           {bottomTab === "diff" && (data.transaction ? <TransactionReview transaction={data.transaction} writebackBlocked={writebackBlocked} onCommit={commitSourceTransaction} onDiscard={async () => { await mutate("/api/transaction/discard", {}, tx("Discarded source transaction", "已放弃源码事务")); }} /> : <div className="ok-line"><LockKeyhole size={13} /> {tx(`Source digest ${sourceDigest} unchanged`, `源码摘要 ${sourceDigest} 未改变`)}</div>)}
           {bottomTab === "validation" && (latestValidation ? <div className="gate-list">{latestValidation.gate_results.map((gate) => <span key={gate.gate} className={gate.status}>{gate.status} · {gate.gate} · {gate.message}</span>)}</div> : <div className="validation-line"><CircleDot size={13} /> {tx("Validation has not been run for this fingerprint", "尚未为此指纹运行验证")}</div>)}
           {bottomTab === "jobs" && <div className="job-list">{data.jobs?.length ? data.jobs.map((job) => <div key={job.job_id}><code>{job.job_id}</code><span>{job.profile}</span><b>{job.state} · {Math.round(job.progress * 100)}%</b>{["queued", "running", "cancelling"].includes(job.state) && <button className="icon-button" title={tx("Cancel job", "取消任务")} aria-label={tx("Cancel job", "取消任务")} onClick={() => void cancelJob(job.job_id)}><X size={12} /></button>}</div>) : <div className="validation-line">{tx("No jobs in this session", "本会话中没有任务")}</div>}</div>}
           {bottomTab === "activity" && <div className="activity-list">{activity.map((item, index) => <span key={`${item}-${index}`}><History size={12} />{item}</span>)}</div>}
-        </div>
-      </section>
+      </BottomPanel>
 
-      <button className="theme-toggle icon-button" title={tx("Toggle theme", "切换主题")} aria-label={tx("Toggle theme", "切换主题")} onClick={() => { const next = !dark; setDark(next); void submit("set-theme", undefined, { theme: next ? "studio-dark" : "paper-light" }); }}>{dark ? <Sun /> : <Moon />}</button>
+      <button className="theme-toggle icon-button" title={tx("Toggle theme", "切换主题")} aria-label={tx("Toggle theme", "切换主题")} onClick={() => { const next = !dark; setDark(next); void submitGlobal("set-theme", undefined, { theme: next ? "studio-dark" : "paper-light" }); }}>{dark ? <Sun /> : <Moon />}</button>
       {projectDialog && <div className="dialog-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setProjectDialog(false); }}>
         <section className="project-dialog project-launcher" role="dialog" aria-modal="true" aria-label={tx("Open model", "打开模型")}>
           <header>
@@ -3028,16 +1421,15 @@ function Field({ label, value, mono = false }: { label: string; value: string; m
   return <div className="field"><label>{label}</label><div className={mono ? "mono" : ""}>{value}</div></div>;
 }
 
-function EdgeInspector({ edge, evidence }: { edge: SceneEdge; evidence: Evidence[] }) {
+function EdgeInspector({ edge, evidence }: { edge: RenderEdge; evidence: Evidence[] }) {
   const { tx } = useLanguage();
   return <div className="structure-inspector edge-inspector">
     <header className="inspector-heading"><div><h2>{edge.label || tx("Connection", "连接")}</h2><span>{tx("Canonical architecture relation", "规范架构关系")}</span></div><Link2 size={18} /></header>
-    <div className="status-row"><span>{edge.visual_relation}</span><b>{edge.edge_type}</b></div>
-    <Field label={tx("Source node", "源节点")} value={edge.source_scene_node_id} mono />
-    <Field label={tx("Target node", "目标节点")} value={edge.target_scene_node_id} mono />
-    <Field label={tx("Role / channel", "角色 / 通道")} value={`${edge.role} / ${edge.visual_relation}`} />
-    <Field label={tx("Canonical edge IDs", "规范边 ID")} value={edge.canonical_edge_ids.join(", ") || tx("Projected relation", "投影关系")} mono />
-    <Field label={tx("Ports", "端口")} value={`${edge.source_port_id ?? "-"} -> ${edge.target_port_id ?? "-"}`} mono />
+    <div className="status-row"><span>{edge.relation}</span><b>{edge.semanticChannel}</b></div>
+    <Field label={tx("Source port", "源端口")} value={edge.sourcePortId} mono />
+    <Field label={tx("Target port", "目标端口")} value={edge.targetPortId} mono />
+    <Field label={tx("Role / channel", "角色 / 通道")} value={`${edge.semanticChannel} / ${edge.relation}`} />
+    <Field label={tx("Canonical edge IDs", "规范边 ID")} value={edge.canonicalEdgeIds.join(", ") || tx("Projected relation", "投影关系")} mono />
     <Field label={tx("Evidence", "证据")} value={`${evidence.length} ${tx("records", "条记录")} · ${evidence[0]?.confidence ?? tx("not linked", "未关联")}`} mono />
   </div>;
 }
@@ -3288,7 +1680,7 @@ function StructureGlyph({ kind, label, count }: { kind: ReturnType<typeof struct
 function StructureInspector({ label, viewNode, sceneNode, nodes, tensors, evidence }: {
   label: string;
   viewNode: PublicationNode;
-  sceneNode: SceneNode;
+  sceneNode: RenderNode;
   nodes: ArchitectureNodeView[];
   tensors: ArchitectureTensor[];
   evidence: Evidence[];
@@ -3321,7 +1713,7 @@ function StructureInspector({ label, viewNode, sceneNode, nodes, tensors, eviden
     <div className="status-row"><span>Exact IR</span><b>{nodes.length} {tx("canonical", "个规范节点")}</b></div>
     <Field label={tx("Source symbols", "源码符号")} value={[...new Set(nodes.map((node) => node.source_symbol).filter(Boolean))].join(", ") || tx("Structural container", "结构容器")} />
     <Field label={tx("Evidence", "证据")} value={`${evidence.length} ${tx("records", "条记录")} · ${evidence[0]?.confidence ?? "exact"}`} mono />
-    <div className="resolution"><div className="section-label">{tx("Resolution", "解析状态")}</div><dl><dt>{tx("Implementation", "实现")}</dt><dd>{viewNode.attributes.resolution ? tx("resolved", "已解析") : tx("exact", "精确")}</dd><dt>{tx("Semantics", "语义")}</dt><dd>{viewNode.collapsed ? tx("grouped", "已分组") : tx("expanded", "已展开")}</dd><dt>{tx("Execution", "执行")}</dt><dd>{sceneNode.canonical_node_ids.length ? tx("authored", "源码定义") : tx("structural", "结构生成")}</dd></dl></div>
+    <div className="resolution"><div className="section-label">{tx("Resolution", "解析状态")}</div><dl><dt>{tx("Implementation", "实现")}</dt><dd>{viewNode.attributes.resolution ? tx("resolved", "已解析") : tx("exact", "精确")}</dd><dt>{tx("Semantics", "语义")}</dt><dd>{viewNode.collapsed ? tx("grouped", "已分组") : tx("expanded", "已展开")}</dd><dt>{tx("Execution", "执行")}</dt><dd>{sceneNode.canonicalNodeIds.length ? tx("authored", "源码定义") : tx("structural", "结构生成")}</dd></dl></div>
   </div>;
 }
 
@@ -3676,22 +2068,30 @@ function TransactionReview({ transaction, writebackBlocked, onCommit, onDiscard 
   </div>;
 }
 
-function VisualInspector({ node, pinned, fontScale, lineWeight, caption, legendPlacement, onPatch, onBatch }: { node: SceneNode; pinned: boolean; fontScale: number; lineWeight: number; caption: string; legendPlacement: "top-left" | "top-right" | "bottom-left" | "bottom-right" | "hidden"; onPatch: (operation: string, targetId: string | undefined, value: Record<string, unknown>) => Promise<void>; onBatch: (description: string, patches: Array<{ operation: string; targetId?: string; value: Record<string, unknown> }>) => Promise<void> }) {
+function VisualInspector({ node, fidelity, pinned, onPatch, onBatch }: {
+  node: RenderNode;
+  fidelity?: "exact" | "opaque" | "schematic";
+  pinned: boolean;
+  onPatch: (operation: string, targetId: string | undefined, value: Record<string, unknown>) => Promise<void>;
+  onBatch: (description: string, patches: Array<{ operation: string; targetId?: string; value: Record<string, unknown> }>) => Promise<void>;
+}) {
   const { tx } = useLanguage();
   const [bounds, setBounds] = useState(node.bounds);
-  const [label, setLabel] = useState(node.label_lines.join("\n"));
-  const [captionText, setCaptionText] = useState(caption);
-  const [annotationText, setAnnotationText] = useState("");
-  useEffect(() => setBounds(node.bounds), [node.scene_node_id, node.bounds]);
-  useEffect(() => setLabel(node.label_lines.join("\n")), [node.scene_node_id, node.label_lines]);
-  useEffect(() => setCaptionText(caption), [caption]);
+  useEffect(() => setBounds(node.bounds), [node.nodeId, node.bounds]);
   const update = (key: keyof Rect, value: number) => setBounds((current) => ({ ...current, [key]: value }));
-  const addAnnotation = async () => {
-    const text = annotationText.trim();
-    if (!text) return;
-    const annotationId = patchId("annotation").replace("patch:", "annotation:");
-    await onPatch("add-annotation", annotationId, { text, x: node.bounds.x, y: node.bounds.y + node.bounds.height + 12, width: 190, height: 52 });
-    setAnnotationText("");
-  };
-  return <><div className="section-label">{tx("Geometry", "几何")}</div><div className="numeric-grid">{(["x", "y", "width", "height"] as const).map((key) => <label key={key}><span>{key.toUpperCase()}</span><input type="number" min={key === "width" || key === "height" ? 1 : 0} value={Math.round(bounds[key])} onChange={(event) => update(key, Number(event.target.value))} /></label>)}</div><button className="apply-visual" onClick={() => void onBatch(tx("Apply geometry", "应用几何设置"), [{ operation: "set-position", targetId: node.scene_node_id, value: { x: bounds.x, y: bounds.y } }, { operation: "set-size", targetId: node.scene_node_id, value: { width: bounds.width, height: bounds.height } }])}>{tx("Apply geometry", "应用几何设置")}</button><label className="toggle-row"><input type="checkbox" checked={pinned} onChange={() => void onPatch("set-pin", node.scene_node_id, { enabled: !pinned })} /><span>{tx("Pin during layout", "布局时固定")}</span></label><label className="model-field"><span>{tx("Fill", "填充色")}</span><input type="color" value={node.fill.startsWith("#") ? node.fill.slice(0, 7) : "#ffffff"} onChange={(event) => void onPatch("set-palette", undefined, { overrides: { [node.scene_node_id]: event.target.value } })} /></label><label className="model-field"><span>{tx("Stroke", "描边色")}</span><input type="color" value={node.stroke.startsWith("#") ? node.stroke.slice(0, 7) : "#1b1d1a"} onChange={(event) => void onPatch("set-palette", undefined, { overrides: { [`${node.scene_node_id}:stroke`]: event.target.value } })} /></label><label className="model-field"><span>{tx("Label lines", "标签行")}</span><textarea rows={3} value={label} onChange={(event) => setLabel(event.target.value)} /></label><button className="apply-visual" onClick={() => void onPatch("set-label-wrap", node.scene_node_id, { lines: label.split("\n").filter(Boolean).slice(0, 3) })}>{tx("Apply label wrap", "应用标签换行")}</button><label className="model-field"><span>{tx("Font scale", "字体缩放")} · {fontScale.toFixed(2)}</span><input type="range" min="0.75" max="1.5" step="0.05" value={fontScale} onChange={(event) => void onPatch("set-font-scale", undefined, { scale: Number(event.target.value) })} /></label><label className="model-field"><span>{tx("Line weight", "线宽")} · {lineWeight.toFixed(1)}</span><input type="range" min="0.5" max="5" step="0.5" value={lineWeight} onChange={(event) => void onPatch("set-line-weight", undefined, { width: Number(event.target.value) })} /></label><div className="section-label">{tx("Document", "文档")}</div><label className="model-field"><span>{tx("Caption", "图注")}</span><input value={captionText} maxLength={240} onChange={(event) => setCaptionText(event.target.value)} /></label><button className="apply-visual" onClick={() => void onPatch("set-caption", undefined, { caption: captionText })}>{tx("Apply caption", "应用图注")}</button><label className="model-field"><span>{tx("Legend placement", "图例位置")}</span><select value={legendPlacement} onChange={(event) => void onPatch("set-legend-placement", undefined, { placement: event.target.value })}><option value="top-left">{tx("Top left", "左上")}</option><option value="top-right">{tx("Top right", "右上")}</option><option value="bottom-left">{tx("Bottom left", "左下")}</option><option value="bottom-right">{tx("Bottom right", "右下")}</option><option value="hidden">{tx("Hidden", "隐藏")}</option></select></label><label className="model-field"><span>{tx("Annotation", "批注")}</span><textarea rows={2} maxLength={500} value={annotationText} onChange={(event) => setAnnotationText(event.target.value)} /></label><button className="apply-visual" disabled={!annotationText.trim()} onClick={() => void addAnnotation()}>{tx("Add annotation", "添加批注")}</button></>;
+  return <>
+    <div className="section-label">{tx("Kernel geometry", "内核几何")}</div>
+    <div className="numeric-grid">{(["x", "y", "width", "height"] as const).map((key) => <label key={key}><span>{key.toUpperCase()}</span><input type="number" min={key === "width" || key === "height" ? 1 : 0} value={Math.round(bounds[key])} onChange={(event) => update(key, Number(event.target.value))} /></label>)}</div>
+    <button className="apply-visual" onClick={() => void onBatch(tx("Apply geometry", "应用几何设置"), [
+      { operation: "set-position", targetId: node.nodeId, value: { x: bounds.x, y: bounds.y } },
+      { operation: "set-size", targetId: node.nodeId, value: { width: bounds.width, height: bounds.height } },
+    ])}>{tx("Apply geometry", "应用几何设置")}</button>
+    <label className="toggle-row"><input type="checkbox" checked={pinned} onChange={() => void onPatch("set-pin", node.nodeId, { enabled: !pinned })} /><span>{tx("Pin during layout", "布局时固定")}</span></label>
+    <div className="section-label">{tx("Visual provenance", "视觉来源")}</div>
+    <Field label={tx("Kernel node", "内核节点")} value={node.nodeId} mono />
+    <Field label={tx("Shape", "图元")} value={node.shape} />
+    <Field label={tx("Render role", "渲染角色")} value={node.renderRole} />
+    <Field label={tx("Template binding", "模板绑定")} value={node.templateBindingId ?? tx("Generic", "通用")} mono />
+    <Field label={tx("Template fidelity", "模板保真度")} value={fidelity ?? tx("Unbound", "未绑定")} />
+  </>;
 }

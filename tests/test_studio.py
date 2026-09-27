@@ -131,7 +131,7 @@ def test_phase8_studio_runtime_does_not_compile_python_scenes(
     assert "layout_modes" not in state["capabilities"]
     assert "routing_engines" not in state["capabilities"]
 
-    target_id = sorted(bundle.kernel_visual_targets()["nodes"])[0]
+    target_id = min(bundle.kernel_visual_targets()["nodes"])
     kernel_scene_id = (
         f"kernel:{bundle.architecture.architecture_id}:"
         f"{bundle.document.source_digest[:12]}"
@@ -748,9 +748,9 @@ def test_kernel_visual_batch_persists_reloads_and_undoes_without_model_changes(
     workspace = tmp_path / ".archcanvas"
     bundle = prepare_studio_bundle(analysis_dir / "architecture.json", workspace)
     targets = bundle.kernel_visual_targets()
-    node_id = sorted(targets["nodes"])[0]
-    detail_id = sorted(targets["detail_nodes"])[-1]
-    expansion_id = sorted(targets["expansions"])[0]
+    node_id = min(targets["nodes"])
+    detail_id = max(targets["detail_nodes"])
+    expansion_id = min(targets["expansions"])
     kernel_scene_id = (
         f"kernel:{bundle.architecture.architecture_id}:{bundle.document.source_digest[:12]}"
     )
@@ -774,6 +774,12 @@ def test_kernel_visual_batch_persists_reloads_and_undoes_without_model_changes(
                 operation="set-size",
                 target_id=node_id,
                 value={**binding, "width": 360.0, "height": 240.0},
+            ),
+            VisualPatch(
+                patch_id="patch:test.kernel-pin",
+                operation="set-pin",
+                target_id=node_id,
+                value={**binding, "enabled": True},
             ),
             VisualPatch(
                 patch_id="patch:test.kernel-detail",
@@ -829,6 +835,7 @@ def test_kernel_visual_batch_persists_reloads_and_undoes_without_model_changes(
     state = derive_view_state(changed)
     assert state["node_positions"][node_id] == {"x": 123.0, "y": 87.0}
     assert state["node_sizes"][node_id] == {"width": 360.0, "height": 240.0}
+    assert node_id in state["pinned_node_ids"]
     assert state["detail_offsets"][detail_id] == {"x": -9.0, "y": 14.0}
     assert expansion_id in state["module_expansion"]
     assert state["route_style"] == "channel"
@@ -896,7 +903,7 @@ def test_kernel_visual_patch_rejects_stale_binding_and_unknown_target(
             VisualPatch(
                 patch_id="patch:test.kernel-stale",
                 operation="set-position",
-                target_id=sorted(targets["nodes"])[0],
+                target_id=min(targets["nodes"]),
                 value={
                     "kernel_scene_id": kernel_scene_id,
                     "architecture_id": bundle.architecture.architecture_id,
@@ -2567,7 +2574,7 @@ def test_studio_server_persists_patch_undo_redo_and_exports_svg(
                 urlopen(removed_request)
             assert removed.value.code == 404
 
-        target_id = sorted(bundle.kernel_visual_targets()["nodes"])[0]
+        target_id = min(bundle.kernel_visual_targets()["nodes"])
         kernel_scene_id = (
             f"kernel:{bundle.architecture.architecture_id}:"
             f"{bundle.document.source_digest[:12]}"

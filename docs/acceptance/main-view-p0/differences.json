@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "oracle": "build/scene-visual-lab",
+  "production": {
+    "fixture_manifest": "studio/src/visual-kernel/production-fixtures.ts",
+    "formal_fixtures": "studio/src/main-view/fixtures",
+    "kernel_version": "visual-kernel-svg-v1"
+  },
+  "matrix": {
+    "topologies": 26,
+    "visual_combinations": 45,
+    "cases": 1170,
+    "status": "pass",
+    "evidence": "studio/src/visual-kernel/production-matrix.test.ts"
+  },
+  "gates": [
+    {
+      "id": "semantic-glyph-library",
+      "build_reference": "build/scene-visual-lab/cases/semantic-glyph-library",
+      "production_reference": "studio/src/main-view/ArchitectureCanvas.tsx",
+      "checks": ["glyph shape", "tone", "provenance", "fidelity badge"],
+      "status": "pass"
+    },
+    {
+      "id": "catalog-details",
+      "build_reference": "build/scene-visual-lab/cases/extended-module-catalog and six catalog families",
+      "production_reference": "studio/src/visual-kernel/catalog-details.ts and module-details.ts",
+      "checks": ["39 detail kinds", "internal primitives", "internal flow", "finite bounds"],
+      "status": "pass"
+    },
+    {
+      "id": "parent-child-expansion",
+      "build_reference": "build/scene-visual-lab/cases/parent-child-expansion",
+      "production_reference": "studio/src/visual-kernel/layout.ts and detail-layout.ts",
+      "checks": ["container expansion", "child relative layout", "portal chain", "downstream displacement", "collapse stability"],
+      "status": "pass"
+    },
+    {
+      "id": "pixel-baseline-pair",
+      "build_reference": "build/scene-visual-lab/cases/*.svg",
+      "production_reference": "docs/acceptance/main-view-p0/{build,production}/*.{svg,png}",
+      "checks": ["1440x900", "1280x800", "1024x768", "390x844", "dark theme"],
+      "status": "pass",
+      "evidence": [
+        "docs/acceptance/main-view-p0/structural-differences.json",
+        "docs/acceptance/main-view-p0/browser-differences.json",
+        "studio/e2e/main-view-p0-visual.spec.ts"
+      ],
+      "note": "Four fixed viewports, dark runtime rendering, five parent-child states, internal drag, and recursive hierarchy have captured browser evidence."
+    }
+  ],
+  "forbidden_dependencies": {
+    "prototype_imports": 0,
+    "build_runtime_reads": 0,
+    "status": "pass"
+  }
+}

@@ -7,13 +7,27 @@ import type {
   RenderTemplateDetail,
   Size,
 } from "./types";
+import type { DetailPrimitive } from "./module-details";
+import { buildModuleDetail, EXPANDED_DETAIL_SIZES } from "./module-details";
+import type { NodeDetailKind } from "./types";
 
 const ATTENTION_SIZE: Size = { width: 900, height: 380 };
 
+export const PRODUCTION_DETAIL_KINDS = Object.freeze(Object.keys(EXPANDED_DETAIL_SIZES) as NodeDetailKind[]);
+
+function detailKindForTemplate(templateId: string): NodeDetailKind | undefined {
+  if (templateId === "attention.qkv-v1") return "attention";
+  const normalized = templateId
+    .replace(/^(?:catalog|module|detail)\./, "")
+    .replace(/(?:\.v?\d+|-v\d+)$/, "");
+  return PRODUCTION_DETAIL_KINDS.find((kind) => kind === normalized);
+}
+
 export function templateDetailSize(binding: KernelTemplateBinding | undefined): Size | undefined {
-  return binding?.fidelity === "exact" && binding.templateId === "attention.qkv-v1"
-    ? ATTENTION_SIZE
-    : undefined;
+  if (binding?.fidelity !== "exact") return undefined;
+  const kind = detailKindForTemplate(binding.templateId);
+  if (!kind) return undefined;
+  return kind === "attention" ? ATTENTION_SIZE : EXPANDED_DETAIL_SIZES[kind];
 }
 
 function canonical(binding: KernelTemplateBinding, slotId: string): string[] {
@@ -117,6 +131,81 @@ function attentionDetail(binding: KernelTemplateBinding, bounds: Bounds): Render
   };
 }
 
+function genericDetail(binding: KernelTemplateBinding, kind: NodeDetailKind, bounds: Bounds): RenderTemplateDetail {
+  const diagram = buildModuleDetail(kind, bounds);
+  const slotIds = Object.keys(binding.nodeSlots).sort();
+  const slotFor = (primitive: DetailPrimitive, index: number) => (
+    primitive.kind === "flow" && primitive.channel ? primitive.channel : slotIds[index] ?? `visual:${index}`
+  );
+  const primitives = diagram.primitives.map((primitive, index): RenderDetailPrimitive => {
+    const slot = slotFor(primitive, index);
+    const common = {
+      primitiveId: slotId(binding, slot),
+      slotId: slot,
+      canonicalIds: canonical(binding, slot),
+    };
+    if (primitive.kind === "rect") return {
+      ...common,
+      kind: "box",
+      x: primitive.x,
+      y: primitive.y,
+      width: primitive.width,
+      height: primitive.height,
+      label: primitive.label ?? "",
+      note: primitive.note,
+      tone: primitive.tone,
+    };
+    if (primitive.kind === "circle") return {
+      ...common,
+      kind: "operator",
+      cx: primitive.cx,
+      cy: primitive.cy,
+      radius: primitive.radius,
+      label: primitive.label,
+      tone: primitive.tone,
+    };
+    if (primitive.kind === "matrix") return {
+      ...common,
+      kind: "matrix",
+      x: primitive.x,
+      y: primitive.y,
+      width: primitive.width,
+      height: primitive.height,
+      label: primitive.label ?? "",
+      columns: primitive.columns,
+      rows: primitive.rows,
+      depth: primitive.depth ?? 0,
+      tone: primitive.tone,
+    };
+    if (primitive.kind === "flow") return {
+      ...common,
+      kind: "flow",
+      points: primitive.points,
+      tone: primitive.tone ?? "neutral",
+      marker: primitive.marker !== false,
+    };
+    return {
+      ...common,
+      kind: "text",
+      x: primitive.x,
+      y: primitive.y,
+      value: primitive.value,
+      emphasis: primitive.emphasis ?? false,
+      tone: primitive.tone ?? "neutral",
+    };
+  });
+  return {
+    nodeId: "",
+    bindingId: binding.bindingId,
+    templateId: binding.templateId,
+    evidenceIds: binding.evidenceIds,
+    bounds: { ...bounds },
+    entryPoint: diagram.entryPoint,
+    exitPoint: diagram.exitPoint,
+    primitives,
+  };
+}
+
 export function buildTemplateDetail(
   nodeId: string,
   binding: KernelTemplateBinding | undefined,
@@ -124,7 +213,14 @@ export function buildTemplateDetail(
   detailOffsets: Record<string, Point> = {},
 ): RenderTemplateDetail | undefined {
   if (!templateDetailSize(binding) || !binding) return undefined;
-  const detail = { ...attentionDetail(binding, bounds), nodeId };
+  const kind = detailKindForTemplate(binding.templateId);
+  if (!kind) return undefined;
+  const detail = {
+    ...(binding.templateId === "attention.qkv-v1"
+      ? attentionDetail(binding, bounds)
+      : genericDetail(binding, kind, bounds)),
+    nodeId,
+  };
   const originalShapes = detail.primitives.filter((primitive) => primitive.kind === "box" || primitive.kind === "matrix" || primitive.kind === "operator");
   const shapeBounds = (primitive: Extract<RenderDetailPrimitive, { kind: "box" | "matrix" | "operator" }>): Bounds => primitive.kind === "operator"
     ? { x: primitive.cx - primitive.radius, y: primitive.cy - primitive.radius, width: primitive.radius * 2, height: primitive.radius * 2 }

@@ -240,4 +240,31 @@ describe("formal state adapter", () => {
 
     expect(adaptFormalState(state).document.nodes.find((item) => item.hierarchyNodeId === "hierarchy:b")?.shape).toBe("operation");
   });
+
+  it("reports malformed formal inputs without accepting or inventing geometry", () => {
+    const state = formalState();
+    state.architecture.edges[0].producer_port = "port:missing";
+    state.architecture.edges.push({
+      ...state.architecture.edges[0],
+      edge_id: "edge:dangling",
+      consumer_id: "node:missing",
+    });
+    state.hierarchy.nodes.find((node) => node.hierarchy_node_id === "hierarchy:a")!.parent_hierarchy_node_id = "hierarchy:a";
+    state.semantic_overlay = {
+      template_bindings: [{
+        ...exactAttentionBinding(),
+        source_digest: "sha256:stale",
+        canonical_node_ids: ["node:missing"],
+      }],
+    };
+
+    const codes = adaptFormalState(state).document.diagnostics.map((item) => item.code);
+    expect(codes).toEqual(expect.arrayContaining([
+      "cyclic-hierarchy",
+      "dangling-canonical-edge",
+      "dangling-template-slot",
+      "missing-producer-port",
+      "stale-template-binding",
+    ]));
+  });
 });

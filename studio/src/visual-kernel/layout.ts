@@ -1,4 +1,4 @@
-import { routeRenderEdge } from "./routing";
+import { routeRenderEdge, routeRenderEdges } from "./routing";
 import { layoutHierarchy } from "./detail-layout";
 import { buildTemplateDetail } from "./template-details";
 import type { KernelDocument, KernelRenderScene, KernelVisualState, RenderNode, RenderPortal } from "./types";
@@ -18,6 +18,12 @@ export function buildKernelRenderScene(
     const detail = buildTemplateDetail(node.nodeId, bindingById.get(node.templateBindingId ?? ""), node.bounds, visualState.detailOffsets);
     return detail ? [detail] : [];
   });
+  const detailBoundaryPorts = Object.fromEntries(details.map((detail) => [detail.nodeId, {
+    entry: detail.entryPoint,
+    exit: detail.exitPoint,
+    entrySide: "left" as const,
+    exitSide: "right" as const,
+  }]));
   const expandedAncestors = (node: RenderNode): RenderNode[] => {
     const result: RenderNode[] = [];
     let parentId = node.parentNodeId;
@@ -30,12 +36,18 @@ export function buildKernelRenderScene(
     return result;
   };
   const portals: RenderPortal[] = [];
-  const renderEdges = document.edges.flatMap((edge) => {
+  const regularRecords: Array<{
+    edge: Parameters<typeof routeRenderEdge>[0];
+    source: RenderNode;
+    target: RenderNode;
+  }> = [];
+  const portalEdges: ReturnType<typeof routeRenderEdge>[] = [];
+  document.edges.forEach((edge) => {
     const sourceId = byPort.get(edge.sourcePortId)?.ownerNodeId;
     const targetId = byPort.get(edge.targetPortId)?.ownerNodeId;
     const source = sourceId ? renderNodeById.get(sourceId) : undefined;
     const target = targetId ? renderNodeById.get(targetId) : undefined;
-    if (!source || !target) return [];
+    if (!source || !target) return;
     const sourceAncestors = expandedAncestors(source);
     const targetAncestors = expandedAncestors(target);
     const sourceAncestorIds = new Set(sourceAncestors.map((node) => node.nodeId));
@@ -60,9 +72,21 @@ export function buildKernelRenderScene(
       direction: "entry" as const,
       point: { x: module.bounds.x, y: clampPortalY(module, targetCenterY) },
     }));
-    portals.push(...sourcePortals, ...targetPortals);
-    return [routeRenderEdge(edge, source, target, visualState.routeStyle, [...sourcePortals, ...targetPortals].map((portal) => portal.point))];
+    const edgePortals = [...sourcePortals, ...targetPortals];
+    portals.push(...edgePortals);
+    if (edgePortals.length > 0) {
+      portalEdges.push(routeRenderEdge(edge, source, target, visualState.routeStyle, edgePortals.map((portal) => portal.point)));
+    } else {
+      regularRecords.push({ edge, source, target });
+    }
   });
+  const routed = routeRenderEdges(
+    regularRecords,
+    renderNodes,
+    visualState.routeStyle,
+    detailBoundaryPorts,
+  );
+  const renderEdges = [...routed.edges, ...portalEdges].sort((left, right) => left.edgeId.localeCompare(right.edgeId));
   const maxX = Math.max(640, ...renderNodes.map((node) => node.bounds.x + node.bounds.width + PAPER_PADDING));
   const maxY = Math.max(520, ...renderNodes.map((node) => node.bounds.y + node.bounds.height + PAPER_PADDING));
   return {
@@ -74,6 +98,7 @@ export function buildKernelRenderScene(
     edges: renderEdges,
     portals,
     details,
+    routingMetrics: routed.metrics,
     diagnostics: document.diagnostics,
   };
 }

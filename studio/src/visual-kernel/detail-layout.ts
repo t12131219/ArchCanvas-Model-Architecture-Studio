@@ -179,11 +179,41 @@ export function layoutHierarchy(document: KernelDocument, visualState: KernelVis
       }
     }
   };
+  const rootRecords: Array<{
+    node: KernelNode;
+    position: { x: number; y: number };
+    baseSize: Size;
+    plan: LayoutPlan;
+    horizontalGrowth: number;
+    exactDetail: boolean;
+  }> = [];
   let rootX = 72;
   for (const root of roots) {
+    const plan = measure(root);
+    const baseSize = visualState.nodeSizes[root.nodeId] ?? leafSize({
+      ...root,
+      expanded: false,
+      renderRole: root.childNodeIds.length > 0 ? "collapsed-module" : "atomic",
+    }, visualState);
     const position = visualState.nodePositions[root.nodeId] ?? { x: rootX, y: 72 };
-    place(root, position.x, position.y);
-    rootX = position.x + measure(root).size.width + 76;
+    rootRecords.push({
+      node: root,
+      position,
+      baseSize,
+      plan,
+      horizontalGrowth: Math.max(0, plan.size.width - baseSize.width),
+      exactDetail: Boolean(root.expanded && templateDetailSize(bindingById.get(root.templateBindingId ?? ""))),
+    });
+    rootX = position.x + baseSize.width + 76;
+  }
+  for (const record of rootRecords) {
+    const shiftX = rootRecords.reduce((sum, candidate) => (
+      candidate.position.x < record.position.x ? sum + candidate.horizontalGrowth : sum
+    ), 0);
+    const centeredY = record.exactDetail
+      ? Math.max(32, record.position.y + (record.baseSize.height - record.plan.size.height) / 2)
+      : record.position.y;
+    place(record.node, record.position.x + shiftX, centeredY);
   }
   return result;
 }

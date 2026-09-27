@@ -734,6 +734,8 @@ SVG 中保留：
 
 ### Phase 0：归档并冻结旧主视图
 
+实施状态（2026-09-27）：已完成。旧主视图源码、离线状态 fixture、完整交互截图与 SVG 基线已归档到 `docs/archive/main-view-v1`；70 项 checksum 全部通过，并以独立提交 `74611f2` 冻结。
+
 交付：
 
 - `docs/archive/main-view-v1` 源码副本、manifest、checksums 和截图。
@@ -744,6 +746,8 @@ SVG 中保留：
 退出条件：归档能定位每个原文件，checksum 校验通过，视觉基线可查看。
 
 ### Phase 1：拆出非画布应用壳
+
+实施状态（2026-09-27）：已完成。`main.tsx` 只负责 bootstrap；`StudioApp`、正式类型、状态接收、API client 和 shell 组件已经形成独立边界，TopBar、导航、Inspector、底部面板与 panel resizer 可独立渲染测试。项目分析、导航、Evidence、源码工作区、事务与任务链路由 Phase 5–8 浏览器回归覆盖。
 
 工作：
 
@@ -757,6 +761,8 @@ SVG 中保留：
 退出条件：项目分析、导航、证据、源码、事务和任务 UI 在没有旧画布代码时仍可运行。
 
 ### Phase 2：删除旧主视图运行路径
+
+实施状态（2026-09-27）：已完成。旧 `scene-graphics`、`scene-performance`、`scene-routing-preview` 及对应测试已删除；前端 runtime 不再依赖 `StudioState.scenes/specs/routing`、旧 layout/route/align API 或 fallback 画布，中央区域只有 `ArchitectureCanvas`。
 
 删除或清空：
 
@@ -773,6 +779,8 @@ SVG 中保留：
 
 ### Phase 3：建立正式纯视觉内核
 
+实施状态（2026-09-27）：已完成。正式内核已覆盖 26 个 topology × 45 个视觉组合、39 类 catalog/detail、完整 adaptive routing/metrics、父子展开五状态、portal、递归 detail 与同源 SVG export。14 组 build/production SVG/PNG 对和结构化报告位于 `docs/acceptance/main-view-p0`，所有自动检查通过；runtime 禁止原型 import 和 build 目录读取。
+
 本阶段内部采用 P0 顺序，不以“基础节点已经能显示”作为完成信号：
 
 - 正式 types 与输入校验。
@@ -788,6 +796,8 @@ SVG 中保留：
 退出条件：1170 组合 fixture 可由正式内核独立生成；semantic glyph、catalog detail、父子展开和递归内部图达到视觉/行为对照门；无 React、DOM、API 或 build 目录依赖。
 
 ### Phase 4：连接正式模型数据
+
+实施状态（2026-09-27）：已完成。`formal-state-adapter.ts` 从 Architecture IR、PublicationHierarchy、Semantic Overlay 与 VisualTemplateBinding 确定性地产生 KernelDocument，并输出缺失端口、悬空边、循环包含和 stale binding 诊断。Transformer、Autoformer、iTransformer、PatchTST、TimeMixer 与 generic 六类正式 JSON fixture 的重复适配、稳定 ID 和 digest 测试通过。
 
 工作：
 
@@ -867,7 +877,7 @@ SVG 中保留：
 - 交互画布根节点与 SVG 同时公开同一 `data-kernel-render-digest`；digest 覆盖节点、边、路径、标签几何、展开 detail、portal、关系和视觉样式，但排除相机、选择与 hover 等非导出状态。
 - 顶部导出入口改为正式主视图 SVG/PNG/PDF 菜单。PNG 使用同一 SVG 经浏览器 canvas 栅格化，PDF 再由该 SVG 栅格结果封装为单页 PDF；三种格式不读取 Python `VisualScene` 几何。导出 SVG 为图例保留独立栏，不遮挡场景内容。
 - 服务端新增 `/api/publication-export`，返回 `X-ArchCanvas-Export-Scope: publication`；兼容 `/api/export` 同样明确 publication scope，并返回 `Deprecation: true` 与 successor `Link`，Studio 主视图不再链接旧入口。
-- 纯内核导出测试覆盖 digest 稳定性、既有 path/label geometry 复用、XML escaping、detail/portal/legend 输出和完整 provenance；前端共 18 个测试文件、96 项测试通过，TypeScript 构建检查通过。
+- 纯内核导出测试覆盖 digest 稳定性、既有 path/label geometry 复用、XML escaping、detail/portal/legend 输出和完整 provenance；前端共 21 个测试文件、110 项测试通过，TypeScript 构建检查通过。
 - Phase 5、Phase 6 与 Phase 7 Playwright 在干净正式 API fixture 上连续通过。Phase 7 实际下载并解析 SVG，逐项比对屏幕与导出的 digest、节点、边、path、label transform/text、detail slot、portal 和图例，并校验 PNG magic/dimensions、PDF magic 与 publication endpoint headers。
 - 浏览器生成的 PDF 经 `pdfinfo` 验证为单页、未加密 PDF 1.4，并经 `pdftoppm` 回渲完成视觉检查；图例、场景和展开内容无裁切或相互遮挡。`tests/test_protocols.py tests/test_studio.py` 同步通过。
 
@@ -898,7 +908,7 @@ SVG 中保留：
 - `/api/publication-export` 与兼容 `/api/export` 在显式请求时才临时编译 publication scene；CLI `studio` 启动 gate 改为 formal projection 与 source-invariance，CLI publication SVG/HTML 流程继续通过。
 - 新增启动守卫测试：将 Python `build_scene` 替换为立即失败，验证 bundle 初始化、state、kernel patch、保存和 reload 均不触发它，而显式 publication export 会进入该边界。
 - Vite 以 `emptyOutDir` 重新生成正式静态资产；旧 `index-4kYngGul.css`、`index-UQZJRoKO.js`、`index-CgEFOZnx.js` 均已移除，当前 HTML 只引用新哈希资产。
-- 前端 18 个测试文件、96 项测试通过；`tests/test_protocols.py tests/test_studio.py` 通过；Phase 5、6、7、8 Playwright 在同一隔离 Studio fixture 上连续 4/4 通过。
+- 前端 21 个测试文件、110 项测试通过；完整 Python pytest、ruff、compileall 与 schema check 通过；P0 视觉验收及 Phase 5、6、7、8 Playwright 在同一隔离 Studio fixture 上连续 5/5 通过。
 
 退出条件：Studio 启动和运行不调用 Python scene layout/routing；CLI publication 测试仍通过。
 
@@ -1096,6 +1106,8 @@ python tools/export_schemas.py --check
 14. 原型测试矩阵、正式模型 fixture、浏览器交互和移动端视觉测试全部通过。
 15. `npm test`、`npm run build`、Python tests、compileall 和 schema check 全部通过。
 16. 生成静态资产中只保留当前构建引用的哈希文件。
+
+实施验收（2026-09-27）：以上 16 项均已满足。最终验证包含 21 个前端测试文件/110 项测试、完整 Python pytest、ruff、compileall、schema check、70/70 归档 checksum、1170 生产矩阵、14 组 P0 结构/浏览器对照以及 5/5 Playwright；生成目录只保留 `index-BsjqwwMX.js` 与 `index-CoLFAn-F.css`，且 `static/index.html` 仅引用这两个当前哈希资产。
 
 ## 22. 推荐提交顺序
 
