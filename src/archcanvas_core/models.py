@@ -1216,6 +1216,10 @@ class VisualPatch(StrictModel):
         "set-collapse",
         "set-camera",
         "add-annotation",
+        "set-kernel-options",
+        "set-detail-expansion",
+        "set-detail-offset",
+        "set-node-shape-override",
     ]
     target_id: Identifier | None = None
     value: dict[str, Any]

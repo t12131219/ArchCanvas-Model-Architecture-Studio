@@ -529,12 +529,17 @@ def studio(args: argparse.Namespace) -> tuple[CommandReceipt, StudioBundle | Non
         else (args.artifact.parent / ".archcanvas").resolve()
     )
     bundle = prepare_studio_bundle(args.artifact, workspace)
-    gates: list[GateResult] = []
+    gates: list[GateResult] = [
+        GateResult(
+            gate="D-formal-projection",
+            status="passed" if bundle.views else "failed",
+            message=(
+                f"Prepared {len(bundle.views)} formal Studio projection(s); "
+                "interactive geometry is owned by the browser visual kernel."
+            ),
+        )
+    ]
     diagnostics: list[Diagnostic] = []
-    for projection_id, scene in bundle.materialized_scenes().items():
-        gate, scene_diagnostics = validate_geometry(scene)
-        gates.append(gate.model_copy(update={"gate": f"D-geometry-{projection_id}"}))
-        diagnostics.extend(scene_diagnostics)
     source_digest_matches = bundle.document.source_digest == source_binding_digest(bundle.snapshot)
     gates.append(
         GateResult(

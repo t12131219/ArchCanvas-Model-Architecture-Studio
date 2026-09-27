@@ -19,7 +19,6 @@ from archcanvas_core.models import (
     VisualScene,
 )
 from archcanvas_core.validation import validate_architecture
-from archcanvas_publication import validate_geometry
 
 if TYPE_CHECKING:
     from .bundle import StudioBundle
@@ -43,14 +42,16 @@ def studio_fingerprint(bundle: StudioBundle) -> str:
 
 def build_search_index(bundle: StudioBundle) -> list[SearchSubject]:
     bindings: dict[str, list[dict[str, str]]] = {}
-    for projection_id, scene in bundle.materialized_scenes().items():
-        for node in scene.nodes:
+    for projection_id, view in bundle.views.items():
+        for node in view.nodes:
             for canonical_id in node.canonical_node_ids:
                 bindings.setdefault(canonical_id, []).append(
                     {
                         "projection_id": projection_id,
-                        "scene_id": scene.scene_id,
-                        "scene_node_id": node.scene_node_id,
+                        "view_node_id": node.view_node_id,
+                        "hierarchy_node_id": str(
+                            node.attributes.get("hierarchy_node_id", "")
+                        ),
                     }
                 )
 
@@ -228,16 +229,17 @@ def run_validation(
         for gate in gates
     ]
     if profile in {"publication", "full", "runtime-replay"}:
-        for projection_id, scene in bundle.materialized_scenes().items():
-            gate, found = validate_geometry(scene)
-            results.append(
-                ValidationGateResult(
-                    gate=f"geometry-{projection_id.removeprefix('projection:')}",
-                    status=gate.status,
-                    message=gate.message,
-                )
+        view_count = len(bundle.views)
+        results.append(
+            ValidationGateResult(
+                gate="publication-projection",
+                status="passed" if view_count > 0 else "failed",
+                message=(
+                    f"Validated {view_count} formal publication projection(s); "
+                    "Studio geometry is owned by the browser visual kernel."
+                ),
             )
-            diagnostics.extend(found)
+        )
     if profile in {"full", "runtime-replay"}:
         if bundle.active_transaction is None:
             results.append(

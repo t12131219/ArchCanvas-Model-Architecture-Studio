@@ -9,6 +9,7 @@ import time
 from collections import defaultdict
 from itertools import pairwise
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 import pytest
@@ -29,7 +30,8 @@ from archcanvas_core.models import (
     VisualScene,
 )
 from archcanvas_engine.cli import main
-from archcanvas_publication import render_svg, validate_geometry
+from archcanvas_patterns import exact_ir_digest
+from archcanvas_publication import build_scene, build_visual_spec, render_svg, validate_geometry
 from archcanvas_python import analyze_project
 from archcanvas_studio import (
     apply_patch,
@@ -59,7 +61,6 @@ from archcanvas_studio.project import (
     discover_conda_environments,
     discover_project,
 )
-from archcanvas_studio.routing import routing_runtime_config
 from archcanvas_studio.server import (
     StudioHTTPServer,
     StudioRequestHandler,
@@ -81,12 +82,84 @@ def _server_without_socket(bundle) -> StudioHTTPServer:  # type: ignore[no-untyp
     server.job_cancellations = {}
     server.project_generation = bundle.project_session.generation
     server.validation_generation = bundle.validation_generation
-    server.layout_candidates = {}
     server.active_project_key = (
         bundle.project_session.project_id,
         bundle.project_session.generation,
     )
     return server
+
+
+def _publication_scenes(bundle) -> dict[str, VisualScene]:  # type: ignore[no-untyped-def]
+    scenes = [
+        build_scene(view, build_visual_spec(view), "auto")
+        for view in bundle.views.values()
+    ]
+    return {scene.scene_id: scene for scene in scenes}
+
+
+def _publication_scene(bundle) -> VisualScene:  # type: ignore[no-untyped-def]
+    return next(iter(_publication_scenes(bundle).values()))
+
+
+def _materialized_publication_scenes(bundle) -> dict[str, VisualScene]:  # type: ignore[no-untyped-def]
+    return {
+        scene_id: materialize_scene(scene, bundle.document)
+        for scene_id, scene in _publication_scenes(bundle).items()
+    }
+
+
+def test_phase8_studio_runtime_does_not_compile_python_scenes(
+    analysis_dir: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def reject_scene_compile(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("Studio runtime compiled a Python scene")
+
+    monkeypatch.setattr("archcanvas_studio.bundle.build_scene", reject_scene_compile)
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json",
+        tmp_path / ".archcanvas-phase8",
+        write_static=False,
+    )
+    state = bundle.state()
+
+    assert {"scenes", "specs", "routing"}.isdisjoint(state)
+    assert not hasattr(bundle, "base_scenes")
+    assert not hasattr(bundle, "routing_mode")
+    assert not hasattr(bundle, "routing_shadow_reports")
+    assert "layout_modes" not in state["capabilities"]
+    assert "routing_engines" not in state["capabilities"]
+
+    target_id = sorted(bundle.kernel_visual_targets()["nodes"])[0]
+    kernel_scene_id = (
+        f"kernel:{bundle.architecture.architecture_id}:"
+        f"{bundle.document.source_digest[:12]}"
+    )
+    changed = apply_patch(
+        bundle.document,
+        VisualPatch(
+            patch_id="patch:test.phase8-runtime",
+            operation="set-position",
+            target_id=target_id,
+            value={
+                "kernel_scene_id": kernel_scene_id,
+                "architecture_id": bundle.architecture.architecture_id,
+                "source_digest": bundle.document.source_digest,
+                "x": 144,
+                "y": 96,
+            },
+        ),
+        {},
+        kernel_targets=bundle.kernel_visual_targets(),
+    )
+    bundle.save_document(changed)
+    assert bundle.state()["view_state"]["node_positions"][target_id] == {
+        "x": 144.0,
+        "y": 96.0,
+    }
+    with pytest.raises(AssertionError, match="compiled a Python scene"):
+        bundle.export_svg()
 
 
 def _wait_for_job(server: StudioHTTPServer, job_id: str) -> AnalysisJob:
@@ -460,7 +533,7 @@ def test_route_hint_reconnects_after_endpoint_moves() -> None:
 
 
 def _move_patch(bundle, *, suffix: str = "move") -> tuple[VisualPatch, str, float]:
-    scene = next(iter(bundle.base_scenes.values()))
+    scene = _publication_scene(bundle)
     node = next(node for node in scene.nodes if node.parent_scene_node_id)
     patch = VisualPatch(
         patch_id=f"patch:test.{suffix}",
@@ -483,10 +556,10 @@ def test_visual_patch_history_preserves_source_and_reopens_layout(
     bundle = prepare_studio_bundle(analysis_dir / "architecture.json", workspace)
     digest = bundle.document.source_digest
     patch, node_id, original_x = _move_patch(bundle)
-    scenes = {scene.scene_id: scene for scene in bundle.base_scenes.values()}
+    scenes = _publication_scenes(bundle)
     changed = apply_patch(bundle.document, patch, scenes)
     assert changed.source_digest == digest
-    base_scene = next(iter(bundle.base_scenes.values()))
+    base_scene = _publication_scene(bundle)
     moved = materialize_scene(base_scene, changed)
     assert next(node for node in moved.nodes if node.scene_node_id == node_id).bounds.x == original_x + 12
 
@@ -497,243 +570,16 @@ def test_visual_patch_history_preserves_source_and_reopens_layout(
     persist_canvas_document(bundle.document_path, redone)
 
     reopened = prepare_studio_bundle(analysis_dir / "architecture.json", workspace)
-    reopened_scene = next(iter(reopened.materialized_scenes().values()))
+    reopened_scene = next(iter(_materialized_publication_scenes(reopened).values()))
     assert next(node for node in reopened_scene.nodes if node.scene_node_id == node_id).bounds.x == original_x + 12
     assert reopened.document.source_digest == digest
     assert load_canvas_document(reopened.document_path) == reopened.document
     assert _source_hashes() == before
 
 
-def test_shadow_routing_compares_without_replacing_visible_scene(
-    analysis_dir: Path, tmp_path: Path
-) -> None:
-    workspace = tmp_path / ".archcanvas-shadow"
-    bundle = prepare_studio_bundle(
-        analysis_dir / "architecture.json",
-        workspace,
-        routing_mode="shadow",
-    )
-    state = bundle.state()
-    projection_id = state["active_projection_id"]
-    report = state["routing"]["reports"][projection_id]
-
-    assert state["routing"]["mode"] == "shadow"
-    assert state["routing"]["visible_engine"] == "legacy"
-    assert state["routing"]["shadow_engine"] == "atomic-v1"
-    assert report["status"] == "compared"
-    assert report["compared_edge_count"] == len(state["scenes"][projection_id]["edges"])
-    assert report["legacy_metrics"] is not None
-    assert report["shadow_receipt"]["engine"] == "atomic-v1"
-    assert report["shadow_receipt"]["metrics"] is not None
-    assert report["delta"] is not None
-    assert len(report["legacy_route_digest"]) == 64
-    assert report["route_digest_matches"] == (
-        report["legacy_route_digest"] == report["shadow_receipt"]["route_digest"]
-    )
-    assert state["scenes"][projection_id] == next(
-        iter(bundle.materialized_scenes().values())
-    ).model_dump(mode="json")
-    assert (workspace / "publication" / "current" / "routing-shadow.json").is_file()
-
-    before_digest = report["shadow_receipt"]["input_digest"]
-    patch, _, _ = _move_patch(bundle, suffix="shadow-move")
-    changed = apply_patch(
-        bundle.document,
-        patch,
-        {scene.scene_id: scene for scene in bundle.base_scenes.values()},
-    )
-    bundle.save_document(changed)
-    updated = bundle.state()["routing"]["reports"][projection_id]
-    assert updated["status"] == "compared"
-    assert updated["shadow_receipt"]["input_digest"] != before_digest
-
-
-def test_shadow_routing_sampling_and_visible_switch_guard(
-    analysis_dir: Path, tmp_path: Path
-) -> None:
-    workspace = tmp_path / ".archcanvas-shadow-skip"
-    bundle = prepare_studio_bundle(
-        analysis_dir / "architecture.json",
-        workspace,
-        routing_mode="shadow",
-        routing_shadow_sample_rate=0.0,
-    )
-    state = bundle.state()
-    report = state["routing"]["reports"][state["active_projection_id"]]
-    assert report["status"] == "not-sampled"
-    assert state["capabilities"]["routing_engines"]["atomic_v1_visible"] is False
-
-    legacy = prepare_studio_bundle(
-        analysis_dir / "architecture.json",
-        workspace,
-        routing_mode="legacy",
-    )
-    persisted = json.loads(
-        (workspace / "publication" / "current" / "routing-shadow.json").read_text(
-            encoding="utf-8"
-        )
-    )
-    assert legacy.routing_shadow_reports == {}
-    assert persisted["mode"] == "legacy"
-    assert persisted["shadow_engine"] is None
-    assert persisted["reports"] == {}
-
-    atomic = prepare_studio_bundle(
-        analysis_dir / "architecture.json",
-        tmp_path / ".archcanvas-atomic",
-        routing_mode="atomic-v1",
-    )
-    atomic_state = atomic.state()
-    atomic_projection = atomic_state["active_projection_id"]
-    atomic_report = atomic_state["routing"]["reports"][atomic_projection]
-    atomic_scene = atomic_state["scenes"][atomic_projection]
-
-    assert atomic_state["routing"]["visible_engine"] == "atomic-v1"
-    assert atomic_state["capabilities"]["routing_engines"] == {
-        "available": ["legacy", "shadow", "atomic-v1"],
-        "selected": "atomic-v1",
-        "visible": "atomic-v1",
-        "atomic_v1_visible": True,
-    }
-    assert atomic_report["status"] == "routed"
-    assert atomic_report["visible_engine"] == "atomic-v1"
-    assert atomic_report["receipt"]["metrics"]["invalid_endpoint_count"] == 0
-    assert atomic_report["receipt"]["metrics"]["obstacle_intersection_count"] == 0
-    assert atomic_scene["edges"]
-    assert all(edge["source_port_id"] for edge in atomic_scene["edges"])
-    assert all(edge["target_port_id"] for edge in atomic_scene["edges"])
-    assert all(
-        edge["route_digest"] == atomic_report["receipt"]["route_digest"]
-        for edge in atomic_scene["edges"]
-    )
-
-
-def test_routing_runtime_config_reads_and_validates_environment(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("ARCHCANVAS_ROUTING_ENGINE", "shadow")
-    monkeypatch.setenv("ARCHCANVAS_ROUTING_SHADOW_SAMPLE_RATE", "0.25")
-    assert routing_runtime_config().mode == "shadow"
-    assert routing_runtime_config().shadow_sample_rate == 0.25
-
-    monkeypatch.setenv("ARCHCANVAS_ROUTING_SHADOW_SAMPLE_RATE", "invalid")
-    with pytest.raises(ValueError, match="must be a number"):
-        routing_runtime_config()
-
-    monkeypatch.setenv("ARCHCANVAS_ROUTING_SHADOW_SAMPLE_RATE", "1.1")
-    with pytest.raises(ValueError, match="between 0 and 1"):
-        routing_runtime_config()
-
-    monkeypatch.setenv("ARCHCANVAS_ROUTING_ENGINE", "atomic-v1")
-    monkeypatch.setenv("ARCHCANVAS_ROUTING_SHADOW_SAMPLE_RATE", "1.0")
-    assert routing_runtime_config().mode == "atomic-v1"
-
-
-def test_atomic_routing_rebuilds_after_visual_patch_and_exports_same_geometry(
-    analysis_dir: Path, tmp_path: Path
-) -> None:
-    bundle = prepare_studio_bundle(
-        analysis_dir / "architecture.json",
-        tmp_path / ".archcanvas-atomic-patch",
-        routing_mode="atomic-v1",
-    )
-    state = bundle.state()
-    projection_id = state["active_projection_id"]
-    first_report = state["routing"]["reports"][projection_id]
-    first_digest = first_report["receipt"]["route_digest"]
-
-    patch, _, _ = _move_patch(bundle, suffix="atomic-move")
-    changed = apply_patch(
-        bundle.document,
-        patch,
-        {scene.scene_id: scene for scene in bundle.base_scenes.values()},
-    )
-    bundle.save_document(changed)
-    updated = bundle.state()
-    report = updated["routing"]["reports"][projection_id]
-    scene = updated["scenes"][projection_id]
-
-    assert report["status"] == "routed"
-    assert report["receipt"]["route_digest"] != first_digest
-    assert all(
-        edge["route_digest"] == report["receipt"]["route_digest"]
-        for edge in scene["edges"]
-    )
-    svg = bundle.export_svg()
-    for edge in scene["edges"]:
-        points = " ".join(
-            f'{point["x"]:.1f},{point["y"]:.1f}' for point in edge["points"]
-        )
-        assert f'points="{points}"' in svg
-        assert f'data-route-digest="{edge["route_digest"]}"' in svg
-
-
-def test_atomic_routing_failure_falls_back_to_legacy_scene(
-    analysis_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    bundle = prepare_studio_bundle(
-        analysis_dir / "architecture.json",
-        tmp_path / ".archcanvas-atomic-fallback",
-        routing_mode="atomic-v1",
-    )
-    legacy = {
-        projection_id: materialize_scene(scene, bundle.document)
-        for projection_id, scene in bundle.base_scenes.items()
-    }
-
-    def fail_atomic(*_args: object, **_kwargs: object) -> None:
-        raise RuntimeError("atomic exploded")
-
-    monkeypatch.setattr("archcanvas_studio.bundle.route_atomic_scene", fail_atomic)
-    state = bundle.state()
-    projection_id = state["active_projection_id"]
-    report = state["routing"]["reports"][projection_id]
-
-    assert state["routing"]["visible_engine"] == "legacy"
-    assert report["status"] == "fallback"
-    assert report["error_code"] == "atomic-routing-failed"
-    assert report["error_message"] == "atomic exploded"
-    assert state["scenes"][projection_id] == legacy[projection_id].model_dump(mode="json")
-
-
-def test_shadow_routing_failure_does_not_change_visible_scene(
-    analysis_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    bundle = prepare_studio_bundle(
-        analysis_dir / "architecture.json",
-        tmp_path / ".archcanvas-shadow-failure",
-        routing_mode="shadow",
-    )
-    visible_before = {
-        projection_id: scene.model_dump(mode="json")
-        for projection_id, scene in bundle.materialized_scenes().items()
-    }
-
-    def fail_shadow(*_args: object) -> None:
-        raise RuntimeError("shadow exploded")
-
-    monkeypatch.setattr(
-        "archcanvas_studio.bundle.compare_shadow_routing",
-        fail_shadow,
-    )
-    bundle.refresh_routing_shadow()
-
-    state = bundle.state()
-    projection_id = state["active_projection_id"]
-    report = state["routing"]["reports"][projection_id]
-    assert report["status"] == "failed"
-    assert report["error_code"] == "shadow-routing-failed"
-    assert report["error_message"] == "shadow exploded"
-    assert state["scenes"] == visible_before
-    assert {
-        item: scene.model_dump(mode="json")
-        for item, scene in bundle.materialized_scenes().items()
-    } == visible_before
-
-
 def test_visual_patch_rejects_unknown_target(analysis_dir: Path, tmp_path: Path) -> None:
     bundle = prepare_studio_bundle(analysis_dir / "architecture.json", tmp_path / ".archcanvas")
-    scene = next(iter(bundle.base_scenes.values()))
+    scene = _publication_scene(bundle)
     patch = VisualPatch(
         patch_id="patch:test.invalid",
         operation="set-position",
@@ -744,7 +590,7 @@ def test_visual_patch_rejects_unknown_target(analysis_dir: Path, tmp_path: Path)
         apply_patch(
             bundle.document,
             patch,
-            {item.scene_id: item for item in bundle.base_scenes.values()},
+            _publication_scenes(bundle),
         )
 
 
@@ -755,7 +601,7 @@ def test_aggregate_visual_operations_require_patch_batch(
     bundle = prepare_studio_bundle(
         analysis_dir / "architecture.json", tmp_path / ".archcanvas"
     )
-    scene = next(iter(bundle.base_scenes.values()))
+    scene = _publication_scene(bundle)
     node = next(item for item in scene.nodes if item.parent_scene_node_id)
     patch = VisualPatch(
         patch_id=f"patch:test.{operation}",
@@ -773,7 +619,7 @@ def test_visual_metadata_and_palette_materialize_and_export(
     bundle = prepare_studio_bundle(
         analysis_dir / "architecture.json", tmp_path / ".archcanvas"
     )
-    scene = next(iter(bundle.base_scenes.values()))
+    scene = _publication_scene(bundle)
     node = next(item for item in scene.nodes if item.parent_scene_node_id)
     edge = scene.edges[0]
     digest = bundle.document.source_digest
@@ -849,7 +695,7 @@ def test_palette_rejects_unknown_visual_target(
     bundle = prepare_studio_bundle(
         analysis_dir / "architecture.json", tmp_path / ".archcanvas"
     )
-    scene = next(iter(bundle.base_scenes.values()))
+    scene = _publication_scene(bundle)
     patch = VisualPatch(
         patch_id="patch:test.unknown-palette-target",
         operation="set-palette",
@@ -864,8 +710,8 @@ def test_theme_and_camera_persist_across_reopen(
 ) -> None:
     workspace = tmp_path / ".archcanvas"
     bundle = prepare_studio_bundle(analysis_dir / "architecture.json", workspace)
-    scene = next(iter(bundle.base_scenes.values()))
-    scenes = {item.scene_id: item for item in bundle.base_scenes.values()}
+    scene = _publication_scene(bundle)
+    scenes = _publication_scenes(bundle)
     document = apply_patch(
         bundle.document,
         VisualPatch(
@@ -896,39 +742,190 @@ def test_theme_and_camera_persist_across_reopen(
     }
 
 
-def test_layout_mode_recompiles_and_persists_across_reopen(
+def test_kernel_visual_batch_persists_reloads_and_undoes_without_model_changes(
     analysis_dir: Path, tmp_path: Path
 ) -> None:
     workspace = tmp_path / ".archcanvas"
     bundle = prepare_studio_bundle(analysis_dir / "architecture.json", workspace)
-    assert bundle.state()["view_state"]["layout_mode"] == "auto"
-    assert bundle.state()["capabilities"]["layout_modes"] == [
-        "auto",
-        "dual-swimlane",
-        "single-lane",
-        "hierarchical",
-        "branch-tree",
-        "force-directed",
-        "radial",
-        "orthogonal",
-    ]
+    targets = bundle.kernel_visual_targets()
+    node_id = sorted(targets["nodes"])[0]
+    detail_id = sorted(targets["detail_nodes"])[-1]
+    expansion_id = sorted(targets["expansions"])[0]
+    kernel_scene_id = (
+        f"kernel:{bundle.architecture.architecture_id}:{bundle.document.source_digest[:12]}"
+    )
+    binding = {
+        "kernel_scene_id": kernel_scene_id,
+        "architecture_id": bundle.architecture.architecture_id,
+        "source_digest": bundle.document.source_digest,
+    }
+    batch = PatchBatch(
+        batch_id="batch:test.kernel-phase6",
+        description="Persist kernel visual state",
+        patches=[
+            VisualPatch(
+                patch_id="patch:test.kernel-position",
+                operation="set-position",
+                target_id=node_id,
+                value={**binding, "x": 123.0, "y": 87.0},
+            ),
+            VisualPatch(
+                patch_id="patch:test.kernel-size",
+                operation="set-size",
+                target_id=node_id,
+                value={**binding, "width": 360.0, "height": 240.0},
+            ),
+            VisualPatch(
+                patch_id="patch:test.kernel-detail",
+                operation="set-detail-offset",
+                target_id=detail_id,
+                value={**binding, "x": -9.0, "y": 14.0},
+            ),
+            VisualPatch(
+                patch_id="patch:test.kernel-expansion",
+                operation="set-detail-expansion",
+                target_id=expansion_id,
+                value={**binding, "enabled": True},
+            ),
+            VisualPatch(
+                patch_id="patch:test.kernel-options",
+                operation="set-kernel-options",
+                value={
+                    **binding,
+                    "route_style": "channel",
+                    "node_style": "technical",
+                    "label_style": "endpoint",
+                },
+            ),
+            VisualPatch(
+                patch_id="patch:test.kernel-shape",
+                operation="set-node-shape-override",
+                target_id=node_id,
+                value={**binding, "shape": "tensor"},
+            ),
+            VisualPatch(
+                patch_id="patch:test.kernel-camera",
+                operation="set-camera",
+                value={
+                    **binding,
+                    "x": -42.0,
+                    "y": 18.0,
+                    "zoom": 1.25,
+                    "width": 900.0,
+                    "height": 620.0,
+                },
+            ),
+        ],
+    )
+    source_digest = bundle.document.source_digest
+    ir_digest = exact_ir_digest(bundle.architecture)
+    scenes: dict[str, VisualScene] = {}
+    changed = apply_patch_batch(
+        bundle.document,
+        batch,
+        scenes,
+        kernel_targets=targets,
+    )
+    state = derive_view_state(changed)
+    assert state["node_positions"][node_id] == {"x": 123.0, "y": 87.0}
+    assert state["node_sizes"][node_id] == {"width": 360.0, "height": 240.0}
+    assert state["detail_offsets"][detail_id] == {"x": -9.0, "y": 14.0}
+    assert expansion_id in state["module_expansion"]
+    assert state["route_style"] == "channel"
+    assert state["node_style"] == "technical"
+    assert state["label_style"] == "endpoint"
+    assert state["node_shape_overrides"][node_id] == "tensor"
+    assert state["cameras"][kernel_scene_id]["width"] == 900.0
+    assert changed.source_digest == source_digest
+    assert exact_ir_digest(bundle.architecture) == ir_digest
 
-    canonical_nodes = set(next(iter(bundle.views.values())).canonical_node_ids)
-    bundle.set_layout_mode("branch-tree")
-    state = bundle.state()
-    assert state["view_state"]["layout_mode"] == "branch-tree"
-    assert next(iter(state["scenes"].values()))["layout_family"] == "branch-tree"
-    assert {
-        canonical_id
-        for node in next(iter(state["scenes"].values()))["nodes"]
-        for canonical_id in node["canonical_node_ids"]
-    } == canonical_nodes
+    camera_changed = apply_patch_batch(
+        changed,
+        PatchBatch(
+            batch_id="batch:test.kernel-camera-second",
+            description="Update kernel camera",
+            patches=[
+                VisualPatch(
+                    patch_id="patch:test.kernel-camera-second",
+                    operation="set-camera",
+                    value={
+                        **binding,
+                        "x": 20.0,
+                        "y": 30.0,
+                        "zoom": 0.9,
+                        "width": 1100.0,
+                        "height": 760.0,
+                    },
+                )
+            ],
+        ),
+        scenes,
+        kernel_targets=targets,
+    )
+    assert derive_view_state(camera_changed)["cameras"][kernel_scene_id]["x"] == 20.0
+    camera_undone = undo_patch(camera_changed)
+    assert derive_view_state(camera_undone)["cameras"][kernel_scene_id]["x"] == -42.0
+    assert derive_view_state(redo_patch(camera_undone))["cameras"][kernel_scene_id]["x"] == 20.0
 
+    undone = undo_patch(changed)
+    assert not derive_view_state(undone)["node_positions"]
+    assert redo_patch(undone).visual_patches == changed.visual_patches
+    bundle.save_document(changed)
     reopened = prepare_studio_bundle(analysis_dir / "architecture.json", workspace)
-    assert reopened.state()["view_state"]["layout_mode"] == "branch-tree"
-    assert next(iter(reopened.base_scenes.values())).layout_family == "branch-tree"
-    with pytest.raises(ValueError, match="unknown layout mode"):
-        reopened.set_layout_mode("spiral")
+    assert reopened.state()["view_state"]["node_positions"][node_id]["x"] == 123.0
+    assert reopened.state()["integrity"] == {
+        "source_digest": source_digest,
+        "exact_ir_digest": ir_digest,
+    }
+
+
+def test_kernel_visual_patch_rejects_stale_binding_and_unknown_target(
+    analysis_dir: Path, tmp_path: Path
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json", tmp_path / ".archcanvas"
+    )
+    targets = bundle.kernel_visual_targets()
+    kernel_scene_id = (
+        f"kernel:{bundle.architecture.architecture_id}:{bundle.document.source_digest[:12]}"
+    )
+    scenes: dict[str, VisualScene] = {}
+    with pytest.raises(ValueError, match="source binding is stale"):
+        apply_patch(
+            bundle.document,
+            VisualPatch(
+                patch_id="patch:test.kernel-stale",
+                operation="set-position",
+                target_id=sorted(targets["nodes"])[0],
+                value={
+                    "kernel_scene_id": kernel_scene_id,
+                    "architecture_id": bundle.architecture.architecture_id,
+                    "source_digest": "0" * 64,
+                    "x": 1,
+                    "y": 2,
+                },
+            ),
+            scenes,
+            kernel_targets=targets,
+        )
+    with pytest.raises(ValueError, match="unknown stable node"):
+        apply_patch(
+            bundle.document,
+            VisualPatch(
+                patch_id="patch:test.kernel-unknown",
+                operation="set-size",
+                target_id="view:hierarchy:missing",
+                value={
+                    "kernel_scene_id": kernel_scene_id,
+                    "architecture_id": bundle.architecture.architecture_id,
+                    "source_digest": bundle.document.source_digest,
+                    "width": 100,
+                    "height": 100,
+                },
+            ),
+            scenes,
+            kernel_targets=targets,
+        )
 
 
 def test_module_and_source_navigation_share_canonical_objects_and_preference(
@@ -1182,10 +1179,9 @@ def test_fresh_tier_a_analysis_retains_expandable_studio_hierarchy(
         tmp_path / f".{fixture_name}-archcanvas",
     )
     state = bundle.state()
-    projection_id = state["active_projection_id"]
     rows = state["navigation"]["projections"]["module"]["nodes"]
     expandable_ids = [row["id"] for row in rows if row["child_count"] > 0]
-    collapsed_node_count = len(state["scenes"][projection_id]["nodes"])
+    collapsed_node_count = len(state["views"][state["active_projection_id"]]["nodes"])
 
     assert max(row["depth"] for row in rows) >= 2
     assert len(expandable_ids) >= 2
@@ -1196,10 +1192,9 @@ def test_fresh_tier_a_analysis_retains_expandable_studio_hierarchy(
     )
     expanded = bundle.state()
     expanded_view = expanded["views"][expanded["active_projection_id"]]
-    expanded_scene = expanded["scenes"][expanded["active_projection_id"]]
 
     assert expanded_view["fully_expanded"] is True
-    assert len(expanded_scene["nodes"]) > collapsed_node_count
+    assert len(expanded_view["nodes"]) > collapsed_node_count
 
 
 def test_encoder_expansion_preserves_container_and_reveals_immediate_structure(
@@ -1246,23 +1241,12 @@ def test_encoder_expansion_preserves_container_and_reveals_immediate_structure(
         "v",
         "encoder_norm",
     }
-    scene = expanded_state["scenes"][expanded_state["active_projection_id"]]
-    scene_encoder = next(
-        node for node in scene["nodes"] if node["view_node_id"] == expanded_encoder["view_node_id"]
-    )
-    assert scene_encoder["shape"] == "container"
-    assert any(
-        node["parent_scene_node_id"] == scene_encoder["scene_node_id"]
-        for node in scene["nodes"]
-    )
-
-
 def test_repeated_camera_updates_are_compacted(
     analysis_dir: Path, tmp_path: Path
 ) -> None:
     bundle = prepare_studio_bundle(analysis_dir / "architecture.json", tmp_path / ".archcanvas")
-    scene = next(iter(bundle.base_scenes.values()))
-    scenes = {item.scene_id: item for item in bundle.base_scenes.values()}
+    scene = _publication_scene(bundle)
+    scenes = _publication_scenes(bundle)
     document = bundle.document
     for index in range(5):
         document = apply_patch(
@@ -1285,7 +1269,7 @@ def test_patch_batch_is_atomic_and_undoes_as_one_action(
     analysis_dir: Path, tmp_path: Path
 ) -> None:
     bundle = prepare_studio_bundle(analysis_dir / "architecture.json", tmp_path / ".archcanvas")
-    scene = next(iter(bundle.base_scenes.values()))
+    scene = _publication_scene(bundle)
     nodes = [item for item in scene.nodes if item.parent_scene_node_id][:2]
     batch = PatchBatch(
         batch_id="batch:test.align",
@@ -1300,7 +1284,7 @@ def test_patch_batch_is_atomic_and_undoes_as_one_action(
             for index, node in enumerate(nodes)
         ],
     )
-    scenes = {item.scene_id: item for item in bundle.base_scenes.values()}
+    scenes = _publication_scenes(bundle)
     changed = apply_patch_batch(bundle.document, batch, scenes)
     assert len(changed.visual_patches) == 2
     undone = undo_patch(changed)
@@ -1318,7 +1302,7 @@ def test_equal_size_alignment_uses_primary_node_and_undoes_as_one_action(
     bundle = prepare_studio_bundle(
         analysis_dir / "architecture.json", tmp_path / ".archcanvas"
     )
-    baseline = next(iter(bundle.base_scenes.values()))
+    baseline = _publication_scene(bundle)
     candidates = [node for node in baseline.nodes if node.parent_scene_node_id]
     first, primary = candidates[:2]
     first = first.model_copy(
@@ -1385,7 +1369,7 @@ def test_container_move_translates_descendants_and_internal_edges_atomically(
             "source": [],
         },
     )
-    scene = next(iter(bundle.base_scenes.values()))
+    scene = _publication_scene(bundle)
     view = next(iter(bundle.views.values()))
     encoder_row = next(row for row in rows if row["label"] == "encoder")
     encoder_view = next(
@@ -1439,7 +1423,7 @@ def test_container_move_translates_descendants_and_internal_edges_atomically(
     changed = apply_patch_batch(
         bundle.document,
         batch,
-        {item.scene_id: item for item in bundle.base_scenes.values()},
+        _publication_scenes(bundle),
         enforce_containment=True,
     )
     moved = materialize_scene(scene, changed)
@@ -1476,7 +1460,7 @@ def test_containment_enforcement_rejects_detached_child(
             "source": [],
         },
     )
-    scene = next(iter(bundle.base_scenes.values()))
+    scene = _publication_scene(bundle)
     by_id = {node.scene_node_id: node for node in scene.nodes}
     child = next(
         node
@@ -1519,7 +1503,7 @@ def test_auto_layout_restores_compound_baseline_without_breaking_containment(
             "source": [],
         },
     )
-    baseline = next(iter(bundle.base_scenes.values()))
+    baseline = _publication_scene(bundle)
     parent_ids = {
         node.parent_scene_node_id
         for node in baseline.nodes
@@ -1564,99 +1548,6 @@ def test_auto_layout_restores_compound_baseline_without_breaking_containment(
     assert restored == baseline
 
 
-def test_layout_candidates_are_deterministic_preview_only_and_stale_guarded(
-    analysis_dir: Path, tmp_path: Path
-) -> None:
-    bundle = prepare_studio_bundle(
-        analysis_dir / "architecture.json", tmp_path / ".archcanvas"
-    )
-    original_document = bundle.document
-    first = bundle.layout_candidates()
-    second = bundle.layout_candidates()
-    assert first
-    assert [item[0]["candidate_id"] for item in first] == [
-        item[0]["candidate_id"] for item in second
-    ]
-    assert [item[0]["score"] for item in first] == [item[0]["score"] for item in second]
-    assert bundle.document == original_document
-    assert all(
-        validate_geometry(VisualScene.model_validate(item[0]["scene"]))[0].status
-        == "passed"
-        for item in first
-    )
-
-    server = _server_without_socket(bundle)
-    payloads = server.create_layout_candidates()
-    stale_id = str(payloads[0]["candidate_id"])
-    patch, _, _ = _move_patch(bundle, suffix="stale-layout-candidate")
-    scenes = {scene.scene_id: scene for scene in bundle.base_scenes.values()}
-    bundle.save_document(apply_patch(bundle.document, patch, scenes))
-    with pytest.raises(ValueError, match="fingerprint is stale"):
-        server.apply_layout_candidate(stale_id)
-    assert not server.layout_candidates
-
-    payloads = server.create_layout_candidates()
-    before_count = len(bundle.document.visual_patches)
-    source_digest = bundle.document.source_digest
-    state = server.apply_layout_candidate(str(payloads[0]["candidate_id"]))
-    assert len(bundle.document.visual_patches) > before_count
-    assert bundle.document.source_digest == source_digest
-    assert not server.layout_candidates
-    assert state["document"]["source_digest"] == source_digest
-
-
-def test_layout_candidates_keep_pinned_node_bounds(
-    analysis_dir: Path, tmp_path: Path
-) -> None:
-    bundle = prepare_studio_bundle(
-        analysis_dir / "architecture.json", tmp_path / ".archcanvas"
-    )
-    scene = next(iter(bundle.materialized_scenes().values()))
-    pinned_node = next(node for node in scene.nodes if node.parent_scene_node_id)
-    movable_node = next(
-        node
-        for node in scene.nodes
-        if node.parent_scene_node_id == pinned_node.parent_scene_node_id
-        and node.scene_node_id != pinned_node.scene_node_id
-    )
-    scenes = {scene.scene_id: next(iter(bundle.base_scenes.values()))}
-    document = apply_patch(
-        bundle.document,
-        VisualPatch(
-            patch_id="patch:test.pin-layout-candidate",
-            operation="set-pin",
-            target_id=pinned_node.scene_node_id,
-            value={"scene_id": scene.scene_id, "enabled": True},
-        ),
-        scenes,
-    )
-    document = apply_patch(
-        document,
-        VisualPatch(
-            patch_id="patch:test.move-for-layout-candidate",
-            operation="set-position",
-            target_id=movable_node.scene_node_id,
-            value={
-                "scene_id": scene.scene_id,
-                "x": movable_node.bounds.x + 12,
-                "y": movable_node.bounds.y,
-            },
-        ),
-        scenes,
-    )
-    bundle.save_document(document)
-    candidates = bundle.layout_candidates()
-    assert candidates
-    for payload, _ in candidates:
-        preview = VisualScene.model_validate(payload["scene"])
-        preview_node = next(
-            node
-            for node in preview.nodes
-            if node.scene_node_id == pinned_node.scene_node_id
-        )
-        assert preview_node.bounds == pinned_node.bounds
-
-
 def test_auto_route_uses_distributed_exterior_corridors_for_long_edges(
     analysis_dir: Path, tmp_path: Path
 ) -> None:
@@ -1671,7 +1562,7 @@ def test_auto_route_uses_distributed_exterior_corridors_for_long_edges(
             "source": [],
         },
     )
-    scene = next(iter(bundle.materialized_scenes().values()))
+    scene = next(iter(_materialized_publication_scenes(bundle).values()))
     canonical = next(
         edge
         for edge in bundle.architecture.edges
@@ -1747,20 +1638,20 @@ def test_auto_route_uses_distributed_exterior_corridors_for_long_edges(
         strategy_document = apply_patch_batch(
             bundle.document,
             strategy_batch,
-            {item.scene_id: item for item in bundle.base_scenes.values()},
+            _publication_scenes(bundle),
         )
         strategy_scene = materialize_scene(
-            next(iter(bundle.base_scenes.values())), strategy_document
+            _publication_scene(bundle), strategy_document
         )
         strategy_gate, strategy_diagnostics = validate_geometry(strategy_scene)
         assert strategy_gate.status == "passed", strategy_diagnostics
 
-    base_scene = next(iter(bundle.base_scenes.values()))
+    base_scene = _publication_scene(bundle)
     original = materialize_scene(base_scene, bundle.document)
     changed = apply_patch_batch(
         bundle.document,
         batch,
-        {item.scene_id: item for item in bundle.base_scenes.values()},
+        _publication_scenes(bundle),
     )
     routed = materialize_scene(base_scene, changed)
     changed_edge = next(
@@ -1808,7 +1699,7 @@ def test_patch_batch_failure_keeps_original_document(
     analysis_dir: Path, tmp_path: Path
 ) -> None:
     bundle = prepare_studio_bundle(analysis_dir / "architecture.json", tmp_path / ".archcanvas")
-    scene = next(iter(bundle.base_scenes.values()))
+    scene = _publication_scene(bundle)
     node = next(item for item in scene.nodes if item.parent_scene_node_id)
     batch = PatchBatch(
         batch_id="batch:test.invalid",
@@ -1832,7 +1723,7 @@ def test_patch_batch_failure_keeps_original_document(
         apply_patch_batch(
             bundle.document,
             batch,
-            {item.scene_id: item for item in bundle.base_scenes.values()},
+            _publication_scenes(bundle),
         )
     assert not bundle.document.visual_patches
 
@@ -2449,7 +2340,7 @@ def test_camera_rejects_non_finite_values(
     analysis_dir: Path, tmp_path: Path, value: float
 ) -> None:
     bundle = prepare_studio_bundle(analysis_dir / "architecture.json", tmp_path / ".archcanvas")
-    scene = next(iter(bundle.base_scenes.values()))
+    scene = _publication_scene(bundle)
     patch = VisualPatch(
         patch_id="patch:test.non-finite",
         operation="set-camera",
@@ -2459,7 +2350,7 @@ def test_camera_rejects_non_finite_values(
         apply_patch(
             bundle.document,
             patch,
-            {item.scene_id: item for item in bundle.base_scenes.values()},
+            _publication_scenes(bundle),
         )
 
 
@@ -2628,7 +2519,7 @@ def test_reanalysis_archives_stale_studio_bindings(
 
 def test_geometry_rejects_non_finite_values(analysis_dir: Path, tmp_path: Path) -> None:
     bundle = prepare_studio_bundle(analysis_dir / "architecture.json", tmp_path / ".archcanvas")
-    scene = next(iter(bundle.base_scenes.values()))
+    scene = _publication_scene(bundle)
     node = next(item for item in scene.nodes if item.parent_scene_node_id)
     patch = VisualPatch(
         patch_id="patch:test.non-finite-position",
@@ -2640,7 +2531,7 @@ def test_geometry_rejects_non_finite_values(analysis_dir: Path, tmp_path: Path) 
         apply_patch(
             bundle.document,
             patch,
-            {item.scene_id: item for item in bundle.base_scenes.values()},
+            _publication_scenes(bundle),
         )
 
 
@@ -2658,25 +2549,41 @@ def test_studio_server_persists_patch_undo_redo_and_exports_svg(
     try:
         state = json.loads(urlopen(f"{base_url}/api/state").read())
         assert state["document"]["source_digest"] == bundle.document.source_digest
-        layout_request = Request(
-            f"{base_url}/api/layout-mode",
-            data=json.dumps({"layout_mode": "hierarchical"}).encode(),
-            headers={"Content-Type": "application/json"},
-            method="POST",
+        assert {"scenes", "specs", "routing"}.isdisjoint(state)
+        for endpoint in (
+            "/api/layout-mode",
+            "/api/layout-candidates",
+            "/api/layout",
+            "/api/route",
+            "/api/align",
+        ):
+            removed_request = Request(
+                f"{base_url}{endpoint}",
+                data=b"{}",
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with pytest.raises(HTTPError) as removed:
+                urlopen(removed_request)
+            assert removed.value.code == 404
+
+        target_id = sorted(bundle.kernel_visual_targets()["nodes"])[0]
+        kernel_scene_id = (
+            f"kernel:{bundle.architecture.architecture_id}:"
+            f"{bundle.document.source_digest[:12]}"
         )
-        state = json.loads(urlopen(layout_request).read())
-        assert state["view_state"]["layout_mode"] == "hierarchical"
-        assert next(iter(state["scenes"].values()))["layout_family"] == "hierarchical"
-        layout_noop_request = Request(
-            f"{base_url}/api/layout",
-            data=json.dumps({"batch_id": "batch:test.layout-noop"}).encode(),
-            headers={"Content-Type": "application/json"},
-            method="POST",
+        patch = VisualPatch(
+            patch_id="patch:test.server-kernel",
+            operation="set-position",
+            target_id=target_id,
+            value={
+                "kernel_scene_id": kernel_scene_id,
+                "architecture_id": bundle.architecture.architecture_id,
+                "source_digest": bundle.document.source_digest,
+                "x": 120,
+                "y": 80,
+            },
         )
-        unchanged = json.loads(urlopen(layout_noop_request).read())
-        assert unchanged["view_state"]["layout_mode"] == "hierarchical"
-        assert not unchanged["document"]["visual_patches"]
-        patch, _, _ = _move_patch(bundle, suffix="server")
         request = Request(
             f"{base_url}/api/patch",
             data=patch.model_dump_json().encode(),
@@ -2694,9 +2601,18 @@ def test_studio_server_persists_patch_undo_redo_and_exports_svg(
         redo = Request(f"{base_url}/api/redo", data=b"{}", method="POST")
         redone = json.loads(urlopen(redo).read())
         assert len(redone["document"]["visual_patches"]) == 1
-        svg = urlopen(f"{base_url}/api/export").read().decode()
+        legacy_export = urlopen(f"{base_url}/api/export")
+        svg = legacy_export.read().decode()
         assert svg.startswith('<?xml version="1.0"')
-        assert next(iter(bundle.base_scenes.values())).scene_id in svg
+        assert _publication_scene(bundle).scene_id in svg
+        assert legacy_export.headers["X-ArchCanvas-Export-Scope"] == "publication"
+        assert legacy_export.headers["Deprecation"] == "true"
+        assert "/api/publication-export" in legacy_export.headers["Link"]
+
+        publication_export = urlopen(f"{base_url}/api/publication-export")
+        assert publication_export.read().decode() == svg
+        assert publication_export.headers["X-ArchCanvas-Export-Scope"] == "publication"
+        assert publication_export.headers["Deprecation"] is None
     finally:
         server.shutdown()
         server.server_close()

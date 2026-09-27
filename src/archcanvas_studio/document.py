@@ -45,6 +45,33 @@ GLOBAL_OPERATIONS = {
     "set-font-scale",
     "set-camera",
     "add-annotation",
+    "set-kernel-options",
+}
+KERNEL_NODE_OPERATIONS = {"set-position", "set-size", "set-node-shape-override"}
+KERNEL_DETAIL_OPERATIONS = {"set-detail-offset"}
+KERNEL_EXPANSION_OPERATIONS = {"set-detail-expansion"}
+KERNEL_OPERATIONS = (
+    KERNEL_NODE_OPERATIONS
+    | KERNEL_DETAIL_OPERATIONS
+    | KERNEL_EXPANSION_OPERATIONS
+    | {"set-kernel-options", "set-camera"}
+)
+KERNEL_ROUTE_STYLES = {"adaptive", "direct", "orthogonal", "channel", "curve"}
+KERNEL_NODE_STYLES = {"semantic", "technical", "compact"}
+KERNEL_LABEL_STYLES = {"plate", "plain", "endpoint"}
+KERNEL_NODE_SHAPES = {
+    "operation",
+    "container",
+    "io",
+    "tensor",
+    "condition",
+    "attention",
+    "normalization",
+    "convolution",
+    "add",
+    "multiply",
+    "concat",
+    "merge",
 }
 
 
@@ -138,32 +165,82 @@ def _scene_for_patch(patch: VisualPatch, scenes: dict[str, VisualScene]) -> Visu
     return scenes[scene_id]
 
 
+def _is_kernel_patch(patch: VisualPatch) -> bool:
+    return isinstance(patch.value.get("kernel_scene_id"), str) or patch.operation in {
+        "set-kernel-options",
+        "set-detail-expansion",
+        "set-detail-offset",
+        "set-node-shape-override",
+    }
+
+
+def _validate_kernel_binding(document: CanvasDocument, patch: VisualPatch) -> None:
+    if patch.value.get("architecture_id") != document.architecture_id:
+        raise ValueError("kernel visual patch architecture binding is stale")
+    if patch.value.get("source_digest") != document.source_digest:
+        raise ValueError("kernel visual patch source binding is stale")
+    kernel_scene_id = patch.value.get("kernel_scene_id")
+    if not isinstance(kernel_scene_id, str) or not kernel_scene_id:
+        raise ValueError("kernel visual patch requires a kernel_scene_id")
+
+
+def _validate_kernel_target(
+    patch: VisualPatch,
+    kernel_targets: dict[str, set[str]] | None,
+) -> None:
+    if kernel_targets is None:
+        raise ValueError("kernel visual patch validation context is unavailable")
+    target_id = patch.target_id
+    if patch.operation in KERNEL_NODE_OPERATIONS:
+        if target_id not in kernel_targets.get("nodes", set()):
+            raise ValueError("kernel node patch references an unknown stable node")
+    elif patch.operation in KERNEL_EXPANSION_OPERATIONS:
+        if target_id not in kernel_targets.get("expansions", set()):
+            raise ValueError("kernel expansion patch references an unknown expandable module")
+    elif patch.operation in KERNEL_DETAIL_OPERATIONS:
+        detail_nodes = kernel_targets.get("detail_nodes", set())
+        detail_prefixes = kernel_targets.get("detail_prefixes", set())
+        if target_id not in detail_nodes and not any(
+            isinstance(target_id, str) and target_id.startswith(f"{prefix}:")
+            for prefix in detail_prefixes
+        ):
+            raise ValueError("kernel detail patch references an unknown detail target")
+
+
 def validate_patch(
     document: CanvasDocument,
     patch: VisualPatch,
     scenes: dict[str, VisualScene],
+    *,
+    kernel_targets: dict[str, set[str]] | None = None,
 ) -> None:
     if patch.patch_id in {
         item.patch_id for item in [*document.visual_patches, *document.redo_patches]
     }:
         raise ValueError("visual patch identifier already exists")
-    scene = _scene_for_patch(patch, scenes)
+    kernel_patch = _is_kernel_patch(patch)
+    if kernel_patch:
+        if patch.operation not in KERNEL_OPERATIONS:
+            raise ValueError("operation is not supported by the visual kernel")
+        _validate_kernel_binding(document, patch)
+        _validate_kernel_target(patch, kernel_targets)
+    scene = None if kernel_patch else _scene_for_patch(patch, scenes)
     if patch.operation in AGGREGATE_OPERATIONS:
         raise ValueError(
             f"{patch.operation} must be lowered to position patches in a PatchBatch"
         )
-    if patch.operation in NODE_OPERATIONS:
+    if patch.operation in NODE_OPERATIONS and not kernel_patch:
         if scene is None or patch.target_id not in {node.scene_node_id for node in scene.nodes}:
             raise ValueError("node visual patch requires a valid scene and target node")
-    elif patch.operation in EDGE_OPERATIONS:
+    elif patch.operation in EDGE_OPERATIONS and not kernel_patch:
         if scene is None or patch.target_id not in {edge.scene_edge_id for edge in scene.edges}:
             raise ValueError("edge visual patch requires a valid scene and target edge")
-    elif patch.operation not in GLOBAL_OPERATIONS:
+    elif patch.operation not in GLOBAL_OPERATIONS | KERNEL_OPERATIONS:
         raise ValueError("unsupported visual patch operation")
 
     if patch.operation == "set-position":
-        _number(patch.value.get("x"), "x")
-        _number(patch.value.get("y"), "y")
+        _number(patch.value.get("x"), "x", allow_negative=kernel_patch)
+        _number(patch.value.get("y"), "y", allow_negative=kernel_patch)
     elif patch.operation == "set-size":
         _number(patch.value.get("width"), "width", positive=True)
         _number(patch.value.get("height"), "height", positive=True)
@@ -191,6 +268,33 @@ def validate_patch(
         _number(patch.value.get("x", 0), "camera x", allow_negative=True)
         _number(patch.value.get("y", 0), "camera y", allow_negative=True)
         _number(patch.value.get("zoom"), "camera zoom", positive=True)
+        if "width" in patch.value:
+            _number(patch.value.get("width"), "camera width", positive=True)
+        if "height" in patch.value:
+            _number(patch.value.get("height"), "camera height", positive=True)
+    elif patch.operation == "set-detail-offset":
+        _number(patch.value.get("x"), "detail x", allow_negative=True)
+        _number(patch.value.get("y"), "detail y", allow_negative=True)
+    elif patch.operation == "set-detail-expansion":
+        if not isinstance(patch.value.get("enabled"), bool):
+            raise ValueError("set-detail-expansion requires an enabled boolean")
+    elif patch.operation == "set-kernel-options":
+        options = {
+            key: patch.value[key]
+            for key in ("route_style", "node_style", "label_style")
+            if key in patch.value
+        }
+        if not options:
+            raise ValueError("set-kernel-options requires at least one option")
+        if options.get("route_style", "adaptive") not in KERNEL_ROUTE_STYLES:
+            raise ValueError("set-kernel-options requires a supported route style")
+        if options.get("node_style", "semantic") not in KERNEL_NODE_STYLES:
+            raise ValueError("set-kernel-options requires a supported node style")
+        if options.get("label_style", "plate") not in KERNEL_LABEL_STYLES:
+            raise ValueError("set-kernel-options requires a supported label style")
+    elif patch.operation == "set-node-shape-override":
+        if patch.value.get("shape") not in KERNEL_NODE_SHAPES:
+            raise ValueError("set-node-shape-override requires a supported shape")
     elif patch.operation == "set-font-scale":
         scale = _number(patch.value.get("scale"), "font scale", positive=True)
         if not 0.75 <= scale <= 1.5:
@@ -265,10 +369,11 @@ def apply_patch(
     scenes: dict[str, VisualScene],
     *,
     enforce_containment: bool = False,
+    kernel_targets: dict[str, set[str]] | None = None,
 ) -> CanvasDocument:
-    validate_patch(document, patch, scenes)
-    if patch.operation == "set-camera":
-        scene_id = patch.value["scene_id"]
+    validate_patch(document, patch, scenes, kernel_targets=kernel_targets)
+    if patch.operation == "set-camera" and not _is_kernel_patch(patch):
+        scene_id = patch.value.get("kernel_scene_id", patch.value.get("scene_id"))
         document = document.model_copy(
             update={
                 "visual_patches": [
@@ -276,7 +381,8 @@ def apply_patch(
                     for item in document.visual_patches
                     if not (
                         item.operation == "set-camera"
-                        and item.value.get("scene_id") == scene_id
+                        and item.value.get("kernel_scene_id", item.value.get("scene_id"))
+                        == scene_id
                     )
                 ],
                 "redo_patches": [],
@@ -288,7 +394,11 @@ def apply_patch(
     changed = changed.model_copy(update={"view_state": state})
     if changed.source_digest != document.source_digest:
         raise AssertionError("visual patch changed the source binding")
-    if enforce_containment and patch.operation in {"set-position", "set-size"}:
+    if (
+        enforce_containment
+        and patch.operation in {"set-position", "set-size"}
+        and not _is_kernel_patch(patch)
+    ):
         _validate_affected_containment(changed, [patch], scenes)
     return changed
 
@@ -299,6 +409,7 @@ def apply_patch_batch(
     scenes: dict[str, VisualScene],
     *,
     enforce_containment: bool = False,
+    kernel_targets: dict[str, set[str]] | None = None,
 ) -> CanvasDocument:
     """Apply a validated group of visual changes as one history action."""
     state = dict(document.view_state)
@@ -311,7 +422,7 @@ def apply_patch_batch(
     if batch.batch_id in known_batch_ids:
         raise ValueError("visual patch batch identifier already exists")
     camera_keys = [
-        patch.value.get("scene_id")
+        patch.value.get("kernel_scene_id", patch.value.get("scene_id"))
         for patch in batch.patches
         if patch.operation == "set-camera"
     ]
@@ -319,7 +430,9 @@ def apply_patch_batch(
         raise ValueError("a patch batch cannot contain repeated camera updates")
     changed = document
     for patch in batch.patches:
-        changed = apply_patch(changed, patch, scenes)
+        changed = apply_patch(
+            changed, patch, scenes, kernel_targets=kernel_targets
+        )
     state = dict(changed.view_state)
     history = list(state.get("_history_batches", []))
     history.append(
@@ -339,6 +452,7 @@ def apply_patch_batch(
             patch
             for patch in batch.patches
             if patch.operation in {"set-position", "set-size"}
+            and not _is_kernel_patch(patch)
         ]
         if geometry_patches:
             _validate_affected_containment(changed, geometry_patches, scenes)
@@ -835,18 +949,50 @@ def derive_view_state(document: CanvasDocument) -> dict[str, Any]:
     pinned: set[str] = set()
     collapsed: set[str] = set()
     cameras: dict[str, dict[str, Any]] = {}
+    node_positions: dict[str, dict[str, float]] = {}
+    node_sizes: dict[str, dict[str, float]] = {}
+    detail_offsets: dict[str, dict[str, float]] = {}
+    shape_overrides: dict[str, str] = {}
+    module_expansion = set(state.get("module_expansion", []))
     for patch in document.visual_patches:
         if patch.operation == "set-pin" and patch.target_id:
             (pinned.add if patch.value["enabled"] else pinned.discard)(patch.target_id)
         elif patch.operation == "set-collapse" and patch.target_id:
             (collapsed.add if patch.value["enabled"] else collapsed.discard)(patch.target_id)
         elif patch.operation == "set-camera":
-            scene_id = patch.value.get("scene_id")
+            scene_id = patch.value.get("kernel_scene_id", patch.value.get("scene_id"))
             if not isinstance(scene_id, str):
                 continue
             cameras[scene_id] = {
-                key: patch.value[key] for key in ("x", "y", "zoom")
+                key: patch.value[key]
+                for key in ("x", "y", "zoom", "width", "height")
+                if key in patch.value
             }
+        elif patch.operation == "set-position" and patch.target_id and _is_kernel_patch(patch):
+            node_positions[patch.target_id] = {
+                "x": float(patch.value["x"]),
+                "y": float(patch.value["y"]),
+            }
+        elif patch.operation == "set-size" and patch.target_id and _is_kernel_patch(patch):
+            node_sizes[patch.target_id] = {
+                "width": float(patch.value["width"]),
+                "height": float(patch.value["height"]),
+            }
+        elif patch.operation == "set-detail-offset" and patch.target_id:
+            detail_offsets[patch.target_id] = {
+                "x": float(patch.value["x"]),
+                "y": float(patch.value["y"]),
+            }
+        elif patch.operation == "set-detail-expansion" and patch.target_id:
+            (module_expansion.add if patch.value["enabled"] else module_expansion.discard)(
+                patch.target_id
+            )
+        elif patch.operation == "set-kernel-options":
+            for key in ("route_style", "node_style", "label_style"):
+                if key in patch.value:
+                    state[key] = patch.value[key]
+        elif patch.operation == "set-node-shape-override" and patch.target_id:
+            shape_overrides[patch.target_id] = str(patch.value["shape"])
         elif patch.operation == "set-theme":
             state["theme"] = patch.value.get("theme", "paper-light")
         elif patch.operation == "set-caption":
@@ -879,4 +1025,9 @@ def derive_view_state(document: CanvasDocument) -> dict[str, Any]:
     state["pinned_node_ids"] = sorted(pinned)
     state["collapsed_node_ids"] = sorted(collapsed)
     state["cameras"] = cameras
+    state["node_positions"] = node_positions
+    state["node_sizes"] = node_sizes
+    state["detail_offsets"] = detail_offsets
+    state["node_shape_overrides"] = shape_overrides
+    state["module_expansion"] = sorted(module_expansion)
     return state

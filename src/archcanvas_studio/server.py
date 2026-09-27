@@ -29,13 +29,7 @@ from archcanvas_core.models import (
 
 from .bundle import StudioBundle, prepare_studio_bundle
 from .document import apply_patch, apply_patch_batch, redo_patch, undo_patch
-from .operations import (
-    alignment_batch,
-    auto_layout_batch,
-    auto_route_batch,
-    run_validation,
-    studio_fingerprint,
-)
+from .operations import run_validation, studio_fingerprint
 from .project import (
     browse_directories,
     create_project_session,
@@ -176,13 +170,23 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                 else:
                     self._json(job)
             return
-        if parsed.path == "/api/export":
+        if parsed.path in {"/api/export", "/api/publication-export"}:
             try:
                 with self.server.lock:
                     payload = self.server.bundle.export_svg().encode()
                 self.send_response(HTTPStatus.OK)
                 self.send_header("Content-Type", "image/svg+xml; charset=utf-8")
-                self.send_header("Content-Disposition", 'attachment; filename="archcanvas.svg"')
+                self.send_header(
+                    "Content-Disposition",
+                    'attachment; filename="archcanvas-publication.svg"',
+                )
+                self.send_header("X-ArchCanvas-Export-Scope", "publication")
+                if parsed.path == "/api/export":
+                    self.send_header("Deprecation", "true")
+                    self.send_header(
+                        "Link",
+                        '</api/publication-export>; rel="successor-version"',
+                    )
                 self.send_header("Content-Length", str(len(payload)))
                 self.end_headers()
                 self.wfile.write(payload)
@@ -257,95 +261,25 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                         if expansions is not None
                         else None,
                     )
-                    self.server.layout_candidates.clear()
                     self._json(self.server.bundle.state())
-                    return
-                if self.path == "/api/layout-mode":
-                    self.server.bundle.set_layout_mode(str(payload.get("layout_mode", "")))
-                    self.server.layout_candidates.clear()
-                    self._json(self.server.bundle.state())
-                    return
-                if self.path == "/api/layout-candidates":
-                    self._json({"candidates": self.server.create_layout_candidates()})
-                    return
-                if self.path.startswith("/api/layout-candidates/") and self.path.endswith(
-                    "/apply"
-                ):
-                    candidate_id = self.path[
-                        len("/api/layout-candidates/") : -len("/apply")
-                    ]
-                    self._json(self.server.apply_layout_candidate(candidate_id))
                     return
                 if self.path == "/api/patch":
                     patch = VisualPatch.model_validate(payload)
-                    scenes = {
-                        scene.scene_id: scene
-                        for scene in self.server.bundle.base_scenes.values()
-                    }
                     changed = apply_patch(
-                        document, patch, scenes, enforce_containment=True
+                        document,
+                        patch,
+                        {},
+                        enforce_containment=True,
+                        kernel_targets=self.server.bundle.kernel_visual_targets(),
                     )
                 elif self.path == "/api/patch-batch":
                     batch = PatchBatch.model_validate(payload)
-                    scenes = {
-                        scene.scene_id: scene
-                        for scene in self.server.bundle.base_scenes.values()
-                    }
                     changed = apply_patch_batch(
-                        document, batch, scenes, enforce_containment=True
-                    )
-                elif self.path == "/api/layout":
-                    scene = next(iter(self.server.bundle.materialized_scenes().values()))
-                    baseline_scene = next(iter(self.server.bundle.base_scenes.values()))
-                    try:
-                        batch = auto_layout_batch(
-                            scene,
-                            baseline_scene=baseline_scene,
-                            pinned_ids=set(
-                                self.server.bundle.state()["view_state"]["pinned_node_ids"]
-                            ),
-                            batch_id=str(payload["batch_id"]),
-                        )
-                    except ValueError as error:
-                        if str(error) != "the current scene is already at its deterministic layout":
-                            raise
-                        self._json(self.server.bundle.state())
-                        return
-                    scenes = {
-                        item.scene_id: item for item in self.server.bundle.base_scenes.values()
-                    }
-                    changed = apply_patch_batch(
-                        document, batch, scenes, enforce_containment=True
-                    )
-                elif self.path == "/api/route":
-                    scene = next(iter(self.server.bundle.materialized_scenes().values()))
-                    batch = auto_route_batch(
-                        scene,
-                        batch_id=str(payload["batch_id"]),
-                        strategy=str(payload.get("strategy", "avoid")),
-                    )
-                    scenes = {
-                        item.scene_id: item for item in self.server.bundle.base_scenes.values()
-                    }
-                    changed = apply_patch_batch(document, batch, scenes)
-                elif self.path == "/api/align":
-                    scene = next(iter(self.server.bundle.materialized_scenes().values()))
-                    selected_ids = payload.get("selected_ids")
-                    if not isinstance(selected_ids, list):
-                        raise TypeError("selected_ids must be an ordered list")
-                    batch = alignment_batch(
-                        scene,
-                        [str(item) for item in selected_ids],
-                        str(payload["command"]),
-                        pinned_ids=set(self.server.bundle.state()["view_state"]["pinned_node_ids"]),
-                        gap=float(payload["gap"]) if payload.get("gap") is not None else None,
-                        batch_id=str(payload["batch_id"]),
-                    )
-                    scenes = {
-                        item.scene_id: item for item in self.server.bundle.base_scenes.values()
-                    }
-                    changed = apply_patch_batch(
-                        document, batch, scenes, enforce_containment=True
+                        document,
+                        batch,
+                        {},
+                        enforce_containment=True,
+                        kernel_targets=self.server.bundle.kernel_visual_targets(),
                     )
                 elif self.path == "/api/undo":
                     changed = undo_patch(document)
@@ -454,7 +388,6 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                     self.send_error(HTTPStatus.NOT_FOUND)
                     return
                 self.server.bundle.save_document(changed)
-                self.server.layout_candidates.clear()
                 self._json(self.server.bundle.state())
         except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
             self._error(error)
@@ -491,7 +424,6 @@ class StudioHTTPServer(ThreadingHTTPServer):
         self.job_cancellations: dict[str, threading.Event] = {}
         self.project_generation = bundle.project_session.generation
         self.validation_generation = bundle.validation_generation
-        self.layout_candidates: dict[str, tuple[str, PatchBatch]] = {}
         self.active_project_key = (
             bundle.project_session.project_id,
             bundle.project_session.generation,
@@ -510,7 +442,6 @@ class StudioHTTPServer(ThreadingHTTPServer):
         with self.lock:
             self.active_project_key = (session.project_id, session.generation)
             self.pending_projects = {session.project_id: (session, discovery)}
-            self.layout_candidates.clear()
             for job_id, job in list(self.jobs.items()):
                 if job.state not in {
                     JobState.QUEUED,
@@ -572,37 +503,6 @@ class StudioHTTPServer(ThreadingHTTPServer):
             if job_id not in self.jobs:
                 raise ValueError("job does not exist")
             return self._cancel_job_locked(job_id)
-
-    def create_layout_candidates(self) -> list[dict[str, object]]:
-        with self.lock:
-            candidates = self.bundle.layout_candidates()
-            self.layout_candidates = {
-                str(payload["candidate_id"]): (
-                    str(payload["input_fingerprint"]),
-                    batch,
-                )
-                for payload, batch in candidates
-            }
-            return [payload for payload, _ in candidates]
-
-    def apply_layout_candidate(self, candidate_id: str) -> dict[str, object]:
-        with self.lock:
-            candidate = self.layout_candidates.get(candidate_id)
-            if candidate is None:
-                raise ValueError("layout candidate does not exist or has expired")
-            fingerprint, batch = candidate
-            if fingerprint != studio_fingerprint(self.bundle):
-                self.layout_candidates.clear()
-                raise ValueError("layout candidate input fingerprint is stale")
-            scenes = {
-                scene.scene_id: scene for scene in self.bundle.base_scenes.values()
-            }
-            changed = apply_patch_batch(
-                self.bundle.document, batch, scenes, enforce_containment=True
-            )
-            self.bundle.save_document(changed)
-            self.layout_candidates.clear()
-            return self.bundle.state()
 
     def start_analysis(self, request: AnalysisRequest) -> AnalysisJob:
         with self.lock:
@@ -929,7 +829,6 @@ class StudioHTTPServer(ThreadingHTTPServer):
                     )
                     return
                 self.bundle = replacement
-                self.layout_candidates.clear()
                 replacement.write_static()
                 self.jobs[job_id] = current.model_copy(
                     update={

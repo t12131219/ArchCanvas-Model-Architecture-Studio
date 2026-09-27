@@ -4,7 +4,7 @@ import difflib
 import hashlib
 import json
 import shutil
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from pydantic import TypeAdapter
@@ -42,30 +42,16 @@ from archcanvas_core.models import (
     TransactionState,
     ValidationRun,
     VisualPatch,
-    VisualScene,
-    VisualSpec,
     WritebackSummary,
 )
 from archcanvas_patterns import exact_ir_digest
 from archcanvas_publication import (
-    LAYOUT_MODES,
-    AtomicRoutingReport,
-    RoutingShadowComparison,
     build_scene,
     build_visual_spec,
-    compare_shadow_routing,
     compile_hierarchy,
     expandable_node_ids,
     project_hierarchy,
-    relayout_scene,
     render_svg,
-    route_atomic_scene,
-    validate_geometry,
-)
-from archcanvas_publication.routing_scene import failed_atomic_routing
-from archcanvas_publication.routing_shadow import (
-    failed_shadow_comparison,
-    skipped_shadow_comparison,
 )
 from archcanvas_transactions import (
     commit_transaction,
@@ -81,19 +67,12 @@ from .document import (
     create_canvas_document,
     derive_view_state,
     load_canvas_document,
-    materialize_scene,
     persist_canvas_document,
     source_binding_digest,
 )
 from .navigation import PROJECTIONS, build_navigation_projections
-from .operations import (
-    auto_layout_batch,
-    build_search_index,
-    run_validation,
-    studio_fingerprint,
-)
+from .operations import build_search_index, run_validation, studio_fingerprint
 from .project import create_project_session, discover_project
-from .routing import ROUTING_MODES, routing_runtime_config
 
 STATIC_ROOT = Path(__file__).resolve().parent / "static"
 
@@ -148,8 +127,6 @@ class StudioBundle:
     semantic_overlay: SemanticAnnotationOverlay | None
     hierarchy: PublicationHierarchy
     views: dict[str, PublicationView]
-    specs: dict[str, VisualSpec]
-    base_scenes: dict[str, VisualScene]
     document: CanvasDocument
     project_session: ProjectSession
     project_discovery: dict[str, object]
@@ -160,106 +137,9 @@ class StudioBundle:
     search_index: list[SearchSubject]
     validation_runs: list[ValidationRun]
     navigation: dict[str, object]
-    routing_mode: str = "legacy"
-    routing_shadow_sample_rate: float = 1.0
-    routing_shadow_reports: dict[
-        str, RoutingShadowComparison | AtomicRoutingReport
-    ] = field(default_factory=dict)
     validation_generation: int = 0
     active_transaction: SourceTransaction | None = None
     active_proposal: AgentProposal | None = None
-
-    def _legacy_materialized_scenes(self) -> dict[str, VisualScene]:
-        return {
-            projection_id: materialize_scene(scene, self.document)
-            for projection_id, scene in self.base_scenes.items()
-        }
-
-    def _fixed_route_ids(self, scene: VisualScene) -> frozenset[str]:
-        return frozenset(
-            patch.target_id
-            for patch in self.document.visual_patches
-            if patch.operation == "set-route-hint"
-            and patch.target_id is not None
-            and patch.value.get("scene_id") in {None, scene.scene_id}
-        )
-
-    def materialized_scenes(self) -> dict[str, VisualScene]:
-        scenes = self._legacy_materialized_scenes()
-        if self.routing_mode != "atomic-v1":
-            return scenes
-        reports: dict[str, AtomicRoutingReport] = {}
-        routed: dict[str, VisualScene] = {}
-        for projection_id, scene in scenes.items():
-            view = self.views[projection_id]
-            try:
-                routed[projection_id], reports[projection_id] = route_atomic_scene(
-                    self.architecture,
-                    view,
-                    scene,
-                    fixed_scene_edge_ids=self._fixed_route_ids(scene),
-                )
-            except Exception as error:  # noqa: BLE001 - opt-in mode must retain rollback
-                routed[projection_id] = scene
-                reports[projection_id] = failed_atomic_routing(scene, view, error)
-        self.routing_shadow_reports = reports
-        return routed
-
-    def _shadow_selected(self, scene: VisualScene) -> bool:
-        if self.routing_shadow_sample_rate >= 1.0:
-            return True
-        if self.routing_shadow_sample_rate <= 0.0:
-            return False
-        value = int(hashlib.sha256(scene.scene_id.encode()).hexdigest()[:16], 16)
-        return value / float(0xFFFFFFFFFFFFFFFF) < self.routing_shadow_sample_rate
-
-    def refresh_routing_shadow(self) -> None:
-        reports: dict[str, RoutingShadowComparison | AtomicRoutingReport] = {}
-        if self.routing_mode == "shadow":
-            for projection_id, scene in self._legacy_materialized_scenes().items():
-                view = self.views[projection_id]
-                if not self._shadow_selected(scene):
-                    reports[projection_id] = skipped_shadow_comparison(scene, view)
-                    continue
-                try:
-                    reports[projection_id] = compare_shadow_routing(
-                        self.architecture,
-                        view,
-                        scene,
-                    )
-                except Exception as error:  # noqa: BLE001 - shadow must not block legacy
-                    reports[projection_id] = failed_shadow_comparison(scene, view, error)
-        elif self.routing_mode == "atomic-v1":
-            self.materialized_scenes()
-            reports = dict(self.routing_shadow_reports)
-        self.routing_shadow_reports = reports
-        visible_engine = self._visible_routing_engine()
-        _write_json(
-            self.workspace / "publication" / "current" / "routing-shadow.json",
-            {
-                "mode": self.routing_mode,
-                "visible_engine": visible_engine,
-                "shadow_engine": (
-                    "atomic-v1" if self.routing_mode == "shadow" else None
-                ),
-                "shadow_sample_rate": self.routing_shadow_sample_rate,
-                "reports": {
-                    projection_id: report.to_dict()
-                    for projection_id, report in reports.items()
-                },
-            },
-        )
-
-    def _visible_routing_engine(self) -> str:
-        if self.routing_mode != "atomic-v1":
-            return "legacy"
-        if self.routing_shadow_reports and all(
-            isinstance(report, AtomicRoutingReport)
-            and report.visible_engine == "atomic-v1"
-            for report in self.routing_shadow_reports.values()
-        ):
-            return "atomic-v1"
-        return "legacy"
 
     def _expanded_hierarchy_ids(self) -> set[str]:
         state = derive_view_state(self.document)
@@ -298,23 +178,13 @@ class StudioBundle:
         view = project_hierarchy(
             self.architecture, self.hierarchy, self._expanded_hierarchy_ids()
         )
-        spec = build_visual_spec(view)
-        layout_mode = str(derive_view_state(self.document).get("layout_mode", "auto"))
-        scene = build_scene(view, spec, layout_mode)
         self.views = {view.projection_id: view}
-        self.specs = {view.projection_id: spec}
-        self.base_scenes = {view.projection_id: scene}
-        self.refresh_routing_shadow()
 
     def write_static(self) -> None:
         _write_static_bundle(self)
 
     def diagnostics(self) -> list[Diagnostic]:
-        diagnostics: list[Diagnostic] = []
-        for scene in self.materialized_scenes().values():
-            _, scene_diagnostics = validate_geometry(scene)
-            diagnostics.extend(scene_diagnostics)
-        return diagnostics
+        return []
 
     def source_excerpt(
         self,
@@ -597,8 +467,7 @@ class StudioBundle:
         _write_json(self.source_workspace_path, self.source_workspace)
 
     def state(self) -> dict[str, object]:
-        scenes = self.materialized_scenes()
-        view_state = derive_view_state(self.document)
+        view_state = self._kernel_view_state()
         navigation = dict(self.navigation)
         navigation["active_projection"] = view_state.get("navigation_view", "module")
         return {
@@ -627,32 +496,16 @@ class StudioBundle:
                 projection_id: view.model_dump(mode="json")
                 for projection_id, view in self.views.items()
             },
-            "specs": {
-                projection_id: spec.model_dump(mode="json")
-                for projection_id, spec in self.specs.items()
-            },
-            "scenes": {
-                projection_id: scene.model_dump(mode="json")
-                for projection_id, scene in scenes.items()
-            },
             "document": self.document.model_dump(mode="json"),
+            "integrity": {
+                "source_digest": self.document.source_digest,
+                "exact_ir_digest": exact_ir_digest(self.architecture),
+            },
             "draft": self.draft.model_dump(mode="json"),
             "source_workspace": self.source_workspace_summary(),
             "view_state": view_state,
             "navigation": navigation,
             "diagnostics": [item.model_dump(mode="json") for item in self.diagnostics()],
-            "routing": {
-                "mode": self.routing_mode,
-                "visible_engine": self._visible_routing_engine(),
-                "shadow_engine": (
-                    "atomic-v1" if self.routing_mode == "shadow" else None
-                ),
-                "shadow_sample_rate": self.routing_shadow_sample_rate,
-                "reports": {
-                    projection_id: report.to_dict()
-                    for projection_id, report in self.routing_shadow_reports.items()
-                },
-            },
             "search_subject_count": len(self.search_index),
             "validation_runs": [
                 run.model_dump(mode="json") for run in self.validation_runs[-20:]
@@ -694,13 +547,6 @@ class StudioBundle:
                     "writeback": "validate-review-explicit-commit",
                 },
                 "navigation_projections": list(PROJECTIONS),
-                "layout_modes": list(LAYOUT_MODES),
-                "routing_engines": {
-                    "available": list(ROUTING_MODES),
-                    "selected": self.routing_mode,
-                    "visible": self._visible_routing_engine(),
-                    "atomic_v1_visible": self._visible_routing_engine() == "atomic-v1",
-                },
                 "validation_profiles": [
                     "fast-static",
                     "publication",
@@ -708,6 +554,35 @@ class StudioBundle:
                     "runtime-replay",
                 ],
             },
+        }
+
+    def _kernel_view_state(self) -> dict[str, object]:
+        return derive_view_state(self.document)
+
+    def kernel_visual_targets(self) -> dict[str, set[str]]:
+        """Return stable targets owned by the formal visual kernel."""
+        hierarchy_nodes = {node.hierarchy_node_id: node for node in self.hierarchy.nodes}
+        node_ids = {f"view:{node_id}" for node_id in hierarchy_nodes}
+        expansions = set(expandable_node_ids(self.hierarchy))
+        detail_prefixes: set[str] = set()
+        if self.semantic_overlay is not None:
+            canonical_to_hierarchy = {
+                canonical_id: node.hierarchy_node_id
+                for node in self.hierarchy.nodes
+                for canonical_id in node.canonical_node_ids
+            }
+            for binding in self.semantic_overlay.template_bindings:
+                detail_prefixes.add(binding.binding_id)
+                expansions.update(
+                    canonical_to_hierarchy[canonical_id]
+                    for canonical_id in binding.root_canonical_node_ids
+                    if canonical_id in canonical_to_hierarchy
+                )
+        return {
+            "nodes": node_ids,
+            "detail_nodes": node_ids,
+            "detail_prefixes": detail_prefixes,
+            "expansions": expansions,
         }
 
     def set_navigation_view(
@@ -751,181 +626,6 @@ class StudioBundle:
                 projection, expanded_ids
             )
         self.save_document(self.document.model_copy(update={"view_state": state}))
-        self.recompile_projection()
-
-    def set_layout_mode(self, layout_mode: str) -> None:
-        if layout_mode not in LAYOUT_MODES:
-            raise ValueError(f"unknown layout mode: {layout_mode}")
-        state = dict(self.document.view_state)
-        state["layout_mode"] = layout_mode
-        self.save_document(self.document.model_copy(update={"view_state": state}))
-        self.recompile_projection()
-
-    def layout_candidates(self, limit: int = 3) -> list[tuple[dict[str, object], PatchBatch]]:
-        """Build deterministic, geometry-valid layout previews without mutating the document."""
-        if limit < 1:
-            raise ValueError("layout candidate limit must be positive")
-        projection_id = next(iter(self.views))
-        current = self.materialized_scenes()[projection_id]
-        base = self.base_scenes[projection_id]
-        pinned_ids = set(derive_view_state(self.document).get("pinned_node_ids", []))
-        fingerprint = studio_fingerprint(self)
-        current_by_id = {node.scene_node_id: node for node in current.nodes}
-        seen_geometry: set[str] = set()
-        candidates: list[tuple[dict[str, object], PatchBatch]] = []
-        targets = [
-            ("compiler", base),
-            *(
-                (layout_mode, relayout_scene(current, layout_mode))
-                for layout_mode in ("force-directed", "radial", "orthogonal")
-            ),
-        ]
-        for layout_mode, target in targets:
-            try:
-                batch = auto_layout_batch(
-                    current,
-                    baseline_scene=target,
-                    pinned_ids=pinned_ids,
-                    batch_id=f"batch:layout.{fingerprint[:12]}.{layout_mode}",
-                )
-            except ValueError as error:
-                if str(error) == "the current scene is already at its deterministic layout":
-                    continue
-                raise
-            target_by_id = {node.scene_node_id: node for node in target.nodes}
-            size_patches = [
-                VisualPatch(
-                    patch_id=(
-                        f"patch:{batch.batch_id.removeprefix('batch:')}.size.{index}"
-                    ),
-                    operation="set-size",
-                    target_id=node_id,
-                    value={
-                        "scene_id": current.scene_id,
-                        "width": max(
-                            current_by_id[node_id].bounds.width,
-                            target_by_id[node_id].bounds.width,
-                        ),
-                        "height": max(
-                            current_by_id[node_id].bounds.height,
-                            target_by_id[node_id].bounds.height,
-                        ),
-                    },
-                )
-                for index, node_id in enumerate(sorted(current_by_id))
-                if node_id not in pinned_ids
-                if (
-                    current_by_id[node_id].bounds.width,
-                    current_by_id[node_id].bounds.height,
-                )
-                != (
-                    max(
-                        current_by_id[node_id].bounds.width,
-                        target_by_id[node_id].bounds.width,
-                    ),
-                    max(
-                        current_by_id[node_id].bounds.height,
-                        target_by_id[node_id].bounds.height,
-                    ),
-                )
-            ]
-            manual_route_ids = {
-                patch.target_id
-                for patch in self.document.visual_patches
-                if patch.operation == "set-route-hint" and patch.target_id is not None
-            }
-            route_patches = [
-                VisualPatch(
-                    patch_id=(
-                        f"patch:{batch.batch_id.removeprefix('batch:')}.route.{index}"
-                    ),
-                    operation="set-route-hint",
-                    target_id=edge.scene_edge_id,
-                    value={
-                        "scene_id": current.scene_id,
-                        "points": [point.model_dump(mode="json") for point in edge.points],
-                    },
-                )
-                for index, edge in enumerate(target.edges)
-                if edge.scene_edge_id not in manual_route_ids
-            ]
-            batch = batch.model_copy(
-                update={"patches": [*batch.patches, *size_patches, *route_patches]}
-            )
-            preview_document = apply_patch_batch(
-                self.document, batch, {base.scene_id: base}
-            )
-            preview = materialize_scene(base, preview_document)
-            preview_by_id = {node.scene_node_id: node for node in preview.nodes}
-            if any(
-                preview_by_id[node_id].bounds != current_by_id[node_id].bounds
-                for node_id in pinned_ids
-                if node_id in current_by_id and node_id in preview_by_id
-            ):
-                continue
-            gate, diagnostics = validate_geometry(preview)
-            if gate.status != "passed":
-                continue
-            geometry_payload = [
-                (
-                    node.scene_node_id,
-                    node.bounds.x,
-                    node.bounds.y,
-                    node.bounds.width,
-                    node.bounds.height,
-                )
-                for node in preview.nodes
-            ]
-            geometry_digest = hashlib.sha256(
-                json.dumps(geometry_payload, separators=(",", ":")).encode()
-            ).hexdigest()
-            if geometry_digest in seen_geometry:
-                continue
-            seen_geometry.add(geometry_digest)
-            movement = sum(
-                abs(node.bounds.x - current_by_id[node.scene_node_id].bounds.x)
-                + abs(node.bounds.y - current_by_id[node.scene_node_id].bounds.y)
-                for node in preview.nodes
-            )
-            route_length = sum(
-                abs(end.x - start.x) + abs(end.y - start.y)
-                for edge in preview.edges
-                for start, end in zip(edge.points, edge.points[1:])
-            )
-            area = preview.paper_width * preview.paper_height
-            score = round(area / 1000.0 + route_length + movement * 0.2, 3)
-            candidate_digest = hashlib.sha256(
-                f"{fingerprint}:{layout_mode}:{geometry_digest}".encode()
-            ).hexdigest()
-            payload: dict[str, object] = {
-                "candidate_id": f"layoutcandidate:{candidate_digest[:20]}",
-                "input_fingerprint": fingerprint,
-                "strategy": layout_mode,
-                "score": score,
-                "metrics": {
-                    "paper_area": round(area, 3),
-                    "route_length": round(route_length, 3),
-                    "movement": round(movement, 3),
-                    "changed_nodes": len(
-                        {
-                            patch.target_id
-                            for patch in batch.patches
-                            if patch.operation in {"set-position", "set-size"}
-                        }
-                    ),
-                    "route_changes": len(route_patches),
-                },
-                "supported_fixes": [],
-                "diagnostics": [
-                    diagnostic.model_dump(mode="json") for diagnostic in diagnostics
-                ],
-                "scene": preview.model_dump(mode="json"),
-            }
-            candidates.append((payload, batch))
-        candidates.sort(
-            key=lambda item: (float(item[0]["score"]), str(item[0]["strategy"]))
-        )
-        return candidates[:limit]
 
     def search(self, query: str, limit: int = 50) -> list[dict[str, object]]:
         from .operations import search_subjects
@@ -1583,12 +1283,27 @@ class StudioBundle:
     def save_document(self, document: CanvasDocument) -> None:
         if document.source_digest != self.document.source_digest:
             raise ValueError("CanvasDocument source digest cannot change")
+        if document.architecture_id != self.architecture.architecture_id:
+            raise ValueError("CanvasDocument architecture binding cannot change")
+        ir_digest = exact_ir_digest(self.architecture)
+        previous_expansion = derive_view_state(self.document).get("module_expansion", [])
         persist_canvas_document(self.document_path, document)
         self.document = document
-        self.refresh_routing_shadow()
+        if exact_ir_digest(self.architecture) != ir_digest:
+            raise AssertionError("visual document update changed the Exact IR")
+        if derive_view_state(document).get("module_expansion", []) != previous_expansion:
+            self.recompile_projection()
 
     def export_svg(self) -> str:
-        return render_svg(next(iter(self.materialized_scenes().values())))
+        """Compile the legacy publication artifact only for an explicit export request."""
+        view = next(iter(self.views.values()))
+        spec = build_visual_spec(view)
+        scene = build_scene(
+            view,
+            spec,
+            str(derive_view_state(self.document).get("layout_mode", "auto")),
+        )
+        return render_svg(scene)
 
 
 def _render_index(template: str, state: dict[str, object]) -> str:
@@ -1637,15 +1352,9 @@ def prepare_studio_bundle(
     *,
     write_static: bool = True,
     replace_stale_bindings: bool = False,
-    routing_mode: str | None = None,
-    routing_shadow_sample_rate: float | None = None,
 ) -> StudioBundle:
     artifact = artifact.resolve()
     workspace = workspace.resolve()
-    routing_config = routing_runtime_config(
-        routing_mode,
-        routing_shadow_sample_rate,
-    )
     architecture = ArchitectureIR.model_validate_json(artifact.read_text(encoding="utf-8"))
     snapshot_path = artifact.parent / "source-snapshot.json"
     if not snapshot_path.is_file():
@@ -1798,11 +1507,7 @@ def prepare_studio_bundle(
                 if node.hierarchy_node_id in expandable and node.depth <= visible_depth
             }
     view = project_hierarchy(architecture, hierarchy, expanded_ids)
-    spec = build_visual_spec(view)
-    scene = build_scene(view, spec, str(state.get("layout_mode", "auto")))
     views = {view.projection_id: view}
-    specs = {view.projection_id: spec}
-    base_scenes = {view.projection_id: scene}
 
     project_root = Path(snapshot.project_root).resolve()
     project_session = create_project_session(
@@ -1877,8 +1582,6 @@ def prepare_studio_bundle(
         semantic_overlay=semantic_overlay,
         hierarchy=hierarchy,
         views=views,
-        specs=specs,
-        base_scenes=base_scenes,
         document=document,
         project_session=project_session,
         project_discovery=project_discovery,
@@ -1889,18 +1592,10 @@ def prepare_studio_bundle(
         search_index=[],
         validation_runs=[],
         navigation=navigation,
-        routing_mode=routing_config.mode,
-        routing_shadow_sample_rate=routing_config.shadow_sample_rate,
     )
     bundle.search_index = build_search_index(bundle)
-    bundle.refresh_routing_shadow()
     _write_json(workspace / "publication" / "hierarchy.json", hierarchy)
     _write_json(workspace / "publication" / "current" / "publication-view.json", view)
-    _write_json(workspace / "publication" / "current" / "visual-spec.json", spec)
-    _write_json(
-        workspace / "publication" / "current" / "visual-scene.json",
-        next(iter(bundle.materialized_scenes().values())),
-    )
     if write_static:
         _write_static_bundle(bundle)
     return bundle

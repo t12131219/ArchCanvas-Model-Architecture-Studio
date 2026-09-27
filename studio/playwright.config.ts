@@ -6,6 +6,7 @@ const workspacePython = process.platform === "win32"
   : "../.venv/bin/python";
 const python = process.env.ARCHCANVAS_PYTHON
   ?? (existsSync(workspacePython) ? workspacePython : "python");
+const externalBaseURL = process.env.ARCHCANVAS_E2E_BASE_URL;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -17,7 +18,7 @@ export default defineConfig({
   workers: 1,
   reporter: process.env.CI ? [["line"], ["html", { open: "never" }]] : "line",
   use: {
-    baseURL: "http://127.0.0.1:4311",
+    baseURL: externalBaseURL ?? "http://127.0.0.1:4311",
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
     video: "retain-on-failure",
@@ -29,8 +30,8 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 1000 } },
     },
   ],
-  webServer: {
-    command: `${python} ../tools/serve_routing_smoke.py --port 4311`,
+  webServer: externalBaseURL ? undefined : {
+    command: `${python} ../tools/serve_studio_e2e.py --port 4311`,
     url: "http://127.0.0.1:4311/api/state",
     reuseExistingServer: false,
     timeout: 120_000,
