@@ -114,6 +114,13 @@ function distanceToNodeBoundary(point: Point, bounds: Bounds): number {
   );
 }
 
+function distanceToCircleBoundary(point: Point, bounds: Bounds): number {
+  const centerX = bounds.x + bounds.width / 2;
+  const centerY = bounds.y + bounds.height / 2;
+  const radius = Math.min(bounds.width, bounds.height) / 2;
+  return Math.abs(Math.hypot(point.x - centerX, point.y - centerY) - radius);
+}
+
 function hierarchyNodeBounds(level: InlineDetailLevel): Bounds[] {
   return [
     ...level.nodes.map((node) => node.bounds),
@@ -193,8 +200,7 @@ describe("interactive module detail layout", () => {
     const updateGate = listDetailNodes(diagram).find((node) => node.label === "z_t")!;
     const candidate = listDetailNodes(diagram).find((node) => node.label === "h̃_t")!;
     const candidateInput = diagram.primitives.find((primitive) => primitive.kind === "flow"
-      && primitive.points.at(-1)?.x === candidate.bounds.x
-      && primitive.points.at(-1)?.y === candidate.bounds.y + candidate.bounds.height / 2);
+      && distanceToNodeBoundary(primitive.points.at(-1)!, candidate.bounds) < 0.01);
 
     expect(candidateInput?.kind).toBe("flow");
     if (candidateInput?.kind !== "flow") return;
@@ -510,10 +516,10 @@ describe("interactive module detail layout", () => {
       expect(frame).toMatchObject({
         frameRole: "semantic-group",
         width: naturalFrame.width,
-        height: naturalFrame.height,
       });
       expect(frame).toMatchObject(baselineFrame ?? {});
       if (!frame || frame.kind !== "rect") continue;
+      expect(frame.height).toBeLessThan(naturalFrame.height);
 
       const content = detailLevelContentBounds(level);
       expect(content).toEqual({
@@ -555,6 +561,104 @@ describe("interactive module detail layout", () => {
         const node = level.nodes.find((candidate) => candidate.label === label)!;
         expect(node.bounds.x, `${routingMode}/${label} remains right of semantic group`)
           .toBeGreaterThanOrEqual(frameBounds.x + frameBounds.width);
+      }
+    }
+  });
+
+  it("keeps semantic group bottom spacing compact and shrinks it when a member moves back", () => {
+    const kind = "attention" as const;
+    const size = expandedDetailSize(kind);
+    const natural = buildModuleDetail(kind, { x: 0, y: 0, ...size });
+    const scale = listDetailNodes(natural).find((node) => node.label === "Scale")!;
+    const levelKey = "attention-semantic-frame-resize";
+    const frameForOffset = (offsetY: number) => {
+      const level = buildInlineDetailLayout(kind, { x: 0, y: 0, ...size }, undefined, {
+        [levelKey]: { [scale.id]: { x: 0, y: offsetY } },
+      }, levelKey);
+      const frame = level.diagram.primitives.find((primitive) => (
+        primitive.kind === "rect"
+          && primitive.variant === "frame"
+          && primitive.frameRole === "semantic-group"
+      ));
+      const movedScale = level.nodes.find((node) => node.id === scale.id)!;
+      expect(frame?.kind).toBe("rect");
+      if (!frame || frame.kind !== "rect") throw new Error("semantic group frame missing");
+      return { frame, movedScale };
+    };
+
+    const baseline = frameForOffset(0);
+    const movedDown = frameForOffset(120);
+    const movedBack = frameForOffset(0);
+    const movedDownGap = movedDown.frame.y + movedDown.frame.height
+      - (movedDown.movedScale.bounds.y + movedDown.movedScale.bounds.height);
+
+    expect(movedDownGap).toBeLessThanOrEqual(18);
+    expect(movedDown.frame.height).toBeGreaterThan(baseline.frame.height);
+    expect(movedBack.frame).toEqual(baseline.frame);
+  });
+
+  it("distributes colliding dynamic endpoints evenly across the same node side", () => {
+    const kind = "attention" as const;
+    const size = expandedDetailSize(kind);
+    const natural = buildModuleDetail(kind, { x: 0, y: 0, ...size });
+    const scale = listDetailNodes(natural).find((node) => node.label === "Scale")!;
+    const levelKey = "attention-distributed-ports";
+    const level = buildInlineDetailLayout(kind, { x: 0, y: 0, ...size }, undefined, {
+      [levelKey]: { [scale.id]: { x: 0, y: 120 } },
+    }, levelKey);
+    const movedScale = level.nodes.find((node) => node.id === scale.id)!;
+    const topEndpoints = level.diagram.primitives.flatMap((primitive) => {
+      if (primitive.kind !== "flow") return [];
+      return [primitive.points[0], primitive.points.at(-1)!].filter((point) => (
+        Math.abs(point.y - movedScale.bounds.y) < 0.01
+          && point.x >= movedScale.bounds.x
+          && point.x <= movedScale.bounds.x + movedScale.bounds.width
+      ));
+    }).sort((first, second) => first.x - second.x);
+
+    expect(topEndpoints).toHaveLength(2);
+    expect(topEndpoints[0].x).toBeLessThan(topEndpoints[1].x);
+    const gaps = [
+      topEndpoints[0].x - movedScale.bounds.x,
+      topEndpoints[1].x - topEndpoints[0].x,
+      movedScale.bounds.x + movedScale.bounds.width - topEndpoints[1].x,
+    ];
+    expect(gaps[0]).toBeCloseTo(gaps[1], 5);
+    expect(gaps[1]).toBeCloseTo(gaps[2], 5);
+  });
+
+  it("reattaches and separates every circular node connection after movement", () => {
+    for (const [kind, size] of Object.entries(EXPANDED_DETAIL_SIZES) as Array<[NodeDetailKind, Pick<Bounds, "width" | "height">]>) {
+      const base = buildModuleDetail(kind, { x: 0, y: 0, ...size });
+      const baseline = layoutDetailDiagram(base);
+      for (const circle of listDetailNodes(baseline).filter((node) => node.primitive.kind === "circle")) {
+        const incidentEndpoints = baseline.primitives.flatMap((primitive, primitiveIndex) => {
+          if (primitive.kind !== "flow") return [];
+          return (["start", "end"] as const).flatMap((endpoint) => {
+            const point = endpoint === "start" ? primitive.points[0] : primitive.points.at(-1)!;
+            return distanceToCircleBoundary(point, circle.bounds) < 0.01
+              ? [{ primitiveIndex, endpoint }]
+              : [];
+          });
+        });
+        expect(incidentEndpoints.length, `${kind}/${circle.label} starts disconnected`).toBeGreaterThan(0);
+
+        const moved = layoutDetailDiagram(base, { [circle.id]: { x: 31, y: 47 } });
+        const movedCircle = listDetailNodes(moved).find((node) => node.id === circle.id)!;
+        const attached = incidentEndpoints.map(({ primitiveIndex, endpoint }) => {
+          const primitive = moved.primitives[primitiveIndex];
+          expect(primitive.kind).toBe("flow");
+          if (primitive.kind !== "flow") throw new Error("incident flow changed primitive kind");
+          return endpoint === "start" ? primitive.points[0] : primitive.points.at(-1)!;
+        });
+        const unique = new Set(attached.map((point) => `${point.x.toFixed(4)},${point.y.toFixed(4)}`));
+
+        for (const point of attached) {
+          expect(distanceToCircleBoundary(point, movedCircle.bounds), `${kind}/${circle.label} loses an incident flow`)
+            .toBeLessThan(0.01);
+        }
+        expect(unique.size, `${kind}/${circle.label} reuses a moved circular port`)
+          .toBe(attached.length);
       }
     }
   });
@@ -729,6 +833,42 @@ describe("interactive module detail layout", () => {
     expect(nested?.expandedChild?.node.id).toBe(transformer.id);
   });
 
+  it("reuses unaffected sibling detail levels when one deep level moves", () => {
+    const kind: NodeDetailKind = "transformer-encoder";
+    const branch = fullyExpandedDetailTree(kind);
+    const size = expandedDetailSize(kind, branch);
+    const bounds = { x: 20, y: 30, ...size };
+    const previous = buildInlineDetailLayout(kind, bounds, branch, {}, "root");
+    const children = inlineExpandedChildren(previous);
+    expect(children.length).toBeGreaterThan(1);
+    const changedChild = children[0];
+    const sibling = children[1];
+    const movable = changedChild.level.nodes.find((node) => !node.nestedKind) ?? changedChild.level.nodes[0];
+    const layouts = {
+      [changedChild.level.levelKey]: {
+        [movable.id]: { x: 12, y: 8 },
+      },
+    };
+    const next = buildInlineDetailLayout(
+      kind,
+      bounds,
+      branch,
+      layouts,
+      "root",
+      [],
+      "atomic-bottom-up",
+      previous,
+      new Set([changedChild.level.levelKey]),
+    );
+    const nextChildren = inlineExpandedChildren(next);
+
+    expect(next).not.toBe(previous);
+    expect(nextChildren.find((child) => child.node.id === changedChild.node.id)?.level)
+      .not.toBe(changedChild.level);
+    expect(nextChildren.find((child) => child.node.id === sibling.node.id)?.level)
+      .toBe(sibling.level);
+  });
+
   it("lays out every expandable catalog child inside its recursively grown parent", () => {
     for (const [kind, naturalSize] of Object.entries(EXPANDED_DETAIL_SIZES) as Array<[NodeDetailKind, Pick<Bounds, "width" | "height">]>) {
       const base = buildModuleDetail(kind, { x: 0, y: 0, ...naturalSize });
@@ -820,7 +960,7 @@ describe("interactive module detail layout", () => {
     }
   });
 
-  it("snaps every internal circle connection to a horizontal or vertical axis", () => {
+  it("snaps every internal circle connection to its circumference", () => {
     for (const [kind, size] of Object.entries(EXPANDED_DETAIL_SIZES) as Array<[NodeDetailKind, Pick<Bounds, "width" | "height">]>) {
       const diagram = layoutDetailDiagram(buildModuleDetail(kind, { x: 0, y: 0, ...size }));
       const circles = listDetailNodes(diagram).filter((node) => node.primitive.kind === "circle");
@@ -828,25 +968,11 @@ describe("interactive module detail layout", () => {
         ? [primitive.points[0], primitive.points.at(-1)!]
         : []);
       for (const circle of circles) {
-        const center = {
-          x: circle.bounds.x + circle.bounds.width / 2,
-          y: circle.bounds.y + circle.bounds.height / 2,
-        };
-        const attached = endpoints.filter((point) => {
-          const onVerticalBoundary = (Math.abs(point.x - circle.bounds.x) < 0.01
-            || Math.abs(point.x - circle.bounds.x - circle.bounds.width) < 0.01)
-            && point.y >= circle.bounds.y && point.y <= circle.bounds.y + circle.bounds.height;
-          const onHorizontalBoundary = (Math.abs(point.y - circle.bounds.y) < 0.01
-            || Math.abs(point.y - circle.bounds.y - circle.bounds.height) < 0.01)
-            && point.x >= circle.bounds.x && point.x <= circle.bounds.x + circle.bounds.width;
-          return onVerticalBoundary || onHorizontalBoundary;
-        });
+        const attached = endpoints.filter((point) => distanceToCircleBoundary(point, circle.bounds) < 0.01);
         expect(attached.length, `${kind}/${circle.label} has no attached flow`).toBeGreaterThan(0);
         for (const point of attached) {
-          expect(
-            Math.abs(point.x - center.x) < 0.01 || Math.abs(point.y - center.y) < 0.01,
-            `${kind}/${circle.label} endpoint is off-axis`,
-          ).toBe(true);
+          expect(distanceToCircleBoundary(point, circle.bounds), `${kind}/${circle.label} endpoint is off-circle`)
+            .toBeLessThan(0.01);
         }
       }
     }

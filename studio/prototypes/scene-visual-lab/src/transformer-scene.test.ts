@@ -262,7 +262,7 @@ describe("classic Transformer source-grounded scene", () => {
     }
   });
 
-  it("contains expanded attention siblings and collapses its entry bridge in atomic mode", () => {
+  it("keeps attention fan-out continuous and connects masks to its internal semantic port", () => {
     const base = buildModuleDetail("transformer-encoder", {
       x: 0,
       y: 0,
@@ -291,19 +291,49 @@ describe("classic Transformer source-grounded scene", () => {
 
     const child = atomic.expandedChild!.level;
     const childEntry = inlineAtomicEntry(child)!;
+    expect(childEntry.point).toEqual(child.diagram.entryPoint);
     expect(atomic.diagram.primitives.some((primitive) => (
       primitive.kind === "flow" && primitive.points.at(-1)
         && Math.abs(primitive.points.at(-1)!.x - childEntry.point.x) < 0.01
         && Math.abs(primitive.points.at(-1)!.y - childEntry.point.y) < 0.01
     ))).toBe(true);
 
+    const entryBridge = child.diagram.primitives[2];
+    expect(entryBridge.kind).toBe("flow");
+    if (entryBridge.kind !== "flow") return;
+    expect(entryBridge.points[0]).toEqual(child.diagram.entryPoint);
+    const fanOutPoint = entryBridge.points.at(-1)!;
+    expect(child.diagram.primitives.filter((primitive) => (
+      primitive.kind === "flow"
+        && primitive.points[0].x === fanOutPoint.x
+        && primitive.points[0].y === fanOutPoint.y
+    ))).toHaveLength(3);
+
+    const softmax = child.nodes.find((node) => node.label === "Softmax")!;
+    const maskPort = child.diagram.semanticInputPorts?.mask;
+    expect(maskPort).toEqual({
+      point: {
+        x: softmax.bounds.x + softmax.bounds.width / 2,
+        y: softmax.bounds.y,
+      },
+      side: "top",
+    });
+    const maskFlowIndex = atomic.diagram.primitives.findIndex((primitive) => (
+      primitive.kind === "flow" && primitive.channel === "src-padding-mask"
+    ));
+    const maskFlow = atomic.diagram.primitives[maskFlowIndex];
+    expect(maskFlow.kind).toBe("flow");
+    if (maskFlow.kind !== "flow") return;
+    expect(maskFlow.points.at(-1)).toEqual(maskPort?.point);
+    expect(maskFlow.marker).not.toBe(false);
+
     const plan = buildAtomicHierarchyRoutingPlan(
       { encoder: atomic },
       new Set(["encoder"]),
       new Set(["encoder"]),
     );
-    expect(plan.hiddenFlowIds.has(`${child.levelKey}:flow:2`)).toBe(true);
-    expect(plan.foregroundFlowIds.size).toBeGreaterThan(0);
+    expect(plan.hiddenFlowIds.has(`${child.levelKey}:flow:2`)).toBe(false);
+    expect(plan.foregroundFlowIds.has(`${atomic.levelKey}:flow:${maskFlowIndex}`)).toBe(true);
   });
 
   it("keeps child-frame entry and bridge visible in recursive routing mode", () => {

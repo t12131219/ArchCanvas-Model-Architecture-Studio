@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { buildInlineDetailLayout, expandedDetailSize, listDetailNodes } from "./detail-layout";
+import { buildAtomicHierarchyRoutingPlan } from "./atomic-hierarchy";
+import {
+  buildInlineDetailLayout,
+  expandedDetailSize,
+  inlineAtomicEntry,
+  listDetailNodes,
+} from "./detail-layout";
+import type { DetailExpansionBranch } from "./detail-layout";
 import { expandScene, expandableNodeIds } from "./expansion";
 import { buildModuleDetail } from "./module-details";
 import { measureScene, routeScene } from "./routing";
@@ -50,7 +57,7 @@ describe("Tensor2Tensor Transformer source-grounded scene", () => {
   });
 
   it("supports the same recursive attention drill-down as the classic comparison scene", () => {
-    for (const kind of ["transformer-encoder", "transformer-decoder"] as const) {
+    for (const kind of ["tensor2tensor-encoder", "tensor2tensor-decoder"] as const) {
       const natural = buildModuleDetail(kind, { x: 0, y: 0, ...expandedDetailSize(kind) });
       const attention = listDetailNodes(natural).find((node) => node.nestedKind === "attention");
       expect(attention).toBeTruthy();
@@ -59,6 +66,62 @@ describe("Tensor2Tensor Transformer source-grounded scene", () => {
         primitive.kind === "rect" && primitive.label === "Softmax"
       ))).toBe(true);
     }
+  });
+
+  it("keeps QKV fan-out continuous and routes encoder attention bias into Softmax", () => {
+    const kind = "tensor2tensor-encoder" as const;
+    const base = buildModuleDetail(kind, { x: 0, y: 0, ...expandedDetailSize(kind) });
+    const attention = listDetailNodes(base).find((node) => node.nestedKind === "attention")!;
+    const branch: DetailExpansionBranch = { childId: attention.id };
+    const atomic = buildInlineDetailLayout(
+      kind,
+      { x: 0, y: 0, ...expandedDetailSize(kind, branch) },
+      branch,
+      {},
+      kind,
+      [],
+      "atomic-bottom-up",
+    );
+    const child = atomic.expandedChild!.level;
+    const childEntry = inlineAtomicEntry(child)!;
+
+    expect(childEntry.point).toEqual(child.diagram.entryPoint);
+    const entryBridge = child.diagram.primitives[2];
+    expect(entryBridge.kind).toBe("flow");
+    if (entryBridge.kind !== "flow") return;
+    expect(entryBridge.points[0]).toEqual(childEntry.point);
+    const fanOutPoint = entryBridge.points.at(-1)!;
+    expect(child.diagram.primitives.filter((primitive) => (
+      primitive.kind === "flow"
+        && primitive.points[0].x === fanOutPoint.x
+        && primitive.points[0].y === fanOutPoint.y
+    ))).toHaveLength(3);
+
+    const softmax = child.nodes.find((node) => node.label === "Softmax")!;
+    const maskPort = child.diagram.semanticInputPorts?.mask;
+    expect(maskPort).toEqual({
+      point: {
+        x: softmax.bounds.x + softmax.bounds.width / 2,
+        y: softmax.bounds.y,
+      },
+      side: "top",
+    });
+    const biasFlowIndex = atomic.diagram.primitives.findIndex((primitive) => (
+      primitive.kind === "flow" && primitive.channel === "src-padding-mask"
+    ));
+    const biasFlow = atomic.diagram.primitives[biasFlowIndex];
+    expect(biasFlow.kind).toBe("flow");
+    if (biasFlow.kind !== "flow") return;
+    expect(biasFlow.points.at(-1)).toEqual(maskPort?.point);
+    expect(biasFlow.marker).not.toBe(false);
+
+    const plan = buildAtomicHierarchyRoutingPlan(
+      { encoder: atomic },
+      new Set(["encoder"]),
+      new Set(["encoder"]),
+    );
+    expect(plan.hiddenFlowIds.has(`${child.levelKey}:flow:2`)).toBe(false);
+    expect(plan.foregroundFlowIds.has(`${atomic.levelKey}:flow:${biasFlowIndex}`)).toBe(true);
   });
 
   it("exports the Tensor2Tensor-specific labels without invalid geometry", () => {

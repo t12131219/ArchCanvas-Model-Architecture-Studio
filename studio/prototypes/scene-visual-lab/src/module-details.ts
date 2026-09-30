@@ -1,4 +1,4 @@
-import type { Bounds, NodeDetailKind, Point } from "./types";
+import type { Bounds, NodeDetailKind, Point, PortSide } from "./types";
 import {
   buildCatalogDetail,
   CATALOG_DETAIL_KIND_NAMES,
@@ -13,13 +13,14 @@ export type DetailPrimitive =
   | { kind: "rect"; x: number; y: number; width: number; height: number; rx: number; label?: string; note?: string; tone: DetailTone; variant?: "box" | "frame" | "capsule"; frameRole?: DetailFrameRole }
   | { kind: "circle"; cx: number; cy: number; radius: number; label: string; tone: DetailTone }
   | { kind: "matrix"; x: number; y: number; width: number; height: number; columns: number; rows: number; label?: string; tone: DetailTone; depth?: number }
-  | { kind: "flow"; points: Point[]; marker?: boolean; tone?: DetailTone; channel?: string }
+  | { kind: "flow"; points: Point[]; marker?: boolean; tone?: DetailTone; channel?: string; targetPortRole?: string }
   | { kind: "text"; x: number; y: number; value: string; anchor?: "start" | "middle" | "end"; emphasis?: boolean; tone?: DetailTone };
 
 export interface ModuleDetailDiagram {
   kind: NodeDetailKind;
   entryPoint: Point;
   exitPoint: Point;
+  semanticInputPorts?: Record<string, { point: Point; side: PortSide }>;
   primitives: DetailPrimitive[];
 }
 
@@ -93,6 +94,15 @@ function flow(...points: Point[]): DetailPrimitive {
 
 function semanticFlow(tone: DetailTone, channel: string, ...points: Point[]): DetailPrimitive {
   return { kind: "flow", points, tone, channel };
+}
+
+function semanticInputFlow(
+  tone: DetailTone,
+  channel: string,
+  targetPortRole: string,
+  ...points: Point[]
+): DetailPrimitive {
+  return { kind: "flow", points, tone, channel, targetPortRole };
 }
 
 function wire(...points: Point[]): DetailPrimitive {
@@ -226,7 +236,7 @@ function transformerEncoderDiagram(bounds: Bounds): DetailPrimitive[] {
     flow({ x: addNorm2X + 112, y: cy }, { x: x + width - 74, y: cy }),
     matrix(x + width - 74, cy - 27, 52, 54, "memory", "orange", 3, 3),
     flow({ x: x + width - 22, y: cy }, { x: x + width, y: cy }),
-    semanticFlow("orange", "src-padding-mask", { x: x + 101, y: y + 154 }, { x: attentionX + 69, y: y + 174 }, { x: attentionX + 69, y: cy - 36 }),
+    semanticInputFlow("orange", "src-padding-mask", "mask", { x: x + 101, y: y + 154 }, { x: attentionX + 69, y: y + 174 }, { x: attentionX + 69, y: cy - 36 }),
     rect(x + 40, y + 116, 122, 38, "Source padding mask", "orange", "[B,1,1,S]"),
     semanticFlow("blue", "residual-1", { x: inputX + 31, y: cy - 27 }, { x: inputX + 31, y: y + 184 }, { x: addNorm1X + 56, y: y + 184 }, { x: addNorm1X + 56, y: cy - 31 }),
     semanticFlow("green", "residual-2", { x: addNorm1X + 56, y: cy + 31 }, { x: addNorm1X + 56, y: cy + 75 }, { x: addNorm2X + 56, y: cy + 75 }, { x: addNorm2X + 56, y: cy + 31 }),
@@ -279,11 +289,11 @@ function transformerDecoderDiagram(bounds: Bounds): DetailPrimitive[] {
     matrix(x + width - 78, cy - 26, 54, 52, "decoded", "pink", 3, 3),
     flow({ x: x + width - 24, y: cy }, { x: x + width, y: cy }),
     rect(x + 70, y + 130, 166, 44, "Target pad ∧ causal mask", "orange", "[B,1,T,T]"),
-    semanticFlow("orange", "target-mask", { x: x + 153, y: y + 174 }, { x: selfX + 73, y: y + 196 }, { x: selfX + 73, y: cy - 36 }),
+    semanticInputFlow("orange", "target-mask", "mask", { x: x + 153, y: y + 174 }, { x: selfX + 73, y: y + 196 }, { x: selfX + 73, y: cy - 36 }),
     matrix(x + 510, y + 126, 72, 54, "memory", "orange", 5, 3, 7),
     semanticFlow("orange", "encoder-memory", { x: x + 582, y: y + 153 }, { x: crossX + 77, y: y + 202 }, { x: crossX + 77, y: cy - 38 }),
     rect(x + 300, y + 126, 150, 54, "Source padding mask", "orange", "cross-attention keys"),
-    semanticFlow("orange", "memory-mask", { x: x + 375, y: y + 180 }, { x: crossX + 108, y: y + 220 }, { x: crossX + 108, y: cy - 38 }),
+    semanticInputFlow("orange", "memory-mask", "mask", { x: x + 375, y: y + 180 }, { x: crossX + 108, y: y + 220 }, { x: crossX + 108, y: cy - 38 }),
     semanticFlow("blue", "residual-1", { x: inputX + 27, y: cy - 26 }, { x: inputX + 27, y: y + 246 }, { x: add1X + 54, y: y + 246 }, { x: add1X + 54, y: cy - 31 }),
     semanticFlow("green", "residual-2", { x: add1X + 54, y: cy + 31 }, { x: add1X + 54, y: cy + 70 }, { x: add2X + 54, y: cy + 70 }, { x: add2X + 54, y: cy + 31 }),
     semanticFlow("violet", "residual-3", { x: add2X + 54, y: cy + 31 }, { x: add2X + 54, y: cy + 102 }, { x: add3X + 54, y: cy + 102 }, { x: add3X + 54, y: cy + 31 }),
@@ -563,5 +573,11 @@ export function buildModuleDetail(kind: NodeDetailKind, bounds: Bounds): ModuleD
     "mixture-of-experts": mixtureOfExpertsDiagram,
     pooling: poolingDiagram,
   } as Record<NodeDetailKind, (value: Bounds) => DetailPrimitive[]>;
-  return { kind, ...boundaryPoints(bounds), primitives: builders[kind](bounds) };
+  const semanticInputPorts = kind === "attention" ? {
+    mask: {
+      point: { x: bounds.x + 432, y: bounds.y + 120 },
+      side: "top" as const,
+    },
+  } : undefined;
+  return { kind, ...boundaryPoints(bounds), semanticInputPorts, primitives: builders[kind](bounds) };
 }

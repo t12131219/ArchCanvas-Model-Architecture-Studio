@@ -307,7 +307,7 @@ export function projectedAtomicEntryForModule(
     ));
     if (next.length !== 1) {
       return next.length > 1
-        ? { point: { ...edge.points.at(-1)! }, side: "left", bridgeEdgeIds }
+        ? { point: { ...moduleEntry.point }, side: moduleEntry.side, bridgeEdgeIds: [] }
         : undefined;
     }
     cursorId = edge.targetId;
@@ -376,7 +376,7 @@ export function projectedSceneBoundaryPorts(
       exit: { ...(atomicExit?.point ?? exit.point) },
       entrySide: atomicEntry?.side ?? "left",
       exitSide: atomicExit?.side ?? "right",
-      entryIsInterior: Boolean(atomicEntry),
+      entryIsInterior: Boolean(atomicEntry?.atomId),
       exitIsInterior: Boolean(atomicExit),
     }]] : [];
   }));

@@ -11,7 +11,7 @@ import {
   Undo2,
   Waypoints,
 } from "lucide-react";
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useReducer, useRef, useState, useTransition } from "react";
 
 import { applyVisualPatch, clampBounds, cloneScene, editableNodeBounds } from "./model";
 import { expandScene } from "./expansion";
@@ -109,6 +109,7 @@ interface DetailGesture {
   initialOffset: Point;
   childBounds: Bounds;
   parentBounds: Bounds;
+  presentation?: DetailDragPresentation;
 }
 
 type Gesture = NodeGesture | DetailGesture;
@@ -127,6 +128,166 @@ interface CameraGesture {
   pointerId: number;
   start: Point;
   initial: CanvasCamera;
+}
+
+interface DetailFlowPresentation {
+  element: SVGPolylineElement;
+  points: Point[];
+  moveStart: boolean;
+  moveEnd: boolean;
+}
+
+interface DetailDragPresentation {
+  element: SVGGElement;
+  initialTransform: string | null;
+  flows: DetailFlowPresentation[];
+}
+
+type PendingGesturePreview =
+  | { kind: "node"; value: { nodeId: string; bounds: Bounds } }
+  | { kind: "detail"; value: DetailPreview };
+
+interface DetailTreeCacheEntry {
+  kind: NonNullable<LabNode["detail_kind"]>;
+  bounds: Bounds;
+  branch?: DetailExpansionBranch;
+  layouts: DetailLayoutMap;
+  hierarchyRoutingMode: HierarchyRoutingMode;
+  tree: InlineDetailLevel;
+}
+
+function sameBounds(first: Bounds, second: Bounds): boolean {
+  return first.x === second.x
+    && first.y === second.y
+    && first.width === second.width
+    && first.height === second.height;
+}
+
+function pointTouchesBounds(point: Point, bounds: Bounds, tolerance = 16): boolean {
+  const dx = point.x < bounds.x
+    ? bounds.x - point.x
+    : point.x > bounds.x + bounds.width ? point.x - bounds.x - bounds.width : 0;
+  const dy = point.y < bounds.y
+    ? bounds.y - point.y
+    : point.y > bounds.y + bounds.height ? point.y - bounds.y - bounds.height : 0;
+  if (dx || dy) return Math.hypot(dx, dy) <= tolerance;
+  return Math.min(
+    point.x - bounds.x,
+    bounds.x + bounds.width - point.x,
+    point.y - bounds.y,
+    bounds.y + bounds.height - point.y,
+  ) <= tolerance;
+}
+
+function captureDetailDragPresentation(
+  eventTarget: EventTarget | null,
+  childBounds: Bounds,
+): DetailDragPresentation | undefined {
+  if (!(eventTarget instanceof Element)) return undefined;
+  const element = eventTarget.closest<SVGGElement>(".detail-interactive-node, .nested-inline-detail");
+  const level = element?.parentElement;
+  if (!element || !level?.classList.contains("detail-level")) return undefined;
+  const detailRoot = element.closest<SVGGElement>(".lab-node") ?? level;
+  const flows = [...detailRoot.querySelectorAll<SVGPolylineElement>(".detail-flow")].flatMap((flow) => {
+    if (element.contains(flow)) return [];
+    const points = Array.from({ length: flow.points.numberOfItems }, (_, index) => {
+      const point = flow.points.getItem(index);
+      return { x: point.x, y: point.y };
+    });
+    if (!points.length) return [];
+    const moveStart = pointTouchesBounds(points[0], childBounds);
+    const moveEnd = pointTouchesBounds(points.at(-1)!, childBounds);
+    return moveStart || moveEnd ? [{ element: flow, points, moveStart, moveEnd }] : [];
+  });
+  return { element, initialTransform: element.getAttribute("transform"), flows };
+}
+
+function translatedFlowPoints(flow: DetailFlowPresentation, dx: number, dy: number): Point[] {
+  const points = flow.points.map((point) => ({ ...point }));
+  const moveEndpoint = (index: number, adjacentIndex: number) => {
+    const original = flow.points[index];
+    const adjacent = flow.points[adjacentIndex];
+    points[index] = { x: original.x + dx, y: original.y + dy };
+    if (!adjacent || points.length <= 2) return;
+    if (Math.abs(original.y - adjacent.y) <= Math.abs(original.x - adjacent.x)) {
+      points[adjacentIndex].y = adjacent.y + dy;
+    } else {
+      points[adjacentIndex].x = adjacent.x + dx;
+    }
+  };
+  if (flow.moveStart) moveEndpoint(0, 1);
+  if (flow.moveEnd) moveEndpoint(points.length - 1, points.length - 2);
+  return points;
+}
+
+function presentDetailDrag(presentation: DetailDragPresentation, dx: number, dy: number) {
+  const suffix = presentation.initialTransform ? ` ${presentation.initialTransform}` : "";
+  presentation.element.setAttribute("transform", `translate(${dx} ${dy})${suffix}`);
+  for (const flow of presentation.flows) {
+    flow.element.setAttribute(
+      "points",
+      translatedFlowPoints(flow, dx, dy).map((point) => `${point.x},${point.y}`).join(" "),
+    );
+  }
+}
+
+function resetDetailDragPresentation(presentation: DetailDragPresentation | undefined) {
+  if (!presentation) return;
+  if (presentation.initialTransform === null) presentation.element.removeAttribute("transform");
+  else presentation.element.setAttribute("transform", presentation.initialTransform);
+  for (const flow of presentation.flows) {
+    flow.element.setAttribute("points", flow.points.map((point) => `${point.x},${point.y}`).join(" "));
+  }
+}
+
+function sameNode(first: LabNode, second: LabNode): boolean {
+  return first.scene_node_id === second.scene_node_id
+    && first.shape === second.shape
+    && first.label === second.label
+    && first.secondary_label === second.secondary_label
+    && first.detail_kind === second.detail_kind
+    && first.detail_expanded === second.detail_expanded
+    && sameBounds(first.bounds, second.bounds);
+}
+
+function sameDetailSelection(first?: DetailSelection | null, second?: DetailSelection | null): boolean {
+  if (!first || !second) return first === second;
+  return first.rootId === second.rootId
+    && first.childId === second.childId
+    && sameLevelPath(first.levelPath, second.levelPath);
+}
+
+function useLatestEvent<T extends (...args: never[]) => unknown>(handler: T): T {
+  const handlerRef = useRef(handler);
+  handlerRef.current = handler;
+  return useMemo(() => ((...args: Parameters<T>) => handlerRef.current(...args)) as T, []);
+}
+
+function useStableSet(values: ReadonlySet<string> | undefined): ReadonlySet<string> | undefined {
+  const stableRef = useRef(values);
+  const stable = stableRef.current;
+  const equal = stable === values || Boolean(stable && values
+    && stable.size === values.size
+    && [...values].every((value) => stable.has(value)));
+  if (!equal) stableRef.current = values;
+  return stableRef.current;
+}
+
+function sameDetailLevelLayout(
+  first: DetailLayoutMap[string] | undefined,
+  second: DetailLayoutMap[string] | undefined,
+): boolean {
+  if (first === second) return true;
+  const firstEntries = Object.entries(first ?? {});
+  const secondEntries = Object.entries(second ?? {});
+  return firstEntries.length === secondEntries.length && firstEntries.every(([nodeId, offset]) => (
+    offset.x === second?.[nodeId]?.x && offset.y === second[nodeId]?.y
+  ));
+}
+
+function changedDetailLevelKeys(first: DetailLayoutMap, second: DetailLayoutMap): Set<string> {
+  const keys = new Set([...Object.keys(first), ...Object.keys(second)]);
+  return new Set([...keys].filter((key) => !sameDetailLevelLayout(first[key], second[key])));
 }
 
 const NODE_SHAPES: readonly NodeShape[] = [
@@ -480,16 +641,7 @@ function expansionAtLevel(
   return current;
 }
 
-function RecursiveDetailLevelGraphic({
-  root,
-  level,
-  levelPath,
-  selection,
-  onChildPointerDown,
-  onToggleNested,
-  hiddenFlowIds,
-  foregroundFlowIds,
-}: {
+interface RecursiveDetailLevelGraphicProps {
   root: LabNode;
   level: InlineDetailLevel;
   levelPath: string[];
@@ -504,7 +656,32 @@ function RecursiveDetailLevelGraphic({
   onToggleNested: (root: LabNode, levelPath: string[], child: DetailNode) => void;
   hiddenFlowIds?: ReadonlySet<string>;
   foregroundFlowIds?: ReadonlySet<string>;
-}) {
+}
+
+function recursiveDetailLevelPropsEqual(
+  first: RecursiveDetailLevelGraphicProps,
+  second: RecursiveDetailLevelGraphicProps,
+): boolean {
+  return sameNode(first.root, second.root)
+    && first.level === second.level
+    && sameLevelPath(first.levelPath, second.levelPath)
+    && sameDetailSelection(first.selection, second.selection)
+    && first.onChildPointerDown === second.onChildPointerDown
+    && first.onToggleNested === second.onToggleNested
+    && first.hiddenFlowIds === second.hiddenFlowIds
+    && first.foregroundFlowIds === second.foregroundFlowIds;
+}
+
+const RecursiveDetailLevelGraphic = memo(function RecursiveDetailLevelGraphic({
+  root,
+  level,
+  levelPath,
+  selection,
+  onChildPointerDown,
+  onToggleNested,
+  hiddenFlowIds,
+  foregroundFlowIds,
+}: RecursiveDetailLevelGraphicProps) {
   const nodesByIndex = new Map(level.nodes.map((child) => [child.primitiveIndex, child]));
   const expanded = inlineExpandedChildren(level);
   const expandedIds = new Set(expanded.map((child) => child.node.id));
@@ -544,7 +721,7 @@ function RecursiveDetailLevelGraphic({
     />)}
     {level.diagram.primitives.map((primitive, index) => renderPrimitive(primitive, index, true))}
   </g>;
-}
+}, recursiveDetailLevelPropsEqual);
 
 function InlineExpandedDetailGraphic({
   root,
@@ -604,7 +781,15 @@ function InlineExpandedDetailGraphic({
       hiddenFlowIds={hiddenFlowIds}
       foregroundFlowIds={foregroundFlowIds}
     />
-    <rect className="nested-inline-header" x={x} y={y} width={width} height={42} rx={5} />
+    <rect
+      className="nested-inline-header"
+      x={x}
+      y={y}
+      width={width}
+      height={42}
+      rx={5}
+      onPointerDown={(event) => onChildPointerDown(event, root, levelPath, parentLevel, child)}
+    />
     <line className="nested-inline-divider" x1={x} y1={y + 42} x2={x + width} y2={y + 42} />
     <text className="nested-detail-title" x={x + 12} y={y + 17}>{child.label}</text>
     <text className="nested-detail-subtitle" x={x + 12} y={y + 32}>{DETAIL_KIND_NAMES[nested.kind]}</text>
@@ -675,22 +860,7 @@ function DetailToggle({ node, onToggle }: { node: LabNode; onToggle: (nodeId: st
   </foreignObject>;
 }
 
-function NodeGraphic({
-  node,
-  visualStyle,
-  selected,
-  connecting,
-  onPointerDown,
-  onResizePointerDown,
-  onToggleDetail,
-  detailTree,
-  detailSelection,
-  onDetailPointerDown,
-  onToggleNestedDetail,
-  resizeEnabled,
-  hiddenFlowIds,
-  foregroundFlowIds,
-}: {
+interface NodeGraphicProps {
   node: LabNode;
   visualStyle: NodeVisualStyle;
   selected: boolean;
@@ -711,7 +881,41 @@ function NodeGraphic({
   resizeEnabled: boolean;
   hiddenFlowIds?: ReadonlySet<string>;
   foregroundFlowIds?: ReadonlySet<string>;
-}) {
+}
+
+function nodeGraphicPropsEqual(first: NodeGraphicProps, second: NodeGraphicProps): boolean {
+  return sameNode(first.node, second.node)
+    && first.visualStyle === second.visualStyle
+    && first.selected === second.selected
+    && first.connecting === second.connecting
+    && first.detailTree === second.detailTree
+    && sameDetailSelection(first.detailSelection, second.detailSelection)
+    && first.resizeEnabled === second.resizeEnabled
+    && first.hiddenFlowIds === second.hiddenFlowIds
+    && first.foregroundFlowIds === second.foregroundFlowIds
+    && first.onPointerDown === second.onPointerDown
+    && first.onResizePointerDown === second.onResizePointerDown
+    && first.onToggleDetail === second.onToggleDetail
+    && first.onDetailPointerDown === second.onDetailPointerDown
+    && first.onToggleNestedDetail === second.onToggleNestedDetail;
+}
+
+const NodeGraphic = memo(function NodeGraphic({
+  node,
+  visualStyle,
+  selected,
+  connecting,
+  onPointerDown,
+  onResizePointerDown,
+  onToggleDetail,
+  detailTree,
+  detailSelection,
+  onDetailPointerDown,
+  onToggleNestedDetail,
+  resizeEnabled,
+  hiddenFlowIds,
+  foregroundFlowIds,
+}: NodeGraphicProps) {
   const { x, y, width, height } = node.bounds;
   const colors = NODE_COLORS[node.shape];
   const fill = visualStyle === "compact" ? "#ffffff" : colors.fill;
@@ -826,7 +1030,7 @@ function NodeGraphic({
       />}
     </g>
   );
-}
+}, nodeGraphicPropsEqual);
 
 function labelPosition(route: RoutedEdge, style: EdgeLabelStyle): Point & { angle: number } {
   if (style !== "endpoint") return { x: route.labelPoint.x, y: route.labelPoint.y, angle: route.labelAngle };
@@ -840,17 +1044,38 @@ function labelPosition(route: RoutedEdge, style: EdgeLabelStyle): Point & { angl
   };
 }
 
-function EdgeGraphic({
-  route,
-  labelStyle,
-  selected,
-  onSelect,
-}: {
+interface EdgeGraphicProps {
   route: RoutedEdge;
   labelStyle: EdgeLabelStyle;
   selected: boolean;
   onSelect: (edge: LabEdge) => void;
-}) {
+}
+
+function edgeGraphicPropsEqual(first: EdgeGraphicProps, second: EdgeGraphicProps): boolean {
+  return first.route.path === second.route.path
+    && first.route.edge.scene_edge_id === second.route.edge.scene_edge_id
+    && first.route.edge.source_scene_node_id === second.route.edge.source_scene_node_id
+    && first.route.edge.target_scene_node_id === second.route.edge.target_scene_node_id
+    && first.route.edge.label === second.route.edge.label
+    && first.route.edge.relation === second.route.edge.relation
+    && first.route.labelPoint.x === second.route.labelPoint.x
+    && first.route.labelPoint.y === second.route.labelPoint.y
+    && first.route.labelAngle === second.route.labelAngle
+    && first.route.sourceSide === second.route.sourceSide
+    && first.route.targetSide === second.route.targetSide
+    && first.route.markerEnd === second.route.markerEnd
+    && first.route.foreground === second.route.foreground
+    && first.labelStyle === second.labelStyle
+    && first.selected === second.selected
+    && first.onSelect === second.onSelect;
+}
+
+const EdgeGraphic = memo(function EdgeGraphic({
+  route,
+  labelStyle,
+  selected,
+  onSelect,
+}: EdgeGraphicProps) {
   const color = RELATION_COLORS[route.edge.relation];
   const labelPoint = labelPosition(route, labelStyle);
   const labelWidth = Math.max(42, Math.min(220, route.edge.label.length * 6.6 + 16));
@@ -873,7 +1098,7 @@ function EdgeGraphic({
       </g>
     </g>
   );
-}
+}, edgeGraphicPropsEqual);
 
 function MarkerDefinitions() {
   return <defs>
@@ -936,10 +1161,26 @@ function App() {
   const [edgeSource, setEdgeSource] = useState<string | null>(null);
   const [camera, setCamera] = useState<CanvasCamera>({ x: 0, y: 0, zoom: 1 });
   const [isPanning, setIsPanning] = useState(false);
+  const [isHierarchyPending, startHierarchyTransition] = useTransition();
   const svgRef = useRef<SVGSVGElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  const zoomOutputRef = useRef<HTMLOutputElement | null>(null);
   const gestureRef = useRef<Gesture | null>(null);
   const cameraGestureRef = useRef<CameraGesture | null>(null);
+  const cameraRef = useRef(camera);
+  const pendingCameraRef = useRef<CanvasCamera | null>(null);
+  const cameraFrameRef = useRef<number | null>(null);
+  const cameraCommitTimerRef = useRef<number | null>(null);
+  const pendingGesturePreviewRef = useRef<PendingGesturePreview | null>(null);
+  const gestureFrameRef = useRef<number | null>(null);
+  const pendingDetailPresentationRef = useRef<{
+    presentation: DetailDragPresentation;
+    dx: number;
+    dy: number;
+  } | null>(null);
+  const detailPresentationFrameRef = useRef<number | null>(null);
+  const detailTreeCacheRef = useRef(new Map<string, DetailTreeCacheEntry>());
+  const lastMetricsRef = useRef<ReturnType<typeof measureScene> | null>(null);
   const pendingCameraFitRef = useRef(true);
   const pendingFocusNodeRef = useRef<string | null>(null);
   const sequence = useRef(1);
@@ -968,21 +1209,55 @@ function App() {
       },
     };
   }, [detailLayouts, detailPreview]);
-  const detailTrees = useMemo<Record<string, InlineDetailLevel>>(() => Object.fromEntries(
-    displayScene.nodes.flatMap((node) => (
-      node.detail_expanded && node.detail_kind
-        ? [[node.scene_node_id, buildInlineDetailLayout(
-          node.detail_kind,
-          node.bounds,
-          detailExpansions[node.scene_node_id],
-          effectiveDetailLayouts,
-          node.scene_node_id,
-          [],
-          hierarchyRoutingMode,
-        )]]
-        : []
-    )),
-  ), [detailExpansions, displayScene, effectiveDetailLayouts, hierarchyRoutingMode]);
+  const detailTrees = useMemo<Record<string, InlineDetailLevel>>(() => {
+    const trees: Record<string, InlineDetailLevel> = {};
+    const activeIds = new Set<string>();
+    for (const node of displayScene.nodes) {
+      if (!node.detail_expanded || !node.detail_kind) continue;
+      activeIds.add(node.scene_node_id);
+      const branch = detailExpansions[node.scene_node_id];
+      const layouts = detailPreview?.rootId === node.scene_node_id
+        ? effectiveDetailLayouts
+        : detailLayouts;
+      const cached = detailTreeCacheRef.current.get(node.scene_node_id);
+      const changedLayoutKeys = cached ? changedDetailLevelKeys(cached.layouts, layouts) : undefined;
+      if (cached
+        && cached.kind === node.detail_kind
+        && sameBounds(cached.bounds, node.bounds)
+        && cached.branch === branch
+        && changedLayoutKeys?.size === 0
+        && cached.hierarchyRoutingMode === hierarchyRoutingMode) {
+        trees[node.scene_node_id] = cached.tree;
+        continue;
+      }
+      const tree = buildInlineDetailLayout(
+        node.detail_kind,
+        node.bounds,
+        branch,
+        layouts,
+        node.scene_node_id,
+        [],
+        hierarchyRoutingMode,
+        cached?.branch === branch && cached.hierarchyRoutingMode === hierarchyRoutingMode
+          ? cached.tree
+          : undefined,
+        changedLayoutKeys,
+      );
+      trees[node.scene_node_id] = tree;
+      detailTreeCacheRef.current.set(node.scene_node_id, {
+        kind: node.detail_kind,
+        bounds: { ...node.bounds },
+        branch,
+        layouts,
+        hierarchyRoutingMode,
+        tree,
+      });
+    }
+    for (const nodeId of detailTreeCacheRef.current.keys()) {
+      if (!activeIds.has(nodeId)) detailTreeCacheRef.current.delete(nodeId);
+    }
+    return trees;
+  }, [detailExpansions, detailLayouts, detailPreview?.rootId, displayScene, effectiveDetailLayouts, hierarchyRoutingMode]);
   const atomicRoutingPlan = useMemo(() => {
     if (hierarchyRoutingMode !== "atomic-bottom-up") return undefined;
     return buildAtomicHierarchyRoutingPlan(
@@ -992,11 +1267,18 @@ function App() {
     );
   }, [detailTrees, displayScene.edges, hierarchyRoutingMode]);
   const boundaryPorts = atomicRoutingPlan?.boundaryPorts;
+  const hiddenFlowIds = useStableSet(atomicRoutingPlan?.hiddenFlowIds);
+  const foregroundFlowIds = useStableSet(atomicRoutingPlan?.foregroundFlowIds);
   const routed = useMemo(
     () => routeScene(displayScene, options.routeStyle, boundaryPorts),
     [boundaryPorts, displayScene, options.routeStyle],
   );
-  const metrics = useMemo(() => measureScene(displayScene, routed), [displayScene, routed]);
+  const metrics = useMemo(() => {
+    if ((preview || detailPreview) && lastMetricsRef.current) return lastMetricsRef.current;
+    const next = measureScene(displayScene, routed);
+    lastMetricsRef.current = next;
+    return next;
+  }, [detailPreview, displayScene, preview, routed]);
   const contentBounds = useMemo(() => sceneContentBounds(displayScene), [displayScene]);
   const selectedNode = selection?.kind === "node"
     ? editor.scene.nodes.find((node) => node.scene_node_id === selection.id)
@@ -1023,6 +1305,18 @@ function App() {
   )).some(([id]) => id === selectedDetail.child.id));
 
   useEffect(() => {
+    cameraRef.current = camera;
+    applyCameraPresentation(camera);
+  }, [camera]);
+
+  useEffect(() => () => {
+    if (cameraFrameRef.current !== null) cancelAnimationFrame(cameraFrameRef.current);
+    if (gestureFrameRef.current !== null) cancelAnimationFrame(gestureFrameRef.current);
+    if (detailPresentationFrameRef.current !== null) cancelAnimationFrame(detailPresentationFrameRef.current);
+    if (cameraCommitTimerRef.current !== null) window.clearTimeout(cameraCommitTimerRef.current);
+  }, []);
+
+  useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport || !pendingCameraFitRef.current) return;
     pendingCameraFitRef.current = false;
@@ -1041,11 +1335,86 @@ function App() {
       event.preventDefault();
       event.stopPropagation();
       const factor = wheelZoomFactor(event.deltaY, event.deltaMode);
-      setCamera((current) => zoomCameraAt(current, current.zoom * factor, anchor));
+      const current = pendingCameraRef.current ?? cameraRef.current;
+      const next = zoomCameraAt(current, current.zoom * factor, anchor);
+      scheduleCameraPresentation(next);
+      if (cameraCommitTimerRef.current !== null) window.clearTimeout(cameraCommitTimerRef.current);
+      cameraCommitTimerRef.current = window.setTimeout(() => {
+        cameraCommitTimerRef.current = null;
+        setCamera(cameraRef.current);
+      }, 80);
     };
     viewport.addEventListener("wheel", handleWheel, { passive: false });
     return () => viewport.removeEventListener("wheel", handleWheel);
   }, []);
+
+  function applyCameraPresentation(next: CanvasCamera) {
+    cameraRef.current = next;
+    if (svgRef.current) {
+      svgRef.current.style.transform = `translate(${next.x}px, ${next.y}px) scale(${next.zoom})`;
+    }
+    if (viewportRef.current) {
+      viewportRef.current.style.setProperty("--canvas-grid-size", `${canvasGridSize(next.zoom)}px`);
+      viewportRef.current.style.setProperty("--canvas-grid-x", `${next.x}px`);
+      viewportRef.current.style.setProperty("--canvas-grid-y", `${next.y}px`);
+    }
+    if (zoomOutputRef.current) zoomOutputRef.current.value = `${Math.round(next.zoom * 100)}%`;
+  }
+
+  function scheduleCameraPresentation(next: CanvasCamera) {
+    cameraRef.current = next;
+    pendingCameraRef.current = next;
+    if (cameraFrameRef.current !== null) return;
+    cameraFrameRef.current = requestAnimationFrame(() => {
+      cameraFrameRef.current = null;
+      const pending = pendingCameraRef.current;
+      pendingCameraRef.current = null;
+      if (pending) applyCameraPresentation(pending);
+    });
+  }
+
+  function flushCameraPresentation(next: CanvasCamera) {
+    if (cameraFrameRef.current !== null) cancelAnimationFrame(cameraFrameRef.current);
+    cameraFrameRef.current = null;
+    pendingCameraRef.current = null;
+    applyCameraPresentation(next);
+  }
+
+  function scheduleGesturePreview(next: PendingGesturePreview) {
+    pendingGesturePreviewRef.current = next;
+    if (gestureFrameRef.current !== null) return;
+    gestureFrameRef.current = requestAnimationFrame(() => {
+      gestureFrameRef.current = null;
+      const pending = pendingGesturePreviewRef.current;
+      pendingGesturePreviewRef.current = null;
+      if (pending?.kind === "node") setPreview(pending.value);
+      else if (pending) setDetailPreview(pending.value);
+    });
+  }
+
+  function cancelGesturePreview() {
+    if (gestureFrameRef.current !== null) cancelAnimationFrame(gestureFrameRef.current);
+    gestureFrameRef.current = null;
+    pendingGesturePreviewRef.current = null;
+  }
+
+  function scheduleDetailPresentation(presentation: DetailDragPresentation, dx: number, dy: number) {
+    pendingDetailPresentationRef.current = { presentation, dx, dy };
+    if (detailPresentationFrameRef.current !== null) return;
+    detailPresentationFrameRef.current = requestAnimationFrame(() => {
+      detailPresentationFrameRef.current = null;
+      const pending = pendingDetailPresentationRef.current;
+      pendingDetailPresentationRef.current = null;
+      if (pending) presentDetailDrag(pending.presentation, pending.dx, pending.dy);
+    });
+  }
+
+  function finishDetailPresentation(presentation: DetailDragPresentation | undefined) {
+    if (detailPresentationFrameRef.current !== null) cancelAnimationFrame(detailPresentationFrameRef.current);
+    detailPresentationFrameRef.current = null;
+    pendingDetailPresentationRef.current = null;
+    resetDetailDragPresentation(presentation);
+  }
 
   useEffect(() => {
     const nodeId = pendingFocusNodeRef.current;
@@ -1088,6 +1457,7 @@ function App() {
   }
 
   function loadScene(scene: LabScene) {
+    cancelGesturePreview();
     dispatch({ type: "load", scene });
     setSelection(null);
     setPreview(null);
@@ -1185,6 +1555,7 @@ function App() {
         y: child.bounds.y - initialOffset.y,
       },
       parentBounds: detailLevelContentBounds(level),
+      presentation: captureDetailDragPresentation(event.target, child.bounds),
     };
   }
 
@@ -1213,12 +1584,26 @@ function App() {
         x: gesture.initialOffset.x + point.x - gesture.start.x,
         y: gesture.initialOffset.y + point.y - gesture.start.y,
       });
-      setDetailPreview({ rootId: gesture.rootId, levelPath: gesture.levelPath, childId: gesture.childId, offset });
+      if (gesture.presentation) {
+        scheduleDetailPresentation(
+          gesture.presentation,
+          offset.x - gesture.initialOffset.x,
+          offset.y - gesture.initialOffset.y,
+        );
+        return;
+      }
+      scheduleGesturePreview({
+        kind: "detail",
+        value: { rootId: gesture.rootId, levelPath: gesture.levelPath, childId: gesture.childId, offset },
+      });
       return;
     }
-    setPreview({
-      nodeId: gesture.nodeId,
-      bounds: nextGestureBounds(gesture, svgPoint(event, event.currentTarget), editor.scene),
+    scheduleGesturePreview({
+      kind: "node",
+      value: {
+        nodeId: gesture.nodeId,
+        bounds: nextGestureBounds(gesture, svgPoint(event, event.currentTarget), editor.scene),
+      },
     });
   }
 
@@ -1232,6 +1617,8 @@ function App() {
         y: gesture.initialOffset.y + point.y - gesture.start.y,
       });
       gestureRef.current = null;
+      finishDetailPresentation(gesture.presentation);
+      cancelGesturePreview();
       setDetailPreview(null);
       setDetailLayouts((current) => ({
         ...current,
@@ -1245,6 +1632,7 @@ function App() {
     }
     const bounds = nextGestureBounds(gesture, svgPoint(event, event.currentTarget), editor.scene);
     gestureRef.current = null;
+    cancelGesturePreview();
     setPreview(null);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     patch({ operation: "update-node", nodeId: gesture.nodeId, changes: { bounds } });
@@ -1258,7 +1646,7 @@ function App() {
     cameraGestureRef.current = {
       pointerId: event.pointerId,
       start: { x: event.clientX, y: event.clientY },
-      initial: camera,
+      initial: cameraRef.current,
     };
     setIsPanning(true);
     setSelection(null);
@@ -1268,7 +1656,7 @@ function App() {
   function moveCameraPan(event: React.PointerEvent<HTMLDivElement>) {
     const gesture = cameraGestureRef.current;
     if (!gesture || gesture.pointerId !== event.pointerId) return;
-    setCamera({
+    scheduleCameraPresentation({
       ...gesture.initial,
       x: gesture.initial.x + event.clientX - gesture.start.x,
       y: gesture.initial.y + event.clientY - gesture.start.y,
@@ -1278,7 +1666,14 @@ function App() {
   function finishCameraPan(event: React.PointerEvent<HTMLDivElement>) {
     const gesture = cameraGestureRef.current;
     if (!gesture || gesture.pointerId !== event.pointerId) return;
+    const next = {
+      ...gesture.initial,
+      x: gesture.initial.x + event.clientX - gesture.start.x,
+      y: gesture.initial.y + event.clientY - gesture.start.y,
+    };
     cameraGestureRef.current = null;
+    flushCameraPresentation(next);
+    setCamera(next);
     setIsPanning(false);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   }
@@ -1331,45 +1726,60 @@ function App() {
         return next;
       });
     }
-    setExpandedNodeIds((current) => {
-      const next = new Set(current);
-      if (next.has(nodeId)) next.delete(nodeId);
-      else {
-        next.add(nodeId);
-        pendingFocusNodeRef.current = nodeId;
-      }
-      return next;
-    });
+    const updateExpansion = () => {
+      setExpandedNodeIds((current) => {
+        const next = new Set(current);
+        if (next.has(nodeId)) next.delete(nodeId);
+        else {
+          next.add(nodeId);
+          pendingFocusNodeRef.current = nodeId;
+        }
+        return next;
+      });
+    };
+    if (collapsing) updateExpansion();
+    else startHierarchyTransition(updateExpansion);
     setSelection({ kind: "node", id: nodeId });
     setPreview(null);
   }
 
   function toggleNestedDetail(root: LabNode, levelPath: string[], child: DetailNode) {
     if (!child.nestedKind) return;
+    const collapsing = detailExpansionChildren(expansionAtLevel(
+      detailExpansions[root.scene_node_id],
+      levelPath,
+    )).some(([id]) => id === child.id);
     setSelection(null);
     setDetailSelection({ rootId: root.scene_node_id, levelPath, childId: child.id });
-    setDetailExpansions((current) => {
-      const nextBranch = toggleDetailExpansionAtPath(current[root.scene_node_id], levelPath, child.id);
-      if (!detailExpansionChildren(nextBranch).length) {
-        const next = { ...current };
-        delete next[root.scene_node_id];
-        return next;
-      }
-      return { ...current, [root.scene_node_id]: nextBranch };
-    });
+    const updateExpansion = () => {
+      setDetailExpansions((current) => {
+        const nextBranch = toggleDetailExpansionAtPath(current[root.scene_node_id], levelPath, child.id);
+        if (!detailExpansionChildren(nextBranch).length) {
+          const next = { ...current };
+          delete next[root.scene_node_id];
+          return next;
+        }
+        return { ...current, [root.scene_node_id]: nextBranch };
+      });
+    };
+    if (collapsing) updateExpansion();
+    else startHierarchyTransition(updateExpansion);
   }
 
   function expandAllDetails() {
     const expandable = editor.scene.nodes.filter((node) => node.detail_kind);
-    setExpandedNodeIds(new Set(expandable.map((node) => node.scene_node_id)));
-    setDetailExpansions(Object.fromEntries(expandable.map((node) => [
+    const nextExpansions = Object.fromEntries(expandable.map((node) => [
       node.scene_node_id,
       fullyExpandedDetailTree(node.detail_kind!),
-    ])));
-    setSelection(null);
-    setDetailSelection(null);
-    setPreview(null);
-    setDetailPreview(null);
+    ]));
+    startHierarchyTransition(() => {
+      setExpandedNodeIds(new Set(expandable.map((node) => node.scene_node_id)));
+      setDetailExpansions(nextExpansions);
+      setSelection(null);
+      setDetailSelection(null);
+      setPreview(null);
+      setDetailPreview(null);
+    });
     pendingCameraFitRef.current = true;
   }
 
@@ -1459,6 +1869,17 @@ function App() {
     patch({ operation: "update-edge", edgeId: selectedEdge.scene_edge_id, changes });
   }
 
+  function selectEdge(edge: LabEdge) {
+    setSelection({ kind: "edge", id: edge.scene_edge_id });
+  }
+
+  const handleNodePointerDown = useLatestEvent(beginNode);
+  const handleResizePointerDown = useLatestEvent(beginResize);
+  const handleToggleNodeDetail = useLatestEvent(toggleNodeDetail);
+  const handleDetailPointerDown = useLatestEvent(beginDetailNode);
+  const handleToggleNestedDetail = useLatestEvent(toggleNestedDetail);
+  const handleSelectEdge = useLatestEvent(selectEdge);
+
   return <div className="scene-lab">
     <header className="lab-topbar">
       <div className="lab-product"><Waypoints size={17} /><strong>ArchCanvas</strong><span>Scene Lab</span></div>
@@ -1512,9 +1933,9 @@ function App() {
             <option value="atomic-bottom-up">原子收束</option>
             <option value="recursive">逐层</option>
           </select></label>
-          <div className="detail-bulk-actions" aria-label="层级展开操作">
-            <button className="tool-button" onClick={expandAllDetails}><Plus size={14} />全部展开</button>
-            <button className="tool-button" onClick={collapseAllDetails} disabled={!expandedNodeIds.size}><Minus size={14} />全部收起</button>
+          <div className="detail-bulk-actions" aria-label="层级展开操作" aria-busy={isHierarchyPending}>
+            <button className="tool-button" onClick={expandAllDetails} disabled={isHierarchyPending}><Plus size={14} />全部展开</button>
+            <button className="tool-button" onClick={collapseAllDetails} disabled={isHierarchyPending || !expandedNodeIds.size}><Minus size={14} />全部收起</button>
           </div>
           <div className="scene-caption"><strong>{editor.scene.title}</strong><span>{editor.scene.description}</span></div>
         </div>
@@ -1552,7 +1973,7 @@ function App() {
               route={route}
               labelStyle={options.labelStyle}
               selected={selection?.kind === "edge" && selection.id === route.edge.scene_edge_id}
-              onSelect={(edge) => setSelection({ kind: "edge", id: edge.scene_edge_id })}
+              onSelect={handleSelectEdge}
             />)}
             {displayScene.nodes.map((node) => <NodeGraphic
               key={node.scene_node_id}
@@ -1560,28 +1981,28 @@ function App() {
               visualStyle={options.nodeStyle}
               selected={selection?.kind === "node" && selection.id === node.scene_node_id}
               connecting={edgeSource === node.scene_node_id}
-              onPointerDown={beginNode}
-              onResizePointerDown={beginResize}
-              onToggleDetail={toggleNodeDetail}
+              onPointerDown={handleNodePointerDown}
+              onResizePointerDown={handleResizePointerDown}
+              onToggleDetail={handleToggleNodeDetail}
               detailTree={detailTrees[node.scene_node_id]}
               detailSelection={detailSelection?.rootId === node.scene_node_id ? detailSelection : undefined}
-              onDetailPointerDown={beginDetailNode}
-              onToggleNestedDetail={toggleNestedDetail}
+              onDetailPointerDown={handleDetailPointerDown}
+              onToggleNestedDetail={handleToggleNestedDetail}
               resizeEnabled={true}
-              hiddenFlowIds={atomicRoutingPlan?.hiddenFlowIds}
-              foregroundFlowIds={atomicRoutingPlan?.foregroundFlowIds}
+              hiddenFlowIds={hiddenFlowIds}
+              foregroundFlowIds={foregroundFlowIds}
             />)}
             {routed.filter((route) => route.foreground).map((route) => <EdgeGraphic
               key={route.edge.scene_edge_id}
               route={route}
               labelStyle={options.labelStyle}
               selected={selection?.kind === "edge" && selection.id === route.edge.scene_edge_id}
-              onSelect={(edge) => setSelection({ kind: "edge", id: edge.scene_edge_id })}
+              onSelect={handleSelectEdge}
             />)}
           </svg>
           <div className="canvas-controls" aria-label="画布视图">
             <button className="icon-button" title="缩小" onClick={() => zoomFromCenter(1 / 1.2)}><Minus size={15} /></button>
-            <output aria-label="当前缩放比例">{Math.round(camera.zoom * 100)}%</output>
+            <output ref={zoomOutputRef} aria-label="当前缩放比例">{Math.round(camera.zoom * 100)}%</output>
             <button className="icon-button" title="放大" onClick={() => zoomFromCenter(1.2)}><Plus size={15} /></button>
             <button className="icon-button" title="适合视图" onClick={fitCamera}><Maximize2 size={15} /></button>
           </div>

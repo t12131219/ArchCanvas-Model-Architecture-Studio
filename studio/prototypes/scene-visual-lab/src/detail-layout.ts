@@ -104,6 +104,8 @@ interface DetailLayoutOptions {
   bottomTextY?: number;
   nodePorts?: Record<string, Partial<Record<PortSide, Point>>>;
   nodePortDirections?: Record<string, Partial<Record<PortSide, PortSide>>>;
+  semanticNodePorts?: Record<string, Record<string, { point: Point; side: PortSide }>>;
+  distributedEndpointPorts?: Record<string, Point>;
   junctionPorts?: Record<string, Point>;
   suppressExitMarker?: boolean;
   suppressExpandedChildMarker?: boolean;
@@ -124,11 +126,13 @@ interface OccupiedRoute {
 
 const DETAIL_NODE_PREFIX = "detail-node-";
 const ANCHOR_TOLERANCE = 8;
+const BOUNDARY_EPSILON = 0.01;
 const DIRECTED_ANCHOR_GAP = 72;
 const ROUTE_PADDING = 7;
 const INLINE_EXPANSION_GAP = 34;
 const INLINE_RIGHT_PADDING = 32;
 const INLINE_BOTTOM_PADDING = 36;
+const SEMANTIC_GROUP_BOTTOM_PADDING = 18;
 const ROUTE_CHANNEL_STEP = 14;
 const SHARED_ENDPOINT_ALLOWANCE = 14;
 
@@ -343,6 +347,10 @@ function pointKey(point: Point): string {
   return `${point.x.toFixed(3)},${point.y.toFixed(3)}`;
 }
 
+function flowEndpointKey(primitiveIndex: number, endpoint: "start" | "end"): string {
+  return `${primitiveIndex}:${endpoint}`;
+}
+
 function boundsEqual(a: Bounds, b: Bounds): boolean {
   return samePoint(a, b) && Math.abs(a.width - b.width) < 0.01 && Math.abs(a.height - b.height) < 0.01;
 }
@@ -352,6 +360,38 @@ function centeredBoundaryPoint(side: Anchor["side"], bounds: Bounds): Point {
   if (side === "right") return { x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 };
   if (side === "top") return { x: bounds.x + bounds.width / 2, y: bounds.y };
   return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height };
+}
+
+function distributedBoundaryPoint(
+  node: DetailNode,
+  side: Anchor["side"],
+  slot: number,
+  slotCount: number,
+): Point {
+  const { bounds } = node;
+  if (node.primitive.kind === "circle") {
+    const center = boundsCenter(bounds);
+    const radius = Math.min(bounds.width, bounds.height) / 2;
+    const centerAngle = {
+      left: Math.PI,
+      right: 0,
+      top: -Math.PI / 2,
+      bottom: Math.PI / 2,
+    }[side];
+    const spread = Math.PI * 35 / 180;
+    const offset = slotCount === 1
+      ? 0
+      : -spread + slot * spread * 2 / (slotCount - 1);
+    return {
+      x: center.x + Math.cos(centerAngle + offset) * radius,
+      y: center.y + Math.sin(centerAngle + offset) * radius,
+    };
+  }
+  const fraction = (slot + 1) / (slotCount + 1);
+  if (side === "left") return { x: bounds.x, y: bounds.y + bounds.height * fraction };
+  if (side === "right") return { x: bounds.x + bounds.width, y: bounds.y + bounds.height * fraction };
+  if (side === "top") return { x: bounds.x + bounds.width * fraction, y: bounds.y };
+  return { x: bounds.x + bounds.width * fraction, y: bounds.y + bounds.height };
 }
 
 function boundsCenter(bounds: Bounds): Point {
@@ -661,6 +701,7 @@ function orthogonalRoute(
 
 function layoutFlow(
   primitive: Extract<DetailPrimitive, { kind: "flow" }>,
+  primitiveIndex: number,
   diagram: ModuleDetailDiagram,
   baseNodes: DetailNode[],
   movedNodes: DetailNode[],
@@ -677,10 +718,14 @@ function layoutFlow(
   )).length > 1;
   const candidateStartAnchor = findAnchor(first, baseNodes, primitive.points[1], "start", allowDirectedGap);
   const candidateEndAnchor = findAnchor(last, baseNodes, primitive.points.at(-2), "end", allowDirectedGap);
-  const startAnchor = isSharedEndpoint(first) && !options.nodePorts?.[candidateStartAnchor?.node.id ?? ""]
+  const startAnchor = isSharedEndpoint(first)
+    && !options.nodePorts?.[candidateStartAnchor?.node.id ?? ""]
+    && (!candidateStartAnchor || distanceToBoundary(first, candidateStartAnchor.node.bounds) > BOUNDARY_EPSILON)
     ? undefined
     : candidateStartAnchor;
-  const endAnchor = isSharedEndpoint(last) && !options.nodePorts?.[candidateEndAnchor?.node.id ?? ""]
+  const endAnchor = isSharedEndpoint(last)
+    && !options.nodePorts?.[candidateEndAnchor?.node.id ?? ""]
+    && (!candidateEndAnchor || distanceToBoundary(last, candidateEndAnchor.node.bounds) > BOUNDARY_EPSILON)
     ? undefined
     : candidateEndAnchor;
   const startsAtBoundary = samePoint(first, diagram.entryPoint);
@@ -689,6 +734,9 @@ function layoutFlow(
   const movedById = new Map(movedNodes.map((node) => [node.id, node]));
   const movedStartNode = startAnchor ? movedById.get(startAnchor.node.id) : undefined;
   const movedEndNode = endAnchor ? movedById.get(endAnchor.node.id) : undefined;
+  const semanticEndPort = movedEndNode && primitive.targetPortRole
+    ? options.semanticNodePorts?.[movedEndNode.id]?.[primitive.targetPortRole]
+    : undefined;
   const externalStart = startsAtBoundary && options.entryPoint
     ? options.entryPoint
     : options.junctionPorts?.[pointKey(first)] ?? first;
@@ -712,7 +760,7 @@ function layoutFlow(
     || movedEndNode && options.adaptivePortNodeIds?.has(movedEndNode.id),
   );
   let resolvedStartSide = startAnchor?.side ?? startPortalAnchor?.side;
-  let resolvedEndSide = endAnchor?.side ?? endPortalAnchor?.side;
+  let resolvedEndSide = semanticEndPort?.side ?? endAnchor?.side ?? endPortalAnchor?.side;
   if (shouldResolveNearestSides) {
     if (movedStartNode && !options.nodePorts?.[movedStartNode.id]) {
       resolvedStartSide = sideToward(
@@ -728,18 +776,23 @@ function layoutFlow(
     }
   }
   const start = movedStartNode && resolvedStartSide
-    ? options.nodePorts?.[movedStartNode.id]?.[resolvedStartSide]
+    ? options.distributedEndpointPorts?.[flowEndpointKey(primitiveIndex, "start")]
+      ?? options.nodePorts?.[movedStartNode.id]?.[resolvedStartSide]
       ?? centeredBoundaryPoint(resolvedStartSide, movedStartNode.bounds)
     : externalStart;
   const end = movedEndNode && resolvedEndSide
-    ? options.nodePorts?.[movedEndNode.id]?.[resolvedEndSide]
+    ? options.distributedEndpointPorts?.[flowEndpointKey(primitiveIndex, "end")]
+      ?? semanticEndPort?.point
+      ?? options.nodePorts?.[movedEndNode.id]?.[resolvedEndSide]
       ?? centeredBoundaryPoint(resolvedEndSide, movedEndNode.bounds)
     : externalEnd;
   const startRouteSide = movedStartNode && resolvedStartSide
     ? options.nodePortDirections?.[movedStartNode.id]?.[resolvedStartSide] ?? resolvedStartSide
     : resolvedStartSide;
   const endRouteSide = movedEndNode && resolvedEndSide
-    ? options.nodePortDirections?.[movedEndNode.id]?.[resolvedEndSide] ?? resolvedEndSide
+    ? semanticEndPort?.side
+      ?? options.nodePortDirections?.[movedEndNode.id]?.[resolvedEndSide]
+      ?? resolvedEndSide
     : resolvedEndSide;
   const points = primitive.points.map((point) => ({ ...point }));
   points[0] = start;
@@ -761,7 +814,7 @@ function layoutFlow(
     && distanceToBoundary(start, movedStartNode.bounds) > ANCHOR_TOLERANCE) {
     interiorPortNodeIds.add(movedStartNode.id);
   }
-  if (movedEndNode && options.nodePorts?.[movedEndNode.id]?.[resolvedEndSide!]
+  if (movedEndNode && (semanticEndPort || options.nodePorts?.[movedEndNode.id]?.[resolvedEndSide!])
     && distanceToBoundary(end, movedEndNode.bounds) > ANCHOR_TOLERANCE) {
     interiorPortNodeIds.add(movedEndNode.id);
   }
@@ -776,7 +829,9 @@ function layoutFlow(
     || startGeometryChanged
     || endGeometryChanged;
   const suppressMarker = options.suppressExitMarker && endsAtBoundary
-    || options.suppressExpandedChildMarker && Boolean(movedEndNode && options.nodePorts?.[movedEndNode.id]);
+    || options.suppressExpandedChildMarker && Boolean(
+      movedEndNode && options.nodePorts?.[movedEndNode.id] && !semanticEndPort,
+    );
   if (samePoint(start, end)) {
     return { ...primitive, points: [start, end], marker: false };
   }
@@ -800,6 +855,109 @@ function layoutFlow(
   };
 }
 
+interface DynamicEndpointCandidate {
+  key: string;
+  node: DetailNode;
+  side: Anchor["side"];
+  point: Point;
+  opposite: Point;
+}
+
+function distributedDynamicEndpointPorts(
+  diagram: ModuleDetailDiagram,
+  preliminary: DetailPrimitive[],
+  baseNodes: DetailNode[],
+  movedNodes: DetailNode[],
+  options: DetailLayoutOptions,
+): Record<string, Point> {
+  const movedById = new Map(movedNodes.map((node) => [node.id, node]));
+  const endpointUseCount = new Map<string, number>();
+  for (const candidate of diagram.primitives) {
+    if (candidate.kind !== "flow") continue;
+    for (const point of [candidate.points[0], candidate.points.at(-1)!]) {
+      const key = pointKey(point);
+      endpointUseCount.set(key, (endpointUseCount.get(key) ?? 0) + 1);
+    }
+  }
+
+  const groups = new Map<string, DynamicEndpointCandidate[]>();
+  const addCandidate = (
+    primitiveIndex: number,
+    endpoint: "start" | "end",
+    anchor: Anchor | undefined,
+    point: Point,
+    opposite: Point,
+    originalPoint: Point,
+    targetPortRole?: string,
+  ) => {
+    if (!anchor) return;
+    const sharedFreeJunction = (endpointUseCount.get(pointKey(originalPoint)) ?? 0) > 1
+      && distanceToBoundary(originalPoint, anchor.node.bounds) > BOUNDARY_EPSILON;
+    if (sharedFreeJunction) return;
+    const node = movedById.get(anchor.node.id);
+    if (!node) return;
+    const side = anchorSide(point, node.bounds);
+    if (options.nodePorts?.[node.id]?.[side]) return;
+    if (endpoint === "end" && targetPortRole && options.semanticNodePorts?.[node.id]?.[targetPortRole]) return;
+    const groupKey = `${node.id}:${side}`;
+    const group = groups.get(groupKey) ?? [];
+    group.push({
+      key: flowEndpointKey(primitiveIndex, endpoint),
+      node,
+      side,
+      point,
+      opposite,
+    });
+    groups.set(groupKey, group);
+  };
+
+  diagram.primitives.forEach((primitive, primitiveIndex) => {
+    const routed = preliminary[primitiveIndex];
+    if (primitive.kind !== "flow" || routed.kind !== "flow") return;
+    const startAnchor = findAnchor(primitive.points[0], baseNodes, primitive.points[1], "start", true);
+    const endAnchor = findAnchor(primitive.points.at(-1)!, baseNodes, primitive.points.at(-2), "end", true);
+    addCandidate(
+      primitiveIndex,
+      "start",
+      startAnchor,
+      routed.points[0],
+      routed.points.at(-1)!,
+      primitive.points[0],
+    );
+    addCandidate(
+      primitiveIndex,
+      "end",
+      endAnchor,
+      routed.points.at(-1)!,
+      routed.points[0],
+      primitive.points.at(-1)!,
+      primitive.targetPortRole,
+    );
+  });
+
+  const ports: Record<string, Point> = {};
+  for (const candidates of groups.values()) {
+    if (candidates.length < 2 || !candidates.some((candidate, index) => (
+      candidates.slice(index + 1).some((other) => samePoint(candidate.point, other.point))
+    ))) continue;
+    const horizontal = candidates[0].side === "top" || candidates[0].side === "bottom";
+    candidates.sort((first, second) => (
+      horizontal
+        ? first.opposite.x - second.opposite.x
+        : first.opposite.y - second.opposite.y
+    ) || first.key.localeCompare(second.key));
+    candidates.forEach((candidate, slot) => {
+      ports[candidate.key] = distributedBoundaryPoint(
+        candidate.node,
+        candidate.side,
+        slot,
+        candidates.length,
+      );
+    });
+  }
+  return ports;
+}
+
 export function layoutDetailDiagram(
   diagram: ModuleDetailDiagram,
   offsets: DetailOffsetMap = {},
@@ -809,7 +967,7 @@ export function layoutDetailDiagram(
   const adaptivePortNodeIds = new Set(Object.entries(offsets)
     .filter(([, offset]) => Math.abs(offset.x) >= 0.01 || Math.abs(offset.y) >= 0.01)
     .map(([id]) => id));
-  const layoutOptions = { ...options, adaptivePortNodeIds };
+  const initialLayoutOptions = { ...options, adaptivePortNodeIds };
   const movedPrimitives = diagram.primitives.map((primitive, index) => {
     const id = detailNodeId(index);
     const resized = resizePrimitive(primitive, options.nodeBounds?.[id]);
@@ -822,9 +980,30 @@ export function layoutDetailDiagram(
   });
   const movedDiagram = { ...diagram, primitives: movedPrimitives };
   const movedNodes = listDetailNodes(movedDiagram);
-  const preliminary = movedPrimitives.map((primitive) => primitive.kind === "flow"
-    ? layoutFlow(primitive, diagram, baseNodes, movedNodes, layoutOptions)
+  const semanticInputPorts = diagram.semanticInputPorts && Object.fromEntries(Object.entries(diagram.semanticInputPorts).map(([role, port]) => {
+    const anchor = findAnchor(port.point, baseNodes);
+    const movedNode = anchor ? movedNodes.find((node) => node.id === anchor.node.id) : undefined;
+    return [role, movedNode ? {
+      point: centeredBoundaryPoint(anchor!.side, movedNode.bounds),
+      side: anchor!.side,
+    } : port];
+  }));
+  const initialPreliminary = movedPrimitives.map((primitive, index) => primitive.kind === "flow"
+    ? layoutFlow(primitive, index, diagram, baseNodes, movedNodes, initialLayoutOptions)
     : primitive);
+  const distributedEndpointPorts = distributedDynamicEndpointPorts(
+    diagram,
+    initialPreliminary,
+    baseNodes,
+    movedNodes,
+    initialLayoutOptions,
+  );
+  const layoutOptions = { ...initialLayoutOptions, distributedEndpointPorts };
+  const preliminary = Object.keys(distributedEndpointPorts).length
+    ? movedPrimitives.map((primitive, index) => primitive.kind === "flow"
+      ? layoutFlow(primitive, index, diagram, baseNodes, movedNodes, layoutOptions)
+      : primitive)
+    : initialPreliminary;
   const stableRoutes: OccupiedRoute[] = [];
   const dynamicIndexes = new Set<number>();
   preliminary.forEach((primitive, index) => {
@@ -841,12 +1020,13 @@ export function layoutDetailDiagram(
     if (primitive.kind !== "flow" || !dynamicIndexes.has(index)) return primitive;
     const original = movedPrimitives[index];
     if (original.kind !== "flow") return primitive;
-    const routed = layoutFlow(original, diagram, baseNodes, movedNodes, layoutOptions, occupiedRoutes, true);
+    const routed = layoutFlow(original, index, diagram, baseNodes, movedNodes, layoutOptions, occupiedRoutes, true);
     occupiedRoutes.push({ points: routed.points, channel: routed.channel });
     return routed;
   });
   return {
     ...movedDiagram,
+    semanticInputPorts,
     entryPoint: options.entryPoint ?? diagram.entryPoint,
     exitPoint: options.exitPoint ?? diagram.exitPoint,
     primitives: routedPrimitives,
@@ -978,15 +1158,29 @@ function layoutSemanticGroupFrames(
     const baseTop = Math.min(...members.map((member) => member.bounds.y));
     const baseRight = Math.max(...members.map((member) => member.bounds.x + member.bounds.width));
     const baseBottom = Math.max(...members.map((member) => member.bounds.y + member.bounds.height));
+    const inFrameFlowBottom = Math.max(baseBottom, ...baseDiagram.primitives.flatMap((candidate) => (
+      candidate.kind === "flow"
+        ? candidate.points
+          .filter((point) => pointInsideOrOnBounds(point, originalFrame))
+          .map((point) => point.y)
+        : []
+    )));
     const movedLeft = Math.min(...movedMembers.map((bounds) => bounds.x));
     const movedTop = Math.min(...movedMembers.map((bounds) => bounds.y));
     const movedRight = Math.max(...movedMembers.map((bounds) => bounds.x + bounds.width));
-    const movedBottom = Math.max(...movedMembers.map((bounds) => bounds.y + bounds.height));
+    const movedBottom = Math.max(
+      inFrameFlowBottom,
+      ...movedMembers.map((bounds) => bounds.y + bounds.height),
+    );
+    const bottomPadding = Math.min(
+      SEMANTIC_GROUP_BOTTOM_PADDING,
+      Math.max(0, originalFrame.y + originalFrame.height - inFrameFlowBottom),
+    );
     const nextFrame: Bounds = {
       x: movedLeft - (baseLeft - originalFrame.x),
       y: movedTop - (baseTop - originalFrame.y),
       width: movedRight - movedLeft + (baseLeft - originalFrame.x) + (originalFrame.x + originalFrame.width - baseRight),
-      height: movedBottom - movedTop + (baseTop - originalFrame.y) + (originalFrame.y + originalFrame.height - baseBottom),
+      height: movedBottom - movedTop + (baseTop - originalFrame.y) + bottomPadding,
     };
     const shift = { x: nextFrame.x - originalFrame.x, y: nextFrame.y - originalFrame.y };
     primitives = primitives.map((current, index) => {
@@ -1108,7 +1302,7 @@ export function inlineAtomicEntry(level: InlineDetailLevel): InlineAtomicEntry |
       return { point: { ...point }, side: anchor.side };
     }
     if (next.length !== 1) {
-      return next.length > 1 ? { point: { ...point }, side: "left" } : undefined;
+      return next.length > 1 ? { point: { ...level.diagram.entryPoint }, side: "left" } : undefined;
     }
     if (anchor) return { point: { ...point }, side: anchor.side };
     cursor = point;
@@ -1225,8 +1419,21 @@ export function buildInlineDetailLayout(
   rootId: string,
   levelPath: readonly string[] = [],
   routingMode: HierarchyRoutingMode = "atomic-bottom-up",
+  previousLevel?: InlineDetailLevel,
+  changedLevelKeys?: ReadonlySet<string>,
 ): InlineDetailLevel {
   const levelKey = detailLevelKey(rootId, levelPath);
+  const levelIsAffected = !changedLevelKeys || [...changedLevelKeys].some((changedKey) => (
+    changedKey === levelKey || changedKey.startsWith(`${levelKey}/`)
+  ));
+  if (previousLevel
+    && previousLevel.kind === kind
+    && previousLevel.levelKey === levelKey
+    && previousLevel.routingMode === routingMode
+    && boundsEqual(previousLevel.bounds, bounds)
+    && !levelIsAffected) {
+    return previousLevel;
+  }
   const natural = naturalDetailBounds(kind, bounds.x, bounds.y);
   const baseDiagram = buildModuleDetail(kind, natural);
   const automatic = branch ? automaticExpandedBounds(kind, branch) : undefined;
@@ -1272,6 +1479,10 @@ export function buildInlineDetailLayout(
     };
   }
   const baseNodes = listDetailNodes(baseDiagram);
+  const previousChildren = new Map((previousLevel ? inlineExpandedChildren(previousLevel) : []).map((expanded) => [
+    expanded.node.id,
+    expanded.level,
+  ]));
   const expandedChildren = activeNodes.map((active) => ({
     node: active,
     level: buildInlineDetailLayout(
@@ -1282,6 +1493,8 @@ export function buildInlineDetailLayout(
       rootId,
       [...levelPath, active.id],
       routingMode,
+      previousChildren.get(active.id),
+      changedLevelKeys,
     ),
   }));
   const atomicPorts = new Map(expandedChildren.map((expanded) => [expanded.node.id, {
@@ -1305,6 +1518,10 @@ export function buildInlineDetailLayout(
       layoutDetailDiagram(baseDiagram, layouts[levelKey] ?? {}, {
         ...commonOptions,
         junctionPorts,
+        semanticNodePorts: Object.fromEntries(expandedChildren.map((expanded) => [
+          expanded.node.id,
+          expanded.level.diagram.semanticInputPorts ?? {},
+        ])),
         extraObstacles: childObstacles,
       }),
     ), natural, bounds);
@@ -1330,6 +1547,10 @@ export function buildInlineDetailLayout(
     layoutDetailDiagram(baseDiagram, layouts[levelKey] ?? {}, {
       ...commonOptions,
       junctionPorts,
+      semanticNodePorts: Object.fromEntries(expandedChildren.map((expanded) => [
+        expanded.node.id,
+        expanded.level.diagram.semanticInputPorts ?? {},
+      ])),
       extraObstacles: childObstacles,
       nodePorts: Object.fromEntries(expandedChildren.map((expanded) => {
         const ports = atomicPorts.get(expanded.node.id)!;
