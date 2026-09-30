@@ -1,11 +1,8 @@
 import { measureScene, routeScene } from "./routing";
-import { buildInlineDetailLayout } from "./detail-layout";
+import { buildInlineDetailLayout, inlineExpandedChildren } from "./detail-layout";
 import type { DetailExpansionMap, DetailLayoutMap, InlineDetailLevel } from "./detail-layout";
 import {
-  buildAtomicHierarchyProjection,
-  projectedAtomicExit,
-  projectedNestedExitBridgeIds,
-  projectedSceneBoundaryPorts,
+  buildAtomicHierarchyRoutingPlan,
 } from "./atomic-hierarchy";
 import { DETAIL_KIND_NAMES } from "./module-details";
 import type { DetailPrimitive } from "./module-details";
@@ -120,29 +117,44 @@ function renderDetailPrimitive(primitive: DetailPrimitive, atomicEdgeId?: string
   }
   const label = primitive.label ? `<text class="detail-box-label" x="${primitive.x + primitive.width / 2}" y="${primitive.y + primitive.height / 2 + (primitive.note ? -2 : 4)}">${escapeXml(primitive.label)}</text>` : "";
   const note = primitive.note ? `<text class="detail-note" x="${primitive.x + primitive.width / 2}" y="${primitive.y + primitive.height / 2 + 13}">${escapeXml(primitive.note)}</text>` : "";
-  return `<g class="detail-shape detail-tone-${primitive.tone} detail-${primitive.variant ?? "box"}"><rect x="${primitive.x}" y="${primitive.y}" width="${primitive.width}" height="${primitive.height}" rx="${primitive.rx}"/>${label}${note}</g>`;
+  const frameRole = primitive.variant === "frame" ? ` detail-frame-${primitive.frameRole ?? "containment"}` : "";
+  return `<g class="detail-shape detail-tone-${primitive.tone} detail-${primitive.variant ?? "box"}${frameRole}"><rect x="${primitive.x}" y="${primitive.y}" width="${primitive.width}" height="${primitive.height}" rx="${primitive.rx}"/>${label}${note}</g>`;
 }
 
-function renderInlineDetailLevel(level: InlineDetailLevel, hiddenFlowIds: ReadonlySet<string>): string {
-  const expanded = level.expandedChild;
-  const primitives = level.diagram.primitives.map((primitive, index) => {
+function renderInlineDetailLevel(
+  level: InlineDetailLevel,
+  hiddenFlowIds: ReadonlySet<string>,
+  foregroundFlowIds: ReadonlySet<string>,
+): string {
+  const expanded = inlineExpandedChildren(level);
+  const expandedIds = new Set(expanded.map((child) => child.node.id));
+  const renderPrimitive = (primitive: DetailPrimitive, index: number, foreground: boolean) => {
     const node = level.nodes.find((item) => item.primitiveIndex === index);
     const atomicEdgeId = primitive.kind === "flow" ? `${level.levelKey}:flow:${index}` : undefined;
-    if (expanded && node?.id === expanded.node.id) return "";
+    if (node && expandedIds.has(node.id)) return "";
     if (atomicEdgeId && hiddenFlowIds.has(atomicEdgeId)) return "";
+    if (Boolean(atomicEdgeId && foregroundFlowIds.has(atomicEdgeId)) !== foreground) return "";
     return renderDetailPrimitive(primitive, atomicEdgeId);
+  };
+  const primitives = level.diagram.primitives.map((primitive, index) => renderPrimitive(primitive, index, false)).join("");
+  const foregroundPrimitives = level.diagram.primitives.map((primitive, index) => renderPrimitive(primitive, index, true)).join("");
+  const expandedMarkup = expanded.map((child) => {
+    const { x, y, width, height } = child.node.bounds;
+    const nested = renderInlineDetailLevel(child.level, hiddenFlowIds, foregroundFlowIds);
+    return `<g class="nested-inline-detail" data-detail-node-id="${escapeXml(child.node.id)}"><rect class="nested-inline-surface" x="${x}" y="${y}" width="${width}" height="${height}" rx="5"/><g class="detail-level detail-${child.level.kind}">${nested}</g><rect class="nested-inline-header" x="${x}" y="${y}" width="${width}" height="42" rx="5"/><line class="nested-inline-divider" x1="${x}" y1="${y + 42}" x2="${x + width}" y2="${y + 42}"/><text class="nested-detail-title" x="${x + 12}" y="${y + 17}">${escapeXml(child.node.label)}</text><text class="nested-detail-subtitle" x="${x + 12}" y="${y + 32}">${escapeXml(DETAIL_KIND_NAMES[child.level.kind])}</text></g>`;
   }).join("");
-  if (!expanded) return primitives;
-  const { x, y, width, height } = expanded.node.bounds;
-  const nested = renderInlineDetailLevel(expanded.level, hiddenFlowIds);
-  const expandedMarkup = `<g class="nested-inline-detail" data-detail-node-id="${escapeXml(expanded.node.id)}"><rect class="nested-inline-surface" x="${x}" y="${y}" width="${width}" height="${height}" rx="5"/><g class="detail-level detail-${expanded.level.kind}">${nested}</g><rect class="nested-inline-header" x="${x}" y="${y}" width="${width}" height="42" rx="5"/><line class="nested-inline-divider" x1="${x}" y1="${y + 42}" x2="${x + width}" y2="${y + 42}"/><text class="nested-detail-title" x="${x + 12}" y="${y + 17}">${escapeXml(expanded.node.label)}</text><text class="nested-detail-subtitle" x="${x + 12}" y="${y + 32}">${escapeXml(DETAIL_KIND_NAMES[expanded.level.kind])}</text></g>`;
-  return `${expandedMarkup}${primitives}`;
+  return `${primitives}${expandedMarkup}${foregroundPrimitives}`;
 }
 
-function renderExpandedNode(node: LabNode, level: InlineDetailLevel, hiddenFlowIds: ReadonlySet<string>): string {
+function renderExpandedNode(
+  node: LabNode,
+  level: InlineDetailLevel,
+  hiddenFlowIds: ReadonlySet<string>,
+  foregroundFlowIds: ReadonlySet<string>,
+): string {
   const { x, y, width, height } = node.bounds;
   const colors = NODE_COLORS[node.shape];
-  const detail = renderInlineDetailLevel(level, hiddenFlowIds);
+  const detail = renderInlineDetailLevel(level, hiddenFlowIds, foregroundFlowIds);
   return `<g class="scene-node expanded-node" data-node-id="${escapeXml(node.scene_node_id)}"><rect class="node-surface expanded-surface" x="${x}" y="${y}" width="${width}" height="${height}" rx="6" fill="#fff" stroke="${colors.stroke}"/><rect class="expanded-header" x="${x}" y="${y}" width="${width}" height="50" rx="6" fill="${colors.fill}"/><line class="expanded-divider" x1="${x}" y1="${y + 50}" x2="${x + width}" y2="${y + 50}"/><text class="expanded-title" x="${x + 16}" y="${y + 22}">${escapeXml(node.label)}</text><text class="expanded-subtitle" x="${x + 16}" y="${y + 39}">${escapeXml(DETAIL_KIND_NAMES[level.kind])}</text><g class="module-detail detail-${level.kind}">${detail}</g></g>`;
 }
 
@@ -151,8 +163,11 @@ function renderNode(
   style: NodeVisualStyle,
   detailTree?: InlineDetailLevel,
   hiddenFlowIds: ReadonlySet<string> = new Set(),
+  foregroundFlowIds: ReadonlySet<string> = new Set(),
 ): string {
-  if (node.detail_expanded && node.detail_kind && detailTree) return renderExpandedNode(node, detailTree, hiddenFlowIds);
+  if (node.detail_expanded && node.detail_kind && detailTree) {
+    return renderExpandedNode(node, detailTree, hiddenFlowIds, foregroundFlowIds);
+  }
   const { x, y, width, height } = node.bounds;
   const colors = NODE_COLORS[node.shape];
   const fill = style === "compact" ? "#ffffff" : colors.fill;
@@ -252,22 +267,14 @@ export function renderSceneSvg(
       )]]
       : []
   )));
-  const projections = hierarchyRoutingMode === "atomic-bottom-up"
-    ? Object.fromEntries(Object.entries(detailTrees).map(([nodeId, tree]) => [
-      nodeId,
-      buildAtomicHierarchyProjection(tree),
-    ]))
-    : {};
-  const boundaryPorts = hierarchyRoutingMode === "atomic-bottom-up"
-    ? projectedSceneBoundaryPorts(projections)
+  const atomicRoutingPlan = hierarchyRoutingMode === "atomic-bottom-up"
+    ? buildAtomicHierarchyRoutingPlan(
+      detailTrees,
+      new Set(scene.edges.map((edge) => edge.target_scene_node_id)),
+      new Set(scene.edges.map((edge) => edge.source_scene_node_id)),
+    )
     : undefined;
-  const outgoingNodeIds = new Set(scene.edges.map((edge) => edge.source_scene_node_id));
-  const hiddenExitBridgeIds = hierarchyRoutingMode === "atomic-bottom-up"
-    ? new Set(Object.entries(projections).flatMap(([nodeId, projection]) => [
-      ...projectedNestedExitBridgeIds(projection),
-      ...(outgoingNodeIds.has(nodeId) ? projectedAtomicExit(projection)?.bridgeEdgeIds ?? [] : []),
-    ]))
-    : new Set<string>();
+  const boundaryPorts = atomicRoutingPlan?.boundaryPorts;
   const routed = routeScene(scene, options.routeStyle, boundaryPorts);
   const metrics = measureScene(scene, routed);
   const backgroundEdges = routed.filter((route) => !route.foreground)
@@ -278,7 +285,8 @@ export function renderSceneSvg(
     item,
     options.nodeStyle,
     detailTrees[item.scene_node_id],
-    hiddenExitBridgeIds,
+    atomicRoutingPlan?.hiddenFlowIds,
+    atomicRoutingPlan?.foregroundFlowIds,
   )).join("");
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="scene-title scene-description" viewBox="0 0 ${scene.paper_width} ${scene.paper_height}">
   <title id="scene-title">${escapeXml(scene.title)}</title><desc id="scene-description">${escapeXml(scene.description)}</desc>

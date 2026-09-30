@@ -9,7 +9,9 @@ export type DetailLayoutMap = Record<string, DetailOffsetMap>;
 export type DetailNodeBoundsMap = Record<string, Bounds>;
 
 export interface DetailExpansionBranch {
-  childId: string;
+  children?: Record<string, DetailExpansionBranch>;
+  /** Legacy single-path representation accepted when reading older snapshots. */
+  childId?: string;
   child?: DetailExpansionBranch;
 }
 
@@ -31,10 +33,67 @@ export interface InlineDetailLevel {
   nodes: DetailNode[];
   levelKey: string;
   routingMode: HierarchyRoutingMode;
+  expandedChildren?: Array<{
+    node: DetailNode;
+    level: InlineDetailLevel;
+  }>;
+  /** Compatibility alias for callers that only inspect a single expansion. */
   expandedChild?: {
     node: DetailNode;
     level: InlineDetailLevel;
   };
+}
+
+const EMPTY_DETAIL_EXPANSION: DetailExpansionBranch = { children: {} };
+
+export function detailExpansionChildren(
+  branch: DetailExpansionBranch | undefined,
+): Array<[string, DetailExpansionBranch]> {
+  if (!branch) return [];
+  if (branch.children) return Object.entries(branch.children);
+  return branch.childId ? [[branch.childId, branch.child ?? EMPTY_DETAIL_EXPANSION]] : [];
+}
+
+export function inlineExpandedChildren(level: InlineDetailLevel): NonNullable<InlineDetailLevel["expandedChildren"]> {
+  return level.expandedChildren ?? (level.expandedChild ? [level.expandedChild] : []);
+}
+
+export function detailExpansionPath(...childIds: string[]): DetailExpansionBranch {
+  return childIds.reduceRight<DetailExpansionBranch>(
+    (child, childId) => ({ children: { [childId]: child } }),
+    EMPTY_DETAIL_EXPANSION,
+  );
+}
+
+export function toggleDetailExpansionAtPath(
+  branch: DetailExpansionBranch | undefined,
+  levelPath: readonly string[],
+  childId: string,
+): DetailExpansionBranch {
+  const children = Object.fromEntries(detailExpansionChildren(branch));
+  if (!levelPath.length) {
+    if (children[childId]) delete children[childId];
+    else children[childId] = { children: {} };
+    return { children };
+  }
+  const nested = children[levelPath[0]];
+  if (!nested) return { children };
+  children[levelPath[0]] = toggleDetailExpansionAtPath(nested, levelPath.slice(1), childId);
+  return { children };
+}
+
+export function fullyExpandedDetailTree(
+  kind: NodeDetailKind,
+  ancestors: readonly NodeDetailKind[] = [],
+): DetailExpansionBranch {
+  if (ancestors.includes(kind) || ancestors.length >= 20) return EMPTY_DETAIL_EXPANSION;
+  const bounds = naturalDetailBounds(kind);
+  const children = Object.fromEntries(listDetailNodes(buildModuleDetail(kind, bounds)).flatMap((node) => (
+    node.nestedKind
+      ? [[node.id, fullyExpandedDetailTree(node.nestedKind, [...ancestors, kind])]]
+      : []
+  )));
+  return { children };
 }
 
 interface DetailLayoutOptions {
@@ -49,6 +108,8 @@ interface DetailLayoutOptions {
   suppressExitMarker?: boolean;
   suppressExpandedChildMarker?: boolean;
   adaptivePortNodeIds?: ReadonlySet<string>;
+  routeBounds?: Bounds;
+  extraObstacles?: Bounds[];
 }
 
 interface Anchor {
@@ -105,6 +166,14 @@ export function inferNestedDetailKind(
   const value = `${label} ${note}`.toLowerCase();
   let nestedKind: NodeDetailKind | undefined;
 
+  if (["transformer-encoder", "transformer-decoder", "tensor2tensor-encoder", "tensor2tensor-decoder"].includes(parentKind)) {
+    if (/^(self-attention|masked self-attn|cross-attention)$/i.test(label)) return "attention";
+    if (/^add\s*&\s*norm$/i.test(label)) return "add-norm";
+    if (/^feed-forward$/i.test(label)) return "feedforward";
+    return undefined;
+  }
+  if (parentKind === "sinusoidal-embedding") return undefined;
+
   if (parentKind === "dual-encoder" && value.includes("image")) nestedKind = "vision-transformer";
   else if (parentKind === "dual-encoder" && value.includes("text")) nestedKind = "attention";
   else if (parentKind === "seq2seq" && /encoder|decoder/.test(value)) nestedKind = "recurrent";
@@ -154,6 +223,18 @@ function translatePrimitive(primitive: DetailPrimitive, offset: Point): DetailPr
 function resizePrimitive(primitive: DetailPrimitive, bounds: Bounds | undefined): DetailPrimitive {
   if (!bounds) return primitive;
   if (primitive.kind === "circle") {
+    if (Math.abs(bounds.width - bounds.height) > 0.01) {
+      return {
+        kind: "rect",
+        x: bounds.x,
+        y: bounds.y,
+        width: bounds.width,
+        height: bounds.height,
+        rx: 4,
+        label: primitive.label,
+        tone: primitive.tone,
+      };
+    }
     return {
       ...primitive,
       cx: bounds.x + bounds.width / 2,
@@ -356,10 +437,40 @@ function collisionCount(points: Point[], obstacles: Bounds[]): number {
   return count;
 }
 
+function routeBoundaryOverflow(points: Point[], bounds: Bounds | undefined): number {
+  if (!bounds) return 0;
+  const right = bounds.x + bounds.width;
+  const bottom = bounds.y + bounds.height;
+  return points.reduce((sum, point) => sum
+    + Math.max(0, bounds.x - point.x)
+    + Math.max(0, point.x - right)
+    + Math.max(0, bounds.y - point.y)
+    + Math.max(0, point.y - bottom), 0);
+}
+
 function routeLength(points: Point[]): number {
   let length = 0;
   for (let index = 1; index < points.length; index += 1) {
     length += Math.abs(points[index].x - points[index - 1].x) + Math.abs(points[index].y - points[index - 1].y);
+  }
+  return length;
+}
+
+function routeBacktrackLength(points: Point[]): number {
+  let length = 0;
+  for (let index = 2; index < points.length; index += 1) {
+    const first = points[index - 2];
+    const middle = points[index - 1];
+    const last = points[index];
+    if (first.y === middle.y && middle.y === last.y) {
+      const incoming = middle.x - first.x;
+      const outgoing = last.x - middle.x;
+      if (incoming * outgoing < 0) length += Math.min(Math.abs(incoming), Math.abs(outgoing));
+    } else if (first.x === middle.x && middle.x === last.x) {
+      const incoming = middle.y - first.y;
+      const outgoing = last.y - middle.y;
+      if (incoming * outgoing < 0) length += Math.min(Math.abs(incoming), Math.abs(outgoing));
+    }
   }
   return length;
 }
@@ -465,6 +576,7 @@ function orthogonalRoute(
   hardObstacles: Bounds[],
   occupiedRoutes: OccupiedRoute[] = [],
   channel?: string,
+  routeBounds?: Bounds,
 ): Point[] {
   const sourceStub = startSide ? outward(start, startSide, 12) : start;
   const targetStub = endSide ? outward(end, endSide, 12) : end;
@@ -477,6 +589,20 @@ function orthogonalRoute(
   const middleX = (sourceStub.x + targetStub.x) / 2;
   const middleY = (sourceStub.y + targetStub.y) / 2;
   const channelOffsets = [-2, -1, 1, 2].map((offset) => offset * ROUTE_CHANNEL_STEP);
+  const boundaryChannels = routeBounds ? {
+    left: routeBounds.x + 12,
+    right: routeBounds.x + routeBounds.width - 12,
+    top: routeBounds.y + 12,
+    bottom: routeBounds.y + routeBounds.height - 12,
+  } : undefined;
+  const withinHorizontalBounds = (x: number) => !routeBounds
+    || x >= routeBounds.x && x <= routeBounds.x + routeBounds.width;
+  const withinVerticalBounds = (y: number) => !routeBounds
+    || y >= routeBounds.y && y <= routeBounds.y + routeBounds.height;
+  const obstacleXLanes = [...new Set(obstacles.flatMap((bounds) => [bounds.x, bounds.x + bounds.width]))]
+    .filter(withinHorizontalBounds);
+  const obstacleYLanes = [...new Set(obstacles.flatMap((bounds) => [bounds.y, bounds.y + bounds.height]))]
+    .filter(withinVerticalBounds);
   const candidates = [
     [start, sourceStub, { x: targetStub.x, y: sourceStub.y }, targetStub, end],
     [start, sourceStub, { x: sourceStub.x, y: targetStub.y }, targetStub, end],
@@ -490,11 +616,35 @@ function orthogonalRoute(
     ...channelOffsets.map((offset) => [start, sourceStub, { x: sourceStub.x, y: middleY + offset }, { x: targetStub.x, y: middleY + offset }, targetStub, end]),
     ...[-2, -1, 1, 2].map((offset) => [start, sourceStub, { x: sourceStub.x, y: allBounds.top - 14 + offset * ROUTE_CHANNEL_STEP }, { x: targetStub.x, y: allBounds.top - 14 + offset * ROUTE_CHANNEL_STEP }, targetStub, end]),
     ...[-2, -1, 1, 2].map((offset) => [start, sourceStub, { x: sourceStub.x, y: allBounds.bottom + 14 + offset * ROUTE_CHANNEL_STEP }, { x: targetStub.x, y: allBounds.bottom + 14 + offset * ROUTE_CHANNEL_STEP }, targetStub, end]),
+    ...(boundaryChannels ? [
+      [start, sourceStub, { x: sourceStub.x, y: boundaryChannels.top }, { x: targetStub.x, y: boundaryChannels.top }, targetStub, end],
+      [start, sourceStub, { x: sourceStub.x, y: boundaryChannels.bottom }, { x: targetStub.x, y: boundaryChannels.bottom }, targetStub, end],
+      [start, sourceStub, { x: boundaryChannels.left, y: sourceStub.y }, { x: boundaryChannels.left, y: targetStub.y }, targetStub, end],
+      [start, sourceStub, { x: boundaryChannels.right, y: sourceStub.y }, { x: boundaryChannels.right, y: targetStub.y }, targetStub, end],
+    ] : []),
+    ...obstacleXLanes.map((x) => [
+      start,
+      sourceStub,
+      { x, y: sourceStub.y },
+      { x, y: targetStub.y },
+      targetStub,
+      end,
+    ]),
+    ...obstacleYLanes.map((y) => [
+      start,
+      sourceStub,
+      { x: sourceStub.x, y },
+      { x: targetStub.x, y },
+      targetStub,
+      end,
+    ]),
   ].map(compactPoints);
   return candidates.sort((a, b) => {
     const score = (points: Point[]) => [
+      routeBoundaryOverflow(points, routeBounds),
       collisionCount(points, hardObstacles),
       collisionCount(points, obstacles),
+      routeBacktrackLength(points),
       sharedLength(points, occupiedRoutes, channel),
       crossingCount(points, occupiedRoutes),
       nearParallelLength(points, occupiedRoutes),
@@ -521,8 +671,18 @@ function layoutFlow(
   const first = primitive.points[0];
   const last = primitive.points.at(-1)!;
   const allowDirectedGap = true;
-  const startAnchor = findAnchor(first, baseNodes, primitive.points[1], "start", allowDirectedGap);
-  const endAnchor = findAnchor(last, baseNodes, primitive.points.at(-2), "end", allowDirectedGap);
+  const isSharedEndpoint = (point: Point) => diagram.primitives.filter((candidate) => (
+    candidate.kind === "flow"
+    && (samePoint(candidate.points[0], point) || samePoint(candidate.points.at(-1)!, point))
+  )).length > 1;
+  const candidateStartAnchor = findAnchor(first, baseNodes, primitive.points[1], "start", allowDirectedGap);
+  const candidateEndAnchor = findAnchor(last, baseNodes, primitive.points.at(-2), "end", allowDirectedGap);
+  const startAnchor = isSharedEndpoint(first) && !options.nodePorts?.[candidateStartAnchor?.node.id ?? ""]
+    ? undefined
+    : candidateStartAnchor;
+  const endAnchor = isSharedEndpoint(last) && !options.nodePorts?.[candidateEndAnchor?.node.id ?? ""]
+    ? undefined
+    : candidateEndAnchor;
   const startsAtBoundary = samePoint(first, diagram.entryPoint);
   const endsAtBoundary = samePoint(last, diagram.exitPoint);
 
@@ -547,11 +707,10 @@ function layoutFlow(
     && !boundsEqual(startAnchor.node.bounds, movedStartNode.bounds));
   const endGeometryChanged = Boolean(endAnchor && movedEndNode
     && !boundsEqual(endAnchor.node.bounds, movedEndNode.bounds));
-  const shouldResolveNearestSides = primitive.channel === undefined
-    && Boolean(
-      movedStartNode && options.adaptivePortNodeIds?.has(movedStartNode.id)
-      || movedEndNode && options.adaptivePortNodeIds?.has(movedEndNode.id),
-    );
+  const shouldResolveNearestSides = Boolean(
+    movedStartNode && options.adaptivePortNodeIds?.has(movedStartNode.id)
+    || movedEndNode && options.adaptivePortNodeIds?.has(movedEndNode.id),
+  );
   let resolvedStartSide = startAnchor?.side ?? startPortalAnchor?.side;
   let resolvedEndSide = endAnchor?.side ?? endPortalAnchor?.side;
   if (shouldResolveNearestSides) {
@@ -588,7 +747,14 @@ function layoutFlow(
 
   const excluded = new Set([routeStartNode?.id, routeEndNode?.id].filter(Boolean));
   const obstacleNodes = movedNodes.filter((node) => !excluded.has(node.id));
-  const hardObstacles = obstacleNodes.map((node) => node.bounds);
+  const endpointTouches = (bounds: Bounds) => (
+    pointInsideOrOnBounds(start, bounds)
+    || pointInsideOrOnBounds(end, bounds)
+    || distanceToBoundary(start, bounds) <= ANCHOR_TOLERANCE
+    || distanceToBoundary(end, bounds) <= ANCHOR_TOLERANCE
+  );
+  const extraObstacles = (options.extraObstacles ?? []).filter((bounds) => !endpointTouches(bounds));
+  const hardObstacles = [...obstacleNodes.map((node) => node.bounds), ...extraObstacles];
   const obstacles = hardObstacles.map((bounds) => padded(bounds, ROUTE_PADDING));
   const interiorPortNodeIds = new Set<string>();
   if (movedStartNode && options.nodePorts?.[movedStartNode.id]?.[resolvedStartSide!]
@@ -619,7 +785,17 @@ function layoutFlow(
   }
   return {
     ...primitive,
-    points: orthogonalRoute(start, end, startRouteSide, endRouteSide, routeObstacles, hardObstacles, occupiedRoutes, primitive.channel),
+    points: orthogonalRoute(
+      start,
+      end,
+      startRouteSide,
+      endRouteSide,
+      routeObstacles,
+      hardObstacles,
+      occupiedRoutes,
+      primitive.channel,
+      options.routeBounds,
+    ),
     ...(suppressMarker ? { marker: false } : {}),
   };
 }
@@ -685,6 +861,39 @@ function shiftedBounds(bounds: Bounds, x: number, y: number): Bounds {
   return { ...bounds, x: bounds.x + x, y: bounds.y + y };
 }
 
+interface ContainmentFrameCandidate extends Bounds {
+  index: number;
+  area: number;
+}
+
+function containmentFrameCandidate(
+  diagram: ModuleDetailDiagram,
+  referenceBounds: Bounds,
+): ContainmentFrameCandidate | undefined {
+  return diagram.primitives.flatMap((primitive, index) => {
+    if (primitive.kind !== "rect"
+      || primitive.variant !== "frame"
+      || (primitive.frameRole ?? "containment") !== "containment") return [];
+    const frameBounds = {
+      x: primitive.x,
+      y: primitive.y,
+      width: primitive.width,
+      height: primitive.height,
+    };
+    const frameRight = frameBounds.x + frameBounds.width;
+    const frameBottom = frameBounds.y + frameBounds.height;
+    if (frameBounds.x < referenceBounds.x - 0.01
+      || frameBounds.y < referenceBounds.y - 0.01
+      || frameRight > referenceBounds.x + referenceBounds.width + 0.01
+      || frameBottom > referenceBounds.y + referenceBounds.height + 0.01) return [];
+    return [{
+      index,
+      ...frameBounds,
+      area: primitive.width * primitive.height,
+    }];
+  }).sort((first, second) => second.area - first.area)[0];
+}
+
 function expandedJunctionPorts(
   diagram: ModuleDetailDiagram,
   active: DetailNode,
@@ -723,11 +932,188 @@ interface InlineAtomicExit {
   side: PortSide;
 }
 
+export interface InlineAtomicEntry {
+  point: Point;
+  side: PortSide;
+}
+
 function pointInsideOrOnBounds(point: Point, bounds: Bounds): boolean {
   return point.x >= bounds.x - 0.01
     && point.x <= bounds.x + bounds.width + 0.01
     && point.y >= bounds.y - 0.01
     && point.y <= bounds.y + bounds.height + 0.01;
+}
+
+function boundsInsideOrOnBounds(inner: Bounds, outer: Bounds): boolean {
+  return pointInsideOrOnBounds({ x: inner.x, y: inner.y }, outer)
+    && pointInsideOrOnBounds({ x: inner.x + inner.width, y: inner.y + inner.height }, outer);
+}
+
+function layoutSemanticGroupFrames(
+  baseDiagram: ModuleDetailDiagram,
+  diagram: ModuleDetailDiagram,
+): ModuleDetailDiagram {
+  const baseNodes = listDetailNodes(baseDiagram);
+  let primitives = diagram.primitives;
+
+  for (const [frameIndex, primitive] of baseDiagram.primitives.entries()) {
+    if (primitive.kind !== "rect"
+      || primitive.variant !== "frame"
+      || primitive.frameRole !== "semantic-group") continue;
+    const originalFrame: Bounds = {
+      x: primitive.x,
+      y: primitive.y,
+      width: primitive.width,
+      height: primitive.height,
+    };
+    const members = baseNodes.filter((node) => boundsInsideOrOnBounds(node.bounds, originalFrame));
+    if (!members.length) continue;
+    const movedMembers = members.map((member) => {
+      const moved = primitives[member.primitiveIndex];
+      return moved.kind === "rect" || moved.kind === "circle" || moved.kind === "matrix"
+        ? primitiveBounds(moved)
+        : member.bounds;
+    });
+    const baseLeft = Math.min(...members.map((member) => member.bounds.x));
+    const baseTop = Math.min(...members.map((member) => member.bounds.y));
+    const baseRight = Math.max(...members.map((member) => member.bounds.x + member.bounds.width));
+    const baseBottom = Math.max(...members.map((member) => member.bounds.y + member.bounds.height));
+    const movedLeft = Math.min(...movedMembers.map((bounds) => bounds.x));
+    const movedTop = Math.min(...movedMembers.map((bounds) => bounds.y));
+    const movedRight = Math.max(...movedMembers.map((bounds) => bounds.x + bounds.width));
+    const movedBottom = Math.max(...movedMembers.map((bounds) => bounds.y + bounds.height));
+    const nextFrame: Bounds = {
+      x: movedLeft - (baseLeft - originalFrame.x),
+      y: movedTop - (baseTop - originalFrame.y),
+      width: movedRight - movedLeft + (baseLeft - originalFrame.x) + (originalFrame.x + originalFrame.width - baseRight),
+      height: movedBottom - movedTop + (baseTop - originalFrame.y) + (originalFrame.y + originalFrame.height - baseBottom),
+    };
+    const shift = { x: nextFrame.x - originalFrame.x, y: nextFrame.y - originalFrame.y };
+    primitives = primitives.map((current, index) => {
+      if (index === frameIndex && current.kind === "rect") return { ...current, ...nextFrame };
+      const original = baseDiagram.primitives[index];
+      if (original?.kind !== "text"
+        || !pointInsideOrOnBounds({ x: original.x, y: original.y }, originalFrame)) return current;
+      return current.kind === "text" ? { ...current, x: original.x + shift.x, y: original.y + shift.y } : current;
+    });
+  }
+
+  return { ...diagram, primitives };
+}
+
+function resizeContainmentFrame(
+  diagram: ModuleDetailDiagram,
+  baseBounds: Bounds,
+  targetBounds: Bounds,
+): ModuleDetailDiagram {
+  const outer = containmentFrameCandidate(diagram, baseBounds);
+  if (!outer) return diagram;
+  const left = outer.x - baseBounds.x;
+  const top = outer.y - baseBounds.y;
+  const right = baseBounds.x + baseBounds.width - outer.x - outer.width;
+  const bottom = baseBounds.y + baseBounds.height - outer.y - outer.height;
+  const detailNodes = listDetailNodes(diagram);
+  const contentLeft = detailNodes.length
+    ? Math.min(...detailNodes.map((node) => node.bounds.x)) - 12
+    : targetBounds.x + left;
+  const contentTop = detailNodes.length
+    ? Math.min(...detailNodes.map((node) => node.bounds.y)) - 12
+    : targetBounds.y + top;
+  const contentRight = detailNodes.length
+    ? Math.max(...detailNodes.map((node) => node.bounds.x + node.bounds.width)) + 12
+    : targetBounds.x + targetBounds.width - right;
+  const contentBottom = detailNodes.length
+    ? Math.max(...detailNodes.map((node) => node.bounds.y + node.bounds.height)) + 12
+    : targetBounds.y + targetBounds.height - bottom;
+  const defaultX = targetBounds.x + left;
+  const defaultY = targetBounds.y + top;
+  const frameX = Math.max(targetBounds.x + 4, Math.min(defaultX, contentLeft));
+  const frameY = Math.max(targetBounds.y + 50, Math.min(defaultY, contentTop));
+  const defaultRight = targetBounds.x + targetBounds.width - right;
+  const defaultBottom = targetBounds.y + targetBounds.height - bottom;
+  const frameRight = Math.min(targetBounds.x + targetBounds.width - 4, Math.max(defaultRight, contentRight));
+  const frameBottom = Math.min(targetBounds.y + targetBounds.height - 4, Math.max(defaultBottom, contentBottom));
+  return {
+    ...diagram,
+    primitives: diagram.primitives.map((primitive, index) => {
+      if (index !== outer.index || primitive.kind !== "rect") return primitive;
+      return {
+        ...primitive,
+        x: frameX,
+        y: frameY,
+        width: Math.max(1, frameRight - frameX),
+        height: Math.max(1, frameBottom - frameY),
+      };
+    }),
+  };
+}
+
+export function visibleContainmentFrameBounds(level: InlineDetailLevel): Bounds | undefined {
+  const frame = containmentFrameCandidate(level.diagram, level.bounds);
+  return frame ? {
+    x: frame.x,
+    y: frame.y,
+    width: frame.width,
+    height: frame.height,
+  } : undefined;
+}
+
+/** Compatibility alias. Only true containment frames define a level boundary. */
+export const visibleDetailFrameBounds = visibleContainmentFrameBounds;
+
+export function detailLevelContentBounds(level: InlineDetailLevel): Bounds {
+  const frame = visibleContainmentFrameBounds(level);
+  if (frame) {
+    return {
+      x: frame.x + 12,
+      y: frame.y + 12,
+      width: Math.max(1, frame.width - 24),
+      height: Math.max(1, frame.height - 24),
+    };
+  }
+  return {
+    x: level.bounds.x + 12,
+    y: level.bounds.y + 62,
+    width: Math.max(1, level.bounds.width - 24),
+    height: Math.max(1, level.bounds.height - 98),
+  };
+}
+
+export function inlineAtomicEntry(level: InlineDetailLevel): InlineAtomicEntry | undefined {
+  let cursor = level.diagram.entryPoint;
+  const visited = new Set<number>();
+  for (let depth = 0; depth <= level.diagram.primitives.length; depth += 1) {
+    const candidates = level.diagram.primitives.flatMap((primitive, index) => (
+      primitive.kind === "flow" && !visited.has(index) && samePoint(primitive.points[0], cursor)
+        ? [{ primitive, index }]
+        : []
+    ));
+    if (candidates.length !== 1) return undefined;
+    const { primitive, index } = candidates[0];
+    visited.add(index);
+    const point = primitive.points.at(-1)!;
+    const anchor = findAnchor(point, level.nodes, primitive.points.at(-2), "end", true);
+    const next = level.diagram.primitives.filter((candidate, candidateIndex) => (
+      candidate.kind === "flow"
+      && !visited.has(candidateIndex)
+      && samePoint(candidate.points[0], point)
+    ));
+    const isBoundaryAnchor = anchor && distanceToBoundary(point, anchor.node.bounds) <= ANCHOR_TOLERANCE;
+    if (anchor && isBoundaryAnchor) {
+      const expanded = inlineExpandedChildren(level).find((child) => child.node.id === anchor.node.id);
+      if (expanded) {
+        return inlineAtomicEntry(expanded.level)
+          ?? { point: { ...level.diagram.entryPoint }, side: "left" };
+      }
+      return { point: { ...point }, side: anchor.side };
+    }
+    if (next.length !== 1) {
+      return next.length > 1 ? { point: { ...point }, side: "left" } : undefined;
+    }
+    if (anchor) return { point: { ...point }, side: anchor.side };
+    cursor = point;
+  }
+  return undefined;
 }
 
 function inlineAtomicExit(level: InlineDetailLevel): InlineAtomicExit | undefined {
@@ -745,14 +1131,14 @@ function inlineAtomicExit(level: InlineDetailLevel): InlineAtomicExit | undefine
     const source = primitive.points[0];
     const anchor = findAnchor(source, level.nodes, primitive.points[1], "start", true);
     if (anchor) {
-      if (level.expandedChild?.node.id === anchor.node.id) {
-        return inlineAtomicExit(level.expandedChild.level);
+      const expanded = inlineExpandedChildren(level).find((child) => child.node.id === anchor.node.id);
+      if (expanded) {
+        return inlineAtomicExit(expanded.level);
       }
       return { point: { ...source }, side: anchor.side };
     }
-    if (level.expandedChild && pointInsideOrOnBounds(source, level.expandedChild.node.bounds)) {
-      return inlineAtomicExit(level.expandedChild.level);
-    }
+    const expanded = inlineExpandedChildren(level).find((child) => pointInsideOrOnBounds(source, child.node.bounds));
+    if (expanded) return inlineAtomicExit(expanded.level);
     cursor = source;
   }
   return undefined;
@@ -764,45 +1150,56 @@ function automaticExpandedBounds(
 ): { size: Pick<Bounds, "width" | "height">; overrides: DetailNodeBoundsMap } | undefined {
   const baseBounds = naturalDetailBounds(kind);
   const nodes = listDetailNodes(buildModuleDetail(kind, baseBounds));
-  const active = nodes.find((node) => node.id === branch.childId && node.nestedKind);
-  if (!active?.nestedKind) return undefined;
+  const branches = new Map(detailExpansionChildren(branch));
+  const activeNodes = nodes.filter((node) => node.nestedKind && branches.has(node.id))
+    .sort((first, second) => first.bounds.x - second.bounds.x || first.bounds.y - second.bounds.y || first.id.localeCompare(second.id));
+  if (!activeNodes.length) return undefined;
 
-  const childSize = expandedDetailSize(active.nestedKind, branch.child);
-  const expanded = {
-    x: active.bounds.x,
-    y: Math.max(baseBounds.y + 58, active.bounds.y),
-    width: childSize.width,
-    height: childSize.height,
-  };
-  const overrides: DetailNodeBoundsMap = { [active.id]: expanded };
-  const activeCenterX = active.bounds.x + active.bounds.width / 2;
-  const activeBottom = active.bounds.y + active.bounds.height;
-  const growthX = Math.max(0, expanded.width - active.bounds.width) + INLINE_EXPANSION_GAP;
-  const growthY = Math.max(0, expanded.height - active.bounds.height) + INLINE_EXPANSION_GAP;
+  const currentBounds = new Map(nodes.map((node) => [node.id, { ...node.bounds }]));
+  for (const active of activeNodes) {
+    const activeBounds = currentBounds.get(active.id)!;
+    const childSize = expandedDetailSize(active.nestedKind!, branches.get(active.id));
+    const expanded = {
+      x: activeBounds.x,
+      y: Math.max(baseBounds.y + 58, activeBounds.y),
+      width: childSize.width,
+      height: childSize.height,
+    };
+    currentBounds.set(active.id, expanded);
+    const activeCenterX = activeBounds.x + activeBounds.width / 2;
+    const activeBottom = activeBounds.y + activeBounds.height;
+    const growthX = Math.max(0, expanded.width - activeBounds.width) + INLINE_EXPANSION_GAP;
+    const growthY = Math.max(0, expanded.height - activeBounds.height) + INLINE_EXPANSION_GAP;
 
-  for (const node of nodes) {
-    if (node.id === active.id) continue;
-    const centerX = node.bounds.x + node.bounds.width / 2;
-    let next = { ...node.bounds };
-    if (centerX > activeCenterX + Math.max(8, active.bounds.width * 0.25)) {
-      next.x += growthX;
-    } else if (node.bounds.x + node.bounds.width <= active.bounds.x) {
-      // Upstream peers keep their original lane and continue into the expanded left boundary.
-    } else if (node.bounds.y >= activeBottom - 4) {
-      const horizontalOverlap = node.bounds.x < expanded.x + expanded.width + INLINE_EXPANSION_GAP
-        && node.bounds.x + node.bounds.width > expanded.x - INLINE_EXPANSION_GAP;
-      if (horizontalOverlap) next.y += growthY;
-    } else {
-      const overlaps = next.x < expanded.x + expanded.width + INLINE_EXPANSION_GAP
-        && next.x + next.width > expanded.x - INLINE_EXPANSION_GAP
-        && next.y < expanded.y + expanded.height + INLINE_EXPANSION_GAP
-        && next.y + next.height > expanded.y - INLINE_EXPANSION_GAP;
-      if (overlaps) next.x += growthX;
+    for (const node of nodes) {
+      if (node.id === active.id) continue;
+      const nodeBounds = currentBounds.get(node.id)!;
+      const centerX = nodeBounds.x + nodeBounds.width / 2;
+      const next = { ...nodeBounds };
+      if (centerX > activeCenterX + Math.max(8, activeBounds.width * 0.25)) {
+        next.x += growthX;
+      } else if (nodeBounds.x + nodeBounds.width <= activeBounds.x) {
+        // Upstream peers keep their lane and continue into the expanded boundary.
+      } else if (nodeBounds.y >= activeBottom - 4) {
+        const horizontalOverlap = nodeBounds.x < expanded.x + expanded.width + INLINE_EXPANSION_GAP
+          && nodeBounds.x + nodeBounds.width > expanded.x - INLINE_EXPANSION_GAP;
+        if (horizontalOverlap) next.y += growthY;
+      } else {
+        const overlaps = next.x < expanded.x + expanded.width + INLINE_EXPANSION_GAP
+          && next.x + next.width > expanded.x - INLINE_EXPANSION_GAP
+          && next.y < expanded.y + expanded.height + INLINE_EXPANSION_GAP
+          && next.y + next.height > expanded.y - INLINE_EXPANSION_GAP;
+        if (overlaps) next.x += growthX;
+      }
+      currentBounds.set(node.id, next);
     }
-    if (!boundsEqual(next, node.bounds)) overrides[node.id] = next;
   }
 
-  const finalBounds = nodes.map((node) => overrides[node.id] ?? node.bounds);
+  const overrides: DetailNodeBoundsMap = Object.fromEntries(nodes.flatMap((node) => {
+    const next = currentBounds.get(node.id)!;
+    return boundsEqual(next, node.bounds) ? [] : [[node.id, next]];
+  }));
+  const finalBounds = nodes.map((node) => currentBounds.get(node.id)!);
   const right = Math.max(baseBounds.width, ...finalBounds.map((bounds) => bounds.x + bounds.width + INLINE_RIGHT_PADDING));
   const bottom = Math.max(baseBounds.height, ...finalBounds.map((bounds) => bounds.y + bounds.height + INLINE_BOTTOM_PADDING));
   return { size: { width: right, height: bottom }, overrides };
@@ -850,13 +1247,20 @@ export function buildInlineDetailLayout(
     bottomTextFromY: natural.y + natural.height - 52,
     bottomTextY: bounds.y + bounds.height - 28,
     suppressExitMarker: routingMode === "atomic-bottom-up",
+    routeBounds: bounds,
   };
-  const preliminaryDiagram = layoutDetailDiagram(baseDiagram, layouts[levelKey] ?? {}, commonOptions);
+  const preliminaryDiagram = resizeContainmentFrame(
+    layoutSemanticGroupFrames(
+      baseDiagram,
+      layoutDetailDiagram(baseDiagram, layouts[levelKey] ?? {}, commonOptions),
+    ),
+    natural,
+    bounds,
+  );
   const preliminaryNodes = listDetailNodes(preliminaryDiagram);
-  const active = branch
-    ? preliminaryNodes.find((node) => node.id === branch.childId && node.nestedKind)
-    : undefined;
-  if (!active?.nestedKind) {
+  const childBranches = new Map(detailExpansionChildren(branch));
+  const activeNodes = preliminaryNodes.filter((node) => node.nestedKind && childBranches.has(node.id));
+  if (!activeNodes.length) {
     return {
       kind,
       bounds,
@@ -864,61 +1268,91 @@ export function buildInlineDetailLayout(
       nodes: preliminaryNodes,
       levelKey,
       routingMode,
+      expandedChildren: [],
     };
   }
-  const childLevel = buildInlineDetailLayout(
-    active.nestedKind,
-    active.bounds,
-    branch?.child,
-    layouts,
-    rootId,
-    [...levelPath, active.id],
-    routingMode,
-  );
-  const childAtomicExit = routingMode === "atomic-bottom-up" ? inlineAtomicExit(childLevel) : undefined;
-  const baseActive = listDetailNodes(baseDiagram).find((node) => node.id === active.id);
-  const junctionPorts = baseActive
-    ? expandedJunctionPorts(
+  const baseNodes = listDetailNodes(baseDiagram);
+  const expandedChildren = activeNodes.map((active) => ({
+    node: active,
+    level: buildInlineDetailLayout(
+      active.nestedKind!,
+      active.bounds,
+      childBranches.get(active.id),
+      layouts,
+      rootId,
+      [...levelPath, active.id],
+      routingMode,
+    ),
+  }));
+  const atomicPorts = new Map(expandedChildren.map((expanded) => [expanded.node.id, {
+    entry: routingMode === "atomic-bottom-up" ? inlineAtomicEntry(expanded.level) : undefined,
+    exit: routingMode === "atomic-bottom-up" ? inlineAtomicExit(expanded.level) : undefined,
+  }]));
+  const junctionPorts = Object.assign({}, ...expandedChildren.map((expanded) => {
+    const baseActive = baseNodes.find((node) => node.id === expanded.node.id);
+    const ports = atomicPorts.get(expanded.node.id)!;
+    return baseActive ? expandedJunctionPorts(
       baseDiagram,
       baseActive,
-      childLevel.diagram.entryPoint,
-      childAtomicExit?.point ?? childLevel.diagram.exitPoint,
-    )
-    : {};
+      ports.entry?.point ?? expanded.level.diagram.entryPoint,
+      ports.exit?.point ?? expanded.level.diagram.exitPoint,
+    ) : {};
+  }));
+  const childObstacles = expandedChildren.flatMap((expanded) => leafDetailNodeBounds(expanded.level));
   if (routingMode === "recursive") {
-    const diagram = layoutDetailDiagram(baseDiagram, layouts[levelKey] ?? {}, {
-      ...commonOptions,
-      junctionPorts,
-    });
+    const diagram = resizeContainmentFrame(layoutSemanticGroupFrames(
+      baseDiagram,
+      layoutDetailDiagram(baseDiagram, layouts[levelKey] ?? {}, {
+        ...commonOptions,
+        junctionPorts,
+        extraObstacles: childObstacles,
+      }),
+    ), natural, bounds);
+    const nodes = listDetailNodes(diagram);
+    const finalChildren = expandedChildren.map((expanded) => ({
+      ...expanded,
+      node: nodes.find((node) => node.id === expanded.node.id) ?? expanded.node,
+    }));
     return {
       kind,
       bounds,
       diagram,
-      nodes: listDetailNodes(diagram),
+      nodes,
       levelKey,
       routingMode,
-      expandedChild: { node: active, level: childLevel },
+      expandedChildren: finalChildren,
+      expandedChild: finalChildren[0],
     };
   }
 
-  const diagram = layoutDetailDiagram(baseDiagram, layouts[levelKey] ?? {}, {
-    ...commonOptions,
-    junctionPorts,
-    nodePorts: {
-      [active.id]: {
-        left: childLevel.diagram.entryPoint,
-        right: childAtomicExit?.point ?? childLevel.diagram.exitPoint,
-      },
-    },
-    nodePortDirections: {
-      [active.id]: {
-        right: childAtomicExit?.side ?? "right",
-      },
-    },
-    suppressExpandedChildMarker: true,
-  });
+  const diagram = resizeContainmentFrame(layoutSemanticGroupFrames(
+    baseDiagram,
+    layoutDetailDiagram(baseDiagram, layouts[levelKey] ?? {}, {
+      ...commonOptions,
+      junctionPorts,
+      extraObstacles: childObstacles,
+      nodePorts: Object.fromEntries(expandedChildren.map((expanded) => {
+        const ports = atomicPorts.get(expanded.node.id)!;
+        return [expanded.node.id, {
+          left: ports.entry?.point ?? expanded.level.diagram.entryPoint,
+          right: ports.exit?.point ?? expanded.level.diagram.exitPoint,
+        }];
+      })),
+      nodePortDirections: Object.fromEntries(expandedChildren.map((expanded) => {
+        const ports = atomicPorts.get(expanded.node.id)!;
+        return [expanded.node.id, {
+          left: ports.entry?.side ?? "left",
+          right: ports.exit?.side ?? "right",
+        }];
+      })),
+      suppressExpandedChildMarker: true,
+    }),
+  ), natural, bounds);
   const nodes = listDetailNodes(diagram);
-  const finalActive = nodes.find((node) => node.id === active.id) ?? active;
+  const finalChildren = expandedChildren.map((expanded) => ({
+    ...expanded,
+    node: nodes.find((node) => node.id === expanded.node.id) ?? expanded.node,
+  }));
   return {
     kind,
     bounds,
@@ -926,8 +1360,18 @@ export function buildInlineDetailLayout(
     nodes,
     levelKey,
     routingMode,
-    expandedChild: { node: finalActive, level: childLevel },
+    expandedChildren: finalChildren,
+    expandedChild: finalChildren[0],
   };
+}
+
+function leafDetailNodeBounds(level: InlineDetailLevel): Bounds[] {
+  const children = inlineExpandedChildren(level);
+  const expandedIds = new Set(children.map((child) => child.node.id));
+  return [
+    ...level.nodes.filter((node) => !expandedIds.has(node.id)).map((node) => node.bounds),
+    ...children.flatMap((child) => leafDetailNodeBounds(child.level)),
+  ];
 }
 
 export function findInlineDetailLevel(
@@ -936,17 +1380,33 @@ export function findInlineDetailLevel(
 ): InlineDetailLevel | undefined {
   let level: InlineDetailLevel | undefined = root;
   for (const childId of levelPath) {
-    if (level?.expandedChild?.node.id !== childId) return undefined;
-    level = level.expandedChild.level;
+    const child: NonNullable<InlineDetailLevel["expandedChildren"]>[number] | undefined = level
+      ? inlineExpandedChildren(level).find((expanded) => expanded.node.id === childId)
+      : undefined;
+    if (!child) return undefined;
+    level = child.level;
   }
   return level;
 }
 
 export function clampDetailOffset(parentBounds: Bounds, childBounds: Bounds, offset: Point): Point {
-  const left = parentBounds.x + 12;
-  const right = parentBounds.x + parentBounds.width - 12;
-  const top = parentBounds.y + 62;
-  const bottom = parentBounds.y + parentBounds.height - 36;
+  return clampDetailOffsetToBounds({
+    x: parentBounds.x + 12,
+    y: parentBounds.y + 62,
+    width: Math.max(1, parentBounds.width - 24),
+    height: Math.max(1, parentBounds.height - 98),
+  }, childBounds, offset);
+}
+
+export function clampDetailOffsetToBounds(
+  contentBounds: Bounds,
+  childBounds: Bounds,
+  offset: Point,
+): Point {
+  const left = contentBounds.x;
+  const right = contentBounds.x + contentBounds.width;
+  const top = contentBounds.y;
+  const bottom = contentBounds.y + contentBounds.height;
   return {
     x: Math.min(right - childBounds.x - childBounds.width, Math.max(left - childBounds.x, offset.x)),
     y: Math.min(bottom - childBounds.y - childBounds.height, Math.max(top - childBounds.y, offset.y)),

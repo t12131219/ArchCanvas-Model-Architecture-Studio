@@ -225,6 +225,8 @@ route cache          = hash(projected graph + visible bounds + route options)
 
 ## 验收标准
 
+本节描述原子层级方案的结构标准；每轮修改实际必须执行的命令、案例矩阵、拖动步骤和视觉通过条件，以 [`REGRESSION_TEST_REQUIREMENTS.md`](./REGRESSION_TEST_REQUIREMENTS.md) 为准。
+
 ### 结构测试
 
 - 每个 `AtomicEdge` 在任意展开状态下覆盖次数恰好为 1：隐藏或属于一条投影边。

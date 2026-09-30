@@ -22,7 +22,7 @@ npm run prototype:serve
 - `src/types.ts`：与 Studio Scene 命名对齐的最小场景与 typed visual patch 类型。
 - `src/model.ts`：节点和连线的增删改，以及节点删除时的关联连线清理。
 - `src/routing.ts`：五种路由策略；自适应方案包含分散端口、节点净距、正交避障、共享线段惩罚、圆角折线和纵向标签。
-- `src/scenarios.ts`：26 类压力拓扑和 1170 个路由/节点/标签穷举组合的维度定义。
+- `src/scenarios.ts`：28 类压力拓扑和 1260 个路由/节点/标签穷举组合的维度定义；包含源码对齐的经典 Transformer 与 Tensor2Tensor 双通路对比场景。
 - `src/module-details.ts`：原有九类模块的共享内部图元与新增家族的统一分发入口。
 - `src/catalog-details.ts`：传统 ML、CNN/ViT、序列、生成、图网络、强化学习与参数适配等 30 类结构家族的内部图。
 - `src/model-family-catalog.ts`：300 余个检索别名、结构家族归并和真实 IR 必须检查的差异轴。
@@ -42,6 +42,8 @@ npm run prototype:serve
 ## 备用层级路由方案
 
 当前默认启用[原子图优先的自底向上折叠路由方案](./BOTTOM_UP_ATOMIC_ROUTING.md)：先建立最深层详情树和稳定原子身份，再把子层真实门户自底向上投影到父层与外部边，并收束层级边界的中间箭头。工具栏“层级”可切回“逐层”作为 A/B 基线；该实现不改变现有图例和交互数据。
+
+涉及布局、路由、展开、拖拽、画布或 SVG 的每轮修改，都必须执行 [`REGRESSION_TEST_REQUIREMENTS.md`](./REGRESSION_TEST_REQUIREMENTS.md) 中的完整自动化门禁与浏览器视觉检查。该清单明确要求验证原子收束/逐层 A/B、全案例通用性、负坐标无限画布、向左拖动稳定性、父框包含、节点避让和最短合法路径。
 
 所有带内部图的场景都可用右上角按钮显示或隐藏内部数据流。每个内部图使用同一契约：外部输入与父模块左侧中心端口重合，内部宏观流向从左到右，最后节点连接父模块右侧中心端口，再由外部边继续进入下一模块。展开状态不会修改基础 `LabScene` 坐标，而是从基础场景重新派生放大尺寸、下游位移和外部路由，因此收起后会确定性恢复原布局。构建产物为每个模块输出单独展开和全部展开的 SVG/JSON 快照。
 
@@ -63,6 +65,8 @@ npm run prototype:serve
 - [PyTorch Embedding](https://docs.pytorch.org/docs/stable/generated/torch.nn.Embedding.html)：索引输入、词表查找和嵌入向量输出的形状语义。
 - [PyTorch LSTM](https://docs.pytorch.org/docs/stable/generated/torch.nn.LSTM.html)：输入门、遗忘门、候选状态、输出门以及 `c_t` / `h_t` 更新关系。
 - [PyTorch MaxPool2d](https://docs.pytorch.org/docs/stable/generated/torch.nn.MaxPool2d.html)：池化窗口与空间降采样语义。
+- 本地 `Constraint relationship of architecture diagram/pytorch_transformer_original.zip`：显式 Q/K/V、布尔 padding/causal mask、Post-LayerNorm 和权重共享的教学实现。
+- 本地 `Constraint relationship of architecture diagram/tensor2tensor-1.0.14.tar.gz`：`prepare_encoder/decoder`、target-space embedding、attention bias、timing signal、`conv_hidden_relu` FFN 与共享 softmax 的 Tensor2Tensor 1.0.14 实现。
 - [Hugging Face Mixture of Experts](https://huggingface.co/blog/moe)：router、top-k 专家选择、并行 FFN 与加权汇聚结构。
 - [NN-SVG](https://alexlenail.me/NN-SVG/) 与 [PlotNeuralNet](https://github.com/HarisIqbal88/PlotNeuralNet)：卷积特征图堆栈、三维张量和求和图元。
 - 本地 `Constraint relationship of architecture diagram/`：矩阵、Q/K/V、Add/Multiply、残差和张量长方体的论文图表达。

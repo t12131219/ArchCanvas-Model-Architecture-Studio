@@ -3,13 +3,23 @@ import { describe, expect, it } from "vitest";
 import {
   buildInlineDetailLayout,
   clampDetailOffset,
+  detailLevelContentBounds,
+  detailLevelKey,
   expandedDetailSize,
   findInlineDetailLevel,
+  fullyExpandedDetailTree,
+  inlineAtomicEntry,
+  inlineExpandedChildren,
   layoutDetailDiagram,
   listDetailNodes,
+  visibleContainmentFrameBounds,
 } from "./detail-layout";
 import type { DetailExpansionBranch, InlineDetailLevel } from "./detail-layout";
-import { buildAtomicHierarchyProjection, projectedAtomicExitForModule } from "./atomic-hierarchy";
+import {
+  buildAtomicHierarchyProjection,
+  projectedAtomicEntryForModule,
+  projectedAtomicExitForModule,
+} from "./atomic-hierarchy";
 import { buildModuleDetail, EXPANDED_DETAIL_SIZES } from "./module-details";
 import type { ModuleDetailDiagram } from "./module-details";
 import type { Bounds, NodeDetailKind, Point } from "./types";
@@ -28,6 +38,25 @@ function segmentCrossesBounds(a: Point, b: Point, bounds: Bounds): boolean {
 
 function pointsEqual(a: Point, b: Point): boolean {
   return Math.abs(a.x - b.x) < 0.01 && Math.abs(a.y - b.y) < 0.01;
+}
+
+function routeBacktrackLength(points: Point[]): number {
+  let length = 0;
+  for (let index = 2; index < points.length; index += 1) {
+    const first = points[index - 2];
+    const middle = points[index - 1];
+    const last = points[index];
+    if (first.y === middle.y && middle.y === last.y) {
+      const incoming = middle.x - first.x;
+      const outgoing = last.x - middle.x;
+      if (incoming * outgoing < 0) length += Math.min(Math.abs(incoming), Math.abs(outgoing));
+    } else if (first.x === middle.x && middle.x === last.x) {
+      const incoming = middle.y - first.y;
+      const outgoing = last.y - middle.y;
+      if (incoming * outgoing < 0) length += Math.min(Math.abs(incoming), Math.abs(outgoing));
+    }
+  }
+  return length;
 }
 
 function longestCollinearOverlap(first: Point[], second: Point[]): number {
@@ -88,8 +117,60 @@ function distanceToNodeBoundary(point: Point, bounds: Bounds): number {
 function hierarchyNodeBounds(level: InlineDetailLevel): Bounds[] {
   return [
     ...level.nodes.map((node) => node.bounds),
-    ...(level.expandedChild ? hierarchyNodeBounds(level.expandedChild.level) : []),
+    ...inlineExpandedChildren(level).flatMap((expanded) => hierarchyNodeBounds(expanded.level)),
   ];
+}
+
+function hierarchyLeafBounds(level: InlineDetailLevel): Bounds[] {
+  const expanded = inlineExpandedChildren(level);
+  const expandedIds = new Set(expanded.map((child) => child.node.id));
+  return [
+    ...level.nodes.filter((node) => !expandedIds.has(node.id)).map((node) => node.bounds),
+    ...expanded.flatMap((child) => hierarchyLeafBounds(child.level)),
+  ];
+}
+
+function hierarchyAtomicPorts(level: InlineDetailLevel): Point[] {
+  const projection = buildAtomicHierarchyProjection(level);
+  const projected = projection.portalChains.flatMap((chain) => [
+    projectedAtomicEntryForModule(projection, chain.childModuleId)?.point,
+    projectedAtomicExitForModule(projection, chain.childModuleId)?.point,
+  ]).filter((point): point is Point => Boolean(point));
+  const inline = level.expandedChild
+    ? [inlineAtomicEntry(level.expandedChild.level)?.point, ...hierarchyAtomicPorts(level.expandedChild.level)]
+    : [];
+  return [...projected, ...inline].filter((point): point is Point => Boolean(point));
+}
+
+function expectBoundsInside(inner: Bounds, outer: Bounds, label: string): void {
+  const context = `${label} ${JSON.stringify({ inner, outer })}`;
+  expect(inner.x, `${context} left`).toBeGreaterThanOrEqual(outer.x - 0.01);
+  expect(inner.y, `${context} top`).toBeGreaterThanOrEqual(outer.y - 0.01);
+  expect(inner.x + inner.width, `${context} right`).toBeLessThanOrEqual(outer.x + outer.width + 0.01);
+  expect(inner.y + inner.height, `${context} bottom`).toBeLessThanOrEqual(outer.y + outer.height + 0.01);
+}
+
+function expectRecursiveContainment(level: InlineDetailLevel): void {
+  const frame = visibleContainmentFrameBounds(level);
+  for (const node of level.nodes) {
+    expectBoundsInside(node.bounds, level.bounds, `${level.levelKey}/${node.label} in surface`);
+    if (frame) expectBoundsInside(node.bounds, frame, `${level.levelKey}/${node.label} in frame`);
+  }
+  const expanded = inlineExpandedChildren(level);
+  for (let index = 0; index < expanded.length; index += 1) {
+    expectBoundsInside(expanded[index].level.bounds, level.bounds, `${expanded[index].level.levelKey} child surface`);
+    if (frame) expectBoundsInside(expanded[index].level.bounds, frame, `${expanded[index].level.levelKey} child frame`);
+    for (let other = index + 1; other < expanded.length; other += 1) {
+      const first = expanded[index].level.bounds;
+      const second = expanded[other].level.bounds;
+      const overlaps = first.x < second.x + second.width
+        && first.x + first.width > second.x
+        && first.y < second.y + second.height
+        && first.y + first.height > second.y;
+      expect(overlaps, `${expanded[index].level.levelKey} overlaps ${expanded[other].level.levelKey}`).toBe(false);
+    }
+    expectRecursiveContainment(expanded[index].level);
+  }
 }
 
 describe("interactive module detail layout", () => {
@@ -179,6 +260,29 @@ describe("interactive module detail layout", () => {
     expect(longestCollinearOverlap(routed[0].points, routed[1].points)).toBeLessThanOrEqual(14);
   });
 
+  it("does not leave collinear hairpins after connected nodes move", () => {
+    const diagram: ModuleDetailDiagram = {
+      kind: "attention",
+      entryPoint: { x: 0, y: 120 },
+      exitPoint: { x: 420, y: 120 },
+      primitives: [
+        { kind: "rect", x: 30, y: 150, width: 90, height: 54, rx: 4, label: "Source", tone: "blue" },
+        { kind: "rect", x: 270, y: 40, width: 100, height: 54, rx: 4, label: "Target", tone: "violet" },
+        { kind: "rect", x: 170, y: 120, width: 48, height: 48, rx: 4, label: "Obstacle", tone: "neutral" },
+        { kind: "flow", points: [{ x: 120, y: 177 }, { x: 270, y: 67 }], channel: "moved-route" },
+      ],
+    };
+    const source = listDetailNodes(diagram).find((node) => node.label === "Source")!;
+    const target = listDetailNodes(diagram).find((node) => node.label === "Target")!;
+    const moved = layoutDetailDiagram(diagram, {
+      [source.id]: { x: 36, y: -58 },
+      [target.id]: { x: -18, y: 92 },
+    });
+    const flow = moved.primitives.find((primitive) => primitive.kind === "flow")!;
+
+    expect(routeBacktrackLength(flow.points)).toBe(0);
+  });
+
   it("rebinds VAE parameter branches to the expanded encoder exit", () => {
     const kind: NodeDetailKind = "variational-autoencoder";
     const base = buildModuleDetail(kind, { x: 0, y: 0, ...EXPANDED_DETAIL_SIZES[kind] });
@@ -256,7 +360,7 @@ describe("interactive module detail layout", () => {
     expect(leftFlow.marker).not.toBe(false);
   });
 
-  it("keeps explicit semantic channel ports fixed after nodes move", () => {
+  it("switches semantic channel ports when moved nodes change relative position", () => {
     const diagram: ModuleDetailDiagram = {
       kind: "attention",
       entryPoint: { x: 0, y: 0 },
@@ -270,21 +374,49 @@ describe("interactive module detail layout", () => {
     const source = listDetailNodes(diagram).find((node) => node.label === "Q")!;
     const target = listDetailNodes(diagram).find((node) => node.label === "×")!;
     const moved = layoutDetailDiagram(diagram, {
-      [source.id]: { x: 0, y: 120 },
-      [target.id]: { x: 0, y: -20 },
+      [source.id]: { x: 140, y: 100 },
     });
     const flow = moved.primitives.find((primitive) => primitive.kind === "flow")!;
     const movedSource = listDetailNodes(moved).find((node) => node.id === source.id)!;
     const movedTarget = listDetailNodes(moved).find((node) => node.id === target.id)!;
 
     expect(flow.points[0]).toEqual({
-      x: movedSource.bounds.x + movedSource.bounds.width,
-      y: movedSource.bounds.y + movedSource.bounds.height / 2,
+      x: movedSource.bounds.x + movedSource.bounds.width / 2,
+      y: movedSource.bounds.y,
     });
     expect(flow.points.at(-1)).toEqual({
-      x: movedTarget.bounds.x,
-      y: movedTarget.bounds.y + movedTarget.bounds.height / 2,
+      x: movedTarget.bounds.x + movedTarget.bounds.width / 2,
+      y: movedTarget.bounds.y + movedTarget.bounds.height,
     });
+  });
+
+  it("uses the shortest-facing ports after the Transformer source mask moves below attention", () => {
+    const kind: NodeDetailKind = "transformer-encoder";
+    const base = buildModuleDetail(kind, { x: 0, y: 0, ...EXPANDED_DETAIL_SIZES[kind] });
+    const mask = listDetailNodes(base).find((node) => node.label === "Source padding mask")!;
+    const attention = listDetailNodes(base).find((node) => node.label === "Self-attention")!;
+    const moved = layoutDetailDiagram(base, {
+      [mask.id]: {
+        x: attention.bounds.x + attention.bounds.width / 2 - mask.bounds.width / 2 - mask.bounds.x,
+        y: attention.bounds.y + attention.bounds.height + 44 - mask.bounds.y,
+      },
+    });
+    const movedMask = listDetailNodes(moved).find((node) => node.id === mask.id)!;
+    const flow = moved.primitives.find((primitive) => (
+      primitive.kind === "flow" && primitive.channel === "src-padding-mask"
+    ));
+
+    expect(flow?.kind).toBe("flow");
+    if (flow?.kind !== "flow") return;
+    expect(flow.points[0]).toEqual({
+      x: movedMask.bounds.x + movedMask.bounds.width / 2,
+      y: movedMask.bounds.y,
+    });
+    expect(flow.points.at(-1)).toEqual({
+      x: attention.bounds.x + attention.bounds.width / 2,
+      y: attention.bounds.y + attention.bounds.height,
+    });
+    expect(flow.points).toHaveLength(2);
   });
 
   it("does not create isolated flow endpoints when any catalog child expands", () => {
@@ -297,9 +429,11 @@ describe("interactive module detail layout", () => {
         const flows = level.diagram.primitives.filter((primitive) => primitive.kind === "flow");
         const endpoints = flows.flatMap((flow) => [flow.points[0], flow.points.at(-1)!]);
         const nodeBounds = hierarchyNodeBounds(level);
+        const atomicPorts = hierarchyAtomicPorts(level);
         for (const point of endpoints) {
           const attached = pointsEqual(point, level.diagram.entryPoint)
             || pointsEqual(point, level.diagram.exitPoint)
+            || atomicPorts.some((port) => pointsEqual(port, point))
             || nodeBounds.some((bounds) => distanceToNodeBoundary(point, bounds) <= 12);
           const shared = endpoints.filter((candidatePoint) => pointsEqual(candidatePoint, point)).length > 1;
           expect(
@@ -307,6 +441,120 @@ describe("interactive module detail layout", () => {
             `${kind}/${candidate.label} has isolated endpoint at ${JSON.stringify(point)}`,
           ).toBe(true);
         }
+      }
+    }
+  });
+
+  it("keeps every fully expanded catalog tree inside its immediate surface and visible frame", () => {
+    for (const kind of Object.keys(EXPANDED_DETAIL_SIZES) as NodeDetailKind[]) {
+      const branch = fullyExpandedDetailTree(kind);
+      const size = expandedDetailSize(kind, branch);
+      for (const routingMode of ["atomic-bottom-up", "recursive"] as const) {
+        const level = buildInlineDetailLayout(
+          kind,
+          { x: 0, y: 0, ...size },
+          branch,
+          {},
+          `catalog-${kind}`,
+          [],
+          routingMode,
+        );
+        expectRecursiveContainment(level);
+      }
+    }
+  }, 30_000);
+
+  it("keeps the attention semantic group scoped to scaled dot-product operations", () => {
+    const kind = "attention" as const;
+    const branch = fullyExpandedDetailTree(kind);
+    const size = expandedDetailSize(kind, branch);
+    const natural = buildModuleDetail(kind, { x: 0, y: 0, ...EXPANDED_DETAIL_SIZES[kind] });
+    const query = listDetailNodes(natural).find((node) => node.label === "Q")!;
+    const queryProjection = listDetailNodes(natural).find((node) => node.label === "Linear")!;
+    const naturalFrame = natural.primitives.find((primitive) => (
+      primitive.kind === "rect" && primitive.variant === "frame"
+    ));
+    expect(naturalFrame).toMatchObject({
+      frameRole: "semantic-group",
+      x: 250,
+      y: 72,
+      width: 330,
+      height: 230,
+    });
+    if (!naturalFrame || naturalFrame.kind !== "rect") return;
+    const levelKey = "attention-semantic-group";
+
+    for (const routingMode of ["atomic-bottom-up", "recursive"] as const) {
+      const baseline = buildInlineDetailLayout(
+        kind,
+        { x: 0, y: 0, ...size },
+        branch,
+        {},
+        `${levelKey}-baseline`,
+        [],
+        routingMode,
+      );
+      const level = buildInlineDetailLayout(kind, { x: 0, y: 0, ...size }, branch, {
+        [levelKey]: {
+          [query.id]: { x: -26, y: 0 },
+          [queryProjection.id]: { x: -18, y: 8 },
+        },
+      }, levelKey, [], routingMode);
+      const baselineFrame = baseline.diagram.primitives.find((primitive) => (
+        primitive.kind === "rect" && primitive.variant === "frame"
+      ));
+      const frame = level.diagram.primitives.find((primitive) => (
+        primitive.kind === "rect" && primitive.variant === "frame"
+      ));
+      expect(visibleContainmentFrameBounds(level)).toBeUndefined();
+      expect(frame).toMatchObject({
+        frameRole: "semantic-group",
+        width: naturalFrame.width,
+        height: naturalFrame.height,
+      });
+      expect(frame).toMatchObject(baselineFrame ?? {});
+      if (!frame || frame.kind !== "rect") continue;
+
+      const content = detailLevelContentBounds(level);
+      expect(content).toEqual({
+        x: level.bounds.x + 12,
+        y: level.bounds.y + 62,
+        width: level.bounds.width - 24,
+        height: level.bounds.height - 98,
+      });
+      for (const child of inlineExpandedChildren(level)) {
+        expectBoundsInside(child.level.bounds, content, `${routingMode}/${child.node.label} expansion in detail surface`);
+      }
+
+      const frameBounds = {
+        x: frame.x,
+        y: frame.y,
+        width: frame.width,
+        height: frame.height,
+      };
+      const title = level.diagram.primitives.find((primitive) => (
+        primitive.kind === "text" && primitive.value === "Scaled dot-product attention / head"
+      ));
+      expect(title).toMatchObject({ x: frame.x + frame.width / 2, y: frame.y + 19 });
+      for (const label of ["Scale", "Softmax", "weights"]) {
+        const node = level.nodes.find((candidate) => candidate.label === label)!;
+        expectBoundsInside(node.bounds, frameBounds, `${routingMode}/${label} in semantic group`);
+      }
+      const multipliers = level.nodes.filter((node) => node.label === "×");
+      expect(multipliers).toHaveLength(2);
+      for (const multiplier of multipliers) {
+        expectBoundsInside(multiplier.bounds, frameBounds, `${routingMode}/multiply in semantic group`);
+      }
+
+      for (const label of ["Q", "K", "V"]) {
+        const node = level.nodes.find((candidate) => candidate.label === label)!;
+        expect(node.bounds.x + node.bounds.width, `${routingMode}/${label} remains left of semantic group`)
+          .toBeLessThanOrEqual(frameBounds.x);
+      }
+      for (const label of ["context", "Concat h", "Output Wᴼ", "Output"]) {
+        const node = level.nodes.find((candidate) => candidate.label === label)!;
+        expect(node.bounds.x, `${routingMode}/${label} remains right of semantic group`)
+          .toBeGreaterThanOrEqual(frameBounds.x + frameBounds.width);
       }
     }
   });
@@ -329,6 +577,50 @@ describe("interactive module detail layout", () => {
     const child = { x: 180, y: 190, width: 100, height: 50 };
     expect(clampDetailOffset(parent, child, { x: -500, y: -500 })).toEqual({ x: -68, y: -28 });
     expect(clampDetailOffset(parent, child, { x: 500, y: 500 })).toEqual({ x: 308, y: 124 });
+  });
+
+  it("keeps rerouted flows inside their detail level after dragging around an expanded child", () => {
+    const kind: NodeDetailKind = "tensor2tensor-encoder";
+    const base = buildModuleDetail(kind, { x: 0, y: 0, ...EXPANDED_DETAIL_SIZES[kind] });
+    const addNorm = listDetailNodes(base).find((node) => node.label === "Add & Norm")!;
+    const feedForward = listDetailNodes(base).find((node) => node.label === "Feed-forward")!;
+    const branch: DetailExpansionBranch = { childId: addNorm.id };
+    const size = expandedDetailSize(kind, branch);
+    const bounds = { x: 40, y: 60, ...size };
+    const naturalFeedForward = listDetailNodes(buildModuleDetail(kind, bounds))
+      .find((node) => node.id === feedForward.id)!;
+    const offset = clampDetailOffset(bounds, naturalFeedForward.bounds, { x: -220, y: -160 });
+    for (const routingMode of ["atomic-bottom-up", "recursive"] as const) {
+      const level = buildInlineDetailLayout(kind, bounds, branch, {
+        [detailLevelKey("root")]: { [feedForward.id]: offset },
+      }, "root", [], routingMode);
+
+      for (const primitive of level.diagram.primitives) {
+        if (primitive.kind !== "flow") continue;
+        for (const point of primitive.points) {
+          expect(point.x, `${routingMode}: ${JSON.stringify(primitive.points)}`).toBeGreaterThanOrEqual(level.bounds.x);
+          expect(point.x, `${routingMode}: ${JSON.stringify(primitive.points)}`).toBeLessThanOrEqual(level.bounds.x + level.bounds.width);
+          expect(point.y, `${routingMode}: ${JSON.stringify(primitive.points)}`).toBeGreaterThanOrEqual(level.bounds.y);
+          expect(point.y, `${routingMode}: ${JSON.stringify(primitive.points)}`).toBeLessThanOrEqual(level.bounds.y + level.bounds.height);
+        }
+        const start = primitive.points[0];
+        const end = primitive.points.at(-1)!;
+        for (const nodeBounds of hierarchyLeafBounds(level)) {
+          const ownsEndpoint = [start, end].some((point) => (
+            point.x >= nodeBounds.x && point.x <= nodeBounds.x + nodeBounds.width
+            && point.y >= nodeBounds.y && point.y <= nodeBounds.y + nodeBounds.height
+          ));
+          if (ownsEndpoint) continue;
+          const crosses = primitive.points.slice(1).some((point, index) => (
+            segmentCrossesBounds(primitive.points[index], point, nodeBounds)
+          ));
+          expect(
+            crosses,
+            `${routingMode}: moved route ${JSON.stringify(primitive.points)} crosses leaf ${JSON.stringify(nodeBounds)}`,
+          ).toBe(false);
+        }
+      }
+    }
   });
 
   it("keeps every internal route out of unrelated child nodes across all detail kinds", () => {
@@ -397,7 +689,10 @@ describe("interactive module detail layout", () => {
     const size = expandedDetailSize(kind, branch);
     const level = buildInlineDetailLayout(kind, { x: 30, y: 40, ...size }, branch, {}, "root");
     const expanded = level.expandedChild!;
-    const entry = { x: expanded.node.bounds.x, y: expanded.node.bounds.y + expanded.node.bounds.height / 2 };
+    const projection = buildAtomicHierarchyProjection(level);
+    const entry = inlineAtomicEntry(expanded.level)?.point
+      ?? projectedAtomicEntryForModule(projection, expanded.level.levelKey)?.point
+      ?? expanded.level.diagram.entryPoint;
     const exit = projectedAtomicExitForModule(
       buildAtomicHierarchyProjection(level),
       expanded.level.levelKey,
@@ -475,7 +770,10 @@ describe("interactive module detail layout", () => {
             const crosses = primitive.points.slice(1).some((point, index) => (
               segmentCrossesBounds(primitive.points[index], point, node.bounds)
             ));
-            expect(crosses, `${kind}/${candidate.label} flow crosses ${node.label}`).toBe(false);
+            expect(
+              crosses,
+              `${kind}/${candidate.label} flow ${JSON.stringify(primitive.points)} crosses ${node.label} ${JSON.stringify(node.bounds)}`,
+            ).toBe(false);
           }
         }
         const parentFlows = level.diagram.primitives.filter((primitive) => primitive.kind === "flow");
@@ -484,7 +782,15 @@ describe("interactive module detail layout", () => {
           expanded.level.levelKey,
         )!.point;
         expect(
-          parentFlows.some((flow) => pointsEqual(flow.points.at(-1)!, expanded.level.diagram.entryPoint)),
+          parentFlows.some((flow) => pointsEqual(
+            flow.points.at(-1)!,
+            inlineAtomicEntry(expanded.level)?.point
+              ?? projectedAtomicEntryForModule(
+                buildAtomicHierarchyProjection(level),
+                expanded.level.levelKey,
+              )?.point
+              ?? expanded.level.diagram.entryPoint,
+          )),
           `${kind}/${candidate.label} has no incoming atomic portal attachment`,
         ).toBe(true);
         expect(

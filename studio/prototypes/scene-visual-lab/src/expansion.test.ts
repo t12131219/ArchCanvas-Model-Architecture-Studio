@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { expandScene, expandableNodeIds } from "./expansion";
-import { expandedDetailSize, listDetailNodes } from "./detail-layout";
+import { expandedDetailSize, fullyExpandedDetailTree, listDetailNodes } from "./detail-layout";
 import type { DetailExpansionBranch } from "./detail-layout";
 import { buildModuleDetail, EXPANDED_DETAIL_SIZES } from "./module-details";
 import { measureScene, routeScene } from "./routing";
@@ -26,6 +26,21 @@ describe("parent and child module expansion", () => {
     expect(shiftedDownstream.bounds.x - downstream.bounds.x).toBe(900 - attention.bounds.width);
     expect(collapsed.nodes.map((node) => node.bounds)).toEqual(baseScene.nodes.map((node) => node.bounds));
     expect(collapsed.paper_width).toBe(baseScene.paper_width);
+  });
+
+  it("preserves an expanded node above the legacy paper boundary", () => {
+    const attention = baseScene.nodes.find((node) => node.detail_kind === "attention")!;
+    const moved = {
+      ...baseScene,
+      nodes: baseScene.nodes.map((node) => node.scene_node_id === attention.scene_node_id
+        ? { ...node, bounds: { ...node.bounds, y: -240 } }
+        : node),
+    };
+    const expanded = expandScene(moved, new Set([attention.scene_node_id]));
+    const expandedAttention = expanded.nodes.find((node) => node.scene_node_id === attention.scene_node_id)!;
+
+    expect(expandedAttention.bounds.y).toBeLessThan(0);
+    expect(expandedAttention.bounds.y).toBe(-240 + attention.bounds.height / 2 - EXPANDED_DETAIL_SIZES.attention.height / 2);
   });
 
   it("uses one exact left entry and right exit for every detail diagram", () => {
@@ -88,11 +103,31 @@ describe("parent and child module expansion", () => {
         const metrics = measureScene(scene, routes);
 
         expect(routes).toHaveLength(scene.edges.length);
-        expect(metrics.nodeIntersections).toBe(0);
-        expect(metrics.clearanceViolations).toBe(0);
-        expect(metrics.endpointCongestion).toBe(0);
-        expect(metrics.reverseExits).toBe(0);
+        const caseLabel = `${expandableScene.scene_id} expanded=${[...expandedIds].join(",")}`;
+        expect(metrics.nodeIntersections, caseLabel).toBe(0);
+        expect(metrics.clearanceViolations, caseLabel).toBe(0);
+        expect(metrics.endpointCongestion, caseLabel).toBe(0);
+        expect(metrics.reverseExits, caseLabel).toBe(0);
       }
+    }
+  });
+
+  it("moves lower lanes below recursively expanded Transformer modules", () => {
+    for (const sceneId of ["classic-transformer", "tensor2tensor-transformer"]) {
+      const base = SCENARIOS.find((scene) => scene.scene_id === sceneId)!;
+      const expandedIds = new Set(expandableNodeIds(base));
+      const trees = Object.fromEntries(base.nodes.flatMap((node) => node.detail_kind
+        ? [[node.scene_node_id, fullyExpandedDetailTree(node.detail_kind)]]
+        : []));
+      const sizes = Object.fromEntries(base.nodes.flatMap((node) => node.detail_kind
+        ? [[node.scene_node_id, expandedDetailSize(node.detail_kind, trees[node.scene_node_id])]]
+        : []));
+      const scene = expandScene(base, expandedIds, sizes);
+      const metrics = measureScene(scene, routeScene(scene, "adaptive"));
+
+      expect(metrics.nodeIntersections, sceneId).toBe(0);
+      expect(metrics.clearanceViolations, sceneId).toBe(0);
+      expect(metrics.endpointCongestion, sceneId).toBe(0);
     }
   });
 

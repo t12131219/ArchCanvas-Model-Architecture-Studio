@@ -2,6 +2,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
 
 import { expandScene, expandableNodeIds } from "./src/expansion";
+import { expandedDetailSize, fullyExpandedDetailTree } from "./src/detail-layout";
 import { DETAIL_KIND_NAMES } from "./src/module-details";
 import { DEFAULT_OPTIONS, optionCombinations, SCENARIOS } from "./src/scenarios";
 import { renderCaseIndex, renderGalleryIndex, renderSceneSvg } from "./src/svg-export";
@@ -15,10 +16,18 @@ function caseMatrixPlugin(): Plugin {
         const expansionVariants: Array<{ name: string; label: string; metrics: ReturnType<typeof renderSceneSvg>["metrics"] }> = [];
         const expandableIds = expandableNodeIds(scene);
         if (expandableIds.length) {
+          const detailKindCounts = new Map<string, number>();
+          for (const node of scene.nodes.filter((item) => item.detail_kind)) {
+            detailKindCounts.set(node.detail_kind!, (detailKindCounts.get(node.detail_kind!) ?? 0) + 1);
+          }
           for (const node of scene.nodes.filter((item) => item.detail_kind)) {
             const snapshot = {
-              name: `expanded-${node.detail_kind}`,
-              label: `仅展开${DETAIL_KIND_NAMES[node.detail_kind!]}`,
+              name: detailKindCounts.get(node.detail_kind!) === 1
+                ? `expanded-${node.detail_kind}`
+                : `expanded-${node.scene_node_id}`,
+              label: detailKindCounts.get(node.detail_kind!) === 1
+                ? `仅展开${DETAIL_KIND_NAMES[node.detail_kind!]}`
+                : `仅展开${node.label} · ${DETAIL_KIND_NAMES[node.detail_kind!]}`,
             };
             const expandedScene = expandScene(scene, new Set([node.scene_node_id]));
             const { svg, metrics } = renderSceneSvg(expandedScene, DEFAULT_OPTIONS);
@@ -30,14 +39,24 @@ function caseMatrixPlugin(): Plugin {
               source: JSON.stringify({ scene: expandedScene, expandedNodeIds: [node.scene_node_id], options: DEFAULT_OPTIONS, metrics }, null, 2),
             });
           }
-          const expandedScene = expandScene(scene, new Set(expandableIds));
-          const { svg, metrics } = renderSceneSvg(expandedScene, DEFAULT_OPTIONS);
-          expansionVariants.push({ name: "expanded-all", label: "展开全部父模块", metrics });
+          const detailExpansions = Object.fromEntries(scene.nodes.flatMap((node) => (
+            expandableIds.includes(node.scene_node_id) && node.detail_kind
+              ? [[node.scene_node_id, fullyExpandedDetailTree(node.detail_kind)]]
+              : []
+          )));
+          const expandedSizes = Object.fromEntries(scene.nodes.flatMap((node) => (
+            node.detail_kind && detailExpansions[node.scene_node_id]
+              ? [[node.scene_node_id, expandedDetailSize(node.detail_kind, detailExpansions[node.scene_node_id])]]
+              : []
+          )));
+          const expandedScene = expandScene(scene, new Set(expandableIds), expandedSizes);
+          const { svg, metrics } = renderSceneSvg(expandedScene, DEFAULT_OPTIONS, {}, detailExpansions);
+          expansionVariants.push({ name: "expanded-all", label: "全部展开到原子级", metrics });
           this.emitFile({ type: "asset", fileName: `cases/${scene.scene_id}/expanded-all.svg`, source: svg });
           this.emitFile({
             type: "asset",
             fileName: `cases/${scene.scene_id}/expanded-all.json`,
-            source: JSON.stringify({ scene: expandedScene, expandedNodeIds: expandableIds, options: DEFAULT_OPTIONS, metrics }, null, 2),
+            source: JSON.stringify({ scene: expandedScene, expandedNodeIds: expandableIds, detailExpansions, options: DEFAULT_OPTIONS, metrics }, null, 2),
           });
         }
         const variants = optionCombinations().map((options) => {

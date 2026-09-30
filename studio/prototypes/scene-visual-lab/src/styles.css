@@ -15,7 +15,7 @@ button { color: inherit; }
 .scene-lab {
   --panel: #fff;
   --field: #f0f2ef;
-  --canvas-bg: #dfe3df;
+  --canvas-bg: #fcfdfc;
   --paper: #f8f9f7;
   --ink: #202522;
   --muted: #68706a;
@@ -62,7 +62,7 @@ button { color: inherit; }
 .tool-button { padding: 0 9px; white-space: nowrap; }
 .icon-button { width: 28px; padding: 0; }
 .tool-button:hover, .icon-button:hover:not(:disabled), .tool-button.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
-.icon-button:disabled { opacity: .35; cursor: default; }
+.icon-button:disabled, .tool-button:disabled { opacity: .35; cursor: default; }
 .edge-mode-status { padding: 3px 7px; color: #8a5512; border-left: 2px solid #b87925; background: #fff8e8; font-size: 10px; font-weight: 700; }
 
 .lab-workspace { min-height: 0; display: grid; grid-template-columns: 206px minmax(0, 1fr) 258px; }
@@ -83,13 +83,33 @@ button { color: inherit; }
 .variant-toolbar { min-width: 0; display: flex; align-items: center; gap: 7px; padding: 0 8px; border-bottom: 1px solid var(--border); background: var(--panel); }
 .variant-toolbar label { height: 28px; display: flex; align-items: center; gap: 4px; padding-left: 7px; border: 1px solid var(--border); border-radius: 5px; color: var(--muted); white-space: nowrap; }
 .variant-toolbar select { max-width: 92px; height: 26px; border: 0; outline: 0; color: var(--ink); background: transparent; cursor: pointer; }
+.detail-bulk-actions { display: flex; align-items: center; gap: 4px; }
 .scene-caption { min-width: 0; margin-left: auto; display: grid; text-align: right; }
 .scene-caption strong, .scene-caption span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scene-caption span { color: var(--muted); font-size: 9px; }
-.canvas-viewport { min-height: 0; padding: 12px; display: flex; align-items: center; justify-content: flex-start; overflow: auto; }
-.lab-canvas { display: block; flex: 0 0 auto; min-width: 100%; height: auto; border: 1px solid #bfc7c2; background: var(--paper); box-shadow: 0 2px 9px rgba(35, 45, 39, .12); touch-action: none; }
+.canvas-viewport {
+  --canvas-grid-size: 28px;
+  --canvas-grid-x: 0px;
+  --canvas-grid-y: 0px;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background-color: var(--canvas-bg);
+  background-image: radial-gradient(circle, #d4dad6 1.15px, transparent 1.25px);
+  background-position: var(--canvas-grid-x) var(--canvas-grid-y);
+  background-size: var(--canvas-grid-size) var(--canvas-grid-size);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.canvas-viewport * { user-select: none; -webkit-user-select: none; }
+.canvas-viewport.panning { cursor: grabbing; }
+.lab-canvas { position: absolute; top: 0; left: 0; display: block; overflow: visible; border: 0; background: transparent; box-shadow: none; transform-origin: 0 0; touch-action: none; }
 .lab-canvas.edge-mode { cursor: crosshair; }
-.canvas-paper { fill: url(#lab-grid); stroke: #cfd5d1; }
+.canvas-controls { position: absolute; right: 12px; bottom: 12px; z-index: 2; height: 32px; display: flex; align-items: center; gap: 2px; padding: 2px; border: 1px solid var(--border); border-radius: 6px; background: rgba(255, 255, 255, .94); box-shadow: 0 2px 8px rgba(35, 45, 39, .12); }
+.canvas-controls .icon-button { width: 26px; height: 26px; border: 0; background: transparent; }
+.canvas-controls output { width: 46px; color: var(--muted); text-align: center; font-size: 10px; font-variant-numeric: tabular-nums; }
 
 .lab-edge .edge-path { stroke-width: 2.1px; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; }
 .edge-hit { stroke: transparent; stroke-width: 16px; pointer-events: stroke; cursor: pointer; }
@@ -211,7 +231,7 @@ button { color: inherit; }
   .canvas-column { grid-row: 2; }
   .variant-toolbar { overflow-x: auto; }
   .scene-caption { display: none; }
-  .canvas-viewport { padding: 6px; }
+  .canvas-controls { right: 8px; bottom: 8px; }
   .metric-strip { justify-content: flex-start; overflow-x: auto; }
   .inspector-panel { grid-row: 3; min-height: 300px; border-left: 0; border-top: 1px solid var(--border); }
   .inspector-form { height: auto; }

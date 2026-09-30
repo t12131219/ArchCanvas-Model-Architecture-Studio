@@ -13,21 +13,23 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 
-import { applyVisualPatch, clampBounds, cloneScene } from "./model";
+import { applyVisualPatch, clampBounds, cloneScene, editableNodeBounds } from "./model";
 import { expandScene } from "./expansion";
 import {
-  buildAtomicHierarchyProjection,
-  projectedAtomicExit,
-  projectedNestedExitBridgeIds,
-  projectedSceneBoundaryPorts,
+  buildAtomicHierarchyRoutingPlan,
 } from "./atomic-hierarchy";
 import {
   buildInlineDetailLayout,
-  clampDetailOffset,
+  clampDetailOffsetToBounds,
+  detailExpansionChildren,
   detailLevelKey,
+  detailLevelContentBounds,
   expandedDetailSize,
   findInlineDetailLevel,
+  fullyExpandedDetailTree,
+  inlineExpandedChildren,
   listDetailNodes,
+  toggleDetailExpansionAtPath,
 } from "./detail-layout";
 import type {
   DetailExpansionBranch,
@@ -36,6 +38,14 @@ import type {
   DetailNode,
   InlineDetailLevel,
 } from "./detail-layout";
+import {
+  canvasGridSize,
+  fitCanvasCamera,
+  shouldBeginCanvasPan,
+  wheelZoomFactor,
+  zoomCameraAt,
+} from "./canvas-viewport";
+import type { CanvasCamera } from "./canvas-viewport";
 import { buildModuleDetail, DETAIL_KIND_NAMES } from "./module-details";
 import type { DetailPrimitive } from "./module-details";
 import {
@@ -111,6 +121,12 @@ interface DetailSelection {
 
 interface DetailPreview extends DetailSelection {
   offset: Point;
+}
+
+interface CameraGesture {
+  pointerId: number;
+  start: Point;
+  initial: CanvasCamera;
 }
 
 const NODE_SHAPES: readonly NodeShape[] = [
@@ -190,6 +206,15 @@ function initialScenario(): LabScene {
   return SCENARIOS.find((scene) => scene.scene_id === sceneId) ?? SCENARIOS[0];
 }
 
+function sceneContentBounds(scene: LabScene): Bounds {
+  if (!scene.nodes.length) return { x: 0, y: 0, width: scene.paper_width, height: scene.paper_height };
+  const left = Math.min(...scene.nodes.map((node) => node.bounds.x));
+  const top = Math.min(...scene.nodes.map((node) => node.bounds.y));
+  const right = Math.max(...scene.nodes.map((node) => node.bounds.x + node.bounds.width));
+  const bottom = Math.max(...scene.nodes.map((node) => node.bounds.y + node.bounds.height));
+  return { x: left, y: top, width: right - left, height: bottom - top };
+}
+
 function initialExpandedNodeIds(scene: LabScene): Set<string> {
   if (typeof window === "undefined") return new Set();
   const requested = new URLSearchParams(window.location.search).get("expand");
@@ -209,7 +234,7 @@ function initialDetailExpansions(scene: LabScene, expandedIds: Set<string>): Det
     if (!parent.detail_expanded || !parent.detail_kind) continue;
     const child = listDetailNodes(buildModuleDetail(parent.detail_kind, parent.bounds))
       .find((item) => item.nestedKind && item.label.toLowerCase().includes(requested));
-    if (child) return { [parent.scene_node_id]: { childId: child.id } };
+    if (child) return { [parent.scene_node_id]: { children: { [child.id]: { children: {} } } } };
   }
   return {};
 }
@@ -390,7 +415,7 @@ function DetailPrimitiveGraphic({
       {primitive.label && <text className="detail-matrix-label" x={primitive.x + primitive.width / 2} y={primitive.y - 7}>{primitive.label}</text>}
     </g>;
   } else {
-    graphic = <g className={`detail-shape detail-tone-${primitive.tone} detail-${primitive.variant ?? "box"}`}>
+    graphic = <g className={`detail-shape detail-tone-${primitive.tone} detail-${primitive.variant ?? "box"}${primitive.variant === "frame" ? ` detail-frame-${primitive.frameRole ?? "containment"}` : ""}`}>
       <rect x={primitive.x} y={primitive.y} width={primitive.width} height={primitive.height} rx={primitive.rx} />
       {primitive.label && <text className="detail-box-label" x={primitive.x + primitive.width / 2} y={primitive.y + primitive.height / 2 + (primitive.note ? -2 : 4)}>{primitive.label}</text>}
       {primitive.note && <text className="detail-note" x={primitive.x + primitive.width / 2} y={primitive.y + primitive.height / 2 + 13}>{primitive.note}</text>}
@@ -449,8 +474,8 @@ function expansionAtLevel(
 ): DetailExpansionBranch | undefined {
   let current = branch;
   for (const childId of levelPath) {
-    if (current?.childId !== childId) return undefined;
-    current = current.child;
+    current = detailExpansionChildren(current).find(([id]) => id === childId)?.[1];
+    if (!current) return undefined;
   }
   return current;
 }
@@ -463,6 +488,7 @@ function RecursiveDetailLevelGraphic({
   onChildPointerDown,
   onToggleNested,
   hiddenFlowIds,
+  foregroundFlowIds,
 }: {
   root: LabNode;
   level: InlineDetailLevel;
@@ -477,24 +503,17 @@ function RecursiveDetailLevelGraphic({
   ) => void;
   onToggleNested: (root: LabNode, levelPath: string[], child: DetailNode) => void;
   hiddenFlowIds?: ReadonlySet<string>;
+  foregroundFlowIds?: ReadonlySet<string>;
 }) {
   const nodesByIndex = new Map(level.nodes.map((child) => [child.primitiveIndex, child]));
-  const expanded = level.expandedChild;
-  return <g className={`detail-level detail-${level.kind}`} data-detail-level={level.levelKey}>
-    {expanded && <InlineExpandedDetailGraphic
-      root={root}
-      parentLevel={level}
-      levelPath={levelPath}
-      selection={selection}
-      onChildPointerDown={onChildPointerDown}
-      onToggleNested={onToggleNested}
-      hiddenFlowIds={hiddenFlowIds}
-    />}
-    {level.diagram.primitives.map((primitive, index) => {
+  const expanded = inlineExpandedChildren(level);
+  const expandedIds = new Set(expanded.map((child) => child.node.id));
+  const renderPrimitive = (primitive: DetailPrimitive, index: number, foreground: boolean) => {
       const child = nodesByIndex.get(index);
       const atomicEdgeId = primitive.kind === "flow" ? `${level.levelKey}:flow:${index}` : undefined;
-      if (expanded && child?.id === expanded.node.id) return null;
+      if (child && expandedIds.has(child.id)) return null;
       if (atomicEdgeId && hiddenFlowIds?.has(atomicEdgeId)) return null;
+      if (Boolean(atomicEdgeId && foregroundFlowIds?.has(atomicEdgeId)) !== foreground) return null;
       const selected = Boolean(child && selection?.rootId === root.scene_node_id
         && sameLevelPath(selection.levelPath, levelPath)
         && selection.childId === child.id);
@@ -508,21 +527,39 @@ function RecursiveDetailLevelGraphic({
         onPointerDown={child ? (event) => onChildPointerDown(event, root, levelPath, level, child) : undefined}
         onToggleNested={child ? () => onToggleNested(root, levelPath, child) : undefined}
       />;
-    })}
+  };
+  return <g className={`detail-level detail-${level.kind}`} data-detail-level={level.levelKey}>
+    {level.diagram.primitives.map((primitive, index) => renderPrimitive(primitive, index, false))}
+    {expanded.map((child) => <InlineExpandedDetailGraphic
+      key={child.node.id}
+      root={root}
+      parentLevel={level}
+      expanded={child}
+      levelPath={levelPath}
+      selection={selection}
+      onChildPointerDown={onChildPointerDown}
+      onToggleNested={onToggleNested}
+      hiddenFlowIds={hiddenFlowIds}
+      foregroundFlowIds={foregroundFlowIds}
+    />)}
+    {level.diagram.primitives.map((primitive, index) => renderPrimitive(primitive, index, true))}
   </g>;
 }
 
 function InlineExpandedDetailGraphic({
   root,
   parentLevel,
+  expanded,
   levelPath,
   selection,
   onChildPointerDown,
   onToggleNested,
   hiddenFlowIds,
+  foregroundFlowIds,
 }: {
   root: LabNode;
   parentLevel: InlineDetailLevel;
+  expanded: NonNullable<InlineDetailLevel["expandedChildren"]>[number];
   levelPath: string[];
   selection?: DetailSelection | null;
   onChildPointerDown: (
@@ -534,8 +571,8 @@ function InlineExpandedDetailGraphic({
   ) => void;
   onToggleNested: (root: LabNode, levelPath: string[], child: DetailNode) => void;
   hiddenFlowIds?: ReadonlySet<string>;
+  foregroundFlowIds?: ReadonlySet<string>;
 }) {
-  const expanded = parentLevel.expandedChild!;
   const child = expanded.node;
   const nested = expanded.level;
   const { x, y, width, height } = child.bounds;
@@ -565,6 +602,7 @@ function InlineExpandedDetailGraphic({
       onChildPointerDown={onChildPointerDown}
       onToggleNested={onToggleNested}
       hiddenFlowIds={hiddenFlowIds}
+      foregroundFlowIds={foregroundFlowIds}
     />
     <rect className="nested-inline-header" x={x} y={y} width={width} height={42} rx={5} />
     <line className="nested-inline-divider" x1={x} y1={y + 42} x2={x + width} y2={y + 42} />
@@ -591,6 +629,7 @@ function ModuleDetailGraphic({
   onChildPointerDown,
   onToggleNested,
   hiddenFlowIds,
+  foregroundFlowIds,
 }: {
   node: LabNode;
   level?: InlineDetailLevel;
@@ -604,6 +643,7 @@ function ModuleDetailGraphic({
   ) => void;
   onToggleNested: (root: LabNode, levelPath: string[], child: DetailNode) => void;
   hiddenFlowIds?: ReadonlySet<string>;
+  foregroundFlowIds?: ReadonlySet<string>;
 }) {
   if (!node.detail_kind || !level) return null;
   return <g className={`module-detail detail-${level.kind}`} aria-label={DETAIL_KIND_NAMES[level.kind]}>
@@ -615,6 +655,7 @@ function ModuleDetailGraphic({
       onChildPointerDown={onChildPointerDown}
       onToggleNested={onToggleNested}
       hiddenFlowIds={hiddenFlowIds}
+      foregroundFlowIds={foregroundFlowIds}
     />
   </g>;
 }
@@ -648,6 +689,7 @@ function NodeGraphic({
   onToggleNestedDetail,
   resizeEnabled,
   hiddenFlowIds,
+  foregroundFlowIds,
 }: {
   node: LabNode;
   visualStyle: NodeVisualStyle;
@@ -668,6 +710,7 @@ function NodeGraphic({
   onToggleNestedDetail: (root: LabNode, levelPath: string[], child: DetailNode) => void;
   resizeEnabled: boolean;
   hiddenFlowIds?: ReadonlySet<string>;
+  foregroundFlowIds?: ReadonlySet<string>;
 }) {
   const { x, y, width, height } = node.bounds;
   const colors = NODE_COLORS[node.shape];
@@ -707,6 +750,7 @@ function NodeGraphic({
         onChildPointerDown={onDetailPointerDown}
         onToggleNested={onToggleNestedDetail}
         hiddenFlowIds={hiddenFlowIds}
+        foregroundFlowIds={foregroundFlowIds}
       />
       <DetailToggle node={node} onToggle={onToggleDetail} />
       {selected && <rect className="node-selection" x={x - 5} y={y - 5} width={width + 10} height={height + 10} rx={8} />}
@@ -833,9 +877,6 @@ function EdgeGraphic({
 
 function MarkerDefinitions() {
   return <defs>
-    <pattern id="lab-grid" width="20" height="20" patternUnits="userSpaceOnUse">
-      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#dfe3e1" strokeWidth={0.7} />
-    </pattern>
     {Object.entries(RELATION_COLORS).map(([relation, color]) => <marker key={relation} id={`arrow-${relation}`} viewBox="0 0 10 10" refX="8.8" refY="5" markerWidth="5.8" markerHeight="5.8" orient="auto-start-reverse">
       <path d="M 0 1 L 9 5 L 0 9 z" fill={color} />
     </marker>)}
@@ -868,6 +909,9 @@ function App() {
   const initialExpandedRef = useRef<Set<string>>(initialExpandedNodeIds(initialSceneRef.current));
   const initialExpansionRef = useRef<DetailExpansionMap>(initialDetailExpansions(initialSceneRef.current, initialExpandedRef.current));
   const initialNestedSelection = Object.entries(initialExpansionRef.current)[0];
+  const initialNestedChildId = initialNestedSelection
+    ? detailExpansionChildren(initialNestedSelection[1])[0]?.[0]
+    : undefined;
   const [editor, dispatch] = useReducer(editorReducer, {
     scene: cloneScene(initialSceneRef.current),
     past: [],
@@ -883,16 +927,20 @@ function App() {
   const [preview, setPreview] = useState<{ nodeId: string; bounds: Bounds } | null>(null);
   const [detailLayouts, setDetailLayouts] = useState<DetailLayoutMap>({});
   const [detailPreview, setDetailPreview] = useState<DetailPreview | null>(null);
-  const [detailSelection, setDetailSelection] = useState<DetailSelection | null>(() => initialNestedSelection
-    ? { rootId: initialNestedSelection[0], levelPath: [], childId: initialNestedSelection[1].childId }
+  const [detailSelection, setDetailSelection] = useState<DetailSelection | null>(() => initialNestedSelection && initialNestedChildId
+    ? { rootId: initialNestedSelection[0], levelPath: [], childId: initialNestedChildId }
     : null);
   const [detailExpansions, setDetailExpansions] = useState<DetailExpansionMap>(() => initialExpansionRef.current);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(() => new Set(initialExpandedRef.current));
   const [edgeMode, setEdgeMode] = useState(false);
   const [edgeSource, setEdgeSource] = useState<string | null>(null);
+  const [camera, setCamera] = useState<CanvasCamera>({ x: 0, y: 0, zoom: 1 });
+  const [isPanning, setIsPanning] = useState(false);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const gestureRef = useRef<Gesture | null>(null);
+  const cameraGestureRef = useRef<CameraGesture | null>(null);
+  const pendingCameraFitRef = useRef(true);
   const pendingFocusNodeRef = useRef<string | null>(null);
   const sequence = useRef(1);
 
@@ -935,29 +983,21 @@ function App() {
         : []
     )),
   ), [detailExpansions, displayScene, effectiveDetailLayouts, hierarchyRoutingMode]);
-  const atomicProjections = useMemo(() => hierarchyRoutingMode === "atomic-bottom-up"
-    ? Object.fromEntries(Object.entries(detailTrees).map(([nodeId, tree]) => [
-      nodeId,
-      buildAtomicHierarchyProjection(tree),
-    ]))
-    : {}, [detailTrees, hierarchyRoutingMode]);
-  const boundaryPorts = useMemo(() => hierarchyRoutingMode === "atomic-bottom-up"
-    ? projectedSceneBoundaryPorts(atomicProjections)
-    : undefined, [atomicProjections, hierarchyRoutingMode]);
-  const hiddenExitBridgeIds = useMemo(() => {
-    if (hierarchyRoutingMode !== "atomic-bottom-up") return new Set<string>();
-    const outgoingNodeIds = new Set(displayScene.edges.map((edge) => edge.source_scene_node_id));
-    return new Set(Object.entries(atomicProjections).flatMap(([nodeId, projection]) => [
-      ...projectedNestedExitBridgeIds(projection),
-      ...(outgoingNodeIds.has(nodeId) ? projectedAtomicExit(projection)?.bridgeEdgeIds ?? [] : []),
-    ]));
-  }, [atomicProjections, displayScene.edges, hierarchyRoutingMode]);
+  const atomicRoutingPlan = useMemo(() => {
+    if (hierarchyRoutingMode !== "atomic-bottom-up") return undefined;
+    return buildAtomicHierarchyRoutingPlan(
+      detailTrees,
+      new Set(displayScene.edges.map((edge) => edge.target_scene_node_id)),
+      new Set(displayScene.edges.map((edge) => edge.source_scene_node_id)),
+    );
+  }, [detailTrees, displayScene.edges, hierarchyRoutingMode]);
+  const boundaryPorts = atomicRoutingPlan?.boundaryPorts;
   const routed = useMemo(
     () => routeScene(displayScene, options.routeStyle, boundaryPorts),
     [boundaryPorts, displayScene, options.routeStyle],
   );
   const metrics = useMemo(() => measureScene(displayScene, routed), [displayScene, routed]);
-  const canvasWidthPercent = Math.max(100, displayScene.paper_width / editor.scene.paper_width * 100);
+  const contentBounds = useMemo(() => sceneContentBounds(displayScene), [displayScene]);
   const selectedNode = selection?.kind === "node"
     ? editor.scene.nodes.find((node) => node.scene_node_id === selection.id)
     : undefined;
@@ -977,6 +1017,35 @@ function App() {
   const selectedDetailOffset = detailSelection
     ? effectiveDetailLayouts[detailLevelKey(detailSelection.rootId, detailSelection.levelPath)]?.[detailSelection.childId] ?? { x: 0, y: 0 }
     : { x: 0, y: 0 };
+  const selectedDetailExpanded = Boolean(selectedDetail && detailExpansionChildren(expansionAtLevel(
+    detailExpansions[selectedDetail.root.scene_node_id],
+    detailSelection?.levelPath ?? [],
+  )).some(([id]) => id === selectedDetail.child.id));
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport || !pendingCameraFitRef.current) return;
+    pendingCameraFitRef.current = false;
+    setCamera(fitCanvasCamera(
+      viewport.getBoundingClientRect(),
+      contentBounds,
+    ));
+  }, [contentBounds, editor.scene.scene_id]);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const handleWheel = (event: WheelEvent) => {
+      const bounds = viewport.getBoundingClientRect();
+      const anchor = { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
+      event.preventDefault();
+      event.stopPropagation();
+      const factor = wheelZoomFactor(event.deltaY, event.deltaMode);
+      setCamera((current) => zoomCameraAt(current, current.zoom * factor, anchor));
+    };
+    viewport.addEventListener("wheel", handleWheel, { passive: false });
+    return () => viewport.removeEventListener("wheel", handleWheel);
+  }, []);
 
   useEffect(() => {
     const nodeId = pendingFocusNodeRef.current;
@@ -988,8 +1057,31 @@ function App() {
     pendingFocusNodeRef.current = null;
     const viewportBounds = viewport.getBoundingClientRect();
     const nodeBounds = nodeElement.getBoundingClientRect();
-    viewport.scrollLeft += nodeBounds.left - viewportBounds.left - (viewportBounds.width - nodeBounds.width) / 2;
+    setCamera((current) => ({
+      ...current,
+      x: current.x + viewportBounds.left + viewportBounds.width / 2 - nodeBounds.left - nodeBounds.width / 2,
+      y: current.y + viewportBounds.top + viewportBounds.height / 2 - nodeBounds.top - nodeBounds.height / 2,
+    }));
   }, [displayScene]);
+
+  function fitCamera() {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    setCamera(fitCanvasCamera(
+      viewport.getBoundingClientRect(),
+      contentBounds,
+    ));
+  }
+
+  function zoomFromCenter(factor: number) {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const bounds = viewport.getBoundingClientRect();
+    setCamera((current) => zoomCameraAt(current, current.zoom * factor, {
+      x: bounds.width / 2,
+      y: bounds.height / 2,
+    }));
+  }
 
   function patch(next: LabPatch) {
     dispatch({ type: "patch", patch: next });
@@ -1004,12 +1096,25 @@ function App() {
     setDetailSelection(null);
     setDetailExpansions({});
     setExpandedNodeIds(new Set());
-    if (viewportRef.current) viewportRef.current.scrollLeft = 0;
+    const viewport = viewportRef.current;
+    if (viewport) {
+      pendingCameraFitRef.current = false;
+      setCamera(fitCanvasCamera(
+        viewport.getBoundingClientRect(),
+        sceneContentBounds(scene),
+      ));
+    } else {
+      pendingCameraFitRef.current = true;
+    }
+    cameraGestureRef.current = null;
+    setIsPanning(false);
     setEdgeMode(false);
     setEdgeSource(null);
   }
 
   function beginNode(event: React.PointerEvent<SVGGElement>, node: LabNode) {
+    if (event.button !== 0) return;
+    event.preventDefault();
     event.stopPropagation();
     setDetailSelection(null);
     setSelection({ kind: "node", id: node.scene_node_id });
@@ -1036,7 +1141,6 @@ function App() {
       }
       return;
     }
-    if (expandedNodeIds.size) return;
     const svg = svgRef.current;
     if (!svg) return;
     svg.setPointerCapture(event.pointerId);
@@ -1045,7 +1149,7 @@ function App() {
       nodeId: node.scene_node_id,
       kind: "move",
       start: svgPoint(event as unknown as React.PointerEvent<SVGSVGElement>, svg),
-      initial: { ...node.bounds },
+      initial: editableNodeBounds(editor.scene, node),
     };
   }
 
@@ -1056,6 +1160,8 @@ function App() {
     level: InlineDetailLevel,
     child: DetailNode,
   ) {
+    if (event.button !== 0) return;
+    event.preventDefault();
     event.stopPropagation();
     setSelection(null);
     setDetailSelection({ rootId: root.scene_node_id, levelPath, childId: child.id });
@@ -1078,13 +1184,14 @@ function App() {
         x: child.bounds.x - initialOffset.x,
         y: child.bounds.y - initialOffset.y,
       },
-      parentBounds: level.bounds,
+      parentBounds: detailLevelContentBounds(level),
     };
   }
 
   function beginResize(event: React.PointerEvent<SVGRectElement>, node: LabNode) {
+    if (event.button !== 0) return;
+    event.preventDefault();
     event.stopPropagation();
-    if (expandedNodeIds.size) return;
     const svg = svgRef.current;
     if (!svg) return;
     svg.setPointerCapture(event.pointerId);
@@ -1093,7 +1200,7 @@ function App() {
       nodeId: node.scene_node_id,
       kind: "resize",
       start: svgPoint(event as unknown as React.PointerEvent<SVGSVGElement>, svg),
-      initial: { ...node.bounds },
+      initial: editableNodeBounds(editor.scene, node),
     };
   }
 
@@ -1102,7 +1209,7 @@ function App() {
     if (!gesture || gesture.pointerId !== event.pointerId) return;
     if (gesture.kind === "detail-move") {
       const point = svgPoint(event, event.currentTarget);
-      const offset = clampDetailOffset(gesture.parentBounds, gesture.childBounds, {
+      const offset = clampDetailOffsetToBounds(gesture.parentBounds, gesture.childBounds, {
         x: gesture.initialOffset.x + point.x - gesture.start.x,
         y: gesture.initialOffset.y + point.y - gesture.start.y,
       });
@@ -1120,7 +1227,7 @@ function App() {
     if (!gesture || gesture.pointerId !== event.pointerId) return;
     if (gesture.kind === "detail-move") {
       const point = svgPoint(event, event.currentTarget);
-      const offset = clampDetailOffset(gesture.parentBounds, gesture.childBounds, {
+      const offset = clampDetailOffsetToBounds(gesture.parentBounds, gesture.childBounds, {
         x: gesture.initialOffset.x + point.x - gesture.start.x,
         y: gesture.initialOffset.y + point.y - gesture.start.y,
       });
@@ -1141,6 +1248,39 @@ function App() {
     setPreview(null);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     patch({ operation: "update-node", nodeId: gesture.nodeId, changes: { bounds } });
+  }
+
+  function beginCameraPan(event: React.PointerEvent<HTMLDivElement>) {
+    const isEmptySurface = event.target === event.currentTarget || event.target === svgRef.current;
+    if (!shouldBeginCanvasPan(event.button, isEmptySurface, edgeMode)) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    cameraGestureRef.current = {
+      pointerId: event.pointerId,
+      start: { x: event.clientX, y: event.clientY },
+      initial: camera,
+    };
+    setIsPanning(true);
+    setSelection(null);
+    setDetailSelection(null);
+  }
+
+  function moveCameraPan(event: React.PointerEvent<HTMLDivElement>) {
+    const gesture = cameraGestureRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+    setCamera({
+      ...gesture.initial,
+      x: gesture.initial.x + event.clientX - gesture.start.x,
+      y: gesture.initial.y + event.clientY - gesture.start.y,
+    });
+  }
+
+  function finishCameraPan(event: React.PointerEvent<HTMLDivElement>) {
+    const gesture = cameraGestureRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+    cameraGestureRef.current = null;
+    setIsPanning(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   }
 
   function addNode() {
@@ -1209,20 +1349,38 @@ function App() {
     setSelection(null);
     setDetailSelection({ rootId: root.scene_node_id, levelPath, childId: child.id });
     setDetailExpansions((current) => {
-      function toggleAtPath(branch: DetailExpansionBranch | undefined, path: readonly string[]): DetailExpansionBranch | undefined {
-        if (!path.length) return branch?.childId === child.id ? undefined : { childId: child.id };
-        if (!branch || branch.childId !== path[0]) return branch;
-        const nested = toggleAtPath(branch.child, path.slice(1));
-        return nested ? { ...branch, child: nested } : { childId: branch.childId };
-      }
-      const nextBranch = toggleAtPath(current[root.scene_node_id], levelPath);
-      if (!nextBranch) {
+      const nextBranch = toggleDetailExpansionAtPath(current[root.scene_node_id], levelPath, child.id);
+      if (!detailExpansionChildren(nextBranch).length) {
         const next = { ...current };
         delete next[root.scene_node_id];
         return next;
       }
       return { ...current, [root.scene_node_id]: nextBranch };
     });
+  }
+
+  function expandAllDetails() {
+    const expandable = editor.scene.nodes.filter((node) => node.detail_kind);
+    setExpandedNodeIds(new Set(expandable.map((node) => node.scene_node_id)));
+    setDetailExpansions(Object.fromEntries(expandable.map((node) => [
+      node.scene_node_id,
+      fullyExpandedDetailTree(node.detail_kind!),
+    ])));
+    setSelection(null);
+    setDetailSelection(null);
+    setPreview(null);
+    setDetailPreview(null);
+    pendingCameraFitRef.current = true;
+  }
+
+  function collapseAllDetails() {
+    setExpandedNodeIds(new Set());
+    setDetailExpansions({});
+    setSelection(null);
+    setDetailSelection(null);
+    setPreview(null);
+    setDetailPreview(null);
+    pendingCameraFitRef.current = true;
   }
 
   function updateSelectedDetailOffset(nextOffset: Point) {
@@ -1234,7 +1392,11 @@ function App() {
       x: selectedDetail.child.bounds.x - currentOffset.x,
       y: selectedDetail.child.bounds.y - currentOffset.y,
     };
-    const offset = clampDetailOffset(selectedDetail.level.bounds, baseChild, nextOffset);
+    const offset = clampDetailOffsetToBounds(
+      detailLevelContentBounds(selectedDetail.level),
+      baseChild,
+      nextOffset,
+    );
     setDetailLayouts((current) => ({
       ...current,
       [levelKey]: {
@@ -1350,27 +1512,41 @@ function App() {
             <option value="atomic-bottom-up">原子收束</option>
             <option value="recursive">逐层</option>
           </select></label>
+          <div className="detail-bulk-actions" aria-label="层级展开操作">
+            <button className="tool-button" onClick={expandAllDetails}><Plus size={14} />全部展开</button>
+            <button className="tool-button" onClick={collapseAllDetails} disabled={!expandedNodeIds.size}><Minus size={14} />全部收起</button>
+          </div>
           <div className="scene-caption"><strong>{editor.scene.title}</strong><span>{editor.scene.description}</span></div>
         </div>
-        <div ref={viewportRef} className="canvas-viewport">
+        <div
+          ref={viewportRef}
+          className={`canvas-viewport ${isPanning ? "panning" : ""}`}
+          style={{
+            "--canvas-grid-size": `${canvasGridSize(camera.zoom)}px`,
+            "--canvas-grid-x": `${camera.x}px`,
+            "--canvas-grid-y": `${camera.y}px`,
+          } as React.CSSProperties}
+          onPointerDown={beginCameraPan}
+          onPointerMove={moveCameraPan}
+          onPointerUp={finishCameraPan}
+          onPointerCancel={finishCameraPan}
+          onAuxClick={(event) => event.preventDefault()}
+          onDragStart={(event) => event.preventDefault()}
+        >
           <svg
             ref={svgRef}
             className={`lab-canvas ${edgeMode ? "edge-mode" : ""}`}
-            style={{ width: `${canvasWidthPercent}%`, aspectRatio: `${displayScene.paper_width} / ${displayScene.paper_height}` }}
+            width={displayScene.paper_width}
+            height={displayScene.paper_height}
+            style={{ transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})` }}
             viewBox={`0 0 ${displayScene.paper_width} ${displayScene.paper_height}`}
             role="application"
             aria-label={`${displayScene.title} 架构图编辑画布`}
-            onPointerDown={(event) => {
-              if (event.target !== event.currentTarget) return;
-              setSelection(null);
-              setDetailSelection(null);
-            }}
             onPointerMove={movePointer}
             onPointerUp={finishPointer}
             onPointerCancel={finishPointer}
           >
             <MarkerDefinitions />
-            <rect className="canvas-paper" x={12} y={12} width={displayScene.paper_width - 24} height={displayScene.paper_height - 24} />
             {routed.filter((route) => !route.foreground).map((route) => <EdgeGraphic
               key={route.edge.scene_edge_id}
               route={route}
@@ -1391,8 +1567,9 @@ function App() {
               detailSelection={detailSelection?.rootId === node.scene_node_id ? detailSelection : undefined}
               onDetailPointerDown={beginDetailNode}
               onToggleNestedDetail={toggleNestedDetail}
-              resizeEnabled={!expandedNodeIds.size}
-              hiddenFlowIds={hiddenExitBridgeIds}
+              resizeEnabled={true}
+              hiddenFlowIds={atomicRoutingPlan?.hiddenFlowIds}
+              foregroundFlowIds={atomicRoutingPlan?.foregroundFlowIds}
             />)}
             {routed.filter((route) => route.foreground).map((route) => <EdgeGraphic
               key={route.edge.scene_edge_id}
@@ -1402,6 +1579,12 @@ function App() {
               onSelect={(edge) => setSelection({ kind: "edge", id: edge.scene_edge_id })}
             />)}
           </svg>
+          <div className="canvas-controls" aria-label="画布视图">
+            <button className="icon-button" title="缩小" onClick={() => zoomFromCenter(1 / 1.2)}><Minus size={15} /></button>
+            <output aria-label="当前缩放比例">{Math.round(camera.zoom * 100)}%</output>
+            <button className="icon-button" title="放大" onClick={() => zoomFromCenter(1.2)}><Plus size={15} /></button>
+            <button className="icon-button" title="适合视图" onClick={fitCamera}><Maximize2 size={15} /></button>
+          </div>
         </div>
         <MetricStrip metrics={metrics} />
       </section>
@@ -1434,10 +1617,7 @@ function App() {
           {selectedDetail.child.nestedKind && <button
             className="tool-button inspector-action"
             onClick={() => toggleNestedDetail(selectedDetail.root, detailSelection?.levelPath ?? [], selectedDetail.child)}
-          ><Maximize2 size={14} />{expansionAtLevel(
-              detailExpansions[selectedDetail.root.scene_node_id],
-              detailSelection?.levelPath ?? [],
-            )?.childId === selectedDetail.child.id ? "收起当前层" : "展开下一层"}</button>}
+          ><Maximize2 size={14} />{selectedDetailExpanded ? "收起当前层" : "展开下一层"}</button>}
           <button className="tool-button inspector-action" onClick={resetSelectedDetailOffset}><RotateCcw size={14} />复位子模块位置</button>
         </div> : selectedNode ? <div className="inspector-form">
           <div className="selection-title"><span>节点</span><strong>{selectedNode.label}</strong></div>

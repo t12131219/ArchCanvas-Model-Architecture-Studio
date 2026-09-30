@@ -6,12 +6,12 @@ import { renderSceneSvg } from "./svg-export";
 
 describe("scene lab case matrix", () => {
   it("covers every topology and visual combination", () => {
-    expect(SCENARIOS).toHaveLength(26);
+    expect(SCENARIOS).toHaveLength(28);
     expect(optionCombinations()).toHaveLength(45);
-    expect(SCENARIOS.length * optionCombinations().length).toBe(1170);
+    expect(SCENARIOS.length * optionCombinations().length).toBe(1260);
   });
 
-  it("renders all 1170 cases with finite routes and metrics", () => {
+    it("renders all 1260 cases with finite routes and metrics", () => {
     for (const scene of SCENARIOS) {
       for (const options of optionCombinations()) {
         const routes = routeScene(scene, options.routeStyle);

@@ -7,9 +7,10 @@ import {
 } from "./catalog-details";
 
 export type DetailTone = "neutral" | "blue" | "green" | "pink" | "orange" | "violet";
+export type DetailFrameRole = "containment" | "semantic-group";
 
 export type DetailPrimitive =
-  | { kind: "rect"; x: number; y: number; width: number; height: number; rx: number; label?: string; note?: string; tone: DetailTone; variant?: "box" | "frame" | "capsule" }
+  | { kind: "rect"; x: number; y: number; width: number; height: number; rx: number; label?: string; note?: string; tone: DetailTone; variant?: "box" | "frame" | "capsule"; frameRole?: DetailFrameRole }
   | { kind: "circle"; cx: number; cy: number; radius: number; label: string; tone: DetailTone }
   | { kind: "matrix"; x: number; y: number; width: number; height: number; columns: number; rows: number; label?: string; tone: DetailTone; depth?: number }
   | { kind: "flow"; points: Point[]; marker?: boolean; tone?: DetailTone; channel?: string }
@@ -26,6 +27,11 @@ export const DETAIL_KIND_NAMES: Record<NodeDetailKind, string> = {
   attention: "多头注意力内部数据流",
   feedforward: "前馈网络内部数据流",
   "add-norm": "残差相加与归一化",
+  "sinusoidal-embedding": "词元缩放与正弦位置编码",
+  "transformer-encoder": "经典 Transformer Encoder Layer × 6",
+  "transformer-decoder": "经典 Transformer Decoder Layer × 6",
+  "tensor2tensor-encoder": "Tensor2Tensor Encoder Layer × 6",
+  "tensor2tensor-decoder": "Tensor2Tensor Decoder Layer × 6",
   convolution: "卷积特征提取数据流",
   "tensor-transform": "张量变换数据流",
   embedding: "词元与位置嵌入数据流",
@@ -39,6 +45,11 @@ export const EXPANDED_DETAIL_SIZES: Record<NodeDetailKind, Pick<Bounds, "width" 
   attention: { width: 900, height: 380 },
   feedforward: { width: 600, height: 260 },
   "add-norm": { width: 560, height: 260 },
+  "sinusoidal-embedding": { width: 720, height: 320 },
+  "transformer-encoder": { width: 1060, height: 440 },
+  "transformer-decoder": { width: 1420, height: 540 },
+  "tensor2tensor-encoder": { width: 1060, height: 440 },
+  "tensor2tensor-decoder": { width: 1420, height: 540 },
   convolution: { width: 620, height: 280 },
   "tensor-transform": { width: 540, height: 240 },
   embedding: { width: 680, height: 300 },
@@ -57,8 +68,9 @@ function rect(
   tone: DetailTone = "neutral",
   note?: string,
   variant: "box" | "frame" | "capsule" = "box",
+  frameRole?: DetailFrameRole,
 ): DetailPrimitive {
-  return { kind: "rect", x, y, width, height, rx: variant === "capsule" ? height / 2 : 4, label, note, tone, variant };
+  return { kind: "rect", x, y, width, height, rx: variant === "capsule" ? height / 2 : 4, label, note, tone, variant, frameRole };
 }
 
 function matrix(
@@ -106,7 +118,7 @@ function attentionDiagram(bounds: Bounds): DetailPrimitive[] {
   const labels = ["Q", "K", "V"];
   const tones: DetailTone[] = ["blue", "green", "pink"];
   const p: DetailPrimitive[] = [
-    rect(x + 250, y + 72, 330, 230, "", "orange", undefined, "frame"),
+    rect(x + 250, y + 72, 330, 230, "", "orange", undefined, "frame", "semantic-group"),
     text(x + 415, y + 91, "Scaled dot-product attention / head", true, "orange"),
     wire({ x, y: cy }, { x: branchX, y: cy }),
   ];
@@ -148,6 +160,174 @@ function attentionDiagram(bounds: Bounds): DetailPrimitive[] {
   p.push(text(x + 126, y + 329, "Q / K / V projections", false));
   p.push(text(x + 729, y + 329, "merge heads → project → next module", false));
   return p;
+}
+
+function sinusoidalEmbeddingDiagram(bounds: Bounds): DetailPrimitive[] {
+  const { x, y, width, height } = bounds;
+  const cy = y + height / 2;
+  const upper = y + 110;
+  const lower = y + 228;
+  return [
+    wire({ x, y: cy }, { x: x + 28, y: cy }),
+    semanticFlow("blue", "token-ids", { x: x + 28, y: cy }, { x: x + 42, y: upper }, { x: x + 58, y: upper }),
+    matrix(x + 58, upper - 24, 62, 48, "token ids", "blue", 6, 2),
+    semanticFlow("blue", "embedding", { x: x + 120, y: upper }, { x: x + 148, y: upper }),
+    rect(x + 148, upper - 30, 126, 60, "TokenEmbedding", "blue", "lookup × √d_model"),
+    semanticFlow("blue", "token-embedding", { x: x + 274, y: upper }, { x: x + 380, y: upper }, { x: x + 380, y: cy }, { x: x + 405, y: cy }),
+    semanticFlow("orange", "position", { x: x + 28, y: cy }, { x: x + 42, y: lower }, { x: x + 58, y: lower }),
+    matrix(x + 58, lower - 24, 62, 48, "position", "orange", 6, 2),
+    semanticFlow("orange", "fixed-position", { x: x + 120, y: lower }, { x: x + 148, y: lower }),
+    rect(x + 148, lower - 32, 180, 64, "Sinusoidal PE", "orange", "sin/cos · max_seq_len=5000"),
+    semanticFlow("orange", "position-encoding", { x: x + 328, y: lower }, { x: x + 380, y: lower }, { x: x + 380, y: cy }, { x: x + 405, y: cy }),
+    { kind: "circle", cx: x + 423, cy, radius: 18, label: "+", tone: "orange" },
+    flow({ x: x + 441, y: cy }, { x: x + 474, y: cy }),
+    rect(x + 474, cy - 29, 96, 58, "Dropout", "neutral", "p = 0.1"),
+    flow({ x: x + 570, y: cy }, { x: x + 602, y: cy }),
+    matrix(x + 602, cy - 29, 70, 58, "[B,L,D]", "violet", 5, 3, 6),
+    flow({ x: x + 678, y: cy }, { x: x + width, y: cy }),
+    text(x + width / 2, y + height - 25, "固定位置编码无可训练参数；源端与目标端使用相同公式", false),
+  ];
+}
+
+function transformerEncoderDiagram(bounds: Bounds): DetailPrimitive[] {
+  const { x, y, width, height } = bounds;
+  const cy = y + height / 2;
+  const inputX = x + 38;
+  const attentionX = x + 150;
+  const dropout1X = x + 318;
+  const addNorm1X = x + 424;
+  const ffnX = x + 570;
+  const dropout2X = x + 720;
+  const addNorm2X = x + 826;
+  const p: DetailPrimitive[] = [
+    {
+      kind: "text",
+      x: x + 18,
+      y: y + 72,
+      value: "EncoderLayer × 6 · d_model=512 · 8 heads · d_ff=2048",
+      anchor: "start",
+      emphasis: true,
+      tone: "violet",
+    },
+    wire({ x, y: cy }, { x: inputX, y: cy }),
+    matrix(inputX, cy - 27, 62, 54, "x", "blue", 5, 3, 6),
+    flow({ x: inputX + 68, y: cy }, { x: attentionX, y: cy }),
+    rect(attentionX, cy - 36, 138, 72, "Self-attention", "blue", "Q = K = V = x"),
+    flow({ x: attentionX + 138, y: cy }, { x: dropout1X, y: cy }),
+    rect(dropout1X, cy - 27, 78, 54, "Dropout", "neutral", "0.1"),
+    flow({ x: dropout1X + 78, y: cy }, { x: addNorm1X, y: cy }),
+    rect(addNorm1X, cy - 31, 112, 62, "Add & Norm", "green", "post-LN"),
+    flow({ x: addNorm1X + 112, y: cy }, { x: ffnX, y: cy }),
+    rect(ffnX, cy - 36, 122, 72, "Feed-forward", "violet", "Linear · ReLU · Linear"),
+    flow({ x: ffnX + 122, y: cy }, { x: dropout2X, y: cy }),
+    rect(dropout2X, cy - 27, 78, 54, "Dropout", "neutral", "0.1"),
+    flow({ x: dropout2X + 78, y: cy }, { x: addNorm2X, y: cy }),
+    rect(addNorm2X, cy - 31, 112, 62, "Add & Norm", "green", "post-LN"),
+    flow({ x: addNorm2X + 112, y: cy }, { x: x + width - 74, y: cy }),
+    matrix(x + width - 74, cy - 27, 52, 54, "memory", "orange", 3, 3),
+    flow({ x: x + width - 22, y: cy }, { x: x + width, y: cy }),
+    semanticFlow("orange", "src-padding-mask", { x: x + 101, y: y + 154 }, { x: attentionX + 69, y: y + 174 }, { x: attentionX + 69, y: cy - 36 }),
+    rect(x + 40, y + 116, 122, 38, "Source padding mask", "orange", "[B,1,1,S]"),
+    semanticFlow("blue", "residual-1", { x: inputX + 31, y: cy - 27 }, { x: inputX + 31, y: y + 184 }, { x: addNorm1X + 56, y: y + 184 }, { x: addNorm1X + 56, y: cy - 31 }),
+    semanticFlow("green", "residual-2", { x: addNorm1X + 56, y: cy + 31 }, { x: addNorm1X + 56, y: cy + 75 }, { x: addNorm2X + 56, y: cy + 75 }, { x: addNorm2X + 56, y: cy + 31 }),
+    text(x + width / 2, y + height - 26, "每层保持 [B,S,512]；同一 padding mask 广播到全部 attention heads", false),
+  ];
+  return p;
+}
+
+function transformerDecoderDiagram(bounds: Bounds): DetailPrimitive[] {
+  const { x, y, width, height } = bounds;
+  const cy = y + height / 2;
+  const inputX = x + 34;
+  const selfX = x + 128;
+  const add1X = x + 390;
+  const crossX = x + 535;
+  const add2X = x + 805;
+  const ffnX = x + 950;
+  const add3X = x + 1190;
+  return [
+    {
+      kind: "text",
+      x: x + 18,
+      y: y + 70,
+      value: "DecoderLayer × 6 · masked self-attention + encoder-decoder attention",
+      anchor: "start",
+      emphasis: true,
+      tone: "violet",
+    },
+    wire({ x, y: cy }, { x: inputX, y: cy }),
+    matrix(inputX, cy - 26, 54, 52, "y", "blue", 5, 3, 5),
+    flow({ x: inputX + 60, y: cy }, { x: selfX, y: cy }),
+    rect(selfX, cy - 36, 146, 72, "Masked self-attn", "blue", "causal + target padding"),
+    flow({ x: selfX + 146, y: cy }, { x: x + 300, y: cy }),
+    rect(x + 300, cy - 25, 62, 50, "Drop", "neutral", "0.1"),
+    flow({ x: x + 362, y: cy }, { x: add1X, y: cy }),
+    rect(add1X, cy - 31, 108, 62, "Add & Norm", "green", "post-LN"),
+    flow({ x: add1X + 108, y: cy }, { x: crossX, y: cy }),
+    rect(crossX, cy - 38, 154, 76, "Cross-attention", "orange", "Q=decoder · K,V=memory"),
+    flow({ x: crossX + 154, y: cy }, { x: x + 715, y: cy }),
+    rect(x + 715, cy - 25, 62, 50, "Drop", "neutral", "0.1"),
+    flow({ x: x + 777, y: cy }, { x: add2X, y: cy }),
+    rect(add2X, cy - 31, 108, 62, "Add & Norm", "green", "post-LN"),
+    flow({ x: add2X + 108, y: cy }, { x: ffnX, y: cy }),
+    rect(ffnX, cy - 36, 124, 72, "Feed-forward", "violet", "Linear · ReLU · Linear"),
+    flow({ x: ffnX + 124, y: cy }, { x: x + 1100, y: cy }),
+    rect(x + 1100, cy - 25, 62, 50, "Drop", "neutral", "0.1"),
+    flow({ x: x + 1162, y: cy }, { x: add3X, y: cy }),
+    rect(add3X, cy - 31, 108, 62, "Add & Norm", "green", "post-LN"),
+    flow({ x: add3X + 108, y: cy }, { x: x + width - 78, y: cy }),
+    matrix(x + width - 78, cy - 26, 54, 52, "decoded", "pink", 3, 3),
+    flow({ x: x + width - 24, y: cy }, { x: x + width, y: cy }),
+    rect(x + 70, y + 130, 166, 44, "Target pad ∧ causal mask", "orange", "[B,1,T,T]"),
+    semanticFlow("orange", "target-mask", { x: x + 153, y: y + 174 }, { x: selfX + 73, y: y + 196 }, { x: selfX + 73, y: cy - 36 }),
+    matrix(x + 510, y + 126, 72, 54, "memory", "orange", 5, 3, 7),
+    semanticFlow("orange", "encoder-memory", { x: x + 582, y: y + 153 }, { x: crossX + 77, y: y + 202 }, { x: crossX + 77, y: cy - 38 }),
+    rect(x + 300, y + 126, 150, 54, "Source padding mask", "orange", "cross-attention keys"),
+    semanticFlow("orange", "memory-mask", { x: x + 375, y: y + 180 }, { x: crossX + 108, y: y + 220 }, { x: crossX + 108, y: cy - 38 }),
+    semanticFlow("blue", "residual-1", { x: inputX + 27, y: cy - 26 }, { x: inputX + 27, y: y + 246 }, { x: add1X + 54, y: y + 246 }, { x: add1X + 54, y: cy - 31 }),
+    semanticFlow("green", "residual-2", { x: add1X + 54, y: cy + 31 }, { x: add1X + 54, y: cy + 70 }, { x: add2X + 54, y: cy + 70 }, { x: add2X + 54, y: cy + 31 }),
+    semanticFlow("violet", "residual-3", { x: add2X + 54, y: cy + 31 }, { x: add2X + 54, y: cy + 102 }, { x: add3X + 54, y: cy + 102 }, { x: add3X + 54, y: cy + 31 }),
+    text(x + width / 2, y + height - 25, "每个目标位置只能看见自身及更早位置；cross-attention 读取完整 Encoder memory", false),
+  ];
+}
+
+function tensor2tensorEncoderDiagram(bounds: Bounds): DetailPrimitive[] {
+  return transformerEncoderDiagram(bounds).map((primitive) => {
+    if (primitive.kind === "text" && primitive.value.includes("EncoderLayer")) {
+      return { ...primitive, value: "EncoderLayer × 6 · hidden=512 · heads=8 · filter=2048" };
+    }
+    if (primitive.kind === "rect" && primitive.label === "Feed-forward") {
+      return { ...primitive, note: "conv_hidden_relu · filter=2048" };
+    }
+    if (primitive.kind === "rect" && primitive.label === "Source padding mask") {
+      return { ...primitive, label: "Encoder attention bias", note: "ignore padding · [B,1,1,S]" };
+    }
+    if (primitive.kind === "text" && primitive.value.includes("每层保持")) {
+      return { ...primitive, value: "每层使用 attention bias；conv_hidden_relu 保持 [B,S,H]" };
+    }
+    return primitive;
+  });
+}
+
+function tensor2tensorDecoderDiagram(bounds: Bounds): DetailPrimitive[] {
+  return transformerDecoderDiagram(bounds).map((primitive) => {
+    if (primitive.kind === "text" && primitive.value.includes("DecoderLayer")) {
+      return { ...primitive, value: "DecoderLayer × 6 · bias-masked attention + conv_hidden_relu" };
+    }
+    if (primitive.kind === "rect" && primitive.label === "Feed-forward") {
+      return { ...primitive, note: "conv_hidden_relu · filter=2048" };
+    }
+    if (primitive.kind === "rect" && primitive.label === "Target pad ∧ causal mask") {
+      return { ...primitive, label: "Decoder self-attention bias", note: "lower triangle · [B,T,T]" };
+    }
+    if (primitive.kind === "rect" && primitive.label === "Source padding mask") {
+      return { ...primitive, label: "Encoder-decoder bias", note: "encoder padding" };
+    }
+    if (primitive.kind === "text" && primitive.value.includes("每个目标位置")) {
+      return { ...primitive, value: "bias-masked self-attention；cross-attention 读取完整 Encoder output" };
+    }
+    return primitive;
+  });
 }
 
 function feedforwardDiagram(bounds: Bounds): DetailPrimitive[] {
@@ -270,7 +450,7 @@ function recurrentDiagram(bounds: Bounds): DetailPrimitive[] {
   const cy = y + bounds.height / 2;
   const gateX = x + 242;
   return [
-    rect(x + 224, y + 66, 102, 232, "", "violet", undefined, "frame"),
+    rect(x + 224, y + 66, 102, 232, "", "violet", undefined, "frame", "semantic-group"),
     text(x + 275, y + 84, "LSTM gates", true, "violet"),
     wire({ x, y: cy }, { x: x + 26, y: cy }),
     flow({ x: x + 26, y: cy }, { x: x + 34, y: y + 110 }, { x: x + 46, y: y + 110 }),
@@ -371,6 +551,11 @@ export function buildModuleDetail(kind: NodeDetailKind, bounds: Bounds): ModuleD
     attention: attentionDiagram,
     feedforward: feedforwardDiagram,
     "add-norm": addNormDiagram,
+    "sinusoidal-embedding": sinusoidalEmbeddingDiagram,
+    "transformer-encoder": transformerEncoderDiagram,
+    "transformer-decoder": transformerDecoderDiagram,
+    "tensor2tensor-encoder": tensor2tensorEncoderDiagram,
+    "tensor2tensor-decoder": tensor2tensorDecoderDiagram,
     convolution: convolutionDiagram,
     "tensor-transform": tensorTransformDiagram,
     embedding: embeddingDiagram,

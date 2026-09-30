@@ -4,6 +4,7 @@ import {
   buildAtomicHierarchyProjection,
   projectedAtomicExit,
   projectedAtomicExitForModule,
+  projectedAtomicEntryForModule,
   projectedNestedExitBridgeIds,
   projectedSceneBoundaryPorts,
 } from "./atomic-hierarchy";
@@ -22,6 +23,13 @@ import type { NodeDetailKind, Point } from "./types";
 
 function pointsEqual(first: Point, second: Point): boolean {
   return Math.abs(first.x - second.x) < 0.01 && Math.abs(first.y - second.y) < 0.01;
+}
+
+function pointStrictlyInside(point: Point, bounds: { x: number; y: number; width: number; height: number }): boolean {
+  return point.x > bounds.x + 0.01
+    && point.x < bounds.x + bounds.width - 0.01
+    && point.y > bounds.y + 0.01
+    && point.y < bounds.y + bounds.height - 0.01;
 }
 
 function expandableChild(kind: NodeDetailKind, label: RegExp) {
@@ -94,7 +102,8 @@ describe("bottom-up atomic hierarchy routing", () => {
       const child = parent.expandedChild!.level;
       const parentFlows = parent.diagram.primitives.filter((primitive) => primitive.kind === "flow");
       const childFlows = child.diagram.primitives.filter((primitive) => primitive.kind === "flow");
-      const incoming = parentFlows.filter((flow) => pointsEqual(flow.points.at(-1)!, child.diagram.entryPoint));
+      const atomicEntry = projectedAtomicEntryForModule(projection, child.levelKey)?.point ?? child.diagram.entryPoint;
+      const incoming = parentFlows.filter((flow) => pointsEqual(flow.points.at(-1)!, atomicEntry));
       const atomicExit = projectedAtomicExitForModule(projection, child.levelKey)!;
       const outgoing = parentFlows.filter((flow) => pointsEqual(flow.points[0], atomicExit.point));
       const childEntry = childFlows.filter((flow) => pointsEqual(flow.points[0], child.diagram.entryPoint));
@@ -207,7 +216,8 @@ describe("bottom-up atomic hierarchy routing", () => {
 
     expect(incoming.length).toBeGreaterThan(0);
     expect(outgoing.length).toBeGreaterThan(0);
-    expect(incoming.every((route) => pointsEqual(route.points.at(-1)!, tree.diagram.entryPoint))).toBe(true);
+    const atomicEntry = projectedAtomicEntryForModule(projection, tree.levelKey)?.point ?? tree.diagram.entryPoint;
+    expect(incoming.every((route) => pointsEqual(route.points.at(-1)!, atomicEntry))).toBe(true);
     expect(incoming.every((route) => route.markerEnd === false)).toBe(true);
     expect(atomicExit.bridgeEdgeIds.length).toBeGreaterThan(0);
     expect(pointsEqual(atomicExit.point, tree.diagram.exitPoint)).toBe(false);
@@ -215,6 +225,27 @@ describe("bottom-up atomic hierarchy routing", () => {
     expect(outgoing.every((route) => pointsEqual(route.points[0], atomicExit.point))).toBe(true);
     expect(outgoing.every((route) => route.foreground)).toBe(true);
     expect(outgoing.every((route) => route.markerEnd !== false)).toBe(true);
+
+    // The atomic terminal stub may leave the real port through the parent
+    // frame, but the external search must stay outside that frame afterwards.
+    for (const route of outgoing) {
+      const firstOutsideIndex = route.points.findIndex((point, index) => (
+        index > 0 && !pointStrictlyInside(point, expandedDual.bounds)
+      ));
+      expect(firstOutsideIndex).toBeGreaterThan(0);
+      expect(route.points.slice(firstOutsideIndex + 1).some((point) => pointStrictlyInside(point, expandedDual.bounds))).toBe(false);
+    }
+    for (const route of incoming) {
+      let lastOutsideIndex = -1;
+      for (let index = route.points.length - 2; index >= 0; index -= 1) {
+        if (!pointStrictlyInside(route.points[index], expandedDual.bounds)) {
+          lastOutsideIndex = index;
+          break;
+        }
+      }
+      expect(lastOutsideIndex).toBeGreaterThanOrEqual(0);
+      expect(route.points.slice(0, lastOutsideIndex).some((point) => pointStrictlyInside(point, expandedDual.bounds))).toBe(false);
+    }
   });
 
   it("connects a drilled-down VAE terminal directly to the next scene module", () => {

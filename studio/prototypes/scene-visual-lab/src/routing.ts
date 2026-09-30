@@ -150,6 +150,26 @@ function midpointPort(node: LabNode, side: PortSide): Point {
   return { x: x + width / 2, y: y + height };
 }
 
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.max(minimum, Math.min(maximum, value));
+}
+
+/**
+ * Projects an atomic port onto its owning scene node's frame. The projected
+ * point is the only place where an atomic route is allowed to cross the
+ * parent frame; the obstacle search starts outside the frame.
+ */
+function boundaryPointForInteriorPort(node: LabNode, port: Point, side: PortSide): Point {
+  const { x, y, width, height } = node.bounds;
+  const inset = Math.min(NODE_CLEARANCE, Math.max(2, Math.min(width, height) / 4));
+  if (side === "left" || side === "right") {
+    const axis = clamp(port.y, y + inset, y + height - inset);
+    return { x: side === "left" ? x : x + width, y: axis };
+  }
+  const axis = clamp(port.x, x + inset, x + width - inset);
+  return { x: axis, y: side === "top" ? y : y + height };
+}
+
 function anchors(
   source: LabNode,
   target: LabNode,
@@ -593,13 +613,19 @@ function adaptiveRoutes(scene: LabScene, boundaryPorts?: SceneBoundaryPortMap): 
     const targetPort = record.targetPort ?? midpointPort(record.target, record.targetSide);
     const sourceVector = sideVector(record.sourceSide);
     const targetVector = sideVector(record.targetSide);
+    const sourceBoundary = record.sourceIsInterior
+      ? boundaryPointForInteriorPort(record.source, sourcePort, record.sourceSide)
+      : sourcePort;
+    const targetBoundary = record.targetIsInterior
+      ? boundaryPointForInteriorPort(record.target, targetPort, record.targetSide)
+      : targetPort;
     const start = {
-      x: sourcePort.x + sourceVector.x * PORT_STUB,
-      y: sourcePort.y + sourceVector.y * PORT_STUB,
+      x: sourceBoundary.x + sourceVector.x * PORT_STUB,
+      y: sourceBoundary.y + sourceVector.y * PORT_STUB,
     };
     const end = {
-      x: targetPort.x + targetVector.x * PORT_STUB,
-      y: targetPort.y + targetVector.y * PORT_STUB,
+      x: targetBoundary.x + targetVector.x * PORT_STUB,
+      y: targetBoundary.y + targetVector.y * PORT_STUB,
     };
     const obstacles = scene.nodes
       .filter((node) => !(
@@ -608,7 +634,15 @@ function adaptiveRoutes(scene: LabScene, boundaryPorts?: SceneBoundaryPortMap): 
       ))
       .map((node) => inflate(node.bounds, NODE_CLEARANCE));
     const searched = orthogonalSearch(start, end, obstacles, scene, usedSegments);
-    const compacted = compact([sourcePort, start, ...searched, end, targetPort]);
+    const compacted = compact([
+      sourcePort,
+      ...(record.sourceIsInterior ? [sourceBoundary] : []),
+      start,
+      ...searched,
+      end,
+      ...(record.targetIsInterior ? [targetBoundary] : []),
+      targetPort,
+    ]);
     for (let index = 0; index < compacted.length - 1; index += 1) {
       usedSegments.push({ start: compacted[index], end: compacted[index + 1] });
     }

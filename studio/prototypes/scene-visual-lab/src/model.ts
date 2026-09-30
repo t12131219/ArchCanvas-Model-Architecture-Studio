@@ -1,4 +1,4 @@
-import type { Bounds, LabPatch, LabScene } from "./types";
+import type { Bounds, LabNode, LabPatch, LabScene } from "./types";
 
 export function cloneScene(scene: LabScene): LabScene {
   return {
@@ -6,6 +6,11 @@ export function cloneScene(scene: LabScene): LabScene {
     nodes: scene.nodes.map((node) => ({ ...node, bounds: { ...node.bounds } })),
     edges: scene.edges.map((edge) => ({ ...edge })),
   };
+}
+
+export function editableNodeBounds(scene: LabScene, displayedNode: LabNode): Bounds {
+  const storedNode = scene.nodes.find((node) => node.scene_node_id === displayedNode.scene_node_id);
+  return { ...(storedNode?.bounds ?? displayedNode.bounds) };
 }
 
 export function applyVisualPatch(scene: LabScene, patch: LabPatch): LabScene {
@@ -50,12 +55,12 @@ export function applyVisualPatch(scene: LabScene, patch: LabPatch): LabScene {
   return { ...scene, edges: scene.edges.filter((edge) => edge.scene_edge_id !== patch.edgeId) };
 }
 
-export function clampBounds(bounds: Bounds, scene: LabScene): Bounds {
+export function clampBounds(bounds: Bounds, _scene: LabScene): Bounds {
   const width = Math.max(72, Math.min(320, bounds.width));
   const height = Math.max(42, Math.min(180, bounds.height));
   return {
-    x: Math.max(12, Math.min(scene.paper_width - width - 12, bounds.x)),
-    y: Math.max(12, Math.min(scene.paper_height - height - 12, bounds.y)),
+    x: bounds.x,
+    y: bounds.y,
     width,
     height,
   };

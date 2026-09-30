@@ -32,28 +32,37 @@ export function expandScene(
     node.scene_node_id,
     Math.max(0, size.width - node.bounds.width),
   ]));
+  const verticalGrowthById = new Map(expanded.map(({ node, size }) => [
+    node.scene_node_id,
+    Math.max(0, size.height - EXPANDED_DETAIL_SIZES[node.detail_kind!].height),
+  ]));
   const expandedIds = new Set(expanded.map(({ node }) => node.scene_node_id));
 
   const nodes: LabNode[] = scene.nodes.map((node) => {
     const shiftX = expanded.reduce((sum, item) => (
       item.node.bounds.x < node.bounds.x ? sum + (deltaById.get(item.node.scene_node_id) ?? 0) : sum
     ), 0);
+    const centerY = node.bounds.y + node.bounds.height / 2;
+    const shiftY = expanded.reduce((sum, item) => (
+      item.node.bounds.y + item.node.bounds.height / 2 < centerY
+        ? sum + (verticalGrowthById.get(item.node.scene_node_id) ?? 0)
+        : sum
+    ), 0);
     if (!expandedIds.has(node.scene_node_id) || !node.detail_kind) {
       return {
         ...node,
-        bounds: { ...node.bounds, x: node.bounds.x + shiftX },
+        bounds: { ...node.bounds, x: node.bounds.x + shiftX, y: node.bounds.y + shiftY },
         detail_expanded: undefined,
       };
     }
 
     const size = sizeOverrides[node.scene_node_id] ?? EXPANDED_DETAIL_SIZES[node.detail_kind];
-    const centerY = node.bounds.y + node.bounds.height / 2;
     const naturalHeight = EXPANDED_DETAIL_SIZES[node.detail_kind].height;
     return {
       ...node,
       bounds: {
         x: node.bounds.x + shiftX,
-        y: Math.max(32, centerY - naturalHeight / 2),
+        y: centerY - naturalHeight / 2 + shiftY,
         width: size.width,
         height: size.height,
       },

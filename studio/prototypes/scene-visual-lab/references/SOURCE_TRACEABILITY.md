@@ -190,6 +190,45 @@
 
 简化边界：未展示 indices、ceil mode、dilation、padding 对边界窗口的影响，也未区分 global/adaptive pooling。
 
+## 10. Classic Transformer Encoder-Decoder Scene
+
+- 场景：`classic-transformer`
+- 父模块：`sinusoidal-embedding`、`transformer-encoder`、`transformer-decoder`
+- 当前项目源码：[classic_transformer.py](../../../../../Article/classic_transformer.py)；`Transformer.py` 与其 SHA-256 完全相同
+
+| 可见结构 | 当前源码证据 |
+|---|---|
+| `Source/Target embedding`：lookup × `sqrt(d_model)` + sinusoidal PE + dropout | `TokenEmbedding.forward()` 156-157 行；`SinusoidalPositionalEncoding` 82-129 行 |
+| `Encoder Stack ×6` | `TransformerConfig.num_encoder_layers=6` 48 行；`TransformerEncoder` 构造与调用 487-528 行 |
+| Encoder layer：self-attention → Add & Norm → FFN → Add & Norm | `EncoderLayer.forward()` 362-384 行；默认 `post_norm=True` 57-59 行 |
+| `Decoder Stack ×6` | `TransformerConfig.num_decoder_layers=6` 49 行；`TransformerDecoder` 531-582 行 |
+| Decoder layer：masked self-attention → cross-attention → FFN，每段都有残差与 LayerNorm | `DecoderLayer.forward()` 441-484 行 |
+| Source padding mask | `make_padding_mask()` 677-689 行；布尔值 `True` 表示允许注意 |
+| Target padding ∧ causal mask | `make_tgt_mask()` 716-733 行 |
+| Encoder memory 作为 cross-attention 的 K/V，source mask 作为 memory mask | `forward()` 811-849 行 |
+| `Linear(512 → V)` logits | `output_projection` 649-653 行；`forward()` 830、852 行 |
+| Target embedding 与 output projection 共享 `W/Wᵀ` | `_tie_weights()` 670-675 行；默认开关 61-62 行 |
+
+场景中的 `Encoder call` 和 `Decoder call` 是可视化参数汇聚点，不是源码中的额外神经网络层。它们把 hidden states、mask 和 memory 汇成可展开父模块的单一边界入口，使外部路由遵守统一端口契约。Encoder/Decoder 内部的 attention、Add & Norm、FFN 可以继续递归展开；内部图固定采用当前源码的 ReLU、post-LN、8 heads、`d_model=512`、`d_ff=2048`，没有泛化成其他 Transformer 变体。
+
+## 11. Tensor2Tensor Transformer Comparison Scene
+
+- 场景：`tensor2tensor-transformer`
+- 父模块：`tensor-transform`、`transformer-encoder`、`tensor-transform`、`transformer-decoder`
+- 本地权威源码：`Constraint relationship of architecture diagram/tensor2tensor-1.0.14.tar.gz` 内的 `tensor2tensor/models/transformer.py`
+
+| 可见结构 | Tensor2Tensor 1.0.14 证据 | 与 `classic-transformer` 的对比 |
+|---|---|---|
+| `Encoder prepare` | `transformer_prepare_encoder()`：`flatten4d3d`、padding bias、`target_space` embedding、`add_timing_signal_1d` | 经典场景将 token embedding、正弦 PE 和 source padding mask 分成显式节点 |
+| `Target space id` | `target_space_embedding` 加到 encoder input | 经典实现没有 target-space 条件支路 |
+| `Encoder attention bias` | `attention_bias_ignore_padding(encoder_padding)` | 经典实现向 attention 传递 `[B,1,1,S]` 布尔 padding mask |
+| `Decoder prepare` | `shift_left_3d(targets)` 与 timing signal | 经典实现用目标 token embedding 与 padding ∧ causal mask |
+| `Decoder self-attention bias` | `attention_bias_lower_triangle()` | 经典实现构造布尔 causal mask，再与 target padding mask 合并 |
+| `Encoder/Decoder Stack ×6` | `transformer_encoder()` / `transformer_decoder()` 的六次 layer 循环 | 两者都使用 Post-LN 残差顺序；Tensor2Tensor 的 FFN 默认是 `conv_hidden_relu` |
+| `Shared softmax` | `shared_embedding_and_softmax_weights = True` | 经典场景显式显示 target embedding 与 `Wᵀ` output projection 共享 |
+
+该场景与经典场景共用父子模块展开、二级 attention/FFN drill-down、原子收束和逐层路由模式，因此可以在同一画布中直接比较“显式 mask + embedding”与“attention bias + prepare 阶段”的结构差异。共享的六层模块图是有意的：两份源码的 Encoder/Decoder 拓扑一致，差异集中在输入准备、mask 表达、FFN 实现和输出权重契约。
+
 ## 外层箭头与展开兼容
 
 内部图与外层场景共用以下契约：
