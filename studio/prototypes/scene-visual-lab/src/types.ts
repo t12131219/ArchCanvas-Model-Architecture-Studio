@@ -30,6 +30,15 @@ export type NodeDetailKind =
   | "transformer-decoder"
   | "tensor2tensor-encoder"
   | "tensor2tensor-decoder"
+  | "paper-transformer-encoder"
+  | "paper-transformer-decoder"
+  | "paper-tensor2tensor-encoder"
+  | "paper-tensor2tensor-decoder"
+  | "paper-sinusoidal-embedding"
+  | "paper-tensor-transform"
+  | "paper-attention"
+  | "paper-feedforward"
+  | "paper-add-norm"
   | "convolution"
   | "tensor-transform"
   | "embedding"
@@ -75,6 +84,9 @@ export interface LabNode {
   secondary_label: string;
   detail_kind?: NodeDetailKind;
   detail_expanded?: boolean;
+  layout_lane?: string;
+  layout_rank?: number;
+  paper_tone?: "encoder" | "decoder" | "input" | "output" | "neutral";
 }
 
 export type EdgeRelation =
@@ -92,6 +104,7 @@ export interface LabEdge {
   target_scene_node_id: string;
   relation: EdgeRelation;
   label: string;
+  target_port_role?: string;
 }
 
 export interface LabScene {
@@ -102,6 +115,7 @@ export interface LabScene {
   paper_height: number;
   nodes: LabNode[];
   edges: LabEdge[];
+  layout_profile?: "freeform" | "paper";
 }
 
 export type RouteStyle = "direct" | "orthogonal" | "channel" | "curve" | "adaptive";
@@ -117,6 +131,7 @@ export interface SceneBoundaryPorts {
   exitSide?: PortSide;
   entryIsInterior?: boolean;
   exitIsInterior?: boolean;
+  semanticInputs?: Record<string, { point: Point; side: PortSide; isInterior?: boolean }>;
 }
 
 export type SceneBoundaryPortMap = Record<string, SceneBoundaryPorts>;

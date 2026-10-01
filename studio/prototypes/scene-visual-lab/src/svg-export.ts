@@ -44,6 +44,14 @@ const NODE_COLORS: Record<NodeShape, { fill: string; stroke: string }> = {
   io: { fill: "#f8edf1", stroke: "#9b5268" },
 };
 
+const PAPER_NODE_COLORS: Record<NonNullable<LabNode["paper_tone"]>, { fill: string; stroke: string }> = {
+  encoder: { fill: "#e7f4fb", stroke: "#245f85" },
+  decoder: { fill: "#fbeaf0", stroke: "#8b405e" },
+  input: { fill: "#f8e3ea", stroke: "#96536a" },
+  output: { fill: "#e6f4e8", stroke: "#3f7850" },
+  neutral: { fill: "#fff9dc", stroke: "#7b6b29" },
+};
+
 function escapeXml(value: string): string {
   return value.replace(/[<>&"']/g, (character) => ({
     "<": "&lt;",
@@ -151,11 +159,14 @@ function renderExpandedNode(
   level: InlineDetailLevel,
   hiddenFlowIds: ReadonlySet<string>,
   foregroundFlowIds: ReadonlySet<string>,
+  paperMode: boolean,
 ): string {
   const { x, y, width, height } = node.bounds;
-  const colors = NODE_COLORS[node.shape];
+  const colors = paperMode
+    ? PAPER_NODE_COLORS[node.paper_tone ?? "neutral"]
+    : NODE_COLORS[node.shape];
   const detail = renderInlineDetailLevel(level, hiddenFlowIds, foregroundFlowIds);
-  return `<g class="scene-node expanded-node" data-node-id="${escapeXml(node.scene_node_id)}"><rect class="node-surface expanded-surface" x="${x}" y="${y}" width="${width}" height="${height}" rx="6" fill="#fff" stroke="${colors.stroke}"/><rect class="expanded-header" x="${x}" y="${y}" width="${width}" height="50" rx="6" fill="${colors.fill}"/><line class="expanded-divider" x1="${x}" y1="${y + 50}" x2="${x + width}" y2="${y + 50}"/><text class="expanded-title" x="${x + 16}" y="${y + 22}">${escapeXml(node.label)}</text><text class="expanded-subtitle" x="${x + 16}" y="${y + 39}">${escapeXml(DETAIL_KIND_NAMES[level.kind])}</text><g class="module-detail detail-${level.kind}">${detail}</g></g>`;
+  return `<g class="scene-node expanded-node${paperMode ? " paper-node" : ""}" data-node-id="${escapeXml(node.scene_node_id)}"><rect class="node-surface expanded-surface" x="${x}" y="${y}" width="${width}" height="${height}" rx="6" fill="#fff" stroke="${colors.stroke}"/><rect class="expanded-header" x="${x}" y="${y}" width="${width}" height="50" rx="6" fill="${colors.fill}"/><line class="expanded-divider" x1="${x}" y1="${y + 50}" x2="${x + width}" y2="${y + 50}"/><text class="expanded-title" x="${x + 16}" y="${y + 22}">${escapeXml(node.label)}</text><text class="expanded-subtitle" x="${x + 16}" y="${y + 39}">${escapeXml(DETAIL_KIND_NAMES[level.kind])}</text><g class="module-detail detail-${level.kind}">${detail}</g></g>`;
 }
 
 function renderNode(
@@ -164,23 +175,26 @@ function renderNode(
   detailTree?: InlineDetailLevel,
   hiddenFlowIds: ReadonlySet<string> = new Set(),
   foregroundFlowIds: ReadonlySet<string> = new Set(),
+  paperMode = false,
 ): string {
   if (node.detail_expanded && node.detail_kind && detailTree) {
-    return renderExpandedNode(node, detailTree, hiddenFlowIds, foregroundFlowIds);
+    return renderExpandedNode(node, detailTree, hiddenFlowIds, foregroundFlowIds, paperMode);
   }
   const { x, y, width, height } = node.bounds;
-  const colors = NODE_COLORS[node.shape];
-  const fill = style === "compact" ? "#ffffff" : colors.fill;
+  const colors = paperMode
+    ? PAPER_NODE_COLORS[node.paper_tone ?? "neutral"]
+    : NODE_COLORS[node.shape];
+  const fill = paperMode ? colors.fill : style === "compact" ? "#ffffff" : colors.fill;
   const polygon = polygonPoints(node);
   const symbol = node.shape === "add" ? "+" : node.shape === "multiply" ? "&#215;" : node.shape === "concat" ? "||" : null;
-  const detailed = ["tensor", "convolution", "attention", "normalization"].includes(node.shape) && width >= 110;
+  const detailed = !paperMode && ["tensor", "convolution", "attention", "normalization"].includes(node.shape) && width >= 110;
   const labelX = detailed ? x + width * 0.68 : x + width / 2;
   const labelWidth = detailed ? width * 0.53 : width - 22;
   const shape = symbol
     ? `<circle class="node-surface" cx="${x + width / 2}" cy="${y + height * 0.42}" r="${Math.min(width, height) * 0.27}" fill="${fill}" stroke="${colors.stroke}"/><text class="node-symbol" x="${x + width / 2}" y="${y + height * 0.42 + 8}">${symbol}</text>`
     : polygon
       ? `<polygon class="node-surface" points="${polygon}" fill="${fill}" stroke="${colors.stroke}"/>`
-      : `<rect class="node-surface" x="${x}" y="${y}" width="${width}" height="${height}" rx="${node.shape === "io" ? Math.min(26, height / 2) : node.shape === "normalization" ? 14 : 5}" fill="${fill}" stroke="${colors.stroke}"/>`;
+      : `<rect class="node-surface" x="${x}" y="${y}" width="${width}" height="${height}" rx="${paperMode ? 4 : node.shape === "io" ? Math.min(26, height / 2) : node.shape === "normalization" ? 14 : 5}" fill="${fill}" stroke="${colors.stroke}"/>`;
   const glyphX = x + 12;
   const glyphY = y + Math.max(11, (height - Math.min(44, height - 22)) / 2);
   const glyphWidth = Math.min(52, width * 0.37);
@@ -197,7 +211,7 @@ function renderNode(
   } else if (node.shape === "normalization" && detailed) {
     const bars = [-0.26, 0, 0.26].map((ratio) => `<line x1="${glyphX + glyphWidth / 2 + ratio * glyphWidth}" y1="${glyphY + 8}" x2="${glyphX + glyphWidth / 2 + ratio * glyphWidth}" y2="${glyphY + glyphHeight - 8}"/>`).join("");
     glyph = `<g class="node-glyph" stroke="${colors.stroke}"><rect x="${glyphX}" y="${glyphY}" width="${glyphWidth}" height="${glyphHeight}" rx="${glyphHeight / 2}" fill="${fill}"/>${bars}<text class="node-glyph-text" x="${glyphX + glyphWidth / 2}" y="${glyphY + glyphHeight / 2 + 3}">&#956; &#963;</text></g>`;
-  } else if (node.shape === "operation" && width >= 100) {
+  } else if (!paperMode && node.shape === "operation" && width >= 100) {
     glyph = `<g class="node-glyph operation-glyph" stroke="${colors.stroke}">${[0, 1, 2].map((index) => `<rect x="${x + 10}" y="${y + 13 + index * 11}" width="${15 + index * 3}" height="6" rx="1.5" fill="${colors.stroke}"/>`).join("")}</g>`;
   }
   const maxCharacters = Math.max(5, Math.floor(labelWidth / (style === "compact" ? 7.1 : 6.7)));
@@ -209,10 +223,10 @@ function renderNode(
   const detail = symbol || style === "compact" || height < 58
     ? ""
     : `<text class="node-detail" x="${labelX}" y="${y + height - 11}">${escapeXml(node.secondary_label)}</text>`;
-  const rail = style === "technical" && !symbol
+  const rail = !paperMode && style === "technical" && !symbol
     ? `<rect x="${x}" y="${y}" width="5" height="${height}" rx="2" fill="${colors.stroke}"/><text class="node-kind" x="${x + 13}" y="${y + 14}">${node.shape.toUpperCase()}</text>`
     : "";
-  return `<g class="scene-node node-${style}" data-node-id="${escapeXml(node.scene_node_id)}">${shape}${glyph}${rail}<text class="node-label${symbol ? " symbol-label" : ""}" x="${textX}" y="${textY}">${text}</text>${detail}</g>`;
+  return `<g class="scene-node node-${style}${paperMode ? " paper-node" : ""}" data-node-id="${escapeXml(node.scene_node_id)}">${shape}${glyph}${rail}<text class="node-label${symbol ? " symbol-label" : ""}" x="${textX}" y="${textY}">${text}</text>${detail}</g>`;
 }
 
 function edgeLabelPoint(route: RoutedEdge, style: EdgeLabelStyle): Point & { angle: number } {
@@ -287,12 +301,13 @@ export function renderSceneSvg(
     detailTrees[item.scene_node_id],
     atomicRoutingPlan?.hiddenFlowIds,
     atomicRoutingPlan?.foregroundFlowIds,
+    scene.layout_profile === "paper",
   )).join("");
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="scene-title scene-description" viewBox="0 0 ${scene.paper_width} ${scene.paper_height}">
   <title id="scene-title">${escapeXml(scene.title)}</title><desc id="scene-description">${escapeXml(scene.description)}</desc>
   <defs>${renderMarkers()}<pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="#dfe3e1" stroke-width=".7"/></pattern></defs>
   <style>
-    text{font-family:Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:0}.scene-node>*{vector-effect:non-scaling-stroke;stroke-width:1.35}.node-label{fill:#202522;font-size:13px;font-weight:650;text-anchor:middle}.node-label.symbol-label{font-size:10px;font-weight:700}.node-detail{fill:#68706a;font-size:10px;text-anchor:middle}.node-kind{fill:#68706a;font-size:8px;font-weight:750}.node-symbol{fill:#202522;stroke:none;font-size:25px;font-weight:500;text-anchor:middle}.node-glyph *,.node-grid *{vector-effect:non-scaling-stroke;stroke-width:1px}.node-grid{opacity:.5}.node-glyph-text{fill:#303632;stroke:none;font-size:7px;font-weight:700;text-anchor:middle}.operation-glyph{opacity:.48}.scene-edge path{stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}.edge-label{fill:#303632;font-size:10px;font-weight:650;text-anchor:middle;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}.edge-label-plate{fill:#fff;stroke:#cfd5d1;stroke-width:1px;vector-effect:non-scaling-stroke}.node-compact .node-label{font-size:12px}.node-compact .node-detail{display:none}.expanded-header{stroke:none}.expanded-divider{stroke:#cfd5d1;stroke-width:1px}.expanded-title{fill:#202522;font-size:14px;font-weight:650;text-anchor:start}.expanded-subtitle{fill:#68706a;font-size:9px;text-anchor:start}.detail-flow{fill:none;stroke:#68706a;stroke-width:1.25px;stroke-linecap:round;stroke-linejoin:round}.detail-flow.detail-tone-blue{stroke:#3b789e}.detail-flow.detail-tone-green{stroke:#397b63}.detail-flow.detail-tone-pink{stroke:#a45d7d}.detail-flow.detail-tone-orange{stroke:#a5652e}.detail-flow.detail-tone-violet{stroke:#7156a0}.detail-shape{color:#69736d}.detail-shape rect,.detail-shape circle{fill:#f4f6f4;stroke:currentColor;stroke-width:1.1px}.detail-tone-blue{color:#3b789e}.detail-tone-blue rect,.detail-tone-blue circle{fill:#e5f3fb}.detail-tone-green{color:#397b63}.detail-tone-green rect,.detail-tone-green circle{fill:#e6f5ec}.detail-tone-pink{color:#a45d7d}.detail-tone-pink rect,.detail-tone-pink circle{fill:#f9e7ef}.detail-tone-orange{color:#a5652e}.detail-tone-orange rect,.detail-tone-orange circle{fill:#fff0df}.detail-tone-violet{color:#7156a0}.detail-tone-violet rect,.detail-tone-violet circle{fill:#eee9f8}.detail-frame>rect{fill:#fff8ef;stroke-width:1.4px}.detail-matrix .node-grid{opacity:.55}.detail-matrix-label,.detail-box-label,.detail-symbol{fill:#27302b;stroke:none;font-size:9px;font-weight:650;text-anchor:middle}.detail-symbol{font-size:17px;font-weight:500}.detail-note{fill:#626b65;stroke:none;font-size:7.5px;text-anchor:middle}.detail-text{fill:#5e6862;font-size:8.5px;font-weight:400}.detail-text.emphasis{fill:#27302b;font-size:10px;font-weight:650}.detail-text.detail-tone-orange{fill:#8d5426}.nested-inline-surface{fill:#fff;stroke:#87928b;stroke-width:1.4px}.nested-inline-header{fill:#f3f6f3}.nested-inline-divider{stroke:#cbd3ce;stroke-width:1px}.nested-detail-title{fill:#202522;font-size:11px;font-weight:650;text-anchor:start}.nested-detail-subtitle{fill:#68706a;font-size:8px;text-anchor:start}
+    text{font-family:Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:0}.scene-node>*{vector-effect:non-scaling-stroke;stroke-width:1.35}.node-label{fill:#202522;font-size:13px;font-weight:650;text-anchor:middle}.node-label.symbol-label{font-size:10px;font-weight:700}.node-detail{fill:#68706a;font-size:10px;text-anchor:middle}.node-kind{fill:#68706a;font-size:8px;font-weight:750}.node-symbol{fill:#202522;stroke:none;font-size:25px;font-weight:500;text-anchor:middle}.node-glyph *,.node-grid *{vector-effect:non-scaling-stroke;stroke-width:1px}.node-grid{opacity:.5}.node-glyph-text{fill:#303632;stroke:none;font-size:7px;font-weight:700;text-anchor:middle}.operation-glyph{opacity:.48}.scene-edge path{stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}.edge-label{fill:#303632;font-size:10px;font-weight:650;text-anchor:middle;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}.edge-label-plate{fill:#fff;stroke:#cfd5d1;stroke-width:1px;vector-effect:non-scaling-stroke}.node-compact .node-label{font-size:12px}.node-compact .node-detail{display:none}.paper-node>*{stroke-width:1.8}.paper-node .node-label{font-size:14px;font-weight:700}.paper-node .node-detail{fill:#4d5751}.expanded-header{stroke:none}.expanded-divider{stroke:#cfd5d1;stroke-width:1px}.expanded-title{fill:#202522;font-size:14px;font-weight:650;text-anchor:start}.expanded-subtitle{fill:#68706a;font-size:9px;text-anchor:start}.paper-node .expanded-title{font-size:15px;font-weight:700}.detail-flow{fill:none;stroke:#68706a;stroke-width:1.25px;stroke-linecap:round;stroke-linejoin:round}.detail-flow.detail-tone-blue{stroke:#3b789e}.detail-flow.detail-tone-green{stroke:#397b63}.detail-flow.detail-tone-pink{stroke:#a45d7d}.detail-flow.detail-tone-orange{stroke:#a5652e}.detail-flow.detail-tone-violet{stroke:#7156a0}.detail-shape{color:#69736d}.detail-shape rect,.detail-shape circle{fill:#f4f6f4;stroke:currentColor;stroke-width:1.1px}.detail-tone-blue{color:#3b789e}.detail-tone-blue rect,.detail-tone-blue circle{fill:#e5f3fb}.detail-tone-green{color:#397b63}.detail-tone-green rect,.detail-tone-green circle{fill:#e6f5ec}.detail-tone-pink{color:#a45d7d}.detail-tone-pink rect,.detail-tone-pink circle{fill:#f9e7ef}.detail-tone-orange{color:#a5652e}.detail-tone-orange rect,.detail-tone-orange circle{fill:#fff0df}.detail-tone-violet{color:#7156a0}.detail-tone-violet rect,.detail-tone-violet circle{fill:#eee9f8}.detail-frame>rect{fill:#fff8ef;stroke-width:1.4px}.detail-matrix .node-grid{opacity:.55}.detail-matrix-label,.detail-box-label,.detail-symbol{fill:#27302b;stroke:none;font-size:9px;font-weight:650;text-anchor:middle}.detail-symbol{font-size:17px;font-weight:500}.detail-note{fill:#626b65;stroke:none;font-size:7.5px;text-anchor:middle}.detail-text{fill:#5e6862;font-size:8.5px;font-weight:400}.detail-text.emphasis{fill:#27302b;font-size:10px;font-weight:650}.detail-text.detail-tone-orange{fill:#8d5426}.nested-inline-surface{fill:#fff;stroke:#87928b;stroke-width:1.4px}.nested-inline-header{fill:#f3f6f3}.nested-inline-divider{stroke:#cbd3ce;stroke-width:1px}.nested-detail-title{fill:#202522;font-size:11px;font-weight:650;text-anchor:start}.nested-detail-subtitle{fill:#68706a;font-size:8px;text-anchor:start}
   </style>
   <rect width="100%" height="100%" fill="#f7f8f6"/><rect x="12" y="12" width="${scene.paper_width - 24}" height="${scene.paper_height - 24}" fill="url(#grid)" stroke="#cfd5d1"/>${backgroundEdges}${nodes}${foregroundEdges}
 </svg>`;

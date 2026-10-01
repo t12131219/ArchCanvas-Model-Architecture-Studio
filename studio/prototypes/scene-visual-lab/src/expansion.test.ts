@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { buildAtomicHierarchyRoutingPlan } from "./atomic-hierarchy";
 import { expandScene, expandableNodeIds } from "./expansion";
-import { expandedDetailSize, fullyExpandedDetailTree, listDetailNodes } from "./detail-layout";
+import { buildInlineDetailLayout, expandedDetailSize, fullyExpandedDetailTree, listDetailNodes } from "./detail-layout";
 import type { DetailExpansionBranch } from "./detail-layout";
 import { buildModuleDetail, EXPANDED_DETAIL_SIZES } from "./module-details";
 import { measureScene, routeScene } from "./routing";
@@ -43,19 +44,26 @@ describe("parent and child module expansion", () => {
     expect(expandedAttention.bounds.y).toBe(-240 + attention.bounds.height / 2 - EXPANDED_DETAIL_SIZES.attention.height / 2);
   });
 
-  it("uses one exact left entry and right exit for every detail diagram", () => {
+  it("uses a single exact boundary entry and exit for every detail diagram", () => {
     for (const [kind, size] of Object.entries(EXPANDED_DETAIL_SIZES)) {
       const bounds = { x: 120, y: 80, ...size };
       const diagram = buildModuleDetail(kind as keyof typeof EXPANDED_DETAIL_SIZES, bounds);
       const flows = diagram.primitives.filter((primitive) => primitive.kind === "flow");
+      const paperDetail = kind.startsWith("paper-");
 
-      expect(diagram.entryPoint).toEqual({ x: bounds.x, y: bounds.y + bounds.height / 2 });
-      expect(diagram.exitPoint).toEqual({ x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 });
+      expect(diagram.entryPoint).toEqual(paperDetail
+        ? { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height }
+        : { x: bounds.x, y: bounds.y + bounds.height / 2 });
+      expect(diagram.exitPoint).toEqual(paperDetail
+        ? { x: bounds.x + bounds.width / 2, y: bounds.y }
+        : { x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 });
       expect(flows.some((primitive) => primitive.points[0].x === diagram.entryPoint.x
         && primitive.points[0].y === diagram.entryPoint.y)).toBe(true);
       expect(flows.some((primitive) => primitive.points.at(-1)!.x === diagram.exitPoint.x
         && primitive.points.at(-1)!.y === diagram.exitPoint.y)).toBe(true);
-      expect(flows.every((primitive) => primitive.points.at(-1)!.x >= primitive.points[0].x)).toBe(true);
+      if (!paperDetail) {
+        expect(flows.every((primitive) => primitive.points.at(-1)!.x >= primitive.points[0].x)).toBe(true);
+      }
     }
   });
 
@@ -63,16 +71,35 @@ describe("parent and child module expansion", () => {
     for (const base of SCENARIOS.filter((scene) => expandableNodeIds(scene).length)) {
       const scene = expandScene(base, new Set(expandableNodeIds(base)));
       const nodes = new Map(scene.nodes.map((node) => [node.scene_node_id, node]));
-      for (const route of routeScene(scene, "adaptive")) {
+      const paperDetailTrees = base.layout_profile === "paper"
+        ? Object.fromEntries(scene.nodes.flatMap((node) => (
+          node.detail_expanded && node.detail_kind
+            ? [[node.scene_node_id, buildInlineDetailLayout(node.detail_kind, node.bounds, undefined, {}, node.scene_node_id)]]
+            : []
+        )))
+        : undefined;
+      const paperPlan = paperDetailTrees ? buildAtomicHierarchyRoutingPlan(
+        paperDetailTrees,
+        new Set(scene.edges.map((edge) => edge.target_scene_node_id)),
+        new Set(scene.edges.map((edge) => edge.source_scene_node_id)),
+      ) : undefined;
+      for (const route of routeScene(scene, "adaptive", paperPlan?.boundaryPorts)) {
         const source = nodes.get(route.edge.source_scene_node_id)!;
         const target = nodes.get(route.edge.target_scene_node_id)!;
         if (source.detail_expanded && source.detail_kind) {
-          expect(route.sourceSide).toBe("right");
-          expect(route.points[0]).toEqual(buildModuleDetail(source.detail_kind, source.bounds).exitPoint);
+          const expected = paperPlan?.boundaryPorts[source.scene_node_id];
+          expect(route.sourceSide).toBe(expected?.exitSide ?? "right");
+          expect(route.points[0]).toEqual(expected?.exit ?? buildModuleDetail(source.detail_kind, source.bounds).exitPoint);
         }
         if (target.detail_expanded && target.detail_kind) {
-          expect(route.targetSide).toBe("left");
-          expect(route.points.at(-1)).toEqual(buildModuleDetail(target.detail_kind, target.bounds).entryPoint);
+          const expected = paperPlan?.boundaryPorts[target.scene_node_id];
+          const semantic = route.edge.target_port_role
+            ? expected?.semanticInputs?.[route.edge.target_port_role]
+            : undefined;
+          expect(route.targetSide).toBe(semantic?.side ?? expected?.entrySide ?? "left");
+          expect(route.points.at(-1)).toEqual(
+            semantic?.point ?? expected?.entry ?? buildModuleDetail(target.detail_kind, target.bounds).entryPoint,
+          );
         }
       }
     }
@@ -99,11 +126,26 @@ describe("parent and child module expansion", () => {
       ];
       for (const expandedIds of expansionSets) {
         const scene = expandScene(expandableScene, expandedIds);
-        const routes = routeScene(scene, "adaptive");
+        const paperDetailTrees = expandableScene.layout_profile === "paper"
+          ? Object.fromEntries(scene.nodes.flatMap((node) => (
+            node.detail_expanded && node.detail_kind
+              ? [[node.scene_node_id, buildInlineDetailLayout(node.detail_kind, node.bounds, undefined, {}, node.scene_node_id)]]
+              : []
+          )))
+          : undefined;
+        const paperPlan = paperDetailTrees ? buildAtomicHierarchyRoutingPlan(
+          paperDetailTrees,
+          new Set(scene.edges.map((edge) => edge.target_scene_node_id)),
+          new Set(scene.edges.map((edge) => edge.source_scene_node_id)),
+        ) : undefined;
+        const routes = routeScene(scene, "adaptive", paperPlan?.boundaryPorts);
         const metrics = measureScene(scene, routes);
 
         expect(routes).toHaveLength(scene.edges.length);
         const caseLabel = `${expandableScene.scene_id} expanded=${[...expandedIds].join(",")}`;
+        if (expandableScene.layout_profile === "paper") {
+          expect(metrics.crossings, caseLabel).toBe(0);
+        }
         expect(metrics.nodeIntersections, caseLabel).toBe(0);
         expect(metrics.clearanceViolations, caseLabel).toBe(0);
         expect(metrics.endpointCongestion, caseLabel).toBe(0);

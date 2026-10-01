@@ -38,6 +38,7 @@ function edge(
   target: string,
   relation: EdgeRelation = "flow",
   label: string = relation,
+  targetPortRole?: string,
 ): LabEdge {
   return {
     scene_edge_id: id,
@@ -45,6 +46,7 @@ function edge(
     target_scene_node_id: target,
     relation,
     label,
+    ...(targetPortRole ? { target_port_role: targetPortRole } : {}),
   };
 }
 
@@ -65,6 +67,41 @@ function scene(
     paper_height: paperHeight,
     nodes,
     edges,
+  };
+}
+
+function paperNode(
+  id: string,
+  lane: "encoder" | "decoder",
+  rank: number,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  label: string,
+  secondary: string,
+  shape: NodeShape = "operation",
+  detailKind?: NodeDetailKind,
+  tone: NonNullable<LabNode["paper_tone"]> = "neutral",
+): LabNode {
+  return {
+    ...node(id, x, y, label, secondary, shape, width, height, detailKind),
+    layout_lane: lane,
+    layout_rank: rank,
+    paper_tone: tone,
+  };
+}
+
+function paperScene(
+  id: string,
+  title: string,
+  description: string,
+  nodes: LabNode[],
+  edges: LabEdge[],
+): LabScene {
+  return {
+    ...scene(id, title, description, nodes, edges, 1240, 1090),
+    layout_profile: "paper",
   };
 }
 
@@ -550,6 +587,80 @@ const tensor2tensorTransformer = scene(
   790,
 );
 
+const paperClassicTransformer = paperScene(
+  "paper-classic-transformer",
+  "论文级 · 经典 Transformer",
+  "双列、由下向上的论文构图；父模块展开时以底边为锚向上细化，并保持 Encoder/Decoder 主列紧凑对齐。",
+  [
+    paperNode("paper-classic-src", "encoder", 0, 235, 980, 240, 66, "Inputs", "source token ids · [B,S]", "io", undefined, "input"),
+    paperNode("paper-classic-src-embed", "encoder", 1, 235, 885, 240, 66, "Input Embedding", "tokens × √d_model", "tensor", "paper-sinusoidal-embedding", "input"),
+    paperNode("paper-classic-src-position", "encoder", 1, 72, 893, 126, 50, "Positional Encoding", "sin / cos", "operation", undefined, "neutral"),
+    paperNode("paper-classic-src-add", "encoder", 2, 326, 808, 58, 58, "+", "sum", "add", undefined, "neutral"),
+    paperNode("paper-classic-src-mask", "encoder", 3, 55, 704, 148, 56, "Source mask", "padding · [B,1,1,S]", "condition", undefined, "neutral"),
+    paperNode("paper-classic-encoder", "encoder", 3, 205, 550, 300, 210, "Encoder · N ×", "self-attention · FFN", "attention", "paper-transformer-encoder", "encoder"),
+    paperNode("paper-classic-memory", "encoder", 4, 235, 454, 240, 66, "Encoder memory", "contextual source states", "tensor", undefined, "encoder"),
+    paperNode("paper-classic-tgt", "decoder", 0, 785, 980, 240, 66, "Outputs", "shifted-right target ids", "io", undefined, "output"),
+    paperNode("paper-classic-tgt-embed", "decoder", 1, 785, 885, 240, 66, "Output Embedding", "shared token weights", "tensor", "paper-sinusoidal-embedding", "output"),
+    paperNode("paper-classic-tgt-position", "decoder", 1, 1062, 893, 126, 50, "Positional Encoding", "sin / cos", "operation", undefined, "neutral"),
+    paperNode("paper-classic-tgt-add", "decoder", 2, 876, 808, 58, 58, "+", "sum", "add", undefined, "neutral"),
+    paperNode("paper-classic-tgt-mask", "decoder", 3, 1055, 704, 150, 56, "Target mask", "padding + causal", "condition", undefined, "neutral"),
+    paperNode("paper-classic-decoder", "decoder", 3, 745, 410, 320, 350, "Decoder · N ×", "masked self · cross-attn · FFN", "attention", "paper-transformer-decoder", "decoder"),
+    paperNode("paper-classic-linear", "decoder", 4, 785, 315, 240, 64, "Linear", "d_model → vocabulary", "operation", undefined, "neutral"),
+    paperNode("paper-classic-softmax", "decoder", 5, 785, 225, 240, 64, "Softmax", "token probabilities", "operation", undefined, "neutral"),
+    paperNode("paper-classic-output", "decoder", 6, 785, 130, 240, 66, "Output Probabilities", "[B,T,V]", "io", undefined, "output"),
+  ],
+  [
+    edge("paper-classic-e1", "paper-classic-src", "paper-classic-src-embed", "flow", ""),
+    edge("paper-classic-e2", "paper-classic-src-embed", "paper-classic-src-add", "flow", ""),
+    edge("paper-classic-e3", "paper-classic-src-position", "paper-classic-src-add", "merge", "position"),
+    edge("paper-classic-e4", "paper-classic-src-add", "paper-classic-encoder", "flow", ""),
+    edge("paper-classic-e5", "paper-classic-src-mask", "paper-classic-encoder", "condition", "mask", "mask"),
+    edge("paper-classic-e6", "paper-classic-encoder", "paper-classic-memory", "flow", ""),
+    edge("paper-classic-e7", "paper-classic-tgt", "paper-classic-tgt-embed", "flow", ""),
+    edge("paper-classic-e8", "paper-classic-tgt-embed", "paper-classic-tgt-add", "flow", ""),
+    edge("paper-classic-e9", "paper-classic-tgt-position", "paper-classic-tgt-add", "merge", "position"),
+    edge("paper-classic-e10", "paper-classic-tgt-add", "paper-classic-decoder", "flow", ""),
+    edge("paper-classic-e11", "paper-classic-tgt-mask", "paper-classic-decoder", "condition", "causal mask", "mask"),
+    edge("paper-classic-e12", "paper-classic-memory", "paper-classic-decoder", "memory", "K,V memory", "memory"),
+    edge("paper-classic-e13", "paper-classic-decoder", "paper-classic-linear", "flow", ""),
+    edge("paper-classic-e14", "paper-classic-linear", "paper-classic-softmax", "flow", ""),
+    edge("paper-classic-e15", "paper-classic-softmax", "paper-classic-output", "flow", ""),
+  ],
+);
+
+const paperTensor2TensorTransformer = paperScene(
+  "paper-tensor2tensor-transformer",
+  "论文级 · Tensor2Tensor Transformer",
+  "保持与经典论文视图相同的双列语法，并突出 Tensor2Tensor 的 target-space、attention bias、timing signal 与共享 softmax。",
+  [
+    paperNode("paper-t2t-input", "encoder", 0, 235, 980, 240, 66, "Inputs", "flatten4d3d · [B,S,H]", "io", undefined, "input"),
+    paperNode("paper-t2t-prepare", "encoder", 1, 235, 885, 240, 66, "Encoder Prepare", "space embedding + timing", "tensor", "paper-tensor-transform", "input"),
+    paperNode("paper-t2t-space", "encoder", 1, 55, 893, 142, 50, "Target Space", "learned id embedding", "condition", undefined, "neutral"),
+    paperNode("paper-t2t-encoder-bias", "encoder", 3, 45, 704, 158, 56, "Encoder Bias", "ignore padding", "condition", undefined, "neutral"),
+    paperNode("paper-t2t-encoder", "encoder", 3, 205, 550, 300, 210, "Encoder · N ×", "self-attention · conv FFN", "attention", "paper-tensor2tensor-encoder", "encoder"),
+    paperNode("paper-t2t-memory", "encoder", 4, 235, 454, 240, 66, "Encoder Output", "memory + attention bias", "tensor", undefined, "encoder"),
+    paperNode("paper-t2t-targets", "decoder", 0, 785, 980, 240, 66, "Targets", "teacher forcing", "io", undefined, "output"),
+    paperNode("paper-t2t-decoder-prepare", "decoder", 1, 785, 885, 240, 66, "Decoder Prepare", "shift-left + timing", "tensor", "paper-tensor-transform", "output"),
+    paperNode("paper-t2t-decoder-bias", "decoder", 3, 1050, 704, 158, 56, "Decoder Bias", "lower triangle", "condition", undefined, "neutral"),
+    paperNode("paper-t2t-decoder", "decoder", 3, 745, 410, 320, 350, "Decoder · N ×", "bias-masked attention · conv FFN", "attention", "paper-tensor2tensor-decoder", "decoder"),
+    paperNode("paper-t2t-softmax", "decoder", 4, 785, 315, 240, 64, "Shared Softmax", "tied embedding weights", "operation", undefined, "neutral"),
+    paperNode("paper-t2t-logits", "decoder", 5, 785, 220, 240, 66, "Target Logits", "label-smoothed output", "io", undefined, "output"),
+  ],
+  [
+    edge("paper-t2t-e1", "paper-t2t-input", "paper-t2t-prepare", "flow", ""),
+    edge("paper-t2t-e2", "paper-t2t-space", "paper-t2t-input", "condition", "target space"),
+    edge("paper-t2t-e3", "paper-t2t-prepare", "paper-t2t-encoder", "flow", ""),
+    edge("paper-t2t-e4", "paper-t2t-encoder-bias", "paper-t2t-encoder", "condition", "bias", "mask"),
+    edge("paper-t2t-e5", "paper-t2t-encoder", "paper-t2t-memory", "flow", ""),
+    edge("paper-t2t-e6", "paper-t2t-targets", "paper-t2t-decoder-prepare", "flow", ""),
+    edge("paper-t2t-e7", "paper-t2t-decoder-prepare", "paper-t2t-decoder", "flow", ""),
+    edge("paper-t2t-e8", "paper-t2t-decoder-bias", "paper-t2t-decoder", "condition", "causal bias", "mask"),
+    edge("paper-t2t-e9", "paper-t2t-memory", "paper-t2t-decoder", "memory", "K,V + bias", "memory"),
+    edge("paper-t2t-e11", "paper-t2t-decoder", "paper-t2t-softmax", "flow", ""),
+    edge("paper-t2t-e12", "paper-t2t-softmax", "paper-t2t-logits", "flow", ""),
+  ],
+);
+
 const extendedModuleCatalog = scene(
   "extended-module-catalog",
   "扩展模型模块目录",
@@ -713,6 +824,8 @@ export const SCENARIOS: readonly LabScene[] = [
   parentChildExpansion,
   classicTransformer,
   tensor2tensorTransformer,
+  paperClassicTransformer,
+  paperTensor2TensorTransformer,
   extendedModuleCatalog,
   traditionalMlCatalog,
   neuralFoundationCatalog,

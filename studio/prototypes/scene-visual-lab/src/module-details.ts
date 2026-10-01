@@ -33,6 +33,15 @@ export const DETAIL_KIND_NAMES: Record<NodeDetailKind, string> = {
   "transformer-decoder": "经典 Transformer Decoder Layer × 6",
   "tensor2tensor-encoder": "Tensor2Tensor Encoder Layer × 6",
   "tensor2tensor-decoder": "Tensor2Tensor Decoder Layer × 6",
+  "paper-transformer-encoder": "论文视图 · Encoder Layer × 6",
+  "paper-transformer-decoder": "论文视图 · Decoder Layer × 6",
+  "paper-tensor2tensor-encoder": "论文视图 · Tensor2Tensor Encoder × 6",
+  "paper-tensor2tensor-decoder": "论文视图 · Tensor2Tensor Decoder × 6",
+  "paper-sinusoidal-embedding": "论文视图 · 词元缩放与正弦位置编码",
+  "paper-tensor-transform": "论文视图 · 张量变换数据流",
+  "paper-attention": "论文视图 · Multi-Head Attention",
+  "paper-feedforward": "论文视图 · Position-wise FFN",
+  "paper-add-norm": "论文视图 · Residual + LayerNorm",
   convolution: "卷积特征提取数据流",
   "tensor-transform": "张量变换数据流",
   embedding: "词元与位置嵌入数据流",
@@ -51,6 +60,15 @@ export const EXPANDED_DETAIL_SIZES: Record<NodeDetailKind, Pick<Bounds, "width" 
   "transformer-decoder": { width: 1420, height: 540 },
   "tensor2tensor-encoder": { width: 1060, height: 440 },
   "tensor2tensor-decoder": { width: 1420, height: 540 },
+  "paper-transformer-encoder": { width: 560, height: 780 },
+  "paper-transformer-decoder": { width: 620, height: 1040 },
+  "paper-tensor2tensor-encoder": { width: 560, height: 780 },
+  "paper-tensor2tensor-decoder": { width: 620, height: 1040 },
+  "paper-sinusoidal-embedding": { width: 720, height: 320 },
+  "paper-tensor-transform": { width: 540, height: 240 },
+  "paper-attention": { width: 900, height: 420 },
+  "paper-feedforward": { width: 600, height: 300 },
+  "paper-add-norm": { width: 560, height: 300 },
   convolution: { width: 620, height: 280 },
   "tensor-transform": { width: 540, height: 240 },
   embedding: { width: 680, height: 300 },
@@ -340,6 +358,224 @@ function tensor2tensorDecoderDiagram(bounds: Bounds): DetailPrimitive[] {
   });
 }
 
+function sameDiagramPoint(first: Point, second: Point): boolean {
+  return Math.abs(first.x - second.x) < 0.01 && Math.abs(first.y - second.y) < 0.01;
+}
+
+function paperVerticalBoundary(
+  primitives: DetailPrimitive[],
+  bounds: Bounds,
+): DetailPrimitive[] {
+  const horizontalEntry = { x: bounds.x, y: bounds.y + bounds.height / 2 };
+  const horizontalExit = { x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 };
+  const verticalEntry = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height };
+  const verticalExit = { x: bounds.x + bounds.width / 2, y: bounds.y };
+  return primitives.map((primitive) => {
+    if (primitive.kind !== "flow") return primitive;
+    if (sameDiagramPoint(primitive.points[0], horizontalEntry)) {
+      const target = primitive.points.at(-1)!;
+      return {
+        ...primitive,
+        points: [
+          verticalEntry,
+          { x: verticalEntry.x, y: verticalEntry.y - 18 },
+          { x: target.x, y: verticalEntry.y - 18 },
+          target,
+        ],
+      };
+    }
+    if (sameDiagramPoint(primitive.points.at(-1)!, horizontalExit)) {
+      const source = primitive.points[0];
+      const outerX = bounds.x + bounds.width - 12;
+      return {
+        ...primitive,
+        points: [
+          source,
+          { x: outerX, y: source.y },
+          { x: outerX, y: bounds.y + 18 },
+          { x: verticalExit.x, y: bounds.y + 18 },
+          verticalExit,
+        ],
+      };
+    }
+    return primitive;
+  });
+}
+
+function paperTransformerEncoderDiagram(bounds: Bounds, tensor2tensor = false): DetailPrimitive[] {
+  const { x, y, width, height } = bounds;
+  const cx = x + width / 2;
+  const attention = { x: x + 70, y: y + 540, width: width - 140, height: 130 };
+  const addNorm1 = { x: x + 94, y: y + 440, width: width - 188, height: 72 };
+  const feedforward = { x: x + 70, y: y + 250, width: width - 140, height: 140 };
+  const addNorm2 = { x: x + 94, y: y + 150, width: width - 188, height: 72 };
+  const input = { x: cx - 42, y: y + 714, width: 84, height: 38 };
+  const output = { x: cx - 42, y: y + 82, width: 84, height: 40 };
+  const maskLabel = tensor2tensor ? "Encoder attention bias" : "Source padding mask";
+  const ffnNote = tensor2tensor ? "conv_hidden_relu · filter=2048" : "Linear · ReLU/GELU · Linear";
+  return [
+    {
+      kind: "text",
+      x: x + 42,
+      y: y + 80,
+      value: tensor2tensor
+        ? "Encoder Layer × 6 · hidden=512 · heads=8 · filter=2048"
+        : "Encoder Layer × 6 · d_model=512 · heads=8 · d_ff=2048",
+      anchor: "start",
+      emphasis: true,
+      tone: "blue",
+    },
+    flow({ x: cx, y: y + height }, { x: cx, y: input.y + input.height }),
+    matrix(input.x, input.y, input.width, input.height, "x", "blue", 6, 3, 5),
+    flow({ x: cx, y: input.y }, { x: cx, y: attention.y + attention.height }),
+    rect(attention.x, attention.y, attention.width, attention.height, "Self-attention", "orange", "Q = K = V · split heads"),
+    flow({ x: cx, y: attention.y }, { x: cx, y: addNorm1.y + addNorm1.height }),
+    rect(addNorm1.x, addNorm1.y, addNorm1.width, addNorm1.height, "Add & Norm", "green", "residual + LayerNorm"),
+    flow({ x: cx, y: addNorm1.y }, { x: cx, y: feedforward.y + feedforward.height }),
+    rect(feedforward.x, feedforward.y, feedforward.width, feedforward.height, "Feed-forward", "blue", ffnNote),
+    flow({ x: cx, y: feedforward.y }, { x: cx, y: addNorm2.y + addNorm2.height }),
+    rect(addNorm2.x, addNorm2.y, addNorm2.width, addNorm2.height, "Add & Norm", "green", "residual + LayerNorm"),
+    flow({ x: cx, y: addNorm2.y }, { x: cx, y: output.y + output.height }),
+    matrix(output.x, output.y, output.width, output.height, "memory", "blue", 6, 3, 5),
+    flow({ x: cx, y: output.y }, { x: cx, y }),
+    {
+      kind: "text",
+      x: x + 42,
+      y: y + 708,
+      value: `${maskLabel} · ${tensor2tensor ? "negative bias" : "[B,1,1,S]"}`,
+      anchor: "start",
+      emphasis: true,
+      tone: "orange",
+    },
+    semanticInputFlow("orange", "encoder-mask", "mask",
+      { x, y: attention.y + attention.height / 2 },
+      { x: attention.x, y: attention.y + attention.height / 2 },
+    ),
+    semanticFlow("blue", "residual-1",
+      { x: cx, y: input.y },
+      { x: x + 48, y: input.y },
+      { x: x + 48, y: addNorm1.y + addNorm1.height / 2 },
+      { x: addNorm1.x, y: addNorm1.y + addNorm1.height / 2 },
+    ),
+    semanticFlow("green", "residual-2",
+      { x: cx, y: addNorm1.y },
+      { x: x + width - 48, y: addNorm1.y },
+      { x: x + width - 48, y: addNorm2.y + addNorm2.height / 2 },
+      { x: addNorm2.x + addNorm2.width, y: addNorm2.y + addNorm2.height / 2 },
+    ),
+  ];
+}
+
+function paperTransformerDecoderDiagram(bounds: Bounds, tensor2tensor = false): DetailPrimitive[] {
+  const { x, y, width, height } = bounds;
+  const cx = x + width / 2;
+  const selfAttention = { x: x + 70, y: y + 800, width: width - 140, height: 150 };
+  const addNorm1 = { x: x + 106, y: y + 700, width: width - 212, height: 66 };
+  const crossAttention = { x: x + 70, y: y + 500, width: width - 140, height: 150 };
+  const addNorm2 = { x: x + 106, y: y + 400, width: width - 212, height: 66 };
+  const feedforward = { x: x + 70, y: y + 220, width: width - 140, height: 130 };
+  const addNorm3 = { x: x + 106, y: y + 128, width: width - 212, height: 66 };
+  const input = { x: cx - 42, y: y + 976, width: 84, height: 38 };
+  const output = { x: cx - 42, y: y + 66, width: 84, height: 38 };
+  const causalLabel = tensor2tensor ? "Decoder self-attention bias" : "Target pad + causal mask";
+  const memoryLabel = tensor2tensor ? "Encoder output + bias" : "Encoder memory + source mask";
+  const ffnNote = tensor2tensor ? "conv_hidden_relu · filter=2048" : "Linear · ReLU/GELU · Linear";
+  return [
+    {
+      kind: "text",
+      x: x + 42,
+      y: y + 80,
+      value: tensor2tensor
+        ? "Decoder Layer × 6 · bias-masked attention + conv_hidden_relu"
+        : "Decoder Layer × 6 · masked self-attention + cross-attention",
+      anchor: "start",
+      emphasis: true,
+      tone: "pink",
+    },
+    flow({ x: cx, y: y + height }, { x: cx, y: input.y + input.height }),
+    matrix(input.x, input.y, input.width, input.height, "y", "pink", 6, 3, 5),
+    flow({ x: cx, y: input.y }, { x: cx, y: selfAttention.y + selfAttention.height }),
+    rect(selfAttention.x, selfAttention.y, selfAttention.width, selfAttention.height, "Masked self-attn", "orange", "Q = K = V · causal"),
+    flow({ x: cx, y: selfAttention.y }, { x: cx, y: addNorm1.y + addNorm1.height }),
+    rect(addNorm1.x, addNorm1.y, addNorm1.width, addNorm1.height, "Add & Norm", "green", "residual + LayerNorm"),
+    flow({ x: cx, y: addNorm1.y }, { x: cx, y: crossAttention.y + crossAttention.height }),
+    rect(crossAttention.x, crossAttention.y, crossAttention.width, crossAttention.height, "Cross-attention", "orange", "Q=decoder · K,V=memory"),
+    flow({ x: cx, y: crossAttention.y }, { x: cx, y: addNorm2.y + addNorm2.height }),
+    rect(addNorm2.x, addNorm2.y, addNorm2.width, addNorm2.height, "Add & Norm", "green", "residual + LayerNorm"),
+    flow({ x: cx, y: addNorm2.y }, { x: cx, y: feedforward.y + feedforward.height }),
+    rect(feedforward.x, feedforward.y, feedforward.width, feedforward.height, "Feed-forward", "blue", ffnNote),
+    flow({ x: cx, y: feedforward.y }, { x: cx, y: addNorm3.y + addNorm3.height }),
+    rect(addNorm3.x, addNorm3.y, addNorm3.width, addNorm3.height, "Add & Norm", "green", "residual + LayerNorm"),
+    flow({ x: cx, y: addNorm3.y }, { x: cx, y: output.y + output.height }),
+    matrix(output.x, output.y, output.width, output.height, "decoded", "pink", 6, 3, 5),
+    flow({ x: cx, y: output.y }, { x: cx, y }),
+    {
+      kind: "text",
+      x: x + 578,
+      y: y + 980,
+      value: `${causalLabel} · ${tensor2tensor ? "lower triangle" : "[B,1,T,T]"}`,
+      anchor: "end",
+      emphasis: true,
+      tone: "orange",
+    },
+    semanticInputFlow("orange", "decoder-mask", "mask",
+      { x: x + width, y: selfAttention.y + selfAttention.height / 2 },
+      { x: selfAttention.x + selfAttention.width, y: selfAttention.y + selfAttention.height / 2 },
+    ),
+    {
+      kind: "text",
+      x: x + 42,
+      y: y + 544,
+      value: `${memoryLabel} · K,V`,
+      anchor: "start",
+      emphasis: true,
+      tone: "blue",
+    },
+    semanticInputFlow("blue", "encoder-memory", "memory",
+      { x, y: y + 575 },
+      { x: crossAttention.x, y: crossAttention.y + crossAttention.height / 2 },
+    ),
+    semanticFlow("pink", "residual-1",
+      { x: cx, y: input.y },
+      { x: x + 46, y: input.y },
+      { x: x + 46, y: addNorm1.y + addNorm1.height / 2 },
+      { x: addNorm1.x, y: addNorm1.y + addNorm1.height / 2 },
+    ),
+    semanticFlow("green", "residual-2",
+      { x: cx, y: addNorm1.y },
+      { x: x + width - 46, y: addNorm1.y },
+      { x: x + width - 46, y: addNorm2.y + addNorm2.height / 2 },
+      { x: addNorm2.x + addNorm2.width, y: addNorm2.y + addNorm2.height / 2 },
+    ),
+    semanticFlow("violet", "residual-3",
+      { x: cx, y: addNorm2.y },
+      { x: x + 46, y: addNorm2.y },
+      { x: x + 46, y: addNorm3.y + addNorm3.height / 2 },
+      { x: addNorm3.x, y: addNorm3.y + addNorm3.height / 2 },
+    ),
+  ];
+}
+
+function paperAttentionDiagram(bounds: Bounds): DetailPrimitive[] {
+  return paperVerticalBoundary(attentionDiagram(bounds), bounds);
+}
+
+function paperFeedforwardDiagram(bounds: Bounds): DetailPrimitive[] {
+  return paperVerticalBoundary(feedforwardDiagram(bounds), bounds);
+}
+
+function paperAddNormDiagram(bounds: Bounds): DetailPrimitive[] {
+  return paperVerticalBoundary(addNormDiagram(bounds), bounds);
+}
+
+function paperSinusoidalEmbeddingDiagram(bounds: Bounds): DetailPrimitive[] {
+  return paperVerticalBoundary(sinusoidalEmbeddingDiagram(bounds), bounds);
+}
+
+function paperTensorTransformDiagram(bounds: Bounds): DetailPrimitive[] {
+  return paperVerticalBoundary(tensorTransformDiagram(bounds), bounds);
+}
+
 function feedforwardDiagram(bounds: Bounds): DetailPrimitive[] {
   const { x, y } = bounds;
   const cy = y + bounds.height / 2;
@@ -566,6 +802,15 @@ export function buildModuleDetail(kind: NodeDetailKind, bounds: Bounds): ModuleD
     "transformer-decoder": transformerDecoderDiagram,
     "tensor2tensor-encoder": tensor2tensorEncoderDiagram,
     "tensor2tensor-decoder": tensor2tensorDecoderDiagram,
+    "paper-transformer-encoder": (value) => paperTransformerEncoderDiagram(value),
+    "paper-transformer-decoder": (value) => paperTransformerDecoderDiagram(value),
+    "paper-tensor2tensor-encoder": (value) => paperTransformerEncoderDiagram(value, true),
+    "paper-tensor2tensor-decoder": (value) => paperTransformerDecoderDiagram(value, true),
+    "paper-sinusoidal-embedding": paperSinusoidalEmbeddingDiagram,
+    "paper-tensor-transform": paperTensorTransformDiagram,
+    "paper-attention": paperAttentionDiagram,
+    "paper-feedforward": paperFeedforwardDiagram,
+    "paper-add-norm": paperAddNormDiagram,
     convolution: convolutionDiagram,
     "tensor-transform": tensorTransformDiagram,
     embedding: embeddingDiagram,
@@ -573,11 +818,37 @@ export function buildModuleDetail(kind: NodeDetailKind, bounds: Bounds): ModuleD
     "mixture-of-experts": mixtureOfExpertsDiagram,
     pooling: poolingDiagram,
   } as Record<NodeDetailKind, (value: Bounds) => DetailPrimitive[]>;
-  const semanticInputPorts = kind === "attention" ? {
-    mask: {
-      point: { x: bounds.x + 432, y: bounds.y + 120 },
-      side: "top" as const,
-    },
-  } : undefined;
-  return { kind, ...boundaryPoints(bounds), semanticInputPorts, primitives: builders[kind](bounds) };
+  let semanticInputPorts: ModuleDetailDiagram["semanticInputPorts"];
+  if (kind === "attention" || kind === "paper-attention") {
+    semanticInputPorts = {
+      mask: {
+        point: { x: bounds.x + 432, y: bounds.y + 120 },
+        side: "top",
+      },
+    };
+  } else if (kind === "paper-transformer-encoder" || kind === "paper-tensor2tensor-encoder") {
+    semanticInputPorts = {
+      mask: {
+        point: { x: bounds.x + 70, y: bounds.y + 595 },
+        side: "left",
+      },
+    };
+  } else if (kind === "paper-transformer-decoder" || kind === "paper-tensor2tensor-decoder") {
+    semanticInputPorts = {
+      mask: {
+        point: { x: bounds.x + bounds.width - 70, y: bounds.y + 885 },
+        side: "right",
+      },
+      memory: {
+        point: { x: bounds.x + 70, y: bounds.y + 575 },
+        side: "left",
+      },
+    };
+  }
+  const vertical = kind.startsWith("paper-");
+  const boundaries = vertical ? {
+    entryPoint: { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height },
+    exitPoint: { x: bounds.x + bounds.width / 2, y: bounds.y },
+  } : boundaryPoints(bounds);
+  return { kind, ...boundaries, semanticInputPorts, primitives: builders[kind](bounds) };
 }

@@ -19,10 +19,12 @@ npm run prototype:serve
 
 ## 结构
 
+- [`IMPLEMENTATION_MIGRATION_GUIDE.md`](./IMPLEMENTATION_MIGRATION_GUIDE.md)：30 个场景的源码级实现说明、四个 Transformer 的 Python-to-view 映射、父子/原子路由机制与正式 Studio 迁移方案。
+
 - `src/types.ts`：与 Studio Scene 命名对齐的最小场景与 typed visual patch 类型。
 - `src/model.ts`：节点和连线的增删改，以及节点删除时的关联连线清理。
 - `src/routing.ts`：五种路由策略；自适应方案包含分散端口、节点净距、正交避障、共享线段惩罚、圆角折线和纵向标签。
-- `src/scenarios.ts`：28 类压力拓扑和 1260 个路由/节点/标签穷举组合的维度定义；包含源码对齐的经典 Transformer 与 Tensor2Tensor 双通路对比场景。
+- `src/scenarios.ts`：30 类场景和 1350 个路由/节点/标签基础穷举组合的维度定义；包含源码对齐的经典 Transformer 与 Tensor2Tensor 横向/论文式对比场景。
 - `src/module-details.ts`：原有九类模块的共享内部图元与新增家族的统一分发入口。
 - `src/catalog-details.ts`：传统 ML、CNN/ViT、序列、生成、图网络、强化学习与参数适配等 30 类结构家族的内部图。
 - `src/model-family-catalog.ts`：300 余个检索别名、结构家族归并和真实 IR 必须检查的差异轴。

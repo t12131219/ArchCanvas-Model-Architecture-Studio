@@ -362,6 +362,20 @@ const NODE_COLORS: Record<NodeShape, { fill: string; stroke: string }> = {
   io: { fill: "#f8edf1", stroke: "#9b5268" },
 };
 
+const PAPER_NODE_COLORS: Record<NonNullable<LabNode["paper_tone"]>, { fill: string; stroke: string }> = {
+  encoder: { fill: "#e7f4fb", stroke: "#245f85" },
+  decoder: { fill: "#fbeaf0", stroke: "#8b405e" },
+  input: { fill: "#f8e3ea", stroke: "#96536a" },
+  output: { fill: "#e6f4e8", stroke: "#3f7850" },
+  neutral: { fill: "#fff9dc", stroke: "#7b6b29" },
+};
+
+function visualOptionsForScene(scene: LabScene): VisualOptions {
+  return scene.layout_profile === "paper"
+    ? { routeStyle: "adaptive", nodeStyle: "semantic", labelStyle: "plain" }
+    : DEFAULT_OPTIONS;
+}
+
 function initialScenario(): LabScene {
   const sceneId = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("scene");
   return SCENARIOS.find((scene) => scene.scene_id === sceneId) ?? SCENARIOS[0];
@@ -863,6 +877,7 @@ function DetailToggle({ node, onToggle }: { node: LabNode; onToggle: (nodeId: st
 interface NodeGraphicProps {
   node: LabNode;
   visualStyle: NodeVisualStyle;
+  paperMode: boolean;
   selected: boolean;
   connecting: boolean;
   onPointerDown: (event: React.PointerEvent<SVGGElement>, node: LabNode) => void;
@@ -886,6 +901,7 @@ interface NodeGraphicProps {
 function nodeGraphicPropsEqual(first: NodeGraphicProps, second: NodeGraphicProps): boolean {
   return sameNode(first.node, second.node)
     && first.visualStyle === second.visualStyle
+    && first.paperMode === second.paperMode
     && first.selected === second.selected
     && first.connecting === second.connecting
     && first.detailTree === second.detailTree
@@ -903,6 +919,7 @@ function nodeGraphicPropsEqual(first: NodeGraphicProps, second: NodeGraphicProps
 const NodeGraphic = memo(function NodeGraphic({
   node,
   visualStyle,
+  paperMode,
   selected,
   connecting,
   onPointerDown,
@@ -917,11 +934,13 @@ const NodeGraphic = memo(function NodeGraphic({
   foregroundFlowIds,
 }: NodeGraphicProps) {
   const { x, y, width, height } = node.bounds;
-  const colors = NODE_COLORS[node.shape];
-  const fill = visualStyle === "compact" ? "#ffffff" : colors.fill;
+  const colors = paperMode
+    ? PAPER_NODE_COLORS[node.paper_tone ?? "neutral"]
+    : NODE_COLORS[node.shape];
+  const fill = paperMode ? colors.fill : visualStyle === "compact" ? "#ffffff" : colors.fill;
   const polygon = polygonPoints(node);
   const symbol = node.shape === "add" ? "+" : node.shape === "multiply" ? "×" : node.shape === "concat" ? "||" : null;
-  const detailed = ["tensor", "convolution", "attention", "normalization"].includes(node.shape) && width >= 110;
+  const detailed = !paperMode && ["tensor", "convolution", "attention", "normalization"].includes(node.shape) && width >= 110;
   const labelX = detailed ? x + width * 0.68 : x + width / 2;
   const labelWidth = detailed ? width * 0.53 : width - 22;
   const maxCharacters = Math.max(5, Math.floor(labelWidth / (visualStyle === "compact" ? 7.1 : 6.7)));
@@ -935,7 +954,7 @@ const NodeGraphic = memo(function NodeGraphic({
   const glyphHeight = Math.min(44, height - 22);
   if (node.detail_expanded && node.detail_kind) {
     return <g
-      className={`lab-node expanded-node ${selected ? "selected" : ""} ${connecting ? "connecting" : ""}`}
+      className={`lab-node expanded-node ${paperMode ? `paper-node paper-tone-${node.paper_tone ?? "neutral"}` : ""} ${selected ? "selected" : ""} ${connecting ? "connecting" : ""}`}
       data-node-id={node.scene_node_id}
       tabIndex={0}
       role="group"
@@ -962,7 +981,7 @@ const NodeGraphic = memo(function NodeGraphic({
   }
   return (
     <g
-      className={`lab-node node-${visualStyle} ${selected ? "selected" : ""} ${connecting ? "connecting" : ""}`}
+      className={`lab-node node-${visualStyle} ${paperMode ? `paper-node paper-tone-${node.paper_tone ?? "neutral"}` : ""} ${selected ? "selected" : ""} ${connecting ? "connecting" : ""}`}
       data-node-id={node.scene_node_id}
       tabIndex={0}
       role="button"
@@ -980,7 +999,7 @@ const NodeGraphic = memo(function NodeGraphic({
           y={y}
           width={width}
           height={height}
-          rx={node.shape === "io" ? Math.min(26, height / 2) : node.shape === "normalization" ? 14 : 5}
+          rx={paperMode ? 4 : node.shape === "io" ? Math.min(26, height / 2) : node.shape === "normalization" ? 14 : 5}
           fill={fill}
           stroke={colors.stroke}
         />}
@@ -1006,10 +1025,10 @@ const NodeGraphic = memo(function NodeGraphic({
         {[-0.26, 0, 0.26].map((ratio) => <line key={ratio} x1={glyphX + glyphWidth / 2 + ratio * glyphWidth} y1={glyphY + 8} x2={glyphX + glyphWidth / 2 + ratio * glyphWidth} y2={glyphY + glyphHeight - 8} />)}
         <text className="node-glyph-text" x={glyphX + glyphWidth / 2} y={glyphY + glyphHeight / 2 + 3}>μ σ</text>
       </g>}
-      {node.shape === "operation" && width >= 100 && <g className="node-glyph operation-glyph" stroke={colors.stroke}>
+      {!paperMode && node.shape === "operation" && width >= 100 && <g className="node-glyph operation-glyph" stroke={colors.stroke}>
         {[0, 1, 2].map((index) => <rect key={index} x={x + 10} y={y + 13 + index * 11} width={15 + index * 3} height={6} rx={1.5} fill={colors.stroke} />)}
       </g>}
-      {visualStyle === "technical" && !symbol && <>
+      {!paperMode && visualStyle === "technical" && !symbol && <>
         <rect className="node-rail" x={x} y={y} width={5} height={height} rx={2} fill={colors.stroke} />
         <text className="node-kind" x={x + 13} y={y + 14}>{node.shape.toUpperCase()}</text>
       </>}
@@ -1142,7 +1161,7 @@ function App() {
     past: [],
     future: [],
   });
-  const [options, setOptions] = useState<VisualOptions>(DEFAULT_OPTIONS);
+  const [options, setOptions] = useState<VisualOptions>(() => visualOptionsForScene(initialSceneRef.current));
   const [hierarchyRoutingMode, setHierarchyRoutingMode] = useState<HierarchyRoutingMode>(() => (
     new URLSearchParams(window.location.search).get("hierarchy") === "recursive"
       ? "recursive"
@@ -1238,7 +1257,7 @@ function App() {
         node.scene_node_id,
         [],
         hierarchyRoutingMode,
-        cached?.branch === branch && cached.hierarchyRoutingMode === hierarchyRoutingMode
+        cached && cached.branch === branch && cached.hierarchyRoutingMode === hierarchyRoutingMode
           ? cached.tree
           : undefined,
         changedLayoutKeys,
@@ -1466,6 +1485,7 @@ function App() {
     setDetailSelection(null);
     setDetailExpansions({});
     setExpandedNodeIds(new Set());
+    setOptions(visualOptionsForScene(scene));
     const viewport = viewportRef.current;
     if (viewport) {
       pendingCameraFitRef.current = false;
@@ -1880,7 +1900,8 @@ function App() {
   const handleToggleNestedDetail = useLatestEvent(toggleNestedDetail);
   const handleSelectEdge = useLatestEvent(selectEdge);
 
-  return <div className="scene-lab">
+  const paperMode = editor.scene.layout_profile === "paper";
+  return <div className={`scene-lab ${paperMode ? "paper-layout" : ""}`}>
     <header className="lab-topbar">
       <div className="lab-product"><Waypoints size={17} /><strong>ArchCanvas</strong><span>Scene Lab</span></div>
       <div className="toolbar-group" aria-label="编辑操作">
@@ -1979,6 +2000,7 @@ function App() {
               key={node.scene_node_id}
               node={node}
               visualStyle={options.nodeStyle}
+              paperMode={paperMode}
               selected={selection?.kind === "node" && selection.id === node.scene_node_id}
               connecting={edgeSource === node.scene_node_id}
               onPointerDown={handleNodePointerDown}

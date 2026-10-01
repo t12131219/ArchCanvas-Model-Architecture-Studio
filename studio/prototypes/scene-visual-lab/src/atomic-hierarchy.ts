@@ -27,7 +27,7 @@ export interface BoundaryPortal {
   moduleId: string;
   parentModuleId?: string;
   hostNodeId?: string;
-  side: "left" | "right";
+  side: PortSide;
   point: Point;
   atomicEdgeIds: string[];
 }
@@ -108,9 +108,21 @@ function endpointId(level: InlineDetailLevel, point: Point): string {
   const expanded = node ? expandedChildren.find((child) => child.node.id === node.id) : undefined;
   if (node && expanded) {
     const childLevelKey = expanded.level.levelKey;
-    const leftDistance = Math.abs(point.x - node.bounds.x);
-    const rightDistance = Math.abs(point.x - node.bounds.x - node.bounds.width);
-    return `${childLevelKey}:portal:${leftDistance <= rightDistance ? "entry" : "exit"}`;
+    const entry = expanded.level.diagram.entryPoint;
+    const exit = expanded.level.diagram.exitPoint;
+    const entrySide = pointSide(entry, expanded.level.bounds);
+    const exitSide = pointSide(exit, expanded.level.bounds);
+    const horizontal = ["left", "right"].includes(entrySide) && ["left", "right"].includes(exitSide);
+    const vertical = ["top", "bottom"].includes(entrySide) && ["top", "bottom"].includes(exitSide);
+    if (horizontal && entrySide !== exitSide) {
+      return `${childLevelKey}:portal:${Math.abs(point.x - entry.x) <= Math.abs(point.x - exit.x) ? "entry" : "exit"}`;
+    }
+    if (vertical && entrySide !== exitSide) {
+      return `${childLevelKey}:portal:${Math.abs(point.y - entry.y) <= Math.abs(point.y - exit.y) ? "entry" : "exit"}`;
+    }
+    const entryDistance = Math.hypot(point.x - entry.x, point.y - entry.y);
+    const exitDistance = Math.hypot(point.x - exit.x, point.y - exit.y);
+    return `${childLevelKey}:portal:${entryDistance <= exitDistance ? "entry" : "exit"}`;
   }
   const descendantAtomId = expandedChildren
     .map((child) => descendantAtomIdAt(child.level, point))
@@ -173,7 +185,7 @@ export function buildAtomicHierarchyProjection(root: InlineDetailLevel): AtomicH
       moduleId: level.levelKey,
       parentModuleId,
       hostNodeId,
-      side: "left",
+      side: pointSide(level.diagram.entryPoint, level.bounds),
       point: { ...level.diagram.entryPoint },
       atomicEdgeIds: edgeIdsAt(level.diagram.entryPoint),
     }, {
@@ -181,7 +193,7 @@ export function buildAtomicHierarchyProjection(root: InlineDetailLevel): AtomicH
       moduleId: level.levelKey,
       parentModuleId,
       hostNodeId,
-      side: "right",
+      side: pointSide(level.diagram.exitPoint, level.bounds),
       point: { ...level.diagram.exitPoint },
       atomicEdgeIds: edgeIdsAt(level.diagram.exitPoint),
     });
@@ -209,6 +221,8 @@ export function sceneBoundaryPorts(
   return Object.fromEntries(Object.entries(detailTrees).map(([nodeId, level]) => [nodeId, {
     entry: { ...level.diagram.entryPoint },
     exit: { ...level.diagram.exitPoint },
+    entrySide: pointSide(level.diagram.entryPoint, level.bounds),
+    exitSide: pointSide(level.diagram.exitPoint, level.bounds),
   }]));
 }
 
@@ -228,7 +242,7 @@ export function projectedAtomicExitForModule(
   moduleId: string,
 ): ProjectedAtomicExit | undefined {
   const moduleExit = projection.portals.find((portal) => (
-    portal.moduleId === moduleId && portal.side === "right"
+    portal.portalId === `${moduleId}:portal:exit`
   ));
   if (!moduleExit) return undefined;
 
@@ -273,7 +287,7 @@ export function projectedAtomicEntryForModule(
   moduleId: string,
 ): ProjectedAtomicEntry | undefined {
   const moduleEntry = projection.portals.find((portal) => (
-    portal.moduleId === moduleId && portal.side === "left"
+    portal.portalId === `${moduleId}:portal:entry`
   ));
   if (!moduleEntry) return undefined;
 
@@ -364,18 +378,18 @@ export function projectedSceneBoundaryPorts(
 ): SceneBoundaryPortMap {
   return Object.fromEntries(Object.entries(projections).flatMap(([nodeId, projection]) => {
     const entry = projection.portals.find((portal) => (
-      portal.moduleId === projection.rootId && portal.side === "left"
+      portal.portalId === `${projection.rootId}:portal:entry`
     ));
     const exit = projection.portals.find((portal) => (
-      portal.moduleId === projection.rootId && portal.side === "right"
+      portal.portalId === `${projection.rootId}:portal:exit`
     ));
     const atomicEntry = projectedAtomicEntry(projection);
     const atomicExit = projectedAtomicExit(projection);
     return entry && exit ? [[nodeId, {
       entry: { ...(atomicEntry?.point ?? entry.point) },
       exit: { ...(atomicExit?.point ?? exit.point) },
-      entrySide: atomicEntry?.side ?? "left",
-      exitSide: atomicExit?.side ?? "right",
+      entrySide: atomicEntry?.side ?? entry.side,
+      exitSide: atomicExit?.side ?? exit.side,
       entryIsInterior: Boolean(atomicEntry?.atomId),
       exitIsInterior: Boolean(atomicExit),
     }]] : [];
@@ -391,6 +405,19 @@ export function buildAtomicHierarchyRoutingPlan(
     nodeId,
     buildAtomicHierarchyProjection(tree),
   ]));
+  const boundaryPorts = projectedSceneBoundaryPorts(projections);
+  for (const [nodeId, tree] of Object.entries(detailTrees)) {
+    const ports = boundaryPorts[nodeId];
+    if (!ports || !tree.diagram.semanticInputPorts) continue;
+    ports.semanticInputs = Object.fromEntries(Object.entries(tree.diagram.semanticInputPorts).map(([role, port]) => [
+      role,
+      {
+        point: { ...port.point },
+        side: port.side,
+        isInterior: !pointOnBounds(port.point, tree.bounds),
+      },
+    ]));
+  }
   const hiddenFlowIds = new Set(Object.entries(projections).flatMap(([nodeId, projection]) => [
     ...projectedNestedEntryBridgeIds(projection),
     ...projectedNestedExitBridgeIds(projection),
@@ -399,7 +426,7 @@ export function buildAtomicHierarchyRoutingPlan(
   ]));
   return {
     projections,
-    boundaryPorts: projectedSceneBoundaryPorts(projections),
+    boundaryPorts,
     hiddenFlowIds,
     foregroundFlowIds: new Set(Object.values(projections).flatMap(projectedCrossLevelEdgeIds)),
   };

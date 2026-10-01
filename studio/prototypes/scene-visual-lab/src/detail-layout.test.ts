@@ -439,6 +439,7 @@ describe("interactive module detail layout", () => {
         for (const point of endpoints) {
           const attached = pointsEqual(point, level.diagram.entryPoint)
             || pointsEqual(point, level.diagram.exitPoint)
+            || distanceToNodeBoundary(point, level.bounds) < 0.01
             || atomicPorts.some((port) => pointsEqual(port, point))
             || nodeBounds.some((bounds) => distanceToNodeBoundary(point, bounds) <= 12);
           const shared = endpoints.filter((candidatePoint) => pointsEqual(candidatePoint, point)).length > 1;

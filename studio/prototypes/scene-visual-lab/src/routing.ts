@@ -15,6 +15,7 @@ const EPSILON = 0.001;
 const NODE_CLEARANCE = 14;
 const PORT_STUB = 24;
 const BEND_COST = 18;
+const CROSSING_COST = 900;
 const PORT_SIDES: readonly PortSide[] = ["left", "right", "top", "bottom"];
 
 interface AnchorPair {
@@ -22,6 +23,9 @@ interface AnchorPair {
   end: Point;
   sourceSide: PortSide;
   targetSide: PortSide;
+  sourceIsInterior: boolean;
+  targetIsInterior: boolean;
+  targetIsSemantic: boolean;
 }
 
 interface SidePair {
@@ -44,6 +48,7 @@ interface AdaptiveEdge {
   targetPort?: Point;
   sourceIsInterior: boolean;
   targetIsInterior: boolean;
+  targetIsSemantic: boolean;
 }
 
 interface PortReference {
@@ -89,6 +94,22 @@ function preferredSidePair(source: LabNode, target: LabNode): SidePair {
     return { sourceSide, targetSide: oppositeSide(sourceSide) };
   }
   const sourceSide: PortSide = dy >= 0 ? "bottom" : "top";
+  return { sourceSide, targetSide: oppositeSide(sourceSide) };
+}
+
+function paperVerticalSidePair(scene: LabScene, source: LabNode, target: LabNode): SidePair | undefined {
+  if (scene.layout_profile !== "paper" || !source.layout_lane || source.layout_lane !== target.layout_lane) {
+    return undefined;
+  }
+  const horizontalOverlap = Math.min(
+    source.bounds.x + source.bounds.width,
+    target.bounds.x + target.bounds.width,
+  ) - Math.max(source.bounds.x, target.bounds.x);
+  if (horizontalOverlap <= 0) return undefined;
+  const sourceCenter = center(source.bounds);
+  const targetCenter = center(target.bounds);
+  if (Math.abs(targetCenter.y - sourceCenter.y) < EPSILON) return undefined;
+  const sourceSide: PortSide = targetCenter.y < sourceCenter.y ? "top" : "bottom";
   return { sourceSide, targetSide: oppositeSide(sourceSide) };
 }
 
@@ -142,6 +163,46 @@ function selectSidePair(source: LabNode, target: LabNode, nodes: readonly LabNod
   return best;
 }
 
+function selectSourceSideForPort(
+  source: LabNode,
+  targetPoint: Point,
+  nodes: readonly LabNode[],
+): PortSide {
+  const sourceCenter = center(source.bounds);
+  const delta = { x: targetPoint.x - sourceCenter.x, y: targetPoint.y - sourceCenter.y };
+  const length = Math.max(EPSILON, Math.hypot(delta.x, delta.y));
+  const direction = { x: delta.x / length, y: delta.y / length };
+  let best = preferredSidePair(source, {
+    ...source,
+    bounds: { x: targetPoint.x, y: targetPoint.y, width: 0, height: 0 },
+  }).sourceSide;
+  let bestScore = Number.POSITIVE_INFINITY;
+  for (const side of PORT_SIDES) {
+    const port = midpointPort(source, side);
+    const vector = sideVector(side);
+    const outside = {
+      x: port.x + vector.x * PORT_STUB,
+      y: port.y + vector.y * PORT_STUB,
+    };
+    const alignment = vector.x * direction.x + vector.y * direction.y;
+    const blocked = nodes.some((node) => (
+      node.scene_node_id !== source.scene_node_id
+      && (pointInsideBounds(outside, inflate(node.bounds, NODE_CLEARANCE))
+        || segmentBlocked({ start: port, end: outside }, [inflate(node.bounds, NODE_CLEARANCE)]))
+    ));
+    const score = Math.abs(outside.x - targetPoint.x)
+      + Math.abs(outside.y - targetPoint.y)
+      + (1 - alignment) * 105
+      + (alignment < -0.01 ? 500 : 0)
+      + (blocked ? 10000 : 0);
+    if (score < bestScore) {
+      bestScore = score;
+      best = side;
+    }
+  }
+  return best;
+}
+
 function midpointPort(node: LabNode, side: PortSide): Point {
   const { x, y, width, height } = node.bounds;
   if (side === "left") return { x, y: y + height / 2 };
@@ -171,6 +232,7 @@ function boundaryPointForInteriorPort(node: LabNode, port: Point, side: PortSide
 }
 
 function anchors(
+  edge: LabEdge,
   source: LabNode,
   target: LabNode,
   boundaryPorts?: SceneBoundaryPortMap,
@@ -178,11 +240,17 @@ function anchors(
   const { sourceSide, targetSide } = preferredSidePair(source, target);
   const sourcePortal = boundaryPorts?.[source.scene_node_id];
   const targetPortal = boundaryPorts?.[target.scene_node_id];
+  const semanticTarget = edge.target_port_role
+    ? targetPortal?.semanticInputs?.[edge.target_port_role]
+    : undefined;
   return {
     start: sourcePortal?.exit ?? midpointPort(source, sourceSide),
-    end: targetPortal?.entry ?? midpointPort(target, targetSide),
+    end: semanticTarget?.point ?? targetPortal?.entry ?? midpointPort(target, targetSide),
     sourceSide: sourcePortal?.exitSide ?? (sourcePortal ? "right" : sourceSide),
-    targetSide: targetPortal?.entrySide ?? (targetPortal ? "left" : targetSide),
+    targetSide: semanticTarget?.side ?? targetPortal?.entrySide ?? (targetPortal ? "left" : targetSide),
+    sourceIsInterior: sourcePortal?.exitIsInterior ?? false,
+    targetIsInterior: semanticTarget?.isInterior ?? targetPortal?.entryIsInterior ?? false,
+    targetIsSemantic: Boolean(semanticTarget),
   };
 }
 
@@ -359,10 +427,23 @@ function assignAdaptivePorts(records: AdaptiveEdge[]): void {
     const sample = references[0];
     const node = sample.role === "source" ? sample.record.source : sample.record.target;
     const side = sample.role === "source" ? sample.record.sourceSide : sample.record.targetSide;
+    const horizontal = side === "top" || side === "bottom";
+    const oppositeAxes = references.map((reference) => (
+      horizontal ? reference.opposite.x : reference.opposite.y
+    ));
+    const nodeAxisStart = horizontal ? node.bounds.x : node.bounds.y;
+    const nodeAxisEnd = nodeAxisStart + (horizontal ? node.bounds.width : node.bounds.height);
+    const targetsShareOneSide = Math.max(...oppositeAxes) < nodeAxisStart
+      || Math.min(...oppositeAxes) > nodeAxisEnd;
+    const sortDirection = references.every((reference) => reference.role === "source")
+      && targetsShareOneSide
+      ? -1
+      : 1;
     references.sort((first, second) => {
-      const firstAxis = side === "left" || side === "right" ? first.opposite.y : first.opposite.x;
-      const secondAxis = side === "left" || side === "right" ? second.opposite.y : second.opposite.x;
-      return firstAxis - secondAxis || first.record.edge.scene_edge_id.localeCompare(second.record.edge.scene_edge_id);
+      const firstAxis = horizontal ? first.opposite.x : first.opposite.y;
+      const secondAxis = horizontal ? second.opposite.x : second.opposite.y;
+      return sortDirection * (firstAxis - secondAxis)
+        || first.record.edge.scene_edge_id.localeCompare(second.record.edge.scene_edge_id);
     });
     references.forEach((reference, index) => {
       const point = node.detail_expanded && (side === "left" || side === "right")
@@ -459,7 +540,7 @@ function parallelProximityPenalty(first: Segment, second: Segment): number {
 function routePenalty(segment: Segment, usedSegments: readonly Segment[]): number {
   return usedSegments.reduce((penalty, used) => {
     const overlap = segmentOverlapLength(segment, used);
-    const crossing = segmentsCross(segment.start, segment.end, used.start, used.end) ? 55 : 0;
+    const crossing = segmentsCross(segment.start, segment.end, used.start, used.end) ? CROSSING_COST : 0;
     return penalty + overlap * 12 + crossing + parallelProximityPenalty(segment, used);
   }, 0);
 }
@@ -591,19 +672,29 @@ function adaptiveRoutes(scene: LabScene, boundaryPorts?: SceneBoundaryPortMap): 
     const source = nodes.get(edge.source_scene_node_id);
     const target = nodes.get(edge.target_scene_node_id);
     if (!source || !target) return [];
-    const sides = selectSidePair(source, target, scene.nodes);
     const sourcePortal = boundaryPorts?.[source.scene_node_id];
     const targetPortal = boundaryPorts?.[target.scene_node_id];
+    const semanticTarget = edge.target_port_role
+      ? targetPortal?.semanticInputs?.[edge.target_port_role]
+      : undefined;
+    const sides = paperVerticalSidePair(scene, source, target)
+      ?? selectSidePair(source, target, scene.nodes);
+    const sourceSide = semanticTarget && !sourcePortal
+      ? selectSourceSideForPort(source, semanticTarget.point, scene.nodes)
+      : sourcePortal?.exitSide ?? (sourcePortal || source.detail_expanded ? "right" : sides.sourceSide);
     return [{
       edge,
       source,
       target,
-      sourceSide: sourcePortal?.exitSide ?? (sourcePortal || source.detail_expanded ? "right" : sides.sourceSide),
-      targetSide: targetPortal?.entrySide ?? (targetPortal || target.detail_expanded ? "left" : sides.targetSide),
+      sourceSide,
+      targetSide: semanticTarget?.side
+        ?? targetPortal?.entrySide
+        ?? (targetPortal || target.detail_expanded ? "left" : sides.targetSide),
       sourcePort: sourcePortal?.exit,
-      targetPort: targetPortal?.entry,
+      targetPort: semanticTarget?.point ?? targetPortal?.entry,
       sourceIsInterior: sourcePortal?.exitIsInterior ?? false,
-      targetIsInterior: targetPortal?.entryIsInterior ?? false,
+      targetIsInterior: semanticTarget?.isInterior ?? targetPortal?.entryIsInterior ?? false,
+      targetIsSemantic: Boolean(semanticTarget),
     }];
   });
   assignAdaptivePorts(records);
@@ -627,12 +718,7 @@ function adaptiveRoutes(scene: LabScene, boundaryPorts?: SceneBoundaryPortMap): 
       x: targetBoundary.x + targetVector.x * PORT_STUB,
       y: targetBoundary.y + targetVector.y * PORT_STUB,
     };
-    const obstacles = scene.nodes
-      .filter((node) => !(
-        record.sourceIsInterior && node.scene_node_id === record.source.scene_node_id
-        || record.targetIsInterior && node.scene_node_id === record.target.scene_node_id
-      ))
-      .map((node) => inflate(node.bounds, NODE_CLEARANCE));
+    const obstacles = scene.nodes.map((node) => inflate(node.bounds, NODE_CLEARANCE));
     const searched = orthogonalSearch(start, end, obstacles, scene, usedSegments);
     const compacted = compact([
       sourcePort,
@@ -655,8 +741,8 @@ function adaptiveRoutes(scene: LabScene, boundaryPorts?: SceneBoundaryPortMap): 
       labelAngle: label.angle,
       sourceSide: record.sourceSide,
       targetSide: record.targetSide,
-      markerEnd: !boundaryPorts?.[record.target.scene_node_id],
-      foreground: record.sourceIsInterior || record.targetIsInterior,
+      markerEnd: record.targetIsSemantic || !boundaryPorts?.[record.target.scene_node_id],
+      foreground: record.sourceIsInterior || record.targetIsInterior || record.targetIsSemantic,
     };
   });
 }
@@ -672,7 +758,7 @@ export function routeScene(
     const source = nodes.get(edge.source_scene_node_id);
     const target = nodes.get(edge.target_scene_node_id);
     if (!source || !target) return [];
-    const anchor = anchors(source, target, boundaryPorts);
+    const anchor = anchors(edge, source, target, boundaryPorts);
     const lane = edgeLane(edge, index, scene.edges);
     const curve = style === "curve" ? curveGeometry(anchor.start, anchor.end, lane) : null;
     const points = curve?.points ?? routePoints(anchor.start, anchor.end, style, lane);
@@ -685,11 +771,8 @@ export function routeScene(
       labelAngle: label.angle,
       sourceSide: anchor.sourceSide,
       targetSide: anchor.targetSide,
-      markerEnd: !boundaryPorts?.[target.scene_node_id],
-      foreground: Boolean(
-        boundaryPorts?.[source.scene_node_id]?.exitIsInterior
-        || boundaryPorts?.[target.scene_node_id]?.entryIsInterior
-      ),
+      markerEnd: anchor.targetIsSemantic || !boundaryPorts?.[target.scene_node_id],
+      foreground: anchor.sourceIsInterior || anchor.targetIsInterior || anchor.targetIsSemantic,
     }];
   });
 }
@@ -746,8 +829,10 @@ function reverseExitCount(scene: LabScene, routes: readonly RoutedEdge[]): numbe
     const afterStart = route.points[1];
     const beforeEnd = route.points.at(-2)!;
     const end = route.points.at(-1)!;
-    if ((afterStart.x - start.x) * desired.x + (afterStart.y - start.y) * desired.y < -EPSILON) count += 1;
-    if ((end.x - beforeEnd.x) * desired.x + (end.y - beforeEnd.y) * desired.y < -EPSILON) count += 1;
+    if (!pointInsideBounds(start, source.bounds)
+      && (afterStart.x - start.x) * desired.x + (afterStart.y - start.y) * desired.y < -EPSILON) count += 1;
+    if (!pointInsideBounds(end, target.bounds)
+      && (end.x - beforeEnd.x) * desired.x + (end.y - beforeEnd.y) * desired.y < -EPSILON) count += 1;
   }
   return count;
 }
@@ -768,14 +853,31 @@ export function measureScene(scene: LabScene, routed: RoutedEdge[]): SceneMetric
   })));
   for (const route of routed) {
     bends += Math.max(0, route.points.length - 2);
-    for (let index = 0; index < route.points.length - 1; index += 1) {
-      const segment = { start: route.points[index], end: route.points[index + 1] };
+    const routeSegments = route.points.slice(0, -1).map((start, index) => ({
+      start,
+      end: route.points[index + 1],
+    }));
+    const sourceNode = scene.nodes.find((node) => node.scene_node_id === route.edge.source_scene_node_id);
+    const targetNode = scene.nodes.find((node) => node.scene_node_id === route.edge.target_scene_node_id);
+    let sourceCorridorEnd = -1;
+    while (sourceNode && sourceCorridorEnd + 1 < routeSegments.length
+      && segmentNearBounds(routeSegments[sourceCorridorEnd + 1], sourceNode.bounds, 9)) {
+      sourceCorridorEnd += 1;
+    }
+    let targetCorridorStart = routeSegments.length;
+    while (targetNode && targetCorridorStart > 0
+      && segmentNearBounds(routeSegments[targetCorridorStart - 1], targetNode.bounds, 9)) {
+      targetCorridorStart -= 1;
+    }
+    for (let index = 0; index < routeSegments.length; index += 1) {
+      const segment = routeSegments[index];
       routeLength += Math.hypot(segment.end.x - segment.start.x, segment.end.y - segment.start.y);
       for (const node of scene.nodes) {
         const isSource = route.edge.source_scene_node_id === node.scene_node_id;
         const isTarget = route.edge.target_scene_node_id === node.scene_node_id;
-        const allowedEndpointSegment = isSource && index === 0
-          || isTarget && index === route.points.length - 2;
+        const allowedEndpointSegment = Boolean(route.foreground && (isSource || isTarget))
+          || isSource && index <= sourceCorridorEnd
+          || isTarget && index >= targetCorridorStart;
         if (!isSource && !isTarget && segmentNearBounds(segment, node.bounds, 0)) nodeIntersections += 1;
         if (!allowedEndpointSegment && segmentNearBounds(segment, node.bounds, 9)) clearanceViolations += 1;
       }

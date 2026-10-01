@@ -176,7 +176,20 @@ export function inferNestedDetailKind(
     if (/^feed-forward$/i.test(label)) return "feedforward";
     return undefined;
   }
-  if (parentKind === "sinusoidal-embedding") return undefined;
+  if ([
+    "paper-transformer-encoder",
+    "paper-transformer-decoder",
+    "paper-tensor2tensor-encoder",
+    "paper-tensor2tensor-decoder",
+  ].includes(parentKind)) {
+    if (/^(self-attention|masked self-attn|cross-attention)$/i.test(label)) return "paper-attention";
+    if (/^add\s*&\s*norm$/i.test(label)) return "paper-add-norm";
+    if (/^feed-forward$/i.test(label)) return "paper-feedforward";
+    return undefined;
+  }
+  if (parentKind === "sinusoidal-embedding" || parentKind === "paper-sinusoidal-embedding") {
+    return undefined;
+  }
 
   if (parentKind === "dual-encoder" && value.includes("image")) nestedKind = "vision-transformer";
   else if (parentKind === "dual-encoder" && value.includes("text")) nestedKind = "attention";
@@ -198,6 +211,7 @@ export function inferNestedDetailKind(
   else if (parentKind === "gan" && /generator|discriminator/.test(value)) nestedKind = "mlp";
   else if (/expert|ffn|mlp|linear/.test(value)) nestedKind = "mlp";
 
+  if (parentKind === "paper-attention" && nestedKind === "attention") return undefined;
   return nestedKind === parentKind ? undefined : nestedKind;
 }
 
@@ -275,6 +289,16 @@ function anchorSide(point: Point, bounds: Bounds): Anchor["side"] {
   ];
   distances.sort((a, b) => a[1] - b[1]);
   return distances[0][0];
+}
+
+function projectBoundaryPoint(point: Point, source: Bounds, target: Bounds): Point {
+  const side = anchorSide(point, source);
+  const xRatio = source.width ? (point.x - source.x) / source.width : 0.5;
+  const yRatio = source.height ? (point.y - source.y) / source.height : 0.5;
+  if (side === "left") return { x: target.x, y: target.y + yRatio * target.height };
+  if (side === "right") return { x: target.x + target.width, y: target.y + yRatio * target.height };
+  if (side === "top") return { x: target.x + xRatio * target.width, y: target.y };
+  return { x: target.x + xRatio * target.width, y: target.y + target.height };
 }
 
 function directedAnchor(
@@ -730,18 +754,37 @@ function layoutFlow(
     : candidateEndAnchor;
   const startsAtBoundary = samePoint(first, diagram.entryPoint);
   const endsAtBoundary = samePoint(last, diagram.exitPoint);
+  const naturalSurface = options.routeBounds
+    ? naturalDetailBounds(diagram.kind, options.routeBounds.x, options.routeBounds.y)
+    : undefined;
+  const startsAtSurface = naturalSurface
+    && distanceToBoundary(first, naturalSurface) <= BOUNDARY_EPSILON;
+  const endsAtSurface = naturalSurface
+    && distanceToBoundary(last, naturalSurface) <= BOUNDARY_EPSILON;
 
   const movedById = new Map(movedNodes.map((node) => [node.id, node]));
   const movedStartNode = startAnchor ? movedById.get(startAnchor.node.id) : undefined;
   const movedEndNode = endAnchor ? movedById.get(endAnchor.node.id) : undefined;
-  const semanticEndPort = movedEndNode && primitive.targetPortRole
+  const nestedSemanticEndPort = movedEndNode && primitive.targetPortRole
     ? options.semanticNodePorts?.[movedEndNode.id]?.[primitive.targetPortRole]
     : undefined;
+  const semanticEndPort = nestedSemanticEndPort ?? (
+    movedEndNode && primitive.targetPortRole && endAnchor
+      ? {
+        point: projectBoundaryPoint(last, endAnchor.node.bounds, movedEndNode.bounds),
+        side: endAnchor.side,
+      }
+      : undefined
+  );
   const externalStart = startsAtBoundary && options.entryPoint
     ? options.entryPoint
+    : startsAtSurface && naturalSurface && options.routeBounds
+      ? projectBoundaryPoint(first, naturalSurface, options.routeBounds)
     : options.junctionPorts?.[pointKey(first)] ?? first;
   const externalEnd = endsAtBoundary && options.exitPoint
     ? options.exitPoint
+    : endsAtSurface && naturalSurface && options.routeBounds
+      ? projectBoundaryPoint(last, naturalSurface, options.routeBounds)
     : options.junctionPorts?.[pointKey(last)] ?? last;
   const startPortalAnchor = !startAnchor && options.junctionPorts?.[pointKey(first)]
     ? findAnchor(externalStart, movedNodes)
@@ -775,6 +818,9 @@ function layoutFlow(
       );
     }
   }
+  const useSemanticEndPort = Boolean(
+    semanticEndPort && (nestedSemanticEndPort || !shouldResolveNearestSides),
+  );
   const start = movedStartNode && resolvedStartSide
     ? options.distributedEndpointPorts?.[flowEndpointKey(primitiveIndex, "start")]
       ?? options.nodePorts?.[movedStartNode.id]?.[resolvedStartSide]
@@ -782,7 +828,7 @@ function layoutFlow(
     : externalStart;
   const end = movedEndNode && resolvedEndSide
     ? options.distributedEndpointPorts?.[flowEndpointKey(primitiveIndex, "end")]
-      ?? semanticEndPort?.point
+      ?? (useSemanticEndPort ? semanticEndPort?.point : undefined)
       ?? options.nodePorts?.[movedEndNode.id]?.[resolvedEndSide]
       ?? centeredBoundaryPoint(resolvedEndSide, movedEndNode.bounds)
     : externalEnd;
@@ -790,7 +836,7 @@ function layoutFlow(
     ? options.nodePortDirections?.[movedStartNode.id]?.[resolvedStartSide] ?? resolvedStartSide
     : resolvedStartSide;
   const endRouteSide = movedEndNode && resolvedEndSide
-    ? semanticEndPort?.side
+    ? (useSemanticEndPort ? semanticEndPort?.side : undefined)
       ?? options.nodePortDirections?.[movedEndNode.id]?.[resolvedEndSide]
       ?? resolvedEndSide
     : resolvedEndSide;
@@ -898,7 +944,7 @@ function distributedDynamicEndpointPorts(
     if (!node) return;
     const side = anchorSide(point, node.bounds);
     if (options.nodePorts?.[node.id]?.[side]) return;
-    if (endpoint === "end" && targetPortRole && options.semanticNodePorts?.[node.id]?.[targetPortRole]) return;
+    if (endpoint === "end" && targetPortRole) return;
     const groupKey = `${node.id}:${side}`;
     const group = groups.get(groupKey) ?? [];
     group.push({
@@ -1024,9 +1070,20 @@ export function layoutDetailDiagram(
     occupiedRoutes.push({ points: routed.points, channel: routed.channel });
     return routed;
   });
+  const resolvedSemanticInputPorts = semanticInputPorts && Object.fromEntries(
+    Object.entries(semanticInputPorts).map(([role, port]) => {
+      const inputFlow = routedPrimitives.find((primitive) => (
+        primitive.kind === "flow" && primitive.targetPortRole === role
+      ));
+      if (!inputFlow || inputFlow.kind !== "flow") return [role, port];
+      const point = inputFlow.points.at(-1)!;
+      const anchor = findAnchor(point, movedNodes, inputFlow.points.at(-2), "end", true);
+      return [role, { point: { ...point }, side: anchor?.side ?? port.side }];
+    }),
+  );
   return {
     ...movedDiagram,
-    semanticInputPorts,
+    semanticInputPorts: resolvedSemanticInputPorts,
     entryPoint: options.entryPoint ?? diagram.entryPoint,
     exitPoint: options.exitPoint ?? diagram.exitPoint,
     primitives: routedPrimitives,
@@ -1090,7 +1147,15 @@ function expandedJunctionPorts(
   }
 
   const ports: Record<string, Point> = {};
-  const portalForSide = (side: Anchor["side"]) => side === "left" ? entryPoint : exitPoint;
+  const portalForSide = (side: Anchor["side"]) => {
+    const entrySide = anchorSide(entryPoint, active.bounds);
+    const exitSide = anchorSide(exitPoint, active.bounds);
+    if (entrySide !== exitSide) return side === entrySide ? entryPoint : exitPoint;
+    const sidePoint = centeredBoundaryPoint(side, active.bounds);
+    const entryDistance = Math.hypot(sidePoint.x - entryPoint.x, sidePoint.y - entryPoint.y);
+    const exitDistance = Math.hypot(sidePoint.x - exitPoint.x, sidePoint.y - exitPoint.y);
+    return entryDistance <= exitDistance ? entryPoint : exitPoint;
+  };
   for (const flow of flows) {
     const first = flow.points[0];
     const last = flow.points.at(-1)!;
@@ -1297,12 +1362,14 @@ export function inlineAtomicEntry(level: InlineDetailLevel): InlineAtomicEntry |
       const expanded = inlineExpandedChildren(level).find((child) => child.node.id === anchor.node.id);
       if (expanded) {
         return inlineAtomicEntry(expanded.level)
-          ?? { point: { ...level.diagram.entryPoint }, side: "left" };
+          ?? { point: { ...level.diagram.entryPoint }, side: anchorSide(level.diagram.entryPoint, level.bounds) };
       }
       return { point: { ...point }, side: anchor.side };
     }
     if (next.length !== 1) {
-      return next.length > 1 ? { point: { ...level.diagram.entryPoint }, side: "left" } : undefined;
+      return next.length > 1
+        ? { point: { ...level.diagram.entryPoint }, side: anchorSide(level.diagram.entryPoint, level.bounds) }
+        : undefined;
     }
     if (anchor) return { point: { ...point }, side: anchor.side };
     cursor = point;
@@ -1343,13 +1410,92 @@ function automaticExpandedBounds(
   branch: DetailExpansionBranch,
 ): { size: Pick<Bounds, "width" | "height">; overrides: DetailNodeBoundsMap } | undefined {
   const baseBounds = naturalDetailBounds(kind);
-  const nodes = listDetailNodes(buildModuleDetail(kind, baseBounds));
+  const baseDiagram = buildModuleDetail(kind, baseBounds);
+  const nodes = listDetailNodes(baseDiagram);
   const branches = new Map(detailExpansionChildren(branch));
+  const expandableNodes = nodes.filter((node) => node.nestedKind);
+  const expandableCenters = expandableNodes.map((node) => ({
+    x: node.bounds.x + node.bounds.width / 2,
+    y: node.bounds.y + node.bounds.height / 2,
+  }));
+  const xSpread = expandableCenters.length > 1
+    ? Math.max(...expandableCenters.map((point) => point.x)) - Math.min(...expandableCenters.map((point) => point.x))
+    : 0;
+  const ySpread = expandableCenters.length > 1
+    ? Math.max(...expandableCenters.map((point) => point.y)) - Math.min(...expandableCenters.map((point) => point.y))
+    : 0;
+  const childrenUseVerticalBoundaries = expandableNodes.every((node) => {
+    const childBounds = naturalDetailBounds(node.nestedKind!);
+    const childDiagram = buildModuleDetail(node.nestedKind!, childBounds);
+    return ["top", "bottom"].includes(anchorSide(childDiagram.entryPoint, childBounds))
+      && ["top", "bottom"].includes(anchorSide(childDiagram.exitPoint, childBounds));
+  });
+  const vertical = expandableCenters.length > 1
+    && ySpread > xSpread
+    && childrenUseVerticalBoundaries
+    && ["top", "bottom"].includes(anchorSide(baseDiagram.entryPoint, baseBounds))
+    && ["top", "bottom"].includes(anchorSide(baseDiagram.exitPoint, baseBounds));
   const activeNodes = nodes.filter((node) => node.nestedKind && branches.has(node.id))
-    .sort((first, second) => first.bounds.x - second.bounds.x || first.bounds.y - second.bounds.y || first.id.localeCompare(second.id));
+    .sort((first, second) => vertical
+      ? second.bounds.y - first.bounds.y || first.bounds.x - second.bounds.x || first.id.localeCompare(second.id)
+      : first.bounds.x - second.bounds.x || first.bounds.y - second.bounds.y || first.id.localeCompare(second.id));
   if (!activeNodes.length) return undefined;
 
   const currentBounds = new Map(nodes.map((node) => [node.id, { ...node.bounds }]));
+  if (vertical) {
+    for (const active of activeNodes) {
+      const activeBounds = currentBounds.get(active.id)!;
+      const childSize = expandedDetailSize(active.nestedKind!, branches.get(active.id));
+      const expanded = {
+        x: activeBounds.x,
+        y: activeBounds.y + activeBounds.height - childSize.height,
+        width: childSize.width,
+        height: childSize.height,
+      };
+      currentBounds.set(active.id, expanded);
+      const activeCenterY = activeBounds.y + activeBounds.height / 2;
+      const growthY = Math.max(0, expanded.height - activeBounds.height) + INLINE_EXPANSION_GAP;
+      const growthX = Math.max(0, expanded.width - activeBounds.width) + INLINE_EXPANSION_GAP;
+
+      for (const node of nodes) {
+        if (node.id === active.id) continue;
+        const nodeBounds = currentBounds.get(node.id)!;
+        const centerY = nodeBounds.y + nodeBounds.height / 2;
+        const next = { ...nodeBounds };
+        if (centerY < activeCenterY - Math.max(8, activeBounds.height * 0.2)) {
+          next.y -= growthY;
+        } else {
+          const overlaps = next.x < expanded.x + expanded.width + INLINE_EXPANSION_GAP
+            && next.x + next.width > expanded.x - INLINE_EXPANSION_GAP
+            && next.y < expanded.y + expanded.height + INLINE_EXPANSION_GAP
+            && next.y + next.height > expanded.y - INLINE_EXPANSION_GAP;
+          if (overlaps && nodeBounds.y + 4 < activeBounds.y + activeBounds.height) next.x += growthX;
+        }
+        currentBounds.set(node.id, next);
+      }
+    }
+
+    const provisional = nodes.map((node) => currentBounds.get(node.id)!);
+    const minX = Math.min(...provisional.map((bounds) => bounds.x));
+    const minY = Math.min(...provisional.map((bounds) => bounds.y));
+    const shiftX = minX < 12 ? 12 - minX : 0;
+    const shiftY = minY < 58 ? 58 - minY : 0;
+    if (shiftX || shiftY) {
+      for (const node of nodes) {
+        const value = currentBounds.get(node.id)!;
+        currentBounds.set(node.id, { ...value, x: value.x + shiftX, y: value.y + shiftY });
+      }
+    }
+    const overrides: DetailNodeBoundsMap = Object.fromEntries(nodes.flatMap((node) => {
+      const next = currentBounds.get(node.id)!;
+      return boundsEqual(next, node.bounds) ? [] : [[node.id, next]];
+    }));
+    const finalBounds = nodes.map((node) => currentBounds.get(node.id)!);
+    const right = Math.max(baseBounds.width, ...finalBounds.map((bounds) => bounds.x + bounds.width + INLINE_RIGHT_PADDING));
+    const bottom = Math.max(baseBounds.height, ...finalBounds.map((bounds) => bounds.y + bounds.height + INLINE_BOTTOM_PADDING));
+    return { size: { width: right, height: bottom }, overrides };
+  }
+
   for (const active of activeNodes) {
     const activeBounds = currentBounds.get(active.id)!;
     const childSize = expandedDetailSize(active.nestedKind!, branches.get(active.id));
@@ -1441,12 +1587,18 @@ export function buildInlineDetailLayout(
     id,
     shiftedBounds(value, bounds.x, bounds.y),
   ]));
-  const entryPoint = routingMode === "atomic-bottom-up"
-    ? { x: bounds.x, y: baseDiagram.entryPoint.y }
-    : { x: bounds.x, y: bounds.y + bounds.height / 2 };
-  const exitPoint = routingMode === "atomic-bottom-up"
-    ? { x: bounds.x + bounds.width, y: baseDiagram.exitPoint.y }
-    : { x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 };
+  const verticalBoundaries = ["top", "bottom"].includes(anchorSide(baseDiagram.entryPoint, natural))
+    || ["top", "bottom"].includes(anchorSide(baseDiagram.exitPoint, natural));
+  const entryPoint = verticalBoundaries
+    ? projectBoundaryPoint(baseDiagram.entryPoint, natural, bounds)
+    : routingMode === "atomic-bottom-up"
+      ? { x: bounds.x, y: baseDiagram.entryPoint.y }
+      : { x: bounds.x, y: bounds.y + bounds.height / 2 };
+  const exitPoint = verticalBoundaries
+    ? projectBoundaryPoint(baseDiagram.exitPoint, natural, bounds)
+    : routingMode === "atomic-bottom-up"
+      ? { x: bounds.x + bounds.width, y: baseDiagram.exitPoint.y }
+      : { x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 };
   const commonOptions: DetailLayoutOptions = {
     nodeBounds: translatedOverrides,
     entryPoint,
@@ -1554,17 +1706,28 @@ export function buildInlineDetailLayout(
       extraObstacles: childObstacles,
       nodePorts: Object.fromEntries(expandedChildren.map((expanded) => {
         const ports = atomicPorts.get(expanded.node.id)!;
-        return [expanded.node.id, {
-          left: ports.entry?.point ?? expanded.level.diagram.entryPoint,
-          right: ports.exit?.point ?? expanded.level.diagram.exitPoint,
-        }];
+        const entrySide = anchorSide(expanded.level.diagram.entryPoint, expanded.level.bounds);
+        const entry = ports.entry?.point ?? expanded.level.diagram.entryPoint;
+        const exit = ports.exit?.point ?? expanded.level.diagram.exitPoint;
+        return [expanded.node.id, Object.fromEntries(
+          (["left", "right", "top", "bottom"] as PortSide[]).map((side) => [
+            side,
+            side === entrySide ? entry : exit,
+          ]),
+        )];
       })),
       nodePortDirections: Object.fromEntries(expandedChildren.map((expanded) => {
         const ports = atomicPorts.get(expanded.node.id)!;
-        return [expanded.node.id, {
-          left: ports.entry?.side ?? "left",
-          right: ports.exit?.side ?? "right",
-        }];
+        const entrySide = anchorSide(expanded.level.diagram.entryPoint, expanded.level.bounds);
+        const entryDirection = ports.entry?.side ?? entrySide;
+        const exitDirection = ports.exit?.side
+          ?? anchorSide(expanded.level.diagram.exitPoint, expanded.level.bounds);
+        return [expanded.node.id, Object.fromEntries(
+          (["left", "right", "top", "bottom"] as PortSide[]).map((side) => [
+            side,
+            side === entrySide ? entryDirection : exitDirection,
+          ]),
+        )];
       })),
       suppressExpandedChildMarker: true,
     }),
