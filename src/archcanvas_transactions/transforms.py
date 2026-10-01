@@ -51,12 +51,14 @@ class _SetModuleParameter(cst.CSTTransformer):
         source_expression: str,
         value: Any,
         expected_line: int,
+        positional_index: int | None = None,
     ) -> None:
         self.module_name = module_name
         self.parameter_name = parameter_name
         self.source_expression = source_expression
         self.replacement = cst.parse_expression(repr(value))
         self.expected_line = expected_line
+        self.positional_index = positional_index
         self.matches = 0
         self.anchor_line = 0
 
@@ -81,11 +83,13 @@ class _SetModuleParameter(cst.CSTTransformer):
             return updated_node
         call = updated_node.value
         original_call = original_node.value
-        positional_index = {
-            "in_features": 0,
-            "out_features": 1,
-            "normalized_shape": 0,
-        }.get(self.parameter_name)
+        positional_index = self.positional_index
+        if positional_index is None:
+            positional_index = {
+                "in_features": 0,
+                "out_features": 1,
+                "normalized_shape": 0,
+            }.get(self.parameter_name)
         if positional_index is None and self.parameter_name.startswith("arg"):
             suffix = self.parameter_name.removeprefix("arg")
             positional_index = int(suffix) if suffix.isdigit() else None
@@ -118,6 +122,7 @@ def set_python_parameter(
     source_expression: str,
     value: Any,
     expected_line: int,
+    positional_index: int | None = None,
 ) -> TransformResult:
     module = cst.parse_module(source.decode("utf-8"))
     transformer = _SetModuleParameter(
@@ -126,6 +131,7 @@ def set_python_parameter(
         source_expression,
         value,
         expected_line,
+        positional_index,
     )
     changed = MetadataWrapper(module).visit(transformer)
     if transformer.matches != 1:
@@ -555,6 +561,37 @@ def insert_layer_norm(
     if transformer.init_matches != 1 or transformer.forward_matches != 1:
         raise ValueError(
             "insert_layer_norm requires one exact constructor anchor and one exact forward call"
+        )
+    return TransformResult(content=changed.code.encode(), anchor_line=forward_line)
+
+
+def insert_pytorch_module(
+    source: bytes,
+    *,
+    target_module: str,
+    new_module: str,
+    constructor_expression: str,
+    init_line: int,
+    forward_line: int,
+) -> TransformResult:
+    module = cst.parse_module(source.decode("utf-8"))
+    if f"self.{new_module}" in module.code:
+        raise ValueError(f"module name already exists: {new_module}")
+    constructor = cst.parse_expression(constructor_expression)
+    if not isinstance(constructor, cst.Call):
+        raise TypeError("registered module constructor must be a call expression")
+    transformer = _InsertLayerNorm(
+        target_module,
+        new_module,
+        "0",
+        init_line,
+        forward_line,
+        constructor_expression=constructor_expression,
+    )
+    changed = MetadataWrapper(module).visit(transformer)
+    if transformer.init_matches != 1 or transformer.forward_matches != 1:
+        raise ValueError(
+            "registered module insertion requires one exact constructor anchor and one exact forward call"
         )
     return TransformResult(content=changed.code.encode(), anchor_line=forward_line)
 

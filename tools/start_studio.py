@@ -114,9 +114,14 @@ def main(argv: list[str] | None = None) -> int:
         backend_url = f"http://{args.host}:{args.backend_port}/api/state"
         _wait_for_backend(backend, backend_url)
         print(f"Studio backend: {backend_url}")
+        frontend_environment = os.environ.copy()
+        frontend_environment["ARCHCANVAS_API_URL"] = (
+            f"http://{args.host}:{args.backend_port}"
+        )
         frontend = subprocess.Popen(
             [npm, "run", "dev", "--", "--host", args.host, "--port", str(args.frontend_port)],
             cwd=STUDIO,
+            env=frontend_environment,
         )
         print(f"Studio frontend: http://{args.host}:{args.frontend_port}/")
         return frontend.wait()

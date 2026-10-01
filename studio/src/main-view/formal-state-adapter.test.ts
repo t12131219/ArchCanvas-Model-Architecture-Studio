@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildKernelRenderScene } from "../visual-kernel/layout";
+import { resolveQualifiedName } from "../module-registry/registry";
 import { adaptFormalState, type FormalStudioState } from "./formal-state-adapter";
 
 function formalState(): FormalStudioState {
@@ -71,6 +72,148 @@ describe("formal state adapter", () => {
       targetPortId: "view:hierarchy:b:input",
     });
     expect(visualState.routeStyle).toBe("adaptive");
+  });
+
+  it("materializes registry-backed named ports without changing legacy projections", () => {
+    const state = formalState();
+    const definition = resolveQualifiedName("torch.nn.Conv2d")!;
+    const node = state.architecture.nodes.find((item) => item.node_id === "node:b")!;
+    node.attributes = {
+      definition_id: definition.definition_id,
+      definition_version: definition.version,
+      definition_digest: definition.digest,
+      glyph_id: definition.glyph_id,
+      semantic_kind: definition.semantic_kind,
+    };
+    node.output_ports = [{ port_id: "port:b:output", name: "output", direction: "output", role: "output" }];
+    node.input_ports[0] = { port_id: "port:b:input", name: "input", direction: "input", role: "input" };
+    state.architecture.edges[0].consumer_port = "port:b:input";
+
+    const { document } = adaptFormalState(state);
+    const projected = document.nodes.find((item) => item.hierarchyNodeId === "hierarchy:b")!;
+    const input = document.ports.find((item) => item.ownerNodeId === projected.nodeId && item.direction === "input")!;
+
+    expect(projected).toMatchObject({ glyphId: "conv2d", shape: "convolution" });
+    expect(input).toMatchObject({
+      role: "input",
+      canonicalPortIds: ["port:b:input"],
+      contract: {
+        required: true,
+        minConnections: 1,
+        maxConnections: 1,
+        definitionId: "pytorch.nn.conv2d",
+      },
+    });
+    expect(document.edges[0].targetPortId).toBe(input.portId);
+  });
+
+  it("keeps the same registry glyph across engineering and paper-style presets", () => {
+    const definition = resolveQualifiedName("torch.nn.Conv2d")!;
+    const engineering = formalState();
+    const paper = formalState();
+    for (const state of [engineering, paper]) {
+      const node = state.architecture.nodes.find((item) => item.node_id === "node:b")!;
+      node.attributes = {
+        definition_id: definition.definition_id,
+        definition_version: definition.version,
+        definition_digest: definition.digest,
+        glyph_id: definition.glyph_id,
+        semantic_kind: definition.semantic_kind,
+      };
+    }
+    engineering.view_state.node_style = "technical";
+    engineering.view_state.label_style = "endpoint";
+    paper.view_state.node_style = "compact";
+    paper.view_state.label_style = "plain";
+
+    const engineeringNode = adaptFormalState(engineering).document.nodes
+      .find((item) => item.hierarchyNodeId === "hierarchy:b")!;
+    const paperNode = adaptFormalState(paper).document.nodes
+      .find((item) => item.hierarchyNodeId === "hierarchy:b")!;
+
+    expect(engineeringNode.glyphId).toBe("conv2d");
+    expect(paperNode.glyphId).toBe(engineeringNode.glyphId);
+    expect(paperNode.definitionRef).toEqual(engineeringNode.definitionRef);
+  });
+
+  it("projects registered draft nodes and named ports as synthetic kernel facts", () => {
+    const state = formalState();
+    const input = resolveQualifiedName("archcanvas.input.Tensor")!;
+    const relu = resolveQualifiedName("torch.nn.ReLU")!;
+    state.draft = {
+      draft_id: "draft:test",
+      nodes: [
+        {
+          node_id: "draft:input",
+          semantic_name: "Draft input",
+          node_type: input.definition_id,
+          definition_ref: {
+            definition_id: input.definition_id,
+            version: input.version,
+            digest: input.digest,
+          },
+          ports: [{
+            port_id: "draft:input.output",
+            name: "output",
+            direction: "output",
+            role: "output",
+            definition_port_id: "output",
+            required: true,
+            min_connections: 0,
+            max_connections: "many",
+            accepted_relations: ["main"],
+          }],
+        },
+        {
+          node_id: "draft:relu",
+          semantic_name: "Draft ReLU",
+          node_type: relu.definition_id,
+          definition_ref: {
+            definition_id: relu.definition_id,
+            version: relu.version,
+            digest: relu.digest,
+          },
+          ports: relu.ports.map((port) => ({
+            port_id: `draft:relu.${port.port_id}`,
+            name: port.port_id,
+            direction: port.direction,
+            role: port.port_id,
+            definition_port_id: port.port_id,
+            required: port.required,
+            min_connections: port.min_connections,
+            max_connections: port.max_connections,
+            accepted_relations: port.accepted_relations,
+          })),
+        },
+      ],
+      edges: [{
+        edge_id: "draft:input-relu",
+        source_port_id: "draft:input.output",
+        target_port_id: "draft:relu.input",
+        relation: "main",
+      }],
+    };
+
+    const { document, visualState } = adaptFormalState(state);
+    const draftNode = document.nodes.find((node) => node.nodeId === "draft:relu")!;
+    const scene = buildKernelRenderScene(document, visualState);
+
+    expect(draftNode).toMatchObject({
+      synthetic: true,
+      glyphId: "relu",
+      definitionRef: { definitionId: "pytorch.nn.relu", version: "1.0.0" },
+      inputPortIds: ["draft:relu.input"],
+      outputPortIds: ["draft:relu.output"],
+    });
+    expect(document.ports.find((port) => port.portId === "draft:relu.input")).toMatchObject({
+      ownerNodeId: "draft:relu",
+      contract: { required: true, minConnections: 1, maxConnections: 1 },
+    });
+    expect(document.edges.find((edge) => edge.edgeId === "draft:input-relu")).toMatchObject({
+      canonicalEdgeIds: [],
+      relation: "sequence",
+    });
+    expect(scene.nodes.some((node) => node.nodeId === "draft:relu")).toBe(true);
   });
 
   it("produces deterministic geometry when formal arrays are reordered", () => {

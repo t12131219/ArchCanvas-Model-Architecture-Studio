@@ -3,12 +3,16 @@ from __future__ import annotations
 import difflib
 import hashlib
 import json
+import secrets
 import shutil
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from pydantic import TypeAdapter
 
+from archcanvas_core.builtin_registry import BuiltinModuleRegistry
+from archcanvas_core.digest_protocol import domain_digest
 from archcanvas_core.models import (
     AgentProposal,
     ArchitectureIR,
@@ -17,6 +21,7 @@ from archcanvas_core.models import (
     DraftEdge,
     DraftGraphDocument,
     DraftNode,
+    DraftPort,
     EditIntent,
     EditProofState,
     EditProofStatus,
@@ -25,6 +30,7 @@ from archcanvas_core.models import (
     FreeformSourcePatch,
     GraphDelta,
     ProjectSession,
+    ProposalReconciliationReceipt,
     ProposedConnection,
     PublicationHierarchy,
     PublicationView,
@@ -38,10 +44,14 @@ from archcanvas_core.models import (
     SourceTransaction,
     SourceWorkspaceDocument,
     StagedSourceBuffer,
+    TopologyDraftCapability,
+    TopologyEditSession,
+    TopologyReviewReceipt,
     TransactionState,
     ValidationRun,
     WritebackSummary,
 )
+from archcanvas_core.module_contract import migrate_parameter_values
 from archcanvas_patterns import exact_ir_digest
 from archcanvas_publication import (
     build_scene,
@@ -59,7 +69,9 @@ from archcanvas_transactions import (
     prepare_transaction,
     verify_transaction,
 )
+from archcanvas_transactions.store import load_transaction
 
+from .contract_maintenance import ContractMaintenanceManager
 from .document import (
     create_canvas_document,
     derive_view_state,
@@ -67,11 +79,24 @@ from .document import (
     persist_canvas_document,
     source_binding_digest,
 )
+from .draft_analysis import analyze_draft_graph
 from .navigation import PROJECTIONS, build_navigation_projections
 from .operations import build_search_index, run_validation, studio_fingerprint
 from .project import create_project_session, discover_project
 
 STATIC_ROOT = Path(__file__).resolve().parent / "static"
+MODULE_REGISTRY = BuiltinModuleRegistry()
+DRAFT_DOCUMENT_DIGEST_DOMAIN = "archcanvas:draft-graph-document:v1"
+
+
+def draft_document_digest(draft: DraftGraphDocument) -> str:
+    return domain_digest(
+        DRAFT_DOCUMENT_DIGEST_DOMAIN,
+        draft.model_dump(
+            mode="json",
+            exclude={"proofs", "lowering_status", "writeback_summary"},
+        ),
+    )
 
 
 def _write_json(path: Path, value: object) -> None:
@@ -82,6 +107,22 @@ def _write_json(path: Path, value: object) -> None:
         json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n",
         encoding="utf-8",
     )
+
+
+def _parameter_value_matches(value: object, value_type: str) -> bool:
+    if value is None or value_type == "any":
+        return True
+    if value_type == "boolean":
+        return isinstance(value, bool)
+    if value_type == "integer":
+        return isinstance(value, int) and not isinstance(value, bool)
+    if value_type == "number":
+        return isinstance(value, (int, float, str)) and not isinstance(value, bool)
+    if value_type == "string":
+        return isinstance(value, str)
+    if value_type == "shape":
+        return isinstance(value, (int, str, list, tuple)) and not isinstance(value, bool)
+    return False
 
 
 def _reachable_expansions(
@@ -137,6 +178,10 @@ class StudioBundle:
     validation_generation: int = 0
     active_transaction: SourceTransaction | None = None
     active_proposal: AgentProposal | None = None
+    topology_session: TopologyEditSession | None = None
+    topology_base_draft: DraftGraphDocument | None = None
+    topology_review_receipt: TopologyReviewReceipt | None = None
+    contract_maintenance: ContractMaintenanceManager | None = None
 
     def _expanded_hierarchy_ids(self) -> set[str]:
         state = derive_view_state(self.document)
@@ -499,6 +544,32 @@ class StudioBundle:
                 "exact_ir_digest": exact_ir_digest(self.architecture),
             },
             "draft": self.draft.model_dump(mode="json"),
+            "edit_session": (
+                self.topology_session.model_copy(
+                    update={"current_document_digest": draft_document_digest(self.draft)}
+                ).model_dump(mode="json")
+                if self.topology_session is not None
+                else self.contract_maintenance.session.model_dump(mode="json")
+                if (
+                    self.contract_maintenance is not None
+                    and self.contract_maintenance.session is not None
+                )
+                else {
+                    "mode": "visual",
+                    "document_id": self.draft.draft_id,
+                    "current_document_digest": draft_document_digest(self.draft),
+                }
+            ),
+            "topology_review_receipt": (
+                self.topology_review_receipt.model_dump(mode="json")
+                if self.topology_review_receipt is not None
+                else None
+            ),
+            "contract_maintenance": (
+                self.contract_maintenance.state()
+                if self.contract_maintenance is not None
+                else None
+            ),
             "source_workspace": self.source_workspace_summary(),
             "view_state": view_state,
             "navigation": navigation,
@@ -533,6 +604,11 @@ class StudioBundle:
                 "draft_node_authoring": {
                     "status": "available",
                     "writeback": "proposal-unless-adapter-lowering-is-proven",
+                },
+                "contract_maintenance": {
+                    "status": "available",
+                    "writeback": "candidate-validate-review-publish",
+                    "separate_from_topology": True,
                 },
                 "arbitrary_draft_node_lowering": {
                     "status": "unavailable",
@@ -649,6 +725,367 @@ class StudioBundle:
         )
         return validation
 
+    def begin_topology_draft(
+        self, base_document_digest: str, subject: str
+    ) -> TopologyEditSession:
+        current_digest = draft_document_digest(self.draft)
+        if base_document_digest != current_digest:
+            raise ValueError("topology draft base document digest is stale")
+        if (
+            self.contract_maintenance is not None
+            and self.contract_maintenance.session is not None
+        ):
+            raise ValueError("contract-maintenance mode must be closed before topology editing")
+        if self.topology_session is not None:
+            if self.topology_session.capability.subject != subject:
+                raise ValueError("topology draft is owned by another session")
+            return self.topology_session.model_copy(
+                update={"current_document_digest": current_digest}
+            )
+        now = datetime.now(UTC)
+        capability = TopologyDraftCapability(
+            capability_id=f"capability:topology.{secrets.token_hex(12)}",
+            subject=subject,
+            draft_id=self.draft.draft_id,
+            base_document_digest=current_digest,
+            allowed_commands=[
+                "CreateNode",
+                "DeleteNode",
+                "ConnectPorts",
+                "DisconnectEdge",
+                "SetInstanceParameter",
+                "DeleteCanonicalNode",
+                "DiscardIntent",
+                "SubmitDraft",
+            ],
+            issued_at=now.isoformat(),
+            expires_at=(now + timedelta(minutes=30)).isoformat(),
+        )
+        self.topology_base_draft = self.draft
+        self.topology_review_receipt = None
+        self.topology_session = TopologyEditSession(
+            capability=capability,
+            current_document_digest=current_digest,
+        )
+        return self.topology_session
+
+    def begin_contract_maintenance(
+        self, definition_id: str, version: str, digest: str, subject: str
+    ) -> None:
+        if self.topology_session is not None:
+            raise ValueError("topology draft mode must be closed before contract maintenance")
+        if self.active_transaction is not None and self.active_transaction.state not in {
+            TransactionState.COMMITTED,
+            TransactionState.DISCARDED,
+            TransactionState.FAILED,
+        }:
+            raise ValueError("source transaction must finish before contract maintenance")
+        assert self.contract_maintenance is not None
+        self.contract_maintenance.begin(definition_id, version, digest, subject)
+
+    def _authorize_topology_command(
+        self, command: str, payload: dict[str, object], subject: str
+    ) -> None:
+        session = self.topology_session
+        if session is None:
+            raise ValueError("topology draft mode is required")
+        capability = session.capability
+        if capability.subject != subject:
+            raise ValueError("topology capability belongs to another session")
+        if str(payload.get("capability_id", "")) != capability.capability_id:
+            raise ValueError("topology capability is missing or invalid")
+        if command not in capability.allowed_commands:
+            raise ValueError(f"topology capability denies {command}")
+        if datetime.now(UTC) >= datetime.fromisoformat(capability.expires_at):
+            raise ValueError("topology capability has expired")
+        expected = str(payload.get("expected_document_digest", ""))
+        if expected != draft_document_digest(self.draft):
+            raise ValueError("topology command targets a stale draft")
+
+    def dispatch_topology_command(
+        self, command: str, payload: dict[str, object], subject: str
+    ) -> None:
+        self._authorize_topology_command(command, payload, subject)
+        handlers = {
+            "CreateNode": lambda: self.propose_draft_node(payload),
+            "DeleteNode": lambda: self.delete_draft_node(str(payload["node_id"])),
+            "ConnectPorts": lambda: self.propose_draft_edge(payload),
+            "DisconnectEdge": lambda: self.delete_draft_edge(str(payload["edge_id"])),
+            "SetInstanceParameter": lambda: self.set_draft_node_parameters(payload),
+            "DeleteCanonicalNode": lambda: self.propose_canonical_delete(payload),
+            "DiscardIntent": lambda: self.discard_canonical_delete(
+                str(payload["intent_id"])
+            ),
+        }
+        handler = handlers.get(command)
+        if handler is None:
+            raise ValueError(f"unsupported topology command: {command}")
+        handler()
+        self.topology_review_receipt = None
+        assert self.topology_session is not None
+        self.topology_session = self.topology_session.model_copy(
+            update={"current_document_digest": draft_document_digest(self.draft)}
+        )
+
+    def discard_topology_draft(self, capability_id: str, subject: str) -> None:
+        session = self.topology_session
+        if session is None:
+            raise ValueError("topology draft mode is not active")
+        if (
+            session.capability.subject != subject
+            or session.capability.capability_id != capability_id
+        ):
+            raise ValueError("topology capability is missing or invalid")
+        if self.topology_base_draft is None:
+            raise ValueError("topology draft has no recoverable base document")
+        self.draft = self.topology_base_draft
+        _write_json(self.draft_path, self.draft)
+        self.topology_session = None
+        self.topology_base_draft = None
+        self.topology_review_receipt = None
+        self.active_proposal = None
+
+    def _topology_blocking_diagnostics(self) -> list[dict[str, object]]:
+        diagnostics: list[dict[str, object]] = []
+        for node in self.draft.nodes:
+            if node.definition_ref is None:
+                diagnostics.append(
+                    {
+                        "code": "DRAFT_DEFINITION_UNREGISTERED",
+                        "severity": "blocking",
+                        "message": "Draft node has no exact registered definition.",
+                        "target_ids": [node.node_id],
+                    }
+                )
+                continue
+            definition = MODULE_REGISTRY.resolve_ref(
+                node.definition_ref.definition_id,
+                node.definition_ref.version,
+                node.definition_ref.digest,
+            )
+            if definition is None:
+                diagnostics.append(
+                    {
+                        "code": "DRAFT_DEFINITION_STALE",
+                        "severity": "blocking",
+                        "message": "Draft node definition is unavailable or stale.",
+                        "target_ids": [node.node_id],
+                    }
+                )
+                continue
+            missing = [
+                contract.parameter_id
+                for contract in definition.parameters
+                if contract.required and node.parameters.get(contract.parameter_id) is None
+            ]
+            if missing:
+                diagnostics.append(
+                    {
+                        "code": "DRAFT_REQUIRED_PARAMETER_MISSING",
+                        "severity": "blocking",
+                        "message": "Draft node is missing required parameters.",
+                        "target_ids": [node.node_id, *missing],
+                    }
+                )
+            for port in node.ports:
+                count = sum(
+                    edge.source_port_id == port.port_id
+                    if port.direction == "output"
+                    else edge.target_port_id == port.port_id
+                    for edge in self.draft.edges
+                )
+                if count < port.min_connections:
+                    diagnostics.append(
+                        {
+                            "code": "DRAFT_PORT_CARDINALITY_INCOMPLETE",
+                            "severity": "blocking",
+                            "message": "Draft port has fewer connections than required.",
+                            "target_ids": [node.node_id, port.port_id],
+                        }
+                    )
+
+        node_ids = {node.node_id for node in self.draft.nodes}
+        adjacency: dict[str, set[str]] = {node_id: set() for node_id in node_ids}
+        indegree = dict.fromkeys(node_ids, 0)
+        for edge in self.draft.edges:
+            source_id = self._draft_port_owner(edge.source_port_id)[0]
+            target_id = self._draft_port_owner(edge.target_port_id)[0]
+            if source_id in node_ids and target_id in node_ids and target_id not in adjacency[source_id]:
+                adjacency[source_id].add(target_id)
+                indegree[target_id] += 1
+        pending = sorted(node_id for node_id, count in indegree.items() if count == 0)
+        visited: set[str] = set()
+        while pending:
+            node_id = pending.pop(0)
+            visited.add(node_id)
+            for target_id in sorted(adjacency[node_id]):
+                indegree[target_id] -= 1
+                if indegree[target_id] == 0:
+                    pending.append(target_id)
+            pending.sort()
+        cyclic = sorted(node_ids - visited)
+        if cyclic:
+            diagnostics.append(
+                {
+                    "code": "DRAFT_CYCLE_UNSUPPORTED",
+                    "severity": "blocking",
+                    "message": "Draft graph contains a non-control-flow cycle.",
+                    "target_ids": cyclic,
+                }
+            )
+        return diagnostics
+
+    def _registered_insertion_patch(self) -> SemanticStructuralPatch | None:
+        if len(self.draft.nodes) != 1 or len(self.draft.edges) != 2:
+            return None
+        node = self.draft.nodes[0]
+        if node.definition_ref is None:
+            return None
+        definition = MODULE_REGISTRY.resolve_ref(
+            node.definition_ref.definition_id,
+            node.definition_ref.version,
+            node.definition_ref.digest,
+        )
+        if definition is None:
+            return None
+        inputs = [port for port in node.ports if port.direction == "input"]
+        outputs = [port for port in node.ports if port.direction == "output"]
+        if len(inputs) != 1 or len(outputs) != 1:
+            return None
+        incoming = [
+            edge for edge in self.draft.edges if edge.target_port_id == inputs[0].port_id
+        ]
+        outgoing = [
+            edge for edge in self.draft.edges if edge.source_port_id == outputs[0].port_id
+        ]
+        if len(incoming) != 1 or len(outgoing) != 1:
+            return None
+        source_node_id, _, _, source_is_draft, _ = self._draft_port_owner(
+            incoming[0].source_port_id
+        )
+        target_node_id, _, _, target_is_draft, _ = self._draft_port_owner(
+            outgoing[0].target_port_id
+        )
+        if source_is_draft or target_is_draft:
+            return None
+        original = next(
+            (
+                edge
+                for edge in self.architecture.edges
+                if edge.producer_id == source_node_id
+                and edge.producer_port == incoming[0].source_port_id
+                and edge.consumer_id == target_node_id
+                and edge.consumer_port == outgoing[0].target_port_id
+            ),
+            None,
+        )
+        if original is None:
+            return None
+        return SemanticStructuralPatch(
+            patch_id=f"patch:registered-insert.{node.node_id.removeprefix('draft:')}",
+            operation="insert_registered_module",
+            artifact_path=str(self.artifact_path),
+            target_node_id=source_node_id,
+            parameters={
+                "module_name": node.semantic_name,
+                "definition_ref": node.definition_ref.model_dump(mode="json"),
+                "constructor_parameters": node.parameters,
+                "correlation_id": (
+                    f"correlation:{node.node_id.removeprefix('draft:')}"
+                ),
+            },
+        )
+
+    def _prepare_registered_insertion(self) -> SourceTransaction | None:
+        request = self._registered_insertion_patch()
+        if request is None:
+            return None
+        transaction, _ = prepare_transaction(request, self.workspace)
+        transaction, _ = verify_transaction(
+            self.workspace / "transactions" / transaction.transaction_id
+        )
+        if transaction.state is not TransactionState.REVIEW_READY:
+            message = (
+                transaction.diagnostics[-1].message
+                if transaction.diagnostics
+                else "registered insertion did not reach review-ready"
+            )
+            raise ValueError(message)
+        realized = set(transaction.realized_subject_ids)
+        proofs = [
+            proof.model_copy(
+                update={
+                    "status": EditProofState.REVIEW_READY,
+                    "writeback_eligibility": "commit",
+                    "reason_codes": [],
+                    "message": (
+                        "Registered module insertion is bound to a verified source "
+                        "transaction and canonical reanalysis result."
+                    ),
+                    "affected_subject_ids": sorted(
+                        set(proof.affected_subject_ids) | realized
+                    ),
+                    "required_facts": [],
+                    "supported_fixes": [],
+                    "input_fingerprint": studio_fingerprint(self),
+                }
+            )
+            for proof in self.draft.proofs
+        ]
+        self.draft = self.draft.model_copy(
+            update={
+                "proofs": proofs,
+                "lowering_status": "planned",
+                "writeback_summary": WritebackSummary(
+                    eligibility="commit",
+                    blocking_intent_ids=[],
+                ),
+            }
+        )
+        _write_json(self.draft_path, self.draft)
+        return transaction
+
+    def submit_topology_draft(
+        self, capability_id: str, expected_document_digest: str, subject: str
+    ) -> TopologyReviewReceipt:
+        self._authorize_topology_command(
+            "SubmitDraft",
+            {
+                "capability_id": capability_id,
+                "expected_document_digest": expected_document_digest,
+            },
+            subject,
+        )
+        self._validate_draft_document(self.draft)
+        structural_diagnostics = self._topology_blocking_diagnostics()
+        analysis = analyze_draft_graph(self.draft, MODULE_REGISTRY)
+        diagnostics = [
+            *structural_diagnostics,
+            *[item.model_dump(mode="json") for item in analysis.diagnostics],
+        ]
+        blocking = [item for item in diagnostics if item.get("severity") == "blocking"]
+        if blocking:
+            codes = ", ".join(str(item["code"]) for item in blocking)
+            raise ValueError(f"topology draft has blocking diagnostics: {codes}")
+        prepared_transaction = self._prepare_registered_insertion()
+        digest = draft_document_digest(self.draft)
+        now = datetime.now(UTC)
+        receipt = TopologyReviewReceipt(
+            receipt_id=f"receipt:topology.{secrets.token_hex(12)}",
+            draft_id=self.draft.draft_id,
+            document_digest=digest,
+            registry_digest=MODULE_REGISTRY.bundle.bundle_digest,
+            submitted_at=now.isoformat(),
+            diagnostics=diagnostics,
+        )
+        self.topology_review_receipt = receipt
+        if prepared_transaction is not None:
+            self.active_transaction = prepared_transaction
+            self.active_proposal = None
+        self.topology_session = None
+        self.topology_base_draft = None
+        return receipt
+
     def save_draft(self, draft: DraftGraphDocument, expected_revision: int) -> None:
         if expected_revision != self.draft.revision:
             raise ValueError("draft revision is stale")
@@ -656,6 +1093,7 @@ class StudioBundle:
             raise ValueError("draft belongs to another architecture")
         if draft.base_source_digest != self.document.source_digest:
             raise ValueError("draft source binding is stale")
+        self._validate_draft_document(draft)
         if draft.revision != expected_revision + 1:
             raise ValueError("draft revision must advance exactly once")
         current_proofs = {proof.intent_id: proof for proof in self.draft.proofs}
@@ -668,8 +1106,230 @@ class StudioBundle:
         _write_json(self.draft_path, draft)
         self.draft = draft
 
+    def _validate_draft_document(self, draft: DraftGraphDocument) -> None:
+        registered = [node for node in draft.nodes if node.definition_ref is not None]
+        if registered and draft.base_registry_digest != MODULE_REGISTRY.bundle.bundle_digest:
+            raise ValueError("registered draft nodes require the exact registry binding")
+        if not registered and draft.base_registry_digest not in {
+            None,
+            MODULE_REGISTRY.bundle.bundle_digest,
+        }:
+            raise ValueError("draft registry binding is stale")
+
+        prior_nodes = {node.node_id: node for node in self.draft.nodes}
+        port_ids: set[str] = {
+            port.port_id
+            for node in self.architecture.nodes
+            for port in [*node.input_ports, *node.output_ports]
+        }
+        node_ids = {node.node_id for node in self.architecture.nodes}
+        node_ids.update(node.node_id for node in draft.nodes)
+        for node in draft.nodes:
+            if node.framework != self.architecture.framework:
+                raise ValueError("draft node framework does not match the active architecture")
+            if node.definition_ref is None:
+                if prior_nodes.get(node.node_id) != node:
+                    raise ValueError(
+                        "bulk draft updates cannot create or modify unregistered nodes"
+                    )
+            elif self._materialize_registered_draft_node(node) != node:
+                raise ValueError(
+                    "registered draft node does not match its materialized definition"
+                )
+            if node.parent_id is not None:
+                if node.parent_id == node.node_id:
+                    raise ValueError("draft node cannot parent itself")
+                if node.parent_id not in node_ids:
+                    raise ValueError("draft node parent does not exist")
+            for port in node.ports:
+                if port.port_id in port_ids:
+                    raise ValueError("draft port identifiers must be globally unique")
+                port_ids.add(port.port_id)
+
+        parents = {
+            node.node_id: node.parent_id
+            for node in draft.nodes
+            if node.parent_id is not None and node.parent_id.startswith("draft:")
+        }
+        for node_id in parents:
+            seen: set[str] = set()
+            cursor: str | None = node_id
+            while cursor is not None and cursor in parents:
+                if cursor in seen:
+                    raise ValueError("draft node parent hierarchy contains a cycle")
+                seen.add(cursor)
+                cursor = parents.get(cursor)
+
+        checked_edges: list[DraftEdge] = []
+        for edge in draft.edges:
+            self._validate_draft_edge(edge, checked_edges, draft)
+            checked_edges.append(edge)
+
+        ordered_groups: dict[str, list[int]] = {}
+        for edge in draft.edges:
+            _, _, _, _, contract = self._draft_port_owner(
+                edge.target_port_id, draft=draft
+            )
+            if (
+                contract is not None
+                and contract.definition_port_id is not None
+                and contract.ordering == "ordered"
+                and contract.max_connections != 1
+            ):
+                assert edge.target_ordinal is not None
+                ordered_groups.setdefault(edge.target_port_id, []).append(
+                    edge.target_ordinal
+                )
+        for port_id, ordinals in ordered_groups.items():
+            if sorted(ordinals) != list(range(len(ordinals))):
+                raise ValueError(
+                    f"ordered draft port {port_id} requires contiguous target ordinals"
+                )
+
+    def _materialize_registered_draft_node(self, node: DraftNode) -> DraftNode:
+        if node.definition_ref is None:
+            return node
+        definition = MODULE_REGISTRY.resolve_ref(
+            node.definition_ref.definition_id,
+            node.definition_ref.version,
+            node.definition_ref.digest,
+        )
+        if definition is None:
+            raise ValueError("draft node references an unknown or stale module definition")
+        if node.node_type != definition.definition_id:
+            raise ValueError("draft node type must match its exact module definition")
+
+        contracts = {item.parameter_id: item for item in definition.parameters}
+        parameters = migrate_parameter_values(
+            definition,
+            definition.parameter_schema_version,
+            node.parameters,
+        )
+        for parameter_id, value in parameters.items():
+            contract = contracts[parameter_id]
+            if not _parameter_value_matches(value, contract.value_type):
+                raise ValueError(
+                    f"draft parameter {parameter_id} does not match {contract.value_type}"
+                )
+
+        ports = [
+            DraftPort(
+                port_id=f"{node.node_id}.{contract.port_id}",
+                name=contract.port_id,
+                direction=contract.direction,
+                role=contract.port_id,
+                definition_port_id=contract.port_id,
+                required=contract.required,
+                min_connections=contract.min_connections,
+                max_connections=contract.max_connections,
+                ordering=contract.ordering,
+                accepted_relations=contract.accepted_relations,
+                tensor_ranks=contract.tensor_ranks,
+                tensor_layouts=contract.tensor_layouts,
+            )
+            for contract in definition.ports
+        ]
+        if node.ports and node.ports != ports:
+            raise ValueError("draft node ports do not match its registered module definition")
+        return node.model_copy(update={"parameters": parameters, "ports": ports})
+
+    def _draft_node_proof(
+        self,
+        node: DraftNode,
+        intent: EditIntent,
+        edges: list[DraftEdge],
+    ) -> EditProofStatus:
+        reason_codes = ["UNREGISTERED_NODE_LOWERING"]
+        missing_ports: list[str] = []
+        for port in node.ports:
+            connected = sum(
+                edge.source_port_id == port.port_id
+                if port.direction == "output"
+                else edge.target_port_id == port.port_id
+                for edge in edges
+            )
+            if connected < port.min_connections:
+                missing_ports.append(
+                    f"{port.name} ({connected}/{port.min_connections})"
+                )
+        required_parameters: set[str] = set()
+        if node.definition_ref is not None:
+            definition = MODULE_REGISTRY.resolve_ref(
+                node.definition_ref.definition_id,
+                node.definition_ref.version,
+                node.definition_ref.digest,
+            )
+            if definition is not None:
+                required_parameters = {
+                    parameter.parameter_id
+                    for parameter in definition.parameters
+                    if parameter.required
+                }
+        missing_parameters = sorted(
+            parameter_id
+            for parameter_id in required_parameters
+            if node.parameters.get(parameter_id) is None
+        )
+        if missing_ports:
+            reason_codes.insert(0, "DRAFT_PORT_CARDINALITY_INCOMPLETE")
+        if missing_parameters:
+            reason_codes.insert(0, "DRAFT_REQUIRED_PARAMETER_MISSING")
+        details = []
+        if missing_parameters:
+            details.append("parameters: " + ", ".join(missing_parameters))
+        if missing_ports:
+            details.append("ports: " + ", ".join(missing_ports))
+        suffix = f" Draft is incomplete ({'; '.join(details)})." if details else ""
+        return EditProofStatus(
+            intent_id=intent.intent_id,
+            status=EditProofState.UNPROVEN,
+            writeback_eligibility="blocked",
+            reason_codes=reason_codes,
+            message=(
+                f"No registered {node.framework} lowering proves how to create "
+                f"{node.node_type}.{suffix}"
+            ),
+            affected_subject_ids=[node.node_id, *[port.port_id for port in node.ports]],
+            required_facts=[
+                "constructor anchor",
+                "required parameters",
+                "input/output compatibility",
+                "required port cardinality",
+                "delta oracle",
+            ],
+            supported_fixes=[
+                "Complete required parameters and port connections.",
+                "Register and test a framework-specific create-node lowering.",
+            ],
+            checked_generation=self.project_session.generation,
+            input_fingerprint=studio_fingerprint(self),
+        )
+
+    def _refresh_registered_node_proofs(
+        self, draft: DraftGraphDocument
+    ) -> DraftGraphDocument:
+        intents = {intent.intent_id: intent for intent in draft.intents}
+        nodes = {node.node_id: node for node in draft.nodes}
+        proofs: list[EditProofStatus] = []
+        for proof in draft.proofs:
+            intent = intents.get(proof.intent_id)
+            node = (
+                nodes.get(intent.target_ids[0])
+                if intent is not None
+                and intent.kind == "create-node"
+                and intent.target_ids
+                else None
+            )
+            if node is not None and node.definition_ref is not None:
+                proofs.append(self._draft_node_proof(node, intent, draft.edges))
+            else:
+                proofs.append(proof)
+        return draft.model_copy(update={"proofs": proofs})
+
     def propose_draft_node(self, payload: dict[str, object]) -> None:
-        node = DraftNode.model_validate(payload["node"])
+        node = self._materialize_registered_draft_node(
+            DraftNode.model_validate(payload["node"])
+        )
         if node.framework != self.architecture.framework:
             raise ValueError("draft node framework does not match the active architecture")
         if any(item.node_id == node.node_id for item in self.draft.nodes):
@@ -683,20 +1343,7 @@ class StudioBundle:
             user_input=node.model_dump(mode="json"),
             capability_requirement=f"semantic.create-node.{node.framework}.{node.node_type}",
         )
-        proof = EditProofStatus(
-            intent_id=intent_id,
-            status=EditProofState.UNPROVEN,
-            writeback_eligibility="blocked",
-            reason_codes=["UNREGISTERED_NODE_LOWERING"],
-            message=(
-                f"No registered {node.framework} lowering proves how to create {node.node_type}."
-            ),
-            affected_subject_ids=[node.node_id],
-            required_facts=["constructor anchor", "input/output compatibility", "delta oracle"],
-            supported_fixes=["Register and test a framework-specific create-node lowering."],
-            checked_generation=self.project_session.generation,
-            input_fingerprint=studio_fingerprint(self),
-        )
+        proof = self._draft_node_proof(node, intent, self.draft.edges)
         self.active_proposal = AgentProposal(
             proposal_id=f"proposal:{intent_id.removeprefix('intent:')}",
             reason_code="UNSUPPORTED_STRUCTURAL_INTENT",
@@ -705,11 +1352,18 @@ class StudioBundle:
             source_context={
                 "architecture_id": self.architecture.architecture_id,
                 "source_digest": self.document.source_digest,
+                "registry_digest": MODULE_REGISTRY.bundle.bundle_digest,
+                "definition_ref": (
+                    node.definition_ref.model_dump(mode="json")
+                    if node.definition_ref is not None
+                    else None
+                ),
             },
         )
         draft = self.draft.model_copy(
             update={
                 "revision": self.draft.revision + 1,
+                "base_registry_digest": MODULE_REGISTRY.bundle.bundle_digest,
                 "nodes": [*self.draft.nodes, node],
                 "intents": [*self.draft.intents, intent],
                 "proofs": [*self.draft.proofs, proof],
@@ -723,7 +1377,100 @@ class StudioBundle:
                 ),
             }
         )
+        draft = self._refresh_registered_node_proofs(draft)
         self.draft = DraftGraphDocument.model_validate(draft.model_dump(mode="json"))
+        _write_json(self.draft_path, self.draft)
+
+    def set_draft_node_parameters(self, payload: dict[str, object]) -> None:
+        node_id = str(payload["node_id"])
+        node = next((item for item in self.draft.nodes if item.node_id == node_id), None)
+        if node is None:
+            raise ValueError("draft node does not exist")
+        if node.definition_ref is None:
+            raise ValueError("unregistered draft nodes do not expose schema parameters")
+        raw_parameters = payload.get("parameters")
+        if not isinstance(raw_parameters, dict):
+            raise TypeError("draft node parameters must be an object")
+        updated = self._materialize_registered_draft_node(
+            node.model_copy(update={"parameters": raw_parameters, "ports": []})
+        )
+        if updated.parameters == node.parameters:
+            raise ValueError("draft node parameters are unchanged")
+
+        intent_id = str(
+            payload.get(
+                "intent_id",
+                f"intent:set-parameters.{node_id.removeprefix('draft:')}.{self.draft.revision + 1}",
+            )
+        )
+        intent = EditIntent(
+            intent_id=intent_id,
+            kind="set-parameter",
+            target_ids=[node_id],
+            preconditions=[
+                "exact registered definition",
+                "parameter schema validation",
+                "shape and cost reanalysis",
+                "registered source lowering",
+            ],
+            user_input={
+                "node_id": node_id,
+                "definition_ref": node.definition_ref.model_dump(mode="json"),
+                "before": node.parameters,
+                "after": updated.parameters,
+            },
+            capability_requirement=(
+                f"semantic.set-parameter.{node.framework}.{node.node_type}"
+            ),
+        )
+        proof = EditProofStatus(
+            intent_id=intent_id,
+            status=EditProofState.UNPROVEN,
+            writeback_eligibility="blocked",
+            reason_codes=["UNSUPPORTED_DRAFT_PARAMETER_LOWERING"],
+            message=(
+                "Draft parameters passed the registered schema, but no exact source "
+                "lowering is bound to this synthetic node."
+            ),
+            affected_subject_ids=[node_id],
+            required_facts=["source constructor anchor", "observed Graph Delta oracle"],
+            supported_fixes=[
+                "Bind the synthetic node to a reviewed insertion proposal before prepare."
+            ],
+            checked_generation=self.project_session.generation,
+            input_fingerprint=studio_fingerprint(self),
+        )
+        proposal = AgentProposal(
+            proposal_id=f"proposal:{intent_id.removeprefix('intent:')}",
+            reason_code="UNSUPPORTED_STRUCTURAL_INTENT",
+            summary=proof.message,
+            requested_intent=intent.model_dump(mode="json"),
+            source_context={
+                "architecture_id": self.architecture.architecture_id,
+                "source_digest": self.document.source_digest,
+                "registry_digest": MODULE_REGISTRY.bundle.bundle_digest,
+                "definition_ref": node.definition_ref.model_dump(mode="json"),
+            },
+        )
+        draft = self.draft.model_copy(
+            update={
+                "revision": self.draft.revision + 1,
+                "nodes": [updated if item.node_id == node_id else item for item in self.draft.nodes],
+                "intents": [*self.draft.intents, intent],
+                "proofs": [*self.draft.proofs, proof],
+                "lowering_status": "blocked",
+                "writeback_summary": WritebackSummary(
+                    eligibility="blocked",
+                    blocking_intent_ids=[
+                        *self.draft.writeback_summary.blocking_intent_ids,
+                        intent_id,
+                    ],
+                ),
+            }
+        )
+        draft = self._refresh_registered_node_proofs(draft)
+        self.draft = DraftGraphDocument.model_validate(draft.model_dump(mode="json"))
+        self.active_proposal = proposal
         _write_json(self.draft_path, self.draft)
 
     def delete_draft_node(self, node_id: str) -> None:
@@ -771,21 +1518,24 @@ class StudioBundle:
                 ),
             }
         )
+        draft = self._refresh_registered_node_proofs(draft)
         self.draft = DraftGraphDocument.model_validate(draft.model_dump(mode="json"))
         self.active_proposal = None
         _write_json(self.draft_path, self.draft)
 
-    def _draft_port_owner(self, port_id: str) -> tuple[str, str, str, bool]:
-        matches: list[tuple[str, str, str, bool]] = []
+    def _draft_port_owner(
+        self, port_id: str, *, draft: DraftGraphDocument | None = None
+    ) -> tuple[str, str, str, bool, DraftPort | None]:
+        matches: list[tuple[str, str, str, bool, DraftPort | None]] = []
         for node in self.architecture.nodes:
             matches.extend(
-                (node.node_id, port.direction, port.role, False)
+                (node.node_id, port.direction, port.role, False, None)
                 for port in [*node.input_ports, *node.output_ports]
                 if port.port_id == port_id
             )
-        for node in self.draft.nodes:
+        for node in (draft or self.draft).nodes:
             matches.extend(
-                (node.node_id, port.direction, port.role, True)
+                (node.node_id, port.direction, port.role, True, port)
                 for port in node.ports
                 if port.port_id == port_id
             )
@@ -795,21 +1545,104 @@ class StudioBundle:
             raise ValueError(f"draft edge references an ambiguous port: {port_id}")
         return matches[0]
 
-    def propose_draft_edge(self, payload: dict[str, object]) -> None:
-        edge = DraftEdge.model_validate(payload["edge"])
-        if any(item.edge_id == edge.edge_id for item in self.draft.edges):
+    def _validate_draft_edge(
+        self,
+        edge: DraftEdge,
+        existing_edges: list[DraftEdge],
+        draft: DraftGraphDocument,
+    ) -> None:
+        if edge.policy == "disconnect":
+            raise ValueError("disconnect must remove an existing draft edge")
+        if any(item.edge_id == edge.edge_id for item in existing_edges):
             raise ValueError("draft edge identifier already exists")
-        source_node_id, source_direction, source_role, source_is_draft = (
-            self._draft_port_owner(edge.source_port_id)
-        )
-        target_node_id, target_direction, _, target_is_draft = self._draft_port_owner(
-            edge.target_port_id
-        )
+        if any(
+            item.source_port_id == edge.source_port_id
+            and item.target_port_id == edge.target_port_id
+            and item.target_ordinal == edge.target_ordinal
+            for item in existing_edges
+        ):
+            raise ValueError("draft edge endpoints are already connected")
+        (
+            source_node_id,
+            source_direction,
+            _,
+            _,
+            source_contract,
+        ) = self._draft_port_owner(edge.source_port_id, draft=draft)
+        (
+            target_node_id,
+            target_direction,
+            _,
+            _,
+            target_contract,
+        ) = self._draft_port_owner(edge.target_port_id, draft=draft)
         if source_direction != "output":
             raise ValueError("draft edge source must reference an output port")
         if target_direction != "input":
             raise ValueError("draft edge target must reference an input port")
+        if source_node_id == target_node_id:
+            raise ValueError("draft edge cannot connect a node to itself")
+        expected_relation = {
+            "add-residual": "residual",
+            "concat": "concat",
+        }.get(edge.policy, "main")
+        if edge.relation != expected_relation:
+            raise ValueError("draft edge relation does not match its connection policy")
+        for contract in (source_contract, target_contract):
+            if contract is None:
+                continue
+            if edge.relation not in contract.accepted_relations:
+                raise ValueError(
+                    f"draft port {contract.port_id} rejects relation {edge.relation}"
+                )
+            connected = sum(
+                item.source_port_id == contract.port_id
+                if contract.direction == "output"
+                else item.target_port_id == contract.port_id
+                for item in existing_edges
+            )
+            if (
+                isinstance(contract.max_connections, int)
+                and connected + 1 > contract.max_connections
+            ):
+                raise ValueError(
+                    f"draft port {contract.port_id} exceeds its connection cardinality"
+                )
+        if target_contract is not None:
+            is_ordered_variadic = (
+                target_contract.definition_port_id is not None
+                and
+                target_contract.ordering == "ordered"
+                and target_contract.max_connections != 1
+            )
+            if is_ordered_variadic and edge.target_ordinal is None:
+                raise ValueError("ordered variadic draft ports require a target ordinal")
+            if target_contract.ordering == "unordered" and edge.target_ordinal is not None:
+                raise ValueError("unordered draft ports reject target ordinals")
+            if edge.target_ordinal is not None and any(
+                item.target_port_id == edge.target_port_id
+                and item.target_ordinal == edge.target_ordinal
+                for item in existing_edges
+            ):
+                raise ValueError("draft target ordinal is already connected")
 
+    def propose_draft_edge(self, payload: dict[str, object]) -> None:
+        edge = DraftEdge.model_validate(payload["edge"])
+        self._validate_draft_edge(edge, self.draft.edges, self.draft)
+        (
+            source_node_id,
+            _,
+            source_role,
+            source_is_draft,
+            _,
+        ) = self._draft_port_owner(edge.source_port_id)
+        (
+            target_node_id,
+            _,
+            _,
+            target_is_draft,
+            _,
+        ) = self._draft_port_owner(edge.target_port_id)
         intent_id = str(payload.get("intent_id", edge.edge_id.replace("draft:", "intent:", 1)))
         intent = EditIntent(
             intent_id=intent_id,
@@ -865,7 +1698,7 @@ class StudioBundle:
                 source_port_id=edge.source_port_id,
                 target_node_id=target_node_id,
                 target_port_id=edge.target_port_id,
-                role=source_role,
+                role=edge.relation if edge.relation else source_role,
             )
             proposal = plan_connection(request, self.architecture)
             reason_code = proposal.reason_code
@@ -904,6 +1737,7 @@ class StudioBundle:
                 ),
             }
         )
+        draft = self._refresh_registered_node_proofs(draft)
         self.draft = DraftGraphDocument.model_validate(draft.model_dump(mode="json"))
         self.active_proposal = proposal
         _write_json(self.draft_path, self.draft)
@@ -941,6 +1775,7 @@ class StudioBundle:
                 ),
             }
         )
+        draft = self._refresh_registered_node_proofs(draft)
         self.draft = DraftGraphDocument.model_validate(draft.model_dump(mode="json"))
         self.active_proposal = None
         _write_json(self.draft_path, self.draft)
@@ -1343,6 +2178,209 @@ def _archive_stale_binding(path: Path) -> Path:
     return archive
 
 
+def _available_architecture_subject_ids(
+    architecture: ArchitectureIR, evidence: list[EvidenceRecord]
+) -> set[str]:
+    return {
+        *[node.node_id for node in architecture.nodes],
+        *[
+            port.port_id
+            for node in architecture.nodes
+            for port in [*node.input_ports, *node.output_ports]
+        ],
+        *[edge.edge_id for edge in architecture.edges],
+        *[tensor.tensor_id for tensor in architecture.tensors],
+        *[record.evidence_id for record in evidence],
+    }
+
+
+def _committed_reconciliation_transactions(workspace: Path) -> list[SourceTransaction]:
+    transactions: list[SourceTransaction] = []
+    transaction_root = workspace / "transactions"
+    if not transaction_root.is_dir():
+        return transactions
+    for manifest in sorted(transaction_root.glob("*/transaction.json")):
+        try:
+            transaction = load_transaction(manifest)
+        except (OSError, ValueError):
+            continue
+        if (
+            transaction.state is TransactionState.COMMITTED
+            and transaction.proposal_correlation_id is not None
+            and transaction.realized_subject_ids
+        ):
+            transactions.append(transaction)
+    return transactions
+
+
+def _reconcilable_stale_draft_path(
+    workspace: Path, project_root: Path, current_path: Path
+) -> Path | None:
+    expected_nodes = {
+        f"draft:{transaction.proposal_correlation_id.removeprefix('correlation:')}"
+        for transaction in _committed_reconciliation_transactions(workspace)
+        if transaction.proposal_correlation_id is not None
+        and Path(transaction.original_project_root).resolve() == project_root
+    }
+    if not expected_nodes:
+        return None
+    matches: list[Path] = []
+    for path in sorted((workspace / "drafts").glob("*.draft.json")):
+        if path == current_path:
+            continue
+        try:
+            candidate = DraftGraphDocument.model_validate_json(
+                path.read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError):
+            continue
+        if expected_nodes.intersection(node.node_id for node in candidate.nodes):
+            matches.append(path)
+    if len(matches) > 1:
+        raise ValueError("multiple stale draft documents match committed proposal correlations")
+    return matches[0] if matches else None
+
+
+def _reconcile_stale_draft(
+    saved: DraftGraphDocument,
+    *,
+    architecture: ArchitectureIR,
+    source_digest: str,
+    registry_digest: str,
+    evidence: list[EvidenceRecord],
+    workspace: Path,
+) -> DraftGraphDocument:
+    draft = saved.model_copy(
+        update={
+            "base_architecture_id": architecture.architecture_id,
+            "base_source_digest": source_digest,
+            "base_registry_digest": registry_digest,
+            "revision": saved.revision + 1,
+        }
+    )
+    available = _available_architecture_subject_ids(architecture, evidence)
+    receipts = list(saved.reconciliation_receipts)
+    handled_correlations = {
+        receipt.proposal_correlation_id for receipt in receipts
+    }
+
+    for transaction in _committed_reconciliation_transactions(workspace):
+        correlation_id = transaction.proposal_correlation_id
+        assert correlation_id is not None
+        if correlation_id in handled_correlations:
+            continue
+        draft_node_id = f"draft:{correlation_id.removeprefix('correlation:')}"
+        node = next((item for item in draft.nodes if item.node_id == draft_node_id), None)
+        if node is None:
+            continue
+        node_port_ids = {port.port_id for port in node.ports}
+        incident_edge_ids = {
+            edge.edge_id
+            for edge in draft.edges
+            if edge.source_port_id in node_port_ids or edge.target_port_id in node_port_ids
+        }
+        synthetic_subject_ids = {draft_node_id, *node_port_ids, *incident_edge_ids}
+        affected_intent_ids = {
+            intent.intent_id
+            for intent in draft.intents
+            if synthetic_subject_ids.intersection(intent.target_ids)
+        }
+        missing = sorted(set(transaction.realized_subject_ids) - available)
+        timestamp = datetime.now(UTC).isoformat()
+        if not missing:
+            receipt = ProposalReconciliationReceipt(
+                receipt_id=f"reconciliation:{transaction.transaction_id}",
+                proposal_correlation_id=correlation_id,
+                transaction_id=transaction.transaction_id,
+                status="realized",
+                synthetic_subject_ids=sorted(synthetic_subject_ids),
+                canonical_subject_ids=sorted(transaction.realized_subject_ids),
+                reconciled_at=timestamp,
+                message=(
+                    "The committed proposal was found in the refreshed architecture; "
+                    "its synthetic draft subjects were retired."
+                ),
+            )
+            remaining_intents = [
+                item for item in draft.intents if item.intent_id not in affected_intent_ids
+            ]
+            remaining_proofs = [
+                item for item in draft.proofs if item.intent_id not in affected_intent_ids
+            ]
+            blocking = [
+                item
+                for item in draft.writeback_summary.blocking_intent_ids
+                if item not in affected_intent_ids
+            ]
+            draft = draft.model_copy(
+                update={
+                    "nodes": [item for item in draft.nodes if item.node_id != draft_node_id],
+                    "edges": [
+                        item for item in draft.edges if item.edge_id not in incident_edge_ids
+                    ],
+                    "intents": remaining_intents,
+                    "proofs": remaining_proofs,
+                    "reconciliation_receipts": [*receipts, receipt],
+                    "lowering_status": "blocked" if remaining_proofs else "not-planned",
+                    "writeback_summary": WritebackSummary(
+                        eligibility="blocked",
+                        blocking_intent_ids=blocking,
+                    ),
+                }
+            )
+            receipts.append(receipt)
+            continue
+
+        receipt = ProposalReconciliationReceipt(
+            receipt_id=f"reconciliation:{transaction.transaction_id}",
+            proposal_correlation_id=correlation_id,
+            transaction_id=transaction.transaction_id,
+            status="blocked",
+            synthetic_subject_ids=sorted(synthetic_subject_ids),
+            canonical_subject_ids=sorted(transaction.realized_subject_ids),
+            missing_subject_ids=missing,
+            reconciled_at=timestamp,
+            message=(
+                "The committed proposal could not be matched to every expected canonical "
+                "node, port, and evidence record; the synthetic draft was retained."
+            ),
+        )
+        proofs = [
+            proof.model_copy(
+                update={
+                    "status": EditProofState.STALE,
+                    "writeback_eligibility": "blocked",
+                    "reason_codes": ["SYNTHETIC_REALIZATION_MISMATCH"],
+                    "message": receipt.message,
+                    "required_facts": missing,
+                    "supported_fixes": [
+                        "Re-run analysis with the committed source and exact registry bundle."
+                    ],
+                }
+            )
+            if proof.intent_id in affected_intent_ids
+            else proof
+            for proof in draft.proofs
+        ]
+        blocking = sorted(
+            set(draft.writeback_summary.blocking_intent_ids) | affected_intent_ids
+        )
+        draft = draft.model_copy(
+            update={
+                "proofs": proofs,
+                "reconciliation_receipts": [*receipts, receipt],
+                "lowering_status": "blocked",
+                "writeback_summary": WritebackSummary(
+                    eligibility="blocked",
+                    blocking_intent_ids=blocking,
+                ),
+            }
+        )
+        receipts.append(receipt)
+
+    return DraftGraphDocument.model_validate(draft.model_dump(mode="json"))
+
+
 def prepare_studio_bundle(
     artifact: Path,
     workspace: Path,
@@ -1506,7 +2544,17 @@ def prepare_studio_bundle(
     view = project_hierarchy(architecture, hierarchy, expanded_ids)
     views = {view.projection_id: view}
 
+    project_manifest_path = artifact.parent / "project-manifest-v2.json"
     project_root = Path(snapshot.project_root).resolve()
+    if project_manifest_path.is_file():
+        project_manifest_payload = json.loads(
+            project_manifest_path.read_text(encoding="utf-8")
+        )
+        project_root_hint = project_manifest_payload.get("project_root_hint")
+        if isinstance(project_root_hint, str) and project_root_hint:
+            hinted_root = Path(project_root_hint).resolve()
+            if hinted_root.is_dir():
+                project_root = hinted_root
     project_session = create_project_session(
         project_root,
         workspace,
@@ -1515,6 +2563,17 @@ def prepare_studio_bundle(
     )
     project_discovery = discover_project(project_root)
     draft_path = workspace / "drafts" / f"{suffix}.draft.json"
+    stale_draft: DraftGraphDocument | None = None
+    if not draft_path.is_file() and replace_stale_bindings:
+        prior_draft_path = _reconcilable_stale_draft_path(
+            workspace, project_root, draft_path
+        )
+        if prior_draft_path is not None:
+            saved_draft = DraftGraphDocument.model_validate_json(
+                prior_draft_path.read_text(encoding="utf-8")
+            )
+            stale_draft = saved_draft
+            _archive_stale_binding(prior_draft_path)
     if draft_path.is_file():
         saved_draft = DraftGraphDocument.model_validate_json(
             draft_path.read_text(encoding="utf-8")
@@ -1522,9 +2581,12 @@ def prepare_studio_bundle(
         if (
             saved_draft.base_architecture_id != architecture.architecture_id
             or saved_draft.base_source_digest != document.source_digest
+            or saved_draft.base_registry_digest
+            not in {None, MODULE_REGISTRY.bundle.bundle_digest}
         ):
             if not replace_stale_bindings:
                 raise ValueError("saved DraftGraphDocument binding is stale")
+            stale_draft = saved_draft
             _archive_stale_binding(draft_path)
             draft = None
         else:
@@ -1532,11 +2594,23 @@ def prepare_studio_bundle(
     else:
         draft = None
     if draft is None:
-        draft = DraftGraphDocument(
-            draft_id=f"draft:{suffix}",
-            base_architecture_id=architecture.architecture_id,
-            base_source_digest=document.source_digest,
-            revision=0,
+        draft = (
+            _reconcile_stale_draft(
+                stale_draft,
+                architecture=architecture,
+                source_digest=document.source_digest,
+                registry_digest=MODULE_REGISTRY.bundle.bundle_digest,
+                evidence=evidence,
+                workspace=workspace,
+            )
+            if stale_draft is not None
+            else DraftGraphDocument(
+                draft_id=f"draft:{suffix}",
+                base_architecture_id=architecture.architecture_id,
+                base_source_digest=document.source_digest,
+                base_registry_digest=MODULE_REGISTRY.bundle.bundle_digest,
+                revision=0,
+            )
         )
         _write_json(draft_path, draft)
 
@@ -1589,6 +2663,7 @@ def prepare_studio_bundle(
         search_index=[],
         validation_runs=[],
         navigation=navigation,
+        contract_maintenance=ContractMaintenanceManager(workspace, MODULE_REGISTRY),
     )
     bundle.search_index = build_search_index(bundle)
     _write_json(workspace / "publication" / "hierarchy.json", hierarchy)

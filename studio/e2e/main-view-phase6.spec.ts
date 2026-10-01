@@ -172,37 +172,77 @@ test("Phase 6 persists kernel state and keeps structural edits behind formal API
   expect(proposal.integrity).toEqual(integrity);
 
   const draftNodeId = "draft:phase6-node-boundary";
-  const drafted = await page.evaluate(async ({ draftNodeId, nonce }) => {
+  const draftNode = {
+    node_id: draftNodeId,
+    semantic_name: "Phase 6 Draft",
+    framework: "pytorch",
+    node_type: "Linear",
+    parameters: {},
+    ports: [
+      { port_id: `${draftNodeId}.input`, name: "input", direction: "input", role: "main" },
+      { port_id: `${draftNodeId}.output`, name: "output", direction: "output", role: "main" },
+    ],
+  };
+  const locked = await page.request.post("/api/proposal/node", {
+    headers: { "X-ArchCanvas-Nonce": baseline.session_nonce },
+    data: { node: draftNode },
+  });
+  expect(locked.status()).toBe(422);
+  expect(await locked.text()).toContain("topology draft mode is required");
+
+  const unlocked = await page.evaluate(async ({ digest, nonce }) => {
+    const response = await fetch("/api/draft/session/begin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-ArchCanvas-Nonce": nonce },
+      body: JSON.stringify({ base_document_digest: digest }),
+    });
+    if (!response.ok) throw new Error(await response.text());
+    return response.json();
+  }, {
+    digest: proposal.edit_session.current_document_digest,
+    nonce: baseline.session_nonce,
+  }) as StudioState;
+  expect(unlocked.edit_session.mode).toBe("topology-draft");
+
+  const drafted = await page.evaluate(async ({ node, nonce, capabilityId, digest }) => {
     const response = await fetch("/api/proposal/node", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-ArchCanvas-Nonce": nonce },
-      body: JSON.stringify({ node: {
-        node_id: draftNodeId,
-        semantic_name: "Phase 6 Draft",
-        framework: "pytorch",
-        node_type: "Linear",
-        parameters: {},
-        ports: [
-          { port_id: `${draftNodeId}.input`, name: "input", direction: "input", role: "main" },
-          { port_id: `${draftNodeId}.output`, name: "output", direction: "output", role: "main" },
-        ],
-      } }),
+      body: JSON.stringify({
+        node,
+        capability_id: capabilityId,
+        expected_document_digest: digest,
+      }),
     });
     if (!response.ok) throw new Error(await response.text());
     return response.json();
-  }, { draftNodeId, nonce: baseline.session_nonce }) as StudioState;
+  }, {
+    node: draftNode,
+    nonce: baseline.session_nonce,
+    capabilityId: unlocked.edit_session.capability?.capability_id,
+    digest: unlocked.edit_session.current_document_digest,
+  }) as StudioState;
   expect(drafted.draft.nodes.some((item) => item.node_id === draftNodeId)).toBe(true);
   expect(drafted.integrity).toEqual(integrity);
 
-  const deleted = await page.evaluate(async ({ draftNodeId, nonce }) => {
+  const deleted = await page.evaluate(async ({ draftNodeId, nonce, capabilityId, digest }) => {
     const response = await fetch("/api/draft/node/delete", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-ArchCanvas-Nonce": nonce },
-      body: JSON.stringify({ node_id: draftNodeId }),
+      body: JSON.stringify({
+        node_id: draftNodeId,
+        capability_id: capabilityId,
+        expected_document_digest: digest,
+      }),
     });
     if (!response.ok) throw new Error(await response.text());
     return response.json();
-  }, { draftNodeId, nonce: baseline.session_nonce }) as StudioState;
+  }, {
+    draftNodeId,
+    nonce: baseline.session_nonce,
+    capabilityId: drafted.edit_session.capability?.capability_id,
+    digest: drafted.edit_session.current_document_digest,
+  }) as StudioState;
   expect(deleted.draft.nodes.some((item) => item.node_id === draftNodeId)).toBe(false);
   expect(deleted.integrity).toEqual(integrity);
 });

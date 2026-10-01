@@ -1,4 +1,5 @@
 import type { StudioJob } from "../jobs";
+import type { ModuleDefinition } from "../module-registry/types";
 
 export type Projection = "module" | "source";
 export type LayoutMode = "auto" | "dual-swimlane" | "single-lane" | "hierarchical" | "branch-tree" | "force-directed" | "radial" | "orthogonal";
@@ -219,8 +220,112 @@ export interface CanonicalDeleteImpact {
   blocking_reasons: string[];
 }
 
+export interface ContractMigration {
+  migration_id: string;
+  from_version: string;
+  to_version: string;
+  parameter_map: Record<string, string | null>;
+  port_map: Record<string, string | null>;
+  fixture_results: Array<{
+    fixture_id: string;
+    status: "passed" | "failed";
+    message: string;
+  }>;
+}
+
+export interface ContractMaintenanceCapability {
+  capability_id: string;
+  subject: string;
+  draft_id: string;
+  base: { definition_id: string; version: string; digest: string };
+  allowed_commands: Array<"UpdateCandidate" | "Validate" | "Review" | "Publish" | "Discard">;
+  issued_at: string;
+  expires_at: string;
+}
+
+export interface ContractMaintenanceState {
+  session: {
+    mode: "contract-maintenance";
+    candidate_digest: string;
+    capability: ContractMaintenanceCapability;
+  } | null;
+  draft: {
+    draft_id: string;
+    base: { definition_id: string; version: string; digest: string };
+    candidate: ModuleDefinition;
+    candidate_digest: string;
+    author: string;
+    created_at: string;
+    revision: number;
+    state: "draft" | "validating" | "review-ready" | "approved" | "rejected";
+    migration: ContractMigration | null;
+  } | null;
+  validation: {
+    validation_id: string;
+    draft_id: string;
+    candidate_digest: string;
+    validation_digest: string;
+    status: "passed" | "failed";
+    diff: {
+      changes: Array<{
+        subject: string;
+        kind: "parameter" | "port" | "rule" | "matcher" | "semantic" | "visual";
+        compatibility: "breaking" | "backward-compatible" | "visual-only";
+        message: string;
+      }>;
+      compatibility: "breaking" | "backward-compatible" | "visual-only" | "unchanged";
+      required_version_bump: "major" | "minor" | "patch" | "none";
+    };
+    diagnostics: Diagnostic[];
+    validated_at: string;
+  } | null;
+  review_receipt: {
+    receipt_id: string;
+    draft_id: string;
+    candidate_digest: string;
+    validation_digest: string;
+    reviewer: string;
+    decision: "approved" | "rejected";
+    decided_at: string;
+  } | null;
+  published: Array<Record<string, unknown>>;
+}
+
 export interface StudioState {
   session_nonce?: string;
+  edit_session:
+    | {
+      mode: "visual";
+      document_id: string;
+      current_document_digest: string;
+    }
+    | {
+      mode: "topology-draft";
+      current_document_digest: string;
+      capability: {
+        capability_id: string;
+        subject: string;
+        draft_id: string;
+        base_document_digest: string;
+        allowed_commands: string[];
+        issued_at: string;
+        expires_at: string;
+      };
+    }
+    | {
+      mode: "contract-maintenance";
+      candidate_digest: string;
+      capability: ContractMaintenanceCapability;
+    };
+  topology_review_receipt?: {
+    receipt_id: string;
+    draft_id: string;
+    document_digest: string;
+    registry_digest: string;
+    status: "review-ready";
+    submitted_at: string;
+    diagnostics: Array<Record<string, unknown>>;
+  } | null;
   project: {
     project_id: string;
     root: string;
@@ -286,11 +391,13 @@ export interface StudioState {
   draft: {
     draft_id: string;
     revision: number;
+    base_registry_digest?: string | null;
     nodes: Array<{
       node_id: string;
       semantic_name: string;
       framework: string;
       node_type: string;
+      definition_ref?: { definition_id: string; version: string; digest: string } | null;
       parent_id?: string | null;
       source_anchor?: string | null;
       parameters: Record<string, unknown>;
@@ -299,6 +406,14 @@ export interface StudioState {
         name: string;
         direction: "input" | "output";
         role: string;
+        definition_port_id?: string | null;
+        required?: boolean;
+        min_connections?: number;
+        max_connections?: number | "many";
+        ordering?: "ordered" | "unordered";
+        accepted_relations?: string[];
+        tensor_ranks?: number[];
+        tensor_layouts?: Array<"NCHW" | "NHWC" | "sequence" | "scalar" | "any">;
       }>;
     }>;
     edges: Array<{
@@ -306,6 +421,8 @@ export interface StudioState {
       source_port_id: string;
       target_port_id: string;
       policy: DraftEdgePolicy;
+      relation?: string;
+      target_ordinal?: number | null;
       parameters: Record<string, unknown>;
     }>;
     intents: Array<{
@@ -324,8 +441,20 @@ export interface StudioState {
       reason_codes: string[];
       affected_subject_ids: string[];
     }>;
+    reconciliation_receipts?: Array<{
+      receipt_id: string;
+      proposal_correlation_id: string;
+      transaction_id: string;
+      status: "realized" | "blocked";
+      synthetic_subject_ids: string[];
+      canonical_subject_ids: string[];
+      missing_subject_ids: string[];
+      reconciled_at: string;
+      message: string;
+    }>;
     writeback_summary: { eligibility: "blocked" | "prepare" | "commit"; blocking_intent_ids: string[] };
   };
+  contract_maintenance?: ContractMaintenanceState | null;
   source_workspace: {
     workspace_id: string;
     revision: number;
@@ -351,5 +480,10 @@ export interface StudioState {
     runtime_evidence: boolean;
     semantic_transforms: string[];
     proposed_connection: boolean;
+    contract_maintenance?: {
+      status: "available" | "unavailable";
+      writeback: string;
+      separate_from_topology: boolean;
+    };
   };
 }

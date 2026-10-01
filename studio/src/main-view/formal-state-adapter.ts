@@ -11,6 +11,8 @@ import type {
   KernelVisualState,
 } from "../visual-kernel/types";
 import { templateDetailSize } from "../visual-kernel/template-details";
+import { resolveDefinitionRef } from "../module-registry/registry";
+import type { ModuleDefinition } from "../module-registry/types";
 
 export interface FormalPort {
   port_id: string;
@@ -110,6 +112,37 @@ export interface FormalStudioState {
     annotations?: FormalSemanticAnnotation[];
     template_bindings?: FormalTemplateBinding[];
   } | null;
+  draft?: {
+    draft_id: string;
+    nodes: Array<{
+      node_id: string;
+      semantic_name: string;
+      node_type: string;
+      parent_id?: string | null;
+      definition_ref?: {
+        definition_id: string;
+        version: string;
+        digest: string;
+      } | null;
+      ports: Array<{
+        port_id: string;
+        name: string;
+        direction: "input" | "output";
+        role: string;
+        definition_port_id?: string | null;
+        required?: boolean;
+        min_connections?: number;
+        max_connections?: number | "many";
+        accepted_relations?: string[];
+      }>;
+    }>;
+    edges: Array<{
+      edge_id: string;
+      source_port_id: string;
+      target_port_id: string;
+      relation?: string;
+    }>;
+  };
 }
 
 function unique(values: string[]): string[] {
@@ -117,15 +150,16 @@ function unique(values: string[]): string[] {
 }
 
 function shapeFor(kind: string, attributes: Record<string, unknown>, annotationGlyph?: string): KernelNodeShape {
-  const glyph = String(annotationGlyph ?? attributes.glyph ?? "").toLowerCase();
+  const glyph = String(annotationGlyph ?? attributes.glyph_id ?? attributes.glyph ?? "").toLowerCase();
   const semanticRole = String(attributes.semantic_role ?? "").toLowerCase();
-  const opType = String(attributes.op_type ?? attributes.source_kind ?? "").toLowerCase();
+  const opType = String(attributes.op_type ?? attributes.semantic_kind ?? attributes.source_kind ?? "").toLowerCase();
   if (kind === "module_container" || kind === "opaque_composite") return "container";
   if (kind === "input" || kind === "output" || kind === "io" || kind === "input_output") return "io";
   if (kind === "tensor" || kind === "tensor_value" || glyph === "tensor") return "tensor";
   if (kind === "condition" || kind === "condition_control" || glyph === "condition") return "condition";
-  if (glyph === "attention") return "attention";
-  if (glyph === "normalization") return "normalization";
+  if (glyph === "attention" || glyph === "multihead-attention") return "attention";
+  if (glyph === "normalization" || glyph === "layernorm") return "normalization";
+  if (glyph === "conv2d" || glyph === "convolution") return "convolution";
   if (glyph === "add" || semanticRole === "add") return "add";
   if (glyph === "multiply" || semanticRole === "multiply") return "multiply";
   if (glyph === "concat" || semanticRole === "concat") return "concat";
@@ -136,6 +170,21 @@ function shapeFor(kind: string, attributes: Record<string, unknown>, annotationG
   if (/(^|\.)(mul|multiply)$/.test(opType)) return "multiply";
   if (/(^|\.)(cat|concat)$/.test(opType)) return "concat";
   return "operation";
+}
+
+function definitionFor(node: FormalNode | undefined): ModuleDefinition | undefined {
+  if (!node) return undefined;
+  const definitionId = node.attributes.definition_id;
+  const version = node.attributes.definition_version;
+  const digest = node.attributes.definition_digest;
+  if (typeof definitionId !== "string" || typeof version !== "string" || typeof digest !== "string") {
+    return undefined;
+  }
+  return resolveDefinitionRef({ definition_id: definitionId, version, digest });
+}
+
+function projectedPortId(nodeId: string, canonicalPortId: string): string {
+  return `${nodeId}:port:${canonicalPortId}`;
 }
 
 function relationFor(edge: FormalEdge): KernelRelation {
@@ -151,6 +200,16 @@ function relationFor(edge: FormalEdge): KernelRelation {
   if (type.includes("branch") || type.includes("fanout")) return "parallel-branch";
   if (type.includes("merge") || role.includes("concat")) return "merge";
   if (type.includes("routing")) return "routing";
+  return "sequence";
+}
+
+function draftRelation(value: string | undefined): KernelRelation {
+  if (value === "residual") return "residual";
+  if (value === "concat" || value === "merge") return "merge";
+  if (value === "mask" || value === "condition") return "condition";
+  if (value === "memory") return "memory-reference";
+  if (value === "state") return "state-update";
+  if (value === "shape") return "shape-transform";
   return "sequence";
 }
 
@@ -349,6 +408,8 @@ export function adaptFormalState(state: FormalStudioState): {
     const annotationGlyphs = unique(canonicalNodeIds.flatMap((id) => [...(annotationGlyphsByCanonical.get(id) ?? [])]));
     const annotationGlyph = annotationGlyphs.length === 1 ? annotationGlyphs[0] : undefined;
     const hasChildren = hasTemplateDetail || childIds.length > 0 || state.hierarchy.nodes.some((candidate) => candidate.parent_hierarchy_node_id === item.hierarchy_node_id);
+    const definition = !hasChildren ? definitionFor(primary) : undefined;
+    const useNamedPorts = Boolean(definition && primary);
     return {
       nodeId,
       hierarchyNodeId: item.hierarchy_node_id,
@@ -363,15 +424,67 @@ export function adaptFormalState(state: FormalStudioState): {
       label: item.semantic_name,
       secondaryLabel: containedFacts.length > 1 ? `${containedFacts.length} operations` : primary?.kind,
       semanticKind: item.kind ?? primary?.kind ?? "unknown",
+      glyphId: definition?.glyph_id,
+      definitionRef: definition ? {
+        definitionId: definition.definition_id,
+        version: definition.version,
+        digest: definition.digest,
+      } : undefined,
       shape: state.view_state.node_shape_overrides?.[nodeId]
         ?? (hasTemplateDetail ? "attention" : hasChildren ? "container" : primary ? shapeFor(primary.kind, primary.attributes, annotationGlyph) : shapeFor(item.kind ?? "unknown", {}, annotationGlyph)),
-      inputPortIds: [`${nodeId}:input`],
-      outputPortIds: [`${nodeId}:output`],
+      inputPortIds: useNamedPorts
+        ? primary!.input_ports.map((port) => projectedPortId(nodeId, port.port_id))
+        : [`${nodeId}:input`],
+      outputPortIds: useNamedPorts
+        ? primary!.output_ports.map((port) => projectedPortId(nodeId, port.port_id))
+        : [`${nodeId}:output`],
       evidenceIds,
       templateBindingId: binding?.bindingId,
       synthetic: Boolean(item.attributes?.synthetic ?? canonicalNodeIds.length === 0),
     };
   });
+
+  const draftDefinitions = new Map(
+    (state.draft?.nodes ?? []).map((node) => [
+      node.node_id,
+      node.definition_ref ? resolveDefinitionRef(node.definition_ref) : undefined,
+    ]),
+  );
+  for (const draftNode of state.draft?.nodes ?? []) {
+    const definition = draftDefinitions.get(draftNode.node_id);
+    const nodeId = draftNode.node_id;
+    nodes.push({
+      nodeId,
+      hierarchyNodeId: `draft-hierarchy:${draftNode.node_id}`,
+      childNodeIds: [],
+      depth: 1,
+      expanded: false,
+      renderRole: "atomic",
+      canonicalNodeIds: [],
+      containedCanonicalNodeIds: [],
+      label: draftNode.semantic_name,
+      secondaryLabel: `${draftNode.node_type} · draft`,
+      semanticKind: definition?.semantic_kind ?? draftNode.node_type,
+      glyphId: definition?.glyph_id,
+      definitionRef: definition ? {
+        definitionId: definition.definition_id,
+        version: definition.version,
+        digest: definition.digest,
+      } : undefined,
+      shape: shapeFor(definition?.semantic_kind ?? draftNode.node_type, {
+        glyph_id: definition?.glyph_id,
+        semantic_kind: definition?.semantic_kind,
+      }),
+      inputPortIds: draftNode.ports
+        .filter((port) => port.direction === "input")
+        .map((port) => port.port_id),
+      outputPortIds: draftNode.ports
+        .filter((port) => port.direction === "output")
+        .map((port) => port.port_id),
+      evidenceIds: [],
+      synthetic: true,
+    });
+  }
 
   for (const node of [...nodes].sort((left, right) => right.depth - left.depth || left.nodeId.localeCompare(right.nodeId))) {
     for (const canonicalId of node.containedCanonicalNodeIds) {
@@ -379,10 +492,62 @@ export function adaptFormalState(state: FormalStudioState): {
     }
   }
 
-  const ports: KernelPort[] = nodes.flatMap((node) => [
-    { portId: node.inputPortIds[0], ownerNodeId: node.nodeId, direction: "input" as const, role: "projected-input", evidenceIds: node.evidenceIds },
-    { portId: node.outputPortIds[0], ownerNodeId: node.nodeId, direction: "output" as const, role: "projected-output", evidenceIds: node.evidenceIds },
-  ]);
+  const ports: KernelPort[] = nodes.flatMap((node) => {
+    const draftNode = state.draft?.nodes.find((item) => item.node_id === node.nodeId);
+    if (draftNode) {
+      const definition = draftDefinitions.get(draftNode.node_id);
+      return draftNode.ports.map((port) => ({
+        portId: port.port_id,
+        ownerNodeId: node.nodeId,
+        direction: port.direction,
+        role: port.role,
+        evidenceIds: [],
+        contract: definition ? {
+          required: port.required ?? false,
+          minConnections: port.min_connections ?? 0,
+          maxConnections: port.max_connections ?? "many",
+          acceptedRelations: port.accepted_relations ?? ["main"],
+          definitionId: definition.definition_id,
+          definitionVersion: definition.version,
+        } : undefined,
+      }));
+    }
+    const primary = node.canonicalNodeIds.length === 1
+      ? formalNodes.get(node.canonicalNodeIds[0])
+      : undefined;
+    const definition = definitionFor(primary);
+    if (definition && primary && node.renderRole === "atomic") {
+      return [...primary.input_ports, ...primary.output_ports].map((port) => {
+        const contract = definition.ports.find((item) => item.port_id === port.role || item.port_id === port.name);
+        return {
+          portId: projectedPortId(node.nodeId, port.port_id),
+          ownerNodeId: node.nodeId,
+          direction: port.direction,
+          role: port.role,
+          evidenceIds: node.evidenceIds,
+          canonicalPortIds: [port.port_id],
+          contract: contract ? {
+            required: contract.required,
+            minConnections: contract.min_connections,
+            maxConnections: contract.max_connections,
+            acceptedRelations: contract.accepted_relations,
+            definitionId: definition.definition_id,
+            definitionVersion: definition.version,
+          } : undefined,
+        };
+      });
+    }
+    return [
+      { portId: node.inputPortIds[0], ownerNodeId: node.nodeId, direction: "input" as const, role: "projected-input", evidenceIds: node.evidenceIds },
+      { portId: node.outputPortIds[0], ownerNodeId: node.nodeId, direction: "output" as const, role: "projected-output", evidenceIds: node.evidenceIds },
+    ];
+  });
+  const namedPortByCanonical = new Map(
+    ports.flatMap((port) => (port.canonicalPortIds ?? []).map((canonicalId) => [
+      `${port.ownerNodeId}|${canonicalId}`,
+      port.portId,
+    ] as const)),
+  );
   const edgeGroups = new Map<string, FormalEdge[]>();
   for (const edge of [...state.architecture.edges].sort((left, right) => left.edge_id.localeCompare(right.edge_id))) {
     const source = representativeByCanonical.get(edge.producer_id);
@@ -398,23 +563,49 @@ export function adaptFormalState(state: FormalStudioState): {
     }
     if (source === target) continue;
     const relation = relationFor(edge);
-    const key = `${source}|${target}|${relation}|${edge.role}`;
+    const sourcePort = namedPortByCanonical.get(`${source}|${edge.producer_port}`) ?? `${source}:output`;
+    const targetPort = namedPortByCanonical.get(`${target}|${edge.consumer_port}`) ?? `${target}:input`;
+    const key = `${sourcePort}|${targetPort}|${relation}|${edge.role}`;
     edgeGroups.set(key, [...(edgeGroups.get(key) ?? []), edge]);
   }
   const edges: KernelEdge[] = [...edgeGroups.entries()].map(([key, facts]) => {
-    const [source, target, relation, semanticChannel] = key.split("|") as [string, string, KernelRelation, string];
+    const [sourcePortId, targetPortId, relation, semanticChannel] = key.split("|") as [string, string, KernelRelation, string];
     return {
       edgeId: `projected:${key}`,
       canonicalEdgeIds: facts.map((edge) => edge.edge_id).sort(),
-      sourcePortId: `${source}:output`,
-      targetPortId: `${target}:input`,
+      sourcePortId,
+      targetPortId,
       relation,
       semanticChannel,
       tensorIds: unique(facts.map((edge) => edge.tensor_id)),
       label: semanticChannel || relation,
       evidenceIds: unique(facts.flatMap((edge) => edge.evidence_ids)),
     };
-  }).sort((left, right) => left.edgeId.localeCompare(right.edgeId));
+  });
+  const portIds = new Set(ports.map((port) => port.portId));
+  for (const edge of state.draft?.edges ?? []) {
+    if (!portIds.has(edge.source_port_id) || !portIds.has(edge.target_port_id)) {
+      diagnostics.push({
+        code: "unprojected-draft-edge",
+        severity: "warning",
+        message: `Draft edge ${edge.edge_id} has no visible endpoint.`,
+        targetIds: [edge.edge_id],
+      });
+      continue;
+    }
+    edges.push({
+      edgeId: edge.edge_id,
+      canonicalEdgeIds: [],
+      sourcePortId: edge.source_port_id,
+      targetPortId: edge.target_port_id,
+      relation: draftRelation(edge.relation),
+      semanticChannel: edge.relation ?? "main",
+      tensorIds: [],
+      label: edge.relation ?? "main",
+      evidenceIds: [],
+    });
+  }
+  edges.sort((left, right) => left.edgeId.localeCompare(right.edgeId));
 
   const nodeById = new Map(nodes.map((node) => [node.nodeId, node]));
   const modules: KernelModule[] = nodes.filter((node) => node.renderRole !== "atomic").map((node) => ({

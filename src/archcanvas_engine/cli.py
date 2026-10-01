@@ -13,7 +13,6 @@ from pydantic import TypeAdapter, ValidationError
 
 from archcanvas_adapters import adapter_capabilities, analyze_with_adapter
 from archcanvas_core.models import (
-    SCHEMA_MODELS,
     ArchitectureIR,
     CommandReceipt,
     Diagnostic,
@@ -25,6 +24,7 @@ from archcanvas_core.models import (
     SemanticStructuralPatch,
     SourceSnapshot,
 )
+from archcanvas_core.schema_registry import SCHEMA_MODELS
 from archcanvas_core.validation import validate_architecture
 from archcanvas_patterns import (
     apply_pattern_packs,
@@ -44,6 +44,7 @@ from archcanvas_publication import (
     validate_publication,
 )
 from archcanvas_python import AnalysisError
+from archcanvas_python.frontend_v2 import analyze_project_v2
 from archcanvas_release import create_bundle, install_skill, release_support_matrix, verify_bundle
 from archcanvas_runtime import RuntimeTraceError, trace_runtime
 from archcanvas_studio import StudioBundle, prepare_studio_bundle, source_binding_digest
@@ -232,22 +233,41 @@ def doctor() -> CommandReceipt:
 def analyze(args: argparse.Namespace) -> CommandReceipt:
     project = args.project.resolve()
     config_bytes = args.config.read_bytes() if args.config else b"{}"
-    bundle = analyze_with_adapter(
-        project,
-        args.entry,
-        args.task,
-        args.mode,
-        config_bytes,
-        args.config,
-        framework=args.framework,
-        pattern_packs_enabled=not args.no_pattern_packs,
-    )
+    out = args.out.resolve()
+    frontend_v2 = None
+    if args.frontend == "v2":
+        if args.framework not in {"pytorch", "auto"}:
+            raise AnalysisError(
+                "FRONTEND_V2_FRAMEWORK_UNSUPPORTED",
+                "compiler frontend v2 currently supports PyTorch source projects",
+            )
+        frontend_v2 = analyze_project_v2(
+            project,
+            args.entry,
+            args.task,
+            args.mode,
+            out / ".frontend-v2",
+            config_bytes=config_bytes,
+            pyright_executable=args.pyright_typeserver,
+            pattern_packs_enabled=not args.no_pattern_packs,
+        )
+        bundle = frontend_v2.compatibility
+    else:
+        bundle = analyze_with_adapter(
+            project,
+            args.entry,
+            args.task,
+            args.mode,
+            config_bytes,
+            args.config,
+            framework=args.framework,
+            pattern_packs_enabled=not args.no_pattern_packs,
+        )
     gates, diagnostics = validate_architecture(
         bundle.architecture,
         bundle.evidence,
         bundle.snapshot,
     )
-    out = args.out.resolve()
     artifacts = {
         "source_snapshot": str(out / "source-snapshot.json"),
         "evidence_ledger": str(out / "evidence-ledger.json"),
@@ -264,6 +284,16 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
         "runtime_receipt": str(out / "runtime-receipt.json"),
         "architecture": str(out / "architecture.json"),
     }
+    if frontend_v2 is not None:
+        artifacts.update(
+            {
+                "source_corpus_v2": str(out / "source-corpus-v2.json"),
+                "project_manifest_v2": str(out / "project-manifest-v2.json"),
+                "analysis_input_v2": str(out / "analysis-input-v2.json"),
+                "semantic_graph_v2": str(out / "semantic-graph-v2.json"),
+                "architecture_v2": str(out / "architecture-v2.json"),
+            }
+        )
     blocking = any(item.severity == "blocking" for item in diagnostics)
     if blocking:
         return CommandReceipt(
@@ -349,6 +379,12 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
         },
     )
     _write_json(Path(artifacts["architecture"]), bundle.architecture)
+    if frontend_v2 is not None:
+        _write_json(Path(artifacts["project_manifest_v2"]), frontend_v2.manifest)
+        _write_json(Path(artifacts["source_corpus_v2"]), frontend_v2.corpus)
+        _write_json(Path(artifacts["analysis_input_v2"]), frontend_v2.analysis_input)
+        _write_json(Path(artifacts["semantic_graph_v2"]), frontend_v2.semantic_graph)
+        _write_json(Path(artifacts["architecture_v2"]), frontend_v2.exact_ir)
     receipt = CommandReceipt(
         command="analyze",
         status="ok",
@@ -361,6 +397,13 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
             "framework": bundle.architecture.framework,
             "profile": profile,
             "pattern_packs_enabled": not args.no_pattern_packs,
+            "frontend": args.frontend,
+            "compatibility_projection": frontend_v2 is not None,
+            "resolver": (
+                frontend_v2.analysis_input.resolver.model_dump(mode="json")
+                if frontend_v2 is not None
+                else None
+            ),
             "pattern_status": pattern_receipt.status,
             "selected_pattern_packs": pattern_receipt.selected_pack_ids,
             "candidate_pattern_packs": [
@@ -729,6 +772,12 @@ def build_parser() -> argparse.ArgumentParser:
     analyze_parser.add_argument("--task", required=True)
     analyze_parser.add_argument("--mode", choices=("eval", "train"), required=True)
     analyze_parser.add_argument("--out", type=Path, required=True)
+    analyze_parser.add_argument("--frontend", choices=("v1", "v2"), default="v1")
+    analyze_parser.add_argument(
+        "--pyright-typeserver",
+        type=Path,
+        help="Pinned pyright-typeserver executable used only by compiler frontend v2.",
+    )
     analyze_parser.add_argument("--no-pattern-packs", action="store_true")
     analyze_parser.add_argument("--pattern-workspace", type=Path, action="append", default=[])
     analyze_parser.add_argument("--pattern-lock", action="append", default=[])

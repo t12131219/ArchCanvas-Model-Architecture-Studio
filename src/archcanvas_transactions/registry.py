@@ -39,6 +39,11 @@ TRANSFORM_REGISTRY: dict[str, dict[str, Any]] = {
         "target": "single-consumer sequential module output",
         "topology_change": True,
     },
+    "insert_registered_module": {
+        "version": "1.0",
+        "target": "v2 exact single-consumer PyTorch module output",
+        "topology_change": True,
+    },
 }
 
 
@@ -294,6 +299,69 @@ def validate_structural_oracle(
     after: ArchitectureIR,
     delta: GraphDelta,
 ) -> None:
+    if request.operation == "insert_registered_module":
+        reference = request.parameters["definition_ref"]
+        module_name = request.parameters["module_name"]
+        added_nodes = [item for item in after.nodes if item.node_id in delta.added_nodes]
+        matching = [
+            item
+            for item in added_nodes
+            if item.attributes.get("definition_id") == reference["definition_id"]
+            and item.attributes.get("definition_version") == reference["version"]
+            and item.attributes.get("definition_digest") == reference["digest"]
+            and item.semantic_name == module_name
+        ]
+        if len(added_nodes) != 1 or len(matching) != 1 or delta.removed_nodes:
+            raise ValueError(
+                "registered module insertion must realize exactly one pinned canonical node"
+            )
+        inserted = matching[0]
+        original_edges = [
+            item for item in before.edges if item.producer_id == request.target_node_id
+        ]
+        if len(original_edges) != 1:
+            raise ValueError(
+                "registered module insertion requires one original downstream consumer"
+            )
+        original = original_edges[0]
+        removed = [item for item in before.edges if item.edge_id in delta.removed_edges]
+        added = [item for item in after.edges if item.edge_id in delta.added_edges]
+        route = {(item.producer_id, item.consumer_id) for item in added}
+        before_edges = {item.edge_id: item for item in before.edges}
+        after_edges = {item.edge_id: item for item in after.edges}
+        structurally_changed_edges = [
+            edge_id
+            for edge_id in delta.changed_edges
+            if before_edges[edge_id].model_dump(
+                mode="json", exclude={"evidence_ids"}
+            )
+            != after_edges[edge_id].model_dump(
+                mode="json", exclude={"evidence_ids"}
+            )
+        ]
+        if (
+            [item.edge_id for item in removed] != [original.edge_id]
+            or route
+            != {
+                (request.target_node_id, inserted.node_id),
+                (inserted.node_id, original.consumer_id),
+            }
+            or structurally_changed_edges
+            or delta.removed_ports
+            or delta.changed_ports
+            or delta.removed_tensors
+            or delta.changed_parameters
+            or delta.changed_sharing
+        ):
+            raise ValueError(
+                "registered module insertion produced an unbounded Graph Delta: "
+                f"removed_edges={delta.removed_edges}, route={sorted(route)}, "
+                f"changed_edges={structurally_changed_edges}, removed_ports={delta.removed_ports}, "
+                f"changed_ports={delta.changed_ports}, removed_tensors={delta.removed_tensors}, "
+                f"changed_parameters={len(delta.changed_parameters)}, "
+                f"changed_sharing={delta.changed_sharing}"
+            )
+        return
     if before.framework == "jax" and request.operation == "replace_activation":
         replacement = f"nn.{str(request.parameters['replacement']).lower()}"
         node = next(item for item in after.nodes if item.node_id == request.target_node_id)

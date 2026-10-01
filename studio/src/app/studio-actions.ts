@@ -34,7 +34,29 @@ export function createStudioActions(deps: StudioActionDependencies) {
 
   async function mutate(endpoint: string, payload?: object, activityLabel?: string): Promise<StudioState | null> {
     try {
-      const state = await postStudioJson<StudioState>(endpoint, payload ?? {}, { nonce: data?.session_nonce });
+      const topologyEndpoints = new Set([
+        "/api/proposal/node",
+        "/api/proposal/draft-edge",
+        "/api/proposal/delete-node",
+        "/api/draft/node/delete",
+        "/api/draft/node/parameters",
+        "/api/draft/edge/delete",
+        "/api/draft/delete-intent/discard",
+        "/api/draft/session/discard",
+        "/api/draft/session/submit",
+      ]);
+      let requestPayload = payload ?? {};
+      if (topologyEndpoints.has(endpoint)) {
+        if (data?.edit_session.mode !== "topology-draft") {
+          throw new Error(tx("Topology draft mode is required.", "需要先解锁拓扑草稿模式。"));
+        }
+        requestPayload = {
+          ...requestPayload,
+          capability_id: data.edit_session.capability.capability_id,
+          expected_document_digest: data.edit_session.current_document_digest,
+        };
+      }
+      const state = await postStudioJson<StudioState>(endpoint, requestPayload, { nonce: data?.session_nonce });
       acceptStudioState(state);
       if (["/api/patch", "/api/patch-batch", "/api/undo", "/api/redo"].includes(endpoint)) {
         restoreNavigationState(state);

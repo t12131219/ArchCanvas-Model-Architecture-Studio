@@ -15,6 +15,7 @@ archcanvas analyze \
   --project fixtures/tier_a/transformer \
   --entry model:Transformer \
   --framework pytorch \
+  --frontend v2 \
   --task inference \
   --mode eval \
   --out build/transformer \
@@ -99,6 +100,20 @@ managed ONNX artifact set under the rollback contract; stale revisions and concu
 any member are rejected without fuzzy merging.
 
 `analyze` never imports the target project. It reads Python source, records file digests and source spans, and emits unresolved facts whenever the static subset cannot prove a claim.
+
+For PyTorch source projects, `--frontend v2` captures an immutable multi-file SourceCorpus,
+builds LibCST-backed source anchors and a Python Semantic Graph, binds exact registry definitions
+and named ports, and emits `architecture-v2.json` alongside the v1 compatibility projection used
+by existing consumers. Studio analysis jobs select v2 by default for `pytorch` and `auto`; the
+general CLI keeps `--frontend v1` as the compatibility default for cross-framework workflows.
+Pass `--no-pattern-packs` to exclude v2 pattern bindings and their digests from the analysis input.
+
+Pyright Type Server is an optional resolver capability. Supply a pinned executable explicitly with
+`--pyright-typeserver /trusted/path/pyright-typeserver`, or set
+`ARCHCANVAS_PYRIGHT_TYPESERVER` for Studio analysis jobs. Its executable digest, snapshot and query
+digests are recorded in `analysis-input-v2.json`. When the sidecar is absent, times out or changes
+snapshot during a query batch, analysis deterministically falls back to LibCST/local resolution and
+emits a resolver diagnostic without importing or executing the target project.
 
 `trace` is a separate, explicit opt-in boundary. It imports and executes the frozen entrypoint only
 inside an isolated subprocess with a temporary working directory, timeout, CPU/memory limits,

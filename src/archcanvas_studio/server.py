@@ -19,7 +19,6 @@ from archcanvas_core.models import (
     AnalysisJob,
     AnalysisRequest,
     Diagnostic,
-    DraftGraphDocument,
     JobState,
     PatchBatch,
     ProjectSession,
@@ -297,12 +296,94 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                     self.server.bundle.propose_connection(payload)
                     self._json(self.server.bundle.state())
                     return
+                elif self.path == "/api/draft/session/begin":
+                    self.server.bundle.begin_topology_draft(
+                        str(payload["base_document_digest"]),
+                        self.server.session_nonce,
+                    )
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/contracts/session/begin":
+                    base = payload.get("base")
+                    if not isinstance(base, dict):
+                        raise TypeError("contract base must be an exact definition reference")
+                    self.server.bundle.begin_contract_maintenance(
+                        str(base["definition_id"]),
+                        str(base["version"]),
+                        str(base["digest"]),
+                        self.server.session_nonce,
+                    )
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/contracts/candidate":
+                    manager = self.server.bundle.contract_maintenance
+                    assert manager is not None
+                    manager.update_candidate(
+                        payload,
+                        str(payload["capability_id"]),
+                        self.server.session_nonce,
+                    )
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/contracts/validate":
+                    manager = self.server.bundle.contract_maintenance
+                    assert manager is not None
+                    manager.validate(
+                        str(payload["capability_id"]), self.server.session_nonce
+                    )
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/contracts/review":
+                    manager = self.server.bundle.contract_maintenance
+                    assert manager is not None
+                    manager.review(
+                        str(payload["decision"]),
+                        str(payload["capability_id"]),
+                        self.server.session_nonce,
+                    )
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/contracts/publish":
+                    manager = self.server.bundle.contract_maintenance
+                    assert manager is not None
+                    manager.publish(
+                        str(payload["capability_id"]), self.server.session_nonce
+                    )
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/contracts/session/discard":
+                    manager = self.server.bundle.contract_maintenance
+                    assert manager is not None
+                    manager.discard(
+                        str(payload["capability_id"]), self.server.session_nonce
+                    )
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/draft/session/discard":
+                    self.server.bundle.discard_topology_draft(
+                        str(payload["capability_id"]),
+                        self.server.session_nonce,
+                    )
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/draft/session/submit":
+                    self.server.bundle.submit_topology_draft(
+                        str(payload["capability_id"]),
+                        str(payload["expected_document_digest"]),
+                        self.server.session_nonce,
+                    )
+                    self._json(self.server.bundle.state())
+                    return
                 elif self.path == "/api/proposal/node":
-                    self.server.bundle.propose_draft_node(payload)
+                    self.server.bundle.dispatch_topology_command(
+                        "CreateNode", payload, self.server.session_nonce
+                    )
                     self._json(self.server.bundle.state())
                     return
                 elif self.path == "/api/proposal/draft-edge":
-                    self.server.bundle.propose_draft_edge(payload)
+                    self.server.bundle.dispatch_topology_command(
+                        "ConnectPorts", payload, self.server.session_nonce
+                    )
                     self._json(self.server.bundle.state())
                     return
                 elif self.path == "/api/proposal/delete-node/preview":
@@ -315,19 +396,33 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                     )
                     return
                 elif self.path == "/api/proposal/delete-node":
-                    self.server.bundle.propose_canonical_delete(payload)
+                    self.server.bundle.dispatch_topology_command(
+                        "DeleteCanonicalNode", payload, self.server.session_nonce
+                    )
                     self._json(self.server.bundle.state())
                     return
                 elif self.path == "/api/draft/node/delete":
-                    self.server.bundle.delete_draft_node(str(payload["node_id"]))
+                    self.server.bundle.dispatch_topology_command(
+                        "DeleteNode", payload, self.server.session_nonce
+                    )
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/draft/node/parameters":
+                    self.server.bundle.dispatch_topology_command(
+                        "SetInstanceParameter", payload, self.server.session_nonce
+                    )
                     self._json(self.server.bundle.state())
                     return
                 elif self.path == "/api/draft/edge/delete":
-                    self.server.bundle.delete_draft_edge(str(payload["edge_id"]))
+                    self.server.bundle.dispatch_topology_command(
+                        "DisconnectEdge", payload, self.server.session_nonce
+                    )
                     self._json(self.server.bundle.state())
                     return
                 elif self.path == "/api/draft/delete-intent/discard":
-                    self.server.bundle.discard_canonical_delete(str(payload["intent_id"]))
+                    self.server.bundle.dispatch_topology_command(
+                        "DiscardIntent", payload, self.server.session_nonce
+                    )
                     self._json(self.server.bundle.state())
                     return
                 elif self.path == "/api/source-workspace/open":
@@ -395,18 +490,17 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
     def do_PUT(self) -> None:
         try:
             self._check_write_origin()
-            payload = self._payload()
+            self._payload()
             if not self.path.startswith("/api/drafts/"):
                 self.send_error(HTTPStatus.NOT_FOUND)
                 return
-            expected_revision = int(payload.pop("expected_revision"))
-            draft = DraftGraphDocument.model_validate(payload)
             with self.server.lock:
                 if self.path.removeprefix("/api/drafts/") != self.server.bundle.draft.draft_id:
                     self.send_error(HTTPStatus.NOT_FOUND)
                     return
-                self.server.bundle.save_draft(draft, expected_revision)
-                self._json(self.server.bundle.state())
+                raise ValueError(
+                    "bulk draft replacement is disabled; use validated topology commands"
+                )
         except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
             self._error(error)
 
@@ -733,8 +827,18 @@ class StudioHTTPServer(ThreadingHTTPServer):
                 if not config_path.is_relative_to(root) or not config_path.is_file():
                     raise ValueError("analysis config escapes the project root or does not exist")
             analysis_dir = workspace / "analyses" / job_id.removeprefix("job:")
+            analyzer_workdir = workspace / "analyzer-workdirs" / job_id.removeprefix("job:")
+            analyzer_tmpdir = analyzer_workdir / "tmp"
+            analyzer_tmpdir.mkdir(parents=True, exist_ok=True)
+            frontend = (
+                "v2"
+                if request.framework in {"pytorch", "auto"}
+                and session.framework in {"pytorch", "auto"}
+                else "v1"
+            )
             command = [
                 sys.executable,
+                "-I",
                 "-m",
                 "archcanvas_engine.cli",
                 "analyze",
@@ -750,28 +854,43 @@ class StudioHTTPServer(ThreadingHTTPServer):
                 "eval",
                 "--out",
                 str(analysis_dir),
+                "--frontend",
+                frontend,
                 "--json",
             ]
             if config_path is not None:
                 command.extend(["--config", str(config_path)])
             if not request.pattern_packs_enabled:
                 command.append("--no-pattern-packs")
-            source_root = str(Path(__file__).resolve().parents[1])
-            environment = dict(os.environ)
-            environment["PYTHONPATH"] = os.pathsep.join(
-                part
-                for part in (source_root, environment.get("PYTHONPATH"))
-                if part
+            pyright_typeserver = os.environ.get("ARCHCANVAS_PYRIGHT_TYPESERVER")
+            if frontend == "v2" and pyright_typeserver:
+                command.extend(
+                    ["--pyright-typeserver", str(Path(pyright_typeserver).resolve())]
+                )
+            environment = {
+                key: value
+                for key, value in os.environ.items()
+                if key in {"LANG", "LC_ALL", "LC_CTYPE", "PATH", "TZ"}
+            }
+            environment.update(
+                {
+                    "PYTHONHASHSEED": "0",
+                    "PYTHONDONTWRITEBYTECODE": "1",
+                    "PYTHONNOUSERSITE": "1",
+                    "TMPDIR": str(analyzer_tmpdir),
+                }
             )
             process_options: dict[str, object] = {}
             if os.name == "posix":
                 process_options["start_new_session"] = True
             process = subprocess.Popen(  # type: ignore[arg-type]
                 command,
-                cwd=analysis_root,
+                cwd=analyzer_workdir,
                 env=environment,
+                stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
+                close_fds=True,
                 text=True,
                 **process_options,
             )
@@ -800,6 +919,14 @@ class StudioHTTPServer(ThreadingHTTPServer):
                 "analysis_python": sys.executable,
                 "target_environment_python": session.python_executable,
                 "target_environment_usage": "runtime-only",
+                "frontend": frontend,
+                "isolation": {
+                    "python_isolated_mode": True,
+                    "environment": "allowlisted",
+                    "working_directory": "dedicated-analysis-workspace",
+                    "stdin": "closed",
+                    "project_cwd": False,
+                },
             }
             replacement = prepare_studio_bundle(
                 analysis_dir / "architecture.json",

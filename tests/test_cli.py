@@ -79,5 +79,6 @@ def test_doctor_reports_registered_source_transactions(capsys) -> None:
     )
     assert receipt["details"]["capabilities"]["structural_transforms"] == [
         "insert_layer_norm",
+        "insert_registered_module",
         "replace_activation",
     ]

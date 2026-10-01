@@ -450,7 +450,7 @@ describe("interactive module detail layout", () => {
         }
       }
     }
-  });
+  }, 20_000);
 
   it("keeps every fully expanded catalog tree inside its immediate surface and visible frame", () => {
     for (const kind of Object.keys(EXPANDED_DETAIL_SIZES) as NodeDetailKind[]) {

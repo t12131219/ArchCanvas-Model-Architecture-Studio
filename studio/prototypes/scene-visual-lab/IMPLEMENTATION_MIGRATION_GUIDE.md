@@ -2245,6 +2245,8 @@ ui/
 4. 通过 [`prepareStructural()`](../../src/app/studio-actions.ts) 进入正式 prepare/verify/review/commit；
 5. 源码重新静态分析后，用带 canonical/evidence IDs 的正式节点替换 synthetic 节点。
 
+其中第 1、5 步依赖稳定的多文件源码事实、定义解析和命名端口绑定。若允许重写主程序读取链，应与[第 19 节 Python 编译前端 v2](#19-主程序-python-编译前端-v2允许重写时的源码读取方案)协同实施，而不是继续扩展现有单文件 AST visitor。
+
 动态执行验证放在最后，并且必须显式启用、禁网、限制 CPU/内存/PID/运行时间。默认路径继续是静态分析，不得通过 import 用户工程来获得模型图。
 
 #### 18.14.1 推荐的第一个端到端切片：Input -> Conv2d -> ReLU
@@ -2399,3 +2401,918 @@ contract-review/diff.test.ts              # major/minor/patch 与 migration gate
 当前 DL-Playground checkout 根目录未发现 `LICENSE`、`COPYING` 或 `NOTICE`。在版权许可或项目授权明确前，只应复用架构思想、行为观察和公开接口形态，并按本节契约重新实现；不要直接复制其 TypeScript/TSX 源码、样式或测试夹具。
 
 实施时应保留一份来源记录，说明哪些能力是根据行为重新设计、哪些术语属于 PyTorch/React Flow 通用概念，以及是否有经授权的代码片段。若后续确认许可证，再由维护者决定是否保留 clean-room 实现或引入带 attribution 的依赖。
+
+## 19. 主程序 Python 编译前端 v2：允许重写时的源码读取方案
+
+第 18 节解决的是“模块契约、命名端口和原型构图如何建立”，但这些能力迁入正式 Studio 后还有一个更早的前置条件：Python 读取端必须能够从冻结的多文件源码中，稳定地产生模块实例、调用点、值、端口绑定、参数共享和父子关系。若仍在当前通用 `analyzer.py` 上逐项增加特殊分支，registry 最终只能绑定到不稳定的节点和顺序端口，保护锁也无法证明准备修改的是哪一段源码。
+
+如果允许较大范围重写，推荐新建一套并行的 **Python compiler frontend v2**，而不是把现有读取器继续扩成一个更大的 AST visitor。这里的“编译前端”不表示编译或执行用户模型，而是指借用编译器的分层方式，将源码字节、语法、名称、控制流、值流、框架语义和架构 IR 分开处理。
+
+必须继续遵守的既有工程约束为：
+
+- Source Evidence 和 Exact Architecture IR 仍是权威，Canvas 仍是派生视图；
+- 默认只做静态分析，不 `import`、不执行用户项目，不通过构造模型获得结构；
+- 无法证明的动态调用、控制流或容器生成必须形成 `opaque` boundary 和 diagnostic；
+- visual patch 不能写源码，语义修改继续走 prepare、verify、review、commit；
+- v2 读取结果必须能降级投影到现有正式 Studio，不能要求 visual-kernel 与读取器同时推倒重写。
+
+### 19.1 为什么不再对现有 AST 读取器逐项打补丁
+
+当前实现的问题并不是八个互不相关的小缺陷，而是源码字节、语法节点、架构节点和视觉节点之间缺少中间语义层：
+
+| 当前实现 | 直接后果 | 仅打补丁仍会保留的问题 |
+|---|---|---|
+| [`source_index.py`](../../../src/archcanvas_python/source_index.py) 每次从工作树读取并 `ast.parse()` | 解析输入没有冻结内容身份 | 名称索引、Evidence 和事务仍可能读到不同字节 |
+| [`analyzer.py`](../../../src/archcanvas_python/analyzer.py) 在遍历顶层执行语句时直接创建 `ArchitectureNode` | 定义、实例、调用和值被压成一个对象 | 无法严谨表达共享模块、多次调用和 tuple 输出 |
+| `_call_name()` 保留源码拼写 | `nn.Linear`、`torch.nn.Linear`、别名和 re-export 不统一 | 每增加一种导入形式就要补启发式 |
+| 输入端口按依赖遍历顺序生成 `in0/in1/...` | MHA/LSTM/Decoder 无法严格绑定语义参数 | 在端口名称上补字符串仍没有调用实参绑定 |
+| node/evidence ID 使用遍历序号和 `.2/.3` 后缀 | 前面插入语句会造成大面积 ID 漂移 | 只换一种序号规则仍不能区分精确 Evidence 与跨版本 lineage |
+| Autoformer 等分析器自行读取固定 `SOURCE_PATHS` 并手工构图 | 每个模型家族形成第二套读取器 | 公共修复无法自然覆盖专用分析器 |
+| 读取用 AST、写回用 LibCST | read anchor 与 write anchor 来自两棵不同的树 | 行号和表达式字符串只能做脆弱的二次比对 |
+
+可选方案的结论为：
+
+| 方案 | 可取之处 | 不采用为最终架构的原因 |
+|---|---|---|
+| 扩展现有 AST 分析器 | 改动小，短期可修具体 bug | 无损源码、稳定写回和跨文件语义仍然分裂 |
+| 只用 LibCST | 无损、精确 span、可统一读写 | 不完整解析对象属性类型和复杂跨文件调用 |
+| 只用 Pyright | 导入、类型、search path 能力成熟 | 不提供 ArchCanvas 模块/端口语义，也不是源码写回事实模型 |
+| Tree-sitter 作为核心 | 增量快、语法错误时仍能产生树 | 提供语法而不是 Python 导入、类型和调用语义 |
+| **LibCST + Pyright sidecar + ArchCanvas Semantic Graph** | 源码、解析、语义与产品契约各自有明确责任 | 需要固定 sidecar 版本和新的 v2 协议，但长期边界最稳定 |
+
+### 19.2 官方能力依据与采用边界
+
+本方案基于 2026-10-01 核对的官方资料，不依赖把第三方工具能力想象成完整 Python 解释器。
+
+#### 19.2.1 LibCST
+
+[LibCST 官方设计说明](https://libcst.readthedocs.io/en/latest/why_libcst.html)明确指出 Python AST 是有损的，会丢失注释、空白和换行形式；LibCST 是可精确重印的 lossless CST，同时使用接近 AST 语义的节点类型。对 ArchCanvas 来说，这意味着分析 Evidence 和事务写回可以建立在同一份语法表示上。
+
+[LibCST Metadata](https://libcst.readthedocs.io/en/latest/metadata.html)提供：
+
+- `PositionProvider`：行列范围，适合 UI 展示；
+- `ByteSpanPositionProvider`：从文件开头计算的字节 offset 与 length，适合作为精确源码锚点；
+- `ParentNodeProvider`：反向取得父节点；
+- `ScopeProvider`：局部变量定义、访问和作用域；
+- `QualifiedNameProvider`：模块内候选限定名；
+- `FullyQualifiedNameProvider`：结合仓库位置生成全限定名并解析相对导入；
+- `FullRepoManager`：为仓库级 provider 生成每文件 cache。
+
+但官方文档也明确说明 `ScopeProvider` 不负责任意对象属性的赋值/访问；LibCST 自带 `TypeInferenceProvider` 又依赖 Pyre Query API、Pyre server 和 watchman。因此 v2 使用 LibCST 负责**源码事实与局部名称**，不把其可选 Pyre 集成作为默认依赖。
+
+#### 19.2.2 Pyright Type Server
+
+[Pyright Type Server](https://microsoft.github.io/pyright/#/type-server)是单独发布的 `pyright-typeserver` 包，通过 stdio 上的 JSON-RPC 提供：
+
+- `typeServer/getComputedType`；
+- `typeServer/getDeclaredType`；
+- `typeServer/getExpectedType`；
+- `typeServer/resolveImport`；
+- `typeServer/getPythonSearchPaths`；
+- `typeServer/getSnapshot`；
+- virtual file redirection。
+
+它与 Pyright CLI/LSP 共用 analyzer、binder 和 type evaluator，适合补足 `self.attention`、继承方法、re-export、stub 和调用返回类型。但它只能提供 resolver/type evidence，不能直接产生 ArchCanvas 的 module instance、PortContract、TemplateBinding 或 Exact Architecture IR。
+
+[Pyright Import Resolution](https://github.com/microsoft/pyright/blob/main/docs/import-resolution.md)还揭示了一个必须显式处理的安全边界：未明确配置时，Pyright 可能调用配置的或默认 Python 解释器取得 search path。ArchCanvas 的静态分析进程不得允许这种隐式行为，因为解释器启动可能处理 `sitecustomize`、用户 site 或可执行 `.pth`。
+
+因此生产配置必须显式提供 workspace root、`extraPaths`、`stubPath` 和固定的 `typeshedPath`；默认不把用户环境的 Python executable 交给 Type Server。需要读取第三方类型时，只挂载已盘点并冻结的 `.pyi`、`py.typed` 包源码或审核过的 stub corpus，并把实际 read set 纳入分析输入摘要。
+
+#### 19.2.3 Tree-sitter
+
+[Tree-sitter 官方说明](https://tree-sitter.github.io/tree-sitter/)将其定位为增量 concrete syntax parser：足够快，可在每次按键时解析，并能在语法错误存在时继续返回有用语法树。因此它适合未来的“未完成编辑 buffer 预览”，不适合首期作为正式 Evidence、类型解析或源码写回的权威前端。
+
+只有满足以下需求后才引入 Tree-sitter：
+
+- Studio 已有真正的 staged multi-file source editor；
+- 用户需要在尚未形成合法 Python 时看到 provisional diagnostics；
+- Tree-sitter 节点只绑定临时 buffer revision，不生成 approved Evidence；
+- buffer 变为合法源码并提交后，仍由 LibCST v2 重新分析。
+
+#### 19.2.4 隔离启动与规范化摘要
+
+[Python `-I` isolated mode](https://docs.python.org/3.14/using/cmdline.html#cmdoption-I)会移除当前目录和用户 site-packages，并忽略 `PYTHON*` 环境变量。正式 analyzer 应从安装在可信环境中的入口以 isolated mode 启动，项目根只作为数据参数传入，不能再作为 `cwd` 或 `PYTHONPATH`。
+
+Python 与 TypeScript 都要计算 registry 和文档摘要，不能分别依赖语言自身的普通 JSON serializer。[RFC 8785 JSON Canonicalization Scheme](https://www.rfc-editor.org/rfc/rfc8785.html)定义了面向 hashing/signing 的确定性属性排序、primitive 序列化、UTF-8 和无多余空白规则。建议跨语言 bundle 使用 JCS 或严格等价的受测试实现，而不是仅约定 `sort_keys=True`。
+
+### 19.3 最终单向链路
+
+正式读取链路调整为：
+
+```text
+ProjectManifest / SourceRootResolver
+  -> Immutable SourceCorpus + content-addressed blobs
+  -> Frozen materialized repository
+  -> LibCST Repository Frontend
+       syntax + byte spans + parents + scopes + qualified names
+  -> optional/version-pinned Pyright Type Server
+       import target + declared/computed type + search path evidence
+  -> ArchCanvas Python Semantic Graph
+       definitions + instances + calls + values + control regions + parameter groups
+  -> Registry Binder
+       exact definition version + named port/parameter binding
+  -> Exact Architecture IR v2 + Evidence Ledger
+  -> Shape / Cost / Template predicate evaluation
+  -> existing hierarchy/publication/visual-kernel
+  -> engineering or paper projection
+```
+
+这里有五个不可反向的事实边界：
+
+| 层 | 权威事实 | 不允许做的事 |
+|---|---|---|
+| `SourceCorpus` | 本次分析实际冻结的源码 bytes 和路径空间 | 从工作树重新读取并假装仍是同一 snapshot |
+| LibCST frontend | 语法、源码 span、局部 scope 和限定名候选 | 根据图例或 registry 反向改写 CST 事实 |
+| Python Semantic Graph | 实例、调用、值流、参数共享和控制区域 | 保存 SVG、坐标或 paper lane |
+| Exact Architecture IR v2 | 经证据和契约绑定的正式架构事实 | 保存未审核的 UI 草稿和临时编辑 buffer |
+| Kernel/Lab projection | 图例、模板、布局、路由和视觉 preset | 重新猜测定义、端口、Shape 或父子模块 |
+
+### 19.4 `ProjectManifest` 与 source root 解析
+
+当前 `discover_project()` 同步遍历并解析全部小于 2 MB 的 Python 文件，而且调用发生在 Studio server lock 内。v2 应把“目录发现”“候选入口索引”和“正式分析”拆开。
+
+建议协议：
+
+```python
+class SourceRootSpec(StrictModel):
+    logical_prefix: str
+    relative_path: str
+    precedence: int
+
+
+class ProjectManifest(StrictModel):
+    schema_version: Literal["2.0"] = "2.0"
+    project_id: Identifier
+    project_root_hint: str
+    source_roots: list[SourceRootSpec]
+    include_globs: list[str]
+    exclude_globs: list[str]
+    config_paths: list[str]
+    python_target: str
+    platform_target: str
+    namespace_package_policy: Literal["enabled", "disabled"]
+    discovery_budget: DiscoveryBudget
+```
+
+解析顺序固定为：
+
+1. 读取显式 Studio 项目设置；
+2. 读取 `pyproject.toml` 中可静态解释的包目录、Pyright 配置和 include/exclude；
+3. 识别常见 root 与 `src/` layout；
+4. 建立有顺序的 source roots，保留冲突与 shadowing diagnostic；
+5. 只做快速候选索引，不在 `/api/projects/open` 的 server lock 中解析全项目；
+6. 正式分析 job 再捕获冻结 corpus 并构建仓库索引。
+
+发现结果必须包含 `included/skipped` manifest。文件过大、编码错误、符号链接逃逸、预算耗尽和不支持的 namespace layout 都要记录原因，不能静默忽略。
+
+### 19.5 不可变 `SourceCorpus` 与 CAS
+
+#### 19.5.1 v2 类型
+
+```python
+class SourceBlobRef(StrictModel):
+    logical_path: str
+    sha256: Sha256
+    blob_ref: str
+    size: int
+    encoding: str
+    file_kind: Literal["python", "stub", "config", "project-metadata"]
+
+
+class SourceCorpus(StrictModel):
+    schema_version: Literal["2.0"] = "2.0"
+    corpus_id: Identifier
+    source_corpus_digest: Sha256
+    vcs_revision: str | None = None
+    files: list[SourceBlobRef]
+    source_roots: list[SourceRootSpec]
+    excluded: list[ExcludedSource]
+
+
+class AnalysisInputManifest(StrictModel):
+    schema_version: Literal["2.0"] = "2.0"
+    source_corpus_digest: Sha256
+    registry_digest: Sha256
+    analyzer_build_digest: Sha256
+    pattern_pack_digests: list[Sha256]
+    resolver: ResolverManifest
+    task: str
+    execution_mode: Literal["eval", "train"]
+    entrypoint: str
+    config_digest: Sha256
+    analysis_input_digest: Sha256
+```
+
+`project_root_hint` 或当前绝对路径不能进入 corpus digest；同一份逻辑源码复制到另一台机器后应得到相同 digest。路径采用规范化 POSIX relative path，禁止 `..`、绝对路径和大小写折叠猜测。
+
+#### 19.5.2 捕获和读取规则
+
+```text
+工作树
+  -> 校验 confined path / symlink policy
+  -> 一次读取 bytes
+  -> 计算 sha256
+  -> 写入 CAS blob
+  -> 建立 logical path manifest
+  -> 从 CAS 物化只读 snapshot root
+  -> 后续 LibCST/Pyright/Evidence 全部读取 snapshot root
+```
+
+为防止读取过程中工作树变化，捕获器至少执行 `stat -> read -> stat` 一致性检查；检测到 inode、size 或 mtime 改变时重试有限次数，仍不稳定则终止 snapshot。更严格的平台实现可以持有打开的文件描述符并对实际 bytes 摘要，不应依赖捕获前的 mtime 作为内容身份。
+
+`source_corpus_digest` 对规范化的 source roots、逻辑路径、file kind 和每文件摘要计算。新增一个可能参与 import shadowing 的文件也必须改变 corpus digest；实际解析过的文件另存 `analysis_read_set`，用于审计和缓存命中解释，不能代替完整路径空间摘要。
+
+CAS 至少需要：
+
+- 原子写入和 `sha256` 二次核对；
+- 相同 bytes 跨分析去重；
+- bundle 引用计数或可重建的保留策略；
+- blob 缺失时返回结构化 `SOURCE_BLOB_MISSING`；
+- source excerpt 直接读取 blob，工作树变化后仍可展示当时证据；
+- 不把用户源码写入日志或 digest 之外的 telemetry。
+
+#### 19.5.3 不再重载 `revision`
+
+v1 同时用 `revision` 表示单文件内容摘要、上游 Git revision 和多文件组合摘要，导致事务层无法统一验证。v2 明确拆分：
+
+| 字段 | 用途 | 是否作为 freshness gate |
+|---|---|---|
+| `vcs_revision` | 人类可读来源，如 commit/tag | 否，允许为空或工作树状态 |
+| `source_corpus_digest` | 冻结源码路径空间与内容 | 是 |
+| `analysis_input_digest` | corpus + registry + analyzer + resolver + config | 是 |
+| `exact_ir_digest` | 最终 Exact IR 规范化内容 | 用于下游缓存和 review |
+
+事务准备仍要逐个比较将被修改文件的当前工作树摘要与 base blob；但“分析产物是否同源”比较的是 corpus/analysis input digest，不再要求组合 revision 等于 `source_files[0].sha256`。
+
+### 19.6 LibCST repository frontend
+
+#### 19.6.1 每文件解析结果
+
+```python
+class ParsedSourceUnit:
+    logical_path: str
+    blob_digest: str
+    module_name: str
+    package_name: str | None
+    module: cst.Module
+    wrapper: MetadataWrapper
+    positions: Mapping[CSTNode, CodeRange]
+    byte_spans: Mapping[CSTNode, CodeSpan]
+    parents: Mapping[CSTNode, CSTNode]
+    scopes: Mapping[CSTNode, Scope]
+    qualified_names: Mapping[CSTNode, set[QualifiedName]]
+```
+
+`FullRepoManager` 的 root 必须是冻结 corpus 的物化目录。不能让它的 `get_metadata_wrapper_for_path()` 指向实时项目，否则虽然 `SourceCorpus` 已冻结，metadata provider 仍可能偷偷读取更新后的工作树。
+
+如果某些数据流算法使用 Python AST 更简单，可以从**同一个 CAS bytes** 派生只读 AST view；AST 只能作为计算辅助，不得产生独立的 source span、Evidence ID 或写回 anchor。任何 CST/AST 对应失败都必须保留 CST 事实并降级相关语义分析。
+
+#### 19.6.2 精确 anchor 与稳定 lineage 是两套 ID
+
+不能要求一个 ID 同时表示“这段不可变源码证据”和“修改前后仍然是同一语义对象”。建议分开：
+
+```python
+class SourceAnchor(StrictModel):
+    logical_path: str
+    blob_digest: Sha256
+    byte_start: int
+    byte_length: int
+    line_span: SourceSpan
+    qualified_symbol: str
+    cst_node_kind: str
+    semantic_role: str
+    subtree_fingerprint: Sha256
+    parent_fingerprint: Sha256 | None
+
+
+class SemanticLineageKey(StrictModel):
+    qualified_owner: str
+    instance_path: str | None
+    semantic_role: str
+    definition_ref: DefinitionRef | None
+    local_fingerprint: Sha256
+```
+
+- `EvidenceRecord.evidence_id` 绑定 corpus 和 `SourceAnchor`，源码 bytes 变化后产生新 Evidence；
+- canonical node ID 在同一 Exact IR 内稳定；
+- `SemanticLineageKey` 用于重新分析后候选对应；
+- lineage remapper 输出 `preserved/replaced/ambiguous/deleted/created`，不在歧义时静默沿用旧 ID；
+- 行号和数组位置不进入长期 identity。
+
+`subtree_fingerprint` 对忽略非语义空白但保留字面量、运算符、关键字参数和调用目标的规范化 CST 计算。注释或前面插入无关语句时 lineage 可以保持，精确 Evidence 仍正确换代。
+
+### 19.7 Pyright Type Server sidecar
+
+#### 19.7.1 生命周期与一致性
+
+每个 analysis job 使用一个受控 sidecar 会话：
+
+```text
+start pinned pyright-typeserver --stdio
+  -> initialize with frozen snapshot root and explicit config
+  -> didOpen / virtual redirect selected corpus files
+  -> getSnapshot = S0
+  -> batch resolveImport/type queries
+  -> getSnapshot = S1
+  -> require S0 == S1
+  -> record query/result digests and resolver manifest
+  -> terminate sidecar
+```
+
+若 snapshot 在批次中变化，丢弃整批结果并有限重试；不能把不同 Pyright snapshot 的类型结果组合进一个 Exact IR。
+
+`ResolverManifest` 至少记录：
+
+```python
+class ResolverManifest(StrictModel):
+    kind: Literal["pyright-typeserver", "libcst-only"]
+    version: str
+    executable_digest: Sha256 | None
+    config_digest: Sha256
+    typeshed_digest: Sha256 | None
+    stub_corpus_digest: Sha256 | None
+    python_target: str
+    platform_target: str
+    search_paths: list[str]
+    snapshot_id: str | None
+```
+
+#### 19.7.2 安全配置
+
+Type Server 启动时必须：
+
+- `cwd` 指向专用分析 workspace，而不是用户项目；
+- 使用清理后的环境和固定 executable；
+- 显式配置 root、extra paths、typeshed 和 stub path；
+- 禁止自动选择或调用用户 Python 解释器；
+- 所有 workspace path 映射到冻结 snapshot root；
+- 默认禁网并设置 CPU、内存、PID、文件数和超时预算；
+- 丢弃非协议 stdout，stderr 只进入受限 diagnostic，不混入用户源码全文。
+
+Pyright 缺失、超时或无法解析时，核心分析仍可使用 LibCST/local symbol graph，但相关 binding confidence 必须降级并产生 diagnostic。正式发行版可以捆绑固定版本；协议上仍不能把 sidecar 的成功当成分析器总能成立的隐式前提。
+
+#### 19.7.3 Resolver 结果只是证据
+
+例如 Pyright 推导 `self.attn` 为 `torch.nn.MultiheadAttention` 时，Registry Binder 仍需：
+
+1. 保存查询位置、Pyright snapshot 和返回类型；
+2. 与构造函数中的 `self.attn = ...`、import binding 和 source matcher 交叉验证；
+3. 解析精确 definition version；
+4. 若多个 matcher 同时成立则保持 ambiguous；
+5. 绝不因为类型名称以 `Attention` 结尾就自动套用 MHA 契约。
+
+### 19.8 ArchCanvas Python Semantic Graph
+
+LibCST 和 Pyright 都不会直接产出指南第 18 节所需的模块实例图。因此 v2 在 Exact Architecture IR 之前增加不对 UI 暴露的中间语义图。
+
+```python
+class PythonSemanticGraph(StrictModel):
+    graph_id: Identifier
+    analysis_input_digest: Sha256
+    definitions: list[SemanticDefinition]
+    instances: list[ModuleInstance]
+    calls: list[CallSite]
+    values: list[SemanticValue]
+    parameter_groups: list[ParameterGroup]
+    control_regions: list[ControlRegion]
+    diagnostics: list[AnalysisDiagnostic]
+```
+
+各对象职责为：
+
+| 对象 | 表达的事实 | 不能合并到其他对象的原因 |
+|---|---|---|
+| `SemanticDefinition` | class/function 及其签名、body anchor | 同一个定义可有多个实例 |
+| `ModuleInstance` | `self.encoder.layers[0]` 等实例路径和父子关系 | 同一个实例可被调用多次 |
+| `CallSite` | 某一处实际调用及实参/返回绑定 | FLOPs 按调用计，参数不一定按调用复制 |
+| `SemanticValue` | 参数、局部变量、call result、tuple element | 端口边连接的是值，不是源码名称字符串 |
+| `ParameterGroup` | 同一 parameter identity 和共享关系 | tied embedding/output projection 必须只计一组参数 |
+| `ControlRegion` | if/loop/comprehension/repeat/opaque boundary | 控制语义不能伪装成普通 DAG 边 |
+
+#### 19.8.1 CFG/SSA-lite，而不是完整解释 Python
+
+目标是恢复架构相关数据流，不是实现完整 Python 编译器。支持范围建议为：
+
+- 函数参数、局部赋值、attribute field、tuple/list 构造与解构；
+- 直接函数/方法调用、关键字参数、`*args/**kwargs` 的可证明静态子集；
+- `if` 的静态 predicate 或分支合流；
+- `for range/static ModuleList` 的 Repeat 表达；
+- return、yield 不支持时的明确 boundary；
+- tensor/function/module call 的 value production；
+- 跨本地文件的有限深度展开。
+
+每个分析 job 设置独立预算：最大 corpus 文件、总字节、CST 节点、call depth、control-region 数、解析时间和 resolver query 数。预算耗尽时生成带 boundary ports 的 `ANALYSIS_BUDGET_EXCEEDED`，不能截断后仍标记 exact。
+
+#### 19.8.2 调用和命名端口绑定顺序
+
+```text
+Call CST node
+  -> local scope / FQN candidates
+  -> optional Pyright declared/computed type
+  -> resolve local definition or external canonical symbol
+  -> resolve module instance and parameter group
+  -> select registry sourceMatcher candidates
+  -> bind constructor parameters
+  -> bind positional/keyword call arguments to PortContract IDs
+  -> bind return structure to output PortContract IDs
+  -> produce CallSite + Value edges + Evidence
+```
+
+`CallArgumentBinding` 至少记录：
+
+```python
+class CallArgumentBinding(StrictModel):
+    call_id: Identifier
+    port_contract_id: str
+    value_id: Identifier
+    argument_kind: Literal["positional", "keyword", "vararg", "kwarg", "implicit"]
+    source_argument_index: int | None
+    source_keyword: str | None
+    ordinal: int | None
+    evidence_ids: list[Identifier]
+```
+
+绑定完成后才能创建正式 input port edge。不能先按 edge 顺序收集输入，再让 Shape rule 猜第 0 项是什么。
+
+#### 19.8.3 MHA、LSTM 和共享调用示例
+
+```python
+context, weights = self.attn(
+    query=x,
+    key=memory,
+    value=memory,
+    attn_mask=mask,
+    need_weights=True,
+)
+```
+
+应恢复：
+
+```text
+instance self.attn -> definition pytorch.nn.multihead_attention@...
+CallSite call:...attn
+  query            <- value:x
+  key               <- value:memory
+  value             <- value:memory
+  attention_mask    <- value:mask
+  context           -> value:context
+  weights           -> value:weights
+```
+
+关键字书写顺序变化不能改变端口绑定。对于：
+
+```python
+sequence, (hn, cn) = self.lstm(x, (h0, c0))
+```
+
+返回 binding 必须保留 tuple path：`sequence=[0]`、`hn=[1,0]`、`cn=[1,1]`。同一个 `self.lstm` 在两个 branch 被调用时产生两个 CallSite，但引用同一个 ModuleInstance/ParameterGroup。
+
+### 19.9 Registry 作为 Python/TypeScript 共用 ABI
+
+第 18 节建议在原型中以 TypeScript `defineAtomicModule()` 作者体验声明 registry。迁入正式程序后，不能让 Python 读取器重新手写一份对应表。构建产物应是唯一的 `module-contract-bundle.json`：
+
+```json
+{
+  "schemaVersion": "1.0",
+  "bundleDigest": "...",
+  "definitions": [
+    {
+      "id": "pytorch.nn.multihead_attention",
+      "version": "1.0.0",
+      "definitionDigest": "...",
+      "canonicalKind": "torch.nn.MultiheadAttention",
+      "parameters": { "schemaVersion": "1.0", "fields": [] },
+      "ports": [],
+      "sourceMatcherIds": ["python.torch.nn.MultiheadAttention.v1"],
+      "shapeRule": { "id": "mha.v1", "version": "1.0.0", "digest": "..." },
+      "glyphId": "multihead-attention",
+      "detailTemplateId": "attention"
+    }
+  ]
+}
+```
+
+规范为：
+
+- TypeScript authoring object 可以保留，但发布前必须导出纯数据 bundle；
+- bundle 中不允许函数、React component、日期、随机 ID 或绝对路径；
+- predicate 使用受限声明式 DSL，任意实现函数只能通过审核后的 rule/matcher ID 引用；
+- Python 和 TypeScript 分别实现 JCS 校验，并用同一 golden fixture 验证 byte-for-byte digest；
+- Python `RegistryBundleLoader` 与 TypeScript `createAtomicNodeRegistry()` 必须验证同一个 `bundleDigest`；
+- Exact IR 固定引用 `(definitionId, version, definitionDigest)`，不能只引用最新版 ID；
+- matcher implementation、shape rule 和 glyph renderer 可以位于不同运行时，但它们各自的版本/digest 都进入 bundle。
+
+这条 ABI 直接保证：源码恢复出的 MHA、用户从节点目录创建的 MHA，以及 engineering/paper 投影中的 MHA 都指向同一个 definition 和 `glyphId`。视图 preset 只能选择 glyph variant，不能改变 semantic identity。
+
+### 19.10 Exact Architecture IR v2
+
+现有 `ArchitectureIR` 可以继续作为兼容格式，但 v2 至少补充以下正式关系：
+
+```python
+class DefinitionRef(StrictModel):
+    definition_id: str
+    version: str
+    digest: Sha256
+
+
+class ArchitectureCall(StrictModel):
+    call_id: Identifier
+    instance_id: Identifier | None
+    definition_ref: DefinitionRef | None
+    parent_module_id: Identifier
+    input_bindings: list[CallArgumentBinding]
+    output_bindings: list[CallOutputBinding]
+    control_region_id: Identifier
+    evidence_ids: list[Identifier]
+    confidence: Confidence
+```
+
+IR v2 应同时保存：
+
+- module definition hierarchy；
+- module instance hierarchy；
+- call graph；
+- value/tensor flow graph；
+- materialized named ports；
+- shared parameter groups；
+- repeats 和 control regions；
+- source matcher/definition binding；
+- `analysis_input_digest` 与 `registry_digest`；
+- unresolved/ambiguous/opaque diagnostics。
+
+对下游兼容，先实现纯函数：
+
+```text
+ExactArchitectureIRv2
+  -> validate v2 invariants
+  -> projectArchitectureV1Compatibility()
+  -> existing hierarchy/publication/formal-state-adapter
+  -> current KernelDocument
+```
+
+兼容投影可以暂时把一个 `CallSite` 映射为现有 `ArchitectureNode`，但必须把 `call_id/instance_id/definitionRef` 保存在可追溯字段中。v1 无法表达的多输出、控制区域或端口契约要产生 compatibility diagnostic，禁止静默丢失后仍报告完整迁移。
+
+### 19.11 摘要、缓存键和内容身份
+
+不同摘要不能再互相替代：
+
+| 摘要 | 输入 | 用途 |
+|---|---|---|
+| `blobDigest` | 单文件原始 bytes | CAS identity、source freshness |
+| `sourceCorpusDigest` | source roots + 路径空间 + blob digests | 冻结源码身份 |
+| `registryDigest` | canonical module contract bundle | 定义/端口/规则版本身份 |
+| `resolverDigest` | Pyright/version/config/typeshed/stub corpus | 名称和类型解析环境 |
+| `analysisInputDigest` | corpus + registry + resolver + analyzer + packs + request | 完整分析缓存键 |
+| `semanticGraphDigest` | 规范化 Python Semantic Graph | 前端确定性检查 |
+| `exactIrDigest` | 规范化 Exact IR v2 | review、事务和下游缓存 |
+| `projectionDigest` | IR + template/glyph/layout engine versions + visual state | 渲染缓存，不参与源码事实 |
+
+建议所有 hash 使用 domain separation，例如：
+
+```text
+sha256("archcanvas:source-corpus:v2\0" + canonicalBytes)
+sha256("archcanvas:analysis-input:v2\0" + canonicalBytes)
+```
+
+时间戳、绝对路径、数组遍历偶然顺序、坐标、选中状态和 analysis cache 不进入语义摘要。浮点参数若需要跨语言完全确定，应限制为 JCS 可稳定表达的有限数值；超出 IEEE 754 安全范围的整数、Decimal 和符号维度使用字符串/结构化表达，不依赖 Python 与 JavaScript 的不同数字模型。
+
+### 19.12 模型家族分析器改为 pattern pack
+
+Autoformer、iTransformer、PatchTST、TimeMixer 等当前专用模块应保留其领域知识，但删除各自的源码加载、snapshot、端口生成和手工基础图构造。
+
+目标形式：
+
+```text
+common SourceCorpus / CST / Semantic Graph
+  -> builtin pattern pack predicates
+  -> architecture classification
+  -> repeat / parameter-share / template-slot bindings
+  -> Evidence-backed refinements
+  -> Exact IR v2
+```
+
+Pattern pack 只能：
+
+- 匹配已有 definition、instance、call、value 和 control facts；
+- 将一组已证明事实标注为 Transformer encoder、decomposition block 等复合语义；
+- 声明 template parameter 与 slot binding；
+- 增加带 Evidence 的关系或 diagnostic。
+
+Pattern pack 不能绕过公共 reader 重新读取文件，不能因为文件名/类名相似就创建 exact 节点，也不能把 reference architecture 当成 source fact。固定源码契约检查应改成对 Semantic Graph 的 predicate，而不是对 `ast.unparse()` 字符串片段做包含判断。
+
+### 19.13 与第 18 节模块契约系统的直接衔接
+
+| 第 18 节要求 | v2 读取端提供的正式输入 |
+|---|---|
+| `definitionId/version/digest` | Registry Binder 对 call/instance 的精确 `DefinitionRef` |
+| 命名 input/output port | `CallArgumentBinding` 与 `CallOutputBinding` |
+| `parentId` 和组合模块 | ModuleInstance hierarchy 与 composite pattern binding |
+| 参数来源和只读状态 | constructor/config/default/computed Evidence |
+| symbolic Shape | value graph、named port input 和源码约束 |
+| shared parameter cost | `ParameterGroup` 与多 CallSite 分离 |
+| `glyphId/detailTemplateId` | 从相同 DefinitionRef 读取，不从 label 推断 |
+| stable slot/binding ID | canonical node/call/value 与 template slot binding |
+| 保护锁和 review | corpus/analysis/registry digest + exact SourceAnchor |
+| prepare/verify/commit | 用 frozen base blob 变换，提交后重新生成 v2 IR |
+| synthetic proposal 回收 | correlation ID + lineage remapper + canonical binding |
+
+这也修正一个容易被忽略的分层问题：TypeScript registry 负责用户创建节点时的语义契约，Python frontend 负责从已有源码恢复实例；两者必须通过 canonical bundle 汇合，不能让 Python 根据 `op_type` 字符串临时创造另一套端口。
+
+### 19.14 四个 Transformer 在 v2 中的恢复路径
+
+第 8-11 节的四个场景迁移后只保留两份模型语义和两个视图 preset。v2 前端需要恢复以下证据，而不是直接生成 paper/freeform 节点：
+
+#### 19.14.1 经典 Transformer
+
+```text
+Transformer instance
+  src_tok_emb / tgt_tok_emb / generator ParameterGroup
+  Encoder instance -> Repeat(count=6)
+    EncoderLayer instance
+      self_attention CallSite
+      dropout CallSite
+      residual Add CallSite
+      layer_norm CallSite
+      feed_forward composite
+  Decoder instance -> Repeat(count=6)
+    masked_self_attention CallSite
+    cross_attention CallSite
+    feed_forward composite
+```
+
+需要特别证明：
+
+- `query/key/value` 在 self-attention 中引用同一 hidden value；
+- cross-attention 的 query 来自 decoder，key/value 来自 encoder memory；
+- padding/causal mask 分别绑定对应 PortContract；
+- embedding/output projection 的 tied parameter 指向同一 ParameterGroup；
+- `ModuleList` 和 loop 共同形成 stack Repeat，而不是创建六个无证据副本；
+- post-LN/pre-LN 由真实值流顺序决定，不从类名推断。
+
+#### 19.14.2 Tensor2Tensor
+
+同一 Transformer composite template 由不同 Evidence 参数化：
+
+- `target_space_id` 绑定 Encoder Prepare 的 condition/value slot；
+- padding 和 causal constraint 是 additive bias，而不是 bool mask；
+- timing signal、shift-left、`conv_hidden_relu` 是独立 call/value facts；
+- shared softmax 若来自 modality/runtime 层，Evidence 也必须来自对应框架文件，不能冒充 `model_fn_body()` 内调用；
+- T2T 与经典实现共享 MHA/Add/Norm 等原子 DefinitionRef，但 composite template parameters 不同。
+
+#### 19.14.3 视图投影
+
+```text
+一个 Exact IR v2
+  -> engineering preset: 左到右、显式 prepare/call/mask
+  -> paper preset: encoder/decoder 双列、底到顶、折叠部分调用细节
+```
+
+两种 preset 读取同一 call ID、port ID、DefinitionRef、parameter group 和 Evidence。`paper` 只改变 orientation、lane、折叠策略、颜色和 glyph variant，因此相同组件自然获得相同 `glyphId`，不再需要修补 `!paperMode` 条件分支。
+
+### 19.15 进程隔离、性能和预算
+
+#### 19.15.1 Analyzer 进程
+
+当前 Studio 以项目目录为 `cwd`、继承环境并注入 `PYTHONPATH` 启动 `python -m archcanvas_engine.cli`。v2 目标为：
+
+```text
+trusted installed ArchCanvas interpreter
+  + isolated mode
+  + sanitized environment
+  + cwd = dedicated analysis workspace
+  + project path only as ordinary argument
+  + read-only frozen corpus mount
+  + closed stdin
+  + network denied where platform supports
+  + CPU / memory / PID / file-size / timeout limits
+```
+
+由于 `-I` 不会把开发 checkout 自动加入 `sys.path`，正式发行应从可信环境中安装的 console entry point 启动；开发模式使用明确的受信 bootstrap，不通过用户项目 `PYTHONPATH` 寻找 ArchCanvas。
+
+#### 19.15.2 增量缓存
+
+缓存按不可变输入分层：
+
+```text
+blobDigest -> parsed CST + local metadata
+sourceCorpusDigest + resolverDigest -> repository symbol index
+analysisInputDigest -> Semantic Graph
+semanticGraphDigest + registryDigest -> Exact IR
+exactIrDigest + projection inputs -> Kernel scene
+```
+
+移动节点、改变 paper preset 或展开状态不能使 CST/semantic cache 失效。Registry rule 变化必须使 Exact IR/Shape/template binding 失效，但不需要重新解析未改变的 CST。
+
+#### 19.15.3 预算和部分结果
+
+每个阶段返回自己的统计：
+
+```text
+files captured / skipped
+bytes captured
+CST files parsed / cache hits
+resolver queries / unresolved / ambiguous
+definitions / instances / calls / values
+opaque boundaries by reason
+elapsed time per stage
+peak worker memory where available
+```
+
+超出预算后的独立子图仍可继续分析；受影响路径输出 blocked/unknown，不把全图清空，也不把缺失结果估成零。
+
+### 19.16 现有源码的替换边界
+
+| 当前文件 | v2 处理方式 | 保留内容 |
+|---|---|---|
+| [`archcanvas_python/source_index.py`](../../../src/archcanvas_python/source_index.py) | 由 `project_manifest.py`、`corpus.py`、`cst_frontend.py`、`symbol_graph.py` 取代 | framework detection 可改成普通 Evidence predicate |
+| [`archcanvas_python/analyzer.py`](../../../src/archcanvas_python/analyzer.py) | 冻结为 v1；入口改为调用 v2 pipeline | CLI/API 兼容 facade 和 `AnalysisBundle` 概念 |
+| `profile_graph.py` | 删除通用固定路径 loader | 模型家族共享的领域 predicate helper |
+| `autoformer.py`、`itransformer.py`、`patchtst.py`、`timemixer.py` | 改成 pattern pack/semantic refinement | 已验证的架构语义、fixture 和 Evidence 断言 |
+| [`archcanvas_core/models.py`](../../../src/archcanvas_core/models.py) | 新增 v2 models/schema，不在第一步原地破坏 v1 | StrictModel、Confidence、Evidence 原则 |
+| [`archcanvas_studio/bundle.py`](../../../src/archcanvas_studio/bundle.py) | `source_excerpt()` 改读 blob store | excerpt API 形态和行数限制 |
+| [`archcanvas_studio/document.py`](../../../src/archcanvas_studio/document.py) | 用 `analysisInputDigest/exactIrDigest` 绑定 | visual state 与源码事实分离 |
+| [`archcanvas_studio/project.py`](../../../src/archcanvas_studio/project.py) | 快速发现与后台 corpus/index job 分离 | confined path、静态 entrypoint 候选思想 |
+| [`archcanvas_studio/server.py`](../../../src/archcanvas_studio/server.py) | 进程从项目 cwd/env 隔离，长索引移出全局 lock | generation-bound、可取消 job 生命周期 |
+| [`archcanvas_transactions/service.py`](../../../src/archcanvas_transactions/service.py) | freshness 改用 corpus/base blob，删除 first-file revision 假设 | prepare/verify/review/commit 状态机 |
+| [`archcanvas_transactions/transforms.py`](../../../src/archcanvas_transactions/transforms.py) | 接受共享 `SourceAnchor`，先在 frozen bytes 变换再比对工作树 | LibCST transformer 与 proposal 输出 |
+
+建议新增目录：
+
+```text
+src/archcanvas_core/
+  source_v2.py
+  architecture_v2.py
+  module_contract.py
+  digest_protocol.py
+
+src/archcanvas_python/
+  project_manifest.py
+  corpus.py
+  cst_frontend.py
+  anchors.py
+  symbol_graph.py
+  semantic_graph.py
+  control_flow.py
+  value_flow.py
+  call_binding.py
+  registry_binding.py
+  pyright_client.py
+  lineage.py
+  v1_compat.py
+  pattern_packs/
+
+src/archcanvas_engine/
+  source_blob_store.py
+  analysis_manifest.py
+```
+
+协议和 schema 属于 `archcanvas_core`；Python 源码发现与恢复仍属于 `archcanvas_python`；CAS 持久化和 job orchestration 属于 engine/Studio。不要把 compiler frontend 放进 visual-kernel 或 React 层。
+
+### 19.17 分阶段迁移，不做不可回滚的 big-bang
+
+允许大范围重写不等于一次切断现有正式链路。推荐按以下 gate 迁移：
+
+#### 阶段 0：锁定基线
+
+- 为 generic、四个 Transformer、Autoformer、iTransformer、PatchTST、TimeMixer 保存 v1 artifact；
+- 记录当前 Evidence、hierarchy、publication、Kernel scene 和 transaction fixtures；
+- 修复或单独记录现有 multi-file revision 冲突，避免把已知 bug 当成 v2 差异。
+
+#### 阶段 1：协议和 SourceCorpus
+
+- 增加 SourceSnapshot/AnalysisInput/SourceAnchor v2 schema；
+- 实现 JCS、domain-separated digest 和跨 Python/TypeScript golden vectors；
+- 实现 CAS、冻结物化目录和 blob source excerpt；
+- 事务仍消费 v1 IR，但 freshness 先能验证 v2 corpus。
+
+#### 阶段 2：LibCST frontend 与 Semantic Graph
+
+- 建立 repository metadata、definition/instance/call/value/control 模型；
+- generic fixture 双跑 v1/v2；
+- 对未知动态行为输出 opaque，不接 registry 猜测；
+- 实现 lineage report，但暂不替换正式 canonical IDs。
+
+#### 阶段 3：Registry ABI 与命名端口
+
+- 从第 18 节 TypeScript registry 导出 canonical bundle；
+- Python 加载并验证同一 digest；
+- 先打通 Input -> Conv2d -> ReLU，再打通 MHA 和 LSTM；
+- v2->v1 compatibility projector 继续供现有 Studio 使用。
+
+#### 阶段 4：Pyright sidecar
+
+- 固定版本、配置、typeshed 和 stub corpus；
+- 实现 snapshot-consistent query batch；
+- 用 alias/re-export/inheritance fixture 验证增益；
+- sidecar 关闭或失败时验证 deterministic degradation。
+
+#### 阶段 5：Transformer 与 family pattern packs
+
+- 先恢复经典/T2T 的共享原子定义、mask/memory port、Repeat 和 weight tying；
+- 用同一 IR 驱动 engineering/paper；
+- 再逐个将专用 family analyzer 改成 semantic pattern pack；
+- 每迁移一个 pack 即停止该 family 的旧手工 reader 双写。
+
+#### 阶段 6：事务和正式切换
+
+- transform 使用 v2 SourceAnchor 和 frozen blob；
+- commit 后 v2 重新分析并通过 correlation/lineage 回收 synthetic proposal；
+- Studio 默认读取 v2，保留一个发行周期的 v1 compatibility 开关；
+- 观测稳定后删除旧 generic AST 构图和固定路径 source loader。
+
+#### 阶段 7：可选 live editor
+
+只有 staged multi-file editor 已实现时，再增加 Tree-sitter provisional frontend。它不属于 v2 正式迁移的完成条件。
+
+### 19.18 测试与验收
+
+除第 16、18.16 节测试外，compiler frontend v2 至少增加：
+
+1. 同一 corpus、registry、resolver 和 request 重复分析得到 byte-identical Semantic Graph、Exact IR 与 digest；
+2. 项目复制到不同绝对路径后仍得到相同 source/analysis digest；
+3. `nn.Linear`、`torch.nn.Linear`、alias 和本地 re-export 绑定同一 definition；
+4. 条件 import 产生多个候选时保持 ambiguous，不选择遍历遇到的第一个；
+5. MHA 关键字顺序变化不改变 query/key/value/mask port binding；
+6. LSTM 嵌套 tuple 输出正确绑定 `sequence/hn/cn`；
+7. 同一个 module 调用两次只计一组共享参数、两次 FLOPs；
+8. tied embedding/projection 恢复为同一个 ParameterGroup；
+9. 前面插入注释或无关语句后 Evidence 换代、lineage 保持且无大面积序号漂移；
+10. 分析后修改/删除工作树文件，旧 Evidence excerpt 仍能从 CAS 展示；
+11. 新增可能 shadow import 的文件会改变 corpus digest 并使旧分析失效；
+12. multi-file snapshot 不再要求 corpus digest 等于第一文件摘要；
+13. 项目内恶意 `sitecustomize.py`、用户 site 和 `PYTHONPATH` 不会在 analyzer 启动时执行/生效；
+14. Pyright query batch 前后 snapshot 不同会整批丢弃；
+15. Pyright 缺失、超时、import unresolved 时产生明确降级结果，不阻断无关子图；
+16. 超出 call-depth/file/byte/query budget 时产生带端口的 opaque boundary；
+17. v2->v1 adapter 对无法表达的多输出/控制关系发出 compatibility diagnostic；
+18. 四个 Transformer 中相同 DefinitionRef 在 engineering/paper 使用相同 `glyphId`；
+19. prepare 时任一 base blob 改变都会拒绝 stale transaction；
+20. commit 后重新分析得到的 canonical node/port/evidence 能兑现 synthetic proposal，否则保留 blocking diagnostic。
+
+建议增加测试目录：
+
+```text
+tests/source_v2/
+  test_corpus_capture.py
+  test_canonical_digest.py
+  test_cst_anchors.py
+  test_symbol_resolution.py
+  test_pyright_client.py
+  test_semantic_calls.py
+  test_tuple_outputs.py
+  test_parameter_sharing.py
+  test_lineage.py
+  test_v1_compat.py
+  test_process_isolation.py
+
+tests/fixtures/frontend_v2/
+  aliases/
+  reexports/
+  inheritance/
+  shared_module/
+  mha_ports/
+  lstm_outputs/
+  transformer_classic/
+  transformer_t2t/
+  dynamic_opaque/
+```
+
+### 19.19 主要风险和约束
+
+| 风险 | 处理方式 |
+|---|---|
+| LibCST 比 AST 更慢、内存更高 | 按 blob digest 缓存；批量 metadata provider；只展开入口闭包和预算内本地调用 |
+| Pyright Type Server 协议或包版本变化 | 固定版本、封装单一 client adapter、记录 executable/config digest、协议 golden tests |
+| Node sidecar 增加发行复杂度 | 作为显式 capability；正式包捆绑固定版本；无 sidecar 时确定性降级 |
+| Pyright 自动调用 Python 取得 search path | 显式 root/extraPaths/typeshed/stub 配置，禁止用户 Python，测试 `sitecustomize` 不执行 |
+| Python 动态特性无法静态证明 | 不追求完全解释；opaque/ambiguous 是合法结果，不用命名启发式伪造 exact |
+| CAS 增加磁盘使用 | blob 去重、按 bundle 引用、可审计 GC；不得删除仍被 Evidence/transaction 引用的 blob |
+| Python/TypeScript digest 不一致 | JCS/I-JSON、golden vectors、限制高精度数字表示、domain separation |
+| v2 schema 影响下游过大 | 新增 v2 而非原地破坏 v1；compatibility projector 让 UI 和 visual-kernel 后迁 |
+| lineage 错配造成错误事务目标 | 精确 Evidence 与 lineage key 分离；歧义时要求人工确认或重新 prepare |
+
+### 19.20 推荐的第一个读取端 vertical slice
+
+不要一开始就迁移所有 family analyzer。第一个切片使用一个真实多文件 PyTorch fixture：
+
+```text
+model.py: Model.forward
+  -> blocks.py: ConvBlock
+  -> torch.nn.Conv2d
+  -> torch.nn.ReLU
+```
+
+完成条件为：
+
+1. 三个源码文件和 `pyproject.toml` 被捕获到 SourceCorpus/CAS；
+2. LibCST 从 frozen root 生成 byte span、FQN 和 parent/scope metadata；
+3. `self.block` 恢复为 ModuleInstance，Conv/ReLU 恢复为两个 CallSite；
+4. 两个调用绑定 registry bundle 中的精确 definition version；
+5. 端口为 `Conv2d.input/output` 和 `ReLU.input/output`，不是 `in0/out`；
+6. Exact IR v2 能通过 compatibility projector 驱动当前 Studio；
+7. source excerpt 在工作树改变后仍显示冻结 blob；
+8. 修改 Conv 参数 proposal 使用同一个 LibCST SourceAnchor；
+9. commit 后重新分析并建立旧/新 lineage；
+10. 全程没有 import 或执行 fixture 项目。
+
+随后第二个切片专门覆盖 MHA 命名输入与 LSTM tuple 输出；第三个切片再覆盖经典 Transformer 的 Repeat、memory/mask 和 weight tying。完成这三条链路后，才开始迁移 Autoformer 等 family pattern pack。

@@ -6,6 +6,8 @@ const SCENES = [
   "tensor2tensor-transformer",
   "vision-sequence-catalog",
 ] as const;
+const PROTOTYPE_BASE_URL = process.env.ARCHCANVAS_PROTOTYPE_E2E_BASE_URL
+  ?? "http://127.0.0.1:4312";
 
 async function firstVisibleCandidate(
   candidates: Locator,
@@ -29,7 +31,7 @@ async function firstVisibleCandidate(
 
 for (const sceneId of SCENES) {
   test(`${sceneId} remains interactive when fully expanded`, async ({ page }) => {
-    await page.goto(`/?scene=${sceneId}&qa=expanded-interaction`);
+    await page.goto(`${PROTOTYPE_BASE_URL}/?scene=${sceneId}&qa=expanded-interaction`);
 
     const bulkActions = page.locator(".detail-bulk-actions");
     await page.getByRole("button", { name: "全部展开" }).click();

@@ -7,6 +7,32 @@ const workspacePython = process.platform === "win32"
 const python = process.env.ARCHCANVAS_PYTHON
   ?? (existsSync(workspacePython) ? workspacePython : "python");
 const externalBaseURL = process.env.ARCHCANVAS_E2E_BASE_URL;
+const externalPrototypeBaseURL = process.env.ARCHCANVAS_PROTOTYPE_E2E_BASE_URL;
+
+const webServers = [
+  ...(externalBaseURL ? [] : [
+    {
+      command: `${python} ../tools/serve_studio_e2e.py --port 4311`,
+      url: "http://127.0.0.1:4311/api/state",
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+    {
+      command: `${python} ../tools/serve_studio_e2e.py --port 4313 --fixture frontend-v2`,
+      url: "http://127.0.0.1:4313/api/state",
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+  ]),
+  ...(externalPrototypeBaseURL ? [] : [
+    {
+      command: "npm run prototype:dev -- --host 127.0.0.1 --port 4312",
+      url: "http://127.0.0.1:4312",
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+  ]),
+];
 
 export default defineConfig({
   testDir: "./e2e",
@@ -30,10 +56,5 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 1000 } },
     },
   ],
-  webServer: externalBaseURL ? undefined : {
-    command: `${python} ../tools/serve_studio_e2e.py --port 4311`,
-    url: "http://127.0.0.1:4311/api/state",
-    reuseExistingServer: false,
-    timeout: 120_000,
-  },
+  webServer: webServers.length ? webServers : undefined,
 });

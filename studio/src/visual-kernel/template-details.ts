@@ -1,6 +1,7 @@
 import type {
   Bounds,
   DetailTone,
+  HierarchyRoutingMode,
   KernelTemplateBinding,
   Point,
   RenderDetailPrimitive,
@@ -10,6 +11,20 @@ import type {
 import type { DetailPrimitive } from "./module-details";
 import { buildModuleDetail, EXPANDED_DETAIL_SIZES } from "./module-details";
 import type { NodeDetailKind } from "./types";
+import {
+  buildAtomicHierarchyProjection,
+  projectedAtomicEntry,
+  projectedAtomicExit,
+  projectedNestedEntryBridgeIds,
+  projectedNestedExitBridgeIds,
+} from "./atomic-hierarchy";
+import {
+  buildInlineDetailLayout,
+  expandedDetailSize,
+  inlineExpandedChildren,
+  type DetailExpansionBranch,
+  type InlineDetailLevel,
+} from "./recursive-detail-layout";
 
 const ATTENTION_SIZE: Size = { width: 900, height: 380 };
 
@@ -23,10 +38,14 @@ function detailKindForTemplate(templateId: string): NodeDetailKind | undefined {
   return PRODUCTION_DETAIL_KINDS.find((kind) => kind === normalized);
 }
 
-export function templateDetailSize(binding: KernelTemplateBinding | undefined): Size | undefined {
+export function templateDetailSize(
+  binding: KernelTemplateBinding | undefined,
+  expansion?: DetailExpansionBranch,
+): Size | undefined {
   if (binding?.fidelity !== "exact") return undefined;
   const kind = detailKindForTemplate(binding.templateId);
   if (!kind) return undefined;
+  if (expansion) return expandedDetailSize(kind, expansion);
   return kind === "attention" ? ATTENTION_SIZE : EXPANDED_DETAIL_SIZES[kind];
 }
 
@@ -213,20 +232,173 @@ function genericDetail(binding: KernelTemplateBinding, kind: NodeDetailKind, bou
   };
 }
 
+function recursiveDetail(
+  binding: KernelTemplateBinding,
+  kind: NodeDetailKind,
+  bounds: Bounds,
+  expansion: DetailExpansionBranch,
+  options: {
+    mode: HierarchyRoutingMode;
+    hideEntryBridge?: boolean;
+    hideExitBridge?: boolean;
+  },
+): RenderTemplateDetail {
+  const root = buildInlineDetailLayout(
+    kind,
+    bounds,
+    expansion,
+    {},
+    binding.bindingId,
+    [],
+    options.mode,
+  );
+  const projection = buildAtomicHierarchyProjection(root);
+  const atomicEntry = options.hideEntryBridge ? projectedAtomicEntry(projection) : undefined;
+  const atomicExit = options.hideExitBridge ? projectedAtomicExit(projection) : undefined;
+  const hiddenFlowIds = new Set([
+    ...(options.mode === "atomic-bottom-up" ? projectedNestedEntryBridgeIds(projection) : []),
+    ...(options.mode === "atomic-bottom-up" ? projectedNestedExitBridgeIds(projection) : []),
+    ...(atomicEntry?.bridgeEdgeIds ?? []),
+    ...(atomicExit?.bridgeEdgeIds ?? []),
+  ]);
+  const convert = (
+    primitive: DetailPrimitive,
+    index: number,
+    level: InlineDetailLevel,
+  ): RenderDetailPrimitive => {
+    const mappedSlot = primitive.kind === "flow" && primitive.channel
+      ? primitive.channel
+      : `visual:${level.levelKey}:${index}`;
+    const stableSlot = `${level.levelKey}:${mappedSlot}`;
+    const common = {
+      primitiveId: slotId(binding, stableSlot),
+      slotId: stableSlot,
+      canonicalIds: canonical(binding, mappedSlot),
+    };
+    if (primitive.kind === "rect") return {
+      ...common,
+      kind: "box",
+      x: primitive.x,
+      y: primitive.y,
+      width: primitive.width,
+      height: primitive.height,
+      label: primitive.label ?? "",
+      note: primitive.note,
+      tone: primitive.tone,
+    };
+    if (primitive.kind === "circle") return {
+      ...common,
+      kind: "operator",
+      cx: primitive.cx,
+      cy: primitive.cy,
+      radius: primitive.radius,
+      label: primitive.label,
+      tone: primitive.tone,
+    };
+    if (primitive.kind === "matrix") return {
+      ...common,
+      kind: "matrix",
+      x: primitive.x,
+      y: primitive.y,
+      width: primitive.width,
+      height: primitive.height,
+      label: primitive.label ?? "",
+      columns: primitive.columns,
+      rows: primitive.rows,
+      depth: primitive.depth ?? 0,
+      tone: primitive.tone,
+    };
+    if (primitive.kind === "flow") return {
+      ...common,
+      kind: "flow",
+      points: primitive.points,
+      tone: primitive.tone ?? "neutral",
+      marker: primitive.marker !== false,
+    };
+    return {
+      ...common,
+      kind: "text",
+      x: primitive.x,
+      y: primitive.y,
+      value: primitive.value,
+      emphasis: primitive.emphasis ?? false,
+      tone: primitive.tone ?? "neutral",
+    };
+  };
+  const semanticPrimitiveKey = (primitive: DetailPrimitive): string => {
+    if (primitive.kind === "flow") return `flow:${primitive.channel ?? "unnamed"}`;
+    if (primitive.kind === "text") return `text:${primitive.value}`;
+    const label = primitive.label ?? (primitive.kind === "matrix" ? "tensor" : "submodule");
+    return `${primitive.kind}:${label}`;
+  };
+  const stablePrimitiveSlot = (level: InlineDetailLevel, primitive: DetailPrimitive, index: number): string => {
+    const key = semanticPrimitiveKey(primitive);
+    const occurrence = level.diagram.primitives.slice(0, index)
+      .filter((candidate) => semanticPrimitiveKey(candidate) === key).length;
+    return `${level.levelKey}:${key}${occurrence ? `:${occurrence + 1}` : ""}`;
+  };
+  const flatten = (level: InlineDetailLevel): RenderDetailPrimitive[] => {
+    const expanded = inlineExpandedChildren(level);
+    const expandedIds = new Set(expanded.map((child) => child.node.id));
+    const current = level.diagram.primitives.flatMap((primitive, index) => {
+      const node = level.nodes.find((candidate) => candidate.primitiveIndex === index);
+      const edgeId = primitive.kind === "flow" ? `${level.levelKey}:flow:${index}` : undefined;
+      if (node && expandedIds.has(node.id)) return [];
+      if (edgeId && hiddenFlowIds.has(edgeId)) return [];
+      const converted = convert(primitive, index, level);
+      const stableSlot = stablePrimitiveSlot(level, primitive, index);
+      return [{
+        ...converted,
+        primitiveId: slotId(binding, stableSlot),
+        slotId: stableSlot,
+      }];
+    });
+    return [...current, ...expanded.flatMap((child) => flatten(child.level))];
+  };
+  return {
+    nodeId: "",
+    bindingId: binding.bindingId,
+    templateId: binding.templateId,
+    evidenceIds: binding.evidenceIds,
+    bounds: { ...bounds },
+    entryPoint: atomicEntry?.point ?? root.diagram.entryPoint,
+    exitPoint: atomicExit?.point ?? root.diagram.exitPoint,
+    entrySide: atomicEntry?.side,
+    exitSide: atomicExit?.side,
+    entryIsInterior: Boolean(atomicEntry?.atomId),
+    exitIsInterior: Boolean(atomicExit),
+    hierarchyRoutingMode: options.mode,
+    primitives: flatten(root),
+  };
+}
+
 export function buildTemplateDetail(
   nodeId: string,
   binding: KernelTemplateBinding | undefined,
   bounds: Bounds,
   detailOffsets: Record<string, Point> = {},
+  expansion?: DetailExpansionBranch,
+  routing: {
+    mode?: HierarchyRoutingMode;
+    hasIncoming?: boolean;
+    hasOutgoing?: boolean;
+  } = {},
 ): RenderTemplateDetail | undefined {
-  if (!templateDetailSize(binding) || !binding) return undefined;
+  if (!templateDetailSize(binding, expansion) || !binding) return undefined;
   const kind = detailKindForTemplate(binding.templateId);
   if (!kind) return undefined;
+  const hierarchyRoutingMode = routing.mode ?? "atomic-bottom-up";
   const detail = {
     // Keep the exact Q/K/V binding contract stable: its slot IDs and adjacent
     // flow anchors are part of the formal interaction surface. Catalog kinds
     // use the shared prototype detail primitive stream below.
-    ...(binding.templateId === "attention.qkv-v1"
+    ...(expansion
+      ? recursiveDetail(binding, kind, bounds, expansion, {
+        mode: hierarchyRoutingMode,
+        hideEntryBridge: hierarchyRoutingMode === "atomic-bottom-up" && routing.hasIncoming,
+        hideExitBridge: hierarchyRoutingMode === "atomic-bottom-up" && routing.hasOutgoing,
+      })
+      : binding.templateId === "attention.qkv-v1"
       ? attentionDetail(binding, bounds)
       : genericDetail(binding, kind, bounds)),
     nodeId,

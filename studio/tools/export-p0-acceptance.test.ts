@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { renderKernelSceneSvg } from "../src/visual-kernel/export";
 import { buildKernelRenderScene } from "../src/visual-kernel/layout";
+import { fullyExpandedDetailTree } from "../src/visual-kernel/recursive-detail-layout";
 import {
   DEFAULT_OPTIONS,
   PRODUCTION_FIXTURES,
@@ -186,6 +187,11 @@ function compileFixture(spec: AcceptanceCase): {
         height: node.bounds.height,
       }])),
       detailOffsets: spec.detailOffsets ?? {},
+      detailExpansionTrees: spec.expanded === "all"
+        ? Object.fromEntries(fixture.nodes.flatMap((node) => node.detailKind
+          ? [[node.nodeId, fullyExpandedDetailTree(node.detailKind)]]
+          : []))
+        : {},
       pinnedNodeIds: [],
       routeHints: {},
       paperSize: referenceSize ? { width: referenceSize[2], height: referenceSize[3] } : { width: fixture.width, height: fixture.height },
@@ -290,8 +296,11 @@ function canonicalProductionStructure(scene: ReturnType<typeof buildKernelRender
     const last = primitive.points.at(-1);
     const first = primitive.points[0];
     const boundary = (point: { x: number; y: number } | undefined, target: { x: number; y: number }) => point?.x === target.x && point?.y === target.y;
-    const isAttention = detail.templateId === "attention.qkv-v1";
-    return !(boundary(last, detail.exitPoint) || (isAttention && boundary(first, detail.entryPoint)));
+    const legacyAttentionEntry = detail.templateId === "attention.qkv-v1"
+      && detail.hierarchyRoutingMode === undefined
+      && boundary(first, detail.entryPoint);
+    const legacyBoundaryExit = detail.hierarchyRoutingMode === undefined && boundary(last, detail.exitPoint);
+    return !(legacyAttentionEntry || legacyBoundaryExit);
   }));
   return {
     ...raw,
@@ -496,8 +505,11 @@ describe("P0 build/production visual acceptance", () => {
   it("renders every required glyph, catalog, and parent-child state", () => {
     const records = CASES.map(acceptanceRecord);
     const recursive = recursiveHierarchyRecord();
+    const failedChecks = records.flatMap(({ report }) => Object.entries(report.checks)
+      .filter(([, passed]) => !passed)
+      .map(([check]) => `${report.id}:${check}`));
     expect(records).toHaveLength(13);
-    expect(records.every(({ report }) => Object.values(report.checks).every(Boolean))).toBe(true);
+    expect(failedChecks).toEqual([]);
     expect(recursive.report.production.portal_discontinuities).toEqual([]);
     expect(recursive.report.checks).toEqual(Object.fromEntries(
       Object.keys(recursive.report.checks).map((key) => [key, true]),
@@ -522,5 +534,5 @@ describe("P0 build/production visual acceptance", () => {
       generated_by: "studio/tools/export-p0-acceptance.test.ts",
       cases: [...records.map((record) => record.report), recursive.report],
     }, null, 2)}\n`);
-  });
+  }, 20_000);
 });

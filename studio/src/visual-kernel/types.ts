@@ -41,6 +41,20 @@ export type NodeDetailKind =
   | "attention"
   | "feedforward"
   | "add-norm"
+  | "sinusoidal-embedding"
+  | "transformer-encoder"
+  | "transformer-decoder"
+  | "tensor2tensor-encoder"
+  | "tensor2tensor-decoder"
+  | "paper-transformer-encoder"
+  | "paper-transformer-decoder"
+  | "paper-tensor2tensor-encoder"
+  | "paper-tensor2tensor-decoder"
+  | "paper-sinusoidal-embedding"
+  | "paper-tensor-transform"
+  | "paper-attention"
+  | "paper-feedforward"
+  | "paper-add-norm"
   | "convolution"
   | "tensor-transform"
   | "embedding"
@@ -81,6 +95,20 @@ export type NodeDetailKind =
 export type RouteStyle = "adaptive" | "direct" | "orthogonal" | "channel" | "curve";
 export type NodeVisualStyle = "semantic" | "technical" | "compact";
 export type EdgeLabelStyle = "plain" | "plate" | "endpoint";
+export type HierarchyRoutingMode = "recursive" | "atomic-bottom-up";
+export type PortSide = "left" | "right" | "top" | "bottom";
+
+export interface SceneBoundaryPorts {
+  entry: Point;
+  exit: Point;
+  entrySide?: PortSide;
+  exitSide?: PortSide;
+  entryIsInterior?: boolean;
+  exitIsInterior?: boolean;
+  semanticInputs?: Record<string, { point: Point; side: PortSide; isInterior?: boolean }>;
+}
+
+export type SceneBoundaryPortMap = Record<string, SceneBoundaryPorts>;
 export type KernelRenderRole = "atomic" | "collapsed-module" | "expanded-module";
 
 export interface KernelPort {
@@ -89,6 +117,15 @@ export interface KernelPort {
   direction: "input" | "output";
   role: string;
   evidenceIds: string[];
+  canonicalPortIds?: string[];
+  contract?: {
+    required: boolean;
+    minConnections: number;
+    maxConnections: number | "many";
+    acceptedRelations: string[];
+    definitionId: string;
+    definitionVersion: string;
+  };
 }
 
 export interface KernelNode {
@@ -105,6 +142,12 @@ export interface KernelNode {
   label: string;
   secondaryLabel?: string;
   semanticKind: string;
+  glyphId?: string;
+  definitionRef?: {
+    definitionId: string;
+    version: string;
+    digest: string;
+  };
   shape: KernelNodeShape;
   inputPortIds: string[];
   outputPortIds: string[];
@@ -176,6 +219,8 @@ export interface KernelVisualState {
   nodePositions: Record<string, Point>;
   nodeSizes: Record<string, Size>;
   detailOffsets: Record<string, Point>;
+  detailExpansionTrees?: Record<string, import("./recursive-detail-layout").DetailExpansionBranch>;
+  hierarchyRoutingMode?: HierarchyRoutingMode;
   pinnedNodeIds: string[];
   routeHints: Record<string, Point[]>;
   routeStyle: RouteStyle;
@@ -222,6 +267,11 @@ export interface RenderTemplateDetail {
   bounds: Bounds;
   entryPoint: Point;
   exitPoint: Point;
+  entrySide?: PortSide;
+  exitSide?: PortSide;
+  entryIsInterior?: boolean;
+  exitIsInterior?: boolean;
+  hierarchyRoutingMode?: HierarchyRoutingMode;
   primitives: RenderDetailPrimitive[];
 }
 

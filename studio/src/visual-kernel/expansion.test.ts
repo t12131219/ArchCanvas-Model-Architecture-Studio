@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildKernelRenderScene } from "./layout";
+import { fullyExpandedDetailTree } from "./recursive-detail-layout";
 import type { KernelDocument, KernelNode, KernelRelation, KernelVisualState, NodeDetailKind } from "./types";
 
 function fixture(expandedKinds: NodeDetailKind[]): { document: KernelDocument; visualState: KernelVisualState } {
@@ -112,5 +113,60 @@ describe("exact detail expansion", () => {
     expect(outgoing.points[0]).toEqual(detail.exitPoint);
     expect(scene.routingMetrics?.nodeIntersections).toBe(0);
     expect(scene.routingMetrics?.reverseExits).toBe(0);
+  });
+
+  it("keeps recursive expansion in derived visual state without mutating the formal document", () => {
+    const { document, visualState } = fixture(["attention"]);
+    const documentBefore = structuredClone(document);
+    const shallow = buildKernelRenderScene(document, visualState);
+    visualState.detailExpansionTrees = {
+      attention: fullyExpandedDetailTree("attention"),
+    };
+    const recursive = buildKernelRenderScene(document, visualState);
+
+    expect(document).toEqual(documentBefore);
+    expect(recursive.nodes.find((node) => node.nodeId === "attention")!.bounds.height)
+      .toBeGreaterThan(shallow.nodes.find((node) => node.nodeId === "attention")!.bounds.height);
+    expect(recursive.details[0].primitives.length).toBeGreaterThan(shallow.details[0].primitives.length);
+  });
+
+  it("assigns deterministic primitive IDs for the same binding and expansion tree", () => {
+    const { document, visualState } = fixture(["attention"]);
+    visualState.detailExpansionTrees = {
+      attention: fullyExpandedDetailTree("attention"),
+    };
+    const first = buildKernelRenderScene(document, visualState).details[0];
+    const second = buildKernelRenderScene(document, structuredClone(visualState)).details[0];
+
+    expect(first.primitives.map((primitive) => primitive.primitiveId))
+      .toEqual(second.primitives.map((primitive) => primitive.primitiveId));
+    expect(new Set(first.primitives.map((primitive) => primitive.primitiveId)).size)
+      .toBe(first.primitives.length);
+  });
+
+  it("makes atomic bridge removal explicit while preserving the recursive A/B mode", () => {
+    const atomicFixture = fixture(["attention"]);
+    atomicFixture.visualState.detailExpansionTrees = {
+      attention: fullyExpandedDetailTree("attention"),
+    };
+    const recursiveFixture = fixture(["attention"]);
+    recursiveFixture.visualState.detailExpansionTrees = {
+      attention: fullyExpandedDetailTree("attention"),
+    };
+    recursiveFixture.visualState.hierarchyRoutingMode = "recursive";
+
+    const atomic = buildKernelRenderScene(atomicFixture.document, atomicFixture.visualState);
+    const recursive = buildKernelRenderScene(recursiveFixture.document, recursiveFixture.visualState);
+    const atomicDetail = atomic.details[0];
+    const recursiveDetail = recursive.details[0];
+
+    expect(atomicDetail.hierarchyRoutingMode).toBe("atomic-bottom-up");
+    expect(recursiveDetail.hierarchyRoutingMode).toBe("recursive");
+    expect(atomicDetail.primitives.filter((primitive) => primitive.kind === "flow").length)
+      .toBeLessThan(recursiveDetail.primitives.filter((primitive) => primitive.kind === "flow").length);
+    expect(atomic.edges.find((edge) => edge.targetPortId === "attention:input")?.points.at(-1))
+      .toEqual(atomicDetail.entryPoint);
+    expect(atomic.edges.find((edge) => edge.sourcePortId === "attention:output")?.points[0])
+      .toEqual(atomicDetail.exitPoint);
   });
 });

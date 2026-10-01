@@ -95,7 +95,10 @@ export function layoutHierarchy(document: KernelDocument, visualState: KernelVis
   const measure = (node: KernelNode): LayoutPlan => {
     const cached = plans.get(node.nodeId);
     if (cached) return cached;
-    const exactDetailSize = node.expanded ? templateDetailSize(bindingById.get(node.templateBindingId ?? "")) : undefined;
+    const exactDetailSize = node.expanded ? templateDetailSize(
+      bindingById.get(node.templateBindingId ?? ""),
+      visualState.detailExpansionTrees?.[node.nodeId],
+    ) : undefined;
     if (exactDetailSize) {
       const plan = { size: exactDetailSize, children: [] };
       plans.set(node.nodeId, plan);
@@ -202,7 +205,10 @@ export function layoutHierarchy(document: KernelDocument, visualState: KernelVis
       baseSize,
       plan,
       horizontalGrowth: Math.max(0, plan.size.width - baseSize.width),
-      exactDetail: Boolean(root.expanded && templateDetailSize(bindingById.get(root.templateBindingId ?? ""))),
+      exactDetail: Boolean(root.expanded && templateDetailSize(
+        bindingById.get(root.templateBindingId ?? ""),
+        visualState.detailExpansionTrees?.[root.nodeId],
+      )),
     });
     rootX = position.x + baseSize.width + 76;
   }

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from enum import Enum
 from pathlib import PurePosixPath
 from typing import Annotated, Any, Literal
@@ -42,6 +43,33 @@ class SourceSpan(StrictModel):
     def ordered(self) -> SourceSpan:
         if self.end_line < self.start_line:
             raise ValueError("source span end_line precedes start_line")
+        return self
+
+
+class SourceAnchor(StrictModel):
+    logical_path: str
+    blob_digest: Sha256
+    byte_start: int = Field(ge=0)
+    byte_length: int = Field(ge=0)
+    line_span: SourceSpan
+    qualified_symbol: str = Field(min_length=1)
+    cst_node_kind: str = Field(min_length=1)
+    semantic_role: str = Field(min_length=1)
+    subtree_fingerprint: Sha256
+    parent_fingerprint: Sha256 | None = None
+
+    @model_validator(mode="after")
+    def path_is_safe(self) -> SourceAnchor:
+        if "\\" in self.logical_path:
+            raise ValueError("paths must use POSIX separators")
+        path = PurePosixPath(self.logical_path)
+        if (
+            path.is_absolute()
+            or ".." in path.parts
+            or self.logical_path != path.as_posix()
+            or self.logical_path in {"", "."}
+        ):
+            raise ValueError("source anchor path must be a confined normalized relative POSIX path")
         return self
 
 
@@ -1305,7 +1333,11 @@ class SemanticParameterPatch(StrictModel):
 class SemanticStructuralPatch(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     patch_id: Identifier
-    operation: Literal["replace_activation", "insert_layer_norm"]
+    operation: Literal[
+        "replace_activation",
+        "insert_layer_norm",
+        "insert_registered_module",
+    ]
     artifact_path: str = Field(min_length=1)
     target_node_id: Identifier
     parameters: dict[str, Any] = Field(default_factory=dict)
@@ -1323,10 +1355,48 @@ class SemanticStructuralPatch(StrictModel):
                 "SiLU",
             }:
                 raise ValueError("replace_activation requires exactly one GELU/ReLU/SiLU replacement")
-        elif set(self.parameters) != {"module_name", "normalized_shape"}:
+        elif self.operation == "insert_layer_norm" and set(self.parameters) != {
+            "module_name",
+            "normalized_shape",
+        }:
             raise ValueError(
                 "insert_layer_norm requires exactly module_name and normalized_shape parameters"
             )
+        elif self.operation == "insert_registered_module":
+            required = {
+                "module_name",
+                "definition_ref",
+                "constructor_parameters",
+                "correlation_id",
+            }
+            if set(self.parameters) != required:
+                raise ValueError(
+                    "insert_registered_module requires exactly module_name, definition_ref, "
+                    "constructor_parameters, and correlation_id"
+                )
+            module_name = self.parameters["module_name"]
+            if not isinstance(module_name, str) or not re.fullmatch(
+                r"[a-z][a-z0-9_]*", module_name
+            ):
+                raise ValueError(
+                    "insert_registered_module module_name must be a lowercase identifier"
+                )
+            reference = self.parameters["definition_ref"]
+            if not isinstance(reference, dict) or set(reference) != {
+                "definition_id",
+                "version",
+                "digest",
+            }:
+                raise ValueError("insert_registered_module definition_ref is invalid")
+            if not isinstance(self.parameters["constructor_parameters"], dict):
+                raise ValueError(
+                    "insert_registered_module constructor_parameters must be an object"
+                )
+            correlation_id = self.parameters["correlation_id"]
+            if not isinstance(correlation_id, str) or not re.fullmatch(
+                r"[A-Za-z][A-Za-z0-9._:-]*", correlation_id
+            ):
+                raise ValueError("insert_registered_module correlation_id is invalid")
         return self
 
 
@@ -1509,6 +1579,30 @@ class FileChange(StrictModel):
     after_sha256: Sha256
 
 
+class TransactionBaseBlob(StrictModel):
+    logical_path: str = Field(min_length=1)
+    working_path: str = Field(min_length=1)
+    sha256: Sha256
+    blob_ref: str = Field(pattern=r"^sha256:[a-f0-9]{64}$")
+    size: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def paths_and_blob_are_bound(self) -> TransactionBaseBlob:
+        for value in (self.logical_path, self.working_path):
+            path = PurePosixPath(value)
+            if (
+                "\\" in value
+                or path.is_absolute()
+                or ".." in path.parts
+                or value != path.as_posix()
+                or value in {"", "."}
+            ):
+                raise ValueError("transaction base paths must be normalized relative POSIX paths")
+        if self.blob_ref != f"sha256:{self.sha256}":
+            raise ValueError("transaction base blob_ref must bind the declared sha256")
+        return self
+
+
 class SourceTransaction(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     transaction_id: Identifier
@@ -1529,6 +1623,14 @@ class SourceTransaction(StrictModel):
     source_snapshot_id: Identifier
     base_revision: str = Field(min_length=1)
     anchor_fingerprint: Sha256
+    source_anchor: SourceAnchor | None = None
+    base_source_corpus_digest: Sha256 | None = None
+    base_analysis_input_digest: Sha256 | None = None
+    base_registry_digest: Sha256 | None = None
+    base_exact_ir_digest: Sha256 | None = None
+    base_source_blobs: list[TransactionBaseBlob] = Field(default_factory=list)
+    proposal_correlation_id: Identifier | None = None
+    realized_subject_ids: list[Identifier] = Field(default_factory=list)
     file_changes: list[FileChange] = Field(min_length=1)
     source_diff: str
     expected_delta: GraphDelta
@@ -1548,6 +1650,8 @@ class TransactionReceipt(StrictModel):
     status: Literal["ok", "invalid", "failed"]
     gates: list[GateResult] = Field(default_factory=list)
     diagnostics: list[Diagnostic] = Field(default_factory=list)
+    proposal_correlation_id: Identifier | None = None
+    realized_subject_ids: list[Identifier] = Field(default_factory=list)
     source_writes: bool
 
 
@@ -1619,18 +1723,48 @@ class AnalysisJob(StrictModel):
     diagnostics: list[Diagnostic] = Field(default_factory=list)
 
 
+class DefinitionRef(StrictModel):
+    definition_id: Identifier
+    version: str = Field(pattern=r"^[0-9]+\.[0-9]+\.[0-9]+$")
+    digest: Sha256
+
+
 class DraftPort(StrictModel):
     port_id: Identifier
     name: str = Field(min_length=1)
     direction: Literal["input", "output"]
     role: str = Field(min_length=1)
+    definition_port_id: Identifier | None = None
+    required: bool = False
+    min_connections: int = Field(default=0, ge=0)
+    max_connections: int | Literal["many"] = "many"
+    ordering: Literal["ordered", "unordered"] = "ordered"
+    accepted_relations: list[str] = Field(default_factory=lambda: ["main"])
+    tensor_ranks: list[int] = Field(default_factory=list)
+    tensor_layouts: list[
+        Literal["NCHW", "NHWC", "sequence", "scalar", "any"]
+    ] = Field(default_factory=list)
     shape_constraint: str | None = None
     dtype: str | None = None
 
     @model_validator(mode="after")
-    def uses_draft_identity(self) -> DraftPort:
+    def contract_is_valid(self) -> DraftPort:
         if not self.port_id.startswith("draft:"):
             raise ValueError("draft port identifiers must use the draft: prefix")
+        if isinstance(self.max_connections, int) and self.max_connections < self.min_connections:
+            raise ValueError("draft port max_connections cannot be smaller than min_connections")
+        if not self.required and self.min_connections > 0:
+            raise ValueError("optional draft ports must allow zero connections")
+        if not self.accepted_relations or len(self.accepted_relations) != len(
+            set(self.accepted_relations)
+        ):
+            raise ValueError("draft port accepted relations must be non-empty and unique")
+        if any(rank < 0 for rank in self.tensor_ranks) or len(self.tensor_ranks) != len(
+            set(self.tensor_ranks)
+        ):
+            raise ValueError("draft port tensor ranks must be unique non-negative integers")
+        if len(self.tensor_layouts) != len(set(self.tensor_layouts)):
+            raise ValueError("draft port tensor layouts must be unique")
         return self
 
 
@@ -1639,6 +1773,7 @@ class DraftNode(StrictModel):
     semantic_name: str = Field(min_length=1)
     framework: str = Field(min_length=1)
     node_type: str = Field(min_length=1)
+    definition_ref: DefinitionRef | None = None
     parent_id: Identifier | None = None
     source_anchor: str | None = None
     parameters: dict[str, Any] = Field(default_factory=dict)
@@ -1656,6 +1791,8 @@ class DraftEdge(StrictModel):
     source_port_id: Identifier
     target_port_id: Identifier
     policy: Literal["replace-input", "add-residual", "concat", "fanout", "disconnect"]
+    relation: str = Field(default="main", min_length=1)
+    target_ordinal: int | None = Field(default=None, ge=0)
     parameters: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
@@ -1733,16 +1870,33 @@ class WritebackSummary(StrictModel):
     blocking_intent_ids: list[Identifier] = Field(default_factory=list)
 
 
+class ProposalReconciliationReceipt(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    receipt_id: Identifier
+    proposal_correlation_id: Identifier
+    transaction_id: Identifier
+    status: Literal["realized", "blocked"]
+    synthetic_subject_ids: list[Identifier] = Field(default_factory=list)
+    canonical_subject_ids: list[Identifier] = Field(default_factory=list)
+    missing_subject_ids: list[Identifier] = Field(default_factory=list)
+    reconciled_at: str = Field(min_length=1)
+    message: str = Field(min_length=1)
+
+
 class DraftGraphDocument(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     draft_id: Identifier
     base_architecture_id: Identifier
     base_source_digest: Sha256
+    base_registry_digest: Sha256 | None = None
     revision: int = Field(ge=0)
     nodes: list[DraftNode] = Field(default_factory=list)
     edges: list[DraftEdge] = Field(default_factory=list)
     intents: list[EditIntent] = Field(default_factory=list)
     proofs: list[EditProofStatus] = Field(default_factory=list)
+    reconciliation_receipts: list[ProposalReconciliationReceipt] = Field(
+        default_factory=list
+    )
     lowering_status: Literal["not-planned", "checking", "planned", "blocked"] = "not-planned"
     writeback_summary: WritebackSummary = Field(default_factory=WritebackSummary)
 
@@ -1766,6 +1920,45 @@ class DraftGraphDocument(StrictModel):
         if any(item not in intent_ids for item in self.writeback_summary.blocking_intent_ids):
             raise ValueError("writeback summary references an unknown edit intent")
         return self
+
+
+TopologyCommandName = Literal[
+    "CreateNode",
+    "DeleteNode",
+    "ConnectPorts",
+    "DisconnectEdge",
+    "SetInstanceParameter",
+    "DeleteCanonicalNode",
+    "DiscardIntent",
+    "SubmitDraft",
+]
+
+
+class TopologyDraftCapability(StrictModel):
+    capability_id: Identifier
+    subject: str = Field(min_length=1)
+    draft_id: Identifier
+    base_document_digest: Sha256
+    allowed_commands: list[TopologyCommandName] = Field(min_length=1)
+    issued_at: str = Field(min_length=1)
+    expires_at: str = Field(min_length=1)
+
+
+class TopologyEditSession(StrictModel):
+    mode: Literal["topology-draft"] = "topology-draft"
+    capability: TopologyDraftCapability
+    current_document_digest: Sha256
+
+
+class TopologyReviewReceipt(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    receipt_id: Identifier
+    draft_id: Identifier
+    document_digest: Sha256
+    registry_digest: Sha256
+    status: Literal["review-ready"] = "review-ready"
+    submitted_at: str = Field(min_length=1)
+    diagnostics: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class EditableCapability(StrictModel):

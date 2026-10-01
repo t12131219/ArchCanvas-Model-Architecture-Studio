@@ -5,6 +5,18 @@ import type { KernelDocument, KernelRenderScene, KernelVisualState, RenderNode, 
 
 const PAPER_PADDING = 72;
 
+function boundarySide(
+  point: { x: number; y: number },
+  bounds: { x: number; y: number; width: number; height: number },
+) {
+  return ([
+    ["left", Math.abs(point.x - bounds.x)],
+    ["right", Math.abs(point.x - bounds.x - bounds.width)],
+    ["top", Math.abs(point.y - bounds.y)],
+    ["bottom", Math.abs(point.y - bounds.y - bounds.height)],
+  ] as const).reduce((best, candidate) => candidate[1] < best[1] ? candidate : best)[0];
+}
+
 export function buildKernelRenderScene(
   document: KernelDocument,
   visualState: KernelVisualState,
@@ -13,16 +25,37 @@ export function buildKernelRenderScene(
   const renderNodes = layoutHierarchy(document, visualState);
   const renderNodeById = new Map(renderNodes.map((node) => [node.nodeId, node]));
   const bindingById = new Map(document.templateBindings.map((binding) => [binding.bindingId, binding]));
+  const incomingNodeIds = new Set(document.edges.flatMap((edge) => {
+    const ownerNodeId = byPort.get(edge.targetPortId)?.ownerNodeId;
+    return ownerNodeId ? [ownerNodeId] : [];
+  }));
+  const outgoingNodeIds = new Set(document.edges.flatMap((edge) => {
+    const ownerNodeId = byPort.get(edge.sourcePortId)?.ownerNodeId;
+    return ownerNodeId ? [ownerNodeId] : [];
+  }));
   const details = renderNodes.flatMap((node) => {
     if (node.renderRole !== "expanded-module") return [];
-    const detail = buildTemplateDetail(node.nodeId, bindingById.get(node.templateBindingId ?? ""), node.bounds, visualState.detailOffsets);
+    const detail = buildTemplateDetail(
+      node.nodeId,
+      bindingById.get(node.templateBindingId ?? ""),
+      node.bounds,
+      visualState.detailOffsets,
+      visualState.detailExpansionTrees?.[node.nodeId],
+      {
+        mode: visualState.hierarchyRoutingMode,
+        hasIncoming: incomingNodeIds.has(node.nodeId),
+        hasOutgoing: outgoingNodeIds.has(node.nodeId),
+      },
+    );
     return detail ? [detail] : [];
   });
   const detailBoundaryPorts = Object.fromEntries(details.map((detail) => [detail.nodeId, {
     entry: detail.entryPoint,
     exit: detail.exitPoint,
-    entrySide: "left" as const,
-    exitSide: "right" as const,
+    entrySide: detail.entrySide ?? boundarySide(detail.entryPoint, detail.bounds),
+    exitSide: detail.exitSide ?? boundarySide(detail.exitPoint, detail.bounds),
+    entryIsInterior: detail.entryIsInterior,
+    exitIsInterior: detail.exitIsInterior,
   }]));
   const expandedAncestors = (node: RenderNode): RenderNode[] => {
     const result: RenderNode[] = [];

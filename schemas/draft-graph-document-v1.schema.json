@@ -1,5 +1,32 @@
 {
   "$defs": {
+    "DefinitionRef": {
+      "additionalProperties": false,
+      "properties": {
+        "definition_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Definition Id",
+          "type": "string"
+        },
+        "digest": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Digest",
+          "type": "string"
+        },
+        "version": {
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "definition_id",
+        "version",
+        "digest"
+      ],
+      "title": "DefinitionRef",
+      "type": "object"
+    },
     "DraftEdge": {
       "additionalProperties": false,
       "properties": {
@@ -24,10 +51,29 @@
           "title": "Policy",
           "type": "string"
         },
+        "relation": {
+          "default": "main",
+          "minLength": 1,
+          "title": "Relation",
+          "type": "string"
+        },
         "source_port_id": {
           "pattern": "^[a-z][a-z0-9._:-]*$",
           "title": "Source Port Id",
           "type": "string"
+        },
+        "target_ordinal": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Ordinal"
         },
         "target_port_id": {
           "pattern": "^[a-z][a-z0-9._:-]*$",
@@ -47,6 +93,17 @@
     "DraftNode": {
       "additionalProperties": false,
       "properties": {
+        "definition_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DefinitionRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "framework": {
           "minLength": 1,
           "title": "Framework",
@@ -117,6 +174,26 @@
     "DraftPort": {
       "additionalProperties": false,
       "properties": {
+        "accepted_relations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Accepted Relations",
+          "type": "array"
+        },
+        "definition_port_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Definition Port Id"
+        },
         "direction": {
           "enum": [
             "input",
@@ -137,15 +214,48 @@
           "default": null,
           "title": "Dtype"
         },
+        "max_connections": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "const": "many",
+              "type": "string"
+            }
+          ],
+          "default": "many",
+          "title": "Max Connections"
+        },
+        "min_connections": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Min Connections",
+          "type": "integer"
+        },
         "name": {
           "minLength": 1,
           "title": "Name",
+          "type": "string"
+        },
+        "ordering": {
+          "default": "ordered",
+          "enum": [
+            "ordered",
+            "unordered"
+          ],
+          "title": "Ordering",
           "type": "string"
         },
         "port_id": {
           "pattern": "^[a-z][a-z0-9._:-]*$",
           "title": "Port Id",
           "type": "string"
+        },
+        "required": {
+          "default": false,
+          "title": "Required",
+          "type": "boolean"
         },
         "role": {
           "minLength": 1,
@@ -163,6 +273,27 @@
           ],
           "default": null,
           "title": "Shape Constraint"
+        },
+        "tensor_layouts": {
+          "items": {
+            "enum": [
+              "NCHW",
+              "NHWC",
+              "sequence",
+              "scalar",
+              "any"
+            ],
+            "type": "string"
+          },
+          "title": "Tensor Layouts",
+          "type": "array"
+        },
+        "tensor_ranks": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Tensor Ranks",
+          "type": "array"
         }
       },
       "required": [
@@ -638,6 +769,84 @@
       "title": "ParameterDelta",
       "type": "object"
     },
+    "ProposalReconciliationReceipt": {
+      "additionalProperties": false,
+      "properties": {
+        "canonical_subject_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Canonical Subject Ids",
+          "type": "array"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "missing_subject_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Missing Subject Ids",
+          "type": "array"
+        },
+        "proposal_correlation_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Proposal Correlation Id",
+          "type": "string"
+        },
+        "receipt_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Receipt Id",
+          "type": "string"
+        },
+        "reconciled_at": {
+          "minLength": 1,
+          "title": "Reconciled At",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "realized",
+            "blocked"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "synthetic_subject_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Synthetic Subject Ids",
+          "type": "array"
+        },
+        "transaction_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Transaction Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "receipt_id",
+        "proposal_correlation_id",
+        "transaction_id",
+        "status",
+        "reconciled_at",
+        "message"
+      ],
+      "title": "ProposalReconciliationReceipt",
+      "type": "object"
+    },
     "ShapeDelta": {
       "additionalProperties": false,
       "properties": {
@@ -698,6 +907,19 @@
       "title": "Base Architecture Id",
       "type": "string"
     },
+    "base_registry_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Base Registry Digest"
+    },
     "base_source_digest": {
       "pattern": "^[a-f0-9]{64}$",
       "title": "Base Source Digest",
@@ -745,6 +967,13 @@
         "$ref": "#/$defs/EditProofStatus"
       },
       "title": "Proofs",
+      "type": "array"
+    },
+    "reconciliation_receipts": {
+      "items": {
+        "$ref": "#/$defs/ProposalReconciliationReceipt"
+      },
+      "title": "Reconciliation Receipts",
       "type": "array"
     },
     "revision": {

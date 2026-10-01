@@ -43,14 +43,27 @@ describe("production visual-kernel matrix", () => {
   });
 
   it("builds every production catalog detail with bounded primitives and continuous boundaries", () => {
-    expect(PRODUCTION_DETAIL_KINDS).toHaveLength(39);
+    expect(PRODUCTION_DETAIL_KINDS).toHaveLength(53);
+    const pointOnBoundary = (
+      point: { x: number; y: number },
+      bounds: { x: number; y: number; width: number; height: number },
+    ) => (
+      (point.x === bounds.x || point.x === bounds.x + bounds.width)
+        && point.y >= bounds.y && point.y <= bounds.y + bounds.height
+      || (point.y === bounds.y || point.y === bounds.y + bounds.height)
+        && point.x >= bounds.x && point.x <= bounds.x + bounds.width
+    );
     for (const kind of PRODUCTION_DETAIL_KINDS) {
       const size = EXPANDED_DETAIL_SIZES[kind];
       const bounds = { x: 40, y: 60, ...size };
       const detail = buildModuleDetail(kind, bounds);
       expect(detail.primitives.length, kind).toBeGreaterThan(0);
-      expect(detail.entryPoint, kind).toEqual({ x: bounds.x, y: bounds.y + bounds.height / 2 });
-      expect(detail.exitPoint, kind).toEqual({ x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 });
+      expect(pointOnBoundary(detail.entryPoint, bounds), `${kind}:entry`).toBe(true);
+      expect(pointOnBoundary(detail.exitPoint, bounds), `${kind}:exit`).toBe(true);
+      if (kind.startsWith("paper-")) {
+        expect(detail.entryPoint.y, `${kind}:entry`).toBe(bounds.y + bounds.height);
+        expect(detail.exitPoint.y, `${kind}:exit`).toBe(bounds.y);
+      }
       for (const primitive of detail.primitives) {
         if (primitive.kind === "flow") {
           expect(primitive.points.length, kind).toBeGreaterThanOrEqual(2);

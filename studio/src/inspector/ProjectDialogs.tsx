@@ -5,9 +5,19 @@ import {
 } from "lucide-react";
 import { visibleProjectEntrypoints } from "../tree";
 import { Field } from "./InspectorPanels";
-import type { CanonicalDeleteImpact, DraftEdgePolicy } from "../app/studio-types";
+import {
+  MODULE_CATEGORY_ORDER,
+  MODULE_REGISTRY,
+  moduleDefinitionCategory,
+  moduleDefinitionLabel,
+  resolveDefinitionRef,
+  resolveDefinitionId,
+} from "../module-registry/registry";
+import type { CanonicalDeleteImpact, DraftEdgePolicy, StudioState } from "../app/studio-types";
 import type { DirectoryBrowserState, PendingProject, ProjectEntrypoint } from "../app/project-actions";
+import type { ModuleDefinition, ParameterContract } from "../module-registry/types";
 export interface DraftPortOption { port_id: string; role: string; node_label: string; draft: boolean; }
+type DraftNodeView = StudioState["draft"]["nodes"][number];
 export interface ProjectDialogsProps {
   tx: (english: string, chinese: string) => string; projectDialog: boolean; setProjectDialog: (value: boolean) => void;
   condaEnvironments: Array<{ name: string; path: string; active: boolean; python: string }>; environmentLoading: boolean;
@@ -24,6 +34,8 @@ export interface ProjectDialogsProps {
   selectProjectEntrypoint: (candidate: ProjectEntrypoint) => void; analyzeProject: () => void;
   draftDialog: boolean; setDraftDialog: (value: boolean) => void; draftName: string; setDraftName: (value: string) => void;
   draftType: string; setDraftType: (value: string) => void; selectedCanonicalIds: string[]; createDraftNode: () => void;
+  draftParameterNode: DraftNodeView | null; closeDraftParameters: () => void;
+  updateDraftNodeParameters: (nodeId: string, parameters: Record<string, unknown>) => Promise<boolean>;
   draftEdgeDialog: boolean; setDraftEdgeDialog: (value: boolean) => void; draftEdgeSource: string;
   setDraftEdgeSource: (value: string) => void; draftEdgeTarget: string; setDraftEdgeTarget: (value: string) => void;
   draftEdgePolicy: DraftEdgePolicy; setDraftEdgePolicy: (value: DraftEdgePolicy) => void;
@@ -31,6 +43,88 @@ export interface ProjectDialogsProps {
   createDraftEdge: () => void; deleteImpact: CanonicalDeleteImpact | null;
   setDeleteImpact: (value: CanonicalDeleteImpact | null) => void; createCanonicalDeleteIntent: () => void;
 }
+
+function parameterText(value: unknown): string {
+  if (value == null) return "";
+  if (Array.isArray(value)) return value.join(", ");
+  return String(value);
+}
+
+function parseParameterValue(contract: ParameterContract, value: unknown): unknown {
+  if (contract.value_type === "boolean") return Boolean(value);
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  if (contract.value_type === "integer") {
+    const parsed = Number(text);
+    if (!Number.isSafeInteger(parsed)) throw new Error(`${contract.parameter_id} must be an integer`);
+    return parsed;
+  }
+  if (contract.value_type === "number") {
+    const parsed = Number(text);
+    if (!Number.isFinite(parsed)) throw new Error(`${contract.parameter_id} must be a number`);
+    return parsed;
+  }
+  if (contract.value_type === "shape") {
+    return text.split(",").map((item) => {
+      const token = item.trim();
+      const parsed = Number(token);
+      return token && Number.isFinite(parsed) ? parsed : token;
+    });
+  }
+  return text;
+}
+
+function DraftParameterDialog({
+  node,
+  definition,
+  tx,
+  onClose,
+  onSave,
+}: {
+  node: DraftNodeView;
+  definition: ModuleDefinition;
+  tx: ProjectDialogsProps["tx"];
+  onClose: () => void;
+  onSave: ProjectDialogsProps["updateDraftNodeParameters"];
+}) {
+  const [values, setValues] = React.useState<Record<string, unknown>>(node.parameters);
+  const [error, setError] = React.useState("");
+  const [saving, setSaving] = React.useState(false);
+  React.useEffect(() => {
+    setValues(node.parameters);
+    setError("");
+  }, [node.node_id, node.parameters]);
+
+  async function save() {
+    try {
+      const parsed = Object.fromEntries(
+        definition.parameters.map((contract) => [
+          contract.parameter_id,
+          parseParameterValue(contract, values[contract.parameter_id]),
+        ]),
+      );
+      setSaving(true);
+      if (await onSave(node.node_id, parsed)) onClose();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return <div className="dialog-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <section className="project-dialog draft-parameter-dialog" role="dialog" aria-modal="true" aria-label={tx("Edit draft parameters", "编辑草稿参数")}>
+      <header><div><strong>{node.semantic_name}</strong><span>{definition.definition_id} · {definition.version}</span></div><button className="icon-button" title={tx("Close", "关闭")} aria-label={tx("Close", "关闭")} onClick={onClose}><X /></button></header>
+      <div className="draft-parameter-fields">
+        {definition.parameters.map((contract) => <label className="model-field" key={contract.parameter_id}><span>{contract.parameter_id}{contract.required ? " *" : ""}</span>{contract.value_type === "boolean" ? <input type="checkbox" checked={Boolean(values[contract.parameter_id])} onChange={(event) => setValues((current) => ({ ...current, [contract.parameter_id]: event.target.checked }))} /> : <input type={contract.value_type === "integer" || contract.value_type === "number" ? "number" : "text"} step={contract.value_type === "integer" ? 1 : undefined} value={parameterText(values[contract.parameter_id])} onChange={(event) => setValues((current) => ({ ...current, [contract.parameter_id]: event.target.value }))} />}</label>)}
+      </div>
+      {error && <div className="launcher-error"><AlertTriangle size={14} /><span>{error}</span></div>}
+      <div className="module-contract-summary"><code>{definition.digest.slice(0, 12)}</code><span>{definition.ports.map((port) => port.port_id).join(" · ")}</span></div>
+      <div className="launcher-actions"><button onClick={onClose}>{tx("Cancel", "取消")}</button><button className="primary-action" disabled={saving} onClick={() => void save()}>{saving ? <RefreshCw className="spin" size={14} /> : <CornerDownLeft size={14} />} {tx("Apply parameters", "应用参数")}</button></div>
+    </section>
+  </div>;
+}
+
 export function ProjectDialogs(props: ProjectDialogsProps) {
   const {
     tx, projectDialog, setProjectDialog, condaEnvironments, environmentLoading, condaEnvironment,
@@ -39,10 +133,26 @@ export function ProjectDialogs(props: ProjectDialogsProps) {
     setSelectedFolderPath, folderLoading, browseFolders, projectModelExpansions, setProjectModelExpansions,
     projectEntrypoint, setProjectEntrypoint, projectFramework, setProjectFramework, projectConfig, setProjectConfig,
     selectProjectEntrypoint, analyzeProject, draftDialog, setDraftDialog, draftName, setDraftName, draftType,
-    setDraftType, selectedCanonicalIds, createDraftNode, draftEdgeDialog, setDraftEdgeDialog, draftEdgeSource,
+    setDraftType, selectedCanonicalIds, createDraftNode, draftParameterNode, closeDraftParameters,
+    updateDraftNodeParameters, draftEdgeDialog, setDraftEdgeDialog, draftEdgeSource,
     setDraftEdgeSource, draftEdgeTarget, setDraftEdgeTarget, draftEdgePolicy, setDraftEdgePolicy, draftSourcePorts,
     draftTargetPorts, draftPortLabels, createDraftEdge, deleteImpact, setDeleteImpact, createCanonicalDeleteIntent,
   } = props;
+  const [draftSearch, setDraftSearch] = React.useState("");
+  const normalizedDraftSearch = draftSearch.trim().toLowerCase();
+  const visibleDefinitions = MODULE_REGISTRY.definitions.filter((definition) => {
+    const searchable = [
+      moduleDefinitionLabel(definition),
+      definition.definition_id,
+      definition.semantic_kind,
+      ...definition.qualified_names,
+    ].join(" ").toLowerCase();
+    return !normalizedDraftSearch || searchable.includes(normalizedDraftSearch);
+  });
+  const selectedDefinition = resolveDefinitionId(draftType);
+  const draftParameterDefinition = draftParameterNode?.definition_ref
+    ? resolveDefinitionRef(draftParameterNode.definition_ref)
+    : undefined;
   return (
     <>
       {projectDialog && <div className="dialog-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setProjectDialog(false); }}>
@@ -97,12 +207,24 @@ export function ProjectDialogs(props: ProjectDialogsProps) {
         </section>
       </div>}
       {draftDialog && <div className="dialog-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setDraftDialog(false); }}>
-        <section className="project-dialog draft-dialog" role="dialog" aria-modal="true" aria-label={tx("Create draft node", "创建草稿节点")}>
+        <section className="project-dialog draft-dialog module-picker-dialog" role="dialog" aria-modal="true" aria-label={tx("Create draft node", "创建草稿节点")}>
           <header><div><strong>{tx("Create draft node", "创建草稿节点")}</strong><span>{projectFramework} · DraftGraphDocument</span></div><button className="icon-button" title={tx("Close", "关闭")} aria-label={tx("Close", "关闭")} onClick={() => setDraftDialog(false)}><X /></button></header>
-          <label className="model-field"><span>{tx("Semantic name", "语义名称")}</span><input autoFocus value={draftName} onChange={(event) => setDraftName(event.target.value)} /></label>
-          <label className="model-field"><span>{tx("Node type", "节点类型")}</span><input value={draftType} onChange={(event) => setDraftType(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void createDraftNode(); }} /></label>
+          <label className="module-search"><Search size={14} /><input autoFocus aria-label={tx("Search modules", "搜索模块")} placeholder={tx("Search modules", "搜索模块")} value={draftSearch} onChange={(event) => setDraftSearch(event.target.value)} /></label>
+          <div className="module-definition-list" role="listbox" aria-label={tx("Registered modules", "已注册模块")}>
+            {MODULE_CATEGORY_ORDER.map((category) => {
+              const definitions = visibleDefinitions.filter((definition) => moduleDefinitionCategory(definition) === category);
+              if (!definitions.length) return null;
+              return <section className="module-category" key={category}><h3>{category}</h3>{definitions.map((definition) => {
+                const selected = definition.definition_id === draftType;
+                return <button type="button" role="option" aria-selected={selected} className={selected ? "selected" : ""} key={definition.definition_id} onClick={() => { setDraftType(definition.definition_id); if (!draftName.trim()) setDraftName(moduleDefinitionLabel(definition).replace(/\s+/g, "_")); }}><span><strong>{moduleDefinitionLabel(definition)}</strong><code>{definition.definition_id}</code></span><small>{definition.ports.filter((port) => port.direction === "input").map((port) => port.port_id).join(", ") || tx("No inputs", "无输入")} → {definition.ports.filter((port) => port.direction === "output").map((port) => port.port_id).join(", ")}</small></button>;
+              })}</section>;
+            })}
+            {!visibleDefinitions.length && <div className="module-definition-empty">{tx("No matching modules", "没有匹配的模块")}</div>}
+          </div>
+          <label className="model-field"><span>{tx("Semantic name", "语义名称")}</span><input value={draftName} onChange={(event) => setDraftName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void createDraftNode(); }} /></label>
+          {selectedDefinition && <div className="module-contract-summary"><span>{selectedDefinition.version}</span><code>{selectedDefinition.digest.slice(0, 12)}</code><span>{selectedDefinition.parameters.length} {tx("parameters", "个参数")}</span><span>{selectedDefinition.ports.length} {tx("ports", "个端口")}</span></div>}
           <Field label={tx("Parent anchor", "父级锚点")} value={selectedCanonicalIds[0] ?? tx("Architecture root", "架构根节点")} mono />
-          <div className="launcher-actions"><button onClick={() => setDraftDialog(false)}>{tx("Cancel", "取消")}</button><button className="primary-action" disabled={!draftName.trim() || !draftType.trim()} onClick={() => void createDraftNode()}><Plus size={14} /> {tx("Create draft", "创建草稿")}</button></div>
+          <div className="launcher-actions"><button onClick={() => setDraftDialog(false)}>{tx("Cancel", "取消")}</button><button className="primary-action" disabled={!draftName.trim() || !selectedDefinition} onClick={() => void createDraftNode()}><Plus size={14} /> {tx("Create draft", "创建草稿")}</button></div>
         </section>
       </div>}
       {draftEdgeDialog && <div className="dialog-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setDraftEdgeDialog(false); }}>
@@ -110,10 +232,11 @@ export function ProjectDialogs(props: ProjectDialogsProps) {
           <header><div><strong>{tx("Create draft connection", "创建草稿连接")}</strong><span>DraftGraphDocument · {tx("source remains unchanged", "不修改源码")}</span></div><button className="icon-button" title={tx("Close", "关闭")} aria-label={tx("Close", "关闭")} onClick={() => setDraftEdgeDialog(false)}><X /></button></header>
           <label className="model-field"><span>{tx("Source output", "源输出端口")}</span><select autoFocus value={draftEdgeSource} onChange={(event) => setDraftEdgeSource(event.target.value)}>{draftSourcePorts.map((port) => <option key={port.port_id} value={port.port_id}>{draftPortLabels.get(port.port_id)} · {port.role}</option>)}</select></label>
           <label className="model-field"><span>{tx("Target input", "目标输入端口")}</span><select value={draftEdgeTarget} onChange={(event) => setDraftEdgeTarget(event.target.value)}>{draftTargetPorts.map((port) => <option key={port.port_id} value={port.port_id}>{draftPortLabels.get(port.port_id)} · {port.role}</option>)}</select></label>
-          <label className="model-field"><span>{tx("Connection policy", "连接策略")}</span><select value={draftEdgePolicy} onChange={(event) => setDraftEdgePolicy(event.target.value as DraftEdgePolicy)}><option value="replace-input">{tx("Replace input", "替换输入")}</option><option value="add-residual">{tx("Add residual", "添加残差")}</option><option value="concat">{tx("Concatenate", "拼接")}</option><option value="fanout">{tx("Fan out", "扇出")}</option><option value="disconnect">{tx("Disconnect", "断开")}</option></select></label>
+          <label className="model-field"><span>{tx("Connection policy", "连接策略")}</span><select value={draftEdgePolicy} onChange={(event) => setDraftEdgePolicy(event.target.value as DraftEdgePolicy)}><option value="replace-input">{tx("Replace input", "替换输入")}</option><option value="add-residual">{tx("Add residual", "添加残差")}</option><option value="concat">{tx("Concatenate", "拼接")}</option><option value="fanout">{tx("Fan out", "扇出")}</option></select></label>
           <div className="launcher-actions"><button onClick={() => setDraftEdgeDialog(false)}>{tx("Cancel", "取消")}</button><button className="primary-action" disabled={!draftEdgeSource || !draftEdgeTarget} onClick={() => void createDraftEdge()}><Link2 size={14} /> {tx("Create connection", "创建连接")}</button></div>
         </section>
       </div>}
+      {draftParameterNode && draftParameterDefinition && <DraftParameterDialog node={draftParameterNode} definition={draftParameterDefinition} tx={tx} onClose={closeDraftParameters} onSave={updateDraftNodeParameters} />}
       {deleteImpact && <div className="dialog-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setDeleteImpact(null); }}>
         <section className="project-dialog impact-dialog" role="dialog" aria-modal="true" aria-label={tx("Deletion impact preview", "删除影响预览")}>
           <header><div><strong>{tx("Deletion impact preview", "删除影响预览")}</strong><span>{deleteImpact.semantic_name} · {deleteImpact.node_id}</span></div><button className="icon-button" title={tx("Close", "关闭")} aria-label={tx("Close", "关闭")} onClick={() => setDeleteImpact(null)}><X /></button></header>

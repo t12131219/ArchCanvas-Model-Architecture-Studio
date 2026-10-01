@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
+import subprocess
 import sys
 import threading
 import time
@@ -14,10 +15,12 @@ from urllib.request import Request, urlopen
 
 import pytest
 
+from archcanvas_core.builtin_registry import BuiltinModuleRegistry
 from archcanvas_core.models import (
     AnalysisJob,
     AnalysisRequest,
     DraftGraphDocument,
+    DraftNode,
     EditProofState,
     JobState,
     PatchBatch,
@@ -46,6 +49,7 @@ from archcanvas_studio import (
     source_binding_digest,
     undo_patch,
 )
+from archcanvas_studio.bundle import draft_document_digest
 from archcanvas_studio.document import _reroute_edges
 from archcanvas_studio.operations import (
     _orthogonal_segment_interaction,
@@ -1903,7 +1907,57 @@ def test_analysis_cancel_terminates_the_host_static_analysis_process(
     assert finished.finished_at is not None
     assert process.terminated is True
     assert invocation["command"][0] == sys.executable  # type: ignore[index]
+    assert invocation["command"][1:3] == ["-I", "-m"]  # type: ignore[index]
+    command = invocation["command"]  # type: ignore[assignment]
+    frontend_index = command.index("--frontend")
+    assert command[frontend_index : frontend_index + 2] == ["--frontend", "v2"]
+    options = invocation["options"]  # type: ignore[assignment]
+    assert options["cwd"] != Path(bundle.project_session.root)
+    assert options["stdin"] is subprocess.DEVNULL
+    assert "PYTHONPATH" not in options["env"]
     assert server.bundle is bundle
+
+
+def test_studio_passes_an_explicit_pinned_pyright_sidecar_to_v2_analysis(
+    analysis_dir: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json", tmp_path / ".archcanvas"
+    )
+    server = _server_without_socket(bundle)
+    sidecar = tmp_path / "trusted-tools" / "pyright-typeserver"
+    sidecar.parent.mkdir()
+    sidecar.write_text("pinned sidecar fixture", encoding="utf-8")
+    process = _BlockingAnalysisProcess()
+    invocation: dict[str, object] = {}
+
+    def popen(command, **options):  # type: ignore[no-untyped-def]
+        invocation["command"] = command
+        return process
+
+    monkeypatch.setenv("ARCHCANVAS_PYRIGHT_TYPESERVER", str(sidecar))
+    monkeypatch.setattr("archcanvas_studio.server.subprocess.Popen", popen)
+    monkeypatch.setattr(
+        server,
+        "_terminate_process_locked",
+        lambda running: running.terminate(),
+    )
+
+    job = server.start_analysis(
+        _analysis_request(bundle.project_session, "request:test-pyright-sidecar")
+    )
+    assert process.started.wait(3)
+    server.cancel_job(job.job_id)
+    _wait_for_job(server, job.job_id)
+
+    command = invocation["command"]  # type: ignore[assignment]
+    sidecar_index = command.index("--pyright-typeserver")
+    assert command[sidecar_index : sidecar_index + 2] == [
+        "--pyright-typeserver",
+        str(sidecar.resolve()),
+    ]
 
 
 def test_static_analysis_uses_host_python_when_target_environment_is_incompatible(
@@ -1934,6 +1988,44 @@ def test_static_analysis_uses_host_python_when_target_environment_is_incompatibl
         == "/opt/conda/envs/incompatible/bin/python"
     )
     assert finished.receipt["details"]["target_environment_usage"] == "runtime-only"
+    assert finished.receipt["details"]["frontend"] == "v2"
+    assert finished.receipt["details"]["compatibility_projection"] is True
+    assert finished.receipt["details"]["isolation"] == {
+        "python_isolated_mode": True,
+        "environment": "allowlisted",
+        "working_directory": "dedicated-analysis-workspace",
+        "stdin": "closed",
+        "project_cwd": False,
+    }
+    assert "architecture_v2" in finished.receipt["artifacts"]
+
+
+def test_static_analysis_does_not_execute_project_sitecustomize_or_inherit_pythonpath(
+    analysis_dir: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json", tmp_path / ".archcanvas"
+    )
+    project = Path(bundle.project_session.root)
+    marker = tmp_path / "sitecustomize-executed"
+    (project / "sitecustomize.py").write_text(
+        f"from pathlib import Path\nPath({str(marker)!r}).write_text('executed')\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("PYTHONPATH", str(project))
+    server = _server_without_socket(bundle)
+
+    job = server.start_analysis(
+        _analysis_request(bundle.project_session, "request:test-isolated-analysis")
+    )
+    finished = _wait_for_job(server, job.job_id)
+
+    assert finished.state is JobState.SUCCEEDED
+    assert not marker.exists()
+    assert finished.receipt is not None
+    assert finished.receipt["details"]["frontend"] == "v2"
 
 
 def test_project_switch_marks_late_analysis_stale_without_replacing_bundle(
@@ -2110,6 +2202,173 @@ def test_unknown_draft_node_becomes_blocked_zero_permission_proposal(
         bundle.save_draft(forged, bundle.draft.revision)
 
 
+def test_topology_capability_rejects_locked_and_stale_commands_and_submits_clean_draft(
+    analysis_dir: Path, tmp_path: Path
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json", tmp_path / ".archcanvas"
+    )
+    definition = BuiltinModuleRegistry().resolve_qualified_name("archcanvas.input.Tensor")
+    assert definition is not None
+    command = {
+        "node": {
+            "node_id": "draft:capability-input",
+            "semantic_name": "input",
+            "framework": bundle.architecture.framework,
+            "node_type": definition.definition_id,
+            "definition_ref": definition.ref.model_dump(mode="json"),
+            "parameters": {"shape": ["B", 3, 224, 224]},
+        }
+    }
+    with pytest.raises(ValueError, match="mode is required"):
+        bundle.dispatch_topology_command("CreateNode", command, "session:test")
+    with pytest.raises(ValueError, match="base document digest is stale"):
+        bundle.begin_topology_draft("0" * 64, "session:test")
+
+    session = bundle.begin_topology_draft(
+        draft_document_digest(bundle.draft), "session:test"
+    )
+    with pytest.raises(ValueError, match="stale draft"):
+        bundle.dispatch_topology_command(
+            "CreateNode",
+            {
+                **command,
+                "capability_id": session.capability.capability_id,
+                "expected_document_digest": "0" * 64,
+            },
+            "session:test",
+        )
+    bundle.dispatch_topology_command(
+        "CreateNode",
+        {
+            **command,
+            "capability_id": session.capability.capability_id,
+            "expected_document_digest": session.current_document_digest,
+        },
+        "session:test",
+    )
+    current_digest = draft_document_digest(bundle.draft)
+    receipt = bundle.submit_topology_draft(
+        session.capability.capability_id,
+        current_digest,
+        "session:test",
+    )
+
+    assert receipt.status == "review-ready"
+    assert receipt.document_digest == current_digest
+    assert bundle.topology_session is None
+    assert bundle.state()["edit_session"]["mode"] == "visual"
+    with pytest.raises(ValueError, match="mode is required"):
+        bundle.dispatch_topology_command("CreateNode", command, "session:test")
+
+
+def test_topology_submit_blocks_incomplete_graph_and_discard_restores_base(
+    analysis_dir: Path, tmp_path: Path
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json", tmp_path / ".archcanvas"
+    )
+    definition = BuiltinModuleRegistry().resolve_qualified_name("torch.nn.ReLU")
+    assert definition is not None
+    base = bundle.draft
+    session = bundle.begin_topology_draft(
+        draft_document_digest(base), "session:test"
+    )
+    bundle.dispatch_topology_command(
+        "CreateNode",
+        {
+            "capability_id": session.capability.capability_id,
+            "expected_document_digest": session.current_document_digest,
+            "node": {
+                "node_id": "draft:incomplete-relu",
+                "semantic_name": "relu",
+                "framework": bundle.architecture.framework,
+                "node_type": definition.definition_id,
+                "definition_ref": definition.ref.model_dump(mode="json"),
+            },
+        },
+        "session:test",
+    )
+    with pytest.raises(ValueError, match="DRAFT_PORT_CARDINALITY_INCOMPLETE"):
+        bundle.submit_topology_draft(
+            session.capability.capability_id,
+            draft_document_digest(bundle.draft),
+            "session:test",
+        )
+
+    bundle.discard_topology_draft(
+        session.capability.capability_id, "session:test"
+    )
+    assert bundle.draft == base
+    assert bundle.topology_session is None
+
+
+def test_topology_submit_runs_authoritative_server_shape_analysis(
+    analysis_dir: Path, tmp_path: Path
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json", tmp_path / ".archcanvas"
+    )
+    registry = BuiltinModuleRegistry()
+    input_definition = registry.resolve_qualified_name("archcanvas.input.Tensor")
+    conv_definition = registry.resolve_qualified_name("torch.nn.Conv2d")
+    assert input_definition is not None
+    assert conv_definition is not None
+    session = bundle.begin_topology_draft(
+        draft_document_digest(bundle.draft), "session:shape-gate"
+    )
+
+    for node_id, definition, parameters in (
+        ("draft:shape-input", input_definition, {"shape": [1, 4, 8, 8]}),
+        (
+            "draft:shape-conv",
+            conv_definition,
+            {"in_channels": 3, "out_channels": 8, "kernel_size": 3},
+        ),
+    ):
+        assert bundle.topology_session is not None
+        bundle.dispatch_topology_command(
+            "CreateNode",
+            {
+                "capability_id": session.capability.capability_id,
+                "expected_document_digest": bundle.topology_session.current_document_digest,
+                "node": {
+                    "node_id": node_id,
+                    "semantic_name": node_id.rsplit(":", 1)[-1],
+                    "framework": bundle.architecture.framework,
+                    "node_type": definition.definition_id,
+                    "definition_ref": definition.ref.model_dump(mode="json"),
+                    "parameters": parameters,
+                },
+            },
+            "session:shape-gate",
+        )
+
+    assert bundle.topology_session is not None
+    bundle.dispatch_topology_command(
+        "ConnectPorts",
+        {
+            "capability_id": session.capability.capability_id,
+            "expected_document_digest": bundle.topology_session.current_document_digest,
+            "edge": {
+                "edge_id": "draft:shape-edge",
+                "source_port_id": "draft:shape-input.output",
+                "target_port_id": "draft:shape-conv.input",
+                "policy": "fanout",
+                "relation": "main",
+            },
+        },
+        "session:shape-gate",
+    )
+
+    with pytest.raises(ValueError, match="CONV2D_CHANNEL_MISMATCH"):
+        bundle.submit_topology_draft(
+            session.capability.capability_id,
+            draft_document_digest(bundle.draft),
+            "session:shape-gate",
+        )
+
+
 def test_deleting_draft_node_removes_its_intent_and_preserves_source(
     analysis_dir: Path, tmp_path: Path
 ) -> None:
@@ -2283,6 +2542,261 @@ def test_draft_edge_rejects_unknown_and_reversed_ports(
                     "policy": "fanout",
                 }
             }
+        )
+
+
+def test_registered_draft_nodes_materialize_exact_contracts_and_cardinality(
+    analysis_dir: Path, tmp_path: Path
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json", tmp_path / ".archcanvas"
+    )
+    registry = BuiltinModuleRegistry()
+    input_definition = registry.resolve_qualified_name("archcanvas.input.Tensor")
+    relu_definition = registry.resolve_qualified_name("torch.nn.ReLU")
+    assert input_definition is not None
+    assert relu_definition is not None
+
+    def registered_node(node_id: str, definition, parameters=None):  # type: ignore[no-untyped-def]
+        return {
+            "node_id": node_id,
+            "semantic_name": definition.definition_id.rsplit(".", 1)[-1],
+            "framework": bundle.architecture.framework,
+            "node_type": definition.definition_id,
+            "definition_ref": definition.ref.model_dump(mode="json"),
+            "parameters": parameters or {},
+        }
+
+    bundle.propose_draft_node(
+        {"node": registered_node("draft:registry-input", input_definition, {"shape": [1, 3]})}
+    )
+    bundle.propose_draft_node(
+        {"node": registered_node("draft:registry-relu", relu_definition)}
+    )
+
+    input_node, relu_node = bundle.draft.nodes
+    assert input_node.definition_ref == input_definition.ref
+    assert input_node.parameters == {"shape": [1, 3]}
+    assert [port.name for port in relu_node.ports] == ["input", "output"]
+    assert relu_node.ports[0].max_connections == 1
+    relu_proof = next(
+        proof
+        for proof in bundle.draft.proofs
+        if relu_node.node_id in proof.affected_subject_ids
+    )
+    assert "DRAFT_PORT_CARDINALITY_INCOMPLETE" in relu_proof.reason_codes
+
+    bundle.propose_draft_edge(
+        {
+            "edge": {
+                "edge_id": "draft:registry-edge",
+                "source_port_id": input_node.ports[0].port_id,
+                "target_port_id": relu_node.ports[0].port_id,
+                "policy": "fanout",
+                "relation": "main",
+            }
+        }
+    )
+    relu_proof = next(
+        proof
+        for proof in bundle.draft.proofs
+        if relu_node.node_id in proof.affected_subject_ids
+    )
+    assert "DRAFT_PORT_CARDINALITY_INCOMPLETE" not in relu_proof.reason_codes
+    assert relu_proof.reason_codes == ["UNREGISTERED_NODE_LOWERING"]
+
+    bundle.propose_draft_node(
+        {
+            "node": registered_node(
+                "draft:registry-input-2", input_definition, {"shape": [1, 3]}
+            )
+        }
+    )
+    second_input = bundle.draft.nodes[-1]
+    with pytest.raises(ValueError, match="cardinality"):
+        bundle.propose_draft_edge(
+            {
+                "edge": {
+                    "edge_id": "draft:registry-edge-2",
+                    "source_port_id": second_input.ports[0].port_id,
+                    "target_port_id": relu_node.ports[0].port_id,
+                    "policy": "fanout",
+                }
+            }
+        )
+
+
+def test_registered_draft_node_rejects_stale_definition_and_forged_contract(
+    analysis_dir: Path, tmp_path: Path
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json", tmp_path / ".archcanvas"
+    )
+    definition = BuiltinModuleRegistry().resolve_qualified_name("torch.nn.Conv2d")
+    assert definition is not None
+    base = {
+        "node_id": "draft:registered-conv",
+        "semantic_name": "conv",
+        "framework": bundle.architecture.framework,
+        "node_type": definition.definition_id,
+        "definition_ref": definition.ref.model_dump(mode="json"),
+        "parameters": {"in_channels": 3, "out_channels": 16, "kernel_size": [3, 3]},
+    }
+
+    stale = dict(base)
+    stale["definition_ref"] = {**base["definition_ref"], "digest": "0" * 64}
+    with pytest.raises(ValueError, match="unknown or stale"):
+        bundle.propose_draft_node({"node": stale})
+
+    forged = dict(base)
+    forged["ports"] = [
+        {
+            "port_id": "draft:registered-conv.input",
+            "name": "input",
+            "direction": "output",
+            "role": "input",
+        }
+    ]
+    with pytest.raises(ValueError, match="ports do not match"):
+        bundle.propose_draft_node({"node": forged})
+
+
+def test_bulk_draft_save_revalidates_registered_nodes_and_rejects_unregistered_injection(
+    analysis_dir: Path, tmp_path: Path
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json", tmp_path / ".archcanvas"
+    )
+    definition = BuiltinModuleRegistry().resolve_qualified_name("torch.nn.ReLU")
+    assert definition is not None
+    bundle.propose_draft_node(
+        {
+            "node": {
+                "node_id": "draft:bulk-relu",
+                "semantic_name": "relu",
+                "framework": bundle.architecture.framework,
+                "node_type": definition.definition_id,
+                "definition_ref": definition.ref.model_dump(mode="json"),
+            }
+        }
+    )
+    current = bundle.draft
+    forged_port = current.nodes[0].ports[0].model_copy(update={"direction": "output"})
+    forged_node = current.nodes[0].model_copy(
+        update={"ports": [forged_port, *current.nodes[0].ports[1:]]}
+    )
+    forged = current.model_copy(
+        update={"revision": current.revision + 1, "nodes": [forged_node]}
+    )
+    with pytest.raises(ValueError, match="registered module definition"):
+        bundle.save_draft(forged, current.revision)
+
+    injected = current.model_copy(
+        update={
+            "revision": current.revision + 1,
+            "nodes": [
+                *current.nodes,
+                DraftNode.model_validate({
+                    "node_id": "draft:bulk-unregistered",
+                    "semantic_name": "unsafe",
+                    "framework": bundle.architecture.framework,
+                    "node_type": "custom.Unregistered",
+                }),
+            ],
+        }
+    )
+    injected = DraftGraphDocument.model_validate(injected.model_dump(mode="json"))
+    with pytest.raises(ValueError, match="cannot create or modify unregistered"):
+        bundle.save_draft(injected, current.revision)
+
+
+def test_unordered_registered_port_rejects_target_ordinal(
+    analysis_dir: Path, tmp_path: Path
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json", tmp_path / ".archcanvas"
+    )
+    registry = BuiltinModuleRegistry()
+    input_definition = registry.resolve_qualified_name("archcanvas.input.Tensor")
+    add_definition = registry.resolve_qualified_name("torch.add")
+    assert input_definition is not None
+    assert add_definition is not None
+    for node_id, definition, parameters in (
+        ("draft:ordinal-input", input_definition, {"shape": [1, 3]}),
+        ("draft:ordinal-add", add_definition, {}),
+    ):
+        bundle.propose_draft_node(
+            {
+                "node": {
+                    "node_id": node_id,
+                    "semantic_name": node_id.rsplit(":", 1)[-1],
+                    "framework": bundle.architecture.framework,
+                    "node_type": definition.definition_id,
+                    "definition_ref": definition.ref.model_dump(mode="json"),
+                    "parameters": parameters,
+                }
+            }
+        )
+    with pytest.raises(ValueError, match="unordered draft ports reject"):
+        bundle.propose_draft_edge(
+            {
+                "edge": {
+                    "edge_id": "draft:ordinal-edge",
+                    "source_port_id": "draft:ordinal-input.output",
+                    "target_port_id": "draft:ordinal-add.operands",
+                    "policy": "fanout",
+                    "target_ordinal": 0,
+                }
+            }
+        )
+
+
+def test_registered_draft_parameters_use_schema_command_and_preserve_source(
+    analysis_dir: Path, tmp_path: Path
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json", tmp_path / ".archcanvas"
+    )
+    definition = BuiltinModuleRegistry().resolve_qualified_name("torch.nn.Conv2d")
+    assert definition is not None
+    before_source = _source_hashes()
+    bundle.propose_draft_node(
+        {
+            "node": {
+                "node_id": "draft:editable-conv",
+                "semantic_name": "conv",
+                "framework": bundle.architecture.framework,
+                "node_type": definition.definition_id,
+                "definition_ref": definition.ref.model_dump(mode="json"),
+                "parameters": {
+                    "in_channels": 3,
+                    "out_channels": 16,
+                    "kernel_size": [3, 3],
+                },
+            }
+        }
+    )
+    revision = bundle.draft.revision
+    parameters = dict(bundle.draft.nodes[0].parameters)
+    parameters["out_channels"] = 32
+
+    bundle.set_draft_node_parameters(
+        {"node_id": "draft:editable-conv", "parameters": parameters}
+    )
+
+    assert bundle.draft.revision == revision + 1
+    assert bundle.draft.nodes[0].parameters["out_channels"] == 32
+    assert bundle.draft.intents[-1].kind == "set-parameter"
+    assert bundle.draft.proofs[-1].reason_codes == [
+        "UNSUPPORTED_DRAFT_PARAMETER_LOWERING"
+    ]
+    assert _source_hashes() == before_source
+
+    invalid = dict(parameters)
+    invalid["out_channels"] = "wide"
+    with pytest.raises(ValueError, match="does not match integer"):
+        bundle.set_draft_node_parameters(
+            {"node_id": "draft:editable-conv", "parameters": invalid}
         )
 
 

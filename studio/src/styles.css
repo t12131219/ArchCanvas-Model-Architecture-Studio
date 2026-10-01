@@ -171,6 +171,8 @@ button { color: inherit; }
 .draft-panel { flex: 0 0 auto; max-height: 170px; border-top: 1px solid var(--border); overflow: hidden; }
 .draft-panel > header { height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 7px 0 10px; }
 .draft-panel > header > span { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+.draft-panel > header > span > i { padding: 1px 4px; border: 1px solid var(--border); border-radius: 3px; color: var(--success); font-size: 8px; font-style: normal; font-weight: 700; }
+.draft-panel > header > span > i.blocking { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); }
 .draft-actions { display: flex; align-items: center; gap: 2px; }
 .draft-panel .icon-button { width: 24px; height: 24px; }
 .draft-list { max-height: 132px; padding: 0 6px 7px; overflow: auto; }
@@ -181,6 +183,7 @@ button { color: inherit; }
 .draft-list b, .draft-list small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .draft-list small { color: var(--ink-2); font-size: 9px; }
 .draft-list i { color: var(--warning); font-size: 9px; font-style: normal; }
+.draft-item-actions { display: flex; gap: 2px; }
 .draft-empty { padding: 0 10px 10px; color: var(--ink-2); font-size: 10px; }
 .navigation-row { position: relative; min-height: 30px; display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: stretch; border-radius: 4px; }
 .navigation-row:not(.tree-root)::before { content: ""; position: absolute; left: calc(var(--tree-indent) - 7px); top: 0; width: 7px; height: 15px; border-left: 1px solid color-mix(in srgb, var(--ink-2) 28%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--ink-2) 28%, transparent); pointer-events: none; }
@@ -474,6 +477,54 @@ button { color: inherit; }
 .project-dialog header > div { display: flex; flex-direction: column; gap: 3px; }
 .project-dialog header strong { font-size: 15px; }
 .project-dialog header span { color: var(--ink-2); font-size: 10px; }
+.module-picker-dialog { width: min(620px, 100%); }
+.module-search { height: 34px; display: flex; align-items: center; gap: 7px; padding: 0 9px; border: 1px solid var(--border); border-radius: 5px; color: var(--ink-2); background: var(--field); }
+.module-search:focus-within { border-color: var(--accent); outline: 2px solid color-mix(in srgb, var(--accent) 20%, transparent); }
+.module-search input { width: 100%; min-width: 0; border: 0; outline: 0; color: var(--ink); background: transparent; }
+.module-definition-list { max-height: 330px; margin-top: 8px; overflow: auto; border: 1px solid var(--border); border-radius: 5px; background: var(--field); }
+.module-category { padding: 6px; }
+.module-category + .module-category { border-top: 1px solid var(--border); }
+.module-category h3 { margin: 0 0 4px; padding: 0 3px; color: var(--ink-2); font-size: 9px; letter-spacing: 0; text-transform: uppercase; }
+.module-category button { width: 100%; min-height: 44px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, auto); align-items: center; gap: 9px; padding: 6px 8px; border: 1px solid transparent; border-radius: 4px; color: var(--ink); background: transparent; text-align: left; cursor: pointer; }
+.module-category button:hover, .module-category button:focus-visible { border-color: var(--border); outline: none; background: var(--panel); }
+.module-category button.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, var(--panel)); box-shadow: inset 2px 0 0 var(--accent); }
+.module-category button > span { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.module-category strong, .module-category code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.module-category strong { font-size: 11px; }
+.module-category code, .module-category small { color: var(--ink-2); font-size: 9px; letter-spacing: 0; }
+.module-category small { overflow-wrap: anywhere; text-align: right; }
+.module-definition-empty { min-height: 88px; display: grid; place-items: center; color: var(--ink-2); font-size: 10px; }
+.module-contract-summary { min-height: 29px; display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); color: var(--ink-2); font-size: 9px; }
+.module-contract-summary code { color: var(--accent); }
+.draft-parameter-dialog { width: min(560px, 100%); }
+.draft-parameter-fields { max-height: 430px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; overflow: auto; }
+.draft-parameter-fields .model-field input[type="checkbox"] { width: 18px; min-height: 18px; accent-color: var(--accent); }
+.contract-maintenance-dialog { width: min(920px, 100%); }
+.contract-lock-note { display: flex; align-items: flex-start; gap: 8px; padding: 9px 0; color: var(--ink-2); font-size: 10px; line-height: 1.45; }
+.contract-lock-note svg { flex: 0 0 auto; color: var(--warning); }
+.contract-status-line { min-height: 28px; display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); color: var(--ink-2); font-size: 9px; }
+.contract-status-line code { margin-left: auto; color: var(--accent); }
+.contract-state { padding: 2px 5px; border: 1px solid var(--border); border-radius: 3px; color: var(--ink); font-weight: 700; }
+.state-approved, .contract-validation-summary .passed, .receipt-approved { color: var(--success); }
+.state-rejected, .contract-validation-summary .failed, .receipt-rejected { color: var(--danger); }
+.contract-editor-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(240px, 0.8fr); gap: 10px; padding: 10px 0; }
+.contract-editor-grid label { min-width: 0; }
+.contract-editor-grid label > span { display: block; margin-bottom: 5px; color: var(--ink-2); font-size: 9px; font-weight: 700; text-transform: uppercase; }
+.contract-editor-grid textarea { width: 100%; height: 250px; resize: vertical; padding: 8px; border: 1px solid var(--border); border-radius: 4px; color: var(--ink); background: var(--field); font: 9px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.contract-editor-grid textarea:focus { border-color: var(--accent); outline: none; }
+.contract-base-line, .contract-receipt { min-height: 28px; display: flex; align-items: center; gap: 7px; border-top: 1px solid var(--border); color: var(--ink-2); font-size: 9px; }
+.contract-base-line code, .contract-receipt code { margin-left: auto; color: var(--accent); }
+.contract-validation-summary { padding: 8px 0; border-top: 1px solid var(--border); }
+.contract-validation-summary > header { min-height: auto; margin: 0 0 5px; align-items: center; }
+.contract-validation-summary > header strong { font-size: 10px; }
+.contract-validation-summary > header span { font-weight: 700; }
+.contract-validation-summary p { display: grid; grid-template-columns: 104px 150px minmax(0, 1fr); align-items: start; gap: 7px; margin: 0; padding: 4px 0; border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent); font-size: 9px; }
+.contract-validation-summary p b { color: var(--warning); }
+.contract-validation-summary p code { overflow: hidden; color: var(--accent); text-overflow: ellipsis; }
+.contract-validation-summary .contract-diagnostic { grid-template-columns: 14px 190px minmax(0, 1fr); color: var(--danger); }
+.contract-action-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 5px; padding-top: 10px; border-top: 1px solid var(--border); }
+.contract-action-bar button { display: inline-flex; align-items: center; gap: 5px; }
+.contract-active .draft-panel { border-top-color: color-mix(in srgb, var(--warning) 55%, var(--border)); }
 .project-options { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border); }
 .analyze-action { width: 100%; margin-top: 12px; }
 .analyze-action:disabled { opacity: 0.45; cursor: default; }
@@ -557,6 +608,10 @@ button { color: inherit; }
 .loading { height: 100%; display: grid; place-items: center; background: #f4f5f3; color: #5a5e57; }
 .mobile-only { display: none; }
 .inspector-close { margin-left: auto; }
+.codegen-preview { margin-top: 7px; border: 1px solid var(--border); border-radius: 5px; overflow: hidden; background: var(--field); }
+.codegen-preview > header { min-height: 28px; display: flex; align-items: center; justify-content: space-between; padding: 0 5px 0 8px; border-bottom: 1px solid var(--border); color: var(--ink-2); font-size: 9px; font-weight: 700; }
+.codegen-preview > header span { display: flex; align-items: center; gap: 5px; }
+.codegen-preview pre { max-height: 220px; margin: 0; padding: 8px; overflow: auto; color: var(--ink); font: 9px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; }
 
 @media (max-width: 980px) {
   .workspace { grid-template-columns: 200px minmax(0, 1fr) 250px; }
@@ -578,6 +633,10 @@ button { color: inherit; }
 }
 
 @media (max-width: 760px) {
+  .contract-editor-grid { grid-template-columns: 1fr; }
+  .contract-editor-grid textarea { height: 190px; }
+  .contract-validation-summary p { grid-template-columns: 88px minmax(0, 1fr); }
+  .contract-validation-summary p span { grid-column: 1 / -1; }
   .studio { grid-template-rows: 42px minmax(0, 1fr) 116px; }
   .topbar { gap: 5px; padding: 0 6px; overflow-x: auto; }
   .product { font-size: 0; }

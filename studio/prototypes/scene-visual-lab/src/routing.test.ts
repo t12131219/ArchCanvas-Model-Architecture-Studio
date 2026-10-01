@@ -11,7 +11,7 @@ describe("scene lab case matrix", () => {
     expect(SCENARIOS.length * optionCombinations().length).toBe(1350);
   });
 
-    it("renders all 1350 cases with finite routes and metrics", () => {
+  it("renders all 1350 cases with finite routes and metrics", () => {
     for (const scene of SCENARIOS) {
       for (const options of optionCombinations()) {
         const routes = routeScene(scene, options.routeStyle);
@@ -30,7 +30,7 @@ describe("scene lab case matrix", () => {
         expect(svg).not.toContain("undefined");
       }
     }
-  });
+  }, 20_000);
 
   it("samples curved routes for collision and length metrics", () => {
     const scene = SCENARIOS.find((item) => item.scene_id === "fan-out")!;

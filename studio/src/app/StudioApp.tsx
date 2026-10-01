@@ -27,6 +27,7 @@ import {
   RefreshCw,
   Route,
   Search,
+  Settings2,
   ShieldCheck,
   Sun,
   Trash2,
@@ -36,6 +37,8 @@ import {
   ZoomOut,
 } from "lucide-react";
 
+import type { PrintedPyTorchDraft } from "../codegen/pytorch-ir";
+import { compileStudioDraftPreview } from "../codegen/studio-preview";
 import { JobPollingController, type StudioJob } from "../jobs";
 import { initialProjectSelection } from "../project-launch";
 import { createStudioActions, patchId } from "./studio-actions";
@@ -61,6 +64,7 @@ import {
 import { ArchitectureCanvas } from "../main-view/ArchitectureCanvas";
 import { SourceWorkspacePanel } from "../inspector/SourceWorkspacePanel";
 import { TransactionReview } from "../inspector/TransactionReview";
+import { ContractMaintenanceDialog } from "../inspector/ContractMaintenanceDialog";
 import {
   EdgeInspector,
   Field,
@@ -77,6 +81,9 @@ import {
   downloadKernelSvg,
 } from "../main-view/export-download";
 import { adaptFormalState, type FormalStudioState } from "../main-view/formal-state-adapter";
+import { materializeDraftNode, resolveDefinitionId } from "../module-registry/registry";
+import { analyzeGraph } from "../prototype-graph/analyze";
+import type { AnalysisSnapshot, AnalyzedValue, DimensionValue } from "../prototype-graph/types";
 import type { KernelExportArtifact } from "../visual-kernel/export";
 import { buildKernelRenderScene } from "../visual-kernel/layout";
 import type { Bounds as Rect, Point, RenderEdge, RenderNode } from "../visual-kernel/types";
@@ -218,6 +225,20 @@ function storedPanelSizes(): PanelSizes {
   }
 }
 
+function dimensionLabel(value: DimensionValue): string {
+  if (value.kind === "known") return String(value.value);
+  if (value.kind === "symbol") return value.symbol;
+  if (value.kind === "expression") return value.expression;
+  return "?";
+}
+
+function analyzedValueLabel(value: AnalyzedValue | undefined): string {
+  if (!value) return "?";
+  if (value.status === "blocked") return "blocked";
+  if (value.status === "unknown") return "unknown";
+  return `[${value.shape.dimensions.map(dimensionLabel).join(",")}]`;
+}
+
 export function StudioApp() {
   const initialState = useMemo(() => embeddedStudioState(), []);
   const [locale, setLocale] = useState<Locale>(() => {
@@ -226,6 +247,9 @@ export function StudioApp() {
   });
   const tx = (english: string, chinese: string) => locale === "zh" ? chinese : english;
   const [data, setData] = useState<StudioState | null>(initialState);
+  const [draftAnalysis, setDraftAnalysis] = useState<AnalysisSnapshot | null>(null);
+  const [codegenPreview, setCodegenPreview] = useState<PrintedPyTorchDraft | null>(null);
+  const [codegenRequested, setCodegenRequested] = useState(false);
   const [projection, setProjection] = useState<Projection>(
     () => initialState?.navigation?.active_projection ?? initialState?.view_state.navigation_view ?? "module",
   );
@@ -242,6 +266,8 @@ export function StudioApp() {
   const [validationProfile, setValidationProfile] = useState("fast-static");
   const [projectDialog, setProjectDialog] = useState(true);
   const [draftDialog, setDraftDialog] = useState(false);
+  const [contractDialog, setContractDialog] = useState(false);
+  const [draftParameterNodeId, setDraftParameterNodeId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [draftType, setDraftType] = useState("");
   const [draftEdgeDialog, setDraftEdgeDialog] = useState(false);
@@ -275,6 +301,19 @@ export function StudioApp() {
   const acceptKernelExport = useCallback((artifact: KernelExportArtifact) => {
     setKernelExport((current) => current?.renderDigest === artifact.renderDigest ? current : artifact);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setCodegenPreview(null);
+    if (!data) {
+      setDraftAnalysis(null);
+      return () => { cancelled = true; };
+    }
+    void analyzeGraph(data.draft, { allowExternalBoundaries: true }).then((snapshot) => {
+      if (!cancelled) setDraftAnalysis(snapshot);
+    });
+    return () => { cancelled = true; };
+  }, [data?.draft.revision]);
   const navigationTimer = useRef<number | null>(null);
   const navigationQueue = useRef<Promise<void>>(Promise.resolve());
   const expansionsRef = useRef(expansions);
@@ -455,6 +494,7 @@ export function StudioApp() {
   const canonicalDeleteIntents = data?.draft.intents.filter(
     (intent) => intent.kind === "delete-node",
   ) ?? [];
+  const topologyEditing = data?.edit_session.mode === "topology-draft";
 
   async function refreshState(): Promise<StudioState | null> {
     return jobController.current?.refreshState() ?? null;
@@ -526,6 +566,59 @@ export function StudioApp() {
     setExpansions(nextExpansions);
   }
 
+  async function beginTopologyDraft() {
+    if (!data || data.edit_session.mode !== "visual") return;
+    await mutate(
+      "/api/draft/session/begin",
+      { base_document_digest: data.edit_session.current_document_digest },
+      tx("Topology draft unlocked", "拓扑草稿已解锁"),
+    );
+  }
+
+  async function discardTopologyDraft() {
+    if (!window.confirm(tx(
+      "Discard all topology changes made in this edit session?",
+      "放弃本次编辑会话中的全部拓扑更改？",
+    ))) return;
+    await mutate(
+      "/api/draft/session/discard",
+      {},
+      tx("Topology draft discarded", "拓扑草稿已放弃"),
+    );
+  }
+
+  async function submitTopologyDraft() {
+    if (codegenRequested && !generateDraftCodePreview()) return;
+    const state = await mutate(
+      "/api/draft/session/submit",
+      {},
+      tx("Topology draft is review-ready", "拓扑草稿已进入待评审状态"),
+    );
+    if (state) setBottomTab(state.transaction ? "diff" : "problems");
+  }
+
+  function generateDraftCodePreview(): boolean {
+    if (!data) return false;
+    setCodegenRequested(true);
+    const result = compileStudioDraftPreview(data.draft);
+    setCodegenPreview(result.preview);
+    const preview = result.preview;
+    if (!preview) {
+      const codes = result.diagnostics.map((item) => item.code).join(", ");
+      setActivity((items) => [
+        `${tx("Code generation blocked", "代码生成被阻止")} · ${codes}`,
+        ...items,
+      ].slice(0, 20));
+      setBottomTab("problems");
+      return false;
+    }
+    setActivity((items) => [
+      `${tx("Generated reviewed code preview", "已生成受审代码预览")} · ${Object.keys(preview.sourceMap).length} bindings`,
+      ...items,
+    ].slice(0, 20));
+    return true;
+  }
+
   function activateNavigationRow(item: NavigationNode) {
     chooseCanonical(item.canonical_ids, item.id);
     if (item.child_count > 0 && !expansionsRef.current[projection].has(item.id)) {
@@ -536,34 +629,19 @@ export function StudioApp() {
 
   async function createDraftNode() {
     const semanticName = draftName.trim();
-    const nodeType = draftType.trim();
-    if (!semanticName || !nodeType) return;
+    const definition = resolveDefinitionId(draftType);
+    if (!semanticName || !definition) return;
     const nodeId = patchId("draft-node").replace("patch:", "draft:");
     const state = await mutate(
       "/api/proposal/node",
       {
-        node: {
-          node_id: nodeId,
-          semantic_name: semanticName,
-          framework: data?.project.framework ?? "pytorch",
-          node_type: nodeType,
-          parent_id: selectedCanonicalIds[0] ?? null,
-          parameters: {},
-          ports: [
-            {
-              port_id: `${nodeId}.input`,
-              name: "input",
-              direction: "input",
-              role: "main",
-            },
-            {
-              port_id: `${nodeId}.output`,
-              name: "output",
-              direction: "output",
-              role: "main",
-            },
-          ],
-        },
+        node: materializeDraftNode(
+          definition,
+          nodeId,
+          semanticName,
+          data?.project.framework ?? "pytorch",
+          selectedCanonicalIds[0] ?? null,
+        ),
       },
       `${tx("Created draft", "已创建草稿")} · ${semanticName}`,
     );
@@ -583,6 +661,19 @@ export function StudioApp() {
     );
   }
 
+  async function updateDraftNodeParameters(
+    nodeId: string,
+    parameters: Record<string, unknown>,
+  ): Promise<boolean> {
+    const state = await mutate(
+      "/api/draft/node/parameters",
+      { node_id: nodeId, parameters },
+      `${tx("Updated draft parameters", "已更新草稿参数")} · ${nodeId}`,
+    );
+    if (state) setBottomTab("problems");
+    return Boolean(state);
+  }
+
   function openDraftEdgeDialog() {
     setDraftEdgeSource((current) => current || draftSourcePorts[0]?.port_id || "");
     setDraftEdgeTarget((current) => current || draftTargetPorts[0]?.port_id || "");
@@ -600,6 +691,9 @@ export function StudioApp() {
           source_port_id: draftEdgeSource,
           target_port_id: draftEdgeTarget,
           policy: draftEdgePolicy,
+          relation: draftEdgePolicy === "add-residual"
+            ? "residual"
+            : draftEdgePolicy === "concat" ? "concat" : "main",
           parameters: {},
         },
       },
@@ -877,6 +971,22 @@ export function StudioApp() {
   const proofs = data.draft.proofs;
   const proofCounts = proofs.reduce<Record<string, number>>((counts, proof) => ({ ...counts, [proof.status]: (counts[proof.status] ?? 0) + 1 }), {});
   const writebackBlocked = data.draft.writeback_summary.eligibility === "blocked" && data.draft.writeback_summary.blocking_intent_ids.length > 0;
+  const draftBlockingCount = draftAnalysis?.diagnostics.filter((item) => item.severity === "blocking").length ?? 0;
+  const problemItems = [
+    ...data.diagnostics,
+    ...data.draft.proofs.map((proof) => ({
+      code: proof.reason_codes[0] ?? proof.status.toUpperCase(),
+      severity: proof.status,
+      message: proof.message,
+      target_ids: proof.affected_subject_ids,
+    })),
+    ...(draftAnalysis?.diagnostics.map((item) => ({
+      code: item.code,
+      severity: item.severity,
+      message: item.message,
+      target_ids: item.targetIds,
+    })) ?? []),
+  ];
   const latestValidation = data.validation_runs.at(-1);
   const modeLabels: Record<Mode, string> = {
     explore: tx("Explore", "浏览"),
@@ -948,7 +1058,7 @@ export function StudioApp() {
     <LanguageContext.Provider value={{ locale, tx }}>
     <InspectorLanguageContext.Provider value={{ tx }}>
     <div
-      className={`${dark ? "studio dark" : "studio"}${data.transaction ? " has-transaction" : ""}${panelResize ? ` resizing-panel resizing-${panelResize.edge}` : ""}`}
+      className={`${dark ? "studio dark" : "studio"}${data.transaction ? " has-transaction" : ""}${data.edit_session.mode === "contract-maintenance" ? " contract-active" : ""}${panelResize ? ` resizing-panel resizing-${panelResize.edge}` : ""}`}
       style={shellLayoutStyle(panelSizes, bottomTab === "source")}
     >
       <TopBar
@@ -1015,18 +1125,30 @@ export function StudioApp() {
             })}
           </div>
           <section className="draft-panel">
-            <header><span><Braces size={13} />{tx("Draft graph", "草稿图")}</span><div className="draft-actions"><button className="icon-button" disabled={!draftSourcePorts.length || !draftTargetPorts.length} title={tx("Create draft connection", "创建草稿连接")} aria-label={tx("Create draft connection", "创建草稿连接")} onClick={openDraftEdgeDialog}><Link2 size={13} /></button><button className="icon-button" title={tx("Create draft node", "创建草稿节点")} aria-label={tx("Create draft node", "创建草稿节点")} onClick={() => setDraftDialog(true)}><Plus size={13} /></button></div></header>
+            <header><span><Braces size={13} />{tx("Draft graph", "草稿图")}{draftAnalysis && <i className={draftBlockingCount ? "blocking" : "known"}>{draftBlockingCount ? `${draftBlockingCount} blocking` : "analyzed"}</i>}</span><div className="draft-actions">
+              {topologyEditing ? <>
+                <button className="icon-button" disabled={!draftAnalysis || draftBlockingCount > 0} title={tx("Submit topology draft", "提交拓扑草稿")} aria-label={tx("Submit topology draft", "提交拓扑草稿")} onClick={() => void submitTopologyDraft()}><ShieldCheck size={13} /></button>
+                <button className="icon-button" disabled={!data.draft.nodes.length} title={tx("Generate PyTorch code preview", "生成 PyTorch 代码预览")} aria-label={tx("Generate PyTorch code preview", "生成 PyTorch 代码预览")} onClick={generateDraftCodePreview}><FileCode2 size={13} /></button>
+                <button className="icon-button" title={tx("Discard topology draft", "放弃拓扑草稿")} aria-label={tx("Discard topology draft", "放弃拓扑草稿")} onClick={() => void discardTopologyDraft()}><X size={13} /></button>
+              </> : <button className="icon-button" disabled={data.edit_session.mode !== "visual"} title={data.edit_session.mode === "contract-maintenance" ? tx("Close contract maintenance before topology editing", "请先结束契约维护再编辑拓扑") : tx("Unlock topology draft", "解锁拓扑草稿")} aria-label={tx("Unlock topology draft", "解锁拓扑草稿")} onClick={() => void beginTopologyDraft()}><LockKeyhole size={13} /></button>}
+              <button className="icon-button" title={tx("Module contract maintenance", "模块契约维护")} aria-label={tx("Module contract maintenance", "模块契约维护")} onClick={() => setContractDialog(true)}><Settings2 size={13} /></button>
+              <button className="icon-button" disabled={!topologyEditing || !draftSourcePorts.length || !draftTargetPorts.length} title={tx("Create draft connection", "创建草稿连接")} aria-label={tx("Create draft connection", "创建草稿连接")} onClick={openDraftEdgeDialog}><Link2 size={13} /></button>
+              <button className="icon-button" disabled={!topologyEditing} title={tx("Create draft node", "创建草稿节点")} aria-label={tx("Create draft node", "创建草稿节点")} onClick={() => setDraftDialog(true)}><Plus size={13} /></button>
+            </div></header>
             {data.draft.nodes.length || data.draft.edges.length || canonicalDeleteIntents.length ? <div className="draft-list">{data.draft.nodes.map((node) => {
               const proof = data.draft.proofs.find((item) => item.affected_subject_ids.includes(node.node_id));
-              return <div className="draft-item" key={node.node_id}><Box size={13} /><span><b>{node.semantic_name}</b><small>{node.node_type}</small></span><i className={proof?.status}>{proof?.status ?? data.draft.lowering_status}</i><button className="icon-button" title={tx("Delete draft node", "删除草稿节点")} aria-label={tx("Delete draft node", "删除草稿节点")} onClick={() => void deleteDraftNode(node.node_id)}><Trash2 size={12} /></button></div>;
+              const outputShapes = Object.entries(draftAnalysis?.nodeShapes[node.node_id] ?? {}).map(([portId, value]) => `${portId} ${analyzedValueLabel(value)}`).join(" · ");
+              const cost = draftAnalysis?.nodeCosts[node.node_id];
+              return <div className="draft-item" key={node.node_id}><Box size={13} /><span><b>{node.semantic_name}</b><small title={cost?.flops ? `FLOPs ${cost.flops}` : undefined}>{node.node_type}{outputShapes ? ` · ${outputShapes}` : ""}</small></span><i className={proof?.status}>{proof?.status ?? data.draft.lowering_status}</i><div className="draft-item-actions"><button className="icon-button" disabled={!topologyEditing || !node.definition_ref} title={tx("Edit draft parameters", "编辑草稿参数")} aria-label={tx("Edit draft parameters", "编辑草稿参数")} onClick={() => setDraftParameterNodeId(node.node_id)}><Settings2 size={12} /></button><button className="icon-button" disabled={!topologyEditing} title={tx("Delete draft node", "删除草稿节点")} aria-label={tx("Delete draft node", "删除草稿节点")} onClick={() => void deleteDraftNode(node.node_id)}><Trash2 size={12} /></button></div></div>;
             })}{data.draft.edges.map((edge) => {
               const proof = data.draft.proofs.find((item) => item.affected_subject_ids.includes(edge.edge_id));
-              return <div className="draft-item draft-edge" key={edge.edge_id}><Link2 size={13} /><span><b>{draftPortLabels.get(edge.source_port_id) ?? edge.source_port_id}</b><small>{tx("to", "至")} {draftPortLabels.get(edge.target_port_id) ?? edge.target_port_id} · {edge.policy}</small></span><i className={proof?.status}>{proof?.status ?? data.draft.lowering_status}</i><button className="icon-button" title={tx("Delete draft connection", "删除草稿连接")} aria-label={tx("Delete draft connection", "删除草稿连接")} onClick={() => void deleteDraftEdge(edge.edge_id)}><Trash2 size={12} /></button></div>;
+              return <div className="draft-item draft-edge" key={edge.edge_id}><Link2 size={13} /><span><b>{draftPortLabels.get(edge.source_port_id) ?? edge.source_port_id}</b><small>{tx("to", "至")} {draftPortLabels.get(edge.target_port_id) ?? edge.target_port_id} · {edge.policy}</small></span><i className={proof?.status}>{proof?.status ?? data.draft.lowering_status}</i><button className="icon-button" disabled={!topologyEditing} title={tx("Delete draft connection", "删除草稿连接")} aria-label={tx("Delete draft connection", "删除草稿连接")} onClick={() => void deleteDraftEdge(edge.edge_id)}><Trash2 size={12} /></button></div>;
             })}{canonicalDeleteIntents.map((intent) => {
               const proof = data.draft.proofs.find((item) => item.intent_id === intent.intent_id);
               const impact = intent.user_input.impact as CanonicalDeleteImpact | undefined;
-              return <div className="draft-item draft-delete" key={intent.intent_id}><Trash2 size={13} /><span><b>{tx("Delete", "删除")} · {impact?.semantic_name ?? intent.target_ids[0]}</b><small>{intent.expected_delta?.removed_edges.length ?? 0} {tx("edges", "条边")} · {intent.expected_delta?.removed_tensors.length ?? 0} Tensor</small></span><i className={proof?.status}>{proof?.status ?? data.draft.lowering_status}</i><button className="icon-button" title={tx("Discard delete intent", "丢弃删除意图")} aria-label={tx("Discard delete intent", "丢弃删除意图")} onClick={() => void discardCanonicalDeleteIntent(intent.intent_id)}><X size={12} /></button></div>;
+              return <div className="draft-item draft-delete" key={intent.intent_id}><Trash2 size={13} /><span><b>{tx("Delete", "删除")} · {impact?.semantic_name ?? intent.target_ids[0]}</b><small>{intent.expected_delta?.removed_edges.length ?? 0} {tx("edges", "条边")} · {intent.expected_delta?.removed_tensors.length ?? 0} Tensor</small></span><i className={proof?.status}>{proof?.status ?? data.draft.lowering_status}</i><button className="icon-button" disabled={!topologyEditing} title={tx("Discard delete intent", "丢弃删除意图")} aria-label={tx("Discard delete intent", "丢弃删除意图")} onClick={() => void discardCanonicalDeleteIntent(intent.intent_id)}><X size={12} /></button></div>;
             })}</div> : <div className="draft-empty">{tx("No draft changes", "没有草稿变更")}</div>}
+            {codegenPreview && <div className="codegen-preview"><header><span><FileCode2 size={12} />PyTorch Draft</span><button className="icon-button" title={tx("Close code preview", "关闭代码预览")} aria-label={tx("Close code preview", "关闭代码预览")} onClick={() => setCodegenPreview(null)}><X size={11} /></button></header><pre>{codegenPreview.source}</pre></div>}
           </section>
         </NavigationPanel>
 
@@ -1102,7 +1224,7 @@ export function StudioApp() {
         }}
         onTabChange={(tab) => setBottomTab(tab as typeof bottomTab)}
       >
-          {bottomTab === "problems" && ([...data.diagnostics, ...data.draft.proofs.map((proof) => ({ code: proof.reason_codes[0] ?? proof.status.toUpperCase(), severity: proof.status, message: proof.message, target_ids: proof.affected_subject_ids }))].length ? [...data.diagnostics, ...data.draft.proofs.map((proof) => ({ code: proof.reason_codes[0] ?? proof.status.toUpperCase(), severity: proof.status, message: proof.message, target_ids: proof.affected_subject_ids }))].map((item, index) => <button key={`${item.code}-${index}`} onClick={() => chooseCanonical(item.target_ids)}><AlertTriangle size={13} /><b>{item.severity}</b><span>{item.message}</span></button>) : <div className="ok-line"><CircleDot size={13} /> {tx("No geometry or writeback problems", "没有几何或回写问题")}</div>)}
+          {bottomTab === "problems" && (problemItems.length ? problemItems.map((item, index) => <button key={`${item.code}-${index}`} onClick={() => chooseCanonical(item.target_ids)}><AlertTriangle size={13} /><b>{item.severity}</b><span>{item.message}</span></button>) : <div className="ok-line"><CircleDot size={13} /> {tx("No geometry or writeback problems", "没有几何或回写问题")}</div>)}
           {bottomTab === "source" && <SourceWorkspacePanel workspace={data.source_workspace} transaction={data.transaction} sessionNonce={data.session_nonce} tx={tx} onState={setData} onActivity={(message) => setActivity((items) => [message, ...items].slice(0, 20))} onShowDiff={() => setBottomTab("diff")} />}
           {bottomTab === "diff" && (data.transaction ? <TransactionReview transaction={data.transaction} writebackBlocked={writebackBlocked} tx={tx} onCommit={commitSourceTransaction} onDiscard={async () => { await mutate("/api/transaction/discard", {}, tx("Discarded source transaction", "已放弃源码事务")); }} /> : <div className="ok-line"><LockKeyhole size={13} /> {tx(`Source digest ${sourceDigest} unchanged`, `源码摘要 ${sourceDigest} 未改变`)}</div>)}
           {bottomTab === "validation" && (latestValidation ? <div className="gate-list">{latestValidation.gate_results.map((gate) => <span key={gate.gate} className={gate.status}>{gate.status} · {gate.gate} · {gate.message}</span>)}</div> : <div className="validation-line"><CircleDot size={13} /> {tx("Validation has not been run for this fingerprint", "尚未为此指纹运行验证")}</div>)}
@@ -1152,6 +1274,9 @@ export function StudioApp() {
         setDraftType={setDraftType}
         selectedCanonicalIds={selectedCanonicalIds}
         createDraftNode={() => void createDraftNode()}
+        draftParameterNode={data.draft.nodes.find((node) => node.node_id === draftParameterNodeId) ?? null}
+        closeDraftParameters={() => setDraftParameterNodeId(null)}
+        updateDraftNodeParameters={updateDraftNodeParameters}
         draftEdgeDialog={draftEdgeDialog}
         setDraftEdgeDialog={setDraftEdgeDialog}
         draftEdgeSource={draftEdgeSource}
@@ -1167,6 +1292,14 @@ export function StudioApp() {
         deleteImpact={deleteImpact}
         setDeleteImpact={setDeleteImpact}
         createCanonicalDeleteIntent={() => void createCanonicalDeleteIntent()}
+      />
+      <ContractMaintenanceDialog
+        open={contractDialog}
+        state={data}
+        tx={tx}
+        onClose={() => setContractDialog(false)}
+        onState={acceptStudioState}
+        onActivity={(message) => setActivity((items) => [message, ...items].slice(0, 20))}
       />
     </div>
     </InspectorLanguageContext.Provider>

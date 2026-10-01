@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from archcanvas_core.models import SCHEMA_MODELS
+from archcanvas_core.schema_registry import SCHEMA_MODELS
 
 
 def schema_text(model: type) -> str:

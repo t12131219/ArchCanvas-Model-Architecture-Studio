@@ -582,7 +582,8 @@
         "operation": {
           "enum": [
             "replace_activation",
-            "insert_layer_norm"
+            "insert_layer_norm",
+            "insert_registered_module"
           ],
           "title": "Operation",
           "type": "string"
@@ -667,6 +668,151 @@
       "title": "ShapeDelta",
       "type": "object"
     },
+    "SourceAnchor": {
+      "additionalProperties": false,
+      "properties": {
+        "blob_digest": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Blob Digest",
+          "type": "string"
+        },
+        "byte_length": {
+          "minimum": 0,
+          "title": "Byte Length",
+          "type": "integer"
+        },
+        "byte_start": {
+          "minimum": 0,
+          "title": "Byte Start",
+          "type": "integer"
+        },
+        "cst_node_kind": {
+          "minLength": 1,
+          "title": "Cst Node Kind",
+          "type": "string"
+        },
+        "line_span": {
+          "$ref": "#/$defs/SourceSpan"
+        },
+        "logical_path": {
+          "title": "Logical Path",
+          "type": "string"
+        },
+        "parent_fingerprint": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Fingerprint"
+        },
+        "qualified_symbol": {
+          "minLength": 1,
+          "title": "Qualified Symbol",
+          "type": "string"
+        },
+        "semantic_role": {
+          "minLength": 1,
+          "title": "Semantic Role",
+          "type": "string"
+        },
+        "subtree_fingerprint": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Subtree Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "logical_path",
+        "blob_digest",
+        "byte_start",
+        "byte_length",
+        "line_span",
+        "qualified_symbol",
+        "cst_node_kind",
+        "semantic_role",
+        "subtree_fingerprint"
+      ],
+      "title": "SourceAnchor",
+      "type": "object"
+    },
+    "SourceSpan": {
+      "additionalProperties": false,
+      "properties": {
+        "end_column": {
+          "default": 0,
+          "minimum": 0,
+          "title": "End Column",
+          "type": "integer"
+        },
+        "end_line": {
+          "minimum": 1,
+          "title": "End Line",
+          "type": "integer"
+        },
+        "start_column": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Start Column",
+          "type": "integer"
+        },
+        "start_line": {
+          "minimum": 1,
+          "title": "Start Line",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start_line",
+        "end_line"
+      ],
+      "title": "SourceSpan",
+      "type": "object"
+    },
+    "TransactionBaseBlob": {
+      "additionalProperties": false,
+      "properties": {
+        "blob_ref": {
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "title": "Blob Ref",
+          "type": "string"
+        },
+        "logical_path": {
+          "minLength": 1,
+          "title": "Logical Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size": {
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        },
+        "working_path": {
+          "minLength": 1,
+          "title": "Working Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "logical_path",
+        "working_path",
+        "sha256",
+        "blob_ref",
+        "size"
+      ],
+      "title": "TransactionBaseBlob",
+      "type": "object"
+    },
     "TransactionState": {
       "enum": [
         "draft",
@@ -711,10 +857,69 @@
       "title": "Artifact Path",
       "type": "string"
     },
+    "base_analysis_input_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Base Analysis Input Digest"
+    },
+    "base_exact_ir_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Base Exact Ir Digest"
+    },
+    "base_registry_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Base Registry Digest"
+    },
     "base_revision": {
       "minLength": 1,
       "title": "Base Revision",
       "type": "string"
+    },
+    "base_source_blobs": {
+      "items": {
+        "$ref": "#/$defs/TransactionBaseBlob"
+      },
+      "title": "Base Source Blobs",
+      "type": "array"
+    },
+    "base_source_corpus_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Base Source Corpus Digest"
     },
     "created_at": {
       "minLength": 1,
@@ -773,6 +978,27 @@
       "title": "Original Project Root",
       "type": "string"
     },
+    "proposal_correlation_id": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Proposal Correlation Id"
+    },
+    "realized_subject_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Realized Subject Ids",
+      "type": "array"
+    },
     "reanalysis_route": {
       "default": "analyze_with_adapter",
       "title": "Reanalysis Route",
@@ -797,6 +1023,17 @@
       "default": "1.0",
       "title": "Schema Version",
       "type": "string"
+    },
+    "source_anchor": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SourceAnchor"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "source_diff": {
       "title": "Source Diff",

@@ -1,5 +1,7 @@
 """Versioned protocol models and deterministic validation for ArchCanvas."""
 
+from .architecture_v2 import ExactArchitectureIRV2, PythonSemanticGraph
+from .builtin_registry import BuiltinModuleRegistry, builtin_registry_bundle
 from .models import (
     AgentProposal,
     AnalysisJob,
@@ -18,6 +20,7 @@ from .models import (
     PatternRelationConstraint,
     PatternTemplateRule,
     ProjectSession,
+    ProposalReconciliationReceipt,
     ProposedConnection,
     PublicationHierarchy,
     PublicationView,
@@ -36,34 +39,55 @@ from .models import (
     VisualTemplateManifest,
     VisualTemplateSlot,
 )
+from .module_contract import DefinitionRef, ModuleDefinition, ModuleRegistryBundle, PortContract
+from .source_v2 import (
+    AnalysisInputManifest,
+    ProjectManifest,
+    SourceAnchor,
+    SourceBlobRef,
+    SourceCorpus,
+)
 
 __all__ = [
     "AgentProposal",
+    "AnalysisInputManifest",
     "AnalysisJob",
     "AnalysisRequest",
     "ArchitectureIR",
     "ArtifactSet",
+    "BuiltinModuleRegistry",
     "CanvasDocument",
     "CommandReceipt",
+    "DefinitionRef",
     "DraftGraphDocument",
     "EditProofStatus",
     "EditableCapabilityManifest",
     "EvidenceRecord",
+    "ExactArchitectureIRV2",
     "FrameworkFormCapability",
+    "ModuleDefinition",
+    "ModuleRegistryBundle",
     "PatchBatch",
     "PatternCapture",
     "PatternRelationConstraint",
     "PatternTemplateRule",
+    "PortContract",
+    "ProjectManifest",
     "ProjectSession",
+    "ProposalReconciliationReceipt",
     "ProposedConnection",
     "PublicationHierarchy",
     "PublicationView",
+    "PythonSemanticGraph",
     "RuntimeCapabilityReport",
     "RuntimeInputSpec",
     "RuntimeTrace",
     "SearchSubject",
     "SemanticParameterPatch",
     "SemanticStructuralPatch",
+    "SourceAnchor",
+    "SourceBlobRef",
+    "SourceCorpus",
     "SourceSnapshot",
     "SourceTransaction",
     "TemplateLayoutConstraint",
@@ -72,4 +96,5 @@ __all__ = [
     "VisualTemplateBinding",
     "VisualTemplateManifest",
     "VisualTemplateSlot",
+    "builtin_registry_bundle",
 ]
