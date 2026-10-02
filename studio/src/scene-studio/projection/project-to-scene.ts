@@ -11,6 +11,7 @@ import type {
 import { resolveDefinitionRef } from "../../module-registry/registry";
 import { resolveViewPreset } from "../domain/view-preset";
 import type { EdgeRelation, LabEdge, LabNode, NodeShape } from "../types";
+import { projectEncoderDecoderProfile } from "./encoder-decoder-profile";
 
 interface ProjectedNode extends ExactNode {
   projected_canonical_node_ids?: string[];
@@ -240,6 +241,79 @@ function layoutNodes(
   edges: ProjectedEdge[],
 ): { nodes: LabNode[]; width: number; height: number } {
   const preset = resolveViewPreset(presetId);
+  const usesProfileBounds = nodes.length > 0 && nodes.every((node) => (
+    typeof node.attributes.profile_x === "number"
+    && typeof node.attributes.profile_y === "number"
+    && typeof node.attributes.profile_width === "number"
+    && typeof node.attributes.profile_height === "number"
+  ));
+  if (usesProfileBounds) {
+    const result = nodes.map((node) => {
+      const sceneNodeId = `${presetId}:node:${node.node_id}`;
+      const hierarchyNodeId = String(node.attributes.hierarchy_node_id ?? "") || undefined;
+      const storedPosition = state.view_state?.node_positions?.[sceneNodeId]
+        ?? (hierarchyNodeId ? state.view_state?.node_positions?.[`view:${hierarchyNodeId}`] : undefined)
+        ?? state.view_state?.node_positions?.[`view:${node.node_id}`]
+        ?? state.view_state?.node_positions?.[node.node_id];
+      const storedSize = state.view_state?.node_sizes?.[sceneNodeId]
+        ?? (hierarchyNodeId ? state.view_state?.node_sizes?.[`view:${hierarchyNodeId}`] : undefined)
+        ?? state.view_state?.node_sizes?.[`view:${node.node_id}`]
+        ?? state.view_state?.node_sizes?.[node.node_id];
+      const profileSlot = String(node.attributes.profile_slot ?? "");
+      const layoutRank = ({
+        "source-input": 0,
+        "target-input": 0,
+        "source-embedding": 1,
+        "source-position": 1,
+        "target-embedding": 1,
+        "target-position": 1,
+        "source-add": 2,
+        "target-add": 2,
+        "source-mask": 3,
+        encoder: 3,
+        "target-mask": 3,
+        decoder: 3,
+        memory: 4,
+        generator: 4,
+        softmax: 5,
+        output: 6,
+      } as Record<string, number>)[profileSlot];
+      return {
+        scene_node_id: sceneNodeId,
+        bounds: {
+          x: storedPosition?.x ?? Number(node.attributes.profile_x),
+          y: storedPosition?.y ?? Number(node.attributes.profile_y),
+          width: storedSize?.width ?? Number(node.attributes.profile_width),
+          height: storedSize?.height ?? Number(node.attributes.profile_height),
+        },
+        shape: String(node.attributes.profile_shape ?? "operation") as NodeShape,
+        label: node.semantic_name,
+        secondary_label: String(node.attributes.profile_secondary ?? node.kind),
+        detail_kind: node.attributes.profile_detail_kind
+          ? String(node.attributes.profile_detail_kind) as LabNode["detail_kind"]
+          : undefined,
+        layout_lane: ["source-input", "source-embedding", "source-position", "source-add", "source-mask", "encoder-call", "encoder", "memory"].includes(profileSlot)
+          ? "encoder"
+          : "decoder",
+        layout_rank: layoutRank,
+        paper_tone: String(node.attributes.profile_paper_tone ?? "neutral") as NonNullable<LabNode["paper_tone"]>,
+        canonical_node_ids: canonicalIdsFor(node),
+        evidence_ids: unique(node.evidence_ids),
+        source_anchor_ids: unique(node.evidence_ids),
+        input_ports: node.input_ports,
+        output_ports: node.output_ports,
+        fidelity: node.evidence_ids.length ? "exact" as const : "schematic" as const,
+        hierarchy_node_id: hierarchyNodeId,
+        hierarchy_expandable: Number(node.attributes.child_count ?? 0) > 0,
+        parent_hierarchy_node_id: node.parent_id ?? undefined,
+      };
+    });
+    return {
+      nodes: result,
+      width: preset.templateProfile === "paper" ? 1240 : 1690,
+      height: preset.templateProfile === "paper" ? 1090 : 790,
+    };
+  }
   const ranks = topologicalRanks(nodes.map((node) => node.node_id), edges);
   const grouped = new Map<number, ExactNode[]>();
   for (const node of nodes) {
@@ -322,7 +396,7 @@ export function projectToScene(state: StudioStatePayload, requestedPresetId: Vie
   const preset = resolveViewPreset(presetId);
   const canonicalNodes = [...state.architecture.nodes].sort((left, right) => left.node_id.localeCompare(right.node_id));
   const canonicalEdges = [...state.architecture.edges].sort((left, right) => left.edge_id.localeCompare(right.edge_id));
-  const frontier = hierarchyFrontier(state);
+  const frontier = projectEncoderDecoderProfile(state, presetId) ?? hierarchyFrontier(state);
   const projectedNodes = [...frontier.nodes].sort((left, right) => left.node_id.localeCompare(right.node_id));
   const projectedEdges = [...frontier.edges].sort((left, right) => left.edge_id.localeCompare(right.edge_id));
   const layout = layoutNodes(state, presetId, projectedNodes, projectedEdges);
@@ -334,13 +408,19 @@ export function projectToScene(state: StudioStatePayload, requestedPresetId: Vie
     const source = sceneIdByProjected.get(edge.producer_id) ?? sceneIdByCanonical.get(edge.producer_id);
     const target = sceneIdByProjected.get(edge.consumer_id) ?? sceneIdByCanonical.get(edge.consumer_id);
     if (!source || !target || source === target) return [];
+    const relation = edgeRelation(edge);
+    const profileEdge = edge.edge_id.startsWith("profile:");
     return [{
       scene_edge_id: `${presetId}:edge:${edge.edge_id}`,
       source_scene_node_id: source,
       target_scene_node_id: target,
-      relation: edgeRelation(edge),
-      label: edge.role || edge.edge_type,
-      target_port_role: edge.consumer_port,
+      relation,
+      label: profileEdge && relation === "flow" ? "" : edge.role || edge.edge_type,
+      target_port_role: profileEdge
+        ? relation === "condition" ? "mask"
+          : relation === "memory" ? "memory"
+            : undefined
+        : edge.consumer_port,
       canonical_edge_ids: canonicalEdgeIdsFor(edge),
       tensor_ids: tensorIdsFor(edge),
       evidence_ids: unique(edge.evidence_ids),

@@ -1,4 +1,4 @@
-import type { Point } from "./types";
+import type { Bounds, Point } from "./types";
 
 export interface CanvasCamera extends Point {
   zoom: number;
@@ -6,6 +6,9 @@ export interface CanvasCamera extends Point {
 
 export const MIN_CANVAS_ZOOM = 0.08;
 export const MAX_CANVAS_ZOOM = 4;
+export const LARGE_SCENE_NODE_THRESHOLD = 48;
+export const LARGE_SCENE_EDGE_THRESHOLD = 72;
+export const VIEWPORT_DETAIL_OVERSCAN = 180;
 const BASE_GRID_SPACING = 28;
 const MIN_SCREEN_GRID_SPACING = 18;
 const MAX_SCREEN_GRID_SPACING = 36;
@@ -54,4 +57,37 @@ export function fitCanvasCamera(
     y: (viewport.height - world.height * zoom) / 2 - (world.y ?? 0) * zoom,
     zoom,
   };
+}
+
+export function canvasWorldViewport(
+  camera: CanvasCamera,
+  viewport: Pick<DOMRect, "width" | "height">,
+  overscan = VIEWPORT_DETAIL_OVERSCAN,
+): Bounds {
+  const zoom = clampCanvasZoom(camera.zoom);
+  const padding = Math.max(0, overscan);
+  return {
+    x: (-camera.x - padding) / zoom,
+    y: (-camera.y - padding) / zoom,
+    width: (Math.max(0, viewport.width) + padding * 2) / zoom,
+    height: (Math.max(0, viewport.height) + padding * 2) / zoom,
+  };
+}
+
+export function boundsIntersect(first: Bounds, second: Bounds): boolean {
+  return first.x <= second.x + second.width
+    && first.x + first.width >= second.x
+    && first.y <= second.y + second.height
+    && first.y + first.height >= second.y;
+}
+
+export function pointInBounds(point: Point, bounds: Bounds): boolean {
+  return point.x >= bounds.x
+    && point.x <= bounds.x + bounds.width
+    && point.y >= bounds.y
+    && point.y <= bounds.y + bounds.height;
+}
+
+export function shouldVirtualizeSceneDetails(nodeCount: number, edgeCount: number): boolean {
+  return nodeCount >= LARGE_SCENE_NODE_THRESHOLD || edgeCount >= LARGE_SCENE_EDGE_THRESHOLD;
 }

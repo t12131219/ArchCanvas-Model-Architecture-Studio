@@ -434,6 +434,32 @@ export interface StudioStatePayload {
     max_depth?: number;
     nodes: HierarchyFact[];
   };
+  navigation?: {
+    active_projection: "module" | "source";
+    projections: Record<"module" | "source", {
+      projection_id: "module" | "source";
+      label: string;
+      description: string;
+      nodes: Array<{
+        id: string;
+        parent_id: string | null;
+        kind: string;
+        label: string;
+        depth: number;
+        relation: string;
+        canonical_ids: string[];
+        evidence_ids: string[];
+        path?: string | null;
+        span?: { start_line: number; end_line: number; start_column?: number; end_column?: number } | null;
+        reference: boolean;
+        secondary_label?: string | null;
+        binding_status: string;
+        child_count: number;
+        sibling_index?: number;
+        sibling_count?: number;
+      }>;
+    }>;
+  };
   evidence: Array<{
     evidence_id: string;
     kind: string;
@@ -464,6 +490,8 @@ export interface StudioStatePayload {
     node_sizes?: Record<string, { width: number; height: number }>;
     cameras?: Record<string, { x: number; y: number; zoom: number }>;
     module_expansion?: string[];
+    source_expansion?: string[];
+    navigation_view?: "module" | "source";
     pinned_node_ids?: string[];
     theme?: "paper-light" | "studio-dark";
   };

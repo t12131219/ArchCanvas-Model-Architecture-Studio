@@ -255,14 +255,16 @@ def _legacy_adapter_capabilities() -> list[FrameworkAdapterCapability]:
                     static="partial",
                     runtime="experimental" if jax_version else "unavailable",
                     parameter_transaction="partial",
-                    structural_transaction="unavailable",
+                    structural_transaction="partial",
                     artifact_commit="verified",
                     supported_targets=["cpu"] if jax_version else [],
                     verified_fixtures=[
                         "cross_framework/jax_function",
                         "cross_framework/jax_prng",
                     ],
-                    limitations=["No pure-function structural source lowering is registered."],
+                    limitations=[
+                        "Structural lowering is limited to exact assigned activations with an explicit jax namespace."
+                    ],
                 ),
                 FrameworkFormCapability(
                     form_id="form:flax-module",

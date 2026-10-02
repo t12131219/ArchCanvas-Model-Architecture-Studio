@@ -3144,6 +3144,18 @@ def test_studio_server_persists_patch_undo_redo_and_exports_svg(
         state = json.loads(urlopen(f"{base_url}/api/state").read())
         assert state["document"]["source_digest"] == bundle.document.source_digest
         assert {"scenes", "specs", "routing"}.isdisjoint(state)
+        encoded_job = AnalysisJob(
+            job_id="job:encoded-path",
+            project_id=bundle.project_session.project_id,
+            generation=bundle.project_session.generation,
+            input_fingerprint="0" * 64,
+            profile="static-analysis",
+            state=JobState.SUCCEEDED,
+            progress=1,
+        )
+        server.jobs[encoded_job.job_id] = encoded_job
+        loaded_job = json.loads(urlopen(f"{base_url}/api/jobs/job%3Aencoded-path").read())
+        assert loaded_job["job_id"] == encoded_job.job_id
         for endpoint in (
             "/api/layout-mode",
             "/api/layout-candidates",

@@ -203,7 +203,7 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                 self._error(error)
             return
         if parsed.path.startswith("/api/jobs/"):
-            job_id = parsed.path.removeprefix("/api/jobs/")
+            job_id = unquote(parsed.path.removeprefix("/api/jobs/"))
             with self.server.lock:
                 job = self.server.jobs.get(job_id)
                 if job is None:
@@ -601,7 +601,7 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                     self._json(job, HTTPStatus.ACCEPTED)
                     return
                 elif self.path.startswith("/api/jobs/") and self.path.endswith("/cancel"):
-                    job_id = self.path[len("/api/jobs/") : -len("/cancel")]
+                    job_id = unquote(self.path[len("/api/jobs/") : -len("/cancel")])
                     job = self.server.jobs.get(job_id)
                     if job is None:
                         self.send_error(HTTPStatus.NOT_FOUND)

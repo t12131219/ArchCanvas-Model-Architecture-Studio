@@ -1174,10 +1174,13 @@ class StudioBundle:
             )
         return diagnostics
 
-    def _registered_insertion_patch(self) -> SemanticStructuralPatch | None:
-        if len(self.draft.nodes) != 1 or len(self.draft.edges) != 2:
+    def _registered_insertion_patch(
+        self, draft: DraftGraphDocument | None = None
+    ) -> SemanticStructuralPatch | None:
+        candidate = draft or self.draft
+        if len(candidate.nodes) != 1 or len(candidate.edges) != 2:
             return None
-        node = self.draft.nodes[0]
+        node = candidate.nodes[0]
         if node.definition_ref is None:
             return None
         definition = MODULE_REGISTRY.resolve_ref(
@@ -1192,10 +1195,10 @@ class StudioBundle:
         if len(inputs) != 1 or len(outputs) != 1:
             return None
         incoming = [
-            edge for edge in self.draft.edges if edge.target_port_id == inputs[0].port_id
+            edge for edge in candidate.edges if edge.target_port_id == inputs[0].port_id
         ]
         outgoing = [
-            edge for edge in self.draft.edges if edge.source_port_id == outputs[0].port_id
+            edge for edge in candidate.edges if edge.source_port_id == outputs[0].port_id
         ]
         if len(incoming) != 1 or len(outgoing) != 1:
             return None
@@ -1561,7 +1564,36 @@ class StudioBundle:
                 proofs.append(self._draft_node_proof(node, intent, draft.edges))
             else:
                 proofs.append(proof)
-        return draft.model_copy(update={"proofs": proofs})
+        refreshed = draft.model_copy(update={"proofs": proofs})
+        if self._registered_insertion_patch(refreshed) is None:
+            return refreshed
+        prepared_proofs = [
+            proof.model_copy(
+                update={
+                    "status": EditProofState.PROVEN,
+                    "writeback_eligibility": "prepare",
+                    "reason_codes": [],
+                    "message": (
+                        "The complete registered insertion topology has exact source "
+                        "anchors and can enter transaction preparation."
+                    ),
+                    "required_facts": [],
+                    "supported_fixes": [],
+                    "input_fingerprint": studio_fingerprint(self),
+                }
+            )
+            for proof in proofs
+        ]
+        return refreshed.model_copy(
+            update={
+                "proofs": prepared_proofs,
+                "lowering_status": "checking",
+                "writeback_summary": WritebackSummary(
+                    eligibility="prepare",
+                    blocking_intent_ids=[],
+                ),
+            }
+        )
 
     def propose_draft_node(self, payload: dict[str, object]) -> None:
         node = self._materialize_registered_draft_node(
@@ -1707,7 +1739,9 @@ class StudioBundle:
         )
         draft = self._refresh_registered_node_proofs(draft)
         self.draft = DraftGraphDocument.model_validate(draft.model_dump(mode="json"))
-        self.active_proposal = proposal
+        self.active_proposal = (
+            None if draft.writeback_summary.eligibility == "prepare" else proposal
+        )
         _write_json(self.draft_path, self.draft)
 
     def delete_draft_node(self, node_id: str) -> None:
@@ -1976,7 +2010,9 @@ class StudioBundle:
         )
         draft = self._refresh_registered_node_proofs(draft)
         self.draft = DraftGraphDocument.model_validate(draft.model_dump(mode="json"))
-        self.active_proposal = proposal
+        self.active_proposal = (
+            None if draft.writeback_summary.eligibility == "prepare" else proposal
+        )
         _write_json(self.draft_path, self.draft)
 
     def delete_draft_edge(self, edge_id: str) -> None:

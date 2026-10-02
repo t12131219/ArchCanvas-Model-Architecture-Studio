@@ -28,10 +28,17 @@ from .transforms import (
 )
 
 ACTIVATION_OPERATORS = {"nn.GELU", "nn.ReLU", "nn.SiLU"}
+JAX_FLAX_ACTIVATION_OPERATORS = {"nn.gelu", "nn.relu", "nn.silu"}
+JAX_PURE_ACTIVATION_OPERATORS = {
+    "jax.nn.gelu",
+    "jax.nn.relu",
+    "jax.nn.silu",
+    "jnp.tanh",
+}
 TRANSFORM_REGISTRY: dict[str, dict[str, Any]] = {
     "replace_activation": {
         "version": "1.0",
-        "target": "zero-argument nn.GELU/nn.ReLU/nn.SiLU module",
+        "target": "registered bounded PyTorch, Keras, JAX, or ONNX activation anchor",
         "topology_change": False,
     },
     "insert_layer_norm": {
@@ -127,6 +134,18 @@ def _single_value_flow(
         raise ValueError("insert_layer_norm requires a target value consumed exactly once")
 
 
+def _has_direct_import(source: bytes, module_name: str) -> bool:
+    tree = ast.parse(source)
+    return any(
+        isinstance(statement, ast.Import)
+        and any(
+            alias.name == module_name and alias.asname in {None, module_name}
+            for alias in statement.names
+        )
+        for statement in tree.body
+    )
+
+
 def apply_structural_transform(
     request: SemanticStructuralPatch,
     architecture: ArchitectureIR,
@@ -165,9 +184,23 @@ def apply_structural_transform(
         if request.operation != "replace_activation":
             raise ValueError(f"{request.operation} has no registered JAX structural lowering")
         original = str(node.attributes.get("op_type", ""))
-        if original not in {"nn.gelu", "nn.relu", "nn.silu"}:
-            raise ValueError("JAX activation replacement requires an explicit Flax nn activation")
-        replacement = f"nn.{str(request.parameters['replacement']).lower()}"
+        if original in JAX_FLAX_ACTIVATION_OPERATORS:
+            replacement_namespace = "nn"
+        elif original in JAX_PURE_ACTIVATION_OPERATORS:
+            if not _has_direct_import(source, "jax"):
+                raise ValueError(
+                    "JAX pure-function activation replacement requires an explicit import jax"
+                )
+            replacement_namespace = "jax.nn"
+        else:
+            raise ValueError(
+                "JAX activation replacement requires an explicit Flax nn or JAX pure-function activation"
+            )
+        replacement = (
+            f"{replacement_namespace}.{str(request.parameters['replacement']).lower()}"
+        )
+        if original == replacement:
+            raise ValueError("replacement activation is identical to the current activation")
         target_name = str(node.attributes.get("assigned_symbol", ""))
         if not target_name:
             raise ValueError("JAX activation output has no exact assignment anchor")
@@ -363,7 +396,15 @@ def validate_structural_oracle(
             )
         return
     if before.framework == "jax" and request.operation == "replace_activation":
-        replacement = f"nn.{str(request.parameters['replacement']).lower()}"
+        original = next(
+            item for item in before.nodes if item.node_id == request.target_node_id
+        )
+        namespace = (
+            "nn"
+            if original.attributes.get("op_type") in JAX_FLAX_ACTIVATION_OPERATORS
+            else "jax.nn"
+        )
+        replacement = f"{namespace}.{str(request.parameters['replacement']).lower()}"
         node = next(item for item in after.nodes if item.node_id == request.target_node_id)
         if node.attributes.get("op_type") != replacement:
             raise ValueError("JAX activation replacement is not reflected in Exact IR")

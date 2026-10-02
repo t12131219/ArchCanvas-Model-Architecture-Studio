@@ -2159,6 +2159,32 @@ PyTorch 首批状态 fixture 至少包括 Linear 参数重命名、BatchNorm buf
 | 当前未提交 `scene-studio` 修改被覆盖 | 实施阶段先审计和 diff；不得重新复制覆盖用户工作 |
 | 过早删除旧主程序失去对照 | feature freeze 立即生效，物理删除延迟到切换门禁之后 |
 
+### 17.1 视觉一致性纠偏与工作台重构（2026-10-02 已完成验收）
+
+2026-10-02 的首次真实浏览器复核否定了此前“Transformer 视觉 hard golden 已完成”的结论。当时生产 `paper-publication` 只显示 `inputs / encoder / decoder / ffn / output` 五个粗粒度容器，使用通用 rank 布局形成单列，并出现交叉、重叠和标签碰撞；最小原型 `paper-classic-transformer` 则是 16 节点、15 连线的 Encoder/Decoder 双列构图。当时的单元测试与九项 Chromium 流程测试主要证明状态、交互和结构合同可运行，不能作为第 15.2 节截图 hard golden 的替代证据。
+
+本纠偏阶段先于任何新的 P2 功能，且未完成前不得再次宣称正式切换完成：
+
+1. **从投影层恢复视觉语法。** `projectToScene()` 必须从 Exact IR、hierarchy、named ports、evidence 和声明式 structure profile 生成标准/论文视图，不能把顶层 hierarchy frontier 直接交给通用 rank 布局。`encoder-decoder` 论文视图必须恢复双列、底入顶出、主链紧凑堆叠、memory 横向进入 cross-attention、mask/bias 侧挂、输出头对齐 Decoder 主轴和稳定 `N x` 边界。
+2. **从源码事实恢复层级粒度。** 折叠态应呈现原型对应的输入准备、Encoder、memory、Decoder、输出头等阅读层；展开态必须将 Q/K/V、score、scale、mask、softmax、weights x V、concat、output projection、FFN 与 Add & Norm 放回真实父模块。缺失源码证据的 slot 可以标为 `schematic` 或省略，但不得伪装 `exact`。
+3. **原型是视觉 oracle，不是运行时数据。** 允许把相对约束、slot 语法、尺寸级别、颜色 token 和 detail template 重写为生产声明式模板；禁止 production import `SCENARIOS`、按 fixture/project/archive identity 分支或复制手写 scene 节点数组充当分析结果。
+4. **真实浏览器视觉闭环。** 每轮分别截取生产与最小原型的 Classic/Tensor2Tensor、标准/论文、折叠/单侧展开/全展开状态，并在相同桌面与窄屏 viewport 比较构图、层级、图例、路由、端口、文字可读性和指标。未评审差异、非零重叠/穿越/断线、主结构错位或明显密度退化都视为失败；不得通过重录原型 golden 消除差异。
+5. **工具栏只暴露真实能力。** 删除案例矩阵等原型 QA 入口；未实现独立投影的 preset 不得显示为可选视图；生产只读状态下隐藏新增/连线/删除等不可用命令；自动布局不得出现在受 hard golden 约束的论文视图；重复的展开、源码和问题入口应合并到其所属面板。状态相关但真实可用的 undo/redo、导出、缩放和视觉样式命令可以保留。
+6. **左侧重建为导航面板。** 不复制旧主程序代码，基于当前 `navigation.projections`、hierarchy 和 scene binding 重新实现“模块视图 / 源码视图”两个 tab。模块视图负责父子层级与画布选中同步；源码视图负责文件、类、函数、调用和绑定定位；两者共用搜索、展开状态和 canonical/evidence selection，不再把七个 preset 重复列成场景列表。
+7. **右侧重建为对象检查器。** 基于当前 Scene、Exact IR、evidence、source excerpt、visual patch 和 transaction 能力提供“概览 / 源码 / 视觉 / 模型 / 证据”tab。概览显示身份、类型、端口、Shape 与层级；源码显示 anchor 和 excerpt；视觉承载位置、尺寸、固定与层级操作；模型只显示真实可用的参数/结构事务；证据列出 claim、confidence 和位置。没有选择时只显示项目与场景摘要。
+8. **中央画布优先。** 左右面板保持安静、可扫描和可收缩，新增能力使用 tab、抽屉或按需工作区；不得让常驻按钮和重复标题挤压画布。桌面保持三栏工作区，窄屏时导航和检查器变为可关闭覆盖层，文本和控件不得相互遮挡。
+
+本阶段的完成证据必须同时包含：生产/原型截图对照、确定性结构断言、路由指标、真实浏览器交互录像或逐步截图、左右面板选择同步测试、工具栏命令清单，以及 `REGRESSION_TEST_REQUIREMENTS.md` 规定的全量自动化结果。任何仅验证 DOM 存在、节点数量或测试命令退出码的记录都不足以关闭本阶段。
+
+同日最终复核已关闭本纠偏阶段，证据记录在 `docs/acceptance/scene-studio-cutover.md`：
+
+- Classic 标准视图恢复原型的 13/13 主结构，论文视图恢复 16/15 的 Encoder 左列、Decoder 右列、底入顶出构图；Tensor2Tensor 标准/论文视图分别恢复 14/14 与 12/11 的对应结构。
+- Classic 与 Tensor2Tensor 的折叠、单侧展开和完全展开均用真实浏览器与最小原型逐状态对照；完全展开进入 viewport detail virtualization 和 Worker routing，并在稳定后保持零交叉、零重叠、零穿越。
+- Classic 完全展开的稳定指标为 7 个标签碰撞、28 个折点、18570 总线长；Tensor2Tensor 为 4 个标签碰撞、29 个折点、19038 总线长，均与原型同场景一致。标签碰撞是已冻结 golden 的现状，不应误写为零。
+- 生产工具栏不再显示案例矩阵、只读新增/连线/删除、论文视图自动重排和无效的“重置视觉布局”；左侧模块/源码导航和右侧五页签检查器已由当前状态、IR、evidence 与事务能力重新实现。
+- 1280px 以下三栏使用收紧的导航/检查器宽度和受边界约束的变体工具条，真实浏览器复核未再出现工具条覆盖检查器。
+- 当前仍不把逐层路由的原型历史非零质量指标或 Classic v2 的 `OUTPUT_NOT_REACHABLE` 诊断表述为已消除；它们是后续质量修复项，不影响本次原子收束 hard golden 的同源一致性结论。
+
 ## 18. 联网核对结论与来源
 
 本指南在 2026-10-01 重新核对了下列官方资料，并结合仓库现有实现作出选型：

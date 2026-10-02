@@ -6,16 +6,23 @@ import {
   ArrowRightLeft,
   Download,
   GalleryVerticalEnd,
+  LoaderCircle,
   Maximize2,
   Minus,
   Pin,
   PinOff,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
   Plus,
   Redo2,
   RotateCcw,
   Trash2,
   Undo2,
   Waypoints,
+  Workflow,
+  X,
 } from "lucide-react";
 import { memo, useEffect, useMemo, useReducer, useRef, useState, useTransition } from "react";
 import type { ReactNode } from "react";
@@ -23,6 +30,8 @@ import type { ReactNode } from "react";
 import { applyVisualPatch, clampBounds, cloneScene, editableNodeBounds } from "./model";
 import { alignNodeBounds, distributeNodeBounds } from "./layout-commands";
 import type { AlignmentCommand, DistributionCommand } from "./layout-commands";
+import { layoutPatchesFromResult, startElkLayout, type LayoutTask } from "./layout-worker-client";
+import { sceneGeometryFingerprint } from "./layout-worker-protocol";
 import { expandScene } from "./expansion";
 import {
   buildAtomicHierarchyRoutingPlan,
@@ -36,6 +45,7 @@ import {
   expandedDetailSize,
   findInlineDetailLevel,
   fullyExpandedDetailTree,
+  inlineDetailComplexity,
   inlineExpandedChildren,
   listDetailNodes,
   toggleDetailExpansionAtPath,
@@ -48,9 +58,13 @@ import type {
   InlineDetailLevel,
 } from "./detail-layout";
 import {
+  boundsIntersect,
   canvasGridSize,
+  canvasWorldViewport,
   fitCanvasCamera,
+  pointInBounds,
   shouldBeginCanvasPan,
+  shouldVirtualizeSceneDetails,
   wheelZoomFactor,
   zoomCameraAt,
 } from "./canvas-viewport";
@@ -68,6 +82,8 @@ import {
   ROUTE_STYLES,
 } from "./visual-options";
 import { measureScene, routeScene } from "./routing";
+import { startWorkerRouting, type RoutingTask } from "./routing-worker-client";
+import { routingFingerprint } from "./routing-worker-protocol";
 import { renderSceneSvg } from "./svg-export";
 import type {
   Bounds,
@@ -917,6 +933,7 @@ interface NodeGraphicProps {
   resizeEnabled: boolean;
   hiddenFlowIds?: ReadonlySet<string>;
   foregroundFlowIds?: ReadonlySet<string>;
+  showDetails: boolean;
 }
 
 function nodeGraphicPropsEqual(first: NodeGraphicProps, second: NodeGraphicProps): boolean {
@@ -930,6 +947,7 @@ function nodeGraphicPropsEqual(first: NodeGraphicProps, second: NodeGraphicProps
     && first.resizeEnabled === second.resizeEnabled
     && first.hiddenFlowIds === second.hiddenFlowIds
     && first.foregroundFlowIds === second.foregroundFlowIds
+    && first.showDetails === second.showDetails
     && first.onPointerDown === second.onPointerDown
     && first.onResizePointerDown === second.onResizePointerDown
     && first.onToggleDetail === second.onToggleDetail
@@ -953,6 +971,7 @@ const NodeGraphic = memo(function NodeGraphic({
   resizeEnabled,
   hiddenFlowIds,
   foregroundFlowIds,
+  showDetails,
 }: NodeGraphicProps) {
   const { x, y, width, height } = node.bounds;
   const colors = paperMode
@@ -978,26 +997,29 @@ const NodeGraphic = memo(function NodeGraphic({
       className={`lab-node expanded-node ${paperMode ? `paper-node paper-tone-${node.paper_tone ?? "neutral"}` : ""} ${selected ? "selected" : ""} ${connecting ? "connecting" : ""}`}
       data-node-id={node.scene_node_id}
       data-hierarchy-node-id={node.hierarchy_node_id}
+      data-detail-rendering={showDetails ? "full" : "surface"}
       tabIndex={0}
       role="group"
       aria-label={`${node.label}, ${DETAIL_KIND_NAMES[node.detail_kind]}, 已展开`}
       onPointerDown={(event) => onPointerDown(event, node)}
     >
       <rect className="node-surface expanded-surface" x={x} y={y} width={width} height={height} rx={6} fill="#ffffff" stroke={colors.stroke} />
-      <rect className="expanded-header" x={x} y={y} width={width} height={50} rx={6} fill={colors.fill} />
-      <line className="expanded-divider" x1={x} y1={y + 50} x2={x + width} y2={y + 50} />
-      <text className="expanded-title" x={x + 16} y={y + 22}>{node.label}</text>
-      <text className="expanded-subtitle" x={x + 16} y={y + 39}>{DETAIL_KIND_NAMES[node.detail_kind]}</text>
-      <ModuleDetailGraphic
-        node={node}
-        level={detailTree}
-        detailSelection={detailSelection}
-        onChildPointerDown={onDetailPointerDown}
-        onToggleNested={onToggleNestedDetail}
-        hiddenFlowIds={hiddenFlowIds}
-        foregroundFlowIds={foregroundFlowIds}
-      />
-      <DetailToggle node={node} onToggle={onToggleDetail} />
+      {showDetails && <>
+        <rect className="expanded-header" x={x} y={y} width={width} height={50} rx={6} fill={colors.fill} />
+        <line className="expanded-divider" x1={x} y1={y + 50} x2={x + width} y2={y + 50} />
+        <text className="expanded-title" x={x + 16} y={y + 22}>{node.label}</text>
+        <text className="expanded-subtitle" x={x + 16} y={y + 39}>{DETAIL_KIND_NAMES[node.detail_kind]}</text>
+        <ModuleDetailGraphic
+          node={node}
+          level={detailTree}
+          detailSelection={detailSelection}
+          onChildPointerDown={onDetailPointerDown}
+          onToggleNested={onToggleNestedDetail}
+          hiddenFlowIds={hiddenFlowIds}
+          foregroundFlowIds={foregroundFlowIds}
+        />
+        <DetailToggle node={node} onToggle={onToggleDetail} />
+      </>}
       {selected && <rect className="node-selection" x={x - 5} y={y - 5} width={width + 10} height={height + 10} rx={8} />}
     </g>;
   }
@@ -1006,6 +1028,7 @@ const NodeGraphic = memo(function NodeGraphic({
       className={`lab-node node-${visualStyle} ${paperMode ? `paper-node paper-tone-${node.paper_tone ?? "neutral"}` : ""} ${selected ? "selected" : ""} ${connecting ? "connecting" : ""}`}
       data-node-id={node.scene_node_id}
       data-hierarchy-node-id={node.hierarchy_node_id}
+      data-detail-rendering={showDetails ? "full" : "surface"}
       tabIndex={0}
       role="button"
       aria-label={`${node.label}, ${NODE_SHAPE_NAMES[node.shape]}`}
@@ -1013,7 +1036,7 @@ const NodeGraphic = memo(function NodeGraphic({
     >
       {symbol ? <>
         <circle className="node-surface" cx={x + width / 2} cy={y + height * 0.42} r={Math.min(width, height) * 0.27} fill={fill} stroke={colors.stroke} />
-        <text className="node-symbol" x={x + width / 2} y={y + height * 0.42 + 8}>{symbol}</text>
+        {showDetails && <text className="node-symbol" x={x + width / 2} y={y + height * 0.42 + 8}>{symbol}</text>}
       </> : polygon
         ? <polygon className="node-surface" points={polygon} fill={fill} stroke={colors.stroke} />
         : <rect
@@ -1026,16 +1049,16 @@ const NodeGraphic = memo(function NodeGraphic({
           fill={fill}
           stroke={colors.stroke}
         />}
-      {node.shape === "tensor" && detailed && <g className="node-glyph" stroke={colors.stroke}>
+      {showDetails && node.shape === "tensor" && detailed && <g className="node-glyph" stroke={colors.stroke}>
         <path d={`M ${glyphX + 6} ${glyphY - 6} h ${glyphWidth} l 7 7 v ${glyphHeight} l -7 -7 h -${glyphWidth} z`} fill="none" />
         <rect x={glyphX} y={glyphY} width={glyphWidth} height={glyphHeight} rx={2} fill={fill} />
         <MatrixGrid x={glyphX} y={glyphY} width={glyphWidth} height={glyphHeight} stroke={colors.stroke} />
       </g>}
-      {node.shape === "convolution" && detailed && <g className="node-glyph" stroke={colors.stroke}>
+      {showDetails && node.shape === "convolution" && detailed && <g className="node-glyph" stroke={colors.stroke}>
         {[8, 4, 0].map((offset) => <rect key={offset} x={glyphX + offset} y={glyphY - offset} width={glyphWidth - 8} height={glyphHeight} rx={2} fill={fill} />)}
         <MatrixGrid x={glyphX + 8} y={glyphY - 8} width={glyphWidth - 8} height={glyphHeight} stroke={colors.stroke} columns={3} rows={3} />
       </g>}
-      {node.shape === "attention" && detailed && <g className="node-glyph" stroke={colors.stroke}>
+      {showDetails && node.shape === "attention" && detailed && <g className="node-glyph" stroke={colors.stroke}>
         {["Q", "K", "V"].map((value, index) => <g key={value}>
           <rect x={glyphX} y={glyphY + index * (glyphHeight / 3)} width={17} height={glyphHeight / 3 - 2} rx={2} fill={fill} />
           <text className="node-glyph-text" x={glyphX + 8.5} y={glyphY + index * (glyphHeight / 3) + glyphHeight / 6 + 3}>{value}</text>
@@ -1043,23 +1066,23 @@ const NodeGraphic = memo(function NodeGraphic({
         </g>)}
         <circle cx={glyphX + glyphWidth - 5} cy={glyphY + glyphHeight / 2} r={5} fill={fill} />
       </g>}
-      {node.shape === "normalization" && detailed && <g className="node-glyph" stroke={colors.stroke}>
+      {showDetails && node.shape === "normalization" && detailed && <g className="node-glyph" stroke={colors.stroke}>
         <rect x={glyphX} y={glyphY} width={glyphWidth} height={glyphHeight} rx={glyphHeight / 2} fill={fill} />
         {[-0.26, 0, 0.26].map((ratio) => <line key={ratio} x1={glyphX + glyphWidth / 2 + ratio * glyphWidth} y1={glyphY + 8} x2={glyphX + glyphWidth / 2 + ratio * glyphWidth} y2={glyphY + glyphHeight - 8} />)}
         <text className="node-glyph-text" x={glyphX + glyphWidth / 2} y={glyphY + glyphHeight / 2 + 3}>μ σ</text>
       </g>}
-      {!paperMode && node.shape === "operation" && width >= 100 && <g className="node-glyph operation-glyph" stroke={colors.stroke}>
+      {showDetails && !paperMode && node.shape === "operation" && width >= 100 && <g className="node-glyph operation-glyph" stroke={colors.stroke}>
         {[0, 1, 2].map((index) => <rect key={index} x={x + 10} y={y + 13 + index * 11} width={15 + index * 3} height={6} rx={1.5} fill={colors.stroke} />)}
       </g>}
-      {!paperMode && visualStyle === "technical" && !symbol && <>
+      {showDetails && !paperMode && visualStyle === "technical" && !symbol && <>
         <rect className="node-rail" x={x} y={y} width={5} height={height} rx={2} fill={colors.stroke} />
         <text className="node-kind" x={x + 13} y={y + 14}>{node.shape.toUpperCase()}</text>
       </>}
-      <text className={`node-label ${symbol ? "symbol-label" : ""}`} x={symbol ? x + width / 2 : labelX} y={symbol ? y + height - 8 : titleY}>
+      {showDetails && <text className={`node-label ${symbol ? "symbol-label" : ""}`} x={symbol ? x + width / 2 : labelX} y={symbol ? y + height - 8 : titleY}>
         {lines.map((line, index) => <tspan key={`${line}-${index}`} x={symbol ? x + width / 2 : labelX} dy={index ? 16 : 0}>{line}</tspan>)}
-      </text>
-      {!symbol && visualStyle !== "compact" && height >= 58 && <text className="node-secondary" x={labelX} y={y + height - 11}>{node.secondary_label}</text>}
-      <DetailToggle node={node} onToggle={onToggleDetail} />
+      </text>}
+      {showDetails && !symbol && visualStyle !== "compact" && height >= 58 && <text className="node-secondary" x={labelX} y={y + height - 11}>{node.secondary_label}</text>}
+      {showDetails && <DetailToggle node={node} onToggle={onToggleDetail} />}
       {selected && <rect className="node-selection" x={x - 5} y={y - 5} width={width + 10} height={height + 10} rx={7} />}
       {selected && resizeEnabled && <rect
         className="resize-handle"
@@ -1091,6 +1114,7 @@ interface EdgeGraphicProps {
   labelStyle: EdgeLabelStyle;
   selected: boolean;
   onSelect: (edge: LabEdge) => void;
+  showLabel: boolean;
 }
 
 function edgeGraphicPropsEqual(first: EdgeGraphicProps, second: EdgeGraphicProps): boolean {
@@ -1109,6 +1133,7 @@ function edgeGraphicPropsEqual(first: EdgeGraphicProps, second: EdgeGraphicProps
     && first.route.foreground === second.route.foreground
     && first.labelStyle === second.labelStyle
     && first.selected === second.selected
+    && first.showLabel === second.showLabel
     && first.onSelect === second.onSelect;
 }
 
@@ -1117,13 +1142,18 @@ const EdgeGraphic = memo(function EdgeGraphic({
   labelStyle,
   selected,
   onSelect,
+  showLabel,
 }: EdgeGraphicProps) {
   const color = RELATION_COLORS[route.edge.relation];
   const labelPoint = labelPosition(route, labelStyle);
   const labelWidth = Math.max(42, Math.min(220, route.edge.label.length * 6.6 + 16));
   const dashed = route.edge.relation === "residual" || route.edge.relation === "feedback";
   return (
-    <g className={`lab-edge relation-${route.edge.relation} ${selected ? "selected" : ""}`} data-edge-id={route.edge.scene_edge_id}>
+    <g
+      className={`lab-edge relation-${route.edge.relation} ${selected ? "selected" : ""}`}
+      data-edge-id={route.edge.scene_edge_id}
+      data-label-rendering={showLabel ? "full" : "deferred"}
+    >
       {selected && <path className="edge-selection" d={route.path} fill="none" />}
       <path className="edge-hit" d={route.path} fill="none" onPointerDown={(event) => { event.stopPropagation(); onSelect(route.edge); }} />
       <path
@@ -1134,10 +1164,10 @@ const EdgeGraphic = memo(function EdgeGraphic({
         strokeDasharray={dashed ? "7 5" : undefined}
         markerEnd={route.markerEnd === false ? undefined : `url(#arrow-${route.edge.relation})`}
       />
-      <g className="edge-label-group" transform={`rotate(${labelPoint.angle} ${labelPoint.x} ${labelPoint.y})`}>
+      {showLabel && <g className="edge-label-group" transform={`rotate(${labelPoint.angle} ${labelPoint.x} ${labelPoint.y})`}>
         {labelStyle === "plate" && <rect className="edge-label-plate" x={labelPoint.x - labelWidth / 2} y={labelPoint.y - 17} width={labelWidth} height={18} rx={3} />}
         <text className="edge-label" x={labelPoint.x} y={labelPoint.y - 4}>{route.edge.label}</text>
-      </g>
+      </g>}
     </g>
   );
 }, edgeGraphicPropsEqual);
@@ -1177,6 +1207,17 @@ export interface SceneCanvasProps {
   productLabel?: string;
   collectionLabel?: string;
   toolbarContent?: ReactNode;
+  navigationContent?: ReactNode;
+  renderInspectorPanel?: (context: {
+    node?: LabNode;
+    edge?: LabEdge;
+    scene: LabScene;
+    updateNode: (changes: Partial<Omit<LabNode, "scene_node_id">>) => void;
+  }) => ReactNode;
+  showCaseMatrix?: boolean;
+  allowAutomaticLayout?: boolean;
+  layoutToolsEnabled?: boolean;
+  collapsiblePanels?: boolean;
   selection?: Selection;
   readOnlySemantic?: boolean;
   onSceneChange?: (scene: LabScene) => void;
@@ -1201,6 +1242,12 @@ export function App({
   productLabel = "Scene Lab",
   collectionLabel = "压力场景",
   toolbarContent,
+  navigationContent,
+  renderInspectorPanel,
+  showCaseMatrix = true,
+  allowAutomaticLayout = true,
+  layoutToolsEnabled = true,
+  collapsiblePanels = false,
   selection: controlledSelection,
   readOnlySemantic = false,
   onSceneChange,
@@ -1238,6 +1285,8 @@ export function App({
       : "atomic-bottom-up"
   ));
   const [selection, setSelection] = useState<Selection>(null);
+  const [leftPanelOpen, setLeftPanelOpen] = useState(true);
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [preview, setPreview] = useState<{ nodeId: string; bounds: Bounds } | null>(null);
   const [detailLayouts, setDetailLayouts] = useState<DetailLayoutMap>({});
@@ -1250,8 +1299,17 @@ export function App({
   const [edgeMode, setEdgeMode] = useState(false);
   const [edgeSource, setEdgeSource] = useState<string | null>(null);
   const [camera, setCamera] = useState<CanvasCamera>({ x: 0, y: 0, zoom: 1 });
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [isHierarchyPending, startHierarchyTransition] = useTransition();
+  const [layoutStatus, setLayoutStatus] = useState<"idle" | "running" | "failed">("idle");
+  const [layoutError, setLayoutError] = useState<string | null>(null);
+  const [workerRoutes, setWorkerRoutes] = useState<{
+    fingerprint: string;
+    routes: RoutedEdge[];
+    metrics: ReturnType<typeof measureScene>;
+  } | null>(null);
+  const [routingStatus, setRoutingStatus] = useState<"sync" | "pending" | "ready" | "failed">("sync");
   const svgRef = useRef<SVGSVGElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const zoomOutputRef = useRef<HTMLOutputElement | null>(null);
@@ -1285,6 +1343,16 @@ export function App({
   const pendingCameraFitRef = useRef(true);
   const pendingFocusNodeRef = useRef<string | null>(null);
   const sequence = useRef(1);
+  const layoutTaskRef = useRef<LayoutTask | null>(null);
+  const routingTaskRef = useRef<RoutingTask | null>(null);
+  const editorSceneRef = useRef(editor.scene);
+
+  editorSceneRef.current = editor.scene;
+
+  useEffect(() => () => {
+    layoutTaskRef.current?.cancel();
+    routingTaskRef.current?.cancel();
+  }, []);
 
   useEffect(() => {
     const next = availableScenes.find((scene) => scene.scene_id === initialSceneId)
@@ -1386,17 +1454,49 @@ export function App({
   const boundaryPorts = atomicRoutingPlan?.boundaryPorts;
   const hiddenFlowIds = useStableSet(atomicRoutingPlan?.hiddenFlowIds);
   const foregroundFlowIds = useStableSet(atomicRoutingPlan?.foregroundFlowIds);
-  const routed = useMemo(
-    () => routeScene(displayScene, options.routeStyle, boundaryPorts),
+  const detailComplexity = useMemo(() => Object.values(detailTrees).reduce(
+    (total, tree) => {
+      const complexity = inlineDetailComplexity(tree);
+      return {
+        nodeCount: total.nodeCount + complexity.nodeCount,
+        edgeCount: total.edgeCount + complexity.edgeCount,
+      };
+    },
+    { nodeCount: 0, edgeCount: 0 },
+  ), [detailTrees]);
+  const largeScene = shouldVirtualizeSceneDetails(
+    displayScene.nodes.length + detailComplexity.nodeCount,
+    displayScene.edges.length + detailComplexity.edgeCount,
+  );
+  const routeInWorker = options.routeStyle === "adaptive"
+    && largeScene;
+  const currentRoutingFingerprint = useMemo(
+    () => routingFingerprint(displayScene, options.routeStyle, boundaryPorts),
     [boundaryPorts, displayScene, options.routeStyle],
   );
+  const immediateRoutes = useMemo(
+    () => routeScene(displayScene, routeInWorker ? "direct" : options.routeStyle, boundaryPorts),
+    [boundaryPorts, displayScene, options.routeStyle, routeInWorker],
+  );
+  const routed = routeInWorker && workerRoutes?.fingerprint === currentRoutingFingerprint
+    ? workerRoutes.routes
+    : immediateRoutes;
   const metrics = useMemo(() => {
     if ((preview || detailPreview) && lastMetricsRef.current) return lastMetricsRef.current;
-    const next = measureScene(displayScene, routed);
+    const next = routeInWorker && workerRoutes?.fingerprint === currentRoutingFingerprint
+      ? workerRoutes.metrics
+      : measureScene(displayScene, routed);
     lastMetricsRef.current = next;
     return next;
-  }, [detailPreview, displayScene, preview, routed]);
+  }, [currentRoutingFingerprint, detailPreview, displayScene, preview, routeInWorker, routed, workerRoutes]);
   const contentBounds = useMemo(() => sceneContentBounds(displayScene), [displayScene]);
+  const virtualizeSceneDetails = viewportSize.width > 0
+    && viewportSize.height > 0
+    && largeScene;
+  const visibleWorldBounds = useMemo(
+    () => canvasWorldViewport(camera, viewportSize),
+    [camera, viewportSize],
+  );
   const selectedNode = selection?.kind === "node"
     ? editor.scene.nodes.find((node) => node.scene_node_id === selection.id)
     : undefined;
@@ -1426,6 +1526,40 @@ export function App({
     applyCameraPresentation(camera);
   }, [camera]);
 
+  useEffect(() => {
+    routingTaskRef.current?.cancel();
+    routingTaskRef.current = null;
+    if (!routeInWorker) {
+      setRoutingStatus("sync");
+      return;
+    }
+    if (preview || detailPreview) {
+      setRoutingStatus("pending");
+      return;
+    }
+    const task = startWorkerRouting(displayScene, options.routeStyle, boundaryPorts);
+    routingTaskRef.current = task;
+    setRoutingStatus("pending");
+    void task.promise.then((result) => {
+      if (routingTaskRef.current !== task) return;
+      routingTaskRef.current = null;
+      setWorkerRoutes({
+        fingerprint: currentRoutingFingerprint,
+        routes: result.routes,
+        metrics: result.metrics,
+      });
+      setRoutingStatus("ready");
+    }).catch((error: unknown) => {
+      if (routingTaskRef.current === task) routingTaskRef.current = null;
+      if (error instanceof Error && error.name === "AbortError") return;
+      setRoutingStatus("failed");
+    });
+    return () => {
+      if (routingTaskRef.current === task) routingTaskRef.current = null;
+      task.cancel();
+    };
+  }, [boundaryPorts, currentRoutingFingerprint, detailPreview, displayScene, options.routeStyle, preview, routeInWorker]);
+
   useEffect(() => () => {
     if (cameraFrameRef.current !== null) cancelAnimationFrame(cameraFrameRef.current);
     if (gestureFrameRef.current !== null) cancelAnimationFrame(gestureFrameRef.current);
@@ -1435,13 +1569,30 @@ export function App({
 
   useEffect(() => {
     const viewport = viewportRef.current;
-    if (!viewport || !pendingCameraFitRef.current) return;
+    if (!viewport || !pendingCameraFitRef.current || isHierarchyPending) return;
     pendingCameraFitRef.current = false;
     setCamera(fitCanvasCamera(
       viewport.getBoundingClientRect(),
       contentBounds,
     ));
-  }, [contentBounds, editor.scene.scene_id]);
+  }, [contentBounds, editor.scene.scene_id, isHierarchyPending]);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const updateViewportSize = () => {
+      const bounds = viewport.getBoundingClientRect();
+      setViewportSize((current) => (
+        current.width === bounds.width && current.height === bounds.height
+          ? current
+          : { width: bounds.width, height: bounds.height }
+      ));
+    };
+    updateViewportSize();
+    const observer = new ResizeObserver(updateViewportSize);
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -1605,6 +1756,40 @@ export function App({
       changes: { bounds },
       persistenceTargetId: persistenceTargetForNode(nodes.find((node) => node.scene_node_id === nodeId)),
     })), `Distribute selected nodes: ${command}`);
+  }
+
+  function cancelAutomaticLayout() {
+    layoutTaskRef.current?.cancel();
+    layoutTaskRef.current = null;
+    setLayoutStatus("idle");
+    setLayoutError(null);
+  }
+
+  function runAutomaticLayout() {
+    if (editor.scene.nodes.length < 2 || layoutTaskRef.current) return;
+    const sourceScene = editor.scene;
+    const sourceFingerprint = sceneGeometryFingerprint(sourceScene);
+    const task = startElkLayout(sourceScene);
+    layoutTaskRef.current = task;
+    setLayoutStatus("running");
+    setLayoutError(null);
+    void task.promise.then((result) => {
+      if (layoutTaskRef.current !== task) return;
+      layoutTaskRef.current = null;
+      setLayoutStatus("idle");
+      if (sceneGeometryFingerprint(editorSceneRef.current) !== sourceFingerprint) {
+        setLayoutStatus("failed");
+        setLayoutError("场景已变化，已丢弃过期重排结果");
+        return;
+      }
+      const patches = layoutPatchesFromResult(sourceScene, result.positions, new Set(pinnedNodeIds));
+      patchBatch(patches, "Explicit ELK layered relayout");
+    }).catch((error: unknown) => {
+      if (layoutTaskRef.current === task) layoutTaskRef.current = null;
+      if (error instanceof Error && error.name === "AbortError") return;
+      setLayoutStatus("failed");
+      setLayoutError(error instanceof Error ? error.message : String(error));
+    });
   }
 
   function loadScene(scene: LabScene) {
@@ -1943,6 +2128,7 @@ export function App({
       node.scene_node_id,
       fullyExpandedDetailTree(node.detail_kind!),
     ]));
+    pendingCameraFitRef.current = true;
     startHierarchyTransition(() => {
       setExpandedNodeIds(new Set(expandable.map((node) => node.scene_node_id)));
       setDetailExpansions(nextExpansions);
@@ -1951,7 +2137,6 @@ export function App({
       setPreview(null);
       setDetailPreview(null);
     });
-    pendingCameraFitRef.current = true;
   }
 
   function collapseAllDetails() {
@@ -2077,7 +2262,7 @@ export function App({
     <header className="lab-topbar">
       <div className="lab-product"><Waypoints size={17} /><strong>ArchCanvas</strong><span>{productLabel}</span></div>
       {toolbarContent}
-      <div className="toolbar-group" aria-label="编辑操作">
+      {!readOnlySemantic ? <div className="toolbar-group" aria-label="编辑操作">
         <button className="tool-button" disabled={readOnlySemantic} onClick={addNode}><Plus size={15} />节点</button>
         <button
           className={`tool-button ${edgeMode ? "active" : ""}`}
@@ -2086,13 +2271,23 @@ export function App({
           onClick={() => { setEdgeMode((value) => !value); setEdgeSource(null); }}
         ><ArrowRightLeft size={15} />连线</button>
         <button className="icon-button" title="删除所选" disabled={!selection || readOnlySemantic} onClick={removeSelection}><Trash2 size={15} /></button>
-      </div>
+      </div> : null}
       <div className="toolbar-group" aria-label="历史操作">
         <button className="icon-button" title="撤销" disabled={!editor.past.length && !canUndo} onClick={() => { dispatch({ type: "undo" }); onUndo?.(); }}><Undo2 size={15} /></button>
         <button className="icon-button" title="重做" disabled={!editor.future.length && !canRedo} onClick={() => { dispatch({ type: "redo" }); onRedo?.(); }}><Redo2 size={15} /></button>
-        <button className="icon-button" title="重置当前案例" onClick={resetScene}><RotateCcw size={15} /></button>
+        {!readOnlySemantic ? <button className="icon-button" title="重置当前案例" onClick={resetScene}><RotateCcw size={15} /></button> : null}
       </div>
-      {selectedNodeIds.length ? <div className="toolbar-group layout-command-group" role="group" aria-label="对齐、分布与固定">
+      {layoutToolsEnabled && allowAutomaticLayout && !paperMode ? <div className="toolbar-group" aria-label="自动布局">
+        <button
+          className="tool-button"
+          title={layoutError ?? "使用 ELK Layered 在后台显式重新布局"}
+          disabled={editor.scene.nodes.length < 2 || layoutStatus === "running"}
+          onClick={runAutomaticLayout}
+        >{layoutStatus === "running" ? <LoaderCircle className="spin" size={15} /> : <Workflow size={15} />}重新布局</button>
+        {layoutStatus === "running" ? <button className="icon-button" title="取消重新布局" onClick={cancelAutomaticLayout}><X size={14} /></button> : null}
+        {layoutStatus === "failed" ? <span className="layout-command-error" role="status" title={layoutError ?? undefined}>失败</span> : null}
+      </div> : null}
+      {layoutToolsEnabled && selectedNodeIds.length ? <div className="toolbar-group layout-command-group" role="group" aria-label="对齐、分布与固定">
         <span>{selectedNodeIds.length} 已选</span>
         <button className="icon-button" title="左对齐" disabled={selectedNodeIds.length < 2} onClick={() => applyAlignment("left")}><AlignHorizontalJustifyStart size={14} /></button>
         <button className="icon-button" title="水平居中对齐" disabled={selectedNodeIds.length < 2} onClick={() => applyAlignment("horizontal-center")}><AlignVerticalJustifyStart size={14} /></button>
@@ -2103,14 +2298,18 @@ export function App({
         <button className="icon-button" title={selectedNodesPinned ? "取消固定所选节点" : "固定所选节点"} onClick={() => onPinNodes?.(selectedNodeIds, !selectedNodesPinned, editor.scene)}>{selectedNodesPinned ? <PinOff size={14} /> : <Pin size={14} />}</button>
       </div> : null}
       <div className="toolbar-spacer" />
+      {collapsiblePanels ? <div className="toolbar-group" aria-label="面板显示">
+        <button className="icon-button" title={leftPanelOpen ? "收起左侧导航" : "展开左侧导航"} onClick={() => setLeftPanelOpen((value) => !value)}>{leftPanelOpen ? <PanelLeftClose size={15} /> : <PanelLeftOpen size={15} />}</button>
+        <button className="icon-button" title={rightPanelOpen ? "收起右侧检查器" : "展开右侧检查器"} onClick={() => setRightPanelOpen((value) => !value)}>{rightPanelOpen ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}</button>
+      </div> : null}
       {edgeMode && <span className="edge-mode-status">{edgeSource ? "选择终点" : "选择起点"}</span>}
-      <a className="tool-button" href="./cases/index.html" target="_blank" rel="noreferrer"><GalleryVerticalEnd size={15} />案例矩阵</a>
+      {showCaseMatrix ? <a className="tool-button" href="./cases/index.html" target="_blank" rel="noreferrer"><GalleryVerticalEnd size={15} />案例矩阵</a> : null}
       <button className="tool-button" onClick={() => void exportCurrent()}><Download size={15} />{exportRaster ? "导出 SVG/PNG/PDF/JSON" : "导出 SVG/JSON"}</button>
     </header>
 
-    <main className="lab-workspace">
+    <main className={`lab-workspace ${collapsiblePanels && !leftPanelOpen ? "left-panel-collapsed" : ""} ${collapsiblePanels && !rightPanelOpen ? "right-panel-collapsed" : ""}`}>
       <aside className="case-panel">
-        <div className="panel-heading"><GalleryVerticalEnd size={15} /><strong>{collectionLabel}</strong><span>{availableScenes.length}</span></div>
+        {navigationContent ?? <><div className="panel-heading"><GalleryVerticalEnd size={15} /><strong>{collectionLabel}</strong><span>{availableScenes.length}</span></div>
         <div className="case-list">
           {availableScenes.map((scenario) => <button
             key={scenario.scene_id}
@@ -2120,7 +2319,7 @@ export function App({
             <strong>{scenario.title}</strong>
             <span>{scenario.nodes.length} 节点 · {scenario.edges.length} 连线</span>
           </button>)}
-        </div>
+        </div></>}
       </aside>
 
       <section className="canvas-column">
@@ -2168,6 +2367,8 @@ export function App({
             viewBox={`0 0 ${displayScene.paper_width} ${displayScene.paper_height}`}
             role="application"
             aria-label={`${displayScene.title} 架构图编辑画布`}
+            data-viewport-detail-mode={virtualizeSceneDetails ? "virtualized" : "full"}
+            data-routing-mode={routeInWorker ? `worker-${routingStatus}` : "sync"}
             onPointerMove={movePointer}
             onPointerUp={finishPointer}
             onPointerCancel={finishPointer}
@@ -2179,6 +2380,9 @@ export function App({
               labelStyle={options.labelStyle}
               selected={selection?.kind === "edge" && selection.id === route.edge.scene_edge_id}
               onSelect={handleSelectEdge}
+              showLabel={!virtualizeSceneDetails
+                || (selection?.kind === "edge" && selection.id === route.edge.scene_edge_id)
+                || pointInBounds(route.labelPoint, visibleWorldBounds)}
             />)}
             {displayScene.nodes.map((node) => <NodeGraphic
               key={node.scene_node_id}
@@ -2197,6 +2401,11 @@ export function App({
               resizeEnabled={!pinnedNodeIds.includes(node.scene_node_id)}
               hiddenFlowIds={hiddenFlowIds}
               foregroundFlowIds={foregroundFlowIds}
+              showDetails={!virtualizeSceneDetails
+                || selectedNodeIds.includes(node.scene_node_id)
+                || edgeSource === node.scene_node_id
+                || detailSelection?.rootId === node.scene_node_id
+                || boundsIntersect(node.bounds, visibleWorldBounds)}
             />)}
             {routed.filter((route) => route.foreground).map((route) => <EdgeGraphic
               key={route.edge.scene_edge_id}
@@ -2204,6 +2413,9 @@ export function App({
               labelStyle={options.labelStyle}
               selected={selection?.kind === "edge" && selection.id === route.edge.scene_edge_id}
               onSelect={handleSelectEdge}
+              showLabel={!virtualizeSceneDetails
+                || (selection?.kind === "edge" && selection.id === route.edge.scene_edge_id)
+                || pointInBounds(route.labelPoint, visibleWorldBounds)}
             />)}
           </svg>
           <div className="canvas-controls" aria-label="画布视图">
@@ -2218,7 +2430,7 @@ export function App({
 
       <aside className="inspector-panel">
         <div className="panel-heading"><Maximize2 size={15} /><strong>检查器</strong></div>
-        {selectedDetail ? <div className="inspector-form">
+        {!selectedDetail && renderInspectorPanel ? renderInspectorPanel({ node: selectedNode, edge: selectedEdge, scene: editor.scene, updateNode }) : selectedDetail ? <div className="inspector-form">
           <div className="selection-title"><span>父模块内子模块</span><strong>{selectedDetail.child.label}</strong></div>
           <label>根模块<input value={selectedDetail.root.label} readOnly /></label>
           <label>所在层级<input value={detailSelection?.levelPath.length ? `第 ${(detailSelection?.levelPath.length ?? 0) + 1} 层` : "父模块直属"} readOnly /></label>

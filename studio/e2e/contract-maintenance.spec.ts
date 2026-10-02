@@ -32,7 +32,8 @@ async function studioState(page: Page): Promise<ContractState> {
 }
 
 async function openContractDialog(page: Page, definitionId: string) {
-  await page.getByRole("button", { name: "Module contract maintenance" }).click();
+  await page.getByRole("tab", { name: "模型", exact: true }).click();
+  await page.getByRole("button", { name: "模块契约维护" }).click();
   const dialog = page.getByRole("dialog", { name: "Module contract maintenance" });
   await expect(dialog).toBeVisible();
   await dialog.getByLabel("Approved base definition").selectOption(definitionId);

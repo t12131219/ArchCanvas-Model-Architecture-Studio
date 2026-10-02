@@ -1332,12 +1332,13 @@ def _build_vertical_dual_lane_scene(
                         + 28.0
                         + (index % 3) * 7.0
                     )
+                    target_approach_x = max(0.0, end.x - 24.0)
                     points = [
                         start,
                         ScenePoint(x=start.x + 24.0, y=start.y),
                         ScenePoint(x=start.x + 24.0, y=corridor_y),
-                        ScenePoint(x=end.x - 24.0, y=corridor_y),
-                        ScenePoint(x=end.x - 24.0, y=end.y),
+                        ScenePoint(x=target_approach_x, y=corridor_y),
+                        ScenePoint(x=target_approach_x, y=end.y),
                         end,
                     ]
             elif vertical_overlap and horizontal_overlap:

@@ -20,7 +20,7 @@ emits the machine-readable version with installed dependency versions.
 | Keras subclassed `Model.call` | Partial | Experimental | Partial | Partial | Verified |
 | Keras Functional builder | Partial | Experimental | Partial | Partial | Verified |
 | Keras custom/backend-specific Layer | Partial | Experimental | Unavailable | Unavailable | Unavailable |
-| JAX pure function | Partial | Experimental | Partial | Unavailable | Verified |
+| JAX pure function | Partial | Experimental | Partial | Partial | Verified |
 | Flax Module | Partial | Experimental | Partial | Partial | Verified |
 | JAX `jit/vmap/scan` or stateful form | Partial | Experimental | Unavailable | Unavailable | Unavailable |
 | ONNX standard-domain graph | Verified | Experimental | Partial | Partial | Verified |
@@ -34,6 +34,11 @@ not advertise `cuda` unless `torch.cuda.is_available()` succeeds. ONNX external-
 updates freeze the complete artifact set, reject unconfined paths, replay from an isolated copy,
 and restore all replaced members after a failed post-commit gate. This is service-contract
 atomicity with rollback, not a claim of one filesystem-level multi-file rename.
+
+JAX pure-function structural lowering is deliberately bounded: the target must be an activation
+assigned at one exact source anchor, the `jax` namespace must already be imported without an alias,
+and the only replacements are `jax.nn.gelu`, `jax.nn.relu`, and `jax.nn.silu`. Missing namespace
+evidence, transformed/stateful forms, and ambiguous anchors produce zero source writes.
 
 Runtime receipts now preserve form-specific context: Keras backend/form/training mode, JAX PRNG,
 static-argument and pytree fingerprints, and ONNX provider, opset, custom-domain, instrumentation,
@@ -52,8 +57,11 @@ themselves change a partial or experimental status to verified.
 | Validation profiles | Fast and publication available; full reports transaction gates; runtime remains explicit |
 | Draft intent and proof overlay | Connection and arbitrary-node handoffs persist as blocked typed intents with reason codes |
 | Arbitrary draft node lowering | Authoring/proposal available; writeback blocked until a framework adapter proves a lowering |
-| Staged multi-file source editor | Unavailable; current snapshots do not yet inventory transitive source files |
+| Staged multi-file source editor | Available for files in the frozen SourceSnapshot inventory; files outside that inventory remain unavailable |
 | ONNX external-data commit | Available for same-size initializer updates; complete ArtifactSet freshness and rollback verified |
+| Editor-local Python syntax service | Available; Tree-sitter Worker provides incremental errors, folds, and local symbols without changing canonical facts |
+| Large-graph interaction | Available; viewport detail virtualization and adaptive routing Worker preserve hit geometry and complete exports |
+| Explicit graph relayout | Available through cancellable ELK Worker command; pinned nodes remain fixed and one result is one visual undo step |
 
 ## Hosts
 

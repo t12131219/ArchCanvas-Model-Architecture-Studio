@@ -154,3 +154,14 @@ export function setHierarchyExpansion(state: StudioStatePayload, expandedIds: st
     })),
   }, { nonce: state.session_nonce });
 }
+
+export function setNavigationView(
+  state: StudioStatePayload,
+  projection: "module" | "source",
+  expansions: Record<"module" | "source", string[]>,
+) {
+  return postStudioJson<StudioStatePayload>("/api/navigation", {
+    projection,
+    expansions,
+  }, { nonce: state.session_nonce });
+}

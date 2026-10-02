@@ -118,6 +118,10 @@ def test_capability_matrix_is_explicit_per_framework_form() -> None:
     custom_onnx = next(
         form for form in capabilities["onnx"].forms if form.form_id == "form:onnx-custom-op"
     )
+    pure_jax = next(
+        form for form in capabilities["jax"].forms if form.form_id == "form:jax-pure-function"
+    )
+    assert pure_jax.structural_transaction == "partial"
     assert custom_onnx.runtime == "unavailable"
     assert custom_onnx.structural_transaction == "unavailable"
 
@@ -542,6 +546,91 @@ def test_flax_activation_structural_transaction_commits_atomically(tmp_path: Pat
     transaction, committed = commit_transaction(transaction_path)
     assert committed.status == "ok"
     assert "activated = nn.relu(mixed)" in (project / "model.py").read_text()
+
+
+def test_jax_pure_function_activation_transaction_commits_atomically(tmp_path: Path) -> None:
+    source = ROOT / "fixtures" / "cross_framework" / "jax_function"
+    project = tmp_path / "project"
+    shutil.copytree(source, project)
+    config = project / "config.json"
+    bundle = analyze_with_adapter(
+        project,
+        "model:residual_projection",
+        "inference",
+        "eval",
+        config.read_bytes(),
+        config,
+        framework="jax",
+        pattern_packs_enabled=False,
+    )
+    analysis = tmp_path / "analysis"
+    analysis.mkdir()
+    artifact = analysis / "architecture.json"
+    artifact.write_text(bundle.architecture.model_dump_json())
+    (analysis / "source-snapshot.json").write_text(bundle.snapshot.model_dump_json())
+    (analysis / "evidence-ledger.json").write_text(
+        json.dumps([item.model_dump(mode="json") for item in bundle.evidence])
+    )
+    request = SemanticStructuralPatch(
+        patch_id="patch:jax-pure-activation",
+        operation="replace_activation",
+        artifact_path=str(artifact),
+        target_node_id="node:activated",
+        parameters={"replacement": "ReLU"},
+    )
+    transaction, prepared = prepare_transaction(request, tmp_path / "workspace")
+    assert prepared.status == "ok"
+    transaction_path = (
+        Path(transaction.workspace) / "transactions" / transaction.transaction_id / "transaction.json"
+    )
+    transaction, verified = verify_transaction(transaction_path)
+    assert verified.status == "ok", verified.model_dump(mode="json")
+    transaction, committed = commit_transaction(transaction_path)
+    assert committed.status == "ok"
+    changed_source = (project / "model.py").read_text()
+    assert "import jax\n" in changed_source
+    assert "activated = jax.nn.relu(shifted)" in changed_source
+    assert "output = signal + activated" in changed_source
+
+
+def test_jax_pure_function_activation_requires_explicit_namespace_and_writes_nothing(
+    tmp_path: Path,
+) -> None:
+    source = ROOT / "fixtures" / "cross_framework" / "jax_function"
+    project = tmp_path / "project"
+    shutil.copytree(source, project)
+    source_path = project / "model.py"
+    source_path.write_text(source_path.read_text().replace("import jax\n", ""))
+    config = project / "config.json"
+    bundle = analyze_with_adapter(
+        project,
+        "model:residual_projection",
+        "inference",
+        "eval",
+        config.read_bytes(),
+        config,
+        framework="jax",
+        pattern_packs_enabled=False,
+    )
+    analysis = tmp_path / "analysis"
+    analysis.mkdir()
+    artifact = analysis / "architecture.json"
+    artifact.write_text(bundle.architecture.model_dump_json())
+    (analysis / "source-snapshot.json").write_text(bundle.snapshot.model_dump_json())
+    (analysis / "evidence-ledger.json").write_text(
+        json.dumps([item.model_dump(mode="json") for item in bundle.evidence])
+    )
+    request = SemanticStructuralPatch(
+        patch_id="patch:jax-pure-no-namespace",
+        operation="replace_activation",
+        artifact_path=str(artifact),
+        target_node_id="node:activated",
+        parameters={"replacement": "ReLU"},
+    )
+    before = source_path.read_bytes()
+    with pytest.raises(ValueError, match="explicit import jax"):
+        prepare_transaction(request, tmp_path / "workspace")
+    assert source_path.read_bytes() == before
 
 
 def test_onnx_initializer_transaction_replays_and_commits_atomically(tmp_path: Path) -> None:

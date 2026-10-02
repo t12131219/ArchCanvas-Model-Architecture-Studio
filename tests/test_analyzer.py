@@ -8,6 +8,7 @@ from archcanvas_python import analyze_project
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "fixtures" / "tier_a" / "transformer"
+GENERIC_FIXTURE = ROOT / "tests" / "fixtures" / "generic"
 
 
 def transformer_bundle():
@@ -169,3 +170,41 @@ def test_config_changes_source_snapshot_identity() -> None:
     )
     assert original.snapshot.snapshot_id != changed.snapshot.snapshot_id
     assert original.architecture.architecture_id != changed.architecture.architecture_id
+
+
+def test_tensor2tensor_execution_convention_and_tuple_outputs_are_recovered() -> None:
+    bundle = analyze_project(
+        GENERIC_FIXTURE,
+        "tensor2tensor_model:Transformer",
+        "inference",
+        "eval",
+        framework="keras",
+    )
+    container = next(node for node in bundle.architecture.nodes if node.parent_id is None)
+    assert container.attributes["execution_symbol"] == "Transformer.model_fn_body"
+
+    nodes = {node.semantic_name: node for node in bundle.architecture.nodes}
+    encoder_prepare = nodes["transformer_prepare_encoder"]
+    decoder_prepare = nodes["transformer_prepare_decoder"]
+    assert encoder_prepare.attributes["assigned_symbols"] == [
+        "encoder_input",
+        "encoder_attention_bias",
+    ]
+    assert decoder_prepare.attributes["assigned_symbols"] == [
+        "decoder_input",
+        "decoder_self_attention_bias",
+    ]
+
+    decoder = nodes["transformer_decoder"]
+    incoming_roles = {
+        edge.role
+        for edge in bundle.architecture.edges
+        if edge.consumer_id == decoder.node_id
+    }
+    assert {
+        "decoder_input",
+        "encoder_output",
+        "decoder_self_attention_bias",
+        "encoder_attention_bias",
+    } <= incoming_roles
+    assert not any(node.node_id == "node:opaque.execution" for node in nodes.values())

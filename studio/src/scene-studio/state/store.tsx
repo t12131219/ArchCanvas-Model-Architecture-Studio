@@ -60,6 +60,13 @@ export const initialSceneStudioState: SceneStudioState = {
 
 export function sceneStudioReducer(state: SceneStudioState, action: SceneStudioAction): SceneStudioState {
   if (action.type === "source-loaded") {
+    const currentSelection = state.viewSlice.selection;
+    const sameProject = state.projectSlice.source?.project.project_id === action.source.project.project_id;
+    const selectionStillExists = Boolean(currentSelection && action.scenes.some((scene) => (
+      currentSelection.kind === "node"
+        ? scene.nodes.some((node) => node.scene_node_id === currentSelection.id)
+        : scene.edges.some((edge) => edge.scene_edge_id === currentSelection.id)
+    )));
     return {
       ...state,
       projectSlice: { status: "ready", error: null, source: action.source },
@@ -68,14 +75,25 @@ export function sceneStudioReducer(state: SceneStudioState, action: SceneStudioA
         evidenceCount: action.source.evidence.length,
         diagnosticCount: 0,
       },
-      viewSlice: { ...state.viewSlice, scenes: action.scenes, selection: null },
+      viewSlice: {
+        ...state.viewSlice,
+        scenes: action.scenes,
+        selection: sameProject && selectionStillExists ? currentSelection : null,
+      },
     };
   }
   if (action.type === "status") {
     return { ...state, projectSlice: { ...state.projectSlice, status: action.status, error: action.error ?? null } };
   }
   if (action.type === "preset") return { ...state, viewSlice: { ...state.viewSlice, presetId: action.presetId, selection: null } };
-  if (action.type === "selection") return { ...state, viewSlice: { ...state.viewSlice, selection: action.selection } };
+  if (action.type === "selection") {
+    const current = state.viewSlice.selection;
+    if (current === action.selection || (
+      current?.kind === action.selection?.kind
+      && current?.id === action.selection?.id
+    )) return state;
+    return { ...state, viewSlice: { ...state.viewSlice, selection: action.selection } };
+  }
   if (action.type === "mode") return { ...state, interactionSlice: { mode: action.mode } };
   if (action.type === "job") return { ...state, jobSlice: { active: action.job } };
   return { ...state, viewSlice: { ...state.viewSlice, visualRevision: state.viewSlice.visualRevision + 1 } };

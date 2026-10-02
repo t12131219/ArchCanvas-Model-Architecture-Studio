@@ -396,6 +396,11 @@ def test_studio_topology_draft_prepares_registered_insertion_transaction(
         },
     )
 
+    assert bundle.draft.lowering_status == "checking"
+    assert bundle.draft.writeback_summary.eligibility == "prepare"
+    assert not bundle.draft.writeback_summary.blocking_intent_ids
+    assert {item.status for item in bundle.draft.proofs} == {EditProofState.PROVEN}
+
     receipt = bundle.submit_topology_draft(
         session.capability.capability_id,
         draft_document_digest(bundle.draft),

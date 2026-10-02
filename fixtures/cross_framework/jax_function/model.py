@@ -1,5 +1,6 @@
 """Pure JAX-style function fixture. Analysis must not import JAX."""
 
+import jax
 import jax.numpy as jnp
 
 

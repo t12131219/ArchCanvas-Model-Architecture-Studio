@@ -38,6 +38,14 @@ from .source_index import resolve_module_path, resolve_symbol
 ANALYZER_VERSION = "0.4.0"
 
 
+_FRAMEWORK_EXECUTION_METHODS: dict[str, tuple[str, ...]] = {
+    "pytorch": ("forward", "__call__", "call", "model_fn_body"),
+    "keras": ("call", "__call__", "model_fn_body", "forward"),
+    "jax": ("__call__", "call", "forward", "model_fn_body"),
+    "python": ("forward", "call", "__call__", "model_fn_body"),
+}
+
+
 class AnalysisError(ValueError):
     def __init__(self, code: str, message: str) -> None:
         super().__init__(message)
@@ -126,6 +134,14 @@ def _loaded_names(node: ast.AST) -> list[str]:
 
     Visitor().visit(node)
     return names
+
+
+def _assigned_names(node: ast.AST) -> list[str]:
+    if isinstance(node, ast.Name):
+        return [] if node.id == "_" else [node.id]
+    if isinstance(node, (ast.Tuple, ast.List)):
+        return [name for item in node.elts for name in _assigned_names(item)]
+    return []
 
 
 def _attribute_parts(node: ast.AST) -> list[str] | None:
@@ -562,9 +578,11 @@ def _infer_shape(
 
 def _edge_type(variable: str, consumer: _NodeDraft) -> EdgeType:
     lowered = variable.lower()
-    if "mask" in lowered:
+    if "mask" in lowered or "bias" in lowered:
         return EdgeType.CONDITION
-    if "memory" in lowered:
+    if "memory" in lowered or (
+        "encoder_output" in lowered and "decoder" in consumer.semantic_name.lower()
+    ):
         return EdgeType.MEMORY
     if consumer.kind is NodeKind.MERGE_EVENT:
         return EdgeType.RESIDUAL
@@ -638,11 +656,10 @@ def analyze_project(
     source_bytes = source_path.read_bytes()
     source_digest = _sha256(source_bytes)
     config_digest = _sha256(config_bytes)
-    method_name = execution_method or {
-        "pytorch": "forward",
-        "keras": "call",
-        "jax": "__call__",
-    }.get(framework, "forward")
+    method_name = execution_method or _FRAMEWORK_EXECUTION_METHODS.get(
+        framework,
+        _FRAMEWORK_EXECUTION_METHODS["python"],
+    )[0]
     execution_unresolved = False
     if isinstance(symbol_node, ast.ClassDef):
         methods = {
@@ -652,10 +669,13 @@ def analyze_project(
         }
         execution = methods.get(method_name)
         if execution is None and execution_method is None:
-            for fallback_name in ("forward", "call", "__call__"):
-                if fallback_name in methods:
-                    method_name = fallback_name
-                    execution = methods[fallback_name]
+            for candidate in _FRAMEWORK_EXECUTION_METHODS.get(
+                framework,
+                _FRAMEWORK_EXECUTION_METHODS["python"],
+            ):
+                if candidate in methods:
+                    method_name = candidate
+                    execution = methods[candidate]
                     break
         if execution is None:
             execution_unresolved = True
@@ -829,15 +849,16 @@ def analyze_project(
         )
     for statement in execution.body if execution is not None else []:
         target: str | None = None
+        assigned_names: list[str] = []
         expression: ast.AST | None = None
-        if (
-            isinstance(statement, ast.Assign)
-            and len(statement.targets) == 1
-            and isinstance(statement.targets[0], ast.Name)
-        ):
-            target, expression = statement.targets[0].id, statement.value
-        elif isinstance(statement, ast.AnnAssign) and isinstance(statement.target, ast.Name):
-            target, expression = statement.target.id, statement.value
+        if isinstance(statement, ast.Assign) and len(statement.targets) == 1:
+            assigned_names = _assigned_names(statement.targets[0])
+            if assigned_names:
+                target, expression = assigned_names[0], statement.value
+        elif isinstance(statement, ast.AnnAssign):
+            assigned_names = _assigned_names(statement.target)
+            if assigned_names:
+                target, expression = assigned_names[0], statement.value
         elif isinstance(statement, ast.Return):
             dependencies = [
                 (name, variable_producer[name])
@@ -1114,13 +1135,27 @@ def analyze_project(
             attributes={
                 **attributes,
                 "assigned_symbol": target,
+                **(
+                    {"assigned_symbols": assigned_names}
+                    if len(assigned_names) > 1
+                    else {}
+                ),
                 "source_expression": ast.unparse(expression),
             },
             module=module,
         )
         drafts.append(draft)
-        variable_producer[target] = node_id
-        shapes[target] = _infer_shape(target, expression, module, dependencies, shapes, config)
+        inferred_shape = _infer_shape(
+            target,
+            expression,
+            module,
+            dependencies,
+            shapes,
+            config,
+        )
+        for assigned_name in assigned_names or [target]:
+            variable_producer[assigned_name] = node_id
+            shapes[assigned_name] = inferred_shape
 
     if not output_created:
         if return_boundary is None:

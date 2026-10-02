@@ -58,6 +58,22 @@ export function inlineExpandedChildren(level: InlineDetailLevel): NonNullable<In
   return level.expandedChildren ?? (level.expandedChild ? [level.expandedChild] : []);
 }
 
+export function inlineDetailComplexity(level: InlineDetailLevel): { nodeCount: number; edgeCount: number } {
+  return inlineExpandedChildren(level).reduce(
+    (total, child) => {
+      const nested = inlineDetailComplexity(child.level);
+      return {
+        nodeCount: total.nodeCount + nested.nodeCount,
+        edgeCount: total.edgeCount + nested.edgeCount,
+      };
+    },
+    {
+      nodeCount: level.nodes.length,
+      edgeCount: level.diagram.primitives.filter((primitive) => primitive.kind === "flow").length,
+    },
+  );
+}
+
 export function detailExpansionPath(...childIds: string[]): DetailExpansionBranch {
   return childIds.reduceRight<DetailExpansionBranch>(
     (child, childId) => ({ children: { [childId]: child } }),

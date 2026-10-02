@@ -1,4 +1,4 @@
-import { Activity, AlertTriangle, Box, Braces, CheckCircle2, ChevronsDownUp, ChevronsUpDown, CornerUpLeft, FileCode2, FolderOpen, GitCompareArrows, Link2, ListChecks, LoaderCircle, LockKeyhole, Moon, PackageCheck, Plus, RefreshCw, Search, ShieldCheck, Square, Sun, Trash2, Unlink, X, Play } from "lucide-react";
+import { Activity, AlertTriangle, Box, Braces, CheckCircle2, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, CornerUpLeft, Eye, FileCode2, FolderOpen, GitCompareArrows, Info, Layers3, Link2, ListChecks, LoaderCircle, LockKeyhole, Moon, PackageCheck, Pin, PinOff, Plus, RefreshCw, Search, ShieldCheck, SlidersHorizontal, Square, Sun, Trash2, Unlink, X, Play } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { compileStudioDraftPreview } from "../codegen/studio-preview";
@@ -41,6 +41,7 @@ import {
   openProject,
   searchStudio,
   setHierarchyExpansion,
+  setNavigationView,
   startAnalysis,
   startValidation,
   type CondaEnvironment,
@@ -52,9 +53,9 @@ import { persistPinnedNodes, persistTheme, persistVisualPatch, persistVisualPatc
 import { loadSourceExcerpt, type SourceExcerpt } from "./api/source-api";
 import { commitSourceTransaction, discardSourceTransaction, prepareParameterTransaction, prepareStructuralTransaction } from "./api/transaction-api";
 import { isStudioStatePayload, type DraftNode, type EditTargetScope, type StudioStatePayload, type ViewPresetId } from "./domain/source-backed-scene";
-import { ALL_VIEW_PRESETS, VIEW_PRESETS } from "./domain/view-preset";
+import { P0_VIEW_PRESETS, VIEW_PRESETS } from "./domain/view-preset";
 import { projectToScene } from "./projection/project-to-scene";
-import type { LabNode } from "./types";
+import type { LabEdge, LabNode, LabScene, Selection } from "./types";
 import {
   SceneStudioProvider,
   useSceneStudioDispatch,
@@ -486,7 +487,136 @@ function OperationsDrawer({
   </aside>;
 }
 
-function SourceEvidencePanel({ node, onState }: { node: LabNode; onState: (state: unknown) => void }) {
+type NavigationProjection = "module" | "source";
+
+function StudioNavigation({
+  source,
+  scene,
+  onState,
+  onSelect,
+}: {
+  source: StudioStatePayload;
+  scene?: ReturnType<typeof projectToScene>;
+  onState: (state: unknown) => void;
+  onSelect: (selection: Selection) => void;
+}) {
+  const [projection, setProjection] = useState<NavigationProjection>(source.navigation?.active_projection ?? "module");
+  const [query, setQuery] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const navigation = source.navigation;
+  const rows = navigation?.projections[projection].nodes ?? [];
+  const expandedIds = projection === "module"
+    ? source.view_state?.module_expansion ?? []
+    : source.view_state?.source_expansion ?? [];
+  const expanded = useMemo(() => new Set(expandedIds), [expandedIds]);
+  const byId = useMemo(() => new Map(rows.map((row) => [row.id, row])), [rows]);
+  const visibleRows = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (needle) {
+      const included = new Set<string>();
+      for (const row of rows) {
+        if (!`${row.label} ${row.secondary_label ?? ""} ${row.kind} ${row.path ?? ""}`.toLowerCase().includes(needle)) continue;
+        let current: typeof row | undefined = row;
+        while (current) {
+          included.add(current.id);
+          current = current.parent_id ? byId.get(current.parent_id) : undefined;
+        }
+      }
+      return rows.filter((row) => included.has(row.id));
+    }
+    return rows.filter((row) => {
+      let parentId = row.parent_id;
+      while (parentId) {
+        if (!expanded.has(parentId)) return false;
+        parentId = byId.get(parentId)?.parent_id ?? null;
+      }
+      return true;
+    });
+  }, [byId, expanded, query, rows]);
+
+  const saveNavigation = async (nextProjection: NavigationProjection, nextExpanded: Set<string>) => {
+    const expansions = {
+      module: nextProjection === "module" ? [...nextExpanded] : source.view_state?.module_expansion ?? [],
+      source: nextProjection === "source" ? [...nextExpanded] : source.view_state?.source_expansion ?? [],
+    };
+    onState(await setNavigationView(source, nextProjection, expansions));
+  };
+
+  const changeProjection = (next: NavigationProjection) => {
+    setProjection(next);
+    const nextExpanded = new Set(next === "module" ? source.view_state?.module_expansion ?? [] : source.view_state?.source_expansion ?? []);
+    void saveNavigation(next, nextExpanded);
+  };
+
+  const toggle = (id: string) => {
+    const next = new Set(expanded);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setBusyId(id);
+    void saveNavigation(projection, next).finally(() => setBusyId(null));
+  };
+
+  const setAllExpanded = (shouldExpand: boolean) => {
+    const next = shouldExpand
+      ? new Set(rows.filter((row) => row.child_count > 0).map((row) => row.id))
+      : new Set<string>();
+    setBusyId("navigation:all");
+    void saveNavigation(projection, next).finally(() => setBusyId(null));
+  };
+
+  const selectRow = (canonicalIds: string[]) => {
+    const targets = new Set(canonicalIds.filter((id) => id.startsWith("node:")));
+    const node = scene?.nodes.find((item) => item.canonical_node_ids?.some((id) => targets.has(id)));
+    onSelect(node ? { kind: "node", id: node.scene_node_id } : null);
+  };
+
+  if (!navigation) return <div className="navigation-empty"><Layers3 size={18} /><strong>导航尚未生成</strong><span>重新分析项目以构建模块与源码关系。</span></div>;
+  return <div className="studio-navigation">
+    <div className="navigation-tabs" role="tablist" aria-label="项目导航">
+      <button role="tab" aria-selected={projection === "module"} onClick={() => changeProjection("module")}><Layers3 size={13} />模块</button>
+      <button role="tab" aria-selected={projection === "source"} onClick={() => changeProjection("source")}><FileCode2 size={13} />源码</button>
+    </div>
+    <label className="navigation-search"><Search size={13} /><input aria-label="搜索导航" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={projection === "module" ? "搜索模块" : "搜索文件或符号"} /></label>
+    <div className="navigation-summary">
+      <span>{navigation.projections[projection].description}</span>
+      <b>{rows.length}</b>
+      <button
+        className="icon-button"
+        title={projection === "module" ? "全部展开源码层级" : "全部展开源码树"}
+        disabled={busyId !== null}
+        onClick={() => setAllExpanded(true)}
+      >
+        <ChevronsUpDown size={12} />
+      </button>
+      <button
+        className="icon-button"
+        title={projection === "module" ? "全部收起源码层级" : "全部收起源码树"}
+        disabled={busyId !== null || expanded.size === 0}
+        onClick={() => setAllExpanded(false)}
+      >
+        <ChevronsDownUp size={12} />
+      </button>
+    </div>
+    <div className="navigation-tree" role="tree" aria-label={navigation.projections[projection].label}>
+      {visibleRows.map((row) => <div
+        className={`navigation-row kind-${row.kind} ${row.reference ? "reference" : ""}`}
+        key={row.id}
+        role="treeitem"
+        aria-expanded={row.child_count ? expanded.has(row.id) : undefined}
+        style={{ "--tree-depth": row.depth } as React.CSSProperties}
+      >
+        {row.child_count ? <button className="tree-toggle" aria-label={`${expanded.has(row.id) ? "收起" : "展开"}${row.label}`} disabled={busyId === row.id} onClick={() => toggle(row.id)}>{expanded.has(row.id) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}</button> : <span className="tree-spacer" />}
+        <button className="tree-label" title={row.path ? `${row.path}${row.span ? `:${row.span.start_line}` : ""}` : row.label} onClick={() => selectRow(row.canonical_ids)}>
+          <span>{row.label}</span><small>{row.secondary_label ?? row.kind}</small>
+        </button>
+      </div>)}
+      {!visibleRows.length ? <div className="navigation-empty compact">没有匹配项</div> : null}
+    </div>
+  </div>;
+}
+
+type EvidenceSection = "all" | "source" | "model" | "evidence";
+
+function SourceEvidencePanel({ node, onState, section = "all" }: { node: LabNode; onState: (state: unknown) => void; section?: EvidenceSection }) {
   const studio = useSceneStudioState();
   const source = studio.projectSlice.source;
   const [excerpt, setExcerpt] = useState<SourceExcerpt | null>(null);
@@ -511,7 +641,50 @@ function SourceEvidencePanel({ node, onState }: { node: LabNode; onState: (state
   const parameterContext = source?.parameter_edit_contexts?.find((context) => (
     context.target_node_id === canonicalId && context.parameter_name === activeParameter?.name
   ));
-  const structuralCapabilities = source?.capabilities?.semantic_transforms ?? [];
+  const structuralCapabilities = useMemo(() => {
+    if (!source || !canonicalNode || !canonicalId) return [];
+    const advertised = new Set(source.capabilities?.semantic_transforms ?? []);
+    const sourceRecords = evidence.filter((item) => item.kind === "source" && item.path && item.span);
+    const definition = sourceRecords.find((item) => item.evidence_id.includes(".init."));
+    const flow = sourceRecords.find((item) => (
+      item.evidence_id.includes(".forward.")
+      || item.evidence_id.includes(".call.")
+      || item.evidence_id.includes(".id-__call__.")
+    ));
+    const framework = source.project.framework;
+    const opType = String(canonicalNode.attributes.op_type ?? "");
+    const modulePath = String(canonicalNode.attributes.module_path ?? "");
+    const assignedSymbol = String(canonicalNode.attributes.assigned_symbol ?? "");
+    const hasAnchorPair = framework === "jax"
+      ? Boolean(flow)
+      : Boolean(definition && flow && definition.path === flow.path);
+    if (!hasAnchorPair) return [];
+
+    const applicable: Array<"replace_activation" | "insert_layer_norm"> = [];
+    const explicitActivation = framework === "pytorch"
+      ? ["nn.GELU", "nn.ReLU", "nn.SiLU"].includes(opType) && modulePath.startsWith("self.")
+      : framework === "keras"
+        ? opType === "layers.Activation" && canonicalNode.parameters?.some((item) => item.name === "arg0" && ["gelu", "relu", "silu"].includes(String(item.value)))
+        : framework === "jax"
+          ? ["nn.gelu", "nn.relu", "nn.silu", "jax.nn.gelu", "jax.nn.relu", "jax.nn.silu", "jnp.tanh"].includes(opType)
+          : false;
+    if (advertised.has("replace_activation") && explicitActivation) applicable.push("replace_activation");
+
+    const outgoing = source.architecture.edges.filter((edge) => edge.producer_id === canonicalId);
+    const directSequentialOutput = ["pytorch", "keras"].includes(framework)
+      && modulePath.startsWith("self.")
+      && !canonicalNode.attributes.functional_anchor
+      && Boolean(assignedSymbol)
+      && outgoing.length === 1;
+    if (advertised.has("insert_layer_norm") && directSequentialOutput) applicable.push("insert_layer_norm");
+    return applicable;
+  }, [canonicalId, canonicalNode, evidence, source]);
+
+  useEffect(() => {
+    if (structuralCapabilities.includes(structuralOperation)) return;
+    const first = structuralCapabilities[0];
+    if (first) setStructuralOperation(first);
+  }, [structuralCapabilities, structuralOperation]);
 
   useEffect(() => {
     if (!activeParameter) {
@@ -540,9 +713,12 @@ function SourceEvidencePanel({ node, onState }: { node: LabNode; onState: (state
     return () => controller.abort();
   }, [active?.evidence_id, active?.path, active?.span?.end_line, active?.span?.start_line]);
 
-  if (!evidence.length && !parameters.length && !(canonicalId && structuralCapabilities.length)) return null;
+  const showSource = section === "all" || section === "source";
+  const showEvidence = section === "all" || section === "evidence";
+  const showModel = section === "all" || section === "model";
+  if (!evidence.length && !parameters.length && !(canonicalId && structuralCapabilities.length)) return <div className="inspector-empty-state">当前对象没有可用的源码证据或模型操作。</div>;
   return <>
-  {evidence.length ? <section className="source-evidence-panel">
+  {showEvidence && evidence.length ? <section className="source-evidence-panel">
     <header><strong>证据与源码</strong><span>{evidence.length}</span></header>
     <div className="evidence-records">
       {evidence.slice(0, 4).map((item) => <article key={item.evidence_id}>
@@ -551,14 +727,18 @@ function SourceEvidencePanel({ node, onState }: { node: LabNode; onState: (state
         {item.path ? <code>{item.path}{item.span ? `:${item.span.start_line}` : ""}</code> : null}
       </article>)}
     </div>
+  </section> : null}
+  {showSource ? <section className="source-evidence-panel source-only-panel">
+    <header><strong>源码定位</strong><span>{active?.path ?? "无锚点"}</span></header>
     {excerpt ? <div className="source-excerpt">
       <div><strong>{excerpt.path}</strong><span>{excerpt.revision}</span></div>
       <pre>{excerpt.lines.map((line) => <span key={line.number} className={line.number >= excerpt.highlight_start_line && line.number <= excerpt.highlight_end_line ? "highlight" : ""}>
         <i>{line.number}</i>{line.text || " "}
       </span>)}</pre>
     </div> : error ? <div className="excerpt-error">{error}</div> : active ? <div className="excerpt-loading"><LoaderCircle className="spin" size={13} />读取源码片段</div> : null}
+    {!active ? <div className="inspector-empty-state">当前聚合视图没有唯一源码锚点，请在模块树中选择更细粒度对象。</div> : null}
   </section> : null}
-  {studio.interactionSlice.mode === "model" && source && parameters.length && canonicalId ? <section className="parameter-transaction-panel">
+  {showModel && source && parameters.length && canonicalId ? <section className="parameter-transaction-panel">
     <header><strong>参数事务</strong><span>精确锚点</span></header>
     <label>参数<select value={activeParameter?.name ?? ""} onChange={(event) => {
       const selected = parameters.find((parameter) => parameter.name === event.target.value);
@@ -587,7 +767,7 @@ function SourceEvidencePanel({ node, onState }: { node: LabNode; onState: (state
         .finally(() => setPreparing(false));
     }}>{preparing ? <LoaderCircle className="spin" size={14} /> : <Braces size={14} />}准备并验证</button>
   </section> : null}
-  {studio.interactionSlice.mode === "model" && source && canonicalId && structuralCapabilities.length ? <section className="structural-transaction-panel">
+  {showModel && source && canonicalId && structuralCapabilities.length ? <section className="structural-transaction-panel">
     <header><strong>结构事务</strong><span>LibCST adapter</span></header>
     <label>操作<select value={structuralOperation} onChange={(event) => setStructuralOperation(event.target.value as typeof structuralOperation)}>
       <option value="replace_activation" disabled={!structuralCapabilities.includes("replace_activation")}>替换激活函数</option>
@@ -610,7 +790,108 @@ function SourceEvidencePanel({ node, onState }: { node: LabNode; onState: (state
     }}>{preparing ? <LoaderCircle className="spin" size={14} /> : <GitCompareArrows size={14} />}准备结构变换</button>
     <div className="unsupported-structure"><AlertTriangle size={12} />任意 connect/delete 没有 adapter proof 时保持 proposal-only。</div>
   </section> : null}
+  {showModel && error ? <div className="excerpt-error">{error}</div> : null}
   </>;
+}
+
+type InspectorTab = "overview" | "source" | "visual" | "model" | "evidence";
+
+function StudioInspector({
+  source,
+  node,
+  edge,
+  scene,
+  updateNode,
+  draftAnalysis,
+  onState,
+  onOpenSourceWorkspace,
+  onOpenContractMaintenance,
+  pinned,
+  onTogglePinned,
+  onHierarchyExpand,
+  onHierarchyCollapse,
+}: {
+  source: StudioStatePayload;
+  node?: LabNode;
+  edge?: LabEdge;
+  scene: LabScene;
+  updateNode: (changes: Partial<Omit<LabNode, "scene_node_id">>) => void;
+  draftAnalysis: AnalysisSnapshot | null;
+  onState: (state: unknown) => void;
+  onOpenSourceWorkspace: () => void;
+  onOpenContractMaintenance: () => void;
+  pinned: boolean;
+  onTogglePinned: () => void;
+  onHierarchyExpand: (id: string) => void;
+  onHierarchyCollapse: (id: string) => void;
+}) {
+  const [tab, setTab] = useState<InspectorTab>("overview");
+  const canonicalIds = node?.canonical_node_ids ?? [];
+  const canonicalNodes = source.architecture.nodes.filter((item) => canonicalIds.includes(item.node_id));
+  const inputPorts = [...new Map(canonicalNodes.flatMap((item) => item.input_ports).map((port) => [port.role, port])).values()];
+  const outputPorts = [...new Map(canonicalNodes.flatMap((item) => item.output_ports).map((port) => [port.role, port])).values()];
+  const draftNode = node?.draft_node_id ? source.draft?.nodes.find((item) => item.node_id === node.draft_node_id) : undefined;
+
+  const setBound = (key: "x" | "y" | "width" | "height", raw: string) => {
+    if (!node) return;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) return;
+    const value = key === "width" ? Math.max(72, Math.min(640, parsed))
+      : key === "height" ? Math.max(42, Math.min(1200, parsed))
+        : parsed;
+    updateNode({ bounds: { ...node.bounds, [key]: value } });
+  };
+
+  return <div className="studio-inspector">
+    <div className="inspector-tabs" role="tablist" aria-label="对象检查器">
+      {([
+        ["overview", "概览", Info],
+        ["source", "源码", FileCode2],
+        ["visual", "视觉", Eye],
+        ["model", "模型", SlidersHorizontal],
+        ["evidence", "证据", ShieldCheck],
+      ] as const).map(([id, label, Icon]) => <button key={id} role="tab" title={label} aria-label={label} aria-selected={tab === id} onClick={() => setTab(id)}><Icon size={13} /><span>{label}</span></button>)}
+    </div>
+    <div className="studio-inspector-body">
+      {!node && !edge ? <div className="project-inspector-summary">
+        <strong>{source.architecture.entrypoint}</strong>
+        <span>{source.project.framework} · generation {source.project.generation}</span>
+        <dl><div><dt>语义节点</dt><dd>{source.architecture.nodes.length}</dd></div><div><dt>事实边</dt><dd>{source.architecture.edges.length}</dd></div><div><dt>层级节点</dt><dd>{source.hierarchy.nodes.length}</dd></div><div><dt>当前视图</dt><dd>{scene.nodes.length} / {scene.edges.length}</dd></div></dl>
+      </div> : null}
+
+      {tab === "overview" && node ? <section className="inspector-section overview-section">
+        <div className="selection-title"><span>{node.fidelity ?? "schematic"} · {node.shape}</span><strong>{node.label}</strong><small>{node.secondary_label}</small></div>
+        <dl className="object-facts">
+          <div><dt>视图对象</dt><dd><code>{node.scene_node_id}</code></dd></div>
+          <div><dt>层级</dt><dd>{node.hierarchy_node_id ?? "visual slot"}</dd></div>
+          <div><dt>输入 / 输出端口</dt><dd>{inputPorts.length} / {outputPorts.length}</dd></div>
+          <div><dt>源码证据</dt><dd>{node.evidence_ids?.length ?? 0}</dd></div>
+        </dl>
+        {canonicalIds.length ? <div className="canonical-list"><strong>Canonical bindings</strong>{canonicalIds.map((id) => <code key={id}>{id}</code>)}</div> : <div className="schematic-notice"><Info size={13} />此节点是结构 profile 的 schematic 槽位，不冒充 Exact IR 对象。</div>}
+        {inputPorts.length || outputPorts.length ? <div className="port-summary"><strong>Named ports</strong>{inputPorts.map((port) => <span key={port.port_id}><i>IN</i><code>{port.role}</code></span>)}{outputPorts.map((port) => <span key={port.port_id}><i>OUT</i><code>{port.role}</code></span>)}</div> : null}
+      </section> : null}
+      {tab === "overview" && edge ? <section className="inspector-section overview-section"><div className="selection-title"><span>连线 · {edge.relation}</span><strong>{edge.label || edge.relation}</strong></div><dl className="object-facts"><div><dt>起点</dt><dd>{edge.source_scene_node_id}</dd></div><div><dt>终点</dt><dd>{edge.target_scene_node_id}</dd></div><div><dt>事实绑定</dt><dd>{edge.canonical_edge_ids?.length ?? 0}</dd></div></dl></section> : null}
+
+      {tab === "source" && node ? <><SourceEvidencePanel node={node} onState={onState} section="source" />{source.source_workspace ? <button className="tool-button inspector-wide-command" onClick={onOpenSourceWorkspace}><FileCode2 size={13} />打开源码工作区</button> : null}</> : null}
+
+      {tab === "visual" && node ? <section className="inspector-section visual-inspector-section">
+        <div className="field-grid"><label>X<input type="number" value={Math.round(node.bounds.x)} onChange={(event) => setBound("x", event.target.value)} /></label><label>Y<input type="number" value={Math.round(node.bounds.y)} onChange={(event) => setBound("y", event.target.value)} /></label><label>宽度<input type="number" value={Math.round(node.bounds.width)} onChange={(event) => setBound("width", event.target.value)} /></label><label>高度<input type="number" value={Math.round(node.bounds.height)} onChange={(event) => setBound("height", event.target.value)} /></label></div>
+        <dl className="object-facts"><div><dt>泳道</dt><dd>{node.layout_lane ?? "自由布局"}</dd></div><div><dt>排序</dt><dd>{node.layout_rank ?? "-"}</dd></div><div><dt>视觉语调</dt><dd>{node.paper_tone ?? "default"}</dd></div></dl>
+        <button className="tool-button inspector-wide-command" onClick={onTogglePinned}>{pinned ? <PinOff size={13} /> : <Pin size={13} />}{pinned ? "取消固定节点" : "固定节点位置"}</button>
+        {node.hierarchy_expandable && node.hierarchy_node_id ? <button className="tool-button inspector-wide-command" onClick={() => onHierarchyExpand(node.hierarchy_node_id!)}><Plus size={13} />展开源码层级</button> : null}
+        {node.parent_hierarchy_node_id ? <button className="tool-button inspector-wide-command" onClick={() => onHierarchyCollapse(node.parent_hierarchy_node_id!)}><ChevronRight size={13} />收起父层级</button> : null}
+      </section> : null}
+
+      {tab === "model" ? <>{node ? (draftNode
+        ? <DraftNodeInspector source={source} node={draftNode} analysis={draftAnalysis} onState={onState} />
+        : <SourceEvidencePanel node={node} onState={onState} section="model" />) : null}
+        <button className="tool-button inspector-wide-command" onClick={onOpenContractMaintenance}><ShieldCheck size={13} />模块契约维护</button>
+      </> : null}
+
+      {tab === "evidence" && node ? <SourceEvidencePanel node={node} onState={onState} section="evidence" /> : null}
+      {((tab !== "overview" && tab !== "model" && !node) || (tab === "visual" && edge) || (tab === "source" && edge) || (tab === "evidence" && edge)) ? <div className="inspector-empty-state">选择一个模块或节点以查看此页签。</div> : null}
+    </div>
+  </div>;
 }
 
 function TransactionDrawer({
@@ -685,7 +966,7 @@ function SceneStudioWorkspace() {
 
   const acceptSource = useCallback((source: unknown) => {
     if (!isStudioStatePayload(source)) throw new Error("后端返回的 StudioState 缺少 Exact Architecture IR 字段");
-    const scenes = ALL_VIEW_PRESETS.map((presetId) => projectToScene(source, presetId));
+    const scenes = P0_VIEW_PRESETS.map((presetId) => projectToScene(source, presetId));
     dispatch({ type: "source-loaded", source, scenes });
   }, [dispatch]);
 
@@ -713,7 +994,10 @@ function SceneStudioWorkspace() {
     ? `source:${state.projectSlice.source.project.project_id}:${state.viewSlice.presetId}`
     : undefined;
   const sourceScenes = useMemo(() => state.viewSlice.scenes, [state.viewSlice.scenes]);
-  const sourceReady = state.projectSlice.status === "ready" && sourceScenes.length > 0;
+  // Opening a replacement project is transactional from the workspace's point of
+  // view: keep the current analyzed scene visible until the new analysis succeeds.
+  const sourceReady = Boolean(state.projectSlice.source) && sourceScenes.length > 0;
+  const activeScene = sourceScenes.find((item) => item.scene_id === activeSceneId) ?? sourceScenes[0];
   const sourceAnchor = useMemo(() => {
     const source = state.projectSlice.source;
     const selection = state.viewSlice.selection;
@@ -753,7 +1037,11 @@ function SceneStudioWorkspace() {
       dispatch({ type: "status", status: state.projectSlice.source ? "ready" : "idle" });
     } catch (error) {
       setDialogError(String(error));
-      dispatch({ type: "status", status: "error", error: String(error) });
+      dispatch({
+        type: "status",
+        status: state.projectSlice.source ? "ready" : "error",
+        error: String(error),
+      });
     }
   }, [dispatch, environmentPath, projectRoot, state.projectSlice.source]);
 
@@ -829,7 +1117,7 @@ function SceneStudioWorkspace() {
           mode: invocationMode,
           input_structure: JSON.parse(inputStructure) as unknown,
         },
-        request_id: crypto.randomUUID(),
+        request_id: `request:${crypto.randomUUID()}`,
       }, state.projectSlice.source?.session_nonce);
       activeJobIdRef.current = job.job_id;
       dispatch({ type: "job", job });
@@ -931,13 +1219,19 @@ function SceneStudioWorkspace() {
     if (operation === "collapse-all") expanded.clear();
     if (operation === "expand-all") {
       const parentIds = new Set(source.hierarchy.nodes.flatMap((item) => item.parent_hierarchy_node_id ? [item.parent_hierarchy_node_id] : []));
-      parentIds.forEach((id) => expanded.add(id));
+      parentIds.forEach((id) => {
+        if (id !== source.hierarchy.root_node_id) expanded.add(id);
+      });
     }
     navigationQueueRef.current = navigationQueueRef.current.then(async () => {
       const next = await setHierarchyExpansion(source, [...expanded]);
       acceptSource(next);
     }).catch((error) => dispatch({ type: "status", status: "error", error: String(error) }));
   }, [acceptSource, dispatch, state.projectSlice.source]);
+
+  const handleSelectionChange = useCallback((selection: Selection) => {
+    dispatch({ type: "selection", selection });
+  }, [dispatch]);
 
   const commitTransaction = useCallback(async () => {
     const source = state.projectSlice.source;
@@ -976,16 +1270,12 @@ function SceneStudioWorkspace() {
       {sourceReady ? <label className="preset-control">
         <span>视图</span>
         <select value={state.viewSlice.presetId} onChange={(event) => dispatch({ type: "preset", presetId: event.target.value as ViewPresetId })}>
-          {ALL_VIEW_PRESETS.map((id) => <option key={id} value={id}>{VIEW_PRESETS[id].label}</option>)}
+          {P0_VIEW_PRESETS.map((id) => <option key={id} value={id}>{VIEW_PRESETS[id].label}</option>)}
         </select>
       </label> : null}
       <button className="icon-button" title="重新加载分析状态" onClick={() => void hydrate()}><RefreshCw size={14} /></button>
       {sourceReady ? <>
         <button className="icon-button" title="打开搜索、问题与任务" onClick={() => setOperationsOpen(true)}><Search size={14} /></button>
-        <button className="icon-button" title="打开源码工作区" disabled={!state.projectSlice.source?.source_workspace} onClick={() => setSourceWorkspaceOpen(true)}><FileCode2 size={14} /></button>
-        <button className="icon-button" aria-label="Module contract maintenance" title="模块契约维护" onClick={() => setContractMaintenanceOpen(true)}><ShieldCheck size={14} /></button>
-        <button className="icon-button" title="全部展开源码层级" onClick={() => updateHierarchy("expand-all")}><ChevronsUpDown size={14} /></button>
-        <button className="icon-button" title="全部收起源码层级" onClick={() => updateHierarchy("collapse-all")}><ChevronsDownUp size={14} /></button>
         <button className="icon-button" title={state.projectSlice.source?.view_state?.theme === "studio-dark" ? "切换浅色主题" : "切换深色主题"} onClick={updateTheme}>{state.projectSlice.source?.view_state?.theme === "studio-dark" ? <Sun size={14} /> : <Moon size={14} />}</button>
       </> : null}
     </div>
@@ -1022,9 +1312,37 @@ function SceneStudioWorkspace() {
       productLabel="Model Architecture Studio"
       collectionLabel={sourceReady ? "源码视图" : "工作区"}
       toolbarContent={toolbar}
+      navigationContent={sourceReady && state.projectSlice.source ? <StudioNavigation
+        source={state.projectSlice.source}
+        scene={activeScene}
+        onState={acceptSource}
+        onSelect={handleSelectionChange}
+      /> : undefined}
+      renderInspectorPanel={state.projectSlice.source ? ({ node, edge, scene, updateNode }) => <StudioInspector
+        source={state.projectSlice.source!}
+        node={node}
+        edge={edge}
+        scene={scene}
+        updateNode={updateNode}
+        draftAnalysis={draftAnalysis}
+        onState={acceptSource}
+        onOpenSourceWorkspace={() => setSourceWorkspaceOpen(true)}
+        onOpenContractMaintenance={() => setContractMaintenanceOpen(true)}
+        pinned={Boolean(node && pinnedSceneNodeIds.includes(node.scene_node_id))}
+        onTogglePinned={() => {
+          if (!node) return;
+          persistPins([node.scene_node_id], !pinnedSceneNodeIds.includes(node.scene_node_id), scene);
+        }}
+        onHierarchyExpand={(id) => updateHierarchy("expand", id)}
+        onHierarchyCollapse={(id) => updateHierarchy("collapse", id)}
+      /> : undefined}
+      showCaseMatrix={false}
+      allowAutomaticLayout={state.viewSlice.presetId !== "paper-publication"}
+      layoutToolsEnabled={state.interactionSlice.mode === "layout"}
+      collapsiblePanels
       selection={state.viewSlice.selection}
       readOnlySemantic={state.interactionSlice.mode !== "model" || sourceReady}
-      onSelectionChange={(selection) => dispatch({ type: "selection", selection })}
+      onSelectionChange={handleSelectionChange}
       onVisualPatch={persistPatch}
       onVisualPatchBatch={persistPatchBatch}
       onPinNodes={persistPins}
@@ -1033,15 +1351,6 @@ function SceneStudioWorkspace() {
       onRedo={() => persistHistory("redo")}
       canUndo={Boolean(state.projectSlice.source?.document.visual_patches?.length)}
       canRedo={Boolean(state.projectSlice.source?.document.redo_patches?.length)}
-      renderSourceInspector={(node) => {
-        const source = state.projectSlice.source;
-        const draftNode = node.draft_node_id
-          ? source?.draft?.nodes.find((item) => item.node_id === node.draft_node_id)
-          : undefined;
-        return source && draftNode
-          ? <DraftNodeInspector source={source} node={draftNode} analysis={draftAnalysis} onState={acceptSource} />
-          : <SourceEvidencePanel node={node} onState={acceptSource} />;
-      }}
       onHierarchyExpand={(id) => updateHierarchy("expand", id)}
       onHierarchyCollapse={(id) => updateHierarchy("collapse", id)}
       exportRaster={(svg, format) => exportSceneRaster(
