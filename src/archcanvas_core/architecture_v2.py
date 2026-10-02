@@ -200,6 +200,8 @@ def _validate_semantic_relationships(
     repeats: list[SemanticRepeat],
     pattern_bindings: list[PatternBindingV2],
     evidence: list[SourceEvidenceV2],
+    graph_input_value_ids: list[Identifier],
+    graph_output_value_ids: list[Identifier],
 ) -> None:
     definition_ids = {item.definition_id for item in definitions}
     instance_ids = {item.instance_id for item in instances}
@@ -321,6 +323,12 @@ def _validate_semantic_relationships(
         evidence_ids,
         "pattern evidence",
     )
+    require_subset(set(graph_input_value_ids), value_ids, "graph input value")
+    require_subset(set(graph_output_value_ids), value_ids, "graph output value")
+    if len(graph_input_value_ids) != len(set(graph_input_value_ids)):
+        raise ValueError("graph input value IDs must be unique")
+    if len(graph_output_value_ids) != len(set(graph_output_value_ids)):
+        raise ValueError("graph output value IDs must be unique")
 
 
 class PythonSemanticGraph(StrictModel):
@@ -332,6 +340,8 @@ class PythonSemanticGraph(StrictModel):
     instances: list[ModuleInstance] = Field(default_factory=list)
     calls: list[ArchitectureCall] = Field(default_factory=list)
     values: list[SemanticValue] = Field(default_factory=list)
+    graph_input_value_ids: list[Identifier] = Field(default_factory=list)
+    graph_output_value_ids: list[Identifier] = Field(default_factory=list)
     control_regions: list[ControlRegion] = Field(default_factory=list)
     parameter_groups: list[ParameterGroup] = Field(default_factory=list)
     repeats: list[SemanticRepeat] = Field(default_factory=list)
@@ -352,6 +362,8 @@ class PythonSemanticGraph(StrictModel):
             repeats=self.repeats,
             pattern_bindings=self.pattern_bindings,
             evidence=self.evidence,
+            graph_input_value_ids=self.graph_input_value_ids,
+            graph_output_value_ids=self.graph_output_value_ids,
         )
         return self
 
@@ -380,6 +392,8 @@ class ExactArchitectureIRV2(StrictModel):
     instances: list[ModuleInstance] = Field(default_factory=list)
     calls: list[ArchitectureCall] = Field(default_factory=list)
     values: list[SemanticValue] = Field(default_factory=list)
+    graph_input_value_ids: list[Identifier] = Field(default_factory=list)
+    graph_output_value_ids: list[Identifier] = Field(default_factory=list)
     control_regions: list[ControlRegion] = Field(default_factory=list)
     parameter_groups: list[ParameterGroup] = Field(default_factory=list)
     repeats: list[SemanticRepeat] = Field(default_factory=list)
@@ -400,6 +414,8 @@ class ExactArchitectureIRV2(StrictModel):
             repeats=self.repeats,
             pattern_bindings=self.pattern_bindings,
             evidence=self.evidence,
+            graph_input_value_ids=self.graph_input_value_ids,
+            graph_output_value_ids=self.graph_output_value_ids,
         )
         return self
 

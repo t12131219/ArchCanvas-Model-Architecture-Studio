@@ -125,6 +125,17 @@
       "title": "Gates",
       "type": "array"
     },
+    "inference_compatibility": {
+      "default": "not-bound",
+      "enum": [
+        "verified",
+        "partial",
+        "blocked",
+        "not-bound"
+      ],
+      "title": "Inference Compatibility",
+      "type": "string"
+    },
     "proposal_correlation_id": {
       "anyOf": [
         {
@@ -146,10 +157,35 @@
       "title": "Realized Subject Ids",
       "type": "array"
     },
+    "recovery_receipt_id": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Recovery Receipt Id"
+    },
     "schema_version": {
       "const": "1.0",
       "default": "1.0",
       "title": "Schema Version",
+      "type": "string"
+    },
+    "source_status": {
+      "default": "prepared",
+      "enum": [
+        "prepared",
+        "verified",
+        "committed",
+        "failed",
+        "discarded"
+      ],
+      "title": "Source Status",
       "type": "string"
     },
     "source_writes": {
@@ -159,6 +195,30 @@
     "state": {
       "$ref": "#/$defs/TransactionState"
     },
+    "state_compatibility": {
+      "default": "not-bound",
+      "enum": [
+        "verified",
+        "partial",
+        "blocked",
+        "not-bound"
+      ],
+      "title": "State Compatibility",
+      "type": "string"
+    },
+    "state_migration_plan_id": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "State Migration Plan Id"
+    },
     "status": {
       "enum": [
         "ok",
@@ -166,6 +226,17 @@
         "failed"
       ],
       "title": "Status",
+      "type": "string"
+    },
+    "training_resume_compatibility": {
+      "default": "not-bound",
+      "enum": [
+        "verified",
+        "partial",
+        "blocked",
+        "not-bound"
+      ],
+      "title": "Training Resume Compatibility",
       "type": "string"
     },
     "transaction_adapter_id": {

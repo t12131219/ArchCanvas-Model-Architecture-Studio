@@ -110,6 +110,7 @@ class ParsedSourceUnit:
             ast.AsyncFunctionDef: (cst.FunctionDef,),
             ast.Assign: (cst.Assign,),
             ast.AnnAssign: (cst.AnnAssign,),
+            ast.BinOp: (cst.BinaryOperation,),
             ast.Call: (cst.Call,),
             ast.Return: (cst.Return,),
             ast.Name: (cst.Name,),

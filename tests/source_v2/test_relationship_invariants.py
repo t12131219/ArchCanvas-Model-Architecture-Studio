@@ -81,8 +81,17 @@ def _invalid_graph(
                 )
             ]
         ),
+        lambda values: values.update(graph_input_value_ids=["value:missing"]),
+        lambda values: values.update(graph_output_value_ids=["value:missing"]),
     ],
-    ids=["parameter-call", "repeat-call", "pattern-subject", "pattern-slot"],
+    ids=[
+        "parameter-call",
+        "repeat-call",
+        "pattern-subject",
+        "pattern-slot",
+        "graph-input",
+        "graph-output",
+    ],
 )
 def test_semantic_graph_rejects_dangling_relationships(
     tmp_path: Path,

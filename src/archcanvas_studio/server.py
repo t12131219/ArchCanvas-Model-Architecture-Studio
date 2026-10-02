@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import secrets
 import signal
 import subprocess
@@ -13,8 +14,14 @@ from datetime import UTC, datetime
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
+from xml.etree import ElementTree
 
+from archcanvas_adapters import (
+    adapter_capabilities,
+    default_framework_form_id,
+    framework_form_capability,
+)
 from archcanvas_core.models import (
     AnalysisJob,
     AnalysisRequest,
@@ -28,6 +35,10 @@ from archcanvas_core.models import (
 
 from .bundle import StudioBundle, prepare_studio_bundle
 from .document import apply_patch, apply_patch_batch, redo_patch, undo_patch
+from .generated_projects import (
+    MaterializeGeneratedProjectRequest,
+    PrepareGeneratedProjectRequest,
+)
 from .operations import run_validation, studio_fingerprint
 from .project import (
     browse_directories,
@@ -36,6 +47,37 @@ from .project import (
     discover_project,
     resolve_conda_environment,
 )
+
+
+def _convert_scene_svg(svg: str, output_format: str) -> tuple[bytes, str]:
+    lowered = svg.lower()
+    if any(token in lowered for token in ("<!doctype", "<!entity", "<script", "<foreignobject")):
+        raise ValueError("scene SVG contains forbidden active or external content")
+    try:
+        root = ElementTree.fromstring(svg)
+    except ElementTree.ParseError as error:
+        raise ValueError("scene SVG is not well-formed") from error
+    if root.tag.rsplit("}", 1)[-1] != "svg":
+        raise ValueError("scene export payload must have an SVG root")
+    for element in root.iter():
+        for name, value in element.attrib.items():
+            if name.rsplit("}", 1)[-1] in {"href", "src"} and not value.startswith("#"):
+                raise ValueError("scene SVG external resources are forbidden")
+        content = " ".join([element.text or "", *element.attrib.values()])
+        if "@import" in content.lower():
+            raise ValueError("scene SVG style imports are forbidden")
+        for match in re.finditer(r"url\(\s*['\"]?([^)'\"\s]+)", content, re.IGNORECASE):
+            if not match.group(1).startswith("#"):
+                raise ValueError("scene SVG external URLs are forbidden")
+
+    import cairosvg
+
+    encoded = svg.encode("utf-8")
+    if output_format == "png":
+        return cairosvg.svg2png(bytestring=encoded), "image/png"
+    if output_format == "pdf":
+        return cairosvg.svg2pdf(bytestring=encoded), "application/pdf"
+    raise ValueError("scene export format must be png or pdf")
 
 
 class StudioRequestHandler(SimpleHTTPRequestHandler):
@@ -198,6 +240,23 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
         try:
             self._check_write_origin()
             payload = self._payload()
+            if self.path == "/api/scene-export":
+                svg = payload.get("svg")
+                output_format = payload.get("format")
+                if not isinstance(svg, str) or output_format not in {"png", "pdf"}:
+                    raise ValueError("scene export requires SVG and png/pdf format")
+                converted, content_type = _convert_scene_svg(svg, str(output_format))
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", content_type)
+                self.send_header(
+                    "Content-Disposition",
+                    f'attachment; filename="archcanvas-scene.{output_format}"',
+                )
+                self.send_header("X-ArchCanvas-Export-Scope", "scene-studio")
+                self.send_header("Content-Length", str(len(converted)))
+                self.end_headers()
+                self.wfile.write(converted)
+                return
             if self.path == "/api/projects/open":
                 root = Path(str(payload["root"]))
                 with self.server.lock:
@@ -225,6 +284,10 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                         {
                             "project": session.model_dump(mode="json"),
                             "discovery": discovery,
+                            "framework_forms": [
+                                item.model_dump(mode="json")
+                                for item in adapter_capabilities()
+                            ],
                         }
                     )
                 return
@@ -373,6 +436,72 @@ class StudioRequestHandler(SimpleHTTPRequestHandler):
                         self.server.session_nonce,
                     )
                     self._json(self.server.bundle.state())
+                    return
+                elif self.path == "/api/generated-projects/prepare":
+                    manager = self.server.bundle.generated_projects
+                    if manager is None:
+                        raise ValueError("generated project manager is unavailable")
+                    manager.prepare(
+                        self.server.bundle.draft,
+                        PrepareGeneratedProjectRequest.model_validate(payload),
+                    )
+                    self._json(self.server.bundle.state())
+                    return
+                elif self.path.startswith("/api/generated-projects/"):
+                    suffix = self.path.removeprefix("/api/generated-projects/")
+                    encoded_project_id, separator, action = suffix.rpartition("/")
+                    if not separator or action not in {"validate", "materialize", "discard"}:
+                        self.send_error(HTTPStatus.NOT_FOUND)
+                        return
+                    project_id = unquote(encoded_project_id)
+                    manager = self.server.bundle.generated_projects
+                    if manager is None:
+                        raise ValueError("generated project manager is unavailable")
+                    if action == "validate":
+                        manager.validate(
+                            project_id,
+                            self.server.bundle.draft,
+                            graph_digest=str(payload["graph_digest"]),
+                            registry_digest=str(payload["registry_digest"]),
+                            generator_version=str(payload["generator_version"]),
+                        )
+                        self._json(self.server.bundle.state())
+                        return
+                    if action == "discard":
+                        manager.discard(project_id)
+                        self._json(self.server.bundle.state())
+                        return
+                    materialized = manager.materialize(
+                        project_id,
+                        self.server.bundle.draft,
+                        MaterializeGeneratedProjectRequest.model_validate(payload),
+                    )
+                    generation = self.server.next_project_generation()
+                    replacement = prepare_studio_bundle(
+                        materialized.artifact_path,
+                        self.server.bundle.workspace,
+                        write_static=False,
+                        replace_stale_bindings=True,
+                    )
+                    replacement.project_session = replacement.project_session.model_copy(
+                        update={
+                            "generation": generation,
+                            "entrypoint": replacement.snapshot.entrypoint,
+                            "framework": "pytorch",
+                            "task": "inference",
+                        }
+                    )
+                    replacement.project_discovery = discover_project(
+                        Path(replacement.project_session.root)
+                    )
+                    self.server.bundle = replacement
+                    self.server.active_project_key = (
+                        replacement.project_session.project_id,
+                        generation,
+                    )
+                    self.server.pending_projects = {}
+                    replacement.write_static()
+                    self._json(replacement.state())
                     return
                 elif self.path == "/api/proposal/node":
                     self.server.bundle.dispatch_topology_command(
@@ -611,6 +740,29 @@ class StudioHTTPServer(ThreadingHTTPServer):
                 raise ValueError("analysis project generation is stale")
             if (request.project_id, request.project_generation) != self.active_project_key:
                 raise ValueError("analysis does not target the active project generation")
+            discovery = deepcopy(pending[1]) if pending is not None else {}
+            selected = next(
+                (
+                    item
+                    for item in discovery.get("entrypoints", [])
+                    if item.get("entrypoint") == request.entrypoint
+                ),
+                None,
+            )
+            framework = request.framework
+            if framework in {"auto", "unknown"} and selected is not None:
+                framework = str(selected.get("framework", framework))
+            if framework in {"auto", "unknown"}:
+                framework = session.framework
+            form_id = request.form_id or default_framework_form_id(framework)
+            if (
+                framework_form_capability(framework, form_id, "static_analysis")
+                == "unavailable"
+            ):
+                raise ValueError(f"static_analysis is unavailable for {form_id}")
+            request = request.model_copy(
+                update={"framework": framework, "form_id": form_id}
+            )
             encoded = json.dumps(request.model_dump(mode="json"), sort_keys=True).encode()
             fingerprint = hashlib.sha256(encoded).hexdigest()
             job_id = f"job:{request.request_id.removeprefix('request:')}"
@@ -628,7 +780,6 @@ class StudioHTTPServer(ThreadingHTTPServer):
             )
             self.jobs[job_id] = job
             self.job_cancellations[job_id] = threading.Event()
-            discovery = deepcopy(pending[1]) if pending is not None else {}
             workspace = self.bundle.workspace
         threading.Thread(
             target=self._run_analysis,
@@ -654,6 +805,8 @@ class StudioHTTPServer(ThreadingHTTPServer):
                 config_path=project.config_path,
                 execution_mode="static",
                 pattern_packs_enabled=True,
+                entry_invocation=project.entry_invocation,
+                form_id=project.form_id,
                 request_id=f"request:reanalysis.{secrets.token_hex(10)}",
             )
             return self.start_analysis(request)
@@ -666,6 +819,18 @@ class StudioHTTPServer(ThreadingHTTPServer):
                 raise ValueError("unknown validation profile")
             if profile == "runtime-replay" and not runtime_execution_authorized:
                 raise ValueError("runtime replay requires explicit execution authorization")
+            if (
+                profile == "runtime-replay"
+                and framework_form_capability(
+                    self.bundle.project_session.framework,
+                    self.bundle.project_session.form_id,
+                    "runtime_evidence",
+                )
+                == "unavailable"
+            ):
+                raise ValueError(
+                    "runtime evidence is unavailable for the selected framework form"
+                )
             target_bundle = self.bundle
             validation_input = deepcopy(target_bundle)
             project = target_bundle.project_session
@@ -830,6 +995,11 @@ class StudioHTTPServer(ThreadingHTTPServer):
             analyzer_workdir = workspace / "analyzer-workdirs" / job_id.removeprefix("job:")
             analyzer_tmpdir = analyzer_workdir / "tmp"
             analyzer_tmpdir.mkdir(parents=True, exist_ok=True)
+            entry_invocation_path = analyzer_workdir / "entry-invocation-v1.json"
+            entry_invocation_path.write_text(
+                request.entry_invocation.model_dump_json(indent=2) + "\n",
+                encoding="utf-8",
+            )
             frontend = (
                 "v2"
                 if request.framework in {"pytorch", "auto"}
@@ -851,7 +1021,9 @@ class StudioHTTPServer(ThreadingHTTPServer):
                 "--task",
                 request.task,
                 "--mode",
-                "eval",
+                request.entry_invocation.mode,
+                "--entry-invocation",
+                str(entry_invocation_path),
                 "--out",
                 str(analysis_dir),
                 "--frontend",
@@ -938,9 +1110,11 @@ class StudioHTTPServer(ThreadingHTTPServer):
                 update={
                     "entrypoint": request.entrypoint,
                     "framework": replacement.snapshot.framework,
+                    "form_id": request.form_id,
                     "task": request.task,
                     "config_path": request.config_path,
                     "config_digest": replacement.snapshot.config_digest,
+                    "entry_invocation": request.entry_invocation,
                 }
             )
             replacement.project_discovery = discovery

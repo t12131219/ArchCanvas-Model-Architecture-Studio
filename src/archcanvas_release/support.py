@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from archcanvas_adapters import adapter_capabilities
-from archcanvas_core.models import HostSupport, PlatformSupport, ReleaseSupportMatrix
+from archcanvas_core.models import HostSupport, PlatformSupport, ReleaseSupportMatrixV2
 
 
-def release_support_matrix() -> ReleaseSupportMatrix:
-    return ReleaseSupportMatrix(
+def release_support_matrix() -> ReleaseSupportMatrixV2:
+    return ReleaseSupportMatrixV2(
         release="0.1.0-stage9",
         adapters=adapter_capabilities(),
         hosts=[

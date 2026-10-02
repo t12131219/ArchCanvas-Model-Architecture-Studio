@@ -14,13 +14,22 @@ def schema_text(model: type) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
+    parser.add_argument(
+        "--only",
+        action="append",
+        choices=sorted(SCHEMA_MODELS),
+        help="Export or check only the named schema; may be repeated.",
+    )
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     schema_dirs = [root / "schemas", root / "src" / "archcanvas_core" / "schemas"]
     for schema_dir in schema_dirs:
         schema_dir.mkdir(exist_ok=True)
     stale: list[str] = []
+    selected = set(args.only or SCHEMA_MODELS)
     for filename, model in SCHEMA_MODELS.items():
+        if filename not in selected:
+            continue
         expected = schema_text(model)
         for schema_dir in schema_dirs:
             path = schema_dir / filename

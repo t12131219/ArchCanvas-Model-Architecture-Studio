@@ -1,6 +1,11 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
+import json
+import os
+import platform
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -15,15 +20,19 @@ from archcanvas_core.architecture_v2 import (
 )
 from archcanvas_core.builtin_registry import BuiltinModuleRegistry
 from archcanvas_core.digest_protocol import domain_digest
-from archcanvas_core.models import Diagnostic
+from archcanvas_core.models import Diagnostic, EntryInvocationConfig
+from archcanvas_core.schema_registry import SCHEMA_MODELS
 from archcanvas_core.source_v2 import (
+    ANALYSIS_ENVIRONMENT_DIGEST_DOMAIN,
     ANALYSIS_INPUT_DIGEST_DOMAIN,
     AnalysisBudget,
+    AnalysisEnvironmentManifest,
     AnalysisInputManifest,
     DiscoveryBudget,
     ProjectManifest,
     ResolverManifest,
     SourceCorpus,
+    analysis_environment_manifest_payload,
     analysis_input_digest_payload,
 )
 from archcanvas_engine.source_blob_store import SourceBlobStore
@@ -55,6 +64,7 @@ class FrontendV2Bundle:
     corpus: SourceCorpus
     snapshot_root: Path
     repository: ParsedRepository
+    environment_manifest: AnalysisEnvironmentManifest
     analysis_input: AnalysisInputManifest
     semantic_graph: PythonSemanticGraph
     exact_ir: ExactArchitectureIRV2
@@ -66,6 +76,111 @@ class _ResolverRun:
     manifest: ResolverManifest
     budget_exceeded: bool = False
     facts: tuple[ResolverFact, ...] = ()
+
+
+def _installed_version(distribution: str) -> str | None:
+    try:
+        return importlib.metadata.version(distribution)
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+
+def _sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _analysis_environment(
+    project_root: Path,
+    registry: BuiltinModuleRegistry,
+    resolver: ResolverManifest,
+    *,
+    pattern_packs_enabled: bool,
+) -> AnalysisEnvironmentManifest:
+    analyzer_digest = hashlib.sha256(FRONTEND_V2_VERSION.encode()).hexdigest()
+    source_root = Path(__file__).resolve().parents[1]
+    adapter_root = source_root / "archcanvas_adapters"
+    adapter_digests = {
+        path.relative_to(source_root).as_posix(): _sha256_file(path)
+        for path in sorted(adapter_root.glob("*.py"))
+    }
+    schema_payload = {
+        name: model.model_json_schema()
+        for name, model in sorted(SCHEMA_MODELS.items())
+    }
+    schema_bundle_digest = hashlib.sha256(
+        json.dumps(schema_payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    lockfile_names = (
+        "pyproject.toml",
+        "poetry.lock",
+        "uv.lock",
+        "Pipfile.lock",
+        "requirements.txt",
+        "environment.yml",
+        "environment.yaml",
+        "conda-lock.yml",
+    )
+    lockfile_paths = [project_root / name for name in lockfile_names]
+    lockfile_paths.extend(sorted(project_root.glob("pylock*.toml")))
+    lockfile_paths.extend(sorted(project_root.glob("requirements*.txt")))
+    lockfile_digests = {
+        path.relative_to(project_root).as_posix(): _sha256_file(path)
+        for path in sorted(set(lockfile_paths))
+        if path.is_file()
+    }
+    if any(name in lockfile_digests for name in ("poetry.lock", "uv.lock", "Pipfile.lock")):
+        reproducibility_level = "locked"
+    elif lockfile_digests:
+        reproducibility_level = "partially-locked"
+    else:
+        reproducibility_level = "unlocked"
+    allowlisted_environment = {
+        name: os.environ.get(name)
+        for name in ("KERAS_BACKEND", "PYTHONHASHSEED")
+    }
+    environment_variables_allowlist_digest = hashlib.sha256(
+        json.dumps(
+            allowlisted_environment,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    pattern_pack_digests = (
+        builtin_pattern_pack_digests() if pattern_packs_enabled else []
+    )
+    values = {
+        "python_implementation": sys.implementation.name,
+        "python_version": platform.python_version(),
+        "platform": platform.platform(),
+        "framework_versions": {
+            "flax": _installed_version("flax"),
+            "jax": _installed_version("jax"),
+            "keras": _installed_version("keras"),
+            "onnx": _installed_version("onnx"),
+            "onnxruntime": _installed_version("onnxruntime"),
+            "torch": _installed_version("torch"),
+        },
+        "adapter_digests": adapter_digests,
+        "analyzer_digest": analyzer_digest,
+        "schema_bundle_digest": schema_bundle_digest,
+        "registry_digest": registry.bundle.bundle_digest,
+        "pattern_pack_digests": pattern_pack_digests,
+        "pyright_version": (
+            resolver.resolver_version
+            if resolver.kind == "pyright-typeserver"
+            else None
+        ),
+        "lockfile_digests": lockfile_digests,
+        "environment_variables_allowlist_digest": (
+            environment_variables_allowlist_digest
+        ),
+        "reproducibility_level": reproducibility_level,
+    }
+    digest = domain_digest(
+        ANALYSIS_ENVIRONMENT_DIGEST_DOMAIN,
+        analysis_environment_manifest_payload(**values),
+    )
+    return AnalysisEnvironmentManifest(environment_manifest_digest=digest, **values)
 
 
 def _resolver_queries(repository: ParsedRepository) -> list[ResolverQuery]:
@@ -225,8 +340,10 @@ def _analysis_input(
     execution_mode: str,
     config_digest: str,
     resolver: ResolverManifest,
+    environment_manifest: AnalysisEnvironmentManifest,
     analysis_budget: AnalysisBudget,
     pattern_packs_enabled: bool,
+    entry_invocation: EntryInvocationConfig,
 ) -> AnalysisInputManifest:
     analyzer_digest = hashlib.sha256(FRONTEND_V2_VERSION.encode()).hexdigest()
     values = {
@@ -241,6 +358,8 @@ def _analysis_input(
         "execution_mode": execution_mode,
         "entrypoint": entrypoint,
         "config_digest": config_digest,
+        "environment_manifest_digest": environment_manifest.environment_manifest_digest,
+        "entry_invocation": entry_invocation,
         "analysis_budget": analysis_budget,
     }
     digest = domain_digest(
@@ -293,6 +412,8 @@ def _record_resolver_degradation(
         "instances": graph.instances,
         "calls": graph.calls,
         "values": graph.values,
+        "graph_input_value_ids": graph.graph_input_value_ids,
+        "graph_output_value_ids": graph.graph_output_value_ids,
         "control_regions": graph.control_regions,
         "parameter_groups": graph.parameter_groups,
         "repeats": graph.repeats,
@@ -326,12 +447,16 @@ def analyze_project_v2(
     pyright_executable: Path | None = None,
     pyright_executable_digest: str | None = None,
     pattern_packs_enabled: bool = True,
+    entry_invocation: EntryInvocationConfig | None = None,
 ) -> FrontendV2Bundle:
     root = project_root.resolve()
     workspace = workspace.resolve()
     workspace.mkdir(parents=True, exist_ok=True)
     registry = registry or BuiltinModuleRegistry()
     analysis_budget = analysis_budget or AnalysisBudget()
+    entry_invocation = entry_invocation or EntryInvocationConfig(mode=execution_mode)
+    if entry_invocation.mode != execution_mode:
+        raise ValueError("entry invocation mode must match analysis execution mode")
     manifest = discover_project_manifest(
         root,
         "project:frontend-v2",
@@ -353,6 +478,12 @@ def analyze_project_v2(
         executable=pyright_executable,
         executable_digest=pyright_executable_digest,
     )
+    environment_manifest = _analysis_environment(
+        root,
+        registry,
+        resolver_run.manifest,
+        pattern_packs_enabled=pattern_packs_enabled,
+    )
     analysis_input = _analysis_input(
         corpus,
         registry,
@@ -362,8 +493,10 @@ def analyze_project_v2(
         execution_mode=execution_mode,
         config_digest=config_digest,
         resolver=resolver_run.manifest,
+        environment_manifest=environment_manifest,
         analysis_budget=analysis_budget,
         pattern_packs_enabled=pattern_packs_enabled,
+        entry_invocation=entry_invocation,
     )
     semantic_graph = _record_resolver_degradation(
         build_semantic_graph(
@@ -394,6 +527,7 @@ def analyze_project_v2(
         corpus=corpus,
         snapshot_root=snapshot_root,
         repository=repository,
+        environment_manifest=environment_manifest,
         analysis_input=analysis_input,
         semantic_graph=semantic_graph,
         exact_ir=exact_ir,

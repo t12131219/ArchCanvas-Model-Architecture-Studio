@@ -11,9 +11,11 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
+from archcanvas_adapters import adapter_capabilities
 from archcanvas_core.builtin_registry import BuiltinModuleRegistry
 from archcanvas_core.digest_protocol import domain_digest
 from archcanvas_core.models import (
+    AffectedObjectReviewBinding,
     AgentProposal,
     ArchitectureIR,
     CanvasDocument,
@@ -25,18 +27,24 @@ from archcanvas_core.models import (
     EditIntent,
     EditProofState,
     EditProofStatus,
+    EditTargetScope,
     EvidenceRecord,
     FreeformSourceBufferPatch,
     FreeformSourcePatch,
     GraphDelta,
+    ParameterEditContext,
     ProjectSession,
     ProposalReconciliationReceipt,
     ProposedConnection,
+    ProtocolMigrationReceipt,
     PublicationHierarchy,
     PublicationView,
+    RecoveryReceipt,
+    RoundTripConformanceReport,
     RuntimeTrace,
     SearchSubject,
     SemanticAnnotationOverlay,
+    SemanticIntentV2,
     SemanticParameterPatch,
     SemanticStructuralPatch,
     SourceFile,
@@ -52,6 +60,8 @@ from archcanvas_core.models import (
     WritebackSummary,
 )
 from archcanvas_core.module_contract import migrate_parameter_values
+from archcanvas_core.protocols import read_draft_graph_document_protocol
+from archcanvas_core.source_v2 import AnalysisEnvironmentManifest, AnalysisInputManifest
 from archcanvas_patterns import exact_ir_digest
 from archcanvas_publication import (
     build_scene,
@@ -67,19 +77,23 @@ from archcanvas_transactions import (
     plan_connection,
     prepare_freeform_transaction,
     prepare_transaction,
+    recover_incomplete_transactions,
+    resolve_parameter_edit_contexts,
     verify_transaction,
 )
 from archcanvas_transactions.store import load_transaction
 
+from .conformance import build_intent_source_report, build_source_view_report
 from .contract_maintenance import ContractMaintenanceManager
 from .document import (
     create_canvas_document,
     derive_view_state,
-    load_canvas_document,
+    load_canvas_document_with_receipt,
     persist_canvas_document,
     source_binding_digest,
 )
 from .draft_analysis import analyze_draft_graph
+from .generated_projects import GeneratedProjectManager
 from .navigation import PROJECTIONS, build_navigation_projections
 from .operations import build_search_index, run_validation, studio_fingerprint
 from .project import create_project_session, discover_project
@@ -107,6 +121,59 @@ def _write_json(path: Path, value: object) -> None:
         json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n",
         encoding="utf-8",
     )
+
+
+def _conformance_report_path(
+    workspace: Path, report: RoundTripConformanceReport
+) -> Path:
+    filename = report.report_id.removeprefix("round-trip:")
+    return workspace / "conformance" / f"{filename}.json"
+
+
+def _load_conformance_reports(workspace: Path) -> list[RoundTripConformanceReport]:
+    directory = workspace / "conformance"
+    if not directory.is_dir():
+        return []
+    reports: list[RoundTripConformanceReport] = []
+    report_ids: set[str] = set()
+    for path in sorted(directory.glob("*.json")):
+        report = RoundTripConformanceReport.model_validate_json(
+            path.read_text(encoding="utf-8")
+        )
+        if report.report_id in report_ids:
+            raise ValueError(f"duplicate round-trip report id: {report.report_id}")
+        report_ids.add(report.report_id)
+        reports.append(report)
+    return reports
+
+
+def _load_recovery_receipts(workspace: Path) -> list[RecoveryReceipt]:
+    transaction_root = workspace / "transactions"
+    if not transaction_root.is_dir():
+        return []
+    return [
+        RecoveryReceipt.model_validate_json(path.read_text(encoding="utf-8"))
+        for path in sorted(transaction_root.glob("*/recovery-receipt.json"))
+    ]
+
+
+def _load_protocol_migration_receipts(
+    workspace: Path,
+) -> list[ProtocolMigrationReceipt]:
+    directory = workspace / "protocol-migrations"
+    if not directory.is_dir():
+        return []
+    receipts: list[ProtocolMigrationReceipt] = []
+    receipt_ids: set[str] = set()
+    for path in sorted(directory.glob("*.json")):
+        receipt = ProtocolMigrationReceipt.model_validate_json(
+            path.read_text(encoding="utf-8")
+        )
+        if receipt.receipt_id in receipt_ids:
+            raise ValueError(f"duplicate protocol migration receipt id: {receipt.receipt_id}")
+        receipt_ids.add(receipt.receipt_id)
+        receipts.append(receipt)
+    return receipts
 
 
 def _parameter_value_matches(value: object, value_type: str) -> bool:
@@ -175,6 +242,9 @@ class StudioBundle:
     search_index: list[SearchSubject]
     validation_runs: list[ValidationRun]
     navigation: dict[str, object]
+    parameter_edit_contexts: list[ParameterEditContext]
+    analysis_environment: AnalysisEnvironmentManifest | None
+    analysis_input: AnalysisInputManifest | None
     validation_generation: int = 0
     active_transaction: SourceTransaction | None = None
     active_proposal: AgentProposal | None = None
@@ -182,6 +252,127 @@ class StudioBundle:
     topology_base_draft: DraftGraphDocument | None = None
     topology_review_receipt: TopologyReviewReceipt | None = None
     contract_maintenance: ContractMaintenanceManager | None = None
+    generated_projects: GeneratedProjectManager | None = None
+    round_trip_reports: list[RoundTripConformanceReport] | None = None
+    recovery_receipts: list[RecoveryReceipt] | None = None
+    protocol_migration_receipts: list[ProtocolMigrationReceipt] | None = None
+
+    def _verify_transaction_if_prepared(
+        self, transaction: SourceTransaction
+    ) -> SourceTransaction:
+        if transaction.state is not TransactionState.PREPARED:
+            return transaction
+        verified, _ = verify_transaction(
+            self.workspace / "transactions" / transaction.transaction_id
+        )
+        return verified
+
+    def _all_round_trip_reports(self) -> list[RoundTripConformanceReport]:
+        reports = {
+            report.report_id: report for report in (self.round_trip_reports or [])
+        }
+        if self.generated_projects is not None:
+            reports.update(
+                {
+                    report.report_id: report
+                    for report in self.generated_projects.conformance_reports()
+                }
+            )
+        return list(reports.values())
+
+    def _semantic_intent_source_digest(self) -> str:
+        corpus_path = self.artifact_path.parent / "source-corpus-v2.json"
+        if corpus_path.is_file():
+            payload = json.loads(corpus_path.read_text(encoding="utf-8"))
+            digest = payload.get("source_corpus_digest")
+            if isinstance(digest, str):
+                return digest
+        payload = {
+            "snapshot_id": self.snapshot.snapshot_id,
+            "revision": self.snapshot.revision,
+            "config_digest": self.snapshot.config_digest,
+            "source_files": [
+                {"path": item.path, "sha256": item.sha256}
+                for item in sorted(self.snapshot.source_files, key=lambda item: item.path)
+            ],
+        }
+        return hashlib.sha256(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+
+    def _framework_form_id(self) -> str:
+        return self.project_session.form_id
+
+    def _parameter_semantic_intent(
+        self,
+        request: SemanticParameterPatch,
+    ) -> SemanticIntentV2:
+        context = next(
+            (
+                item
+                for item in self.parameter_edit_contexts
+                if item.target_node_id == request.target_node_id
+                and item.parameter_name == request.parameter_name
+            ),
+            None,
+        )
+        if context is None:
+            raise ValueError("parameter edit context is unavailable")
+        scope = request.edit_target_scope or context.default_scope
+        if scope is None:
+            scope = context.allowed_scopes[0] if context.allowed_scopes else EditTargetScope.DEFINITION
+        return SemanticIntentV2(
+            intent_id=request.patch_id.replace("patch:", "intent:", 1),
+            project_id=self.project_session.project_id,
+            project_generation=self.project_session.generation,
+            base_source_digest=self._semantic_intent_source_digest(),
+            base_exact_ir_digest=exact_ir_digest(self.architecture),
+            framework=self.project_session.framework,
+            form_id=self._framework_form_id(),
+            operation="set-parameter",
+            target_ids=[request.target_node_id],
+            payload={
+                "parameter_name": request.parameter_name,
+                "new_value": request.new_value,
+            },
+            value_origin=context.value_origin,
+            edit_target_scope=scope,
+            affected_object_review=AffectedObjectReviewBinding(
+                review_id=f"review:{request.patch_id.removeprefix('patch:')}",
+                affected_object_ids=context.affected_canonical_ids,
+                source_anchor_ids=context.value_origin.source_anchor_ids,
+                decision="confirmed",
+                reviewed_generation=self.project_session.generation,
+            ),
+        )
+
+    def _structural_semantic_intent(
+        self,
+        request: SemanticStructuralPatch,
+    ) -> SemanticIntentV2:
+        operation = {
+            "replace_activation": "replace-operation",
+            "insert_layer_norm": "insert-normalization",
+            "insert_registered_module": "create-node",
+        }[request.operation]
+        return SemanticIntentV2(
+            intent_id=request.patch_id.replace("patch:", "intent:", 1),
+            project_id=self.project_session.project_id,
+            project_generation=self.project_session.generation,
+            base_source_digest=self._semantic_intent_source_digest(),
+            base_exact_ir_digest=exact_ir_digest(self.architecture),
+            framework=self.project_session.framework,
+            form_id=self._framework_form_id(),
+            operation=operation,
+            target_ids=[request.target_node_id],
+            payload=request.parameters,
+            affected_object_review=AffectedObjectReviewBinding(
+                review_id=f"review:{request.patch_id.removeprefix('patch:')}",
+                affected_object_ids=[request.target_node_id],
+                decision="confirmed",
+                reviewed_generation=self.project_session.generation,
+            ),
+        )
 
     def _expanded_hierarchy_ids(self) -> set[str]:
         state = derive_view_state(self.document)
@@ -487,11 +678,10 @@ class StudioBundle:
             ],
         )
         transaction, _ = prepare_freeform_transaction(request, self.workspace)
-        transaction, _ = verify_transaction(
-            self.workspace / "transactions" / transaction.transaction_id
-        )
+        transaction = self._verify_transaction_if_prepared(transaction)
         self.active_transaction = transaction
         self.active_proposal = None
+        self._record_transaction_conformance(transaction)
 
     def discard_source_workspace(self) -> None:
         if self.active_transaction is not None and self.active_transaction.state not in {
@@ -517,7 +707,21 @@ class StudioBundle:
             "project": self.project_session.model_dump(mode="json"),
             "discovery": self.project_discovery,
             "architecture": self.architecture.model_dump(mode="json"),
+            "parameter_edit_contexts": [
+                context.model_dump(mode="json")
+                for context in self.parameter_edit_contexts
+            ],
             "snapshot": self.snapshot.model_dump(mode="json"),
+            "analysis_environment": (
+                self.analysis_environment.model_dump(mode="json")
+                if self.analysis_environment is not None
+                else None
+            ),
+            "analysis_input": (
+                self.analysis_input.model_dump(mode="json")
+                if self.analysis_input is not None
+                else None
+            ),
             "evidence": [record.model_dump(mode="json") for record in self.evidence],
             "runtime": (
                 {
@@ -542,6 +746,10 @@ class StudioBundle:
             "integrity": {
                 "source_digest": self.document.source_digest,
                 "exact_ir_digest": exact_ir_digest(self.architecture),
+            },
+            "semantic_intent_binding": {
+                "base_source_digest": self._semantic_intent_source_digest(),
+                "base_exact_ir_digest": exact_ir_digest(self.architecture),
             },
             "draft": self.draft.model_dump(mode="json"),
             "edit_session": (
@@ -570,6 +778,23 @@ class StudioBundle:
                 if self.contract_maintenance is not None
                 else None
             ),
+            "generated_projects": (
+                self.generated_projects.state()
+                if self.generated_projects is not None
+                else None
+            ),
+            "round_trip_reports": [
+                report.model_dump(mode="json")
+                for report in self._all_round_trip_reports()[-50:]
+            ],
+            "recovery_receipts": [
+                receipt.model_dump(mode="json")
+                for receipt in (self.recovery_receipts or [])[-50:]
+            ],
+            "protocol_migration_receipts": [
+                receipt.model_dump(mode="json")
+                for receipt in (self.protocol_migration_receipts or [])[-50:]
+            ],
             "source_workspace": self.source_workspace_summary(),
             "view_state": view_state,
             "navigation": navigation,
@@ -614,6 +839,20 @@ class StudioBundle:
                     "status": "unavailable",
                     "reason": "Unknown node types require a framework adapter lowering and proof.",
                 },
+                "generated_project": {
+                    "status": "available",
+                    "framework": "pytorch",
+                    "generator_version": "pytorch-sequential-v1",
+                    "supported_slice": [
+                        "archcanvas.input.tensor",
+                        "pytorch.nn.conv2d",
+                        "pytorch.nn.relu",
+                    ],
+                },
+                "framework_forms": [
+                    capability.model_dump(mode="json")
+                    for capability in adapter_capabilities()
+                ],
                 "staged_multi_file_source_editor": {
                     "status": "available",
                     "scope": "frozen-snapshot-python-and-json",
@@ -1001,9 +1240,7 @@ class StudioBundle:
         if request is None:
             return None
         transaction, _ = prepare_transaction(request, self.workspace)
-        transaction, _ = verify_transaction(
-            self.workspace / "transactions" / transaction.transaction_id
-        )
+        transaction = self._verify_transaction_if_prepared(transaction)
         if transaction.state is not TransactionState.REVIEW_READY:
             message = (
                 transaction.diagnostics[-1].message
@@ -1996,14 +2233,37 @@ class StudioBundle:
             target_node_id=str(payload["target_node_id"]),
             parameter_name=str(payload["parameter_name"]),
             new_value=payload.get("new_value"),
+            value_origin_id=(
+                str(payload["value_origin_id"])
+                if payload.get("value_origin_id") is not None
+                else None
+            ),
+            edit_target_scope=payload.get("edit_target_scope"),
+            confirmed_affected_ids=payload.get("confirmed_affected_ids", []),
+            confirmed_source_anchor_ids=payload.get(
+                "confirmed_source_anchor_ids", []
+            ),
             targeted_tests=payload.get("targeted_tests", []),
             runtime_input_spec=payload.get("runtime_input_spec"),
         )
-        transaction, _ = prepare_transaction(request, self.workspace)
-        transaction, _ = verify_transaction(
-            self.workspace / "transactions" / transaction.transaction_id
+        semantic_intent = (
+            SemanticIntentV2.model_validate(payload["semantic_intent"])
+            if "semantic_intent" in payload
+            else self._parameter_semantic_intent(request)
         )
+        if (
+            semantic_intent.project_id != self.project_session.project_id
+            or semantic_intent.project_generation != self.project_session.generation
+        ):
+            raise ValueError("semantic intent references a stale project generation")
+        transaction, _ = prepare_transaction(
+            request,
+            self.workspace,
+            semantic_intent=semantic_intent,
+        )
+        transaction = self._verify_transaction_if_prepared(transaction)
         self.active_transaction = transaction
+        self._record_transaction_conformance(transaction)
 
     def prepare_structural(self, payload: dict[str, object]) -> None:
         request = SemanticStructuralPatch(
@@ -2015,12 +2275,25 @@ class StudioBundle:
             targeted_tests=payload.get("targeted_tests", []),
             runtime_input_spec=payload.get("runtime_input_spec"),
         )
-        transaction, _ = prepare_transaction(request, self.workspace)
-        transaction, _ = verify_transaction(
-            self.workspace / "transactions" / transaction.transaction_id
+        semantic_intent = (
+            SemanticIntentV2.model_validate(payload["semantic_intent"])
+            if "semantic_intent" in payload
+            else self._structural_semantic_intent(request)
         )
+        if (
+            semantic_intent.project_id != self.project_session.project_id
+            or semantic_intent.project_generation != self.project_session.generation
+        ):
+            raise ValueError("semantic intent references a stale project generation")
+        transaction, _ = prepare_transaction(
+            request,
+            self.workspace,
+            semantic_intent=semantic_intent,
+        )
+        transaction = self._verify_transaction_if_prepared(transaction)
         self.active_transaction = transaction
         self.active_proposal = None
+        self._record_transaction_conformance(transaction)
 
     def propose_connection(self, payload: dict[str, object]) -> None:
         request = ProposedConnection(
@@ -2095,6 +2368,7 @@ class StudioBundle:
             self.workspace / "transactions" / self.active_transaction.transaction_id
         )
         self.active_transaction = transaction
+        self._record_transaction_conformance(transaction)
         if (
             transaction.state is TransactionState.COMMITTED
             and isinstance(transaction.request, FreeformSourcePatch)
@@ -2111,6 +2385,20 @@ class StudioBundle:
             self.workspace / "transactions" / self.active_transaction.transaction_id
         )
         self.active_transaction = transaction
+        if transaction.result_exact_ir_digest is not None:
+            self._record_transaction_conformance(transaction)
+
+    def _record_transaction_conformance(self, transaction: SourceTransaction) -> None:
+        if transaction.result_exact_ir_digest is None:
+            return
+        report = build_intent_source_report(transaction)
+        reports = [
+            item
+            for item in (self.round_trip_reports or [])
+            if item.report_id != report.report_id
+        ]
+        self.round_trip_reports = [*reports, report]
+        _write_json(_conformance_report_path(self.workspace, report), report)
 
     def save_document(self, document: CanvasDocument) -> None:
         if document.source_digest != self.document.source_digest:
@@ -2229,8 +2517,8 @@ def _reconcilable_stale_draft_path(
         if path == current_path:
             continue
         try:
-            candidate = DraftGraphDocument.model_validate_json(
-                path.read_text(encoding="utf-8")
+            candidate, _ = read_draft_graph_document_protocol(
+                json.loads(path.read_text(encoding="utf-8"))
             )
         except (OSError, ValueError):
             continue
@@ -2390,11 +2678,43 @@ def prepare_studio_bundle(
 ) -> StudioBundle:
     artifact = artifact.resolve()
     workspace = workspace.resolve()
+    recover_incomplete_transactions(workspace)
     architecture = ArchitectureIR.model_validate_json(artifact.read_text(encoding="utf-8"))
     snapshot_path = artifact.parent / "source-snapshot.json"
     if not snapshot_path.is_file():
         raise ValueError("Studio requires source-snapshot.json beside architecture.json")
     snapshot = SourceSnapshot.model_validate_json(snapshot_path.read_text(encoding="utf-8"))
+    environment_path = artifact.parent / "analysis-environment-manifest-v1.json"
+    analysis_input_path = artifact.parent / "analysis-input-v2.json"
+    if environment_path.is_file() != analysis_input_path.is_file():
+        raise ValueError("Studio found an incomplete v2 analysis manifest set")
+    analysis_environment = (
+        AnalysisEnvironmentManifest.model_validate_json(
+            environment_path.read_text(encoding="utf-8")
+        )
+        if environment_path.is_file()
+        else None
+    )
+    analysis_input = (
+        AnalysisInputManifest.model_validate_json(
+            analysis_input_path.read_text(encoding="utf-8")
+        )
+        if analysis_input_path.is_file()
+        else None
+    )
+    if (
+        analysis_environment is not None
+        and analysis_input is not None
+        and (
+            analysis_input.environment_manifest_digest
+            != analysis_environment.environment_manifest_digest
+            or analysis_input.registry_digest != analysis_environment.registry_digest
+            or analysis_input.analyzer_build_digest != analysis_environment.analyzer_digest
+            or analysis_input.pattern_pack_digests
+            != analysis_environment.pattern_pack_digests
+        )
+    ):
+        raise ValueError("Studio v2 analysis manifests have inconsistent digest bindings")
     evidence_path = artifact.parent / "evidence-ledger.json"
     evidence = (
         TypeAdapter(list[EvidenceRecord]).validate_json(evidence_path.read_text(encoding="utf-8"))
@@ -2468,8 +2788,23 @@ def prepare_studio_bundle(
     suffix = architecture.architecture_id.removeprefix("architecture:")
     document_path = workspace / "documents" / f"{suffix}.canvas.json"
     document: CanvasDocument | None = None
+    protocol_migration_receipts = _load_protocol_migration_receipts(workspace)
     if document_path.is_file():
-        saved_document = load_canvas_document(document_path)
+        saved_document, migration_receipt = load_canvas_document_with_receipt(document_path)
+        protocol_migration_receipts = [
+            receipt
+            for receipt in protocol_migration_receipts
+            if receipt.receipt_id != migration_receipt.receipt_id
+        ]
+        protocol_migration_receipts.append(migration_receipt)
+        _write_json(
+            workspace
+            / "protocol-migrations"
+            / f"{migration_receipt.receipt_id.removeprefix('receipt:')}.json",
+            migration_receipt,
+        )
+        if migration_receipt.status != "current":
+            persist_canvas_document(document_path, saved_document)
         expected_digest = source_binding_digest(snapshot)
         stale_reason = next(
             (
@@ -2569,14 +2904,14 @@ def prepare_studio_bundle(
             workspace, project_root, draft_path
         )
         if prior_draft_path is not None:
-            saved_draft = DraftGraphDocument.model_validate_json(
-                prior_draft_path.read_text(encoding="utf-8")
+            saved_draft, _ = read_draft_graph_document_protocol(
+                json.loads(prior_draft_path.read_text(encoding="utf-8"))
             )
             stale_draft = saved_draft
             _archive_stale_binding(prior_draft_path)
     if draft_path.is_file():
-        saved_draft = DraftGraphDocument.model_validate_json(
-            draft_path.read_text(encoding="utf-8")
+        saved_draft, _ = read_draft_graph_document_protocol(
+            json.loads(draft_path.read_text(encoding="utf-8"))
         )
         if (
             saved_draft.base_architecture_id != architecture.architecture_id
@@ -2640,6 +2975,20 @@ def prepare_studio_bundle(
         )
         _write_json(source_workspace_path, source_workspace)
 
+    round_trip_reports = _load_conformance_reports(workspace)
+    source_view_report = build_source_view_report(
+        architecture,
+        hierarchy,
+        document.source_digest,
+    )
+    round_trip_reports = [
+        report
+        for report in round_trip_reports
+        if report.report_id != source_view_report.report_id
+    ]
+    round_trip_reports.append(source_view_report)
+    _write_json(_conformance_report_path(workspace, source_view_report), source_view_report)
+
     bundle = StudioBundle(
         artifact_path=artifact,
         workspace=workspace,
@@ -2663,7 +3012,14 @@ def prepare_studio_bundle(
         search_index=[],
         validation_runs=[],
         navigation=navigation,
+        parameter_edit_contexts=resolve_parameter_edit_contexts(artifact),
+        analysis_environment=analysis_environment,
+        analysis_input=analysis_input,
         contract_maintenance=ContractMaintenanceManager(workspace, MODULE_REGISTRY),
+        generated_projects=GeneratedProjectManager(workspace, MODULE_REGISTRY),
+        round_trip_reports=round_trip_reports,
+        recovery_receipts=_load_recovery_receipts(workspace),
+        protocol_migration_receipts=protocol_migration_receipts,
     )
     bundle.search_index = build_search_index(bundle)
     _write_json(workspace / "publication" / "hierarchy.json", hierarchy)

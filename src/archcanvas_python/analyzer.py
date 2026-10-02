@@ -624,54 +624,6 @@ def analyze_project(
     if requested_source_path is None:
         raise AnalysisError("ENTRYPOINT_NOT_FOUND", f"source module not found: {module_name}")
     config = _parse_config(config_bytes, config_path)
-    if framework == "pytorch" and pattern_packs_enabled and config.get("architecture_profile") == "autoformer":
-        from .autoformer import analyze_autoformer
-
-        return analyze_autoformer(
-            project,
-            entrypoint,
-            task,
-            execution_mode,
-            config,
-            config_bytes,
-            config_path,
-        )
-    if framework == "pytorch" and pattern_packs_enabled and config.get("architecture_profile") == "itransformer":
-        from .itransformer import analyze_itransformer
-
-        return analyze_itransformer(
-            project,
-            entrypoint,
-            task,
-            execution_mode,
-            config,
-            config_bytes,
-            config_path,
-        )
-    if framework == "pytorch" and pattern_packs_enabled and config.get("architecture_profile") == "patchtst":
-        from .patchtst import analyze_patchtst
-
-        return analyze_patchtst(
-            project,
-            entrypoint,
-            task,
-            execution_mode,
-            config,
-            config_bytes,
-            config_path,
-        )
-    if framework == "pytorch" and pattern_packs_enabled and config.get("architecture_profile") == "timemixer":
-        from .timemixer import analyze_timemixer
-
-        return analyze_timemixer(
-            project,
-            entrypoint,
-            task,
-            execution_mode,
-            config,
-            config_bytes,
-            config_path,
-        )
     try:
         ast.parse(requested_source_path.read_bytes(), filename=str(requested_source_path))
     except (OSError, UnicodeError) as error:

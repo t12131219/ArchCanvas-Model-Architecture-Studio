@@ -103,6 +103,8 @@ def build_exact_ir_v2(
         "instances": graph.instances,
         "calls": graph.calls,
         "values": graph.values,
+        "graph_input_value_ids": graph.graph_input_value_ids,
+        "graph_output_value_ids": graph.graph_output_value_ids,
         "control_regions": graph.control_regions,
         "parameter_groups": graph.parameter_groups,
         "repeats": graph.repeats,

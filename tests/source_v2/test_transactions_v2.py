@@ -16,7 +16,12 @@ from archcanvas_core.models import (
 from archcanvas_python import analyze_project_v2
 from archcanvas_studio import prepare_studio_bundle
 from archcanvas_studio.bundle import draft_document_digest
-from archcanvas_transactions import commit_transaction, prepare_transaction, verify_transaction
+from archcanvas_transactions import (
+    commit_transaction,
+    prepare_transaction,
+    resolve_parameter_edit_context,
+    verify_transaction,
+)
 from archcanvas_transactions import service as transaction_service
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -54,6 +59,10 @@ def _setup(tmp_path: Path) -> tuple[Path, Path, Path, object]:
     _write_json(analysis / "evidence-ledger.json", frontend.compatibility.evidence)
     _write_json(analysis / "project-manifest-v2.json", frontend.manifest)
     _write_json(analysis / "source-corpus-v2.json", frontend.corpus)
+    _write_json(
+        analysis / "analysis-environment-manifest-v1.json",
+        frontend.environment_manifest,
+    )
     _write_json(analysis / "analysis-input-v2.json", frontend.analysis_input)
     _write_json(analysis / "architecture-v2.json", frontend.exact_ir)
     return project, artifact, tmp_path / "workspace", frontend
@@ -65,6 +74,10 @@ def _write_frontend_bundle(analysis: Path, frontend: object) -> None:
     _write_json(analysis / "evidence-ledger.json", frontend.compatibility.evidence)
     _write_json(analysis / "project-manifest-v2.json", frontend.manifest)
     _write_json(analysis / "source-corpus-v2.json", frontend.corpus)
+    _write_json(
+        analysis / "analysis-environment-manifest-v1.json",
+        frontend.environment_manifest,
+    )
     _write_json(analysis / "analysis-input-v2.json", frontend.analysis_input)
     _write_json(analysis / "architecture-v2.json", frontend.exact_ir)
 
@@ -108,14 +121,42 @@ def _registered_insert_request(
     )
 
 
+def test_shared_instance_parameter_scope_includes_every_call_site(tmp_path: Path) -> None:
+    project = tmp_path / "shared-project"
+    shutil.copytree(ROOT / "tests" / "fixtures" / "frontend_v2" / "shared_module", project)
+    analysis = tmp_path / "shared-analysis"
+    frontend = analyze_project_v2(
+        project,
+        "model:Model",
+        "inference",
+        "eval",
+        analysis / ".frontend-v2",
+    )
+    analysis.mkdir(exist_ok=True)
+    _write_frontend_bundle(analysis, frontend)
+    calls = [
+        node
+        for node in frontend.compatibility.architecture.nodes
+        if node.attributes.get("v2_instance_id") == "instance:model.projection"
+    ]
+    assert len(calls) == 2
+
+    context = resolve_parameter_edit_context(
+        analysis / "architecture.json", calls[0].node_id, "out_features"
+    )
+
+    assert context.default_scope is not None
+    assert context.default_scope.value == "module-instance"
+    assert context.affected_canonical_ids == sorted(node.node_id for node in calls)
+
+
 def test_v2_parameter_transaction_preserves_exact_anchor_and_commits(tmp_path: Path) -> None:
     project, artifact, workspace, frontend = _setup(tmp_path)
     first_blob = frontend.corpus.files[0]
     assert frontend.corpus.source_corpus_digest != first_blob.sha256
 
-    transaction, prepared_receipt = prepare_transaction(
-        _request(artifact, frontend), workspace
-    )
+    request = _request(artifact, frontend)
+    transaction, prepared_receipt = prepare_transaction(request, workspace)
 
     expected_anchor = next(
         argument.anchor
@@ -130,8 +171,20 @@ def test_v2_parameter_transaction_preserves_exact_anchor_and_commits(tmp_path: P
     assert transaction.base_analysis_input_digest == frontend.analysis_input.analysis_input_digest
     assert transaction.base_registry_digest == frontend.analysis_input.registry_digest
     assert transaction.base_exact_ir_digest == frontend.exact_ir.exact_ir_digest
+    assert transaction.parameter_edit_context is not None
+    assert transaction.parameter_edit_context.value_origin.kind.value == "constructor-literal"
+    assert transaction.parameter_edit_context.default_scope.value == "module-instance"
+    assert transaction.parameter_edit_context.value_origin.source_anchor_ids
     assert len(transaction.base_source_blobs) == len(frontend.corpus.files)
     assert transaction.file_changes[0].path == "src/app/blocks.py"
+    assert transaction.expected_delta.changed_nodes == [request.target_node_id]
+    assert transaction.expected_delta.changed_edges == []
+    assert transaction.expected_delta.changed_tensors == []
+    assert {
+        change.subject_id
+        for change in transaction.expected_delta.fact_changes
+        if change.kind != "evidence"
+    } == {request.target_node_id}
     assert "nn.Conv2d(3, 24, 3)" in (
         Path(transaction.temporary_project_root) / "src/app/blocks.py"
     ).read_text()
@@ -140,6 +193,10 @@ def test_v2_parameter_transaction_preserves_exact_anchor_and_commits(tmp_path: P
     transaction_path = workspace / "transactions" / transaction.transaction_id
     verified, _ = verify_transaction(transaction_path)
     assert verified.state is TransactionState.REVIEW_READY
+    assert verified.result_source_corpus_digest is not None
+    assert verified.result_source_corpus_digest != verified.base_source_corpus_digest
+    assert verified.result_exact_ir_digest is not None
+    assert verified.result_exact_ir_digest != verified.base_exact_ir_digest
     committed, receipt = commit_transaction(transaction_path)
     assert committed.state is TransactionState.COMMITTED
     assert receipt.source_writes is True

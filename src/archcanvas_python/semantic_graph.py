@@ -408,7 +408,18 @@ class SemanticGraphBuilder:
 
     @staticmethod
     def _call_identity_suffix(module: _ModuleIndex, call: ast.Call) -> str:
-        current: ast.AST = call
+        callee = _attribute_name(call.func) or ast.dump(
+            call.func, annotate_fields=True, include_attributes=False
+        )
+        return SemanticGraphBuilder._expression_identity_suffix(module, call, callee)
+
+    @staticmethod
+    def _expression_identity_suffix(
+        module: _ModuleIndex,
+        expression: ast.AST,
+        identity: str,
+    ) -> str:
+        current: ast.AST = expression
         path: list[str] = []
         statement: ast.stmt | None = None
         while current in module.parents:
@@ -421,9 +432,6 @@ class SemanticGraphBuilder:
                 statement = parent
                 break
             current = parent
-        callee = _attribute_name(call.func) or ast.dump(
-            call.func, annotate_fields=True, include_attributes=False
-        )
         context = type(statement).__name__ if statement is not None else "Expression"
         if isinstance(statement, ast.Assign):
             targets = ",".join(
@@ -441,8 +449,62 @@ class SemanticGraphBuilder:
                 "For:"
                 + ast.dump(statement.target, annotate_fields=True, include_attributes=False)
             )
-        payload = f"{module.unit.module_name}:{context}:{'/'.join(reversed(path))}:{callee}"
+        scope: ast.AST = expression
+        scope_names: list[str] = []
+        current = expression
+        while current in module.parents:
+            parent = module.parents[current][0]
+            if isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                scope_names.append(parent.name)
+                if isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    scope = parent
+                    break
+            current = parent
+        def identity_shape(node: ast.AST) -> str:
+            if isinstance(node, ast.Call):
+                return ast.dump(
+                    node.func,
+                    annotate_fields=True,
+                    include_attributes=False,
+                )
+            if isinstance(node, ast.BinOp):
+                return type(node.op).__name__
+            return ast.dump(
+                node,
+                annotate_fields=True,
+                include_attributes=False,
+            )
+
+        expression_shape = identity_shape(expression)
+        shape_digest = hashlib.sha256(expression_shape.encode()).hexdigest()[:16]
+        structural_ordinal = next(
+            (
+                index
+                for index, candidate in enumerate(
+                    item
+                    for item in ast.walk(scope)
+                    if type(item) is type(expression)
+                    and identity_shape(item) == expression_shape
+                )
+                if candidate is expression
+            ),
+            0,
+        )
+        payload = (
+            f"{module.unit.module_name}:{'.'.join(reversed(scope_names))}:"
+            f"{context}:{'/'.join(reversed(path))}:{identity}:{shape_digest}:"
+            f"{structural_ordinal}"
+        )
         return hashlib.sha256(payload.encode()).hexdigest()[:16]
+
+    @staticmethod
+    def _invocation_identity_suffix(
+        control_region_id: str,
+        source_identity_suffix: str,
+    ) -> str:
+        return hashlib.sha256(
+            f"{control_region_id}:{source_identity_suffix}".encode()
+        ).hexdigest()[:16]
 
     def _definition_id(self, qualified_name: str) -> str:
         return _identifier(f"definition:local.{qualified_name}")
@@ -510,6 +572,31 @@ class SemanticGraphBuilder:
                 definition_id=definition_id,
                 qualified_name=qualified_name,
                 kind="function",
+                anchor=anchor,
+            )
+        return definition_id
+
+    def _ensure_local_method_definition(
+        self,
+        module: _ModuleIndex,
+        class_node: ast.ClassDef,
+        function_node: ast.FunctionDef | ast.AsyncFunctionDef,
+    ) -> str:
+        qualified_name = (
+            f"{module.unit.module_name}.{class_node.name}.{function_node.name}"
+        )
+        definition_id = self._definition_id(qualified_name)
+        if definition_id not in self.definitions:
+            anchor = module.unit.source_anchor(
+                function_node,
+                qualified_symbol=qualified_name,
+                semantic_role="method-definition",
+            )
+            self._add_evidence(anchor, f"Defines local method {qualified_name}.")
+            self.definitions[definition_id] = SemanticDefinition(
+                definition_id=definition_id,
+                qualified_name=qualified_name,
+                kind="method",
                 anchor=anchor,
             )
         return definition_id
@@ -593,6 +680,7 @@ class SemanticGraphBuilder:
         self,
         *,
         module: _ModuleIndex,
+        construction_module: _ModuleIndex | None = None,
         class_node: ast.ClassDef | None,
         registry_definition: ModuleDefinition | None,
         instance_path: str,
@@ -601,6 +689,7 @@ class SemanticGraphBuilder:
         constructor_call: ast.Call | None,
         binding_confidence: Confidence = Confidence.EXACT,
     ) -> str:
+        construction_module = construction_module or module
         instance_id = _identifier(f"instance:{instance_path}")
         if instance_id in self.instances:
             return instance_id
@@ -612,7 +701,7 @@ class SemanticGraphBuilder:
             qualified_symbol = registry_definition.qualified_names[0]
         else:
             raise ValueError("instance requires a local class or registry definition")
-        anchor = module.unit.source_anchor(
+        anchor = construction_module.unit.source_anchor(
             anchor_node,
             qualified_symbol=qualified_symbol,
             semantic_role="module-instance",
@@ -624,7 +713,7 @@ class SemanticGraphBuilder:
         )
         arguments = (
             self._constructor_arguments(
-                module,
+                construction_module,
                 constructor_call,
                 registry_definition,
                 qualified_symbol,
@@ -733,6 +822,7 @@ class SemanticGraphBuilder:
         instance_path = f"{parent.instance_path}.{target_name}[]"
         child_id = self._create_instance(
             module=child_module,
+            construction_module=module,
             class_node=child_class,
             registry_definition=registry_definition,
             instance_path=instance_path,
@@ -847,6 +937,7 @@ class SemanticGraphBuilder:
             child_module, child_class = local if local is not None else (module, None)
             child_id = self._create_instance(
                 module=child_module,
+                construction_module=module,
                 class_node=child_class,
                 registry_definition=registry_definition,
                 instance_path=f"{parent.instance_path}.{target_name}",
@@ -1030,6 +1121,12 @@ class SemanticGraphBuilder:
             semantic_role="opaque-call",
         )
         identity_suffix = self._call_identity_suffix(module, call)
+        invocation_suffix = self._invocation_identity_suffix(
+            control_region_id, identity_suffix
+        )
+        call_id = _identifier(
+            f"call:opaque.{parent_instance.instance_path}.{invocation_suffix}"
+        )
         definition_id = _identifier(
             f"definition:opaque.{diagnostic_code}.{qualified_symbol}.{identity_suffix}"
         )
@@ -1042,7 +1139,7 @@ class SemanticGraphBuilder:
                 anchor=anchor,
             ),
         )
-        opaque_region_id = _identifier(f"control:opaque.{definition_id}.{identity_suffix}")
+        opaque_region_id = _identifier(f"control:opaque.{call_id}")
         self.control_regions.setdefault(
             opaque_region_id,
             ControlRegion(
@@ -1058,6 +1155,8 @@ class SemanticGraphBuilder:
             (f"input{index}", "positional", argument)
             for index, argument in enumerate(call.args)
         ]
+        if isinstance(call.func, ast.Attribute):
+            expressions.insert(0, ("receiver", "implicit", call.func.value))
         expressions.extend(
             (keyword.arg or f"keyword{index}", "keyword", keyword.value)
             for index, keyword in enumerate(call.keywords)
@@ -1086,9 +1185,6 @@ class SemanticGraphBuilder:
                     ),
                 )
             )
-        call_id = _identifier(
-            f"call:opaque.{parent_instance.instance_path}.{identity_suffix}"
-        )
         output_id = self._new_value(
             f"value:{call_id}.output",
             "opaque-output",
@@ -1380,17 +1476,31 @@ class SemanticGraphBuilder:
         function_node: ast.FunctionDef | ast.AsyncFunctionDef,
         environment: dict[str, str],
         control_region_id: str,
+        owner_class: ast.ClassDef | None = None,
     ) -> _EvalResult:
-        qualified_name = f"{function_module.unit.module_name}.{function_node.name}"
-        definition_id = self._ensure_local_function_definition(function_module, function_node)
+        qualified_name = (
+            f"{function_module.unit.module_name}.{owner_class.name}.{function_node.name}"
+            if owner_class is not None
+            else f"{function_module.unit.module_name}.{function_node.name}"
+        )
+        definition_id = (
+            self._ensure_local_method_definition(
+                function_module, owner_class, function_node
+            )
+            if owner_class is not None
+            else self._ensure_local_function_definition(function_module, function_node)
+        )
         anchor = caller_module.unit.source_anchor(
             call,
             qualified_symbol=qualified_name,
             semantic_role="function-call",
         )
+        invocation_suffix = self._invocation_identity_suffix(
+            control_region_id,
+            self._call_identity_suffix(caller_module, call),
+        )
         call_id = _identifier(
-            f"call:{parent_instance.instance_path}.{qualified_name}."
-            f"{self._call_identity_suffix(caller_module, call)}"
+            f"call:{parent_instance.instance_path}.{qualified_name}.{invocation_suffix}"
         )
         bindings, supplied = self._local_function_arguments(
             caller_module,
@@ -1453,6 +1563,97 @@ class SemanticGraphBuilder:
             outputs={item.port_id: item.value_id for item in outputs},
         )
 
+    def _record_binary_operator(
+        self,
+        module: _ModuleIndex,
+        expression: ast.BinOp,
+        instance: ModuleInstance,
+        environment: dict[str, str],
+        control_region_id: str,
+        qualified_name: str,
+    ) -> _EvalResult:
+        definition = self.registry.resolve_qualified_name(qualified_name)
+        if definition is None:
+            return _EvalResult(primary=None)
+        anchor = module.unit.source_anchor(
+            expression,
+            qualified_symbol=qualified_name,
+            semantic_role="operator-call",
+        )
+        source_suffix = self._expression_identity_suffix(
+            module, expression, qualified_name
+        )
+        suffix = self._invocation_identity_suffix(control_region_id, source_suffix)
+        call_id = _identifier(
+            f"call:{instance.instance_path}.{qualified_name}.{suffix}"
+        )
+        operands = [
+            self._evaluate_expression(
+                module,
+                operand,
+                instance,
+                environment,
+                control_region_id,
+            ).primary
+            for operand in (expression.left, expression.right)
+        ]
+        unresolved_operands = [
+            ordinal for ordinal, value_id in enumerate(operands) if value_id is None
+        ]
+        for ordinal in unresolved_operands:
+            value_id = self._new_value(
+                f"value:unresolved.{call_id}.operand.{ordinal}",
+                f"unresolved:operand{ordinal}",
+                anchor,
+            )
+            operands[ordinal] = value_id
+            self.diagnostics.append(
+                Diagnostic(
+                    code="V2_OPERATOR_INPUT_UNRESOLVED",
+                    severity="warning",
+                    message=(
+                        f"Operator input {ordinal} could not be resolved statically for "
+                        f"{call_id}."
+                    ),
+                    target_ids=[call_id, value_id],
+                )
+            )
+        bindings = [
+            CallArgumentBinding(
+                port_id="operands",
+                value_id=value_id,
+                argument_name=f"operand{ordinal}",
+                argument_kind="positional",
+                ordinal=ordinal,
+                anchor=anchor,
+            )
+            for ordinal, value_id in enumerate(operands)
+            if value_id is not None
+        ]
+        output_id = self._new_value(
+            f"value:{call_id.removeprefix('call:')}.output",
+            "output",
+            anchor,
+            producer_call_id=call_id,
+            producer_port_id="output",
+        )
+        self.calls[call_id] = ArchitectureCall(
+            call_id=call_id,
+            definition_ref=definition.ref,
+            parent_module_id=instance.instance_id,
+            input_bindings=bindings,
+            output_bindings=[
+                CallOutputBinding(port_id="output", value_id=output_id, ordinal=0)
+            ],
+            control_region_id=control_region_id,
+            anchor=anchor,
+            confidence=(
+                Confidence.UNRESOLVED if unresolved_operands else Confidence.EXACT
+            ),
+        )
+        self._add_evidence(anchor, f"Applies registered operator {qualified_name}.")
+        return _EvalResult(primary=output_id, outputs={"output": output_id})
+
     def _evaluate_expression(
         self,
         module: _ModuleIndex,
@@ -1463,6 +1664,14 @@ class SemanticGraphBuilder:
     ) -> _EvalResult:
         if isinstance(expression, ast.Name):
             return _EvalResult(primary=environment.get(expression.id))
+        if isinstance(expression, ast.Subscript):
+            return self._evaluate_expression(
+                module,
+                expression.value,
+                instance,
+                environment,
+                control_region_id,
+            )
         if isinstance(expression, (ast.Tuple, ast.List)):
             values = [
                 result.primary
@@ -1480,8 +1689,53 @@ class SemanticGraphBuilder:
                 primary=values[0] if values else None,
                 outputs={f"output{index}": value for index, value in enumerate(values)},
             )
+        if isinstance(expression, ast.BinOp) and isinstance(expression.op, ast.Add):
+            return self._record_binary_operator(
+                module,
+                expression,
+                instance,
+                environment,
+                control_region_id,
+                "operator.add",
+            )
         if isinstance(expression, ast.Call):
             callee = _attribute_name(expression.func)
+            if (
+                isinstance(expression.func, ast.Attribute)
+                and expression.func.attr == "append"
+                and isinstance(expression.func.value, ast.Name)
+                and expression.args
+            ):
+                appended = self._evaluate_expression(
+                    module,
+                    expression.args[0],
+                    instance,
+                    environment,
+                    control_region_id,
+                )
+                if appended.primary is not None:
+                    environment[expression.func.value.id] = appended.primary
+                return appended
+            if callee and callee.startswith("self.") and callee.count(".") == 1:
+                owner = self.instance_classes.get(instance.instance_id)
+                method_name = callee.split(".", 1)[1]
+                method = (
+                    self._find_class_method(owner[0], owner[1], {method_name})
+                    if owner is not None
+                    else None
+                )
+                if method is not None:
+                    method_module, method_owner, method_node = method
+                    return self._record_local_function_call(
+                        module,
+                        expression,
+                        instance,
+                        method_module,
+                        method_node,
+                        environment,
+                        control_region_id,
+                        owner_class=method_owner,
+                    )
             child = None
             if callee and callee.startswith("self.") and callee.count(".") == 1:
                 child = self._child_instance(instance, callee.split(".", 1)[1])
@@ -1576,19 +1830,27 @@ class SemanticGraphBuilder:
                 )).primary
                 is not None
             ]
-            self.call_depth += 1
-            try:
-                nested_result = self._analyze_forward(child, input_values)
-            finally:
-                self.call_depth -= 1
             anchor = module.unit.source_anchor(
                 expression,
                 qualified_symbol=callee or child.instance_path,
                 semantic_role="module-call",
             )
-            call_id = _identifier(
-                f"call:{instance.instance_path}.{self._call_identity_suffix(module, expression)}"
+            invocation_suffix = self._invocation_identity_suffix(
+                control_region_id,
+                self._call_identity_suffix(module, expression),
             )
+            call_id = _identifier(
+                f"call:{instance.instance_path}.{invocation_suffix}"
+            )
+            self.call_depth += 1
+            try:
+                nested_result = self._analyze_forward_result(
+                    child,
+                    input_values,
+                    invocation_key=call_id,
+                )
+            finally:
+                self.call_depth -= 1
             bindings = [
                 CallArgumentBinding(
                     port_id=f"input{index}",
@@ -1600,11 +1862,19 @@ class SemanticGraphBuilder:
                 )
                 for index, value_id in enumerate(input_values)
             ]
-            outputs = (
-                [CallOutputBinding(port_id="output", value_id=nested_result, ordinal=0)]
-                if nested_result
+            result_values = list(nested_result.outputs.items()) or (
+                [("output", nested_result.primary)]
+                if nested_result.primary is not None
                 else []
             )
+            outputs = [
+                CallOutputBinding(
+                    port_id=_identifier(port_id),
+                    value_id=value_id,
+                    ordinal=ordinal,
+                )
+                for ordinal, (port_id, value_id) in enumerate(result_values)
+            ]
             self.calls[call_id] = ArchitectureCall(
                 call_id=call_id,
                 instance_id=child.instance_id,
@@ -1617,9 +1887,21 @@ class SemanticGraphBuilder:
                 confidence=Confidence.EXACT,
             )
             self._add_evidence(anchor, f"Calls composite module {child.instance_path}.")
-            return _EvalResult(primary=nested_result)
+            return _EvalResult(
+                primary=nested_result.primary,
+                outputs={item.port_id: item.value_id for item in outputs},
+            )
         if isinstance(expression, ast.Attribute):
-            return _EvalResult(primary=environment.get(ast.unparse(expression)))
+            value_id = environment.get(ast.unparse(expression))
+            if value_id is not None:
+                return _EvalResult(primary=value_id)
+            return self._evaluate_expression(
+                module,
+                expression.value,
+                instance,
+                environment,
+                control_region_id,
+            )
         return _EvalResult(primary=None)
 
     def _record_registry_call(
@@ -1638,8 +1920,12 @@ class SemanticGraphBuilder:
             semantic_role="module-call",
         )
         identity = called_instance.instance_path if called_instance else definition.definition_id
+        invocation_suffix = self._invocation_identity_suffix(
+            control_region_id,
+            self._call_identity_suffix(module, call),
+        )
         call_id = _identifier(
-            f"call:{identity}.{self._call_identity_suffix(module, call)}"
+            f"call:{identity}.{invocation_suffix}"
         )
         bindings = self._call_arguments(
             module,
@@ -1649,6 +1935,38 @@ class SemanticGraphBuilder:
             environment,
             control_region_id,
         )
+        missing_ports: list[str] = []
+        for port in (item for item in definition.ports if item.direction == "input"):
+            count = sum(1 for item in bindings if item.port_id == port.port_id)
+            for missing_index in range(max(0, port.min_connections - count)):
+                value_id = self._new_value(
+                    f"value:unresolved.{call_id}.{port.port_id}.{missing_index}",
+                    f"unresolved:{port.port_id}",
+                    anchor,
+                )
+                bindings.append(
+                    CallArgumentBinding(
+                        port_id=port.port_id,
+                        value_id=value_id,
+                        argument_name=port.port_id,
+                        argument_kind="implicit",
+                        ordinal=len(bindings),
+                        anchor=anchor,
+                    )
+                )
+                missing_ports.append(port.port_id)
+        if missing_ports:
+            self.diagnostics.append(
+                Diagnostic(
+                    code="V2_CALL_INPUT_UNRESOLVED",
+                    severity="warning",
+                    message=(
+                        f"Call {call_id} retains unresolved required inputs: "
+                        + ", ".join(missing_ports)
+                    ),
+                    target_ids=[call_id],
+                )
+            )
         outputs: dict[str, str] = {}
         output_bindings: list[CallOutputBinding] = []
         for ordinal, port in enumerate(item for item in definition.ports if item.direction == "output"):
@@ -1673,10 +1991,14 @@ class SemanticGraphBuilder:
             control_region_id=control_region_id,
             anchor=anchor,
             confidence=(
-                Confidence.INFERRED
-                if called_instance is not None
-                and called_instance.instance_id in self.resolver_bound_instances
-                else Confidence.EXACT
+                Confidence.UNRESOLVED
+                if missing_ports
+                else (
+                    Confidence.INFERRED
+                    if called_instance is not None
+                    and called_instance.instance_id in self.resolver_bound_instances
+                    else Confidence.EXACT
+                )
             ),
         )
         self._add_evidence(
@@ -1715,6 +2037,7 @@ class SemanticGraphBuilder:
         invocation_key: str,
         owner_definition_id: str,
         qualified_symbol: str | None = None,
+        graph_input_value_ids: list[str] | None = None,
     ) -> _EvalResult:
         qualified_symbol = qualified_symbol or f"{module.unit.module_name}.{function.name}"
         control_region_id = _identifier(f"control:{invocation_key}.{function.name}")
@@ -1764,11 +2087,14 @@ class SemanticGraphBuilder:
                 qualified_symbol=qualified_symbol,
                 semantic_role=f"function-input:{argument.arg}",
             )
-            environment[argument.arg] = self._new_value(
+            value_id = self._new_value(
                 f"value:{control_region_id}.{argument.arg}",
                 argument.arg,
                 value_anchor,
             )
+            environment[argument.arg] = value_id
+            if graph_input_value_ids is not None:
+                graph_input_value_ids.append(value_id)
         result = _EvalResult(primary=None)
 
         def process(statements: list[ast.stmt], region_id: str) -> None:
@@ -1799,24 +2125,52 @@ class SemanticGraphBuilder:
                     result = self._evaluate_expression(
                         module, statement.value, instance, environment, region_id
                     )
+                elif isinstance(statement, ast.If):
+                    conditional_anchor = module.unit.source_anchor(
+                        statement,
+                        qualified_symbol=qualified_symbol,
+                        semantic_role="conditional-region",
+                    )
+                    suffix = self._expression_identity_suffix(
+                        module, statement.test, "conditional"
+                    )
+                    self._add_evidence(
+                        conditional_anchor,
+                        f"Retains both branches of condition {ast.unparse(statement.test)}.",
+                    )
+                    for branch_name, branch_body in (
+                        ("body", statement.body),
+                        ("else", statement.orelse),
+                    ):
+                        if not branch_body:
+                            continue
+                        branch_region_id = _identifier(
+                            f"{region_id}.conditional.{suffix}.{branch_name}"
+                        )
+                        self.control_regions.setdefault(
+                            branch_region_id,
+                            ControlRegion(
+                                control_region_id=branch_region_id,
+                                kind="conditional",
+                                owner_definition_id=owner_definition_id,
+                                parent_region_id=region_id,
+                                anchor=conditional_anchor,
+                            ),
+                        )
+                        process(branch_body, branch_region_id)
                 elif isinstance(statement, ast.For):
                     iterator = _attribute_name(statement.iter)
                     target = statement.target.id if isinstance(statement.target, ast.Name) else None
-                    if not iterator or not iterator.startswith("self.") or target is None:
-                        continue
-                    collection_name = iterator.split(".", 1)[1]
-                    child_id = self.collection_instances.get(
-                        (instance.instance_id, collection_name)
-                    )
-                    if child_id is None:
-                        continue
                     loop_anchor = module.unit.source_anchor(
                         statement,
                         qualified_symbol=qualified_symbol,
                         semantic_role="repeat-loop",
                     )
+                    suffix = self._expression_identity_suffix(
+                        module, statement.iter, "loop"
+                    )
                     loop_region_id = _identifier(
-                        f"{region_id}.{collection_name}.loop"
+                        f"{region_id}.loop.{suffix}"
                     )
                     self.control_regions[loop_region_id] = ControlRegion(
                         control_region_id=loop_region_id,
@@ -1825,20 +2179,46 @@ class SemanticGraphBuilder:
                         parent_region_id=region_id,
                         anchor=loop_anchor,
                     )
-                    self._add_evidence(loop_anchor, f"Iterates module container {collection_name}.")
-                    before = set(self.calls)
-                    self.loop_aliases[(loop_region_id, target)] = self.instances[child_id]
-                    process(statement.body, loop_region_id)
-                    self.loop_aliases.pop((loop_region_id, target), None)
-                    body_calls = sorted(set(self.calls) - before)
-                    repeat_id = _identifier(
-                        f"repeat:{instance.instance_path}.{collection_name}"
+                    self._add_evidence(
+                        loop_anchor,
+                        f"Retains symbolic loop over {ast.unparse(statement.iter)}.",
                     )
-                    repeat = self.repeats.get(repeat_id)
-                    if repeat is not None:
-                        self.repeats[repeat_id] = repeat.model_copy(
-                            update={"body_call_ids": body_calls}
+                    before = set(self.calls)
+                    collection_name = (
+                        iterator.split(".", 1)[1]
+                        if iterator and iterator.startswith("self.")
+                        else None
+                    )
+                    child_id = (
+                        self.collection_instances.get((instance.instance_id, collection_name))
+                        if collection_name is not None
+                        else None
+                    )
+                    if target is not None and child_id is not None:
+                        self.loop_aliases[(loop_region_id, target)] = self.instances[child_id]
+                    elif target is not None:
+                        iterated = self._evaluate_expression(
+                            module,
+                            statement.iter,
+                            instance,
+                            environment,
+                            loop_region_id,
                         )
+                        if iterated.primary is not None:
+                            environment[target] = iterated.primary
+                    process(statement.body, loop_region_id)
+                    if target is not None:
+                        self.loop_aliases.pop((loop_region_id, target), None)
+                    body_calls = sorted(set(self.calls) - before)
+                    if collection_name is not None:
+                        repeat_id = _identifier(
+                            f"repeat:{instance.instance_path}.{collection_name}"
+                        )
+                        repeat = self.repeats.get(repeat_id)
+                        if repeat is not None:
+                            self.repeats[repeat_id] = repeat.model_copy(
+                                update={"body_call_ids": body_calls}
+                            )
 
         self.active_functions.add(control_region_id)
         try:
@@ -1847,20 +2227,23 @@ class SemanticGraphBuilder:
             self.active_functions.remove(control_region_id)
         return result
 
-    def _analyze_forward(
+    def _analyze_forward_result(
         self,
         instance: ModuleInstance,
         supplied_inputs: list[str] | None = None,
-    ) -> str | None:
+        *,
+        graph_input_value_ids: list[str] | None = None,
+        invocation_key: str | None = None,
+    ) -> _EvalResult:
         class_binding = self.instance_classes.get(instance.instance_id)
         if class_binding is None:
-            return None
+            return _EvalResult(primary=None)
         module, class_node = class_binding
         forward_binding = self._find_class_method(
             module, class_node, {"forward", "call", "__call__"}
         )
         if forward_binding is None:
-            return None
+            return _EvalResult(primary=None)
         module, forward_owner, forward = forward_binding
         arguments = [
             item
@@ -1877,11 +2260,19 @@ class SemanticGraphBuilder:
             module,
             forward,
             supplied,
-            invocation_key=f"{instance.instance_path}.{forward.name}",
+            invocation_key=invocation_key or f"{instance.instance_path}.{forward.name}",
             owner_definition_id=instance.local_definition_id or "definition:unknown",
             qualified_symbol=f"{module.unit.module_name}.{forward_owner.name}.{forward.name}",
+            graph_input_value_ids=graph_input_value_ids,
         )
-        return result.primary
+        return result
+
+    def _analyze_forward(
+        self,
+        instance: ModuleInstance,
+        supplied_inputs: list[str] | None = None,
+    ) -> str | None:
+        return self._analyze_forward_result(instance, supplied_inputs).primary
 
     def build(self) -> PythonSemanticGraph:
         if ":" not in self.entrypoint:
@@ -1893,6 +2284,7 @@ class SemanticGraphBuilder:
         if module is None or (class_node is None and function_node is None):
             raise ValueError(f"v2 entrypoint cannot be resolved: {self.entrypoint}")
         root_path = _identifier(symbol_name).removeprefix("id-")
+        graph_input_value_ids: list[str] = []
         if class_node is not None:
             root_id = self._create_instance(
                 module=module,
@@ -1904,18 +2296,26 @@ class SemanticGraphBuilder:
                 constructor_call=None,
             )
             self._discover_parameter_aliases()
-            self._analyze_forward(self.instances[root_id])
+            root_result = self._analyze_forward_result(
+                self.instances[root_id],
+                graph_input_value_ids=graph_input_value_ids,
+            )
         else:
             assert function_node is not None
             root_id = self._create_function_scope(module, function_node, root_path)
-            self._analyze_function_body(
+            root_result = self._analyze_function_body(
                 self.instances[root_id],
                 module,
                 function_node,
                 invocation_key=f"{root_path}.entrypoint",
                 owner_definition_id=self.instances[root_id].local_definition_id
                 or "definition:unknown",
+                graph_input_value_ids=graph_input_value_ids,
             )
+        graph_output_value_ids = list(root_result.outputs.values()) or (
+            [root_result.primary] if root_result.primary is not None else []
+        )
+        graph_output_value_ids = list(dict.fromkeys(graph_output_value_ids))
 
         budget_exclusions = [
             item.logical_path
@@ -1964,6 +2364,8 @@ class SemanticGraphBuilder:
             "instances": list(self.instances.values()),
             "calls": list(self.calls.values()),
             "values": list(self.values.values()),
+            "graph_input_value_ids": graph_input_value_ids,
+            "graph_output_value_ids": graph_output_value_ids,
             "control_regions": list(self.control_regions.values()),
             "parameter_groups": list(self.parameter_groups.values()),
             "repeats": list(self.repeats.values()),

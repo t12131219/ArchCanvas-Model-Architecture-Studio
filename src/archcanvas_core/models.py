@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from enum import Enum
 from pathlib import PurePosixPath
@@ -92,6 +93,25 @@ class SourceSnapshot(StrictModel):
     config_path: str | None = None
     resolved_config: dict[str, Any] = Field(default_factory=dict)
     source_files: list[SourceFile] = Field(min_length=1)
+
+
+class EntryInvocationConfig(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    constructor_args: list[Any] = Field(default_factory=list)
+    constructor_kwargs: dict[str, Any] = Field(default_factory=dict)
+    forward_args: list[Any] = Field(default_factory=list)
+    forward_kwargs: dict[str, Any] = Field(default_factory=dict)
+    static_args: dict[str, Any] = Field(default_factory=dict)
+    mode: Literal["eval", "train"] = "eval"
+    input_structure: Any = None
+
+    @model_validator(mode="after")
+    def values_are_portable_json(self) -> EntryInvocationConfig:
+        try:
+            json.dumps(self.model_dump(mode="json"), allow_nan=False, sort_keys=True)
+        except (TypeError, ValueError) as error:
+            raise ValueError("entry invocation values must be portable JSON") from error
+        return self
 
 
 class EvidenceRecord(StrictModel):
@@ -339,6 +359,153 @@ class FrameworkAdapterCapability(StrictModel):
         return self
 
 
+class CapabilityStatus(str, Enum):
+    VERIFIED = "verified"
+    EXPERIMENTAL = "experimental"
+    PARTIAL = "partial"
+    UNAVAILABLE = "unavailable"
+
+
+class FrameworkFormCapabilityV2(StrictModel):
+    form_id: Identifier
+    form_name: str = Field(min_length=1)
+    framework: Literal["pytorch", "keras", "jax", "onnx", "python"]
+    static_analysis: CapabilityStatus
+    runtime_evidence: CapabilityStatus
+    parameter_transaction: CapabilityStatus
+    structural_transaction: CapabilityStatus
+    code_generation: CapabilityStatus
+    artifact_commit: CapabilityStatus
+    supported_targets: list[str] = Field(default_factory=list)
+    verified_fixtures: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def collections_are_unique(self) -> FrameworkFormCapabilityV2:
+        for name, values in (
+            ("supported targets", self.supported_targets),
+            ("verified fixtures", self.verified_fixtures),
+            ("limitations", self.limitations),
+        ):
+            if len(values) != len(set(values)):
+                raise ValueError(f"framework form {name} must be unique")
+        return self
+
+    @property
+    def static(self) -> str:
+        return self.static_analysis.value
+
+    @property
+    def runtime(self) -> str:
+        return self.runtime_evidence.value
+
+
+class FrameworkAdapterCapabilityV2(StrictModel):
+    schema_version: Literal["2.0"] = "2.0"
+    adapter_id: Identifier
+    framework: Literal["pytorch", "keras", "jax", "onnx", "python"]
+    adapter_version: str = Field(min_length=1)
+    status: CapabilityStatus
+    forms: list[FrameworkFormCapabilityV2] = Field(min_length=1)
+    required_packages: dict[str, str | None] = Field(default_factory=dict)
+    limitations: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def forms_are_consistent(self) -> FrameworkAdapterCapabilityV2:
+        identifiers = [form.form_id for form in self.forms]
+        if len(identifiers) != len(set(identifiers)):
+            raise ValueError("framework form capability identifiers must be unique")
+        if any(form.framework != self.framework for form in self.forms):
+            raise ValueError("framework capability forms must match the adapter framework")
+        return self
+
+    def capability_for(self, form_id: str, action: str) -> CapabilityStatus:
+        form = next((item for item in self.forms if item.form_id == form_id), None)
+        if form is None:
+            return CapabilityStatus.UNAVAILABLE
+        fields = {
+            "static_analysis",
+            "runtime_evidence",
+            "parameter_transaction",
+            "structural_transaction",
+            "code_generation",
+            "artifact_commit",
+        }
+        if action not in fields:
+            return CapabilityStatus.UNAVAILABLE
+        return CapabilityStatus(getattr(form, action))
+
+    @property
+    def static_analysis(self) -> bool:
+        return any(form.static_analysis is not CapabilityStatus.UNAVAILABLE for form in self.forms)
+
+    @property
+    def runtime_evidence(self) -> bool:
+        return any(form.runtime_evidence is not CapabilityStatus.UNAVAILABLE for form in self.forms)
+
+    @property
+    def source_transactions(self) -> bool:
+        return self.framework in {"pytorch", "keras", "jax"} and any(
+            form.parameter_transaction is not CapabilityStatus.UNAVAILABLE
+            or form.structural_transaction is not CapabilityStatus.UNAVAILABLE
+            for form in self.forms
+        )
+
+    @property
+    def parameter_transactions(self) -> bool:
+        return any(
+            form.parameter_transaction is not CapabilityStatus.UNAVAILABLE
+            for form in self.forms
+        )
+
+    @property
+    def structural_transactions(self) -> bool:
+        return any(
+            form.structural_transaction is not CapabilityStatus.UNAVAILABLE
+            for form in self.forms
+        )
+
+    @property
+    def artifact_commit(self) -> bool:
+        return any(form.artifact_commit is not CapabilityStatus.UNAVAILABLE for form in self.forms)
+
+    @property
+    def capability_status(self) -> dict[str, str]:
+        action_fields = {
+            "static": "static_analysis",
+            "runtime": "runtime_evidence",
+            "parameter_transaction": "parameter_transaction",
+            "structural_transaction": "structural_transaction",
+            "code_generation": "code_generation",
+            "artifact_commit": "artifact_commit",
+        }
+        result: dict[str, str] = {}
+        ranks = {
+            CapabilityStatus.UNAVAILABLE: 0,
+            CapabilityStatus.EXPERIMENTAL: 1,
+            CapabilityStatus.PARTIAL: 2,
+            CapabilityStatus.VERIFIED: 3,
+        }
+        for public_name, field_name in action_fields.items():
+            result[public_name] = max(
+                (getattr(form, field_name) for form in self.forms),
+                key=ranks.__getitem__,
+            ).value
+        return result
+
+    @property
+    def supported_targets(self) -> list[str]:
+        return sorted({target for form in self.forms for target in form.supported_targets})
+
+    @property
+    def supported_forms(self) -> list[str]:
+        return [form.form_name for form in self.forms]
+
+    @property
+    def verified_fixtures(self) -> list[str]:
+        return sorted({fixture for form in self.forms for fixture in form.verified_fixtures})
+
+
 class HostSupport(StrictModel):
     host: Literal["codex-local", "claude-code-local", "claude-api", "claude.ai"]
     status: Literal["verified", "installer-tested", "unverified", "unsupported"]
@@ -362,6 +529,23 @@ class ReleaseSupportMatrix(StrictModel):
     notes: list[str] = Field(default_factory=list)
 
 
+class ReleaseSupportMatrixV2(StrictModel):
+    schema_version: Literal["2.0"] = "2.0"
+    release: str = Field(min_length=1)
+    adapters: list[FrameworkAdapterCapabilityV2] = Field(min_length=1)
+    hosts: list[HostSupport] = Field(min_length=1)
+    platforms: list[PlatformSupport] = Field(min_length=1)
+    offline_runtime_network_required: Literal[False] = False
+    notes: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def adapters_are_unique(self) -> ReleaseSupportMatrixV2:
+        frameworks = [adapter.framework for adapter in self.adapters]
+        if len(frameworks) != len(set(frameworks)):
+            raise ValueError("release support matrix frameworks must be unique")
+        return self
+
+
 class OfflineBundleFile(StrictModel):
     path: str = Field(min_length=1)
     sha256: Sha256
@@ -374,10 +558,25 @@ class OfflineBundleManifest(StrictModel):
     architecture_id: Identifier
     source_snapshot_id: Identifier
     exact_ir_digest: Sha256
+    analysis_input_digest: Sha256 | None = None
+    environment_manifest_digest: Sha256 | None = None
+    support_matrix_digest: Sha256
     source_execution: Literal[False] = False
     network_required: Literal[False] = False
     absolute_paths_redacted: bool
     files: list[OfflineBundleFile] = Field(min_length=1)
+
+
+class ProtocolMigrationReceipt(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    receipt_id: Identifier
+    protocol: str = Field(min_length=1)
+    from_version: str = Field(pattern=r"^[0-9]+\.[0-9]+$")
+    to_version: str = Field(pattern=r"^[0-9]+\.[0-9]+$")
+    status: Literal["current", "compatible-minor", "migrated"]
+    input_digest: Sha256
+    output_digest: Sha256
+    migration_id: Identifier | None = None
 
 
 class NodeKind(str, Enum):
@@ -860,6 +1059,7 @@ class VisualTemplateBinding(StrictModel):
     template_version: str = Field(min_length=1)
     root_canonical_node_ids: list[Identifier] = Field(min_length=1)
     node_slots: dict[Identifier, list[Identifier]] = Field(default_factory=dict)
+    parameters: dict[str, Any] = Field(default_factory=dict)
     edge_slots: dict[Identifier, list[Identifier]] = Field(default_factory=dict)
     port_slots: dict[Identifier, list[Identifier]] = Field(default_factory=dict)
     tensor_slots: dict[Identifier, list[Identifier]] = Field(default_factory=dict)
@@ -1312,6 +1512,234 @@ class TransactionState(str, Enum):
     FAILED = "failed"
 
 
+class ValueOriginKind(str, Enum):
+    CONSTRUCTOR_LITERAL = "constructor-literal"
+    MODULE_FIELD = "module-field"
+    CONFIG_KEY = "config-key"
+    DATACLASS_FIELD = "dataclass-field"
+    FUNCTION_DEFAULT = "function-default"
+    CLI_ARGUMENT = "cli-argument"
+    REGISTRY_DEFAULT = "registry-default"
+    FACTORY_RESULT = "factory-result"
+    COMPUTED_EXPRESSION = "computed-expression"
+    RUNTIME_ONLY = "runtime-only"
+
+
+class EditTargetScope(str, Enum):
+    DEFINITION = "definition"
+    MODULE_INSTANCE = "module-instance"
+    CALL_SITE = "call-site"
+    REPEAT_TEMPLATE = "repeat-template"
+    CONFIG_VALUE = "config-value"
+    PARAMETER_SHARING_GROUP = "parameter-sharing-group"
+    ALL_SHARED_USES = "all-shared-uses"
+
+
+class ValueOrigin(StrictModel):
+    origin_id: Identifier
+    kind: ValueOriginKind
+    source_anchor_ids: list[Identifier] = Field(default_factory=list)
+    config_path: str | None = None
+    config_key_path: list[str] = Field(default_factory=list)
+    confidence: Literal["exact", "conditional", "unknown"]
+    editability: Literal["direct", "adapter-required", "readonly"]
+    evidence_ids: list[Identifier] = Field(default_factory=list)
+
+
+class ParameterEditContext(StrictModel):
+    context_id: Identifier
+    target_node_id: Identifier
+    parameter_name: str = Field(min_length=1)
+    current_value: Any = None
+    value_origin: ValueOrigin
+    allowed_scopes: list[EditTargetScope] = Field(default_factory=list)
+    default_scope: EditTargetScope | None = None
+    affected_canonical_ids: list[Identifier] = Field(default_factory=list)
+    blocking_reason: str | None = None
+
+    @model_validator(mode="after")
+    def scope_and_affected_objects_are_consistent(self) -> ParameterEditContext:
+        if len(self.allowed_scopes) != len(set(self.allowed_scopes)):
+            raise ValueError("parameter edit scopes must be unique")
+        if self.default_scope is not None and self.default_scope not in self.allowed_scopes:
+            raise ValueError("default parameter edit scope must be allowed")
+        if self.value_origin.editability == "direct" and not self.allowed_scopes:
+            raise ValueError("direct parameter edits require at least one scope")
+        if not self.affected_canonical_ids:
+            raise ValueError("parameter edit context requires affected canonical objects")
+        return self
+
+
+class AffectedObjectReviewBinding(StrictModel):
+    review_id: Identifier
+    affected_object_ids: list[Identifier] = Field(min_length=1)
+    source_anchor_ids: list[Identifier] = Field(default_factory=list)
+    parameter_sharing_group_ids: list[Identifier] = Field(default_factory=list)
+    decision: Literal["pending", "confirmed", "rejected"]
+    reviewed_generation: int = Field(ge=1)
+
+    @model_validator(mode="after")
+    def identifiers_are_unique(self) -> AffectedObjectReviewBinding:
+        for name, values in (
+            ("affected object identifiers", self.affected_object_ids),
+            ("source anchor identifiers", self.source_anchor_ids),
+            ("parameter sharing group identifiers", self.parameter_sharing_group_ids),
+        ):
+            if len(values) != len(set(values)):
+                raise ValueError(f"{name} must be unique")
+        return self
+
+
+class SemanticIntentV2(StrictModel):
+    schema_version: Literal["2.0"] = "2.0"
+    intent_id: Identifier
+    project_id: Identifier
+    project_generation: int = Field(ge=1)
+    base_source_digest: Sha256
+    base_exact_ir_digest: Sha256
+    framework: Literal["pytorch", "keras", "jax", "onnx", "python"]
+    form_id: Identifier
+    operation: Literal[
+        "create-node",
+        "delete-node",
+        "set-parameter",
+        "replace-operation",
+        "insert-normalization",
+        "connect-ports",
+        "disconnect-edge",
+        "add-residual",
+        "concat-inputs",
+        "edit-source-buffer",
+    ]
+    target_ids: list[Identifier] = Field(min_length=1)
+    payload: dict[str, Any] = Field(default_factory=dict)
+    value_origin: ValueOrigin | None = None
+    edit_target_scope: EditTargetScope | None = None
+    affected_object_review: AffectedObjectReviewBinding
+
+    @model_validator(mode="after")
+    def review_matches_intent(self) -> SemanticIntentV2:
+        if len(self.target_ids) != len(set(self.target_ids)):
+            raise ValueError("semantic intent target identifiers must be unique")
+        reviewed = set(self.affected_object_review.affected_object_ids)
+        if not set(self.target_ids).issubset(reviewed):
+            raise ValueError("semantic intent targets must be included in affected-object review")
+        if self.operation == "set-parameter":
+            if self.value_origin is None or self.edit_target_scope is None:
+                raise ValueError(
+                    "set-parameter intents require ValueOrigin and EditTargetScope"
+                )
+            if self.edit_target_scope not in {
+                EditTargetScope.DEFINITION,
+                EditTargetScope.MODULE_INSTANCE,
+                EditTargetScope.CALL_SITE,
+                EditTargetScope.REPEAT_TEMPLATE,
+                EditTargetScope.CONFIG_VALUE,
+                EditTargetScope.PARAMETER_SHARING_GROUP,
+                EditTargetScope.ALL_SHARED_USES,
+            }:
+                raise ValueError("unsupported edit target scope")
+        elif self.value_origin is not None or self.edit_target_scope is not None:
+            raise ValueError(
+                "ValueOrigin and EditTargetScope are reserved for set-parameter intents"
+            )
+        return self
+
+
+class StateMigrationAction(str, Enum):
+    PRESERVE = "preserve"
+    RENAME = "rename"
+    RESHAPE = "reshape"
+    INITIALIZE = "initialize"
+    DROP = "drop"
+    BLOCK = "block"
+
+
+class StateTensorSpec(StrictModel):
+    dimensions: list[int | str]
+    dtype: str = Field(min_length=1)
+    device: str | None = None
+
+
+class StateInventoryEntry(StrictModel):
+    state_key: str = Field(min_length=1)
+    role: Literal["parameter", "buffer", "optimizer-slot"]
+    tensor: StateTensorSpec
+    parameter_group_id: Identifier | None = None
+    optimizer_slot_keys: list[str] = Field(default_factory=list)
+    evidence_ids: list[Identifier] = Field(default_factory=list)
+
+
+class StateAssetBinding(StrictModel):
+    binding_id: Identifier
+    framework: Literal["pytorch", "keras", "jax", "onnx"]
+    source_state_digest: Sha256
+    inventory_digest: Sha256
+    inventory: list[StateInventoryEntry] = Field(min_length=1)
+    optimizer_state_bound: bool = False
+    scheduler_state_bound: bool = False
+    progress_state_bound: bool = False
+    random_state_bound: bool = False
+
+    @model_validator(mode="after")
+    def inventory_keys_are_unique(self) -> StateAssetBinding:
+        keys = [entry.state_key for entry in self.inventory]
+        if len(keys) != len(set(keys)):
+            raise ValueError("state asset inventory keys must be unique")
+        return self
+
+
+class StateMigrationEntry(StrictModel):
+    old_state_key: str | None = None
+    new_state_key: str | None = None
+    action: StateMigrationAction
+    old_tensor: StateTensorSpec | None = None
+    new_tensor: StateTensorSpec | None = None
+    parameter_group_id: Identifier | None = None
+    initializer_rule_id: Identifier | None = None
+    optimizer_slot_keys: list[str] = Field(default_factory=list)
+    evidence_ids: list[Identifier] = Field(default_factory=list)
+    diagnostics: list[Diagnostic] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def action_has_required_keys(self) -> StateMigrationEntry:
+        if self.action in {StateMigrationAction.PRESERVE, StateMigrationAction.RESHAPE} and (
+            self.old_state_key is None or self.new_state_key is None
+        ):
+            raise ValueError(f"{self.action.value} state migrations require old and new keys")
+        if self.action is StateMigrationAction.RENAME and (
+            self.old_state_key is None
+            or self.new_state_key is None
+            or self.old_state_key == self.new_state_key
+        ):
+            raise ValueError("rename state migrations require distinct old and new keys")
+        if self.action is StateMigrationAction.INITIALIZE and self.new_state_key is None:
+            raise ValueError("initialize state migrations require a new key")
+        if self.action is StateMigrationAction.DROP and self.old_state_key is None:
+            raise ValueError("drop state migrations require an old key")
+        return self
+
+
+class StateMigrationPlan(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    plan_id: Identifier
+    framework: Literal["pytorch", "keras", "jax", "onnx"]
+    base_source_digest: Sha256
+    result_source_digest: Sha256
+    source_state_digest: Sha256
+    target_state_schema_digest: Sha256
+    entries: list[StateMigrationEntry]
+    shared_identity_checks: list[str] = Field(default_factory=list)
+    status: Literal["verified", "partial", "blocked", "not-requested"]
+
+    @model_validator(mode="after")
+    def status_matches_entries(self) -> StateMigrationPlan:
+        blocked = any(entry.action is StateMigrationAction.BLOCK for entry in self.entries)
+        if blocked and self.status not in {"blocked", "partial"}:
+            raise ValueError("a plan with blocked entries cannot be verified")
+        return self
+
+
 class SemanticParameterPatch(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     patch_id: Identifier
@@ -1320,8 +1748,13 @@ class SemanticParameterPatch(StrictModel):
     target_node_id: Identifier
     parameter_name: str = Field(min_length=1)
     new_value: Any
+    value_origin_id: Identifier | None = None
+    edit_target_scope: EditTargetScope | None = None
+    confirmed_affected_ids: list[Identifier] = Field(default_factory=list)
+    confirmed_source_anchor_ids: list[Identifier] = Field(default_factory=list)
     targeted_tests: list[list[str]] = Field(default_factory=list)
     runtime_input_spec: str | None = None
+    state_asset_binding: StateAssetBinding | None = None
 
     @model_validator(mode="after")
     def commands_are_nonempty(self) -> SemanticParameterPatch:
@@ -1343,6 +1776,7 @@ class SemanticStructuralPatch(StrictModel):
     parameters: dict[str, Any] = Field(default_factory=dict)
     targeted_tests: list[list[str]] = Field(default_factory=list)
     runtime_input_spec: str | None = None
+    state_asset_binding: StateAssetBinding | None = None
 
     @model_validator(mode="after")
     def commands_are_nonempty(self) -> SemanticStructuralPatch:
@@ -1615,6 +2049,9 @@ class SourceTransaction(StrictModel):
     state: TransactionState
     state_history: list[TransactionState] = Field(default_factory=list)
     request: SemanticParameterPatch | SemanticStructuralPatch | FreeformSourcePatch
+    semantic_intent: SemanticIntentV2 | None = None
+    parameter_edit_context: ParameterEditContext | None = None
+    state_migration_plan: StateMigrationPlan | None = None
     created_at: str = Field(min_length=1)
     workspace: str = Field(min_length=1)
     original_project_root: str = Field(min_length=1)
@@ -1628,6 +2065,8 @@ class SourceTransaction(StrictModel):
     base_analysis_input_digest: Sha256 | None = None
     base_registry_digest: Sha256 | None = None
     base_exact_ir_digest: Sha256 | None = None
+    result_source_corpus_digest: Sha256 | None = None
+    result_exact_ir_digest: Sha256 | None = None
     base_source_blobs: list[TransactionBaseBlob] = Field(default_factory=list)
     proposal_correlation_id: Identifier | None = None
     realized_subject_ids: list[Identifier] = Field(default_factory=list)
@@ -1653,6 +2092,20 @@ class TransactionReceipt(StrictModel):
     proposal_correlation_id: Identifier | None = None
     realized_subject_ids: list[Identifier] = Field(default_factory=list)
     source_writes: bool
+    source_status: Literal["prepared", "verified", "committed", "failed", "discarded"] = (
+        "prepared"
+    )
+    state_compatibility: Literal["verified", "partial", "blocked", "not-bound"] = (
+        "not-bound"
+    )
+    training_resume_compatibility: Literal[
+        "verified", "partial", "blocked", "not-bound"
+    ] = "not-bound"
+    inference_compatibility: Literal["verified", "partial", "blocked", "not-bound"] = (
+        "not-bound"
+    )
+    state_migration_plan_id: Identifier | None = None
+    recovery_receipt_id: Identifier | None = None
 
 
 class Diagnostic(StrictModel):
@@ -1662,10 +2115,113 @@ class Diagnostic(StrictModel):
     target_ids: list[Identifier] = Field(default_factory=list)
 
 
+class RoundTripConformanceReport(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    report_id: Identifier
+    path: Literal["source-view", "intent-source", "draft-source"]
+    base_source_digest: Sha256 | None = None
+    result_source_digest: Sha256 | None = None
+    base_exact_ir_digest: Sha256 | None = None
+    result_exact_ir_digest: Sha256
+    draft_digest: Sha256 | None = None
+    normalization_rule_digest: Sha256
+    expected_delta_digest: Sha256 | None = None
+    observed_delta_digest: Sha256 | None = None
+    semantic_isomorphism: Literal["exact", "equivalent", "failed"]
+    source_writes: list[str] = Field(default_factory=list)
+    diagnostics: list[Diagnostic] = Field(default_factory=list)
+
+
 class GateResult(StrictModel):
     gate: str = Field(pattern=r"^[A-Z][A-Za-z0-9_-]+$")
     status: Literal["passed", "failed", "skipped"]
     message: str = Field(min_length=1)
+
+
+class TransactionJournalState(str, Enum):
+    PREPARED = "prepared"
+    VERIFIED = "verified"
+    COMMIT_INTENT_RECORDED = "commit-intent-recorded"
+    REPLACING_FILES = "replacing-files"
+    POST_COMMIT_VALIDATING = "post-commit-validating"
+    COMMITTED = "committed"
+    ROLLBACK_REQUIRED = "rollback-required"
+    ROLLED_BACK = "rolled-back"
+    RECOVERY_FAILED = "recovery-failed"
+    DISCARDED = "discarded"
+
+
+class SourceFileMetadata(StrictModel):
+    encoding: Literal["utf-8", "binary"]
+    has_utf8_bom: bool
+    newline: Literal["lf", "crlf", "mixed", "none"]
+    trailing_newline: bool
+    mode: int = Field(ge=0, le=0o7777)
+    symlink: Literal[False] = False
+
+
+class TransactionJournalFile(StrictModel):
+    logical_path: str = Field(min_length=1)
+    working_path: str = Field(min_length=1)
+    before_sha256: Sha256
+    after_sha256: Sha256
+    backup_relative_path: str = Field(min_length=1)
+    original_metadata: SourceFileMetadata
+    prepared_metadata: SourceFileMetadata
+    replacement_status: Literal["pending", "replaced", "rolled-back"] = "pending"
+    backup_verified: bool = False
+    rename_completed: bool = False
+    directory_fsync_completed: bool = False
+
+    @model_validator(mode="after")
+    def paths_are_confined(self) -> TransactionJournalFile:
+        for value in (self.logical_path, self.working_path, self.backup_relative_path):
+            path = PurePosixPath(value)
+            if (
+                "\\" in value
+                or path.is_absolute()
+                or ".." in path.parts
+                or value != path.as_posix()
+                or value in {"", "."}
+            ):
+                raise ValueError("transaction journal paths must be normalized relative paths")
+        return self
+
+
+class TransactionJournal(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    journal_id: Identifier
+    transaction_id: Identifier
+    base_source_digest: Sha256
+    result_source_digest: Sha256
+    state: TransactionJournalState
+    files: list[TransactionJournalFile] = Field(min_length=1)
+    post_commit_gates: list[GateResult] = Field(default_factory=list)
+    diagnostics: list[Diagnostic] = Field(default_factory=list)
+    created_at: str = Field(min_length=1)
+    updated_at: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def file_paths_are_unique(self) -> TransactionJournal:
+        paths = [entry.logical_path for entry in self.files]
+        if len(paths) != len(set(paths)):
+            raise ValueError("transaction journal file paths must be unique")
+        return self
+
+
+class RecoveryReceipt(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    receipt_id: Identifier
+    transaction_id: Identifier
+    journal_id: Identifier
+    outcome: Literal["discarded", "committed", "rolled-back", "recovery-failed"]
+    journal_state: TransactionJournalState
+    before_state_proven: bool
+    after_state_proven: bool
+    source_writes: bool
+    recovered_files: list[str] = Field(default_factory=list)
+    diagnostics: list[Diagnostic] = Field(default_factory=list)
+    created_at: str = Field(min_length=1)
 
 
 class JobState(str, Enum):
@@ -1685,9 +2241,11 @@ class ProjectSession(StrictModel):
     generation: int = Field(ge=1)
     entrypoint: str | None = None
     framework: str = "auto"
+    form_id: Identifier = "form:python-callable"
     task: str = "inference"
     config_path: str | None = None
     config_digest: Sha256
+    entry_invocation: EntryInvocationConfig = Field(default_factory=EntryInvocationConfig)
     execution_policy: Literal["static-only", "runtime-opt-in"] = "static-only"
     environment_path: str | None = None
     python_executable: str | None = None
@@ -1701,10 +2259,12 @@ class AnalysisRequest(StrictModel):
     project_generation: int = Field(ge=1)
     entrypoint: str = Field(min_length=1)
     framework: str = "auto"
+    form_id: Identifier | None = None
     task: str = "inference"
     config_path: str | None = None
     execution_mode: Literal["static", "runtime"] = "static"
     pattern_packs_enabled: bool = True
+    entry_invocation: EntryInvocationConfig = Field(default_factory=EntryInvocationConfig)
     request_id: Identifier
 
 
@@ -2071,13 +2631,17 @@ class CommandReceipt(StrictModel):
 
 SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "source-snapshot-v1.schema.json": SourceSnapshot,
+    "entry-invocation-config-v1.schema.json": EntryInvocationConfig,
     "evidence-record-v1.schema.json": EvidenceRecord,
     "runtime-input-spec-v1.schema.json": RuntimeInputSpec,
     "runtime-trace-v1.schema.json": RuntimeTrace,
     "runtime-capability-report-v1.schema.json": RuntimeCapabilityReport,
     "framework-adapter-capability-v1.schema.json": FrameworkAdapterCapability,
+    "framework-adapter-capability-v2.schema.json": FrameworkAdapterCapabilityV2,
     "release-support-matrix-v1.schema.json": ReleaseSupportMatrix,
+    "release-support-matrix-v2.schema.json": ReleaseSupportMatrixV2,
     "offline-bundle-manifest-v1.schema.json": OfflineBundleManifest,
+    "protocol-migration-receipt-v1.schema.json": ProtocolMigrationReceipt,
     "discrepancy-record-v1.schema.json": DiscrepancyRecord,
     "architecture-ir-v1.schema.json": ArchitectureIR,
     "pattern-pack-manifest-v1.schema.json": PatternPackManifest,
@@ -2092,6 +2656,9 @@ SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "visual-scene-v1.schema.json": VisualScene,
     "canvas-document-v1.schema.json": CanvasDocument,
     "patch-batch-v1.schema.json": PatchBatch,
+    "value-origin-v1.schema.json": ValueOrigin,
+    "parameter-edit-context-v1.schema.json": ParameterEditContext,
+    "semantic-intent-v2.schema.json": SemanticIntentV2,
     "semantic-parameter-patch-v1.schema.json": SemanticParameterPatch,
     "semantic-structural-patch-v1.schema.json": SemanticStructuralPatch,
     "proposed-connection-v1.schema.json": ProposedConnection,
@@ -2099,6 +2666,10 @@ SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "graph-delta-v1.schema.json": GraphDelta,
     "source-transaction-v1.schema.json": SourceTransaction,
     "transaction-receipt-v1.schema.json": TransactionReceipt,
+    "round-trip-conformance-report-v1.schema.json": RoundTripConformanceReport,
+    "state-migration-plan-v1.schema.json": StateMigrationPlan,
+    "transaction-journal-v1.schema.json": TransactionJournal,
+    "recovery-receipt-v1.schema.json": RecoveryReceipt,
     "command-receipt-v1.schema.json": CommandReceipt,
     "project-session-v1.schema.json": ProjectSession,
     "analysis-job-v1.schema.json": AnalysisJob,

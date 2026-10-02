@@ -197,6 +197,38 @@ def test_opaque_binding_keeps_only_real_parent_identity() -> None:
         )
 
 
+def test_binding_parameters_are_digest_protected() -> None:
+    architecture = _analyze_transformer()
+    template = load_registry().templates["attention.qkv-v1"]
+    digest = exact_ir_digest(architecture)
+    binding = create_template_binding(
+        architecture,
+        template,
+        exact_ir_digest=digest,
+        root_canonical_node_ids=["node:transformer"],
+        fidelity="opaque",
+        parameters={"layout_density": "compact", "head_count": 8},
+    )
+
+    assert binding.parameters == {"layout_density": "compact", "head_count": 8}
+    validate_template_binding(
+        architecture,
+        template,
+        binding,
+        exact_ir_digest=digest,
+    )
+    tampered = binding.model_copy(
+        update={"parameters": {**binding.parameters, "head_count": 16}}
+    )
+    with pytest.raises(ValueError, match="binding digest is stale"):
+        validate_template_binding(
+            architecture,
+            template,
+            tampered,
+            exact_ir_digest=digest,
+        )
+
+
 def test_binding_validates_node_edge_port_and_tensor_provenance() -> None:
     architecture = _analyze_transformer()
     edge = next(

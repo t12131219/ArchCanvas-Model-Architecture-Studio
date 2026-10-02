@@ -8,11 +8,11 @@ from pathlib import Path
 from typing import Any
 
 from archcanvas_patterns import apply_pattern_packs, load_registry
-from archcanvas_python import analyze_project
+from archcanvas_python.legacy_profiles import analyze_project_legacy as analyze_project
 from archcanvas_studio import prepare_studio_bundle
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "studio" / "src" / "main-view" / "fixtures"
+OUTPUT = ROOT / "studio" / "src" / "scene-studio" / "fixtures"
 PROFILES = (
     ("transformer", "model:Transformer", "inference", True),
     ("autoformer", "models.Autoformer:Model", "long_term_forecast", True),

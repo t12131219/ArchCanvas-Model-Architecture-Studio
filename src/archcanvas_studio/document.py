@@ -13,6 +13,7 @@ from archcanvas_core.models import (
     ArchitectureIR,
     CanvasDocument,
     PatchBatch,
+    ProtocolMigrationReceipt,
     SceneAnnotation,
     SceneNode,
     ScenePoint,
@@ -21,6 +22,7 @@ from archcanvas_core.models import (
     VisualPatch,
     VisualScene,
 )
+from archcanvas_core.protocols import read_canvas_document_protocol
 from archcanvas_core.validation import (
     apply_visual_patch,
     redo_visual_patch,
@@ -141,7 +143,17 @@ def persist_canvas_document(path: Path, document: CanvasDocument) -> None:
 
 
 def load_canvas_document(path: Path) -> CanvasDocument:
-    return CanvasDocument.model_validate_json(path.read_text(encoding="utf-8"))
+    document, _ = load_canvas_document_with_receipt(path)
+    return document
+
+
+def load_canvas_document_with_receipt(
+    path: Path,
+) -> tuple[CanvasDocument, ProtocolMigrationReceipt]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise TypeError("CanvasDocument payload must be a JSON object")
+    return read_canvas_document_protocol(payload)
 
 
 def _number(

@@ -21,6 +21,30 @@ class TransformResult:
     anchor_line: int
 
 
+_UTF8_BOM = b"\xef\xbb\xbf"
+
+
+def _decode_text(source: bytes) -> str:
+    payload = source.removeprefix(_UTF8_BOM)
+    return payload.decode("utf-8")
+
+
+def _encode_like(source: bytes, text: str) -> bytes:
+    has_bom = source.startswith(_UTF8_BOM)
+    payload = source.removeprefix(_UTF8_BOM)
+    decoded = payload.decode("utf-8")
+    crlf = b"\r\n" in payload
+    trailing_newline = decoded.endswith(("\n", "\r"))
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    normalized = normalized.rstrip("\n")
+    if trailing_newline:
+        normalized += "\n"
+    if crlf:
+        normalized = normalized.replace("\n", "\r\n")
+    encoded = normalized.encode("utf-8")
+    return (_UTF8_BOM + encoded) if has_bom else encoded
+
+
 def _same_expression(source: str, analyzed: str) -> bool:
     if source == analyzed:
         return True
@@ -31,12 +55,12 @@ def _same_expression(source: str, analyzed: str) -> bool:
 
 
 def set_json_value(source: bytes, key: str, value: Any) -> TransformResult:
-    document = json.loads(source)
+    document = json.loads(_decode_text(source))
     if not isinstance(document, dict) or key not in document:
         raise ValueError(f"config key is not available for an exact edit: {key}")
     document[key] = value
     return TransformResult(
-        content=(json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode(),
+        content=_encode_like(source, json.dumps(document, indent=2, ensure_ascii=False) + "\n"),
         anchor_line=1,
     )
 
@@ -124,7 +148,7 @@ def set_python_parameter(
     expected_line: int,
     positional_index: int | None = None,
 ) -> TransformResult:
-    module = cst.parse_module(source.decode("utf-8"))
+    module = cst.parse_module(_decode_text(source))
     transformer = _SetModuleParameter(
         module_name,
         parameter_name,
@@ -136,7 +160,7 @@ def set_python_parameter(
     changed = MetadataWrapper(module).visit(transformer)
     if transformer.matches != 1:
         raise ValueError(f"expected one exact Python parameter anchor, found {transformer.matches}")
-    return TransformResult(content=changed.code.encode(), anchor_line=transformer.anchor_line)
+    return TransformResult(content=_encode_like(source, changed.code), anchor_line=transformer.anchor_line)
 
 
 class _SetFunctionalParameter(cst.CSTTransformer):
@@ -215,7 +239,7 @@ def set_functional_parameter(
     value: Any,
     expected_line: int,
 ) -> TransformResult:
-    module = cst.parse_module(source.decode("utf-8"))
+    module = cst.parse_module(_decode_text(source))
     transformer = _SetFunctionalParameter(
         target_name,
         parameter_name,
@@ -228,7 +252,7 @@ def set_functional_parameter(
         raise ValueError(
             f"expected one exact functional parameter anchor, found {transformer.matches}"
         )
-    return TransformResult(content=changed.code.encode(), anchor_line=expected_line)
+    return TransformResult(content=_encode_like(source, changed.code), anchor_line=expected_line)
 
 
 class _SetClassFieldParameter(cst.CSTTransformer):
@@ -284,7 +308,7 @@ def set_class_field_parameter(
     value: Any,
     expected_line: int,
 ) -> TransformResult:
-    module = cst.parse_module(source.decode("utf-8"))
+    module = cst.parse_module(_decode_text(source))
     transformer = _SetClassFieldParameter(
         class_name,
         field_name,
@@ -295,7 +319,7 @@ def set_class_field_parameter(
     changed = MetadataWrapper(module).visit(transformer)
     if transformer.matches != 1:
         raise ValueError(f"expected one exact module field anchor, found {transformer.matches}")
-    return TransformResult(content=changed.code.encode(), anchor_line=expected_line)
+    return TransformResult(content=_encode_like(source, changed.code), anchor_line=expected_line)
 
 
 class _ReplaceFunctionCall(cst.CSTTransformer):
@@ -342,7 +366,7 @@ def replace_function_call(
     replacement_operator: str,
     expected_line: int,
 ) -> TransformResult:
-    module = cst.parse_module(source.decode("utf-8"))
+    module = cst.parse_module(_decode_text(source))
     transformer = _ReplaceFunctionCall(
         target_name,
         original_operator,
@@ -352,7 +376,7 @@ def replace_function_call(
     changed = MetadataWrapper(module).visit(transformer)
     if transformer.matches != 1:
         raise ValueError(f"expected one exact functional call anchor, found {transformer.matches}")
-    return TransformResult(content=changed.code.encode(), anchor_line=expected_line)
+    return TransformResult(content=_encode_like(source, changed.code), anchor_line=expected_line)
 
 
 class _ReplaceModuleConstructor(cst.CSTTransformer):
@@ -397,7 +421,7 @@ def replace_module_constructor(
     replacement_operator: str,
     expected_line: int,
 ) -> TransformResult:
-    module = cst.parse_module(source.decode("utf-8"))
+    module = cst.parse_module(_decode_text(source))
     transformer = _ReplaceModuleConstructor(
         module_name,
         original_operator,
@@ -407,7 +431,7 @@ def replace_module_constructor(
     changed = MetadataWrapper(module).visit(transformer)
     if transformer.matches != 1:
         raise ValueError(f"expected one exact module constructor anchor, found {transformer.matches}")
-    return TransformResult(content=changed.code.encode(), anchor_line=expected_line)
+    return TransformResult(content=_encode_like(source, changed.code), anchor_line=expected_line)
 
 
 class _RenameLoads(cst.CSTTransformer):
@@ -546,7 +570,7 @@ def insert_layer_norm(
     init_line: int,
     forward_line: int,
 ) -> TransformResult:
-    module = cst.parse_module(source.decode("utf-8"))
+    module = cst.parse_module(_decode_text(source))
     if f"self.{new_module}" in module.code:
         raise ValueError(f"module name already exists: {new_module}")
     cst.parse_expression(normalized_shape)
@@ -562,7 +586,7 @@ def insert_layer_norm(
         raise ValueError(
             "insert_layer_norm requires one exact constructor anchor and one exact forward call"
         )
-    return TransformResult(content=changed.code.encode(), anchor_line=forward_line)
+    return TransformResult(content=_encode_like(source, changed.code), anchor_line=forward_line)
 
 
 def insert_pytorch_module(
@@ -574,7 +598,7 @@ def insert_pytorch_module(
     init_line: int,
     forward_line: int,
 ) -> TransformResult:
-    module = cst.parse_module(source.decode("utf-8"))
+    module = cst.parse_module(_decode_text(source))
     if f"self.{new_module}" in module.code:
         raise ValueError(f"module name already exists: {new_module}")
     constructor = cst.parse_expression(constructor_expression)
@@ -593,7 +617,7 @@ def insert_pytorch_module(
         raise ValueError(
             "registered module insertion requires one exact constructor anchor and one exact forward call"
         )
-    return TransformResult(content=changed.code.encode(), anchor_line=forward_line)
+    return TransformResult(content=_encode_like(source, changed.code), anchor_line=forward_line)
 
 
 def insert_keras_layer_norm(
@@ -604,7 +628,7 @@ def insert_keras_layer_norm(
     init_line: int,
     call_line: int,
 ) -> TransformResult:
-    module = cst.parse_module(source.decode("utf-8"))
+    module = cst.parse_module(_decode_text(source))
     if f"self.{new_module}" in module.code:
         raise ValueError(f"module name already exists: {new_module}")
     transformer = _InsertLayerNorm(
@@ -621,7 +645,7 @@ def insert_keras_layer_norm(
         raise ValueError(
             "Keras normalization insertion requires one exact constructor anchor and call site"
         )
-    return TransformResult(content=changed.code.encode(), anchor_line=call_line)
+    return TransformResult(content=_encode_like(source, changed.code), anchor_line=call_line)
 
 
 def write_prepared(path: Path, content: bytes) -> None:

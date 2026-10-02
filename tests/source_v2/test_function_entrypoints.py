@@ -35,6 +35,15 @@ def test_function_entrypoint_expands_cross_file_local_helper(tmp_path: Path) -> 
     assert [item.port_id for item in helper_call.input_bindings] == ["hidden"]
     assert [item.port_id for item in helper_call.output_bindings] == ["output"]
     assert [item.port_id for item in relu_call.input_bindings] == ["input"]
+    assert bundle.exact_ir.graph_input_value_ids == bundle.semantic_graph.graph_input_value_ids
+    assert bundle.exact_ir.graph_output_value_ids == bundle.semantic_graph.graph_output_value_ids
+    assert bundle.exact_ir.graph_input_value_ids
+    assert bundle.exact_ir.graph_output_value_ids
+    assert not [
+        item
+        for item in bundle.exact_ir.definitions
+        if item.qualified_name == "archcanvas.graph-output"
+    ]
     assert not [item for item in bundle.exact_ir.diagnostics if item.severity == "blocking"]
 
 

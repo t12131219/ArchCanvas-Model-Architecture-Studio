@@ -6,10 +6,11 @@ from typing import Literal
 from pydantic import Field, model_validator
 
 from .digest_protocol import domain_digest
-from .models import Identifier, Sha256, SourceAnchor, StrictModel
+from .models import EntryInvocationConfig, Identifier, Sha256, SourceAnchor, StrictModel
 
 SOURCE_CORPUS_DIGEST_DOMAIN = "archcanvas:source-corpus:v2"
 ANALYSIS_INPUT_DIGEST_DOMAIN = "archcanvas:analysis-input:v2"
+ANALYSIS_ENVIRONMENT_DIGEST_DOMAIN = "archcanvas:analysis-environment:v1"
 
 
 def _validate_relative_path(value: str, *, allow_dot: bool = False) -> str:
@@ -215,6 +216,88 @@ class ResolverManifest(StrictModel):
         return self
 
 
+def analysis_environment_manifest_payload(
+    *,
+    python_implementation: str,
+    python_version: str,
+    platform: str,
+    framework_versions: dict[str, str | None],
+    adapter_digests: dict[str, str],
+    analyzer_digest: str,
+    schema_bundle_digest: str,
+    registry_digest: str,
+    pattern_pack_digests: list[str],
+    pyright_version: str | None,
+    lockfile_digests: dict[str, str],
+    environment_variables_allowlist_digest: str,
+    reproducibility_level: str,
+) -> dict[str, object]:
+    return {
+        "schema_version": "1.0",
+        "python_implementation": python_implementation,
+        "python_version": python_version,
+        "platform": platform,
+        "framework_versions": dict(sorted(framework_versions.items())),
+        "adapter_digests": dict(sorted(adapter_digests.items())),
+        "analyzer_digest": analyzer_digest,
+        "schema_bundle_digest": schema_bundle_digest,
+        "registry_digest": registry_digest,
+        "pattern_pack_digests": sorted(pattern_pack_digests),
+        "pyright_version": pyright_version,
+        "lockfile_digests": dict(sorted(lockfile_digests.items())),
+        "environment_variables_allowlist_digest": environment_variables_allowlist_digest,
+        "reproducibility_level": reproducibility_level,
+    }
+
+
+class AnalysisEnvironmentManifest(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    environment_manifest_digest: Sha256
+    python_implementation: str = Field(min_length=1)
+    python_version: str = Field(min_length=1)
+    platform: str = Field(min_length=1)
+    framework_versions: dict[str, str | None]
+    adapter_digests: dict[str, Sha256] = Field(min_length=1)
+    analyzer_digest: Sha256
+    schema_bundle_digest: Sha256
+    registry_digest: Sha256
+    pattern_pack_digests: list[Sha256] = Field(default_factory=list)
+    pyright_version: str | None = None
+    lockfile_digests: dict[str, Sha256] = Field(default_factory=dict)
+    environment_variables_allowlist_digest: Sha256
+    reproducibility_level: Literal["locked", "partially-locked", "unlocked"]
+
+    @model_validator(mode="after")
+    def digest_is_valid(self) -> AnalysisEnvironmentManifest:
+        expected = domain_digest(
+            ANALYSIS_ENVIRONMENT_DIGEST_DOMAIN,
+            analysis_environment_manifest_payload(
+                python_implementation=self.python_implementation,
+                python_version=self.python_version,
+                platform=self.platform,
+                framework_versions=self.framework_versions,
+                adapter_digests=self.adapter_digests,
+                analyzer_digest=self.analyzer_digest,
+                schema_bundle_digest=self.schema_bundle_digest,
+                registry_digest=self.registry_digest,
+                pattern_pack_digests=self.pattern_pack_digests,
+                pyright_version=self.pyright_version,
+                lockfile_digests=self.lockfile_digests,
+                environment_variables_allowlist_digest=(
+                    self.environment_variables_allowlist_digest
+                ),
+                reproducibility_level=self.reproducibility_level,
+            ),
+        )
+        if self.environment_manifest_digest != expected:
+            raise ValueError(
+                "environment_manifest_digest does not match the environment manifest"
+            )
+        if len(self.pattern_pack_digests) != len(set(self.pattern_pack_digests)):
+            raise ValueError("pattern pack digests must be unique")
+        return self
+
+
 def analysis_input_digest_payload(
     *,
     source_corpus_digest: str,
@@ -226,9 +309,12 @@ def analysis_input_digest_payload(
     execution_mode: str,
     entrypoint: str,
     config_digest: str,
+    environment_manifest_digest: str = "0" * 64,
+    entry_invocation: EntryInvocationConfig | None = None,
     analysis_budget: AnalysisBudget | None = None,
 ) -> dict[str, object]:
     analysis_budget = analysis_budget or AnalysisBudget()
+    entry_invocation = entry_invocation or EntryInvocationConfig(mode=execution_mode)
     return {
         "schema_version": "2.0",
         "source_corpus_digest": source_corpus_digest,
@@ -240,6 +326,8 @@ def analysis_input_digest_payload(
         "execution_mode": execution_mode,
         "entrypoint": entrypoint,
         "config_digest": config_digest,
+        "environment_manifest_digest": environment_manifest_digest,
+        "entry_invocation": entry_invocation.model_dump(mode="json"),
         "analysis_budget": analysis_budget.model_dump(mode="json"),
     }
 
@@ -255,6 +343,8 @@ class AnalysisInputManifest(StrictModel):
     execution_mode: Literal["eval", "train"]
     entrypoint: str = Field(min_length=3)
     config_digest: Sha256
+    environment_manifest_digest: Sha256 = "0" * 64
+    entry_invocation: EntryInvocationConfig = Field(default_factory=EntryInvocationConfig)
     analysis_budget: AnalysisBudget = Field(default_factory=AnalysisBudget)
     analysis_input_digest: Sha256
 
@@ -272,9 +362,13 @@ class AnalysisInputManifest(StrictModel):
                 execution_mode=self.execution_mode,
                 entrypoint=self.entrypoint,
                 config_digest=self.config_digest,
+                environment_manifest_digest=self.environment_manifest_digest,
+                entry_invocation=self.entry_invocation,
                 analysis_budget=self.analysis_budget,
             ),
         )
+        if self.entry_invocation.mode != self.execution_mode:
+            raise ValueError("entry invocation mode must match analysis execution_mode")
         if self.analysis_input_digest != expected:
             raise ValueError("analysis_input_digest does not match the analysis inputs")
         return self
@@ -284,5 +378,6 @@ SOURCE_V2_SCHEMA_MODELS = {
     "project-manifest-v2.schema.json": ProjectManifest,
     "source-corpus-v2.schema.json": SourceCorpus,
     "analysis-input-manifest-v2.schema.json": AnalysisInputManifest,
+    "analysis-environment-manifest-v1.schema.json": AnalysisEnvironmentManifest,
     "source-anchor-v2.schema.json": SourceAnchor,
 }

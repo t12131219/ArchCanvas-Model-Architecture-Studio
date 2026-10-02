@@ -1,0 +1,285 @@
+{
+  "$defs": {
+    "Diagnostic": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "pattern": "^[A-Z][A-Z0-9_]+$",
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "blocking",
+            "warning",
+            "unresolved",
+            "suggestion"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "target_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Target Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code",
+        "severity",
+        "message"
+      ],
+      "title": "Diagnostic",
+      "type": "object"
+    },
+    "StateMigrationAction": {
+      "enum": [
+        "preserve",
+        "rename",
+        "reshape",
+        "initialize",
+        "drop",
+        "block"
+      ],
+      "title": "StateMigrationAction",
+      "type": "string"
+    },
+    "StateMigrationEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/StateMigrationAction"
+        },
+        "diagnostics": {
+          "items": {
+            "$ref": "#/$defs/Diagnostic"
+          },
+          "title": "Diagnostics",
+          "type": "array"
+        },
+        "evidence_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "initializer_rule_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Initializer Rule Id"
+        },
+        "new_state_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "New State Key"
+        },
+        "new_tensor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StateTensorSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "old_state_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Old State Key"
+        },
+        "old_tensor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StateTensorSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "optimizer_slot_keys": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Optimizer Slot Keys",
+          "type": "array"
+        },
+        "parameter_group_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parameter Group Id"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "title": "StateMigrationEntry",
+      "type": "object"
+    },
+    "StateTensorSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        },
+        "dimensions": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "title": "Dimensions",
+          "type": "array"
+        },
+        "dtype": {
+          "minLength": 1,
+          "title": "Dtype",
+          "type": "string"
+        }
+      },
+      "required": [
+        "dimensions",
+        "dtype"
+      ],
+      "title": "StateTensorSpec",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "base_source_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Base Source Digest",
+      "type": "string"
+    },
+    "entries": {
+      "items": {
+        "$ref": "#/$defs/StateMigrationEntry"
+      },
+      "title": "Entries",
+      "type": "array"
+    },
+    "framework": {
+      "enum": [
+        "pytorch",
+        "keras",
+        "jax",
+        "onnx"
+      ],
+      "title": "Framework",
+      "type": "string"
+    },
+    "plan_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Plan Id",
+      "type": "string"
+    },
+    "result_source_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Result Source Digest",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "shared_identity_checks": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Shared Identity Checks",
+      "type": "array"
+    },
+    "source_state_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Source State Digest",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "verified",
+        "partial",
+        "blocked",
+        "not-requested"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "target_state_schema_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Target State Schema Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "plan_id",
+    "framework",
+    "base_source_digest",
+    "result_source_digest",
+    "source_state_digest",
+    "target_state_schema_digest",
+    "entries",
+    "status"
+  ],
+  "title": "StateMigrationPlan",
+  "type": "object"
+}

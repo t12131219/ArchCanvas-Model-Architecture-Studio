@@ -23,7 +23,7 @@ from archcanvas_publication import (
     validate_geometry,
     validate_publication,
 )
-from archcanvas_python import analyze_project
+from archcanvas_python.legacy_profiles import analyze_project_legacy as analyze_project
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILES = [

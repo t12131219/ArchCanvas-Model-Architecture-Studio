@@ -8,6 +8,7 @@ import pytest
 
 from archcanvas_core.validation import validate_architecture
 from archcanvas_python import AnalysisError, analyze_project
+from archcanvas_python.legacy_profiles import analyze_project_legacy
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "fixtures" / "tier_a" / "itransformer"
@@ -15,7 +16,7 @@ FIXTURE = ROOT / "fixtures" / "tier_a" / "itransformer"
 
 def itransformer_bundle(config: dict | None = None):
     config_bytes = json.dumps(config).encode() if config is not None else (FIXTURE / "config.json").read_bytes()
-    return analyze_project(
+    return analyze_project_legacy(
         FIXTURE,
         "model.iTransformer:Model",
         "long_term_forecast",
@@ -124,7 +125,7 @@ def test_modified_itransformer_fixture_is_rejected(tmp_path: Path) -> None:
     model_path = copied / "model" / "iTransformer.py"
     model_path.write_text(model_path.read_text(encoding="utf-8") + "\n", encoding="utf-8")
     with pytest.raises(AnalysisError) as caught:
-        analyze_project(
+        analyze_project_legacy(
             copied,
             "model.iTransformer:Model",
             "long_term_forecast",

@@ -1,4 +1,57 @@
 {
+  "$defs": {
+    "EntryInvocationConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "constructor_args": {
+          "items": {},
+          "title": "Constructor Args",
+          "type": "array"
+        },
+        "constructor_kwargs": {
+          "additionalProperties": true,
+          "title": "Constructor Kwargs",
+          "type": "object"
+        },
+        "forward_args": {
+          "items": {},
+          "title": "Forward Args",
+          "type": "array"
+        },
+        "forward_kwargs": {
+          "additionalProperties": true,
+          "title": "Forward Kwargs",
+          "type": "object"
+        },
+        "input_structure": {
+          "default": null,
+          "title": "Input Structure"
+        },
+        "mode": {
+          "default": "eval",
+          "enum": [
+            "eval",
+            "train"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "static_args": {
+          "additionalProperties": true,
+          "title": "Static Args",
+          "type": "object"
+        }
+      },
+      "title": "EntryInvocationConfig",
+      "type": "object"
+    }
+  },
   "additionalProperties": false,
   "properties": {
     "config_digest": {
@@ -17,6 +70,9 @@
       ],
       "default": null,
       "title": "Config Path"
+    },
+    "entry_invocation": {
+      "$ref": "#/$defs/EntryInvocationConfig"
     },
     "entrypoint": {
       "anyOf": [
@@ -49,6 +105,12 @@
         "runtime-opt-in"
       ],
       "title": "Execution Policy",
+      "type": "string"
+    },
+    "form_id": {
+      "default": "form:python-callable",
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Form Id",
       "type": "string"
     },
     "framework": {

@@ -78,7 +78,12 @@ def main() -> int:
         _write_json(analysis / "evidence-ledger.json", analyzed_v2.compatibility.evidence)
         _write_json(analysis / "project-manifest-v2.json", analyzed_v2.manifest)
         _write_json(analysis / "source-corpus-v2.json", analyzed_v2.corpus)
+        _write_json(
+            analysis / "analysis-environment-manifest-v1.json",
+            analyzed_v2.environment_manifest,
+        )
         _write_json(analysis / "analysis-input-v2.json", analyzed_v2.analysis_input)
+        _write_json(analysis / "semantic-graph-v2.json", analyzed_v2.semantic_graph)
         _write_json(analysis / "architecture-v2.json", analyzed_v2.exact_ir)
     bundle = prepare_studio_bundle(analysis / "architecture.json", workspace)
     server = create_studio_server(bundle, args.host, args.port)

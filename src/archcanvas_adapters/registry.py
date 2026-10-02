@@ -5,7 +5,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
-from archcanvas_core.models import FrameworkAdapterCapability, FrameworkFormCapability
+from archcanvas_core.models import (
+    CapabilityStatus,
+    FrameworkAdapterCapability,
+    FrameworkAdapterCapabilityV2,
+    FrameworkFormCapability,
+    FrameworkFormCapabilityV2,
+)
 from archcanvas_python import AnalysisBundle, AnalysisError, analyze_project
 from archcanvas_python.source_index import detect_framework
 
@@ -92,7 +98,7 @@ def _package_version(name: str) -> str | None:
         return None
 
 
-def adapter_capabilities() -> list[FrameworkAdapterCapability]:
+def _legacy_adapter_capabilities() -> list[FrameworkAdapterCapability]:
     onnx_version = _package_version("onnx")
     onnxruntime_version = _package_version("onnxruntime")
     keras_version = _package_version("keras")
@@ -382,7 +388,7 @@ def adapter_capabilities() -> list[FrameworkAdapterCapability]:
                 FrameworkFormCapability(
                     form_id="form:onnx-custom-op",
                     form_name="custom-domain operator",
-                    static="partial" if onnx_version else "unavailable",
+                    static="unavailable",
                     runtime="unavailable",
                     parameter_transaction="unavailable",
                     structural_transaction="unavailable",
@@ -397,6 +403,76 @@ def adapter_capabilities() -> list[FrameworkAdapterCapability]:
             ],
         ),
     ]
+
+
+def adapter_capabilities() -> list[FrameworkAdapterCapabilityV2]:
+    capabilities: list[FrameworkAdapterCapabilityV2] = []
+    for adapter in _legacy_adapter_capabilities():
+        forms: list[FrameworkFormCapabilityV2] = []
+        for form in adapter.forms:
+            code_generation = CapabilityStatus.UNAVAILABLE
+            limitations = list(form.limitations)
+            if form.form_id == "form:pytorch-module-forward":
+                code_generation = CapabilityStatus.PARTIAL
+                limitations.append(
+                    "Code generation is limited to registry-backed PyTorch nn.Module rules."
+                )
+            forms.append(
+                FrameworkFormCapabilityV2(
+                    form_id=form.form_id,
+                    form_name=form.form_name,
+                    framework=adapter.framework,
+                    static_analysis=CapabilityStatus(form.static),
+                    runtime_evidence=CapabilityStatus(form.runtime),
+                    parameter_transaction=CapabilityStatus(form.parameter_transaction),
+                    structural_transaction=CapabilityStatus(form.structural_transaction),
+                    code_generation=code_generation,
+                    artifact_commit=CapabilityStatus(form.artifact_commit),
+                    supported_targets=form.supported_targets,
+                    verified_fixtures=form.verified_fixtures,
+                    limitations=limitations,
+                )
+            )
+        capabilities.append(
+            FrameworkAdapterCapabilityV2(
+                adapter_id=adapter.adapter_id,
+                framework=adapter.framework,
+                adapter_version=adapter.adapter_version,
+                status=(
+                    CapabilityStatus.PARTIAL
+                    if adapter.status == "supported"
+                    else CapabilityStatus(adapter.status)
+                ),
+                forms=forms,
+                required_packages=adapter.required_packages,
+                limitations=adapter.limitations,
+            )
+        )
+    return capabilities
+
+
+def framework_form_capability(
+    framework: str,
+    form_id: str,
+    action: str,
+) -> CapabilityStatus:
+    adapter = next(
+        (item for item in adapter_capabilities() if item.framework == framework),
+        None,
+    )
+    if adapter is None:
+        return CapabilityStatus.UNAVAILABLE
+    return adapter.capability_for(form_id, action)
+
+
+def default_framework_form_id(framework: str) -> str:
+    adapter = next(
+        (item for item in adapter_capabilities() if item.framework == framework),
+        None,
+    )
+    if adapter is None or not adapter.forms:
+        return "form:python-callable"
+    return adapter.forms[0].form_id
 
 
 def runtime_adapter(framework: str) -> RuntimeAdapterRegistration:

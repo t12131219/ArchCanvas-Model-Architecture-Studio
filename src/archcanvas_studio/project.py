@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from archcanvas_adapters import default_framework_form_id
 from archcanvas_core.models import ProjectSession, SourceSnapshot
 from archcanvas_python.source_index import (
     absolute_import_module,
@@ -154,6 +155,7 @@ def create_project_session(
     snapshot: SourceSnapshot | None = None,
     entrypoint: str | None = None,
     framework: str = "auto",
+    form_id: str | None = None,
     task: str = "inference",
     config_path: str | None = None,
     environment: Mapping[str, Any] | None = None,
@@ -176,12 +178,14 @@ def create_project_session(
     elif snapshot is not None:
         config_digest = snapshot.config_digest
     suffix = _digest(str(root).encode())[:16]
+    resolved_framework = framework if framework != "auto" else (snapshot.framework if snapshot else "auto")
     return ProjectSession(
         project_id=f"project:{suffix}",
         root=str(root),
         generation=generation,
         entrypoint=entrypoint or (snapshot.entrypoint if snapshot else None),
-        framework=framework if framework != "auto" else (snapshot.framework if snapshot else "auto"),
+        framework=resolved_framework,
+        form_id=form_id or default_framework_form_id(resolved_framework),
         task=task if snapshot is None else snapshot.task,
         config_path=normalized_config,
         config_digest=config_digest,

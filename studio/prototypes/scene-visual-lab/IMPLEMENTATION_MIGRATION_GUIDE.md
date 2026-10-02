@@ -1,757 +1,517 @@
-# Scene Visual Lab 源码实现与主程序迁移指南
+# 基于 Scene Visual Lab 副本重建主程序实施指南
 
-> 适用目录：`studio/prototypes/scene-visual-lab/`
-> 代码快照：2026-10-01 当前工作树
-> 目的：说明最小原型中每类场景、图例、父子展开、层级路由和导出的源码实现，并给出迁移到正式 Studio 的语义边界。
+> 文档性质：后续实现的规范性方案，不是现有完成状态说明。
+>
+> 原型基线：`studio/prototypes/scene-visual-lab/`
+>
+> 新主程序目标目录：`studio/src/scene-studio/`
+>
+> 旧主程序前端：`studio/src/app/`、`studio/src/main-view/`、`studio/src/visual-kernel/` 等，仅作为功能和协议参考，不再作为新 UI 的实现基座。
+>
+> 后端基线：`src/archcanvas_studio/`、`src/archcanvas_core/`、`src/archcanvas_python/` 及现有 schemas，继续复用并按本指南扩展。
+>
+> 代码快照：2026-10-01 当前工作树。
 
-## 1. 先明确：当前原型不是 Python 自动可视化器
+## 1. 最终决策
 
-当前原型没有 Python AST/运行图解析器，也没有从任意 `.py` 文件自动生成 `LabScene` 的代码。四个 Transformer 场景来自对指定 Python 源码的人工阅读和人工建模；`src/scenarios.ts` 中的节点、边、标签、坐标和 `detail_kind` 都是手写的。
+本轮重建采用以下不可逆转的方向性决策：
 
-真实链路是：
+1. **主程序前端从最小原型的副本继续生长。** 不再把原型的视觉能力迁入当前臃肿主程序，也不继续维护两套画布和两套视觉状态。
+2. **原始最小原型永久保留。** `studio/prototypes/scene-visual-lab/` 是交互基线、视觉回归基线和算法参考，后续功能只能添加到 `studio/src/scene-studio/`。
+3. **舍弃的是旧前端实现，不是已验证的后端能力。** 当前 Python 分析、IR、证据、项目、任务、事务和验证服务继续作为新主程序的后端；旧 `StudioApp`、`ArchitectureCanvas`、`visual-kernel` 不作为新画布依赖。
+4. **四个 Transformer 场景合并为两份源码。** 当前的“经典横向、经典论文式、Tensor2Tensor 横向、Tensor2Tensor 论文式”必须改成“经典源码、Tensor2Tensor 源码”两个 `SourceProject`；每个项目可以选择标准流程图、论文级视图及其他视图模板。
+5. **产品目标是通用的自动源码到多视图链路，不是两个 Transformer 演示器。** analyzer、registry binding、hierarchy、template selection、layout 和 router 必须根据源码事实与声明式契约工作；禁止按项目名、路径、归档摘要或 fixture ID 写分支，也禁止为每个模型手写节点、坐标和连线。
+6. **两个 Transformer 是硬性黄金标准，不是产品边界。** 通用化、性能优化、`tier_a` 兼容或代码生成改动之后，两份权威源码生成的标准流程图和论文级视图仍必须与最小原型在视觉展示上、层级、构图、图例、路由、展开交互和性能上几乎一致。
+7. **语义只保存一次，视图可以有多份。** 节点、端口、边、参数、父子关系和证据来自同一份 Exact Architecture IR；坐标、展开、颜色、路由和模板属于派生视图。
+8. **画布上的增删改和连线可以修改既有源码或生成新的源码项目，但必须经过事务。** 视觉手势先生成语义意图，再根据显式 source strategy 进入既有源码 lowering 或结构化 codegen，完成重新分析、预期/实际 Graph Delta 对比、验证和人工提交；前端不得直接写工作区源码。
+9. **先达到功能和交互等价，再切换入口。** 从第一天起停止扩展旧前端，但在新程序通过切换门禁前，不物理删除旧代码，避免失去对照和回滚能力。
 
-```text
-Python/上游源码
-  -> 人工确认模块、调用顺序、张量、mask、共享参数和父子关系
-  -> src/scenarios.ts 手写外层 LabScene
-  -> src/module-details.ts / src/catalog-details.ts 手写内部 DetailPrimitive
-  -> src/expansion.ts 计算父节点展开后的外层布局
-  -> src/detail-layout.ts 建立递归详情树并重排/重路由内部图元
-  -> src/atomic-hierarchy.ts 将最深原子入口/出口投影到场景边
-  -> src/routing.ts 计算外层路由
-  -> src/App.tsx 或 src/svg-export.ts 渲染 SVG
-```
+“完全保留最小原型的所有交互体验”在本文中不是视觉相似，而是第 3.1 节列出的行为必须逐项通过自动化和浏览器验收。
 
-因此，本文中的“源码对应”表示有证据约束的人工映射，不表示原型已经实现以下能力：
+## 2. 边界与术语
 
-- 自动识别 Python 类、函数、调用图或张量 shape；
-- 自动判断某个 `nn.Module` 应使用哪个 `NodeShape`；
-- 自动生成父子层级或 `detail_kind`；
-- 自动把源码行号、canonical node、evidence ID 绑定到图元；
-- 自动证明手写图中的每一条边与任意新版本源码仍一致。
+本文使用以下三个目录角色：
 
-正式主程序迁移时必须以 Source Evidence 和 Exact Architecture IR 为权威，以画布为派生视图。不能反向把本原型的坐标、显示标签或 `LabScene` 当成模型事实。
-
-## 2. 当前快照和实现入口
-
-当前 `SCENARIOS` 共 30 个场景：18 个路由/视觉压力场景、1 个通用父子展开场景、4 个 Transformer 场景、1 个扩展模块目录场景、6 个模型家族目录场景。每个基础场景有：
-
-```text
-5 RouteStyle × 3 NodeVisualStyle × 3 EdgeLabelStyle = 45 种组合
-30 场景 × 45 = 1350 个基础静态案例
-```
-
-展开快照在这 1350 个基础案例之外单独生成。
-
-| 文件 | 责任 | 迁移时的含义 |
+| 角色 | 目录 | 规则 |
 |---|---|---|
-| [`src/types.ts`](./src/types.ts) | 原型场景、视觉选项、路由结果和 patch 类型 | 仅为原型 DTO，不是正式 IR |
-| [`src/scenarios.ts`](./src/scenarios.ts) | 30 个手写场景、视觉组合维度 | 测试 fixture；不要作为模型导入格式 |
-| [`src/module-details.ts`](./src/module-details.ts) | Transformer 与九类基础模块的内部图 | 可迁移为有 slot 的视觉模板 |
-| [`src/catalog-details.ts`](./src/catalog-details.ts) | 30 个模型家族的内部图 | 可迁移为 schematic 模板，需证据门控 |
-| [`src/detail-layout.ts`](./src/detail-layout.ts) | 详情图节点化、递归展开、拖动、局部避障 | 可迁移纯布局算法；ID 机制需更换 |
-| [`src/expansion.ts`](./src/expansion.ts) | 外层节点展开和增量位移 | freeform/paper 两种布局策略 |
-| [`src/atomic-hierarchy.ts`](./src/atomic-hierarchy.ts) | 原子节点、门户、门户链和边界投影 | 层级连线收束的核心原型 |
-| [`src/routing.ts`](./src/routing.ts) | 五种路由、指标与自适应寻路 | 可迁移为正式路由引擎能力 |
-| [`src/model.ts`](./src/model.ts) | 内存场景的增删改和边清理 | 仅为 visual patch；不能写模型源码 |
-| [`src/App.tsx`](./src/App.tsx) | React 状态、交互、绘制顺序、检查器 | UI 参考；不要迁移原型状态容器 |
-| [`src/svg-export.ts`](./src/svg-export.ts) | 无 React 的静态 SVG 和指标导出 | 应与正式渲染 scene 共享语义 |
-| [`vite.config.ts`](./vite.config.ts) | 生成案例矩阵和展开快照 | 回归 fixture 生成器 |
-| [`references/SOURCE_TRACEABILITY.md`](./references/SOURCE_TRACEABILITY.md) | 基础模块与 Transformer 的源码追溯 | 迁移模板时的证据说明 |
-| [`references/MODEL_FAMILY_TRACEABILITY.md`](./references/MODEL_FAMILY_TRACEABILITY.md) | 30 个家族图的上游证据 | schematic 模板的适用/不适用边界 |
-| [`BOTTOM_UP_ATOMIC_ROUTING.md`](./BOTTOM_UP_ATOMIC_ROUTING.md) | 原子优先层级路由设计 | 层级路由详细设计补充 |
-| [`REGRESSION_TEST_REQUIREMENTS.md`](./REGRESSION_TEST_REQUIREMENTS.md) | 自动化和浏览器视觉门禁 | 迁移后的最低验收基线 |
+| 原型原件 | `studio/prototypes/scene-visual-lab/` | 只修原型自身缺陷；不得在此接 API、源码事务或主程序壳层 |
+| 原型副本/新主程序 | `studio/src/scene-studio/` | 所有新功能的唯一前端落点 |
+| 旧主程序前端 | `studio/src/app/`、`main-view/`、`visual-kernel/`、`inspector/`、`shell/` | 只读取功能、协议与测试证据；禁止直接组合回新画布 |
 
-## 3. 数据模型：语义、视觉和坐标分别放在哪里
+本文中的关键词：
 
-### 3.1 `LabScene`
+- **Source Project**：一份可分析的源码工程及入口点，不等于一个视图。
+- **Exact Architecture IR**：由静态分析和可选运行时证据生成的语义事实层。
+- **View Preset**：把同一份 IR 投影为某种阅读目的的规则，例如标准流程图或论文级视图。
+- **Scene**：可交给原型 SVG 画布渲染的派生 DTO。
+- **Visual Patch**：只改坐标、尺寸、展开、相机、样式和标签展示的操作。
+- **Semantic Intent**：希望改变模型结构或参数的用户意图。
+- **Source Transaction**：在隔离副本中修改源码并完成重分析、验证、评审和提交的事务。
+- **Canonical ID**：语义对象的稳定身份。
+- **Lineage ID**：源码修改和重分析前后用于匹配同一对象的身份。
+- **Slot ID**：视图模板内部稳定图元或端口槽位的身份。
+- **Generic Source-to-View Pipeline**：不识别具体项目身份，只根据 SourceCorpus、Exact IR、registry contract、evidence 和 View Preset 自动生成场景的标准链路。
+- **Transformer Golden Baseline**：由两份指定权威归档生成的标准/论文视图及最小原型对应场景，是不可因通用化而放宽的硬回归基准。
+- **Tier A Matrix**：`fixtures/tier_a/` 下用于证明通用性的多文件、多输入、多分支、多尺度模型集合；它扩展覆盖面，但不能替代 Transformer Golden Baseline。
 
-`LabScene` 是一个手写可视化场景：
+## 3. 现有事实基线
 
-- `scene_id` 是 fixture ID，不是 architecture ID；
-- `nodes`/`edges` 是当前场景的外层图；
-- `paper_width`/`paper_height` 只决定 SVG 画布；
-- `layout_profile="paper"` 选择论文式展开算法，否则使用 `freeform`；
-- 坐标只用于视觉回归，不能证明执行顺序或包含关系。
+### 3.1 最小原型必须完整保留的体验
 
-`src/scenarios.ts` 的 `scene()`、`node()`、`edge()` 是创建普通场景的薄封装；`paperScene()` 和 `paperNode()` 额外设置 `layout_profile`、`layout_lane`、`layout_rank` 与 `paper_tone`。
+新主程序必须保留原型的以下行为和反馈节奏：
 
-### 3.2 `LabNode`
+- 无限画布式平移、滚轮定点缩放、按钮缩放、适合视图；
+- 节点选择、边选择、空白取消选择；
+- 节点实时拖动预览、释放后提交，允许负坐标和向左拖动；
+- 节点尺寸调整；
+- 父模块展开/收起、全部展开/全部收起；
+- 子模块递归内联展开、拖动、局部连线实时吸附、位置复位；
+- `atomic-bottom-up` 原子收束和 `recursive` 逐层路由 A/B 切换；
+- `direct`、`orthogonal`、`channel`、`curve`、`adaptive` 五种布线；
+- `semantic`、`technical`、`compact` 三种节点视觉；
+- `plain`、`plate`、`endpoint` 三种边标签；
+- 节点新增、节点删除、连线创建、连线删除；
+- 节点和连线检查器；
+- 撤销、重做、场景复位；
+- 路由质量指标；
+- SVG/JSON 方案导出；
+- 屏幕渲染与静态导出一致；
+- 当前 30 个场景及其 1350 个基础视觉组合继续作为回归语料。
 
-节点的字段分成三组：
+这些交互的输入设备语义、拖动阈值、展开后增量位移、选择反馈和收起后确定性恢复都属于兼容契约。不得以引入新画布框架为由改变。
 
-| 字段 | 含义 | 注意事项 |
+### 3.2 最小原型当前缺少的能力
+
+原型当前只有内存 `LabScene`，四个 Transformer 场景是手写的。它没有：
+
+- 项目打开、入口点发现和环境选择；
+- Python 源码捕获、AST/CST、符号解析和 Exact IR；
+- canonical node、named port、tensor、evidence 和 source anchor；
+- 源码/模块双导航、统一搜索和诊断；
+- 分析任务、取消、进度和 stale generation；
+- 参数、结构、自由源码和拓扑草稿事务；
+- 验证、Graph Delta、提交、回滚和重分析；
+- 模块契约维护和 registry；
+- 可编辑源码工作区；
+- PNG/PDF 发布导出。
+
+因此，不能通过继续扩充 `LabNode` 和 `LabEdge` 把这些事实塞进原型 DTO。必须在 `LabScene` 之前增加正式语义层。
+
+### 3.3 当前主程序需要保留的功能
+
+以下能力已有源码和测试证据，应迁入新壳层或直接复用后端：
+
+| 能力 | 当前证据 | 新程序处理方式 |
 |---|---|---|
-| `scene_node_id` | 场景内稳定引用 | 仅在手写 fixture 内稳定 |
-| `label`、`secondary_label` | 展示名称与简述 | 不是源码符号 ID |
-| `shape` | 收起状态的语义图例 | 表达“如何读这个节点”，不是精确类名 |
-| `bounds` | 外层位置和尺寸 | 视觉状态，不是架构事实 |
-| `detail_kind` | 展开模板选择器 | 决定 `buildModuleDetail()` 的分支 |
-| `detail_expanded` | 派生的展开状态 | `expandScene()` 生成，不写回基础 fixture |
-| `layout_lane`、`layout_rank` | 论文视图的列和层级 | 只参与 paper 展开布局 |
-| `paper_tone` | Encoder/Decoder/Input/Output 色调 | 视觉编码，不改变计算语义 |
+| 打开工程、目录浏览、环境和入口选择 | `project-actions.ts`、`project.py`、`server.py` | 保留 API，重做原型风格入口 UI |
+| 异步分析、进度、取消、generation 隔离 | `jobs.ts`、`job-actions.ts`、`server.py` | 保留协议和后端，重做轻量状态适配器 |
+| 模块/源码双导航 | `navigation.py`、`tree.ts` | 保留数据，作为可折叠辅助面板，不改变画布交互 |
+| 搜索 node/tensor/port/evidence/diagnostic | `operations.py`、`/api/search` | 保留 API，结果映射到原型选择状态 |
+| 证据、源码定位和诊断 | `StudioState`、`/api/source-excerpt` | 保留，显示在检查器和源码面板 |
+| 视觉 patch、批处理、undo/redo | `document.py`、`/api/patch*` | 保留服务端持久化，前端改用原型 reducer 手感 |
+| 对齐、分布、固定和布局偏好 | `ArchitectureCanvas.tsx`、`operations.py` | 以原型命令模式重新实现 |
+| 参数和有界结构事务 | `bundle.py`、事务 schemas | 原样接入语义命令层 |
+| 拓扑草稿、增删节点/边和删除影响预览 | draft/proposal endpoints | 改成画布手势的正式落点 |
+| Source Workspace | `SourceWorkspacePanel.tsx`、`bundle.py` | 使用 CodeMirror 6 重做，复用 API |
+| 验证配置和结果 | `/api/validation-runs` | 保留后端，压缩成状态栏/抽屉 |
+| SVG/PNG/PDF 导出 | 当前主视图和 publication export | 统一从同一派生 scene 导出 |
+| Registry、Shape、成本和代码预览 | `module-registry/`、`prototype-graph/`、`codegen/` | 在模型编辑模式按需加载 |
+| 模块契约维护 | contract endpoints/dialog | P1 接入；不阻塞最先落地的 P0 纵向切片 |
+| 主题、语言、面板大小 | 旧 shell | 只迁用户价值，不复制旧 shell 结构 |
 
-### 3.3 为什么使用这 11 种节点图例
+### 3.4 明确舍弃的主程序实现
 
-`NodeShape` 不是 Python 类型枚举，而是架构阅读语法：
+以下内容不能进入新主程序运行依赖：
 
-| `NodeShape` | 适用代码结构 | 使用原因 |
-|---|---|---|
-| `operation` | Linear、Dropout、投影、通用函数/模块 | 单输入输出变换，没有更专用语义 |
-| `tensor` | embedding、hidden state、memory、显式张量 | 强调它是数据/表示，而不是执行算子 |
-| `convolution` | Conv、feature-map block、pooling 目录节点 | 堆叠特征图最容易表达空间/通道语义 |
-| `attention` | self/cross attention、Encoder/Decoder stack | 强调 Q/K/V 关系和可展开注意力结构 |
-| `normalization` | LayerNorm/BatchNorm/Add & Norm 外层 | 统计和仿射归一化具有独立视觉语义 |
-| `condition` | mask、gate、bias、决策或训练条件 | 输入控制“哪些值可见/哪条路径生效” |
-| `merge` | 多路汇聚、加权汇聚、共享调用参数汇聚 | 多条输入进入一个语义边界 |
-| `add` | 残差加法或显式 `+` | 与 concat、一般 merge 区分，表示逐元素和 |
-| `multiply` | 门控、逐元素乘法、缩放 | 对应 `*`/Hadamard product，而不是普通模块 |
-| `concat` | 通道/特征拼接 | 输出维度通常因拼接而变化 |
-| `io` | token 输入、最终输出、外部系统边界 | 显示模型图边界，而非内部计算 |
+- 旧 `StudioApp.tsx` 的单体组件和其大量互相牵连的本地 state；
+- 旧 `ArchitectureCanvas.tsx`；
+- 旧 `visual-kernel` 作为第二画布内核；
+- `FormalStudioState -> KernelDocument -> KernelRenderScene` 的前端专用重复投影链；
+- 旧 shell 的固定四面板布局作为页面骨架；
+- 通过 label 正则推断模块类型或子模板；
+- 通过项目名、路径、归档 digest、fixture ID 或入口类名选择专用场景构造器；
+- 为 Autoformer、iTransformer、PatchTST、TimeMixer 或任一测试项目手写节点表、父子关系、坐标和连线；
+- 通过数组下标生成可持久化图元 ID；
+- 同一 Transformer 为每种画法复制一份语义节点和边；
+- 把视觉撤销和源码事务放进同一个历史栈；
+- 让前端在没有验证收据时直接写源码。
 
-同一个 Python 类在不同层级可能使用不同图例。例如完整 Encoder stack 收起时用 `attention`，展开后的 hidden state 用 `matrix`，内部 LayerNorm 用 `rect/capsule`。这是“层级阅读目的”不同，不是类型冲突。
+可以复制小型、纯函数、已测试且没有旧画布类型依赖的代码，但必须迁入新目录并重新命名所有权，不能从旧目录长期 import。
 
-### 3.4 `LabEdge` 和七种关系
+## 4. 技术选型
 
-| `EdgeRelation` | 源码语义 | 视觉解释 |
-|---|---|---|
-| `flow` | 普通返回值/张量传递 | 主数据流 |
-| `branch` | 一个值进入多个计算分支 | 扇出 |
-| `merge` | 多个值汇入算子 | 汇聚输入 |
-| `residual` | identity/skip path | 虚线捷径 |
-| `memory` | Encoder memory、cache、共享状态引用 | 跨模块读写，不等价于普通顺序调用 |
-| `condition` | mask、attention bias、gate、配置条件 | 控制输入，不当作主张量流 |
-| `feedback` | recurrent/cache/environment 更新回路 | 虚线回边 |
+### 4.1 前端和画布
 
-`target_port_role` 是比关系颜色更精确的端口约束。当前 paper Transformer 使用 `mask` 和 `memory`，让场景外边进入展开模板的语义端口，而不是默认进入父框左/下边界。
+采用：
 
-### 3.5 内部图元
+- React 18、TypeScript、Vite；
+- 原型现有的手写 SVG 渲染；
+- 原型现有的 pointer gesture、camera、detail layout、atomic projection 和 adaptive router；
+- Lucide 图标；
+- CSS variables 管理主题与论文/工程视觉参数。
 
-`module-details.ts` 与 `catalog-details.ts` 不直接创建 `LabNode`，而是返回 `DetailPrimitive[]`：
+不采用 React Flow/xyflow 作为新画布。原因不是其能力不足，而是更换画布会改变节点命中、拖动、递归展开、跨层门户、绘制顺序和导出链路，无法满足“完整保留原型交互”的首要约束。
 
-- `rect`：算子、模块或语义分组框；
-- `matrix`：张量、feature map、权重或中间表示；
-- `circle`：`+`、`×`、`Σ`、激活/门等运算点；
-- `flow`：内部依赖，`marker:false` 时是无箭头 wire；
-- `text`：说明性标注，不参与执行图。
+### 4.2 源码分析与改写
 
-`tone` 只区分通道和视觉层次。蓝/绿/粉/橙/紫不能单独证明任何固定数学语义；真正的语义仍来自 label、channel、target role 和证据绑定。
-
-## 4. 从 Python 源码人工建模为当前视图
-
-### 4.1 建模步骤
-
-当前四个 Transformer 场景实际遵循下列人工步骤：
-
-1. 找到顶层 `forward()` 或框架 body 函数，列出输入、输出和调用顺序。
-2. 找到构造函数/配置，确认层数、hidden size、head 数、FFN 宽度、dropout、norm 顺序和权重共享。
-3. 找到 mask/bias 的创建位置，区分 padding、causal、encoder-decoder bias。
-4. 找到 Encoder/Decoder layer 的边界，把重复层折叠成 `Stack ×N` 父节点。
-5. 把函数参数或返回值中的数据依赖建成边；调用本身只有在需要汇聚多个参数时才建成视觉节点。
-6. 为可递归解释的父节点设置 `detail_kind`，在 `module-details.ts` 建立内部图。
-7. 依据执行语义选 `shape`：张量用 matrix/tensor，控制量用 condition，逐元素运算用 circle/add/multiply，模块调用用 rect/operation/attention。
-8. 对不能由当前源码直接证明的部分标为视觉简化，而不是补造事实。
-
-### 4.2 父子模块如何对应
-
-外层父节点与内部模板的绑定是：
+采用现有 v2 前端：
 
 ```text
-LabNode.detail_kind
-  -> EXPANDED_DETAIL_SIZES[detail_kind]
-  -> buildModuleDetail(detail_kind, bounds)
-  -> ModuleDetailDiagram { entryPoint, exitPoint, semanticInputPorts, primitives }
+ProjectManifest
+  -> immutable SourceCorpus
+  -> LibCST repository frontend
+  -> Python Semantic Graph
+  -> registry/port binding
+  -> Exact Architecture IR v2
+  -> evidence + diagnostics + hierarchy
 ```
 
-以经典 Encoder 为例：
+具体约束：
+
+- **LibCST 是 Python 保格式读取和回写的权威。** 官方文档说明它同时保留空白、注释和语义化节点，可从修改后的 CST 重新打印源码。
+- **Pyright Type Server 是可选解析证据，不是事实源。** 只用于跨文件类型/符号候选；超时、缺失或 snapshot 不一致时必须降级，不得阻断基础分析。
+- **Tree-sitter 只用于可选的编辑器即时语法反馈。** 官方增量解析接口可以在文本编辑后复用旧树，但它不替代 LibCST 的 source anchor、事务改写和最终验证。
+- **不得通过 import 用户工程获得静态图。** 运行时 trace 仍是单独、显式授权的隔离能力。
+- **Pattern Pack 在 Exact IR 之后执行。** 它只增加 annotation/template binding，不能改变 canonical graph。
+
+### 4.3 源码编辑器
+
+采用 CodeMirror 6，不继续使用 `<textarea>`，也不引入 Monaco。
+
+选择依据：
+
+- CodeMirror 的 document/state 是不可变值，修改通过 transaction 表达，和本项目的 staged buffer/transaction 边界一致；
+- 模块化，可只装 Python、diff、search、history 和 diagnostic 所需扩展；
+- viewport 渲染适合中大型源码；
+- `ChangeSet.mapPos()` 可在本地文本变化时维护 source anchor 装饰；
+- 相比 Monaco 体积和 worker 体系更轻，足以满足当前本地 Studio。
+
+CodeMirror 的 undo 只作用于尚未提交的当前 buffer；Source Transaction 的提交、撤销和回滚仍由后端负责，两者不能混为一个历史。
+
+### 4.4 自动布局
+
+默认继续使用原型布局和路由：
+
+- 节点展开和拖动必须走现有增量算法，以保护用户空间记忆；
+- paper preset 继续使用确定性的双列/层级规则；
+- adaptive router 继续负责最终边路径；
+- 用户手工移动后不得被后台自动布局覆盖。
+
+ELK Layered 只作为 P2 的显式“重新布局”命令候选，并放在 Web Worker 中。官方能力覆盖固定端口、正交边、compound graph 和跨层边，适合大型通用 DAG 的一次性排布；它不能在每次 render、展开或拖动时运行，也不能替代原型的递归详情布局和最终路由。
+
+### 4.5 后端通信
+
+继续使用当前本地 HTTP API 和 JSON schema，不在本轮引入 Electron/Tauri、GraphQL 或全局状态框架。新前端建立一层小型 typed client 和一个 reducer/store 即可。
+
+## 5. 目标架构
+
+### 5.1 唯一主链路
 
 ```text
-scenarios.ts
-  transformer-encoder
-  detail_kind = transformer-encoder
-      |
-      v
-module-details.ts
-  transformerEncoderDiagram()
-  x -> Self-attention -> Dropout -> Add & Norm
-    -> Feed-forward -> Dropout -> Add & Norm -> memory
-      |
-      v
-detail-layout.ts
-  Self-attention -> attention
-  Add & Norm    -> add-norm
-  Feed-forward  -> feedforward
+源码工程/归档成员
+  -> Source Project + immutable SourceCorpus
+  -> Python Semantic Graph + Exact Architecture IR
+  -> evidence / hierarchy / diagnostics / registry bindings
+  -> ViewProjector(IR, ViewPreset, VisualState)
+  -> SourceBackedScene
+  -> 原型 expansion + detail layout + atomic projection + routing
+  -> 同一个 SVG scene renderer
+  -> 交互画布 / SVG / PNG / PDF / JSON
 ```
 
-`inferNestedDetailKind()` 当前根据父模板类型以及内部图元的可见 label/note 推断下一层：Transformer 父模板有显式规则；目录模板还使用正则启发式，例如 label 含 `conv` 推为 `convolution`、含 `pool` 推为 `pooling`。这适合原型，但正式程序不能依赖可翻译文案。应把下一层模板 ID 写进模板 slot 或正式 binding。
-
-### 4.3 内部节点身份和当前限制
-
-`listDetailNodes()` 只把非 frame 的 `rect`、`circle`、`matrix` 变为可选择/拖动的 `DetailNode`。其 ID 由 `detailNodeId(primitiveIndex)` 生成：
+反向修改链路：
 
 ```text
-detail-node-${primitiveIndex}
+画布手势
+  -> SemanticIntent
+  -> capability check + named-port validation
+  -> preview overlay + expected Graph Delta
+  -> isolated Source Transaction
+  -> LibCST rewrite
+  -> reparse + reanalyze
+  -> observed Graph Delta + shape/type/test gates
+  -> review
+  -> commit
+  -> 新 SourceCorpus/IR
+  -> 依据 lineage ID 重投影视图
 ```
 
-所以在 `DetailPrimitive[]` 前面插入图元，会改变后续所有子节点 ID，并可能使保存的展开路径和拖动 offset 指向错误节点。这是迁移时必须消除的技术债：正式模板应为每个语义 slot 提供稳定 ID，例如 `encoder.self_attention`、`decoder.cross_attention`、`ffn.expand`，并把它绑定到 canonical/evidence ID。
-
-## 5. 父子展开、内部拖动和原子收束
-
-### 5.1 外层展开
-
-`expandScene()` 总是从基础 `LabScene` 重新派生显示场景，基础坐标不被展开状态覆盖。因此收起后能确定性回到原布局。
-
-普通 `freeform` 场景：
-
-- 按父节点原始 x 排序处理；
-- 展开宽度增加多少，就把其右侧节点累计右移多少；
-- 递归内容比模板自然高度更高时，位于其下方的节点向下移动；
-- 展开父节点以自然高度围绕原中心放置；
-- `paper_width/height` 随内容增长。
-
-`paper` 场景：
-
-- 按 `layout_lane` 分 Encoder/Decoder 列；
-- 按 `layout_rank` 判断同列上下关系；
-- 展开高度全部向上增长，保持底部进入、顶部退出；
-- 同 rank 的辅助节点若与展开框重叠，会被推到框的左右；
-- 两列之间至少保留 `PAPER_LANE_GAP=72`；
-- 全图不足 36 px 边距时整体平移。
-
-### 5.2 递归内联展开
-
-`buildInlineDetailLayout()` 的递归过程是：
-
-1. 以 `buildModuleDetail()` 创建本层自然图；
-2. 应用本层拖动/尺寸 override；
-3. `listDetailNodes()` 找到可交互子节点；
-4. 根据 `DetailExpansionBranch` 找到需要展开的子节点；
-5. 为每个子节点递归调用 `buildInlineDetailLayout()`；
-6. 用 `automaticExpandedBounds()` 给子树腾出空间；
-7. 重算语义分组框、入口/出口、内部 flow 与避障；
-8. 返回 `InlineDetailLevel` 树。
-
-`detailLevelKey(rootId, levelPath)` 使用 `rootId/childId/...` 标识每一级。`clampDetailOffsetToBounds()` 限制拖动后的子节点仍位于当前内容边界内。拖动不是修改 `DetailPrimitive` 源模板，而是保存每层的 offset map，再重建布局。
-
-### 5.3 `recursive` 与 `atomic-bottom-up`
-
-两种层级路由模式共享同一详情树：
-
-- `recursive`：每一级父图先接到展开子框的边界，再由子框接到内部节点；便于对照，但会看到中间边界箭头。
-- `atomic-bottom-up`：默认模式；先构造最深原子图，再把入口/出口逐层投影到外层，隐藏仅用于穿越父边界的桥接箭头。
-
-`buildAtomicHierarchyProjection()` 为每个详情层建立：
-
-- `AtomicNodeRecord`：未被继续展开的最深可见图元；
-- `AtomicEdgeRecord`：内部 flow；
-- `BoundaryPortal`：每层 entry/exit；
-- `PortalChain`：父模块与展开子模块的门户对应。
-
-`projectedAtomicEntry*()` 和 `projectedAtomicExit*()` 沿唯一的桥接边向下寻找真正原子端点。`buildAtomicHierarchyRoutingPlan()` 再产出：
-
-- `boundaryPorts`：外层边应实际接到的位置；
-- `semanticInputs`：`mask`/`memory` 等定向端口；
-- `hiddenFlowIds`：已经由外边替代的内部桥接段；
-- `foregroundFlowIds`：跨层边，必须画在节点之上。
-
-这样一条外层 `memory -> decoder` 边在 Decoder 展开后能直接接到内部 cross-attention 的 memory 端口，而不会在父边界留下重复箭头。
-
-## 6. 路由、标签、绘制和导出
-
-### 6.1 五种路由
-
-`routeScene()` 提供：
-
-- `direct`：端点直线；
-- `orthogonal`：简单正交折线；
-- `channel`：按并行边 lane 分槽；
-- `curve`：曲线路径；
-- `adaptive`：端口选择、分散、避障、路径搜索和圆角折线的组合。
-
-自适应路由的关键实现：
-
-1. `selectSidePair()` 比较四侧候选，避免明显反向出发；
-2. 多条边在同一侧由 `assignAdaptivePorts()` 分散，降低端口拥挤；
-3. 端口外加 `PORT_STUB=24`，保证箭头离开边框后再转弯；
-4. 所有节点障碍膨胀 `NODE_CLEARANCE=14`；
-5. `orthogonalSearch()` 以端点和障碍边界建立可见网格；
-6. 用 Dijkstra 式搜索最小化长度、折点代价和 `routePenalty()`；
-7. 已使用线段进入惩罚，减少交叉和共享线段；
-8. `roundedPolylinePath()` 输出圆角 SVG path；
-9. 纵向主段的 label angle 为 90 度。
-
-当目标边有 `target_port_role` 时，`adaptiveRoutes()` 优先使用目标详情的 `semanticInputs[role]`，并把该跨层边设置为 foreground；这就是 paper 场景中 mask 和 memory 不落到默认入口的原因。
-
-### 6.2 指标
-
-`measureScene()` 计算：交叉、线段重叠、穿越节点、标签撞节点、净距违规、端口拥挤、反向出发、共享长度、折点数和总路径长度。这些指标用于比较路由方案，不是对模型正确性的证明。
-
-### 6.3 React 绘制顺序
-
-`App.tsx` 的派生顺序是：
+空白构图和源码生成链路：
 
 ```text
-editor.scene + expandedNodeIds
-  -> expandScene() 得到 displayScene
-  -> buildInlineDetailLayout() 得到 detailTrees
-  -> buildAtomicHierarchyRoutingPlan() 得到边界端口/隐藏段/前景段
-  -> routeScene() 得到 routed edges
-  -> 背景边
-  -> NodeGraphic（含递归详情）
-  -> 前景跨层边
+Registry palette + 视图增删改/连线
+  -> PrototypeGraphDocument
+  -> named-port / Shape / cost / control-region validation
+  -> structured PyTorch Code IR + source map
+  -> Generated Source Project transaction
+  -> compile + 静态重分析 + 可选隔离运行
+  -> review + materialize
+  -> 作为 Source Project 回到正向读取链路
 ```
 
-背景边先画、节点后画、语义端口边最后画，是为了让普通长边被节点遮挡，而进入内部原子节点的跨层边保持可见。
+正向读取、既有源码修改和空白构图生成共享 registry、named port、Graph Delta 和 receipt 规则。生成项目物化后必须回到同一 SourceCorpus/Exact IR 链路；不得再创建独立的“原型语义图”和“正式语义图”。
 
-### 6.4 静态导出
+### 5.2 四层状态所有权
 
-`renderSceneSvg()` 重复同一派生链，但不依赖 React。`vite.config.ts` 的 `generateBundle()`：
+| 层 | 权威数据 | 所有者 | 可否直接编辑 |
+|---|---|---|---|
+| Source | 文件内容、digest、source anchor、项目入口 | Python 后端 | 只能经 Source Transaction |
+| Semantic | nodes、ports、edges、tensors、parameters、hierarchy、evidence | Exact Architecture IR | 不可由前端直接改 |
+| Visual | preset、位置、尺寸、展开、样式、路由、相机、固定状态 | CanvasDocument/ViewDocument | 可用 Visual Patch |
+| Ephemeral UI | hover、框选、拖动 preview、菜单、当前 tab | 浏览器组件 | 可直接改，不持久化 |
 
-- 为每个场景生成 45 个基础 SVG/JSON；
-- 为每个可展开父节点生成单独展开快照；
-- 为该场景生成“全部展开到原子级”快照；
-- 生成每场景索引、总索引和 `manifest.json`。
-
-交互导出的 JSON 还包含 visual options、展开 ID、递归 expansion tree、拖动 offsets、层级路由模式、指标和内嵌 SVG。
-
-## 7. 30 个场景逐项实现
-
-### 7.1 18 个路由和视觉压力场景
-
-这些场景是路由/图例回归 fixture，不是从某个真实模型源码恢复出的执行图。
-
-| 场景 ID | 手写拓扑和图例 | 验证的实现 |
-|---|---|---|
-| `linear-chain` | IO -> tensor embedding -> attention -> normalization -> projection | 最短主链、均匀端口、短标签的基线 |
-| `fan-out` | shared tensor 扇出 Q/K/V 和 gate，再汇入 attention | 一源多边端口分散、branch/condition/merge 颜色和标签 |
-| `fan-in` | 四个 expert 汇入 weighted merge，再接 norm/head | 多源进入同目标时的端口拥挤和终段净距 |
-| `residual-skip` | attention/dropout 主链与 input residual 在 Add 汇合 | 长跳连、虚线 residual、主链避让 |
-| `feedback-loop` | recurrent cell 产生 emission 和 continue 条件，条件回写 state | feedback 回边、循环拓扑和条件出口 |
-| `dense-bipartite` | 左 3 节点到右 3 节点全连接 | 9 条边集中交叉时的分槽、标签碰撞和共享线段惩罚 |
-| `shared-hub` | producer/consumer/cache 环绕 shared memory | 高度数中心节点、读写方向和环状端口选择 |
-| `crossing-pressure` | 左右各四节点按逆序连接 | 不可避免交叉下的路径分流与确定性 |
-| `parallel-relations` | 相同 source/target 同时有 flow、memory、residual，另有 mask/cache | 同端点多语义边的 lane 分离、关系颜色和回边 |
-| `long-labels` | 三个超宽节点、长副标题和长边标签，另有跨越 residual | 文本不溢出、标签底板、标签避让和宽节点锚点 |
-| `asymmetric-sizes` | 标量、高窄 condition、超宽 operation、方形 merge 混排 | 四侧选择面对非均匀尺寸时的稳定性 |
-| `vertical-dag` | 上到下分支、跨层 memory、skip 和 concat | 非默认纵向 DAG、top/bottom 端口及多层汇聚 |
-| `nearest-side-regression` | source 在 target 右侧，中间有大障碍 | 不能从错误侧反向离开；验证最近侧与绕障选择 |
-| `terminal-fan-in` | 六个上下分布的 source 进入一个高 target | 同目标端口分散、箭头末段长度、箭头头部遮挡 |
-| `four-side-ports` | 左右上下八个节点进入中心 Add | 四侧入射、角点净距、目标侧容量 |
-| `vertical-edge-labels` | 两列纵向链和横向交叉连接 | 长纵向段的标签旋转 90 度及标签/节点净距 |
-| `semantic-glyph-library` | tensor、conv、attention、norm、add、multiply、concat 等图例共存 | `NodeShape` 的 SVG 语法、颜色和混合关系可读性 |
-| `dense-channel-separation` | 五对平行边、五条逆序交叉边和中心障碍 tensor | 高密度通道搜索、共享线段惩罚和顺序稳定性 |
-
-### 7.2 `parent-child-expansion`
-
-该场景串联 `tensor-transform`、`convolution`、`attention`、`add-norm`、`feedforward` 五种父模板。它的目的不是表达一个权威模型，而是覆盖完整展开契约：
-
-- 所有父模块收起时仍是普通 `LabNode`；
-- 展开后入口与原外边连续、出口与下游边连续；
-- attention 内部 Q/K/V、Add & Norm 的残差、FFN 的两层投影都可选择；
-- Transformer 类子图可继续钻取下一层；
-- 父节点变宽后，下游节点由 `expandScene()` 增量右移；
-- 内部拖动只改变 detail offsets，相关内部 flow 重新吸附并避让。
-
-### 7.3 `extended-module-catalog`
-
-该场景串联四个有独立内部图的基础模块：
-
-| 父节点 | 展开实现 | 为什么使用该图例 |
-|---|---|---|
-| Embedding | `embeddingDiagram()`：token/position 两路 lookup、加法、可选 norm、dropout | token/position 是张量，lookup 是操作，加法用 `+` |
-| LSTM cell | `recurrentDiagram()`：`x_t/h_{t-1}/c_{t-1}`、四门、乘加、`c_t/h_t` | gate 是条件，状态是 matrix，逐元素乘加用圆形运算符 |
-| Sparse MoE | `mixtureOfExpertsDiagram()`：router、top-k、多个 expert、加权 `Σ` | router 决定分支，expert 是并行 FFN，`Σ` 表示加权汇聚 |
-| Pooling | `poolingDiagram()`：feature map、window、reduction、pooled map | 特征图使用堆叠 matrix，窗口是参数/观察区域而非新张量 |
-
-### 7.4 六个模型家族目录场景
-
-`detailCatalogScene()` 为每个目录自动建立 `Input -> 五个模块 -> Output` 的外层线性链；这条链仅用于逐个展开和比较图例，不表示五类模型会在一次推理中串行执行。真正的内部图由 `buildCatalogDetail()` 分发。
-
-| 目录场景 | 五个 `detail_kind` | 内部结构重点与图例理由 |
-|---|---|---|
-| `traditional-ml-catalog` | `linear-model`、`kernel-machine`、`decision-tree`、`ensemble`、`clustering` | 线性 score/link；核映射和 margin；阈值二叉路径；并行 learner 汇聚；assign/update 迭代。条件节点用于决策，merge 用于投票/聚合 |
-| `neural-foundation-catalog` | `decomposition`、`mlp`、`normalization`、`residual-block`、`dense-connection` | 矩阵基与投影；升维-激活-降维；统计量与仿射；identity skip 加法；跨层 concat。分别使用 tensor、operation、normalization、add、concat |
-| `vision-sequence-catalog` | `inception`、`depthwise-convolution`、`unet`、`vision-transformer`、`gru` | 多尺度卷积分支、DW/PW 分离、U-Net 跳连、patch token + Transformer、GRU 门控；使用卷积堆栈、concat、attention 和乘加符号 |
-| `sequence-generative-catalog` | `bidirectional-recurrent`、`seq2seq`、`state-space`、`autoencoder`、`variational-autoencoder` | 正反向状态 merge；encoder-context-attention-decoder；selective scan；latent bottleneck；μ/logσ² 与重参数采样。state/tensor 与 condition 分开显示 |
-| `generative-graph-catalog` | `gan`、`diffusion`、`normalizing-flow`、`graph-message-passing`、`time-series-forecast` | 对抗双路径；加噪/去噪时间条件；可逆链与 log-det；message/aggregate/update；trend/seasonal 汇合。回路、条件与 merge 按训练/数据依赖区分 |
-| `multimodal-rl-adaptation-catalog` | `dual-encoder`、`dqn`、`actor-critic`、`distillation`、`adapter-lora` | 图文双塔相似度；Q/target/replay 闭环；actor/critic/advantage；teacher/student loss；冻结主干与低秩增量相加。merge、feedback、add 分别表达对齐、更新和参数增量 |
-
-目录内部图是“家族结构模板”，不是每个具体模型的精确执行图。例如 `ensemble` 同时概括 bagging 的并行投票和 boosting 的残差序列；`normalization` 同时概括 Batch/Layer/Group/RMSNorm。正式程序只有在 predicate 证明具体变体后才能标为 `exact`，否则应保留为 `schematic` 或 `opaque`。
-
-## 8. 四个 Transformer：共同语义和两种构图语法
-
-四个场景不是四份无关模型：
-
-| 模型语义 | 横向工程视图 | 双列论文视图 |
-|---|---|---|
-| 本地教学版经典 Encoder-Decoder Transformer | `classic-transformer` | `paper-classic-transformer` |
-| Tensor2Tensor 1.0.14 Transformer | `tensor2tensor-transformer` | `paper-tensor2tensor-transformer` |
-
-横向视图把数据和调用参数从左到右摊开，适合调试、端口和路由验证；论文视图把 Encoder/Decoder 分成两列，自下向上流动，适合与论文架构图对照。两种视图应该共享同一语义 IR，差别只应存在于 layout profile、模板 orientation 和显示层级。
-
-## 9. 经典 Transformer 的 Python 证据
-
-权威本地文件：
+必须维持以下不变量：
 
 ```text
-/home/fzg/PycharmProjects/ArchCanvas/Article/classic_transformer.py
+Visual Patch 不改变 source_digest 或 exact_ir_digest。
+Semantic Intent 不携带 SVG 坐标。
+切换 View Preset 不生成 Source Transaction。
+Source Transaction 提交后必须产生新 source_digest。
+重分析后的视觉状态只能按 canonical/lineage ID 迁移，不能按 label 猜测。
 ```
 
-同一 `Article/` 目录下的
-`/home/fzg/PycharmProjects/ArchCanvas/Article/Transformer.py` 与它的 SHA-256 完全相同：
-
-```text
-49c31f68d36406e5990d3761c9a6d23ba38b5ed7d8d622e0999b1e9b415a48b7
-```
-
-关键源码范围：
-
-| 源码范围 | 事实 |
-|---|---|
-| 40-65 | 默认 `d_model=512`、6 层 Encoder、6 层 Decoder、8 heads、`d_ff=2048`、dropout、post-norm 和权重共享开关 |
-| 82-129 | 固定 sin/cos positional encoding 与 dropout |
-| 132-157 | token lookup 并乘 `sqrt(d_model)` |
-| 160-219 | scaled dot-product attention：score、mask、softmax、dropout、乘 V |
-| 222-291 | Q/K/V 投影、拆 heads、合 heads、输出投影 |
-| 294-316 | 两层 position-wise FFN |
-| 319-384 | EncoderLayer 调用次序、dropout、residual 和 LayerNorm |
-| 387-484 | DecoderLayer 的 masked self-attn、cross-attn、FFN 和三次 Add & Norm |
-| 487-582 | Encoder/Decoder stack 的层循环和最终输出 |
-| 670-675 | target embedding 与 output projection 的权重绑定 |
-| 677-733 | padding mask、causal mask、target mask 组合 |
-| 775-853 | 顶层 `forward()` 的完整数据流 |
-
-### 9.1 `classic-transformer`：横向外层节点映射
-
-| 视图节点/边 | Python 对应 | 为什么这样画 |
-|---|---|---|
-| `Source tokens [B,S]` | `forward(src_tokens, ...)` 的整数 token 输入 | 模型边界用 `io`；token ID 还不是 hidden tensor |
-| `Source embedding` | `src_tok_emb` + `src_pos_enc` | 输出为 `[B,S,D]`，用 `tensor`；设置 `sinusoidal-embedding` 以展开 lookup、PE、加法和 dropout |
-| `Source padding mask` | `make_padding_mask()` | 布尔值决定可见 key，不是主 hidden state，使用 `condition` |
-| `Encoder call` | 顶层对 encoder 的调用参数汇聚 | `states + src_mask` 汇入一个边界，使用 `merge`；它不是 Python 中新增的一层网络 |
-| `Encoder Stack ×6` | `TransformerEncoder` 和六个 `EncoderLayer` | 重复层折叠为父模块，收起用 `attention`，展开用 `transformer-encoder` |
-| `Encoder memory` | encoder 返回的 `[B,S,512]` | 是供 decoder cross-attention 读取的张量，使用 `tensor` |
-| `Target tokens` | teacher-forcing 下右移的目标 token | 外部输入边界，使用 `io` |
-| `Target embedding` | target embedding + position；权重与 projection 共享 | 使用同一 `sinusoidal-embedding` 模板；副标题明确 shared W |
-| `Target mask` | padding mask 与 causal mask 的逻辑合取 | 控制 self-attention 可见范围，使用 `condition` |
-| `Decoder call` | decoder states、memory、target mask、memory mask 的参数汇聚 | 同样只是视觉汇聚点，不是额外层 |
-| `Decoder Stack ×6` | 六个 `DecoderLayer` | 用 `transformer-decoder` 展开 masked self、cross-attn、FFN |
-| `Output projection` | `Linear(512, vocab, bias=False)` | 实际算子，用 `operation`；`shared W^T` 写入副标题 |
-| `Vocabulary logits [B,T,V]` | 顶层 forward 返回 logits | 模型输出边界，用 `io` |
-| memory -> Decoder call | decoder cross-attention 的 K/V | 关系是 `memory`，与普通顺序 flow 区分 |
-| src mask -> Decoder call | cross-attention 的 memory mask | 关系是 `condition`，说明它控制 memory keys |
-
-### 9.2 Encoder 父模块内部图
-
-`transformerEncoderDiagram()` 对应单个 `EncoderLayer`，顶部文字 `×6` 表示 stack 重复，不是把六层逐一绘出：
-
-```text
-x
- -> Self-attention(Q=K=V=x, source padding mask)
- -> Dropout
- -> Add & Norm(post-LN, residual=x)
- -> Feed-forward(512 -> 2048 -> 512)
- -> Dropout
- -> Add & Norm(post-LN)
- -> memory
-```
-
-图中两条弧形/正交 residual channel 分别绕过 attention 子层和 FFN 子层。使用 `Add & Norm` 矩形而不是一个普通 operation，是因为源码明确有逐元素残差相加和 LayerNorm 两个语义步骤，且它们还可以继续展开成 `F(x)`、`x`、`+`、LayerNorm。
-
-### 9.3 Decoder 父模块内部图
-
-`transformerDecoderDiagram()` 对应：
-
-```text
-y
- -> Masked self-attention(target padding + causal mask)
- -> Dropout -> Add & Norm
- -> Cross-attention(Q=decoder, K/V=encoder memory, source padding mask)
- -> Dropout -> Add & Norm
- -> Feed-forward -> Dropout -> Add & Norm
- -> decoded
-```
-
-这里必须区分三类输入：
-
-- `y` 是主数据入口；
-- target mask 控制 masked self-attention；
-- encoder memory 和 source mask 控制 cross-attention。
-
-横向模板目前把 target mask/source mask 画在父模块内部；paper 模板则通过显式 `semanticInputPorts` 接收外层 mask/memory，体现了迁移时应采用的更精确端口模型。
-
-### 9.4 Attention 的下一层展开
-
-`attentionDiagram()` 把 `MultiHeadAttention.forward()` 映射为：
-
-```text
-输入
- -> Q/K/V 三路 Linear
- -> h × Q/K/V
- -> Q × K^T
- -> scale by 1/sqrt(d_k)
- -> Softmax（源码中 mask 在 Softmax 前应用）
- -> attention weights × V
- -> context
- -> Concat heads
- -> W^O
- -> output
-```
-
-Q/K/V 使用不同颜色 matrix，是因为它们是不同投影后的张量通道；`×` 用圆形图例，因为对应矩阵乘；Softmax/Linear 用矩形，因为是算子；weights/context/output 用 matrix，因为是中间张量。当前通用 attention 详情没有单独画 mask 输入，mask 在 Encoder/Decoder 上一层表达。
-
-### 9.5 Sinusoidal embedding 的下一层展开
-
-`sinusoidalEmbeddingDiagram()` 映射为 token ID -> TokenEmbedding -> 乘 `sqrt(d_model)`，以及 position -> 固定 sin/cos PE，两路在 `+` 汇合，再经 dropout 输出 `[B,L,D]`。固定 PE 使用橙色 operation 而不是参数 matrix，是为了强调它由公式/注册 buffer 生成、没有可训练权重。
-
-## 10. Tensor2Tensor 1.0.14 的 Python 证据
-
-权威本地包：
-
-```text
-/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/tensor2tensor-1.0.14.tar.gz
-```
-
-包内文件：
-
-```text
-tensor2tensor-1.0.14/tensor2tensor/models/transformer.py
-```
-
-关键源码范围：
-
-| 源码范围 | 事实 |
-|---|---|
-| 44-75 | `model_fn_body()`：prepare encoder/decoder、调用 stacks、返回 decoder output |
-| 78-106 | `transformer_prepare_encoder()`：`flatten4d3d`、padding bias、target-space embedding、timing signal |
-| 109-126 | `transformer_prepare_decoder()`：shift-left、decoder self-attention bias、timing signal |
-| 129-167 | Encoder stack：self-attention、dropout、residual/norm、FFN |
-| 170-226 | Decoder stack：masked self-attention、encoder-decoder attention、FFN |
-| 229-265 | `transformer_ffn_layer()` / `conv_hidden_relu` |
-| 269-306 | base 参数：hidden 512、6 层、8 heads、filter 2048、共享 embedding/softmax |
-
-### 10.1 `tensor2tensor-transformer`：横向外层节点映射
-
-| 视图节点/边 | Tensor2Tensor 对应 | 为什么这样画 |
-|---|---|---|
-| `Inputs` | `features["inputs"]` 后的 `flatten4d3d` | 框架输入通常带额外 4D 维度，节点副标题保留 flatten 事实 |
-| `Target space id` | `features["target_space_id"]` 的 32 维 learned embedding | 它条件化 encoder input，不是主 token 流，所以用 `condition` |
-| `Encoder prepare` | flatten + target-space embedding + timing signal | 多个张量操作汇成 encoder states，用 `tensor` + `tensor-transform` 详情 |
-| `Encoder attention bias` | `attention_bias_ignore_padding()` | 以大负数加到 logits，不是 bool mask，仍属于 `condition` |
-| `Encoder call` | encoder states + bias 参数汇聚 | 视觉汇聚点，不是源码额外层 |
-| `Encoder Stack ×6` | `transformer_encoder()` | `tensor2tensor-encoder` 模板标出 bias 与 `conv_hidden_relu` |
-| `Encoder output` | encoder 返回的 memory | decoder cross-attention 的 K/V，使用 `tensor` |
-| `Targets` | `features["targets"]` teacher-forcing 输入 | 模型边界 `io` |
-| `Decoder prepare` | shift-left + timing signal | 使用 `tensor-transform` 表示 shape/position 预处理 |
-| `Decoder self-attention bias` | lower-triangle bias | causal 约束以负 bias 实现，使用 `condition` |
-| `Decoder call` | states + encoder output + 两类 bias | 参数汇聚，不是新层 |
-| `Decoder Stack ×6` | `transformer_decoder()` | 展开 masked self、cross attention、conv FFN |
-| `Shared softmax` | `shared_embedding_and_softmax_weights=True` 及 T2T modality 输出层 | 表达 tied weights；实际 projection/softmax 由 modality/runtime 层完成，不是 `model_fn_body()` 内直接调用 |
-| `Target logits` | 框架输出 logits | 模型边界 `io` |
-
-### 10.2 T2T 内部图如何复用经典模板
-
-`tensor2tensorEncoderDiagram()` 和 `tensor2tensorDecoderDiagram()` 不重新画一套坐标，而是先调用经典 `transformerEncoderDiagram()`/`transformerDecoderDiagram()`，再遍历 primitives 替换：
-
-- 层标题中的参数名称；
-- `Feed-forward` note 为 `conv_hidden_relu · filter=2048`；
-- source padding mask 为 encoder attention bias；
-- target mask 为 lower-triangle decoder bias；
-- source memory mask 为 encoder-decoder bias；
-- 底部解释文字。
-
-这种复用是合理的，因为两个实现共有 self-attention、cross-attention、residual、norm 和两阶段 FFN 的宏观拓扑；差异主要是条件量表示和 FFN 实现。但正式模板不应通过可见 label 搜索后替换，应让一个参数化 Transformer 模板接收 `mask_mode`、`ffn_kind`、`norm_order`、`activation` 等配置。
-
-### 10.3 当前 T2T 场景的一个语义偏差
-
-横向和 paper T2T 场景目前都把 `Target space` 条件边接到 `Inputs`，而源码实际在 `transformer_prepare_encoder()` 内把 target-space embedding 加到 encoder input。迁移时应把它绑定到 `Encoder Prepare` 的 `condition:target-space` slot，不能照搬当前边的 target node。
-
-## 11. 两个论文式 Transformer 场景
-
-### 11.1 公共布局语法
-
-paper 场景使用：
-
-- `layout_profile="paper"`：选择向上增长的展开算法；
-- `layout_lane="encoder" | "decoder"`：保持双列；
-- `layout_rank`：维护同列的上下顺序；
-- `paper_tone`：区分 encoder、decoder、input、output、neutral；
-- 主数据流从节点底部进入、顶部退出；
-- mask 从侧边进入，memory 从 Encoder 列横向进入 Decoder cross-attention。
-
-`paperVerticalBoundary()` 用于把原本左入右出的 attention/FFN/Add-Norm/embedding/tensor-transform 详情转换成底入顶出：它只改触及水平父边界的首尾 flow，内部拓扑保持不变。
-
-`paperTransformerEncoderDiagram()` 和 `paperTransformerDecoderDiagram()` 则原生按纵向坐标绘制大层：底部 input、向上经过 attention/Add & Norm/FFN、顶部 output。它们为 `mask`/`memory` 创建显式 `semanticInputFlow()`。
-
-### 11.2 `paper-classic-transformer`
-
-Encoder 列从下到上：
-
-```text
-Inputs -> Input Embedding
-      + Positional Encoding -> +
-      -> Encoder N× -> Encoder memory
-```
-
-Decoder 列从下到上：
-
-```text
-shifted Outputs -> Output Embedding
-              + Positional Encoding -> +
-              -> Decoder N×
-              -> Linear -> Softmax -> Output Probabilities
-```
-
-source mask 以 `target_port_role="mask"` 进入 Encoder 内部 self-attention；target mask 进入 Decoder masked self-attention；Encoder memory 以 `target_port_role="memory"` 进入 Decoder cross-attention。使用侧入端口而不是接到父框底部，是因为它们不是 decoder 主 hidden stream。
-
-已知重复风险：外层已经有单独的 `Positional Encoding + Add`，但 `Input/Output Embedding` 的 `paper-sinusoidal-embedding` 详情内部又包含 PE 和加法。收起时读图正确，展开时会把 PE 表达两次。正式迁移应二选一：
-
-- 把 embedding 详情拆成 `token-embedding`，外层保留 `position-encoding` 与 `position-add`；或
-- 外层合并成 `token+position embedding` 一个父节点，内部再展示两路与加法。
-
-推荐第一种，因为它能让 Python/IR 中的 token lookup、position function、add、dropout 分别绑定 evidence 和 canonical IDs。
-
-### 11.3 `paper-tensor2tensor-transformer`
-
-Encoder 列：
-
-```text
-Inputs -> Encoder Prepare(target-space + timing)
-       -> Encoder N×(attention bias, conv FFN)
-       -> Encoder Output
-```
-
-Decoder 列：
-
-```text
-Targets -> Decoder Prepare(shift-left + timing)
-        -> Decoder N×(causal bias + encoder output/bias)
-        -> Shared Softmax -> Target Logits
-```
-
-它与 paper classic 共享双列和向上流动语法，但刻意显示 T2T 的四个差异：target-space embedding、attention bias、timing signal、`conv_hidden_relu`/shared softmax。
-
-`paper-tensor2tensor-encoder/decoder` 复用 `paperTransformer*Diagram(bounds, true)`，通过布尔参数替换标题、bias 文案和 FFN note。迁移到正式程序时，应把该布尔值改为结构化模板参数，避免以后为更多变体继续增加布尔组合。
-
-### 11.4 `target_port_role` 的完整链路
-
-paper 场景的语义边通过以下链路落到内部端口：
-
-```text
-LabEdge.target_port_role = "mask" / "memory"
-  -> buildModuleDetail().semanticInputPorts
-  -> buildAtomicHierarchyRoutingPlan().boundaryPorts[node].semanticInputs
-  -> adaptiveRoutes() 选择 semantic target point/side
-  -> route.foreground = true
-  -> App/svg-export 在节点之后绘制该边
-```
-
-这套机制是四个 Transformer 中最值得迁入主程序的部分之一，但正式类型应允许一个节点有多个命名 input port，而不是用一个可选字符串绕过通用端口模型。
-
-## 12. 图例选择和源码结构之间的判定规则
-
-后续把新 Python 模型迁入正式程序时，可用以下规则，但判定必须来自 IR/evidence，而不是源码文本正则：
-
-| 源码结构 | 父节点/内部图例 | 判定理由 |
-|---|---|---|
-| `nn.Module`/函数对输入做单一变换 | `operation` / `rect` | 强调执行单元 |
-| 变量被多个后续算子读取 | `tensor` / `matrix` 加多条出边 | 这是共享数据，不应复制成多个模块 |
-| `x + f(x)` | `residual` 边 + `add`/`+` | 显式保留 identity 与变换支路 |
-| `torch.cat` | `concat` | 与逐元素 add 的 shape 语义不同 |
-| `a * b`、gate | `multiply`/`×` | 表示逐元素或矩阵乘时应在 note/channel 中进一步区分 |
-| bool mask 或 large-negative bias | `condition` 输入 | 控制 attention logits，不是 hidden flow |
-| Q/K/V 投影和 attention | `attention` 父节点；matrix + multiply + softmax 内图 | 使 query/key/value 与概率权重可追踪 |
-| 重复 `ModuleList`/layer loop | 可展开 stack 父节点 + `×N` | 避免平铺 N 份，同时保留数量证据 |
-| weight tying | `parameter-share`（正式 IR）或清晰标注 | 不能只靠两个节点同名；应绑定同一参数 canonical ID |
-| reshape/permute/flatten | `shape-transform`（正式 relation）或 tensor-transform 模板 | 这是 shape/布局变化，不一定包含可训练参数 |
-| dropout/train-only 分支 | `training-only`（正式 relation） | 推理时可能不生效，应与主计算区分 |
-| cache/recurrent state | `memory-reference`/`state-update` | 跨时间或跨调用生命周期，不是普通 sequence |
-
-当前原型的 `EdgeRelation` 只有 7 类；正式 `KernelRelation` 已包含 `shape-transform`、`routing`、`parameter-share`、`training-only` 等更精确关系。迁移时应向正式类型靠拢，不要为了兼容原型而降级正式语义。
-
-## 13. 正式 Studio 的现状和正确迁移落点
-
-正式程序已经有如下链路：
-
-```text
-FormalStudioState / Exact Architecture IR
-  -> studio/src/main-view/formal-state-adapter.ts
-  -> KernelDocument
-  -> studio/src/visual-kernel/layout.ts
-  -> KernelRenderScene
-  -> ArchitectureCanvas.tsx / visual-kernel/export.ts
-```
-
-`formal-state-adapter.ts` 已把 hierarchy/canonical nodes/template bindings/evidence 转换为：
-
-- `KernelNode.canonicalNodeIds` 与 `containedCanonicalNodeIds`；
-- `KernelPort`；
-- `KernelEdge.canonicalEdgeIds`、`tensorIds`、`evidenceIds`；
-- `KernelTemplateBinding` 的 node/edge/port/tensor slots；
-- `KernelVisualState` 中的位置、尺寸、展开和路由偏好。
-
-正式 `visual-kernel` 已经存在：
-
-- `catalog-details.ts`；
-- `module-details.ts`；
-- `template-details.ts`；
-- `routing-engine.ts`；
-- `detail-layout.ts`、`layout.ts` 与 `export.ts`。
-
-但当前正式 `NodeDetailKind` 尚不包含 Transformer stack、paper orientation、sinusoidal embedding 专用种类；`layout.ts` 的 detail boundary 目前固定左入右出；门户链也没有原型当前完整的递归原子收束能力。
-
-### 13.1 不应迁移的内容
-
-- 不把 `LabScene` 变成正式模型格式；
-- 不把 `scene_node_id` 当 canonical ID；
-- 不把 label 正则推断当模板绑定；
-- 不把 `bounds`、lane、rank 写入 Exact Architecture IR；
-- 不把 `App.tsx` 的本地 undo/redo 状态替换正式 workspace state；
-- 不让 visual patch 修改 Python 源码；
-- 不因模板“看起来像”就把 fidelity 标为 exact。
-
-### 13.2 应迁移的内容
-
-- `DetailPrimitive` 的视觉词汇和 SVG 渲染参数；
-- 参数化 Transformer 模板及命名 semantic slots；
-- freeform/paper 的 orientation 和增量展开算法；
-- 递归详情布局中的避障、拖动约束和父框增长；
-- atomic projection、portal chain、语义端口和绘制层级；
-- 自适应路由候选、净距、stub、Dijkstra、惩罚和指标；
-- 静态导出与交互渲染共享同一 `KernelRenderScene` 的原则；
-- 场景矩阵和展开快照作为 production visual-kernel 回归 fixture。
-
-## 14. 推荐迁移方案
-
-### 阶段 1：先定义正式 Transformer 语义模板
-
-不要直接增加十几个显示专用 `NodeDetailKind`。建议建立一个参数化模板，例如：
+### 5.3 建议的前端核心类型
 
 ```ts
-interface TransformerTemplateParameters {
-  orientation: "horizontal" | "bottom-up";
-  role: "encoder" | "decoder";
-  layers: number;
-  hiddenSize: number;
-  heads: number;
-  ffnSize: number;
-  attentionMaskMode: "boolean-mask" | "additive-bias";
-  ffnKind: "linear" | "conv-hidden-relu" | "gated";
-  normOrder: "pre" | "post";
-  hasCrossAttention: boolean;
-  tiedOutputEmbedding: boolean;
+type ViewPresetId =
+  | "engineering-flow"
+  | "paper-publication"
+  | "paper-transformer"
+  | "module-hierarchy"
+  | "source-call"
+  | "tensor-dataflow"
+  | "compact-overview";
+
+interface SourceProjectRef {
+  projectId: string;
+  root: string;
+  entrypoint: string;
+  framework: "pytorch" | "keras" | "jax" | "onnx" | "auto";
+  sourceSnapshotId: string;
+  sourceCorpusDigest: string;
+  generation: number;
+}
+
+interface ViewPreset {
+  id: ViewPresetId;
+  label: string;
+  projection: "architecture" | "module" | "source" | "tensor";
+  orientation: "left-to-right" | "top-to-bottom" | "bottom-to-top";
+  layout:
+    | "incremental-flow"
+    | "publication-structural"
+    | "paper-dual-lane"
+    | "hierarchical"
+    | "compact";
+  hierarchyDepth: number | "expanded-frontier";
+  templateProfile: "engineering" | "paper" | "technical";
+  edgePolicy: "semantic" | "all" | "main-flow";
+}
+
+interface SourceBackedScene extends LabScene {
+  sourceProjectId: string;
+  architectureId: string;
+  sourceDigest: string;
+  exactIrDigest: string;
+  presetId: ViewPresetId;
+  bindings: Record<string, SceneBinding>;
+}
+
+interface SceneBinding {
+  sceneId: string;
+  canonicalNodeIds: string[];
+  canonicalEdgeIds: string[];
+  sourceAnchorIds: string[];
+  evidenceIds: string[];
+  portBindings: Record<string, string>;
+  fidelity: "exact" | "schematic" | "opaque";
 }
 ```
 
-这些参数必须由 predicate/evidence 证明，并进入 `KernelTemplateBinding.bindingDigest`。orientation 属于 visual state/template rendering，不属于模型事实。
+`LabNode`、`LabEdge` 仍是渲染输入，不承载完整参数 schema、源码文本或分析规则。`SourceBackedScene.bindings` 是场景对象与正式事实的桥梁。
 
-### 阶段 2：使用稳定 slot ID
+### 5.4 稳定身份
 
-为模板图元建立稳定 slot，例如：
+禁止继续使用 `detail-node-${primitiveIndex}`。目标 ID 规则：
+
+```text
+canonical node: 由 Exact IR 生成
+source anchor:   corpus digest + file + syntax lineage
+view node:       preset id + hierarchy frontier + canonical set digest
+template slot:   template id + semantic slot id
+render primitive: binding id + slot id
+visual override: view node/slot id + property
+```
+
+模板插入标题、改变颜色或调整图元顺序后，展开状态、拖动偏移、证据和源码定位必须仍指向原语义对象。
+
+### 5.5 正式 Round-trip 一致性协议
+
+“能够从源码生成图”和“能够从图修改源码”分别成立，不等于双向工程已经闭环。系统必须对三种往返路径生成机器可读的 `RoundTripConformanceReport`：
+
+```text
+A(Source S) = Exact IR I
+project(I, Preset P, VisualState V) = Scene
+
+apply(Intent E, Source S) = Source S'
+delta(A(S), A(S')) == expectedDelta(E)
+
+compile(Draft G) = Generated Source Gs
+normalize(A(Gs)) == normalize(G)
+
+NoOp(S) => sourceWrites == [] && digest(S) unchanged
+```
+
+其中 `normalize()` 只消除不影响模型语义的差异，例如代码格式、局部变量名、生成器临时 ID 和合法的语句排序；它不得消除节点/端口/边、父子关系、参数共享、Repeat/control region、Shape 约束、调用签名或 evidence-backed unresolved fact。规范化规则必须版本化并进入报告 digest，不能为了让测试通过临时放宽。
+
+建议的报告最小结构为：
+
+```ts
+interface RoundTripConformanceReport {
+  reportId: string;
+  path: "source-view" | "intent-source" | "draft-source";
+  baseSourceDigest?: string;
+  resultSourceDigest?: string;
+  baseExactIrDigest?: string;
+  resultExactIrDigest: string;
+  draftDigest?: string;
+  normalizationRuleDigest: string;
+  expectedDeltaDigest?: string;
+  observedDeltaDigest?: string;
+  semanticIsomorphism: "exact" | "equivalent" | "failed";
+  sourceWrites: string[];
+  diagnostics: Diagnostic[];
+}
+```
+
+相同 SourceCorpus、analysis input manifest、adapter、registry、pattern pack 和 schema digest 必须产生相同 Exact IR 和规范化 scene digest。相同 `intentId + baseSourceDigest` 的重试必须返回同一个已存在事务或等价 receipt，不能重复应用修改。生成项目在物化并重新打开后必须到达语义 fixed point；第二次打印不得继续改变源码或 source map。
+
+### 5.6 多证据仲裁和运行语义边界
+
+Exact IR 的事实不能由最后到达的证据覆盖。按以下职责处理各类输入：
+
+| 证据 | 能证明 | 不能证明 |
+|---|---|---|
+| SourceCorpus/LibCST | 定义、可能控制路径、源码层级、构造和调用位置 | 某个输入实际走过哪条路径 |
+| registry/type/Shape rule | 已注册操作的端口和约束 | 未注册自定义操作的真实运行效果 |
+| runtime trace/hooks | 固定环境、模式和输入 profile 下实际执行的调用与张量 | 未执行分支、全部动态 Shape、完整源码父子层级 |
+| `torch.export`/JAXPR/ONNX graph | 对声明约束成立的规范化计算图和调用签名 | 原始源码模块层级；任意 Python 数据依赖控制流 |
+| checkpoint/state | 参数、buffer、optimizer/state tree 的一个版本 | 源码结构与状态天然兼容 |
+
+发生矛盾时必须生成现有 `DiscrepancyRecord`，记录 subject、各方 claim、evidence IDs、输入/环境 profile 和 resolution。runtime/export evidence 只能增加 executed/observed annotation 或把事实标为 conditional/unresolved，不能静默删除源码中未执行的合法分支，也不能把 export 内联后的扁平图反写成源码层级。
+
+每个 runtime receipt 至少绑定：execution mode、构造参数、位置/关键字输入、动态 Shape 约束、dtype/device/backend、seed/PRNG、autocast、参数/state/checkpoint digest、adapter/environment digest 和路径覆盖。涉及 Dropout、BatchNorm、in-place op、tensor alias、hook、共享参数或状态更新时必须显式记录限制。
+
+运行验证按 intent 声明 semantic oracle，而不是统一要求输出相等：
+
+- 纯重构应比较输出容差、输入/参数梯度、buffer 变化和共享参数身份；
+- 参数或结构有意变化时，检查 expected delta、输出契约及未受影响区域，不要求变化区域数值相等；
+- 无法稳定重放、路径覆盖不足或 alias/mutation 未被 adapter 观测时标为 partial/unsupported，不得显示“完全验证”。
+
+## 6. 通用多视图目标与 Transformer 黄金基准
+
+### 6.1 从四场景改为两项目
+
+当前四个场景：
+
+```text
+classic-transformer
+paper-classic-transformer
+tensor2tensor-transformer
+paper-tensor2tensor-transformer
+```
+
+目标数据：
+
+```text
+source:classic-transformer
+  -> preset:engineering-flow
+  -> preset:paper-publication
+  -> preset:module-hierarchy
+  -> preset:source-call
+  -> preset:tensor-dataflow
+
+source:tensor2tensor-1.0.14
+  -> preset:engineering-flow
+  -> preset:paper-publication
+  -> preset:module-hierarchy
+  -> preset:source-call
+  -> preset:tensor-dataflow
+```
+
+“场景选择器”在 source-backed 模式下变为两级选择：
+
+1. 源码项目选择；
+2. 视图模板选择。
+
+用户切换模板时，source digest、IR digest、canonical selection 和 evidence 不变；只重新生成 scene，并恢复该 preset 自己的 camera、展开和 visual overrides。
+
+### 6.2 两份源码的权威输入
+
+经典 Transformer：
+
+- 权威归档：`/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/pytorch_transformer_original.zip`；
+- 归档 SHA-256：`7b450cd08737e14b4e9ad33cb240a53be08bf5882986b3d43fa5988d644ae552`；
+- 权威入口成员：`pytorch_transformer_original/transformer.py:Transformer`，`example.py` 只提供构造和输入示例；
+- `references/SOURCE_TRACEABILITY.md` 必须更新为该归档成员的 member digest 和 source anchors，不能继续把其他同名实现当成权威；
+- 自动测试使用仓库内可移植 fixture，例如 `tests/fixtures/frontend_v2/transformer_classic/` 和 `fixtures/tier_a/transformer/`；
+- 完整视觉验收必须对权威源码生成不可变 SourceCorpus，不能用手写 `scenarios.ts` 代替。
+
+Tensor2Tensor：
+
+- 权威归档：`/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/tensor2tensor-1.0.14.tar.gz`；
+- 归档 SHA-256：`83dd1393fdceeeddd77922a36798b7200b979f1c00424b737498438157b8b82f`；
+- 权威成员：`tensor2tensor-1.0.14/tensor2tensor/models/transformer.py` 及其静态可达本地依赖；
+- 导入时由后端把允许成员物化到内容寻址、只读的 workspace snapshot；
+- 记录归档 digest、成员 digest、许可证和 provenance；
+- 不允许浏览器直接解包，也不允许静态分析阶段 import/执行该包。
+
+绝对路径只用于当前机器的验收。可提交的示例 manifest 必须使用项目相对路径、归档 digest 或用户选择的项目根，不能把本机绝对路径写进产品配置。
+
+### 6.3 共同语义、不同绑定
+
+两份源码共享 Transformer 视觉语法，但参数和变体由证据决定：
+
+| 语义轴 | Classic | Tensor2Tensor 1.0.14 |
+|---|---|---|
+| 输入准备 | token embedding + sinusoidal position | modality transform/flatten + timing signal |
+| Encoder mask | boolean padding mask | additive attention bias |
+| Decoder mask | padding + causal mask | lower-triangle bias |
+| FFN | Linear -> activation -> Linear | `conv_hidden_relu` 语义 |
+| 条件 | source/target mask | target-space embedding + attention bias |
+| 输出共享 | target embedding/projection tying | modality/shared softmax 机制 |
+| 顶层 API | 显式 Encoder/Decoder 类 | `prepare_encoder/decoder` + body helpers |
+
+模板只能在证据满足 predicate 时显示对应 slot。无法证明的结构标为 `schematic` 或 `opaque`，不能为了匹配旧图补造 canonical node。
+
+### 6.4 参数化 Transformer 模板
+
+不得维护 `paper-transformer-encoder`、`transformer-encoder` 等两套语义模板。使用一套参数化模板：
+
+```ts
+interface TransformerTemplateParameters {
+  family: "classic" | "tensor2tensor" | "generic";
+  role: "encoder" | "decoder";
+  orientation: "horizontal" | "vertical-bottom-up";
+  layers: number | "symbolic";
+  hiddenSize: number | "symbolic";
+  heads: number | "symbolic";
+  ffnSize: number | "symbolic";
+  ffnKind: "linear" | "conv-hidden-relu" | "gated" | "opaque";
+  maskKind: "boolean" | "additive-bias" | "none" | "unknown";
+  normOrder: "pre" | "post" | "unknown";
+  hasCrossAttention: boolean;
+  tiedOutputEmbedding: boolean | "unknown";
+}
+```
+
+其中只有 `orientation`、色调和展示密度来自 View Preset；其余字段必须来自 IR/evidence。`family` 是有证据的 Transformer 语义变体，不得由归档名、路径或项目 ID 赋值。模板输出稳定 slot：
 
 ```text
 encoder.input
-encoder.self_attention
+encoder.self_attention.query
+encoder.self_attention.key
+encoder.self_attention.value
 encoder.self_attention.mask
 encoder.residual_1
 encoder.norm_1
@@ -759,9 +519,11 @@ encoder.ffn.expand
 encoder.ffn.activation
 encoder.ffn.contract
 encoder.residual_2
+encoder.norm_2
 encoder.output
 
-decoder.self_attention
+decoder.input
+decoder.self_attention.mask
 decoder.cross_attention.query
 decoder.cross_attention.memory
 decoder.cross_attention.memory_mask
@@ -769,2550 +531,1705 @@ decoder.ffn
 decoder.output
 ```
 
-`RenderDetailPrimitive.primitiveId` 应由 `bindingId + slotId` 构造，不能由数组下标构造。每个 slot 通过 `nodeSlots/edgeSlots/portSlots/tensorSlots` 绑定 canonical IDs，并保留 `evidenceIds`。
+外部边必须通过 named port/slot 进入 mask、memory 等真实位置，不能连接父框中心后再靠 label 解释。
 
-### 阶段 3：补齐正式命名端口
+### 6.5 各视图模板职责
 
-将原型的 `target_port_role` 提升为正式端口：
+| Preset | 用途 | 默认布局 | 显示内容 |
+|---|---|---|---|
+| `engineering-flow` | 标准流程图式调试 | 左到右、增量 flow | 调用、张量、mask/bias、端口和主要参数 |
+| `paper-publication` | 通用论文级阅读/导出 | 由结构 profile 决定，默认底到顶紧凑层级 | 结构模块、重复层、共享权重、分支/合流和简化辅助调用 |
+| `paper-transformer` | 旧原型兼容 alias | 解析到 `paper-publication + encoder-decoder-transformer`，不拥有独立 renderer | 仅供四个旧场景和 golden URL 兼容 |
+| `module-hierarchy` | 看父子模块和复用 | 层级/树 | containment、重复实例、共享模块 |
+| `source-call` | 从代码理解调用关系 | 上到下 | 文件、类、函数、调用、赋值、返回和源码锚点 |
+| `tensor-dataflow` | shape/端口诊断 | 左到右 | tensor、producer/consumer、shape、dtype、mask/state |
+| `compact-overview` | 大模型总览 | 压缩分层 | 只显示边界模块和主要流 |
 
-```text
-decoder.hidden.input
-decoder.self_attention.mask
-decoder.cross_attention.memory
-decoder.cross_attention.memory_mask
-decoder.hidden.output
-```
+P0 必须完成 `engineering-flow` 和 `paper-publication`；两个 Transformer 在论文级 preset 下必须解析到 encoder/decoder 双列 profile。其余 preset 在 P1 添加，但接口和状态结构从一开始支持任意数量，不能再把 `layout_profile` 限死为 `freeform | paper`。
 
-路由只读取 `KernelEdge.sourcePortId/targetPortId`，不读取 label。展开模板负责把 port slot 映射到具体内部图元的位置。
+### 6.6 通用自动化边界：不能把测试案例写进映射层
 
-### 阶段 4：统一横向和论文式视图
-
-同一个 `KernelDocument` 应能选择两种 view preset：
-
-- engineering：左到右，显式 prepare/call/mask 参数；
-- paper：Encoder/Decoder 双列、底到顶、隐藏部分调用细节。
-
-两者共享 canonical nodes、edges 和 evidence；只更换 layout profile、orientation、折叠粒度和 tone。这样才能避免维护四份手写语义图。
-
-### 阶段 5：迁移原子层级路由
-
-把 `AtomicHierarchyProjection` 的思路改写为基于正式 `KernelNode/KernelPort/KernelModule`：
-
-1. 从已展开模块的真实子节点和模板 slots 建原子图；
-2. 为每级 module 建 entry/exit/semantic portals；
-3. 根据 canonical edge 和 port slot 建 portal chain；
-4. 自底向上选择最深可见端点；
-5. 隐藏仅用于父边界桥接的重复段；
-6. 将跨层 edge 放入 foreground layer。
-
-### 阶段 6：把当前 30 场景改为正式 fixture
-
-- 18 个压力场景可转成 `KernelDocument` 视觉 fixture；
-- 目录场景保留为 schematic template gallery；
-- 经典/T2T 各维护一份语义 fixture，再分别应用 engineering/paper visual preset；
-- 每个 fixture 同时断言 canonical IDs、ports、template binding、route metrics 和 SVG snapshot；
-- 构建矩阵继续覆盖 5×3×3，但把“视觉比较”和“语义正确性”测试分开。
-
-## 15. 已知简化和迁移风险
-
-| 风险 | 当前状态 | 迁移要求 |
-|---|---|---|
-| Python 到视图不是自动链路 | 完全手写 | 接入正式 static analysis -> Exact Architecture IR；禁止通过导入/执行用户项目取图 |
-| 子节点 ID 依赖 primitive index | 插入图元会漂移 | 使用稳定 slot/binding ID |
-| 下一层类型依赖可见 label 正则 | 翻译/改名会失效 | 在模板定义中显式声明 nested template |
-| paper classic 重复 PE | 外层和 embedding 详情都画 PE | 拆 `token-embedding`/`position-add` 或只保留一个层级 |
-| T2T target-space 边目标不准 | 当前接到 `Inputs` | 接到 Encoder Prepare 的 condition slot |
-| T2T Shared Softmax 是框架层抽象 | body 中无直接 softmax 调用 | 绑定 modality/runtime evidence，不能伪装成 body 内显式节点 |
-| Transformer 参数写死 | 512/6/8/2048、post-LN | 从 IR/template parameters 渲染 |
-| Attention 模板省略 mask/dropout/cache/GQA | 只画通用 MHA 核心 | 按变体 predicates 增减 slots |
-| 目录图是家族并集 | 不代表任一具体模型全部步骤 | 默认 schematic，满足 exact predicate 后再升级 |
-| 原型 visual patch 无来源事务 | 只改内存 `LabScene` | 正式语义编辑必须走 prepare/verify/review/commit |
-| paper 属性混在节点上 | lane/rank/tone 和语义节点同对象 | 迁到 `KernelVisualState` 或 layout preset |
-| 横向详情部分 mask 是内部装饰 | 与外部 edge 不完全统一 | 全部改为正式命名 port 与 canonical edge |
-
-## 16. 测试与验收清单
-
-迁移或修改原型时至少验证：
-
-1. TypeScript 编译通过：
-
-   ```bash
-   npx tsc -p prototypes/scene-visual-lab/tsconfig.json
-   ```
-
-2. 原型单元测试通过：
-
-   ```bash
-   npx vitest run prototypes/scene-visual-lab/src
-   ```
-
-3. 完整静态构建生成 30×45=1350 个基础案例，并生成所有单独展开和全部展开快照。
-4. `classic-transformer` 与 `tensor2tensor-transformer` 的 Encoder/Decoder 能展开到 attention、Add & Norm、FFN。
-5. 两个 paper 场景保持双列、底入顶出；展开后辅助 mask/bias/PE 节点不与父框重叠。
-6. paper Decoder 的 `mask` 和 `memory` 边命中各自内部语义端口。
-7. `atomic-bottom-up` 下没有父边界重复箭头；切到 `recursive` 时仍可作为 A/B 基线。
-8. 任意内部节点拖动后，父框包含、内部边重吸附、无关节点避让、展开树不丢失。
-9. 收起所有详情后基础 `LabScene` 坐标确定性恢复。
-10. 负坐标、向左拖动、缩放/平移、导出 SVG/JSON 按 [`REGRESSION_TEST_REQUIREMENTS.md`](./REGRESSION_TEST_REQUIREMENTS.md) 完整检查。
-11. 正式程序中每个 exact 图元能追到 canonical IDs、slot IDs 和 evidence IDs；缺证据时必须降级或产生 diagnostic。
-12. Source Evidence/IR 与视觉布局冲突时，以 Source Evidence/IR 为准。
-
-## 17. 迁移完成后的目标链路
-
-最终不应保留“四个手写 Transformer 语义场景”，而应形成：
+两个 Transformer 只定义输出质量，不定义实现捷径。正式链路必须对任意受支持 Source Project 执行同一组阶段：
 
 ```text
-Python 静态分析证据
+SourceCorpus
+  -> Python Semantic Graph
   -> Exact Architecture IR
-  -> hierarchy + canonical nodes/edges/tensors/parameters
-  -> predicate-verified KernelTemplateBinding
-  -> 一个 Transformer 语义模板 + 参数
-  -> engineering 或 paper 视图 preset
-  -> recursive detail layout
-  -> atomic portal projection
-  -> adaptive routing
-  -> ArchitectureCanvas / SVG export
+  -> parent/child + call/value/control evidence
+  -> registry binding + optional semantic pattern annotations
+  -> structural publication profile
+  -> generic View Preset projector
+  -> incremental layout + hierarchy/detail routing
+  -> SourceBackedScene
 ```
 
-这样，Python 源码中的父子模块、参数共享、mask/bias、张量通道和执行关系都有正式 ID；当前原型验证过的图例、布局、路由和交互则作为纯视觉层复用。两者的边界清楚后，后续模型变体可以新增证据和模板参数，而不需要再复制一整份场景坐标。
+允许的扩展点只有声明式、可审计的规则：module registry definition、source matcher、port contract、Shape/cost/codegen rule、pattern annotation 和 view-template predicate。它们必须以 symbol、调用、值流、端口、Shape 或 control-region evidence 为输入，输出 canonical annotation 或 template binding。
 
-## 18. 注册表驱动的原子节点与受保护模块契约
+以下做法一律视为失败：
 
-本节说明如何借鉴 DL-Playground 的节点注册、自动表单、Shape 推导和代码生成机制，在 Scene Visual Lab 内建立第一版“创建节点”能力，并为后续迁入正式 Studio 预留严格的端口契约、版本审核和源码事务边界。
+- `if projectId === "autoformer"`、按目录名/归档 digest/fixture ID 选择构图器；
+- 看到类名后直接返回一份预制 `LabScene`；
+- 在 pattern pack 中保存节点坐标、完整边表或展开后的详情树；
+- 依赖 `SCENARIOS` 才能生成 source-backed view；
+- 不认识模型时只显示一个根节点，隐藏已经能从源码证明的子模块和调用关系。
 
-这里的结论不是把 DL-Playground 的 React Flow 节点类复制进来，而是提取它已经验证过的注册表思想，再按 ArchCanvas 的 Source Evidence、Exact Architecture IR 和 visual-kernel 分层重新实现。最重要的约束是：**`LabScene` 仍然只是视觉投影，不能成为模块语义、端口或 Shape 的事实来源。**
+模型家族 pattern pack 可以提高语义名称和论文图例质量，但必须满足：关闭该 pack 后，通用管线仍能生成结构正确、可递归展开的标准流程图和论文级 fallback；pack 只能增加有 evidence 的 annotation/template binding，不能改写 canonical graph。把项目复制到新目录、修改文件名和非语义类名后，规范化结构与视图 digest 必须保持一致，source anchors 可以按新 corpus 正常换代。
 
-### 18.1 DL-Playground 中可复用的设计证据
+父子模块关系按事实恢复：
 
-DL-Playground 已经形成一条浏览器内构图链路，相关源码职责如下：
+- `ModuleInstance.parent_instance_id` 表达实例 containment；
+- definition、instance 和 call site 分开，同一实例的多次调用不复制参数；
+- Python owner scope、attribute assignment、`ModuleList`/容器索引和 control region 提供层级 evidence；
+- functional 子图没有 module instance 时，以带 boundary ports 的 semantic group 表达，不能伪造 `nn.Module`；
+- 展开节点从 canonical children 投影，父框包含、portal chain、atomic/recursive A/B 和收起恢复继续使用原型算法；
+- 无专用 glyph/template 的已知节点使用通用 module/function/operator fallback，仍保留真实名称、端口、Shape、证据和源码定位。
 
-| 源码 | 当前行为 | ArchCanvas 可复用的思想 | 不应直接照搬的部分 |
+通用论文级视图先从 IR 推导结构 profile，而不是模型名称：
+
+```ts
+interface PublicationStructureProfile {
+  topology:
+    | "encoder-decoder"
+    | "single-stack"
+    | "multi-branch"
+    | "multi-scale"
+    | "decomposition-merge"
+    | "generic-hierarchy";
+  primaryFlow: CanonicalEdgeId[];
+  sideInputs: CanonicalPortId[];
+  repeatedRegions: ControlRegionId[];
+  branchGroups: CanonicalNodeId[][];
+  hierarchyRoots: CanonicalNodeId[];
+  evidenceIds: string[];
+}
+```
+
+`encoder-decoder` 才使用 Transformer 的双列构图；encoder-only、分解/合流和多尺度模型不得被补造 Decoder。其他 profile 仍遵循论文级视图的紧凑阅读、稳定父子包含、条件输入侧挂、重复结构折叠、底到顶或明确主流向等共同规则。
+
+### 6.7 `fixtures/tier_a` 通用化验收矩阵
+
+`fixtures/tier_a/` 是通用管线的 P0 兼容集。测试 harness 可以声明入口和输入 Shape，但 production analyzer/projector 不得读取 fixture 名称来决定语义或布局。
+
+| Fixture | 权威入口 | 必须覆盖的通用能力 | 论文级结构预期 |
 |---|---|---|---|
-| [`registry.ts:81`](../../../../DL-Playground/frontend/src/nodes/registry.ts) | 按 14 类集中注册节点 | 集中目录、分类检索、从定义生成菜单 | `Record<string, any>` 和模块加载时副作用式组装 |
-| [`BaseClass.tsx:18`](../../../../DL-Playground/frontend/src/node_gen/BaseClass.tsx) | `LayerDefinition` 集中声明参数、Shape、成本、代码和组件 | 一个节点类型具有统一的静态能力协议 | 语义定义依赖 React、`any`，并把 `Component` 放进核心协议 |
-| [`CreateNodeComponent.tsx:24`](../../../../DL-Playground/frontend/src/node_gen/CreateNodeComponent.tsx) | 从 schema 生成参数表单、Handle、删除和 Shape 预览 | UI 从 schema 投影，不为每个普通节点手写表单 | 组件直接调用 `setNodes/setEdges`，跳过领域命令和审核 |
-| [`Conv2dNode.tsx:14`](../../../../DL-Playground/frontend/src/nodes/vision/conv/Conv2dNode.tsx) | 同一节点内实现参数、校验、推导、成本和 PyTorch 字符串 | 原子模块能力完整，可作为首批迁移样例 | 仅支持具体 `number[]`，代码生成是自由字符串拼接 |
-| [`graphIR.ts:54`](../../../../DL-Playground/frontend/src/utils/graphIR.ts) | React Flow 图与版本化 GraphIR 互转 | 交互状态与可持久化图模型之间需要适配层 | Handle 是从已存在边反推，缺少预声明的端口语义和基数 |
-| [`shape_verifier.ts:23`](../../../../DL-Playground/frontend/src/utils/shape_verifier.ts) | 按依赖就绪顺序传播 Shape | 图级调度应独立于节点 UI | 只按上游节点收集输入，未严格按命名目标端口绑定 |
-| [`computeEstimator.ts:26`](../../../../DL-Playground/frontend/src/utils/computeEstimator.ts) | 汇总参数量和 FLOPs | 分析结果可以统一聚合 | 分析结果不应写回 UI 节点的临时字段 |
-| [`codeCompile.ts:124`](../../../../DL-Playground/frontend/src/utils/codeCompile.ts) | 调用节点的 init/forward 生成器拼装 Python | 节点定义可选择提供代码生成能力 | 任意字符串难以验证多输出、共享参数、functional op 和控制流 |
-| [`RepeatLayer.tsx:20`](../../../../DL-Playground/frontend/src/nodes/control_flow/RepeatLayer.tsx) | 容器节点保存内部节点/边并重复估算 | 复杂节点需要组合语义和专用编辑能力 | 不应把内部 React Flow 数据直接嵌入正式模块定义 |
+| `transformer` | `model.py:Transformer` | 多输入、target mask、self/cross attention、残差 | encoder/decoder 双列 |
+| `autoformer` | `models/Autoformer.py:Model` | 四输入、多文件引用、decomposition、AutoCorrelation、encoder/decoder | 分解/合流与 encoder/decoder 主列 |
+| `itransformer` | `model/iTransformer.py:Model` | encoder-only、多输入/可选输入、变量维反转、归一化 | 单主栈加侧挂 covariates |
+| `patchtst` | `models/PatchTST.py:Model` | patching、RevIN、decomposition 分支、共享 backbone | patch 主链和分解双分支合流 |
+| `timemixer` | `models/TimeMixer.py:Model` | 多尺度列表、循环/ModuleList、season/trend 分解与 mixing | 多尺度泳道加分解/合流 |
 
-现有 14 类目录可以原样保留为节点面板的检索分类：
+每个 fixture 必须自动产生：
 
-```text
-Inputs
-Torch Ops
-Tensor Shape
-Tensor Creation
-Activations
-Normalization
-Regularization
-Linear / Dense
-Vision Convolution
-Vision Pooling
-Sequence / Attention
-Losses
-Metrics
-Control Flow
-```
+1. 非空 `engineering-flow` 和 `paper-publication`；
+2. 来自同一 Exact IR 的 canonical node/edge/port 集，切换 preset 不改语义 digest；
+3. 至少入口模块、一级子模块和一个更深层子模块的可递归展开关系；若源码没有该深度，测试记录 evidence-backed 原因；
+4. graph input/output、条件输入、分支/合流、重复区和 opaque boundary 的真实 named ports；
+5. 折叠、单模块展开、全部展开、atomic/recursive A/B、拖动、缩放、导出和恢复；
+6. source anchor/evidence 定位，以及 partial/opaque 项的显式 diagnostics；
+7. 无项目专用 scene builder 的证明，包括重命名目录/文件的 metamorphic test 和生产 bundle 禁止 fixture import 的静态检查。
 
-这些分类只回答“用户从哪里找到节点”，不表达模型父子关系，也不应成为 IR 的 module hierarchy。父子关系只能来自 `parentId`、组合模块定义或源码分析证据。
+Tier A 的首次正确输出经人工评审后可以建立各自的视觉 golden，但其作用是防止后续回归，不得反过来把 golden 节点数组写入运行时。两个权威 Transformer 的 golden 等级更高：Tier A 修复导致二者任一标准/论文视图偏离最小原型时，本轮不得合并。
 
-#### 18.1.1 DL-Playground 的真实调用链
+### 6.8 专用 analyzer 退场与无 Pattern Pack holdout
 
-从源码执行顺序看，DL-Playground 的节点能力不是由一个独立领域模型驱动，而是由 React Flow 状态串起来：
+当前 `src/archcanvas_python/analyzer.py` 仍根据 `architecture_profile` 直接分派到 `autoformer.py`、`itransformer.py`、`patchtst.py` 和 `timemixer.py`。这是现状，不是目标架构。迁移必须按以下顺序退场：
 
-```text
-nodes/registry.ts import 各节点 class
-  -> NODE_GROUPS 组织侧栏分类
-  -> 文件末尾 registerLayer() 填充可变 LAYER_REGISTRY
-  -> nodeTypes.ts 读取每个 class.Component，生成 React Flow nodeTypes
+1. 为每个专用 analyzer 建立其产生的 canonical fact、annotation、diagnostic 和视觉期望清单；
+2. 在关闭 family Pattern Pack 和专用分派的情况下，由通用 LibCST/Semantic Graph frontend 恢复可证明的 definitions、instances、calls、values、ports、control regions 和 hierarchy；
+3. 只能把模型家族知识迁入声明式 pattern predicate、semantic annotation、registry matcher 或 view-template predicate；
+4. 专用实现不得再创建/删除 canonical node、edge、tensor、port，也不得提供坐标或完整场景；
+5. 删除 production `architecture_profile -> analyze_*` 直接返回路径，并以静态 import 检查证明正式 bundle 不依赖这些模块；
+6. 启用声明式 pack 时提升论文图语义名称和模板绑定，禁用 pack 时仍生成结构正确、可展开、可定位 evidence 的通用双视图。
 
-useSidebarSystem.filteredGroups
-  -> onDragStart() 写 application/reactflow = node type
-  -> useGraphInteraction.createNodeFromEvent()
-  -> getInitialNodeData() 从 paramSchema 复制默认值
-  -> assignParent() 判断 React Flow parentId
-  -> setNodes([...nodes, newNode])
+除 Tier A 外，必须纳入 `docs/acceptance/stage-8.md` 的七类无 Pattern Pack holdout：CNN/ViT、state-space、GNN、diffusion、MoE、time-series 和 custom hybrid。它们不要求匹配 Transformer golden，但必须通过 source identity、semantic closure、任意深度 hierarchy、canonical coverage、几何和 evidence 门禁。新增模型家族能力时优先扩充此类 holdout，不能通过新增 `architecture_profile` 证明通用性。
 
-React Flow onConnect
-  -> addEdge() 直接加入 source/sourceHandle/target/targetHandle
-  -> useTraceSystem.useMemo()
-  -> verifyShapes(nodes, edges, LAYER_REGISTRY)
-  -> 把结果回写到 node.data.__shape
-  -> estimateGraphCost() / codeCompile.ts 再读取相同 nodes、edges
-```
+## 7. “从源码构建”的正式流程
 
-对应的源码细节如下：
+### 7.1 用户流程
 
-- [`registry.ts:237-244`](../../../../DL-Playground/frontend/src/nodes/registry.ts) 遍历 `NODE_GROUPS`，调用 [`layerRegistry.ts:9`](../../../../DL-Playground/frontend/src/utils/layerRegistry.ts) 的 `registerLayer()` 修改全局 `LAYER_REGISTRY`；导入顺序会影响注册时机，没有重复 ID 和内容 digest 检查。
-- [`nodeTypes.ts:7-10`](../../../../DL-Playground/frontend/src/types/nodeTypes.ts) 直接把 `Class.Component` 转为 React Flow component map，说明定义协议和 React UI 仍是耦合的。
-- [`useSidebarSystem.ts:29-53`](../../../../DL-Playground/frontend/src/features/editor/hooks/useSidebarSystem.ts) 从 `NODE_GROUPS` 派生搜索结果；[`useSidebarSystem.ts:59-66`](../../../../DL-Playground/frontend/src/features/editor/hooks/useSidebarSystem.ts) 只把 node type 和可选 module metadata 写入拖放 payload。
-- [`useGraphInteraction.ts:23-85`](../../../../DL-Playground/frontend/src/features/editor/hooks/useGraphInteraction.ts) 根据四种 `FieldType` 构造初始 data；[`useGraphInteraction.ts:188-233`](../../../../DL-Playground/frontend/src/features/editor/hooks/useGraphInteraction.ts) 生成 React Flow node 后直接 `setNodes`。
-- [`useGraphInteraction.ts:160-180`](../../../../DL-Playground/frontend/src/features/editor/hooks/useGraphInteraction.ts) 的连线处理只调用 `addEdge()`，没有检查端口是否必需、连接数是否超限、张量是否兼容，也没有受保护的 command boundary。
-- [`useGraphState.ts:18-52`](../../../../DL-Playground/frontend/src/features/editor/hooks/useGraphState.ts) 优先从 `localStorage.graphIR` 恢复，失败后回退到 `nodes/edges`；[`useGraphState.ts:147-171`](../../../../DL-Playground/frontend/src/features/editor/hooks/useGraphState.ts) 每次变化同时保存三份状态，并把 UI 快照加入最多 50 条的 history。
-- [`useTraceSystem.ts:30-45`](../../../../DL-Playground/frontend/src/features/editor/hooks/useTraceSystem.ts) 对每次 nodes/edges 变化同步运行 Shape；[`useTraceSystem.ts:106-147`](../../../../DL-Playground/frontend/src/features/editor/hooks/useTraceSystem.ts) 又把派生 Shape 回写到 `data.__shape`。因此持久化输入与分析缓存会相互污染。
+1. 用户点击“从源码构建”。
+2. 选择目录或受支持归档、Python 环境、framework、entrypoint 和可选 config。
+3. 前端调用项目 discovery，显示候选入口和不可分析原因。
+4. 用户确认后启动 v2 analysis job。
+5. UI 显示 queued/running/succeeded/failed/cancelled/stale；切换项目会使旧 generation 结果失效。
+6. 成功后一次性接收 Source Project、IR、hierarchy、evidence、diagnostics、template bindings 和默认 visual document。
+7. 默认打开 `engineering-flow`，适合视图，并选中入口模块。
+8. 用户可无损切换 `paper-publication` 等 preset；旧 Transformer golden URL 可以继续使用 `paper-transformer` alias。
 
-#### 18.1.2 Handle 看似命名，实际还不是端口契约
-
-[`BaseClass.tsx:41-45`](../../../../DL-Playground/frontend/src/node_gen/BaseClass.tsx) 的 `HandleSpec` 只有 `targets: string[]` 与 `sources: string[]`。[`CreateNodeComponent.tsx:89-98`](../../../../DL-Playground/frontend/src/node_gen/CreateNodeComponent.tsx) 在节点没有显式声明时生成一个 `in-0` 和一个 `out-0`；[`BaseClass.tsx:190-219`](../../../../DL-Playground/frontend/src/node_gen/BaseClass.tsx) 只是把 target 均匀画在左侧、source 均匀画在右侧。
-
-这套实现能表达“画几个连接点”，但不能表达：
-
-- `query` 必需而 `mask` 可选；
-- `Add.operands` 至少两条连接；
-- 一个输出可以 fan-out 给多个下游；
-- `Concat.inputs` 是有序 variadic，而 Add 的 operands 可视为无序；
-- `LSTM.sequence/hn/cn` 是三个不同输出；
-- 端口接受的 rank、dtype、layout 和 relation。
-
-更关键的是，[`MultiheadAttentionNode.tsx:16`](../../../../DL-Playground/frontend/src/nodes/sequence/MultiheadAttentionNode.tsx) 虽然声明 `query/key/value/mask`，但 [`shape_verifier.ts:25-37`](../../../../DL-Playground/frontend/src/utils/shape_verifier.ts) 只把每个 target node 的上游 node ID 依边遍历顺序压入数组，[`shape_verifier.ts:87-102`](../../../../DL-Playground/frontend/src/utils/shape_verifier.ts) 再把该数组交给 MHA。它没有按 `targetHandle` 建立 `{query, key, value, mask}` 绑定。于是用户先连接 mask、后连接 query 时，UI Handle 名称正确，`inputShapes[0]` 却未必是 query。
-
-同样，[`graphIR.ts:55-75`](../../../../DL-Playground/frontend/src/utils/graphIR.ts) 从“已经存在的边”反推节点 Handle：一个尚未连线但由定义声明的可选端口不会进入 GraphIR。ArchCanvas 的 `PortContract` 必须先于边存在；边只能引用已物化的端口实例，不能反过来创造端口事实。
-
-另外，[`graphIR.ts:76-106`](../../../../DL-Playground/frontend/src/utils/graphIR.ts) 会原样保存整个 `node.data`，其中可能包含 `__shape` 等派生字段，并在每次 build 时写入新的 `createdAt`。因此它虽然有 `version=2`，却不能直接作为内容寻址的 semantic digest 输入。ArchCanvas 计算 digest 前必须使用明确 schema 的 canonical serializer，排除时间戳、坐标、选择态、分析缓存和 UI 私有字段。
-
-#### 18.1.3 Shape、成本和代码生成的具体能力边界
-
-DL-Playground 当前实现可作为算法原型，但不能直接成为严格审核规则：
-
-| 能力 | 源码行为 | 在 ArchCanvas 中必须补强 |
-|---|---|---|
-| Shape 调度 | [`shape_verifier.ts:41-115`](../../../../DL-Playground/frontend/src/utils/shape_verifier.ts) 用 `pending` 集合反复寻找上游已完成节点 | 显式拓扑序、循环分类、按命名端口绑定输入、稳定诊断顺序 |
-| 多输出 Shape | `shapeCompute()` 返回 object 时，第一项被选为 `defaultShape`，其余放在 `byHandle` | 每条 edge 必须读取自己的 `sourcePortId`，禁止回退到“第一个输出” |
-| 未解决节点 | pending 最终统一报告 disconnected edge 或 invalid source | 分开报告缺必需端口、环路、上游 blocking、未知定义和 Shape 不可解 |
-| 成本 | [`computeEstimator.ts:21-47`](../../../../DL-Playground/frontend/src/utils/computeEstimator.ts) 再次按 edge 顺序收集默认 Shape 并简单求和 | 按端口取 Shape，记录估算假设；共享参数只计一次，重复调用 FLOPs 分别计数 |
-| 拓扑排序 | [`codeCompile.ts:134-165`](../../../../DL-Playground/frontend/src/utils/codeCompile.ts) 使用 Kahn 排序；有环时把剩余节点追加到末尾 | 非显式控制流环必须 blocking；合法循环必须由结构化 Loop IR 表达 |
-| 输入/输出变量 | [`codeCompile.ts:181-253`](../../../../DL-Playground/frontend/src/utils/codeCompile.ts) 用 edge label 生成变量名，以 source Handle 猜输出 | 变量来自稳定 value/port ID，显示标签不能参与语义命名 |
-| 参数替换 | [`codeCompile.ts:216-226`](../../../../DL-Playground/frontend/src/utils/codeCompile.ts) 用正则替换生成字符串中的关键字参数 | 在 Code IR AST 节点上替换引用，不操作已打印文本 |
-| Python literal | [`BaseClass.tsx:224-250`](../../../../DL-Playground/frontend/src/node_gen/BaseClass.tsx) 的 `buildInitString()` 对 text/select 直接插入字符串 | printer 统一处理字符串引号、tuple/list、dtype、None、引用和非法标识符 |
-| 动态验证 | [`useTraceSystem.ts:149-172`](../../../../DL-Playground/frontend/src/features/editor/hooks/useTraceSystem.ts) 将 GraphIR、生成代码和输入 Shape 发给 TorchLens | 仅作为显式启用的隔离验证；不得替代默认静态分析或 Source Evidence |
-
-`MultiheadAttentionNode` 目前只输出 context，并在 forward 中用 `${out}, _ = ...` 丢弃 attention weights；`LSTMNode` 只输出 sequence，并丢弃 `hn/cn`。这正说明“PyTorch 调用能返回多个值”和“画布当前只暴露一个 Handle”是两个不同问题。ArchCanvas 注册定义必须完整声明可观察输出，再由参数、availability 或视图 preset 决定哪些端口当前显示。
-
-`RepeatLayerNode` 则展示了另一类边界：它把 `internalNodes/internalEdges` 放入节点 data，验证时构造 `__LOOP_ENTRY__` mock node，再递归调用 `verifyShapes()`；代码生成时重新编译内部 React Flow 图并拼接 `for` 字符串。这种方法适合交互实验，但正式实现应让 Repeat 引用一个版本化 composite graph，并通过显式 carried input/output port 保证循环首尾契约一致。
-
-#### 18.1.4 14 类注册内容与一个实际 ID 冲突
-
-按 [`registry.ts:81-235`](../../../../DL-Playground/frontend/src/nodes/registry.ts) 当前源码，目录内容为：
-
-| 分组 key | 显示名 | 当前注册项 |
-|---|---|---|
-| `inputs` | Inputs | Input |
-| `torch_ops` | Torch Ops | Add、Concat、Sub、Mul、Div、Exp、Log、Sqrt、Pow、Clip、MatMul、Sum、Mean、Prod、Max、Min、ArgMax、ArgMin、tensor Repeat |
-| `tensor_shape` | Tensor Shape | Reshape、Transpose、Flatten、Identity/Pass |
-| `tensor_create` | Tensor Creation | Zeros、Ones、Rand |
-| `activations` | Activations | ReLU、LeakyReLU、GELU、ELU、SELU、Tanh、Sigmoid、Softplus、Softsign、HardSwish、HardSigmoid、Softmax、LogSoftmax |
-| `normalization` | Normalization | BatchNorm2d、InstanceNorm2d、GroupNorm、LayerNorm、RMSNorm |
-| `regularization` | Regularization | Dropout、SpatialDropout2d、AlphaDropout、StochasticDepth |
-| `dense` | Linear / Dense | Linear |
-| `vision_conv` | Vision - Convolution | Conv1d/2d/3d、DepthwiseConv2d、PointwiseConv2d、ConvTranspose2d、Upsample、ResidualBlock |
-| `vision_pool` | Vision - Pooling | MaxPool1d/2d/3d、AvgPool1d/2d/3d、AdaptiveAvgPool2d、AdaptiveMaxPool2d、GlobalAvgPool2d、GlobalMaxPool2d |
-| `sequence` | Sequence / Attention | Embedding、RNN、LSTM、GRU、MultiheadAttention、PositionalEncoding |
-| `losses` | Losses | MSELoss、CrossEntropyLoss、BCELoss |
-| `metrics` | Metrics | Accuracy |
-| `control` | Control Flow | Repeat Layer、ModuleList |
-
-`ModuleRefNode` 在分组循环之后单独注册，因此可被运行时解析，但不属于上述 14 类普通节点。
-
-源码中还有一个需要在迁移前显式消除的冲突：`torch_ops` 的 tensor Repeat 和 `control` 的 Repeat Layer 都使用 registry key `repeat_layer`。文件末尾按分组顺序调用 `registerLayer()`，后注册的 control definition 会覆盖前者；侧栏虽然能显示两个 Repeat 条目，拖放 payload 却是同一个 type key，最终解析到哪个 class 取决于全局 registry 的最后值。
-
-ArchCanvas 的全局 ID 应拆为：
+### 7.2 后端流水线
 
 ```text
-pytorch.tensor.repeat        # torch.Tensor.repeat / torch.repeat_interleave 需再区分语义
-archcanvas.control.repeat    # 重复执行一个 composite subgraph
+discover
+  -> resolve manifest/source roots
+  -> capture immutable SourceCorpus
+  -> parse every selected Python file with LibCST
+  -> local import and symbol resolution
+  -> optional pinned Pyright query batch
+  -> Python Semantic Graph
+  -> registry + named-port binding
+  -> Exact Architecture IR v2
+  -> pattern packs / semantic overlay
+  -> hierarchy + evidence + diagnostics
+  -> publication/view projection inputs
 ```
 
-`createAtomicNodeRegistry()` 遇到重复 `(id, version)` 必须直接失败，不能采用 last-write-wins。分类 key 也不进入 definition identity：未来把 GELU 从一个目录移动到另一个目录，不应破坏已保存节点。
+关键门禁：
 
-### 18.2 目标链路与事实来源
+- 任何文件在捕获期间 digest 变化，整次分析标为 stale；
+- 超出文件数、字节数、语法、CFG 或时间预算时返回 partial/opaque，不猜测；
+- 源码读取必须限制在 manifest source roots 和显式归档成员；
+- 静态分析不执行项目代码；
+- sidecar、pattern pack、registry、schema 和 analyzer 的版本/digest 都进入 analysis input manifest；
+- 即使没有 family pattern pack，也必须从 canonical hierarchy 和边界端口生成通用标准/论文视图；
+- production analyzer/projector 不得 import `fixtures/`、原型 `SCENARIOS` 或按项目身份选择实现；
+- 前端只接受 schema version 与 capability report 兼容的结果。
 
-原型内建议先建立以下单向链路：
+### 7.3 现有 API 的复用
 
-```text
-Atomic Node Registry
-  -> createPrototypeNode(definitionId, version, params)
-  -> PrototypeGraphDocument（节点、命名端口、边、父子关系）
-  -> validateGraph + analyzeGraph（Shape、diagnostic、参数量、FLOPs）
-  -> projectToLabScene（shape、glyphId、detailTemplateId、坐标）
-  -> 现有布局、原子层级路由、SVG 渲染与导出
-  -> 可选 PyTorch Code IR -> printer -> Draft Code
-```
+P0 直接复用：
 
-各层职责必须保持如下边界：
-
-| 层 | 是什么 | 可以持有 | 不能持有或决定 |
-|---|---|---|---|
-| `AtomicNodeRegistry` | 受版本控制的类型目录 | 参数 schema、端口契约、规则 ID、图例 ID | 实例坐标、当前选中状态 |
-| `PrototypeGraphDocument` | 原型语义图 | 节点实例、命名端口、端口级边、父子关系 | SVG path、颜色、纸张坐标 |
-| `AnalysisSnapshot` | 对某一图 digest 的派生结果 | Shape、诊断、成本、规则版本 | 实例参数的事实值 |
-| `LabScene` | 原型视觉 DTO | bounds、视觉 shape、label、展开模板、路由输入 | 参数 schema、端口合法性、代码生成语义 |
-| `KernelDocument` | 正式程序的只读渲染输入 | canonical IDs、evidence、正式 ports/edges/modules | 未审核草稿的直接写入 |
-
-因此，当前 [`addNode()`](./src/App.tsx) 创建通用 `operation` 的行为应被替换为“打开节点目录 -> 选择 `definitionId` -> 由 registry 创建 `PrototypeGraphNode` -> 投影成 `LabNode`”。不能只是给 `addNode()` 增加不同的 `shape` 分支，因为 [`LabNode`](./src/types.ts) 本身没有足够的语义字段。
-
-#### 18.2.1 当前最小原型的实际状态流
-
-最小原型目前只有 `LabScene` 这一份可编辑状态。源码调用顺序是：
-
-```text
-scenarios.ts 的 node()/paperNode()/edge()
-  -> 生成手写 LabScene
-  -> App.tsx editorReducer 保存 scene/past/future
-  -> applyVisualPatch() 修改 LabScene
-  -> expandScene() 按 detail_kind 放大父节点并移动邻居
-  -> buildInlineDetailLayout() 生成递归详情树
-  -> buildAtomicHierarchyRoutingPlan() 找最深可见原子端点
-  -> routeScene() 计算外层边
-  -> NodeGraphic 或 renderSceneSvg() 输出 SVG
-```
-
-每一步的源码含义是：
-
-1. [`scenarios.ts:14-50`](./src/scenarios.ts) 的 `node()` 与 `edge()` 只填写显示 ID、bounds、`NodeShape`、label、`detail_kind` 和可选 `target_port_role`；没有 definition、params、port 或 Shape。
-2. [`scenarios.ts:73-105`](./src/scenarios.ts) 的 `paperNode()` 只是额外写入 `layout_lane/layout_rank/paper_tone`，`paperScene()` 再设置 `layout_profile="paper"`。它没有把普通 Transformer 节点转换成论文视图，而是创建另一份节点数组。
-3. [`App.tsx:417-439`](./src/App.tsx) 的 `editorReducer` 对每个 `LabPatch` 保存 `LabScene` 快照，最多 50 条；语义编辑和视觉移动没有分开的 history。
-4. [`model.ts:16-55`](./src/model.ts) 的 `applyVisualPatch()` 对加边只检查起点/终点存在且不是自环；没有 direction、port、cardinality、relation 或 tensor contract 校验。
-5. [`App.tsx:1207-1220`](./src/App.tsx) 先将拖动 preview 合入 scene，再调用 `expandScene()`；[`App.tsx:1231-1279`](./src/App.tsx) 按展开状态构造并缓存 detail tree。
-6. [`App.tsx:1280-1294`](./src/App.tsx) 在 `atomic-bottom-up` 模式构建原子层级投影，再把 `boundaryPorts` 交给 `routeScene()`。这部分是可以继续复用的纯视觉链路。
-7. [`NodeGraphic`](./src/App.tsx) 与 [`renderNode()`](./src/svg-export.ts) 各维护一份图例分支；屏幕与导出若只改一处会发生漂移。
-
-当前创建和连线也完全工作在视觉层：
-
-- [`App.tsx:1701-1722`](./src/App.tsx) 的 `addNode()` 生成时间戳 ID、固定 `152×72` bounds 和通用 `operation`，然后直接提交 `LabPatch.add-node`。
-- [`App.tsx:1511-1529`](./src/App.tsx) 的连线模式先记 source node ID，再点击 target node；生成的 `LabEdge` 没有 source/target port。
-- [`App.tsx:2065-2078`](./src/App.tsx) 的节点检查器只能编辑 label、secondary label、`NodeShape` 和几何；修改 `shape` 实际上是在手工改变图例，而不是改变模块语义。
-- [`App.tsx:2080-2091`](./src/App.tsx) 的边检查器可以任意切换 relation、source 和 target；它不会重新验证端口。
-
-这些行为应保留为 visual fixture editor 的能力，但不能承载新建 PyTorch 模块实例。特别是“用户把 shape 下拉框从 `operation` 改成 `attention`”只是一种视觉修改，不能把该节点的 canonical kind、输入端口或 Shape 规则改成 Attention。
-
-#### 18.2.2 现有文件到新层的逐项迁移
-
-| 当前文件/函数 | 当前职责 | 第一阶段改造 | 迁入正式 Studio 后 |
-|---|---|---|---|
-| `scenarios.ts` | 手写视觉 fixture | 保留；另建 prototype graph fixtures，经 `projectToLabScene()` 生成对照场景 | 仅作为 visual-kernel 回归 fixture |
-| `types.ts::LabNode/LabEdge` | 同时承担显示和少量结构信息 | 仅增加投影所需只读引用字段，不加入 params/规则实现 | 由 `KernelRenderScene` 取代 |
-| `model.ts::applyVisualPatch()` | 直接增删节点/边 | 继续只处理视觉 patch；禁止接收语义 command | 对应 `CanvasDocument` visual patch |
-| `App.tsx::editorReducer` | LabScene undo/redo | 保留视觉历史；新增独立 `PrototypeGraphDraft` history | 由 workspace/transaction state 管理 |
-| `App.tsx::addNode()` | 创建通用视觉节点 | 改为打开 registry palette，选择后发 `CreateNode` | 创建 synthetic proposal |
-| `App.tsx::beginNode()` edge mode | 节点到节点连线 | 改为选择 source/target `PortInstance`，发 `ConnectPorts` | connection proposal/structural transaction |
-| `App.tsx` inspector | 编辑 label/shape/bounds | geometry 仍发 visual patch；参数发 `SetInstanceParameter` | 参数事务与 visual patch 分开 |
-| `module-details.ts` | `detail_kind -> DetailPrimitive[]` | detail template registry 消费稳定 slot binding | `KernelTemplateBinding` 驱动 |
-| `detail-layout.ts` | 递归布局，并从 label 推断 nested kind | 布局保留；nested kind 改为显式 slot/definition binding | canonical child module binding |
-| `atomic-hierarchy.ts` | primitive index 生成 atom/edge ID | 改用稳定 slot ID；portal 读取命名 port binding | 正式 KernelNode/KernelPort 投影 |
-| `routing.ts` | 根据 bounds/boundaryPorts 选路 | 基本复用；端点来自 port projection | visual-kernel router |
-| `NodeGraphic` / `svg-export.ts` | 两套 SVG 图例实现 | 共同调用 glyph registry 的纯 renderer | ArchitectureCanvas 与 export 共用图元定义 |
-
-#### 18.2.3 父子模块与原子投影的精确替换点
-
-当前展开机制有三处依赖视觉推断：
-
-1. [`module-details.ts:792-853`](./src/module-details.ts) 用 `NodeDetailKind` 选择一组手写 primitives，并以固定坐标声明少量 `semanticInputPorts`；
-2. [`detail-layout.ts:164-228`](./src/detail-layout.ts) 读取 primitive label/note，通过正则推断 `nestedKind`，再以 `detail-node-${primitiveIndex}` 生成子节点 ID；
-3. [`atomic-hierarchy.ts:89-175`](./src/atomic-hierarchy.ts) 以 `levelKey + primitiveIndex` 生成 atom/flow ID，并通过“点是否落在 bounds 上”推断 flow 端点。
-
-迁移时不删除这些布局算法，而是替换它们的语义输入：
-
-```text
-当前：label/note + primitive index + 几何接触
-  -> inferNestedDetailKind()
-  -> detail-node-N
-  -> endpointId(point)
-
-目标：template slot ID + definition/canonical binding + named port binding
-  -> nestedDefinitionId / childCanonicalNodeIds
-  -> bindingId:slotId
-  -> sourcePortId / targetPortId
-  -> 几何仅计算端口在屏幕上的 point/side
-```
-
-例如 Transformer encoder 模板不再通过 label `Self-Attention` 推断下一层，而是显式声明：
-
-```typescript
-{
-  slotId: "encoder.self_attention",
-  accepts: ["pytorch.nn.multihead_attention", "semantic.attention"],
-  nestedDetailTemplateId: "attention",
-  inputPortBindings: {
-    hidden: "query",
-    mask: "mask",
-  },
-  outputPortBindings: {
-    context: "context",
-  },
-}
-```
-
-`primitiveIndex` 仍可作为一次渲染中的数组位置，但不能再进入持久化 ID、review diff 或 evidence binding。这样在模板中插入一个标题或辅助 flow 时，已有展开状态、用户偏移和源码证据不会整体漂移。
-
-### 18.3 建议的核心类型
-
-#### 18.3.1 参数、符号维度和来源
-
-参数 schema 需要覆盖 PyTorch 常见值，并明确参数变化影响哪些派生结果：
-
-```typescript
-type ParameterValueKind =
-  | "integer"
-  | "number"
-  | "text"
-  | "boolean"
-  | "select"
-  | "tuple"
-  | "list"
-  | "dtype"
-  | "symbolic-dimension"
-  | "node-reference"
-  | "parameter-reference";
-
-interface ParameterField<T> {
-  id: string;
-  kind: ParameterValueKind;
-  label: LocalizedLabel;
-  required: boolean;
-  defaultValue?: T;
-  constraints?: {
-    min?: number;
-    max?: number;
-    step?: number;
-    enum?: readonly T[];
-    tupleLength?: number;
-  };
-  visibleWhen?: ParameterPredicate;
-  defaultWhen?: ParameterDefaultRule<T>;
-  conflictsWith?: string[];
-  affects: Array<"shape" | "cost" | "code" | "ports" | "visual">;
-  editability: "editable" | "source-readonly" | "derived-readonly";
-  evidenceIds?: string[];
-}
-
-type DimensionValue =
-  | { kind: "known"; value: number }
-  | { kind: "symbol"; symbol: "B" | "T" | "C" | "H" | "W" | string }
-  | { kind: "expression"; expression: DimensionExpression }
-  | { kind: "unknown"; reason?: string };
-
-interface ShapeValue {
-  dimensions: DimensionValue[];
-  dtype?: string;
-  layout?: "NCHW" | "NHWC" | "sequence" | "scalar" | "any";
-  constraints: ShapeConstraint[];
-}
-```
-
-相较于 DL-Playground 的 `number[]`，符号维度允许系统保留 `B/T/H/W`，而不是在源码尚未给出具体 batch 或序列长度时伪造数值。`ParameterField` 还要带序列化版本和迁移逻辑；上面省略的 `ParameterSchema<P>` 应包含 `schemaVersion`、`fields` 和 `migrate(oldVersion, value)`。
-
-#### 18.3.2 严格端口契约
-
-“几个入点、几个出点”不能只表达成两个数字。必须同时规定端口身份、方向、端口本身是否存在、每个端口允许多少条边，以及所接受的张量和关系：
-
-```typescript
-interface PortContract {
-  id: string;
-  direction: "input" | "output";
-  role: string;
-  label: LocalizedLabel;
-  required: boolean;
-  availability?: ParameterPredicate;
-  connections: {
-    min: number;
-    max: number | "many";
-    ordering: "single" | "ordered" | "unordered";
-  };
-  tensor: {
-    ranks?: number[];
-    dtypeFamilies?: string[];
-    layout?: "NCHW" | "NHWC" | "sequence" | "scalar" | "any";
-  };
-  acceptedRelations: KernelRelation[];
-}
-```
-
-这里要严格区分四个概念：
-
-1. `ports.length` 是模块声明了多少个命名连接位；
-2. `required/availability` 决定某个端口在当前参数下是否必须或可用；
-3. `connections.min/max` 决定一个端口能连接多少条边；
-4. `connections.ordering` 决定同一 variadic port 上的多条边是否需要稳定次序。
-
-例如 Add 可以只有一个名为 `operands` 的输入端口，该端口允许 `2..many` 条无序连接；它不是“动态生成很多个无名输入端口”。Concat 也可以只有一个 variadic `inputs`，但其连接必须带稳定 ordinal，因为拼接顺序会改变结果。MultiheadAttention 则应声明语义不同的 `query`、`key`、`value` 和 `mask`，不能用四条都叫 `in-0/in-1/...` 的位置输入代替。
-
-#### 18.3.3 模块定义、节点实例和图文档
-
-```typescript
-interface AtomicModuleManifest<P> {
-  id: string;
-  version: string;
-  kind: "atomic" | "composite";
-  categoryId: NodeCategoryId;
-  label: LocalizedLabel;
-  aliases: string[];
-  parameters: ParameterSchema<P>;
-  ports: PortContract[] | PortContractFactory<P>;
-  semantics: {
-    canonicalKind: string;
-    sourceMatchers: SourceMatcher[];
-  };
-  visual: {
-    shape: NodeShape;
-    glyphId: string;
-    detailTemplateId?: NodeDetailKind;
-  };
-  rules: {
-    shapeRuleId: string;
-    costRuleId?: string;
-    codegenRuleId?: string;
-  };
-  editPolicy: ModuleEditPolicy;
-}
-
-interface RegisteredModuleDefinition<P> {
-  manifest: Readonly<AtomicModuleManifest<P>>;
-  digest: string;
-  resolvedRules: {
-    shape: ShapeRule;
-    cost?: CostRule;
-    codegen?: CodegenRule;
-  };
-  materializePortSpecs(params: P): MaterializedPortSpec[];
-}
-
-interface MaterializedPortSpec {
-  contractId: string;
-  direction: "input" | "output";
-  role: string;
-  ordinal?: number;
-  available: boolean;
-}
-
-interface PortInstance {
-  portInstanceId: string;
-  contractId: string;
-  ownerNodeId: string;
-  direction: "input" | "output";
-  role: string;
-  ordinal?: number;
-  available: boolean;
-}
-
-interface PrototypeGraphNode {
-  nodeId: string;
-  definitionId: string;
-  definitionVersion: string;
-  params: Record<string, unknown>;
-  origin: "source-derived" | "user-draft" | "template-generated";
-  parentId?: string;
-}
-
-interface PrototypeGraphEdge {
-  edgeId: string;
-  sourceNodeId: string;
-  sourcePortId: string;
-  targetNodeId: string;
-  targetPortId: string;
-  targetOrdinal?: number;
-  relation: KernelRelation;
-}
-
-interface PrototypeGraphDocument {
-  documentId: string;
-  schemaVersion: string;
-  registryDigest: string;
-  nodes: PrototypeGraphNode[];
-  ports: PortInstance[];
-  edges: PrototypeGraphEdge[];
-}
-
-interface PrototypeGraphVisualState {
-  documentId: string;
-  nodePositions: Record<string, Point>;
-  nodeSizeOverrides: Record<string, Size>;
-  expandedNodeIds: string[];
-}
-
-interface AnalysisSnapshot {
-  documentDigest: string;
-  registryDigest: string;
-  nodeShapes: Record<string, Record<string, ShapeValue>>;
-  diagnostics: GraphDiagnostic[];
-  nodeCosts: Record<string, CostEstimate>;
-  graphCost: CostEstimate;
-}
-```
-
-manifest 作者不手写 `digest`。`createAtomicNodeRegistry()` 对规范化 manifest、所引用规则版本和 migration metadata 计算 digest，产出不可变的 `RegisteredModuleDefinition`。这避免作者把旧 digest 误复制到新内容上，也修正了“声明对象尚未注册却要求自己知道最终 digest”的循环依赖。
-
-`definitionVersion` 不能省略。否则同一份已保存图在 registry 更新后会悄悄改变端口、Shape 或代码语义。加载文档时若找不到精确版本，应停止语义分析并给出 blocking diagnostic，而不是自动套用最新版。document 保存物化后的 ports 便于审计和 diff，同时加载时必须根据固定 definition version 重新物化并核对；edge 中保存的是端口实例 ID，分析时还要验证该实例仍能回溯到当前 definition 的 `contractId`。
-
-### 18.4 Registry 的声明和装配方式
-
-普通模块定义应是无 React、无 DOM、无网络和无注册副作用的纯数据：
-
-```typescript
-export default defineAtomicModule({
-  id: "pytorch.nn.conv2d",
-  version: "1.0.0",
-  kind: "atomic",
-  categoryId: "vision-convolution",
-  label: { en: "Conv2d", zh: "二维卷积" },
-  aliases: ["torch.nn.Conv2d", "nn.Conv2d"],
-  parameters: conv2dParameterSchema,
-  ports: [
-    inputPort("input", { required: true, rank: 4, layout: "NCHW" }),
-    outputPort("output", { rank: 4, layout: "NCHW" }),
-  ],
-  semantics: {
-    canonicalKind: "torch.nn.Conv2d",
-    sourceMatchers: [{ matcherId: "python.torch.nn.Conv2d.v1" }],
-  },
-  visual: {
-    shape: "convolution",
-    glyphId: "conv2d",
-    detailTemplateId: "convolution",
-  },
-  rules: {
-    shapeRuleId: "conv-nd.v1",
-    costRuleId: "conv.v1",
-    codegenRuleId: "torch.nn.Conv2d.v1",
-  },
-  editPolicy: { stability: "reviewed", allowInstanceParameterEdit: true },
-} satisfies AtomicModuleManifest<Conv2dParameters>);
-```
-
-建议使用构建时显式聚合，而不是在每个文件中调用 `registerLayer()`：
-
-```typescript
-import conv2d from "./definitions/vision-convolution/conv2d";
-import linear from "./definitions/linear-dense/linear";
-
-export const atomicNodeRegistry = createAtomicNodeRegistry([
-  conv2d,
-  linear,
-  // ...
-]);
-```
-
-`defineAtomicModule()` 只做单文件类型收窄和局部 schema 校验；`createAtomicNodeRegistry()` 才解析跨文件引用、冻结 definition、计算 digest 并建立 `(id, version) -> RegisteredModuleDefinition` 索引。两步分开后，definition 文件仍然是易于 review 的声明式数据，registry 又能执行全局唯一性检查。
-
-`createAtomicNodeRegistry()` 在开发和 CI 中至少执行以下完整性检查：
-
-- `(id, version)`、端口 ID 和参数 ID 在各自作用域内唯一；
-- `categoryId`、`shapeRuleId`、`costRuleId`、`codegenRuleId`、`glyphId` 和 `detailTemplateId` 均可解析；
-- schema 默认值满足自身约束；
-- 所有 predicate 引用的参数存在；
-- 输入端口不能接受输出专用关系，端口最小基数不能大于最大基数；
-- manifest 可确定性序列化，并由规范化内容计算 digest；
-- 同一版本的内容 digest 变化时 CI 失败，强制发布新版本。
-
-`Component` 不进入 `AtomicModuleManifest` 或 `RegisteredModuleDefinition`。节点目录、参数检查器、端口提示、删除命令和 Shape 预览都由统一 UI 读取 schema 生成。只有 `Repeat`、`ModuleRef` 或可视化子图等确实无法由 schema 表达的类型，才通过独立的 `customEditorId` 找 UI 插件；插件也只能发领域命令，不能直接修改图数组。
-
-#### 18.4.1 从点击“节点”到画布出现 Conv2d
-
-结合当前 `App.tsx`，第一条 vertical slice 应明确实现为：
-
-```text
-点击 App.tsx 顶栏“节点”
-  -> NodePalette 读取 registry.listByCategory()
-  -> 用户选择 pytorch.nn.conv2d@1.0.0
-  -> parameter schema 产生经过 validate/normalize 的默认参数
-  -> materializeNodePorts() 产生 input/output PortInstance
-  -> dispatchTopologyCommand(CreateNode)
-  -> command handler 检查 TopologyDraft capability 和 expectedDocumentDigest
-  -> 返回新 PrototypeGraphDocument + audit event
-  -> analyzeGraph() 产生 AnalysisSnapshot
-  -> projectToLabScene() 产生 convolution + glyphId=conv2d 的 LabNode
-  -> 现有 displayScene/detailTrees/routing/NodeGraphic 链路继续渲染
-```
-
-建议 API 不让 React 组件自行拼默认值：
-
-```typescript
-interface CreateNodeRequest {
-  definition: { id: string; version: string };
-  requestedParams?: Record<string, unknown>;
-  parentId?: string;
-  requestedPlacement?: Point;
-}
-
-interface CreateNodeResult {
-  document: PrototypeGraphDocument;
-  createdNodeId?: string;
-  diagnostics: GraphDiagnostic[];
-  auditEvent: DraftAuditEvent;
-}
-
-function createPrototypeNode(
-  registry: AtomicNodeRegistry,
-  document: PrototypeGraphDocument,
-  request: CreateNodeRequest,
-): CreateNodeResult;
-```
-
-`createPrototypeNode()` 的固定顺序为：精确解析版本、合并默认值、拒绝未知参数、normalize tuple/list/dtype、运行字段约束、物化端口、检查 parent 是否允许该 child kind、生成稳定实例 ID、追加节点。`requestedPlacement` 由 orchestration 层在创建成功后写入 `PrototypeGraphVisualState`，不参与 semantic document digest。即使参数有 blocking error，也应保存用户明确输入的 draft value 并返回诊断；不能悄悄替换成另一个合法默认值。
-
-UI 与命令边界建议这样接入当前文件：
-
-- `App.tsx::addNode()` 不再构造 `LabNode`，只设置 `nodePaletteOpen=true`；
-- `NodePalette` 的选中回调发送 `CreateNode`；
-- `PrototypeGraphProvider` 或 reducer 持有 semantic draft；
-- `LabScene` 由 memoized selector 投影，不存回 semantic draft；
-- 当前 `editorReducer` 只保留手写 fixture/视觉 patch 编辑，或改名为 `visualReducer`，避免与 topology reducer 混淆；
-- 投影节点被选中后，检查器用 `prototype_node_id` 找回 semantic node，再按 parameter schema 生成字段。
-
-#### 18.4.2 参数检查器不能照搬节点内表单
-
-DL-Playground 的 [`CreateNodeComponent.tsx:50-64`](../../../../DL-Playground/frontend/src/node_gen/CreateNodeComponent.tsx) 在 `<input onChange>` 中直接 `setNodes()`；这会让每个键入字符都变成未验证的节点 data。Scene Visual Lab 已有右侧检查器，应保留该交互位置，但改成以下过程：
-
-```text
-schema field renderer
-  -> parse UI text to ParameterDraftValue
-  -> field-level diagnostic（允许尚未输入完整）
-  -> SetInstanceParameter command
-  -> normalize + graph-level invalidation
-  -> rematerialize ports（仅 affects 包含 ports 时）
-  -> analyzeGraph
-  -> projectToLabScene
-```
-
-必须区分“输入框中的临时文本”和“已进入语义 draft 的参数值”。例如 tuple 用户输入到一半的 `3,` 不能马上被解析成 `[3]` 并触发错误代码生成；检查器可以持有本地 edit buffer，blur/Enter 或合法 parse 后再发命令。
-
-参数影响域用于精确失效缓存：
-
-| `affects` | 必须失效或重算 |
+| API | 新 UI 用途 |
 |---|---|
-| `ports` | port instances、相关 edge validity、Shape、cost、code、projection |
-| `shape` | 当前节点及下游 Shape/cost/projection overlay |
-| `cost` | 当前节点和 graph cost |
-| `code` | Code IR 与 printer source map |
-| `visual` | `projectToLabScene()`，不必重跑无关 Shape rule |
+| `GET /api/state` | 初始 hydrate 和事务后刷新 |
+| `GET /api/projects/recent` | 最近项目 |
+| `GET /api/environments/conda` | 环境选择 |
+| `GET /api/directories` | 本地目录选择 |
+| `POST /api/projects/open` | 建立 project session |
+| `GET /api/projects/{id}/discovery` | 入口点与配置发现 |
+| `POST /api/analyses` | 启动分析 |
+| `GET /api/jobs/{id}` | 任务进度 |
+| `POST /api/jobs/{id}/cancel` | 取消任务 |
+| `GET /api/search` | 统一搜索 |
+| `GET /api/source-excerpt` | 选中对象定位源码 |
 
-`in_channels/out_channels/kernel_size` 等数值不能只靠 HTML `step=1`；schema validator 仍要检查 integer、正数和分组整除约束。UI 限制只是辅助，不能作为审核保证。
+前端不得把 `StudioState` 整对象作为组件 props 到处传递。建立 `normalizeStudioState()`，只提取 source、semantic、visual、job 和 transaction 五个 slice。
 
-### 18.5 端口实例与兼容性示例
+### 7.4 Framework Adapter 的逐形态能力边界
 
-首批节点的端口契约建议如下：
+`SourceProjectRef.framework` 只说明项目框架，不能代表所有能力都可用。每次打开项目和每次 semantic intent 都必须解析现有 `FrameworkAdapterCapability.forms`，按“框架 + 源码形态 + 动作”返回状态：
 
-| 模块 | 输入端口 | 输出端口 | 关键审核条件 |
+```ts
+type CapabilityStatus = "verified" | "experimental" | "partial" | "unavailable";
+
+interface FrameworkFormCapabilityV2 {
+  formId: string;
+  framework: "pytorch" | "keras" | "jax" | "onnx" | "python";
+  staticAnalysis: CapabilityStatus;
+  runtimeEvidence: CapabilityStatus;
+  parameterTransaction: CapabilityStatus;
+  structuralTransaction: CapabilityStatus;
+  codeGeneration: CapabilityStatus;
+  artifactCommit: CapabilityStatus;
+  supportedTargets: string[];
+  verifiedFixtures: string[];
+  limitations: string[];
+}
+```
+
+`FrameworkFormCapability` 下一 schema 版本应增加 `code_generation`，并让 API、UI、命令 handler 和 release support matrix 消费同一行能力。用户选择 Keras subclass、Keras Functional、JAX pure function、Flax Module、ONNX standard graph、ONNX external data 或 custom-domain graph 后，按钮状态和拒绝 receipt 必须来自对应 form，不能回退到框架级布尔值。
+
+本指南 P0 的 greenfield generator 明确只承诺受 registry/codegen rule 覆盖的 PyTorch `nn.Module`。Keras/JAX/ONNX 在对应 form 未达到 verified 前，只开放 capability matrix 允许的分析、运行或有界事务；不得因 Python 静态分析可用就宣称结构生成和提交可用。缺少框架包、provider 或自定义对象时返回 `unavailable`，不自动安装依赖。
+
+### 7.5 分析环境和入口调用的可复现契约
+
+Source snapshot 之外增加 `AnalysisEnvironmentManifest`，至少冻结：
+
+```ts
+interface AnalysisEnvironmentManifest {
+  pythonImplementation: string;
+  pythonVersion: string;
+  platform: string;
+  frameworkVersions: Record<string, string | null>;
+  adapterDigests: Record<string, string>;
+  analyzerDigest: string;
+  schemaBundleDigest: string;
+  registryDigest: string;
+  patternPackDigests: string[];
+  pyrightVersion?: string;
+  lockfileDigests: Record<string, string>;
+  environmentVariablesAllowlistDigest: string;
+}
+```
+
+静态分析结果必须绑定该 manifest；其中影响解析和语义规则的字段变化后缓存立即 stale。runtime 另绑定实际 backend、device/provider、驱动和可选依赖版本。入口调用必须保存 constructor args/kwargs、forward args/kwargs、static args、train/eval 和输入结构；同一个类用不同构造配置得到的是不同 analysis input，不得共享 Exact IR digest。
+
+环境发现只报告已有环境和能力，不执行 `pip/conda` 安装。lockfile 不存在时记录 `unlocked` diagnostic；这不一定阻断纯静态查看，但会降低 runtime/codegen verification 等级，且不能生成可复现声明。
+
+## 8. 从画布直接修改源码
+
+### 8.1 两类命令必须分开
+
+Visual Command：
+
+```text
+move-node, resize-node, set-camera, set-style, set-route,
+expand, collapse, set-detail-offset, align, distribute, pin
+```
+
+它们只生成 Visual Patch，可以立即显示并进入视觉 undo/redo。
+
+Semantic Intent：
+
+```text
+create-node, delete-node, set-parameter, replace-operation,
+insert-normalization, connect-ports, disconnect-edge,
+add-residual, concat-inputs, edit-source-buffer
+```
+
+它们不能先改正式 scene；只能生成 preview overlay，并等待后端收据。
+
+### 8.2 统一命令协议
+
+```ts
+interface SemanticIntent {
+  intentId: string;
+  kind:
+    | "create-node"
+    | "delete-node"
+    | "set-parameter"
+    | "replace-operation"
+    | "insert-normalization"
+    | "connect-ports"
+    | "disconnect-edge"
+    | "add-residual"
+    | "concat-inputs"
+    | "edit-source-buffer";
+  baseSourceDigest: string;
+  baseExactIrDigest: string;
+  targetCanonicalIds: string[];
+  sourceAnchorIds: string[];
+  parameters: Record<string, unknown>;
+}
+
+interface CapabilityDecision {
+  status: "lowerable" | "needs-review" | "proposal-only" | "invalid";
+  adapterId?: string;
+  expectedDelta?: GraphDelta;
+  reasonCodes: string[];
+  diagnostics: Diagnostic[];
+}
+```
+
+`expectedDelta` 由后端选定 lowering adapter 后计算，不能由浏览器声明为事实。同一个用户动作必须有确定结果：可以改、需要评审、只能提案或无效。禁止按钮看似成功但只改了图。
+
+### 8.3 操作到源码策略的映射
+
+| 画布操作 | 语义输入 | 第一批源码 lowering | 不可证明时 |
 |---|---|---|---|
-| Input | 无 | `output`，`0..many` 下游 | Shape 必须由 schema 或源码证据给出 |
-| Conv2d | `input`，恰好 1 条，rank=4、NCHW | `output` | 输入 channel 与 `in_channels` 一致 |
-| Linear | `input`，恰好 1 条 | `output` | 最后一维与 `in_features` 一致 |
-| Add | `operands`，`2..many` | `sum` | 所有输入 Shape 可广播或严格相同，由 rule variant 决定 |
-| Reshape | `input`，恰好 1 条 | `output` | 元素总量约束可符号求解，最多一个推断维度 |
-| MultiheadAttention | `query/key/value` 必需，`mask` 可选 | `context` 必需，`weights` 条件可用 | embed dim、head 数、batch layout 和 mask rank 均校验 |
-| LSTM | `input` 必需，`h0/c0` 可选 | `sequence/hn/cn` | 层数、方向数和 hidden size 决定多个输出 Shape |
-| Transformer Decoder | `hidden/memory` 必需，两个 mask 可选 | `decoded` | self-attention 与 cross-attention 的来源角色不能互换 |
-| Loss | `prediction/target` 必需，可选 `weight` | `loss` | target dtype、Shape 和 reduction 决定标量或逐元素输出 |
-| Repeat | `loop_input` 和显式 carried ports | `loop_output` | 循环携带值首尾契约一致，重复次数为合法整数 |
+| 修改参数 | canonical node + parameter + literal/config anchor | `SemanticParameterPatch` | proposal-only |
+| 替换激活 | node + registry definition | `replace_activation` | proposal-only |
+| 插入 LayerNorm | edge/port + shape contract | `insert_layer_norm` | proposal-only |
+| 新增节点 | registry definition + 参数 + 插入边界 | 拓扑 draft；仅注册模板且有唯一插入点时 lowering | draft 保持 blocked |
+| 删除节点 | canonical node + delete impact | 仅无歧义、依赖可闭合的受支持结构 | 显示影响并阻断提交 |
+| 新增连线 | source output port + target input port + policy | 注册的 `replace-input`、`fanout`、`add-residual`、`concat` | proposal-only |
+| 删除连线 | canonical edge + consumer port | 注册的 disconnect/replace 变换 | proposal-only |
+| 手工改源码 | staged files + base digest | `FreeformSourcePatch` | stale/validation failure |
 
-端口 ID 一经发布就是序列化协议的一部分。改显示文案不改 ID；删除后的 ID 永不复用；重命名必须通过显式 migration 将旧 edge 的 port ID 转换为新 ID。
+节点 palette 必须由 `module-registry-v1.json` 驱动；创建时生成 definition、参数和 named ports。不能恢复原型当前“新增一个通用 operation 节点”的语义行为。
 
-对于参数控制的端口，优先定义稳定端口全集，再用 `availability` 控制可用性。例如 `MultiheadAttention.weights` 在 `need_weights=false` 时仍保留稳定定义，并物化为 `available=false` 的可审计端口实例，但 UI 不为它提供可连接 Handle。只有端口数量本身确实由结构参数决定时才使用 `PortContractFactory<P>`，且工厂必须是已审核的纯函数。
+### 8.4 连线交互
 
-连接命令的校验顺序建议固定为：
+必须保留原型“进入连线模式 -> 选择起点 -> 选择终点”的手感，但命中对象升级为端口：
 
-```text
-definition/version 可解析
-  -> source/output 与 target/input 方向正确
-  -> relation 被双方接受
-  -> availability 满足
-  -> 单端口 connection cardinality 未超限
-  -> tensor rank/dtype/layout 初步兼容
-  -> 加边到 draft
-  -> 图级 Shape 传播产生最终 diagnostics
-```
+1. hover 节点时显示兼容 output ports；
+2. 选择 source port 后，只高亮类型、shape、relation、cardinality 兼容的 target ports；
+3. 拖动或点击 target port 后生成 `connect-ports` intent；
+4. UI 显示 policy 选择：`replace-input`、`fanout`、`add-residual`、`concat`；
+5. 后端返回 capability 和 expected delta；
+6. preview edge 用未提交样式显示；
+7. 事务验证成功后进入 diff/review；
+8. commit 后重分析，canonical edge 才成为正式边。
 
-草稿阶段允许最后两步产生错误，以支持用户逐步构图；发布或提交阶段则不允许存在 blocking diagnostic。
+不得退化成按边数组顺序决定输入，也不得只保存 source/target node ID。
 
-#### 18.5.1 端口物化、连线顺序与孤立端口
+### 8.5 删除操作
 
-端口契约属于 definition，端口实例属于 node instance，edge 只引用端口实例。三者不能合并成一个字符串：
+删除前必须调用影响预览，至少列出：
 
-```typescript
-function materializeNodePorts<P>(
-  definition: RegisteredModuleDefinition<P>,
-  nodeId: string,
-  params: P,
-): PortInstance[] {
-  return definition.materializePortSpecs(params).map((port) => ({
-    ...port,
-    ownerNodeId: nodeId,
-    portInstanceId: `${nodeId}:port:${port.contractId}${port.ordinal === undefined ? "" : `:${port.ordinal}`}`,
-  }));
-}
-```
+- 被删除 canonical node/edge/tensor；
+- 受影响 consumers、shared parameters 和父模块；
+- 是否有安全 bypass/rewire；
+- 对 shape、输出和 evidence 的影响；
+- lowering capability 和阻断原因。
 
-对固定端口，`contractId` 与实例 ID 一一对应。对真正需要多个可见插槽的 variadic port，可以共享 `contractId="inputs"`，以 ordinal 区分 `inputs:0/1/2`。删除中间插槽时不要重排已有 ordinal；否则所有后续 edge ID、diff 和 review target 都会改变。
+原型的“删除节点并清理关联边”继续用于纯视觉 fixture；source-backed 模式禁止用该函数删除正式模型。
 
-`ConnectPorts` 至少携带：
-
-```typescript
-interface ConnectPortsCommand {
-  type: "ConnectPorts";
-  source: { nodeId: string; portInstanceId: string };
-  target: { nodeId: string; portInstanceId: string };
-  targetOrdinal?: number;
-  relation: KernelRelation;
-  expectedDocumentDigest: string;
-}
-```
-
-command handler 不能相信 UI 传入的 node ID 与 port ID 是匹配的，必须从当前 document/registry 重新解析 owner、direction 和 availability。这样即使用户在两个点击之间修改了参数、导致可选端口消失，第二次点击也只会返回 stale-port diagnostic，不会产生悬空边。
-
-未连接端口也必须序列化或可由精确 definition version 确定性重建。不能采用 DL-Playground `buildGraphIR()` 的“从边反推 Handle”策略，否则以下状态无法区分：
-
-- definition 原本没有 `mask` 端口；
-- definition 有 `mask`，当前没有连接；
-- 参数使 `mask` 暂时 unavailable；
-- 旧版本曾有 `mask`，新版本迁移失败。
-
-#### 18.5.2 MHA、LSTM 与 Transformer 的端口映射
-
-DL-Playground 的 MHA 使用四个 target Handle，并允许 1–4 个输入；缺失 key/value 时在代码生成中退回 query。这实际上把底层 `nn.MultiheadAttention` 和“自注意力便捷包装”合在了一起。ArchCanvas 应拆成严格原子定义与可选组合定义；PyTorch 原子调用还要区分 batch layout、key padding mask、attention mask 和可选 weights 输出：
+### 8.6 事务状态机
 
 ```text
-pytorch.nn.multihead_attention@1.x
-  inputs
-    query              required  1..1  sequence
-    key                required  1..1  sequence
-    value              required  1..1  sequence
-    attention_mask     optional  0..1  mask
-    key_padding_mask   optional  0..1  mask
-  outputs
-    context            required  fan-out
-    weights            availableWhen(need_weights=true)  fan-out
-```
-
-另行定义的 `semantic.self_attention` 可以只暴露一个 `hidden`，再通过组合端口绑定把它连接到内部 MHA 的 query/key/value。这样 fallback 是组合结构的显式证据，不是“数组第二项不存在就取第一项”的偶然行为，也不会让 cross-attention 错把 memory 缺失解释成 self-attention。
-
-LSTM 至少应声明：
-
-```text
-inputs:  input(required), h0(optional), c0(optional)
-outputs: sequence, hn, cn
-```
-
-Transformer Decoder 组合定义则把外部语义端口绑定到内部 slot：
-
-```text
-hidden      -> self_attention.query/key/value
-self_mask   -> self_attention.attention_mask
-memory      -> cross_attention.key/value
-memory_mask -> cross_attention.key_padding_mask 或 attention_mask（由源码证据决定）
-decoded     <- final_norm/output slot
-```
-
-当前最小原型只有 `LabEdge.target_port_role`，并且 [`module-details.ts:821-847`](./src/module-details.ts) 只为若干 attention/paper Transformer 模板手写 `mask`、`memory` 坐标。迁移时它只能作为视觉模板 slot 的过渡输入，不能当作完整端口契约；尤其缺少 source port、owner、required、cardinality 和 tensor constraint。
-
-### 18.6 图例注册与工程/论文视图统一
-
-`NodeShape`、`glyphId` 和 `detailTemplateId` 是三个不同粒度：
-
-- `NodeShape` 决定粗粒度边界和默认端口吸附，如 `convolution`、`attention`、`tensor`；
-- `glyphId` 决定原子组件的精确语义图例，如 `conv2d`、`layer-norm`、`matmul`；
-- `detailTemplateId` 决定展开后出现的内部结构，如完整 attention 或 Transformer encoder。
-
-DL-Playground 本身不能提供可直接迁移的精确图例注册。它的 [`LayerDefinition`](../../../../DL-Playground/frontend/src/node_gen/BaseClass.tsx) 只有可选 `diagramLabel/diagramFamily`，family 也仅有 `input/output/merge/activation/block/other` 六种；[`diagramProjector.ts:98-110`](../../../../DL-Playground/frontend/src/utils/diagramProjector.ts) 未声明时统一退回 `block`。当前节点定义中基本只有 Input 和 ModuleRef 设置了该 metadata。也就是说，DL-Playground 可以贡献“definition 驱动视觉投影”的思路，但 Conv2d、LayerNorm、MHA 等精确 glyph 仍应由 ArchCanvas 基于现有 Scene Lab 图例重新注册。
-
-建议增加独立图例注册表：
-
-```typescript
-interface GlyphDefinition {
-  glyphId: string;
-  semanticKind: string;
-  renderers: {
-    engineering: GlyphRendererId;
-    paper: GlyphRendererId;
-    compact?: GlyphRendererId;
-  };
-  minSize: Size;
-  supportedShapes: NodeShape[];
-  accessibilityLabel: LocalizedLabel;
-}
-```
-
-首批映射可采用：
-
-| 原子组件 | `NodeShape` | `glyphId` | 图例语义 |
-|---|---|---|---|
-| Conv2d | `convolution` | `conv2d` | feature-map stack + kernel |
-| LayerNorm | `normalization` | `layer-norm` | μ/σ 归一化条带 |
-| Add | `add` | `add` | 圆形或汇聚点中的 `+` |
-| MatMul | `multiply` | `matmul` | 矩阵 `×`，区别于逐元素乘法 |
-| Reshape | `tensor` | `reshape` | 轴/维度重排 |
-| Transpose | `tensor` | `transpose` | 两轴交换 |
-| MultiheadAttention | `attention` | `multihead-attention` | Q/K/V 汇聚与多头输出 |
-| Dropout | `operation` | `dropout` | training-only 稀疏点阵 |
-| CrossEntropyLoss | `operation` | `cross-entropy-loss` | prediction/target 汇入 loss |
-| Repeat | `container` 或扩展后的容器 shape | `repeat` | 循环边界、carried ports 和次数 |
-
-当前 [`NodeShape`](./src/types.ts) 尚无 `container`。实现 Repeat registry 前应先增加该粗粒度 shape，并同时更新颜色、bounds、routing anchor、交互渲染和 SVG 导出；在此之前只能使用 `operation` 作为明确标注的降级显示，不能在类型上假装 `container` 已存在。
-
-#### 为什么当前“论文级 Transformer”和“Transformer”的相同组件没有相同图例
-
-这是当前最小原型的实现路径造成的，不代表两个场景中的组件语义不同。源码中可以精确定位到以下原因：
-
-1. 四个 Transformer 场景在 [`scenarios.ts:512-662`](./src/scenarios.ts) 中是四份独立的 `LabScene`。经典工程场景用 `node()`，论文场景用 `paperNode()`；两者没有共享 node instance、definition ID 或 glyph ID。
-2. [`NodeGraphic:937-943`](./src/App.tsx) 在 paper mode 下用 `paper_tone` 取色，并把 `detailed` 定义为 `!paperMode && [tensor, convolution, attention, normalization]...`。因此即使论文节点的 `shape` 仍是 `attention`，Q/K/V glyph 也被明确关闭。
-3. [`NodeGraphic:1028-1030`](./src/App.tsx) 对通用 `operation` glyph 同样要求 `!paperMode`。这使论文场景中的 Linear、Softmax 等普通矩形不显示工程图例。
-4. `add/multiply/concat` 的 `symbol` 在 [`NodeGraphic:942`](./src/App.tsx) 独立计算，没有 `!paperMode` 条件，所以论文级场景中的 `+` 仍会显示。这说明当前差异不是统一设计规则，而是不同分支的条件不一致。
-5. [`svg-export.ts:184-215`](./src/svg-export.ts) 完整复制了相同判断，因此导出结果也会关闭论文 glyph；这不是 React 渲染偶发问题。
-6. [`module-details.ts:796-820`](./src/module-details.ts) 为 `attention` 与 `paper-attention`、普通/paper Transformer 分别注册 builder。论文 detail 使用独立 primitives，而不是给同一语义模板应用 paper renderer。
-7. [`detail-layout.ts:173-188`](./src/detail-layout.ts) 甚至会把相同文字在普通父模板中推断为 `attention/add-norm/feedforward`，在 paper 父模板中推断为 `paper-attention/paper-add-norm/paper-feedforward`。视觉模式已经进入结构 identity，导致后续无法自然共享图例。
-
-迁移后，相同组件必须先解析为同一个 `(definitionId, version)`，再取得相同 `glyphId`。engineering 与 paper renderer 可以改变尺寸、方向、线宽、配色和信息密度，但不能关闭或改写语义图例。论文视图若要保持经典论文的简洁度，可以使用该 glyph 的 `paper` 变体，而不是退回只靠 label 的普通矩形。
-
-这也意味着“相同 label”不是统一图例的判据；只有相同 canonical semantic kind 或相同受审核 definition 才能共享 glyph。无法证明语义一致的节点应显示通用图例并附 diagnostic，不能为了视觉一致强行合并。
-
-#### 18.6.1 图例渲染器的源码收敛方式
-
-当前交互画布使用 JSX，静态导出使用字符串，两边分别手写矩阵、卷积堆叠、Q/K/V 和 μ/σ。迁移时不要让 `GlyphDefinition` 同时保存两份任意渲染函数；应先生成与运行环境无关的 glyph primitives：
-
-```typescript
-type GlyphPrimitive =
-  | { kind: "rect"; bounds: Bounds; radius?: number; role: string }
-  | { kind: "circle"; center: Point; radius: number; role: string }
-  | { kind: "line"; from: Point; to: Point; role: string }
-  | { kind: "text"; point: Point; text: string; role: string }
-  | { kind: "matrix-grid"; bounds: Bounds; rows: number; columns: number; role: string };
-
-interface GlyphRenderRequest {
-  glyphId: string;
-  variant: "engineering" | "paper" | "compact";
-  bounds: Bounds;
-  palette: GlyphPalette;
-}
-
-function buildGlyphPrimitives(request: GlyphRenderRequest): GlyphPrimitive[];
-```
-
-`NodeGraphic` 把 primitives 映射成 React SVG element，`svg-export.ts` 把同一 primitives 转成 escaped XML。图例几何、显示阈值、paper variant 和 accessibility label 只有一个事实来源。测试同时比较 primitive snapshot 与最终 SVG，避免两个 renderer 再次分叉。
-
-`paper_tone` 继续只决定 palette，不能决定 semantic glyph；`layout_profile` 只选择 glyph variant、布局方向和信息密度。目标判断应从当前的：
-
-```typescript
-const detailed = !paperMode && semanticShapes.includes(node.shape);
-```
-
-变为：
-
-```typescript
-const variant = paperMode ? "paper" : visualStyle === "compact" ? "compact" : "engineering";
-const glyph = glyphRegistry.resolve(node.glyph_id, variant);
-```
-
-如果 paper variant 尚未实现，registry 完整性检查应要求显式 fallback 到 engineering/compact renderer并产生开发期 warning，而不是静默不画。
-
-### 18.7 Shape、诊断和成本分析
-
-`analyzeGraph()` 应在 UI 之外按下列阶段执行：
-
-```text
-resolve exact definition versions
-  -> materialize parameter-dependent port instances
-  -> validate edge endpoints/cardinality/direction/relation
-  -> build dependency graph by node + named target port
-  -> topological schedule / cycle classification
-  -> invoke audited shape rules
-  -> solve symbolic constraints
-  -> invoke cost rules
-  -> return immutable AnalysisSnapshot
-```
-
-与 DL-Playground 不同，不能把 Shape 写入 `node.data.__shape`。这样做会把事实数据和派生缓存混在一起，也无法说明结果由哪个 registry/rule 版本产生。`AnalysisSnapshot` 必须同时记录 `documentDigest`、`registryDigest` 和规则版本；任一输入变化即废弃旧快照。
-
-规则实现与 module manifest 分离：
-
-```typescript
-interface ShapeRule {
-  id: string;
-  version: string;
-  verify(context: ShapeRuleContext): GraphDiagnostic[];
-  infer(context: ShapeRuleContext): Record<string, ShapeValue>;
-}
-
-interface CostRule {
-  id: string;
-  version: string;
-  estimate(context: CostRuleContext): CostEstimate;
-}
-```
-
-manifest 只引用 rule ID，不能内嵌任意闭包。这样审核者可以单独证明 `conv-nd.v1` 是纯函数、无 I/O、无随机性，并让 Conv1d/2d/3d 在有意的参数化范围内复用它。
-
-诊断至少包含 `code`、`severity`、`messageKey`、`targetIds`、`relatedPortIds`、`evidenceIds` 和可选修复建议。严重度继续使用正式 kernel 已有的 `info/warning/blocking`；只有 blocking 为零时才允许发布拓扑草稿。
-
-#### 18.7.1 分析器必须按端口构造输入，而不是按边顺序构造数组
-
-建议在拓扑调度前构造显式 binding table：
-
-```typescript
-interface NodeInputBindings {
-  nodeId: string;
-  byPort: Record<string, Array<{
-    edgeId: string;
-    sourceNodeId: string;
-    sourcePortId: string;
-    targetOrdinal?: number;
-  }>>;
-}
-
-interface ShapeRuleContext<P = Record<string, unknown>> {
-  nodeId: string;
-  params: P;
-  inputs: Record<string, ShapeValue[]>;
-  outputContracts: PortContract[];
-  constraints: SymbolicConstraintStore;
-}
-```
-
-构造过程必须先按 `targetPortId` 分组；对 `ordering="ordered"` 的端口按 `targetOrdinal` 排序并检查 ordinal 重复/缺口，对 `unordered` 端口则用 edge ID 排序以保证 diagnostics 与 digest 确定。Shape rule 只能读取 `context.inputs.query`、`context.inputs.mask` 等命名值，不能读取“第 0 个输入碰巧是 query”。
-
-输出同样按 port ID 返回：
-
-```typescript
-interface ShapeRuleResult {
-  outputs: Record<string, ShapeValue>;
-  constraints: ShapeConstraint[];
-  diagnostics: GraphDiagnostic[];
-}
-```
-
-下游 edge 从 `outputs[edge.sourcePortId]` 获取 Shape。缺少该 key 是规则实现错误或 definition/rule 不匹配，必须 blocking；禁止像 DL-Playground 那样回退到 object 第一项的 `defaultShape`。
-
-#### 18.7.2 blocking 传播与部分分析
-
-草稿图经常不完整，分析器不能因为一个节点失败就丢弃全图结果。建议对每个输出保存状态：
-
-```typescript
-type AnalyzedValue =
-  | { status: "known"; shape: ShapeValue }
-  | { status: "unknown"; constraints: ShapeConstraint[]; reason: string }
-  | { status: "blocked"; causedByDiagnosticIds: string[] };
-```
-
-处理规则为：
-
-- 缺少 required port：当前节点相应输出为 blocked；
-- 输入 Shape unknown 但 rank/dtype 约束仍可推导：继续运行支持 partial inference 的 rule；
-- 上游 blocking：生成一条简短的 dependent diagnostic，引用原始 diagnostic ID，不复制长错误；
-- 图中独立分支继续分析并给出 Shape/cost；
-- cost 中涉及 unknown dimension 时返回 symbolic expression 或 confidence/assumptions，不伪造 0；
-- 共享 parameter group 由 canonical parameter ID 去重，module call FLOPs 按每次调用累计。
-
-这样右侧检查器既能显示局部成果，也能明确说明为什么某个端口暂时没有 Shape。
-
-### 18.8 使用结构化 PyTorch Code IR
-
-DL-Playground 的 `getInitCode()` 和 `getForwardCode()` 足够支持演示型顺序网络，但 ArchCanvas 需要覆盖：
-
-- `torch.add`、`reshape` 等 functional op；
-- tuple/dict 多输出和解包；
-- 同一 module/parameter 的多次调用与权重共享；
-- 可选参数、关键字参数和 dtype/device；
-- Repeat、ModuleList、条件和显式循环；
-- 生成代码片段与 Source Evidence/CodeSpan 的对应。
-
-因此 `codegenRuleId` 应产生结构化 IR，而不是直接返回 Python 字符串：
-
-```typescript
-type PyTorchStatement =
-  | ModuleInitStatement
-  | ModuleCallStatement
-  | FunctionCallStatement
-  | TensorMethodStatement
-  | TupleUnpackStatement
-  | AssignmentStatement
-  | ForStatement;
-
-interface PyTorchDraft {
-  imports: ImportSpec[];
-  fields: ModuleInitStatement[];
-  forward: PyTorchStatement[];
-  sourceMap: Record<string, { nodeId: string; portIds: string[] }>;
-}
-```
-
-printer 负责安全编码 Python literal、标识符去重、格式化和 CodeSpan；rule 只能构造受限 AST。首期代码生成应标为“Draft/Proposal”，不自动覆盖用户 `.py` 文件。迁入正式 Studio 后，任何源码变化仍必须走 prepare/verify/review/commit。
-
-#### 18.8.1 从 Graph 到 Code IR 的具体步骤
-
-代码生成前不再复用“Shape 的拓扑数组”，而是建立 value graph：
-
-```text
-PrototypeGraphEdge(sourcePortId, targetPortId)
-  -> ValueId = `${sourceNodeId}:${sourcePortId}`
-  -> 按 target port 绑定 call arguments
-  -> 为 parameter-sharing group 分配一个 ModuleFieldId
-  -> 对 node 调用 codegen rule，产生 statements + output ValueIds
-  -> printer 分配合法且不冲突的 Python identifiers
-  -> sourceMap 记录 statement/span -> node/port/evidence
-```
-
-至少区分三种节点：
-
-| 节点种类 | `__init__` | `forward` | 示例 |
-|---|---|---|---|
-| module definition | 产生 `ModuleInitStatement` | 产生 `ModuleCallStatement` | Conv2d、Linear、LayerNorm |
-| functional op | 无 field | 产生 `FunctionCallStatement` 或 tensor method | Add、MatMul、Reshape |
-| composite/control | 引用子图或受限控制结构 | 产生嵌套 block | Repeat、ModuleRef |
-
-MHA 应产生 tuple value，再根据端口使用情况决定是否保留 weights：
-
-```typescript
-const call = moduleCall(fieldId, argsByPort);
-return tupleBind(call, {
-  context: valueId(nodeId, "context"),
-  weights: params.need_weights ? valueId(nodeId, "weights") : discardValue(),
-});
-```
-
-LSTM 则将 PyTorch 的 `(sequence, (hn, cn))` 表达为嵌套 tuple pattern。不能继续使用 `${outputVar}, _ = ...`，否则画布声明 `hn/cn` 后 printer 仍会丢失它们。
-
-代码生成 gate 至少验证：graph 无非控制流环、每个必需 codegen port 已绑定、所有引用定义版本可解析、参数可编码、共享 field 的构造参数一致、所有被下游使用的 output port 都由 rule 产生。失败时返回结构化 diagnostics，不生成“尽量可运行”的残缺代码。
-
-### 18.9 三层保护锁
-
-保护锁必须区分实例拓扑和模块定义，不能只做一个全局“可编辑”按钮：
-
-| 模式 | 默认状态 | 允许的操作 | 禁止的操作 |
-|---|---|---|---|
-| 视觉模式 | 开放 | 移动、缩放、展开/收起、切换图例和视图 preset | 修改节点、边、参数和契约 |
-| 拓扑草稿模式 | 锁定 | 创建/删除实例、连接/断开端口、修改可编辑实例参数 | 改模块定义、直接提交正式 IR |
-| 模块契约维护模式 | 强锁定 | 基于已批准版本创建 definition draft | 原地修改已批准版本、绕过评审发布 |
-
-UI 上的锁只负责表达状态和避免误触，真正的权限检查要在三处重复执行：
-
-1. command handler 拒绝当前模式无权执行的命令；
-2. domain validator 检查目标定义的 `editPolicy`、版本和 digest；
-3. 持久化/API 层再次检查 session capability、base digest 和 review receipt。
-
-不能让调用者通过直接构造 `LabPatch` 绕开保护锁。`LabPatch` 只适合视觉实验；语义操作应使用显式命令：
-
-```typescript
-type PrototypeGraphCommand = {
-  commandId: string;
-  expectedDocumentDigest: string;
-} & (
-  | { type: "CreateNode"; definitionId: string; version: string; params: unknown }
-  | { type: "DeleteNode"; nodeId: string }
-  | { type: "ConnectPorts"; source: PortRef; target: PortRef; relation: KernelRelation }
-  | { type: "DisconnectEdge"; edgeId: string }
-  | { type: "SetInstanceParameter"; nodeId: string; parameterId: string; value: unknown }
-);
-```
-
-所有 command 返回新的 draft、diagnostics 和 audit event。视觉投影收到新文档后再产生 `LabPatch` 或完整 `LabScene`；反向由 `LabScene` 猜测语义是禁止的。
-
-#### 18.9.1 锁不能实现成 `const [locked, setLocked]`
-
-当前 `App.tsx` 顶栏的新增、连线、删除按钮始终可用，`patch()` 又只是 `dispatch({type: "patch"})`。若只在按钮外包一层 `disabled={locked}`，键盘命令、测试代码、导入文档或未来 API 仍能直接发 patch。
-
-建议把编辑会话建模为带 capability 的判别联合：
-
-```typescript
-type EditSession =
-  | {
-      mode: "visual";
-      documentId: string;
-    }
-  | {
-      mode: "topology-draft";
-      draftId: string;
-      baseDocumentDigest: string;
-      capability: TopologyDraftCapability;
-      expiresAt: string;
-    }
-  | {
-      mode: "contract-maintenance";
-      draftId: string;
-      baseDefinition: { id: string; version: string; digest: string };
-      capability: ContractMaintenanceCapability;
-      expiresAt: string;
-    };
-```
-
-解锁拓扑的含义是 `beginTopologyDraft(baseDocumentDigest)`，不是把 boolean 改为 false；关闭锁的含义是放弃 draft 或提交 review，不是直接把当前状态视为 approved。capability 至少绑定用户/session、允许的操作集合、base digest 和过期时间。
-
-command handler 入口统一检查：
-
-```typescript
-function dispatchGraphCommand(
-  session: EditSession,
-  current: PrototypeGraphDocument,
-  command: PrototypeGraphCommand,
-): CommandReceipt {
-  if (session.mode !== "topology-draft") {
-    return rejected("EDIT_MODE_REQUIRED", command);
-  }
-  if (!allows(session.capability, command.type)) {
-    return rejected("CAPABILITY_DENIED", command);
-  }
-  if (command.expectedDocumentDigest !== digest(current)) {
-    return rejected("STALE_DRAFT", command);
-  }
-  return executeValidatedCommand(current, command);
-}
-```
-
-所有拒绝都返回非零、结构化 receipt；不能只 toast 一句然后当作命令成功。UI 根据 receipt 更新提示，但领域层决定是否执行。
-
-#### 18.9.2 历史记录也必须分层
-
-当前 `editorReducer` 把移动、改 label、加边和删节点都放进同一 `past/future`。引入语义图后应拆成：
-
-- `VisualHistory`：bounds、camera、展开、detail offset、route hint；undo 不触发定义版本变化；
-- `TopologyDraftHistory`：Create/Delete/Connect/Disconnect/SetParameter command 及反向 command；每步重算 digest/diagnostics；
-- `ContractDraftHistory`：manifest diff 与 migration edits；只能在 contract-maintenance session 内存在；
-- 正式 commit history：不可由前端 undo 擦除，只能通过新的反向事务处理。
-
-移动节点后不应让 `PrototypeGraphDocument` digest 变化，除非产品明确把布局纳入语义文档。推荐把 position 存在独立 prototype visual state，使 Shape/codegen cache 不因拖动失效。
-
-### 18.10 契约草稿、评审和版本状态机
-
-已批准定义不可原地修改。解锁“模块契约维护模式”实际执行的是：
-
-```text
-approved
-  -> create DefinitionDraft(baseId, baseVersion, baseDigest)
-  -> draft
-  -> validating
+draft
+  -> prepared
+  -> source-validated
+  -> graph-validated
   -> review-ready
-  -> approved 或 rejected
+  -> committed
+
+任意阶段 -> failed / discarded / stale
 ```
 
-建议的审核对象为：
+`verify` 至少执行：
 
-```typescript
-interface DefinitionDraft {
-  draftId: string;
-  base: { id: string; version: string; digest: string };
-  candidate: AtomicModuleManifest<unknown>;
-  author: string;
-  createdAt: string;
-}
+- base source/corpus digest 新鲜度；
+- LibCST parse 和 anchor 唯一性；
+- 静态 import/symbol resolution；
+- 重分析 Exact IR；
+- expected/observed Graph Delta 精确匹配；
+- named port、shape、dtype 和 cardinality；
+- Python compile check；
+- 请求中声明的 targeted tests；
+- hierarchy 的 collapsed/full projection；
+- 目标 preset 的 scene 构建和几何验证。
 
-interface ContractDiff {
-  parameterChanges: SchemaChange[];
-  portChanges: PortChange[];
-  ruleChanges: RuleReferenceChange[];
-  visualChanges: VisualContractChange[];
-  compatibility: "breaking" | "backward-compatible" | "visual-only";
-  requiredVersionBump: "major" | "minor" | "patch";
-}
+只有 `review-ready` 可以显示提交按钮。提交成功后必须重新 hydrate，而不是把 preview scene 当成新事实。
 
-interface ReviewReceipt {
-  draftId: string;
-  candidateDigest: string;
-  validationRunId: string;
-  reviewer: string;
-  decision: "approved" | "rejected";
-  decidedAt: string;
-}
-```
+### 8.7 视觉状态重放
 
-版本判定至少遵守：
+源码提交后：
 
-- 删除/重命名端口、新增必需端口、改变连接基数下限、改变 Shape 或代码语义：major；
-- 新增向后兼容的可选端口或可选参数：minor；
-- 文案、非语义视觉样式或不改变含义的 glyph renderer 修复：patch；
-- `glyphId` 从一种语义换到另一种语义不能伪装成 patch；
-- 端口或参数重命名必须提供可测试的 graph migration；
-- 发布物包含规范化 manifest、规则版本、测试摘要和 digest；receipt 必须绑定 candidate digest，修改后旧 receipt 自动失效。
+1. 用 lineage ID 匹配新旧 canonical objects；
+2. 保留仍存在对象的位置、尺寸、展开和 slot offset；
+3. 新对象放在受影响局部邻域，不全图重排；
+4. 删除对象的 visual override 进入可审计 tombstone 后再清理；
+5. 当前选择映射到新对象或清空，并给出原因；
+6. 每个 preset 分别迁移自己的 VisualState。
 
-契约代码审核规则至少包括：
+### 8.8 当前缺口：代码预览不等于源码能力
 
-- 禁止 `any`、随机数、时间依赖、网络、DOM、文件 I/O 和执行用户源码；
-- definition ID、port ID、parameter ID 稳定且可确定性序列化；
-- Shape/cost/port factory 为纯函数，只能引用批准的 rule library；
-- Python 代码只经结构化 IR 和受审核 printer 输出；
-- source matcher 明确支持的全限定名、参数绑定和 evidence 策略；
-- 每个端口都有合法、非法、缺失、超额连接测试；
-- 每个 Shape 规则都有边界值、符号维度、未知维度和错误输入测试；
-- engineering/paper 必须解析到相同 `glyphId`；
-- breaking change 必须带已有实例迁移和无法迁移时的 blocking diagnostic。
+当前主程序已经具备一部分底座，但不能把这些底座误报为“画布已经可以生成或修改源码”：
 
-#### 18.10.1 为什么不能直接采用 DL-Playground 的自定义模块版本
+| 已有能力 | 当前边界 | 本次迁移必须补齐 |
+|---|---|---|
+| `studio/src/module-registry/` | 有版本化 definition、参数 schema、named port 和 registry digest | 让 palette、检查器、Shape、成本、codegen 和源码 lowering 真正消费同一 definition |
+| `studio/src/prototype-graph/` | 可物化端口并做部分 Shape、关系、基数和成本分析 | 建立可编辑但不可直接提交的正式 Graph Draft，并补齐控制流、复合模块和提交门槛 |
+| `studio/src/codegen/` | 可生成带 span 的 PyTorch 草稿预览 | 把预览升级为可验证、可评审、可物化并可重新打开的 Source Project |
+| draft/proposal API | 可以记录 synthetic node/edge 和意图 | `create-node`、`connect-ports`、`delete-node` 的通用写回仍缺少 adapter，当前必须保持 blocked/proposal-only |
+| Source Workspace | 已有单文件/事务基础 | staged 多文件编辑、生成项目评审和图/源码双向选择尚未形成完整产品链路 |
+| runtime trace | 面向冻结的源码入口和显式验证任务 | 不能验证刚生成的源码，也没有生成代码专用的隔离、限额和确定性重放协议 |
 
-DL-Playground 已有 `SavedModule`，但它解决的是浏览器本地复用，不是受审核契约：
-
-- [`moduleRegistry.ts:17-30`](../../../../DL-Playground/frontend/src/utils/moduleRegistry.ts) 保存 GraphIR、Handle 名称数组、内部 React Flow nodes/edges 和可选 variable map；没有 definition digest、review receipt 或兼容性级别。
-- [`moduleRegistry.ts:32-37`](../../../../DL-Playground/frontend/src/utils/moduleRegistry.ts) 用第一个数字简单生成 `v2/v3`，不区分 major/minor/patch。
-- [`moduleRegistry.ts:112-137`](../../../../DL-Playground/frontend/src/utils/moduleRegistry.ts) 按相同 ID 覆盖 `localStorage` 中的对象，没有不可变历史版本。
-- [`moduleRegistry.ts:140-161`](../../../../DL-Playground/frontend/src/utils/moduleRegistry.ts) 保存已有模块时沿用相同 ID、提高显示 version，并批量改 module-ref data；旧实例无法继续固定在旧契约。
-- [`useModuleSystem.ts:382-400`](../../../../DL-Playground/frontend/src/features/editor/hooks/useModuleSystem.ts) 导入模块时也可按 ID 覆盖本地记录。
-
-ArchCanvas 必须把逻辑 identity 与版本 identity 分开：
+因此要实现的是两种不同的源码结果，而不是继续给代码预览增加“下载”按钮：
 
 ```text
-definitionId = pytorch.nn.conv2d       # 跨版本稳定的家族 ID
-version      = 2.1.0                   # 语义版本
-digest       = sha256(canonical bundle) # 精确内容身份
+既有源码模式：
+SemanticIntent -> adapter lowering -> LibCST Source Transaction -> 重分析
+
+空白构图模式：
+PrototypeGraphDocument -> 静态验证 -> PyTorch Code IR -> 确定性打印
+  -> Generated Source Project draft -> 编译/静态分析 -> 可选隔离运行
+  -> 评审 -> 物化 -> 作为新的 Source Project 重新打开
 ```
 
-registry 可同时保存多个 version；graph instance 固定引用一个 version。升级实例是显式 `MigrateNodeDefinition` command，输入旧/新 definition、migration ID 和 expected graph digest，输出参数变换、port remap、edge remap 与 diagnostics。绝不在发布新 definition 时批量静默改写所有实例。
+两种模式必须在 project/session 中显式标识，不得在 lowering 失败时偷偷从“修改既有源码”切换成“重生成整个文件”。浏览器也不得直接写用户目录。
 
-#### 18.10.2 ContractDiff 的判定顺序
+### 8.9 Registry 驱动的节点创建和参数编辑
 
-diff 工具不能只做 JSON 文本比较，建议按语义层计算：
+DL-Playground 中最值得保留的思想，是一个 layer definition 同时驱动节点创建、参数 UI、Shape、成本和代码生成。实现时复用当前 `module-registry`，但不要复制其源码或把 React 组件塞回 definition。
 
-1. 规范化旧/新 manifest，忽略字段顺序和非语义格式；
-2. 以稳定 parameter ID 比较类型、required/default/constraints/affects；
-3. 以稳定 port contract ID 比较 direction、availability、cardinality、ordering、tensor 和 relations；
-4. 比较 shape/cost/codegen rule 的 `(id, version, digest)`；
-5. 比较 source matcher、canonical kind 和 evidence policy；
-6. 最后比较 label、glyph/template 和非语义视觉 metadata；
-7. 取所有变化要求的最高版本级别，并检查用户声明的 next version 是否足够；
-8. 对 breaking change 执行 migration fixtures，生成可迁移/需人工处理/不可迁移统计。
+每个已批准定义至少固定以下契约：
 
-如果只改 label，但 source matcher 或 shape rule digest 同时变化，整体仍按后者判定，不能被 visual-only 标签掩盖。
+```ts
+interface RegisteredModuleDefinition {
+  ref: {
+    definitionId: string;
+    version: string;
+    digest: string;
+  };
+  categoryId: string;
+  canonicalKind: string;
+  parameterSchema: ParameterSchema[];
+  ports: PortContract[];
+  shapeRuleId?: string;
+  costRuleId?: string;
+  codegenRuleId?: string;
+  sourceMatchers: SourceMatcher[];
+  glyphId: string;
+  detailTemplateId?: string;
+  editPolicy: EditPolicy;
+}
+```
 
-### 18.11 拓扑草稿的提交门槛
+`ref` 必须固定 ID、版本和 digest。草稿节点只保存 definition ref、实例参数、父级和实例级端口，不复制 definition；已批准 definition 不能原地修改。
 
-拓扑解锁后，用户可以暂时删除必需输入或只搭一半子图。这类中间状态保存在 `PrototypeGraphDocument` draft 中，不应在每次点击时都被强行阻止；但系统必须立即显示 blocking diagnostic。
+创建节点的完整调用链为：
 
-正式提交前固定运行：
+1. palette 从 registry 构建搜索和分类，不维护第二份节点类型列表；
+2. 用户选择 definition 后，由 registry 物化 schema 默认值和精确 named ports；
+3. `CreateNode` command 携带 draft digest 和 definition ref 进入 command handler；
+4. command handler 产生新 `PrototypeGraphDocument`、audit event 和 diagnostics；
+5. Shape/成本分析产生只读 `AnalysisSnapshot`；
+6. `projectToScene()` 把节点投影到原型画布，并使用 definition 的 glyph/template；
+7. 用户确认源码策略前，节点始终是带明确状态的 synthetic draft，不能伪装成 canonical node。
+
+右侧参数检查器同样由 schema 驱动：数字使用带范围的输入/步进器，布尔值使用开关，枚举使用选择器，Shape/tuple 使用结构化编辑器。每次修改发出 `SetInstanceParameter`，先校验类型、约束和动态端口变化，再重新分析；节点卡片只显示高价值摘要，不复制一套完整表单。
+
+参数导致端口集合变化时，registry 必须返回端口迁移结果。仍可对应的端口保留稳定实例 ID；被移除且已有连接的端口产生 blocking diagnostic，由用户显式断开或迁移，不能静默删边。
+
+### 8.10 严格命名端口与 Graph Draft
+
+Graph Draft 是语义编辑的权威暂存层，React 状态、`LabScene` 和 SVG handle 都不是图事实。建议复用现有 `PrototypeGraphDocument` 并保证最小结构包含：
+
+```ts
+interface PrototypeGraphDocument {
+  draftId: string;
+  baseSourceDigest?: string;
+  baseExactIrDigest?: string;
+  baseRegistryDigest: string;
+  sourceStrategy: "rewrite-existing" | "generate-project";
+  nodes: PrototypeNode[];
+  edges: PrototypeEdge[];
+  inputs: GraphInput[];
+  outputs: GraphOutput[];
+  controlRegions: ControlRegion[];
+  digest: string;
+}
+
+interface PrototypeEdge {
+  edgeId: string;
+  source: { nodeId: string; portId: string };
+  target: { nodeId: string; portId: string; ordinal?: number };
+  relation: "tensor" | "mask" | "state" | "control" | "parameter";
+  policy: "replace-input" | "fanout" | "add-residual" | "concat";
+}
+```
+
+在 `rewrite-existing` 中，draft 以 Exact IR binding 为只读基线：canonical nodes/edges 不被就地改写，新增对象使用 synthetic ID，修改和删除用 intent overlay 表达，并保留 source anchors。`generate-project` 没有既有 canonical/source anchor，全部对象都是 draft 身份，直到物化后重新分析才获得 canonical ID。两类身份不得混合或用 scene ID 代替。
+
+端口不是绘图锚点。每个实例端口必须保留 direction、required、min/max connections、ordered/variadic、accepted relations、tensor contract 和 definition port ID。SVG 中的坐标和边侧只是该端口在当前 preset 下的投影。
+
+Graph Draft 允许暂时不完整：用户可以先放节点、再连线，也可以在重构中暂时移除必需输入；但每个 command 后都要立即给出 blocking/non-blocking diagnostics。正式提交前固定运行：
 
 ```text
 schema/default validation
   -> port existence + direction
-  -> per-port cardinality
+  -> cardinality + ordered ordinal
   -> relation compatibility
-  -> tensor rank/dtype/layout
   -> required input completeness
-  -> cycle/control-flow validation
+  -> tensor rank/dtype/layout
+  -> cycle/control-region validation
   -> symbolic Shape propagation
   -> cost analysis
-  -> codegen feasibility（仅请求生成代码时）
+  -> source strategy feasibility
   -> zero blocking diagnostics
-  -> review/commit
 ```
 
-这一区分使“编辑过程可不完整”和“发布结果必须严格有效”同时成立。保护锁负责进入草稿，validator 负责能否离开草稿；两者不能互相替代。
+所有语义命令返回新文档、diagnostics、digest 和审计事件。禁止把现有 `applyVisualPatch()`、节点数组 patch 或“删节点并顺便删边”的 fixture helper 用在 Graph Draft 上。
 
-### 18.12 `projectToLabScene()` 的具体映射
+### 8.11 Shape、成本、诊断和提交门槛
 
-投影函数建议只读取语义图、独立视觉状态和分析快照，并输出当前渲染器已经理解的 DTO：
+分析器按依赖关系调度节点，并按 **目标 port ID 和 ordinal** 组装输入；绝不能依赖 edges 数组顺序。Shape 值至少区分：
 
-```typescript
-function projectToLabScene(input: {
-  graph: PrototypeGraphDocument;
-  visual: PrototypeGraphVisualState;
-  analysis: AnalysisSnapshot;
-  registry: AtomicNodeRegistry;
-  glyphs: GlyphRegistry;
-  viewPreset: "engineering" | "paper";
-}): LabSceneProjection;
+```text
+Known(具体维度)
+Symbolic(B、T、D 等带约束符号)
+Unknown(证据不足，可继续部分分析)
+Error(契约冲突，阻断提交)
 ```
 
-投影必须是确定性纯函数。它可以返回 `LabScene` 以及 `prototypeNodeBySceneNodeId`、`prototypeEdgeBySceneEdgeId` 等索引，但不能修改 graph、analysis 或 registry。
+规则结果必须记录 definition/rule 的版本和 digest、输入假设、输出 Shape、diagnostics 与受影响对象。某节点无法分析时，只阻断依赖它且需要该事实的下游；无关分支仍产生部分结果，不能因单个 unknown 清空全图结果。
 
-| `PrototypeGraph` 来源 | `LabScene` 目标 | 规则 |
+成本分析必须区分 module instance、call site 和 parameter group：共享 embedding/输出投影只计算一次参数，同一共享模块被调用多次则分别计算 FLOPs；符号维度产生带公式和假设的范围，不伪造具体数字。
+
+源码提交门槛按策略分开：
+
+| 校验 | 修改既有源码 | 生成新项目 |
 |---|---|---|
-| `node.nodeId` | `scene_node_id` | 直接使用稳定实例 ID，不用数组下标 |
-| definition `visual.shape` | `shape` | 粗粒度轮廓 |
-| definition `visual.glyphId` | 新增的 `glyph_id` | 精确图例，不从 label 推断 |
-| definition `detailTemplateId` | `detail_kind` | 仅在 template predicate 满足时设置 |
-| definition label + params | `label/secondary_label` | 经过统一 formatter，不能反向解析 |
-| `node.parentId` | 层级投影输入 | 进入现有展开和 portal 构建，不塞入 label |
-| edge 两端 port ID | `target_port_role` 及后续正式 port refs | 过渡期可映射 role，最终直接使用命名端口 |
-| `AnalysisSnapshot` | Shape/cost/diagnostic overlay | 只读覆盖层，不回写语义节点 |
-| `visual.nodePositions[nodeId]` | `bounds.x/y` | 不进入语义 digest；尺寸由 glyph/template 的约束计算 |
+| 端口/Shape/控制结构 | 必须 | 必须 |
+| lowering adapter 可用 | 必须 | 不适用 |
+| 精确 source anchor | 必须 | 不适用 |
+| codegen rule 全覆盖 | 仅涉及重生成片段时 | 必须 |
+| Python compile | 必须 | 必须 |
+| 重分析后的 Graph Delta | 必须 | 必须与整个 draft 对应 |
+| 可选 runtime replay | 可选且显式授权 | 可选且显式授权 |
 
-为了兼容当前原型，可以先给 `LabNode` 增加可选的 `glyph_id` 和 `prototype_node_id`，给 `LabEdge` 增加可选的 `source_port_id/target_port_id`；但这些字段仍是投影结果。正式语义对象必须存在于单独的 prototype graph 模块中。
+静态验证通过只能进入 `review-ready`，不能自动提交。任何 unknown 是否阻断由具体 rule 和输出契约声明，UI 不得自行降级 severity。
 
-建议投影结果显式携带来源索引，而不是让 UI 拼 ID：
+### 8.12 两种源码结果必须独立实现
 
-```typescript
-interface LabSceneProjection {
-  scene: LabScene;
-  sourceIndex: {
-    nodeBySceneId: Record<string, { prototypeNodeId: string; definitionDigest: string }>;
-    edgeBySceneId: Record<string, { prototypeEdgeId: string }>;
-    detailSlotByPrimitiveId: Record<string, { bindingId: string; slotId: string }>;
-  };
+#### 8.12.1 修改既有 Source Project
+
+既有源码模式以当前 SourceCorpus、Exact IR、source anchors 和 lineage 为 base：
+
+```text
+SemanticIntent
+  -> capability adapter selection
+  -> expected Graph Delta
+  -> LibCST transform plan
+  -> 临时 workspace 应用变更
+  -> parse/compile/import-resolution 静态检查
+  -> 重新分析 Exact IR
+  -> observed Graph Delta 精确比较
+  -> diff/review/commit
+```
+
+adapter 必须声明支持的框架、源码形态、必需 anchors、前置条件和预期 delta。例如 `insert-sequential-module@1` 只能处理已证明的顺序调用边界；`add-residual@1` 必须知道 add 的插入位置、两路值和后续 consumer。没有唯一 lowering 时保持 proposal-only，不尝试字符串拼接或正则替换。
+
+该模式只改必要的 CST 节点并保留其他格式、注释和导入。它不得把整个类替换成 codegen 输出，也不得因为画布图可生成 PyTorch 就覆盖用户手写控制流。
+
+#### 8.12.2 从 Graph Draft 生成新的 Source Project
+
+空白构图模式不要求 source anchor，但要求所有节点、端口、控制区和输出都可由固定版本的 codegen rule 表达：
+
+```text
+PrototypeGraphDocument
+  -> validateGraph()
+  -> compileToPyTorchCodeIR()
+  -> deterministic printer + source map
+  -> GeneratedProjectManifest + candidate files
+  -> 后端临时 workspace
+  -> compile + 静态重分析 + expected/observed graph comparison
+  -> review
+  -> 用户选择的新目录中原子物化
+  -> 作为 Source Project 打开
+```
+
+生成结果至少包含模型源码、项目 manifest、入口声明和 generation receipt。依赖版本、Python/PyTorch 约束、输入规格、seed 和 generator digest 必须写入 manifest；可选测试文件只能由已注册模板生成。
+
+前端代码预览可以即时产生，但正式 candidate bundle 必须由后端使用固定版本 generator 重新产生，或由后端对浏览器提交的 Code IR/文件逐项重建 digest 并完成全套静态重分析。浏览器提供的字符串永远不直接写入目标目录。
+
+### 8.13 结构化 PyTorch Code IR 与双向 source map
+
+Codegen rule 只能构造结构化节点，不能返回拼接后的 Python 字符串。Code IR 至少表达：
+
+- import、class、`__init__` field、`forward` 参数和 return；
+- module call、functional call、attribute/index、keyword argument 和安全 Python literal；
+- 单值、tuple、嵌套 tuple、可选输出和丢弃值；
+- shared module field 与多个 call site；
+- `ModuleList`、Repeat、显式 loop 和受限条件区；
+- graph input/output 与 named port value binding。
+
+编译顺序以依赖图和 control region 为准。拓扑排序只适用于普通 DAG 区域，不能把 Repeat 或条件分支拍平成无条件节点列表。MHA、LSTM 等多输出规则必须完整表达 tuple pattern，不能生成 `${output}, _ = ...` 后丢失画布已声明的输出。
+
+printer 负责确定性命名、导入去重、缩进、换行和 literal 编码。同一 graph digest、registry digest、generator version 和配置必须得到字节完全相同的文件；用户 label 不直接成为变量名，字符串、路径、dtype 和可选值必须通过安全 printer 编码。
+
+每个输出 span 至少可以回到以下一种来源：
+
+```ts
+type GeneratedSourceOrigin =
+  | { kind: "node"; nodeId: string }
+  | { kind: "port"; nodeId: string; portId: string }
+  | { kind: "edge"; edgeId: string }
+  | { kind: "parameter"; nodeId: string; parameterId: string }
+  | { kind: "control-region"; regionId: string };
+```
+
+source map 同时建立 origin -> spans 和 file/range -> origins 索引。选择画布对象时高亮所有相关源码；选择源码时只在映射唯一或用户从候选中确认后选择图对象。生成源码 map 和既有源码的 LibCST SourceAnchor 是两套证据，不能混用：前者来自 printer，后者来自冻结 SourceCorpus。
+
+### 8.14 Generated Source Project 生命周期
+
+生成项目是正式领域对象，不是下载弹窗中的临时文本：
+
+```text
+graph-draft
+  -> generated-source-draft
+  -> statically-validated
+  -> runtime-validated（可选）
+  -> review-ready
+  -> materialized
+  -> opened-and-reanalyzed
+
+任意阶段 -> failed / discarded / stale
+```
+
+建议新增后端能力，具体 URL 可按现有 API 命名约定调整：
+
+```text
+POST /api/generated-projects/prepare
+POST /api/generated-projects/{id}/validate
+POST /api/generated-projects/{id}/runtime-validate
+POST /api/generated-projects/{id}/materialize
+POST /api/generated-projects/{id}/discard
+```
+
+`prepare` 请求至少携带 graph digest、registry digest、generator version、目标框架、class/entrypoint 配置和输入规格；返回文件清单、每文件 digest、source map、diagnostics 和 receipt。服务端在临时目录中工作，`materialize` 之前不触碰目标目录。
+
+物化前必须再次校验 receipt、目标目录是否为空或符合显式覆盖策略、路径 confined、文件 digest 和 stale generation。默认只允许新建空目录；覆盖已有文件需要单独逐文件授权和 diff，不能借“生成项目”绕过 Source Transaction。
+
+物化后立即走第 7 节的“从源码构建”流程。只有新 SourceCorpus 能重新产生与 draft 对应的 Exact IR、入口可发现且 source map/lineage 可建立，状态才是 `opened-and-reanalyzed`；否则物化 receipt 标记失败或部分失败，不能把浏览器 draft 当成正式项目继续编辑。
+
+### 8.15 复合模块、Repeat 和 ModuleRef
+
+自定义模块不能只保存在浏览器 `localStorage`。从选区创建模块时必须：
+
+1. 捕获选中节点、内部边和 control regions；
+2. 按跨边界的 named ports 推导模块输入/输出，要求用户解决歧义并命名；
+3. 识别可提升参数、内部常量、共享 parameter groups 和 Shape 约束；
+4. 生成 `DefinitionDraft` 和嵌套 Graph IR；
+5. 运行 schema、port、Shape、codegen 和 migration fixture 校验；
+6. 经 contract review 后发布不可变 definition version；
+7. 外部图只通过固定 digest 的 `ModuleRef` 引用它。
+
+definition 生命周期为：
+
+```text
+approved@vN -> definition-draft -> validating -> review-ready
+  -> approved@vN+1 / rejected
+```
+
+版本判断同时比较参数 schema、端口、Shape/cost/codegen rule、source matcher 和视觉 metadata。端口删除、语义变化或 rule digest 变化必须按 breaking change 处理，并提供引用实例的迁移结果。
+
+Repeat 是显式 control region，不是为了画面方便复制 N 个无关节点：
+
+- 记录 repeat count 是具体值还是符号；
+- 明确参数是共享、逐层独立还是由 factory 生成；
+- 代码生成选择 loop、`ModuleList` 或合法展开；
+- 论文视图可以只显示 `x N`，工程视图可以按需展开调用实例；
+- 展开/收起只改变 View Preset，不改变 Graph Draft 或生成源码。
+
+`ModuleRef` 的外部端口来自已批准模块契约，进入模块编辑时打开独立嵌套 draft；不能在父图里直接修改其内部 definition。递归引用、未固定版本和边界端口不闭合均阻断 codegen。
+
+### 8.16 三层保护锁与四套历史
+
+编辑模式必须是带 capability、base digest 和过期时间的 session，而不是 UI 中一个 `locked` 布尔值：
+
+| 模式 | 默认状态 | 允许 | 禁止 |
+|---|---|---|---|
+| 视觉模式 | 开放 | 移动、缩放、展开、样式、路由、preset | 改节点、边、参数、契约 |
+| 拓扑草稿模式 | 锁定 | 创建/删除实例、连接/断开端口、改实例参数 | 改 definition、绕过验证提交 |
+| 模块契约维护模式 | 强锁定 | 从批准版本创建 definition draft、校验和送审 | 原地修改批准版本、直接影响所有实例 |
+
+权限在 command handler、domain validator 和持久化/API 三层重复检查。每个拒绝返回结构化 receipt；隐藏按钮或 toast 不算权限实现，键盘、导入和测试代码也不能绕过。
+
+历史记录必须分开：
+
+- `VisualHistory`：位置、尺寸、相机、展开、route hint；
+- `TopologyDraftHistory`：Create/Delete/Connect/Disconnect/SetParameter 及其反向 command；
+- `ContractDraftHistory`：definition manifest 和 migration edits；
+- 正式 Source Transaction history：只能通过新的反向事务撤销，不能被浏览器 undo 擦除。
+
+CodeMirror 当前 buffer 还有自己的本地 history，但它只作用于 staged 文本。移动节点不得使 graph/codegen digest 失效，源码提交也不得进入 visual undo 栈。
+
+### 8.17 生成源码的隔离动态验证
+
+动态运行只能补充静态证据，不能成为构图、source anchor 或 Exact IR 的默认来源。用户必须对每次运行或明确范围的会话显式授权；未授权时 UI 不得预加载模型、导入目标工程或自动重试。
+
+每个运行任务使用一次性 workspace 和独立 worker/container，并满足：
+
+- 默认禁网，不挂载宿主 Docker socket；
+- 输入文件只读，输出只写临时目录；
+- 限制 wall-clock、CPU、内存、PID、打开文件数和文件大小；
+- 清理环境变量和 Python path，只使用批准的解释器与锁定依赖；
+- 进程超时后终止整个进程组，不能留后台子进程；
+- 不在长期服务进程中对用户字符串直接 `exec`；
+- stdout/stderr 截断并脱敏，不把源码全文写入日志。
+
+运行请求使用结构化输入规格，支持多个位置/关键字输入、嵌套 tuple/dict 输出、dtype/device、Shape 和可选值域。worker 用固定 seed 构造输入，至少运行两次并记录规范化 replay digest；结果包含模块调用、输入输出 shape/dtype、异常、耗时、资源峰值和环境 manifest。
+
+runtime evidence 与 source/IR 绑定：graph、candidate files、registry、generator、environment 和 input spec 任一 digest 改变后 receipt 立即 stale。两次运行不一致时标记 nondeterministic，不可用于声称生成项目已完全验证。无论运行成功与否，静态端口、source map 和 Graph Delta 门槛都不能被跳过。
+
+### 8.18 第一条构图到源码纵向切片
+
+先用 `Input -> Conv2d -> ReLU` 证明完整链路，不要先追求 palette 中 14 类全部可用：
+
+```text
+创建 Input [B,3,224,224]
+  -> 创建 Conv2d(in=3,out=16,kernel=3)
+  -> 创建 ReLU
+  -> 按 named ports 连线
+  -> 得到 [B,16,222,222]
+  -> 生成结构化 Code IR 和 source map
+  -> 后端准备 Generated Source Project
+  -> compile + 静态重分析
+  -> review/materialize
+  -> 从新源码重新打开并得到同构 Exact IR
+```
+
+把 `Conv2d.in_channels` 改成 4 后，必须在 `Conv2d.input` 出现 blocking diagnostic；改回 3 后消失。删除 ReLU 后输出应明确改绑到 Conv2d，不能留下孤立 edge；重新加入并连线后 code/source map 必须稳定更新。
+
+同一切片还要准备一个等价的既有源码 fixture，证明 `SetParameter` 和受支持的 `InsertNode` 走 LibCST transaction，而不是重生成文件。两条流程分别验收：
+
+- greenfield：能生成、验证、物化、重新打开；
+- existing-source：只改目标 anchor，保留注释/格式并精确匹配 Graph Delta；
+- unsupported：无 adapter、端口不兼容或 source anchor 歧义时零源码写入；
+- visual parity：全过程继续使用原型的拖动、缩放、连线、展开、选择和导出行为。
+
+该切片通过后，再扩展 Add、MHA、LSTM、共享模块、tuple output、Repeat 和 ModuleRef。简单单输入/单输出链路未闭环前，不得用菜单数量代替完成度。
+
+### 8.19 参数值来源与编辑作用域
+
+参数检查器显示的值不等于源码中一定存在一个可替换 literal。Exact IR 和 registry binding 必须为每个可见参数保存 `ValueOrigin`：
+
+```ts
+type ValueOriginKind =
+  | "constructor-literal"
+  | "module-field"
+  | "config-key"
+  | "dataclass-field"
+  | "function-default"
+  | "cli-argument"
+  | "registry-default"
+  | "factory-result"
+  | "computed-expression"
+  | "runtime-only";
+
+interface ValueOrigin {
+  originId: string;
+  kind: ValueOriginKind;
+  sourceAnchorIds: string[];
+  configPath?: string;
+  configKeyPath?: string[];
+  confidence: "exact" | "conditional" | "unknown";
+  editability: "direct" | "adapter-required" | "readonly";
+  evidenceIds: string[];
+}
+
+type EditTargetScope =
+  | "definition"
+  | "module-instance"
+  | "call-site"
+  | "repeat-template"
+  | "config-value"
+  | "parameter-sharing-group"
+  | "all-shared-uses";
+```
+
+`set-parameter` intent 必须携带 `valueOriginId`、`editTargetScope` 和用户确认时显示的 affected canonical IDs/source anchors。后端重新解析 origin 并计算影响范围，不能信任前端上传的集合。以下情况必须要求显式选择或阻断：
+
+- 同一个 config key 构造多个 module instances；
+- 同一个 module instance 有多个 call sites；
+- Repeat 使用共享模板、独立 `ModuleList` 或 factory 创建不同参数；
+- embedding/projection 使用同一 parameter-sharing group；
+- 值来自表达式、环境变量、CLI 或 factory，无法唯一改写；
+- 修改 constructor definition 会影响项目内其他实例。
+
+检查器应先展示“当前解析值、来源、作用域、受影响对象”，再允许 prepare。禁止把 call-site 展示节点误当成独立 module instance，也禁止通过复制共享参数来实现“只改一个调用”。
+
+### 8.20 模型状态、权重和 checkpoint 迁移
+
+源码结构事务和模型状态迁移是两个独立结果。每个绑定了 checkpoint/state asset 的参数或结构事务都必须生成 `StateMigrationPlan`：
+
+```ts
+type StateMigrationAction =
+  | "preserve"
+  | "rename"
+  | "reshape"
+  | "initialize"
+  | "drop"
+  | "block";
+
+interface StateTensorSpec {
+  dimensions: Array<number | string>;
+  dtype: string;
+  device?: string;
+}
+
+interface StateMigrationEntry {
+  oldStateKey?: string;
+  newStateKey?: string;
+  action: StateMigrationAction;
+  oldTensor?: StateTensorSpec;
+  newTensor?: StateTensorSpec;
+  parameterGroupId?: string;
+  initializerRuleId?: string;
+  optimizerSlotKeys: string[];
+  evidenceIds: string[];
+  diagnostics: Diagnostic[];
+}
+
+interface StateMigrationPlan {
+  planId: string;
+  framework: "pytorch" | "keras" | "jax" | "onnx";
+  baseSourceDigest: string;
+  resultSourceDigest: string;
+  sourceStateDigest: string;
+  targetStateSchemaDigest: string;
+  entries: StateMigrationEntry[];
+  sharedIdentityChecks: string[];
+  status: "verified" | "partial" | "blocked" | "not-requested";
 }
 ```
 
-当 definition 没有 glyph 或 detail template 时，投影器输出明确 fallback 和 diagnostic。它不能从 label 正则猜测；label 正则只保留在旧 fixture compatibility adapter 中，并应有删除期限。
+计划至少覆盖 learnable parameters、registered/non-trainable buffers、optimizer state/slots、共享或 tied weights，以及框架特有的 state tree/initializer。参数名相同但 Shape/dtype/共享身份不同不能标记 preserve；`strict=False`、missing/unexpected keys 或按位置复制不能替代逐项计划。
 
-### 18.13 建议源码目录
+事务 receipt 必须分别报告：
 
-首期可在 `scene-visual-lab/src` 下新增：
+- `source_status`：源码和 Exact IR 是否提交成功；
+- `state_compatibility`：现有模型状态是 verified/partial/blocked/not-bound；
+- `training_resume_compatibility`：optimizer、scheduler、step/epoch 和随机状态是否可恢复；
+- `inference_compatibility`：目标模式下 state load 和最小 replay 是否通过。
 
-```text
-prototype-graph/
-  types.ts                     # PrototypeGraphDocument、node、edge、draft
-  visual-state.ts              # position/size/expanded，不进入语义 digest
-  commands.ts                  # 创建/删除/连线/参数修改命令
-  command-handler.ts           # 模式、权限和 base digest 检查
-  validate-graph.ts            # 端口、拓扑和提交门槛
-  analyze-graph.ts             # 调度 Shape/cost rules
-  project-to-lab-scene.ts      # 唯一的语义图 -> LabScene 适配器
-  digest.ts                    # 确定性规范化与摘要
+用户可以显式选择 `source-only` 提交，但 UI 必须说明原 checkpoint 已解除绑定或兼容性未知，不能继续显示“可直接运行/继续训练”。`source+state` 只有计划 verified、迁移产物 digest 固定、隔离加载通过并经 review 后才能提交。未经信任的 pickle/整模型对象默认不加载；PyTorch 优先 `state_dict`/`weights_only`，Keras 处理 architecture/weights/optimizer/custom object，JAX/Flax 处理 PyTree 结构和 optimizer state，ONNX 处理 initializer/external-data ArtifactSet。
 
-atomic-registry/
-  types.ts                     # AtomicModuleManifest、PortContract、ParameterSchema
-  define-module.ts             # defineAtomicModule 与静态约束
-  registry.ts                  # 显式聚合和完整性验证
-  categories.ts                # 14 个检索分类
-  definitions/
-    inputs/
-    torch-ops/
-    tensor-shape/
-    tensor-creation/
-    activations/
-    normalization/
-    regularization/
-    linear-dense/
-    vision-convolution/
-    vision-pooling/
-    sequence-attention/
-    losses/
-    metrics/
-    control-flow/
+### 8.21 外部变更、多文件原子性和崩溃恢复
 
-analysis-rules/
-  shape/
-  cost/
-  diagnostics.ts
-  symbolic-dimensions.ts
+stale 事务不得自动做文本 fuzzy merge。用户选择恢复时，系统以原 `SemanticIntent`、旧 expected delta 和新的 SourceCorpus 重新执行 capability/anchor resolution，产生新的 transaction ID；旧 base/current/proposed 三方 diff 只用于理解冲突。重新 prepare 后必须重新运行全部门禁。
 
-glyph-registry/
-  registry.ts
-  definitions.ts
-  renderers/
-
-codegen/
-  pytorch-ir.ts
-  rule-registry.ts
-  printer.ts
-  source-map.ts
-
-contract-review/
-  types.ts
-  diff.ts
-  validate-definition.ts
-  version-policy.ts
-  migrations.ts
-
-ui/
-  NodePalette.tsx              # 搜索与 14 类目录，只发 CreateNode
-  ParameterInspector.tsx       # schema 驱动的右侧参数编辑
-  PortOverlay.tsx              # 命名端口命中区与连线预览
-  EditModeControl.tsx          # visual/topology/contract 会话入口
-```
-
-这些模块不依赖 React。`App.tsx` 只负责调用 command handler、保存当前 draft/analysis、把投影结果交给现有 SVG 画布，并在检查器中渲染 schema。这样将来迁入正式 Studio 时，registry、规则和测试可以整体移动，不必携带原型的 UI 状态容器。
-
-### 18.14 分阶段实施顺序
-
-#### 阶段 A：语义底座
-
-1. 建立纯 TypeScript 的 registry、parameter、port、symbolic Shape、diagnostic 类型；
-2. 完成 registry 完整性、digest 和版本测试；
-3. 建立 `PrototypeGraphDocument`，不改现有场景数据；
-4. 实现 `projectToLabScene()`，用测试证明投影不反向污染语义图。
-
-#### 阶段 B：首批原子节点和创建 UI
-
-1. 先注册 Input、Linear、Conv2d、MaxPool2d、ReLU、GELU、Add、LayerNorm、Dropout、Reshape、Transpose、Embedding、MultiheadAttention；
-2. 将“新建节点”改为带搜索和 14 类分组的命令菜单；
-3. 参数在右侧检查器统一编辑，不在节点卡片中塞完整表单；
-4. 加入命名端口和端口级连线，保留当前 SVG、布局和路由系统。
-
-#### 阶段 C：静态分析和图例统一
-
-1. 实现拓扑调度、端口基数校验、符号 Shape 传播和成本汇总；
-2. 引入 `AnalysisSnapshot`，删除对 UI node 私有字段的依赖；
-3. 注册稳定 glyph，并让 engineering/paper 使用同一 `glyphId`；
-4. 用四个 Transformer 场景验证 MHA、Add、LayerNorm、FFN 等共享定义投影一致。
-
-#### 阶段 D：草稿代码和复杂结构
-
-1. 实现 PyTorch Code IR、printer 和 source map；
-2. 输出“生成源码提案”，不自动写用户文件；
-3. 增加 Repeat、ModuleRef、ModuleList、多输出和显式循环；
-4. 将 contract diff、版本判断、review receipt 和 migration 接入 CI/本地审核界面。
-
-#### 阶段 E：迁入正式 Studio
-
-1. 将 registry 定义映射到 Exact Architecture IR 的 canonical semantic kind；
-2. 扩展正式 `KernelPort` 的 optional、cardinality、tensor contract 等信息；
-3. 把原型 draft 转换为 synthetic proposal；
-4. 通过 [`prepareStructural()`](../../src/app/studio-actions.ts) 进入正式 prepare/verify/review/commit；
-5. 源码重新静态分析后，用带 canonical/evidence IDs 的正式节点替换 synthetic 节点。
-
-其中第 1、5 步依赖稳定的多文件源码事实、定义解析和命名端口绑定。若允许重写主程序读取链，应与[第 19 节 Python 编译前端 v2](#19-主程序-python-编译前端-v2允许重写时的源码读取方案)协同实施，而不是继续扩展现有单文件 AST visitor。
-
-动态执行验证放在最后，并且必须显式启用、禁网、限制 CPU/内存/PID/运行时间。默认路径继续是静态分析，不得通过 import 用户工程来获得模型图。
-
-#### 18.14.1 推荐的第一个端到端切片：Input -> Conv2d -> ReLU
-
-第一轮不要先把 14 类全部搬进菜单。应先用三个节点证明语义链路完整：
-
-1. `atomic-registry/definitions/inputs/tensor-input.ts`：声明无输入、一个 `output`、符号/具体 Shape 参数；
-2. `atomic-registry/definitions/vision-convolution/conv2d.ts`：声明 `input/output`、Conv 参数与三个 rule ID；
-3. `atomic-registry/definitions/activations/relu.ts`：声明一进一出和 Shape-preserving rule；
-4. `analysis-rules/shape/input.ts`、`conv-nd.ts`、`identity.ts`：先支持 known/symbolic `B,C,H,W`；
-5. `prototype-graph/commands.ts`：支持 CreateNode、ConnectPorts、SetInstanceParameter；
-6. `project-to-lab-scene.ts`：映射为 `io -> convolution -> operation`，其中 Conv 使用 `glyph_id=conv2d`；
-7. `NodePalette.tsx` 替换当前顶栏 `addNode()` 的直接 patch；
-8. `ParameterInspector.tsx` 在当前检查器位置显示 Conv 字段、端口和 Shape diagnostics；
-9. `PortOverlay.tsx` 让边从 source output 命中 target input，并把端口点投影给现有 router；
-10. 使用现有 `NodeGraphic`、`routeScene()` 和导出链路显示结果。
-
-该切片完成时必须能证明：
+多文件事务使用持久化 journal，而不是把内存状态当作原子性：
 
 ```text
-Input.output [B,3,224,224]
-  -> Conv2d.input
-  -> Conv2d.output [B,16,222,222]
-  -> ReLU.input
-  -> ReLU.output [B,16,222,222]
+prepared -> verified -> commit-intent-recorded
+  -> replacing-files -> post-commit-validating -> committed
+  -> rollback-required -> rolled-back / recovery-failed
 ```
 
-把 Conv2d `in_channels` 改成 4 后，应出现绑定到 `Conv2d.input` 的 blocking diagnostic；改回 3 后诊断消失。锁定拓扑后 Connect/Delete/SetParameter command 被拒绝，但节点移动、缩放、展开和视图切换仍可用。interactive SVG 与导出 SVG 必须显示同一个 `conv2d` glyph。
+journal 记录 transaction、base/result corpus digest、每个文件 before/after digest、备份位置、替换进度、fsync/rename 结果和 post-commit gates。服务启动时扫描非终态 journal：能证明所有文件为 before 状态则 discard；能证明所有文件为 after 状态则继续 post-commit validation；混合状态必须从已验证备份回滚并生成 recovery receipt。多文件不能宣称底层文件系统提供单原语原子 rename，只能声明“服务级 journal + rollback”。
 
-只有该链路通过后再扩展 Add、MHA、LSTM 等多输入/多输出节点，否则会在简单 one-in/one-out 尚未稳定时同时调试 variadic、optional 和 tuple output。
+改写必须保留或显式处理每个文件的 encoding、BOM、LF/CRLF、末尾换行、权限 mode 和逻辑路径。symlink 默认不可写；若未来支持，必须冻结 link 本身和 confined target，不能通过 resolve 越过 project root。无法无损表示的编码、权限变化、备份失败或 rollback proof 不完整均阻断 commit。
 
-### 18.15 与正式 Studio 的事务边界
+## 9. 源码工作区
 
-当前正式 [`KernelPort`](../../src/visual-kernel/types.ts) 已包含 `portId/ownerNodeId/direction/role/evidenceIds`，后续可以增加或关联以下契约信息：
+### 9.1 UI 结构
 
-```typescript
-interface KernelPortContractProjection {
-  required: boolean;
-  minConnections: number;
-  maxConnections: number | "many";
-  tensorContract?: TensorContract;
-  acceptedRelations: KernelRelation[];
-  definitionId: string;
-  definitionVersion: string;
-}
-```
+源码工作区作为底部可拉伸面板或右侧临时全高面板，不改变原型画布中央区域。包含：
 
-这些字段应来自批准的 module manifest 与源码证据的结合，而不是 renderer 临时生成。正式链路为：
+- 文件列表和 clean/modified/stale/readonly 状态；
+- CodeMirror 6 编辑器；
+- 与当前 selection 对应的 source anchor 高亮；
+- diagnostics、搜索和 evidence 装饰；
+- staged diff；
+- 保存到 staged buffer、验证、丢弃、评审、提交；
+- transaction active 时只读锁。
+
+选择画布节点、边、内部 slot 或导航项时，源码面板定位到对应 anchor；选择源码区间时，只在映射唯一时同步选择画布对象。
+
+### 9.2 现有 Source Workspace API
+
+继续复用：
 
 ```text
-approved RegisteredModuleDefinition
-  -> 用户创建 ModuleInstance draft
-  -> port/Shape/cost/compatibility validation
-  -> LabScene 或 KernelRenderScene 投影
-  -> prepareStructural / verify / review / commit
-  -> Python 源码重新静态分析
-  -> canonical node + evidence 取代 draft node
+POST /api/source-workspace/open
+POST /api/source-workspace/save
+POST /api/source-workspace/buffer/discard
+POST /api/source-workspace/validate
+POST /api/source-workspace/discard
+POST /api/transaction/commit
+POST /api/transaction/discard
 ```
 
-不得直接修改 [`KernelDocument`](../../src/visual-kernel/types.ts)。拓扑草稿最终调用结构事务；参数变化调用参数事务；模块定义本身的变化走独立 registry transaction。定义审核不能伪装成 visual patch，visual patch 也不能改变 port contract。
+所有 save 请求必须携带 `base_sha256` 和 `expected_revision`。stale buffer 不自动 merge；显示 working/base/staged 三方差异，由用户重新打开或显式解决。
 
-正式提交还要防止过期草稿：prepare 时提交 base source digest、registry digest 和 definition versions；verify 或 commit 发现任一 digest 已变化时，要求 rebase 并重新分析。
+### 9.3 可选 Tree-sitter 层
 
-#### 18.15.1 原型命令到现有 Studio action 的映射
+如果 P2 添加浏览器端 Tree-sitter：
 
-正式前端已经有三条不同入口，迁移时不要全部塞进 `prepareStructural()`：
+- 只提供即时 syntax error、折叠和局部结构导航；
+- 每次 CodeMirror ChangeSet 同步调用 tree edit，再用旧树增量 reparse；
+- 结果标记为 `editor-local`，不得生成 canonical ID 或允许提交；
+- 最终验证仍以服务端 LibCST 和 Exact IR 为准；
+- 不得把 grammar/WASM 首屏加载变成 P0 阻塞项。
 
-| 原型意图 | 现有正式入口 | 说明 |
-|---|---|---|
-| 修改普通实例参数 | [`prepareParameter()`](../../src/app/studio-actions.ts) | 请求 `/api/transaction/prepare`，必须绑定 canonical target node 和源码参数 |
-| 创建/删除/替换模块实例等结构变化 | [`prepareStructural()`](../../src/app/studio-actions.ts) | 请求 `/api/transaction/prepare-structural`；prototype node 先作为 synthetic proposal |
-| 连接两个正式端口 | [`proposeConnection()`](../../src/app/studio-actions.ts) | 当前请求 `/api/proposal/connection`，已经携带 source/target port ID；后续仍需 verify/review/commit 闭环 |
-| 移动、缩放、展开、route hint | visual/navigation persistence | 不生成 Python 源码事务，不改变 `KernelDocument` 语义 |
-| 修改模块契约/manifest | 当前无对应 action | 必须新增独立 registry transaction；不能借用参数或 visual patch |
+### 9.4 审计、离线交付和协议升级
 
-`prepareStructural()` 当前 payload 包含 `patch_id/operation/target_node_id/parameters`，因此从原型迁移时需要一个显式 adapter：
+分析、修改和生成结果可以导出为可验证的 `.archcanvas` bundle。现有 `OfflineBundleManifest` 和 `ArtifactSet` 作为清单边界，至少包含或引用：
 
-```typescript
-function toStructuralProposal(
-  command: PrototypeGraphCommand,
-  bindings: DraftCanonicalBindings,
-): StructuralProposal | UnsupportedReceipt;
-```
+- redacted SourceSnapshot/SourceCorpus 摘要和 AnalysisEnvironmentManifest；
+- Exact IR、hierarchy、evidence、diagnostics、discrepancy records；
+- View Preset、VisualState、折叠/完全展开 scene 及 SVG/HTML/PNG/PDF；
+- registry、pattern/template bindings、framework form support matrix；
+- RoundTripConformanceReport、transaction/runtime/state migration receipts；
+- schema bundle、generator/adapter/analyzer digest 和完整 SHA-256 inventory。
 
-adapter 只有在 draft node/port 已能绑定源码位置或明确的插入位置时才产生 proposal。纯画布 ID、label 或坐标不足以构造正式源码修改；无法绑定时返回 unsupported receipt，而不是把 `scene_node_id` 冒充 `target_node_id`。
+bundle verify 必须拒绝缺失、额外或 digest 不符文件，并检查所有 receipt 是否绑定同一个 source/IR/environment generation。默认不打包用户源码全文、checkpoint 或绝对路径；需要包含时由用户显式选择并在 manifest 标记敏感内容。
 
-提交后的回收流程也要写成代码路径：
+所有持久化协议采用 major/minor 兼容策略：未知 major 必须拒绝；additive minor 可在验证后读取；需要重写的旧版本通过固定 digest 的 migration 产生新对象和 receipt，不原地静默升级。至少为 Exact IR、CanvasDocument、DraftGraphDocument、Registry、SourceTransaction、StateMigrationPlan 和离线 bundle 保留向前读取测试及一份前一 major/minor 的迁移 fixture。
 
-```text
-commit receipt(sourceDigestAfter)
-  -> 触发 Python 静态重新分析
-  -> 得到新的 Exact Architecture IR
-  -> 重建 KernelDocument
-  -> 用 proposal correlation ID 匹配 canonical node/port/evidence
-  -> 移除已兑现 synthetic node
-  -> 无法匹配则保留 diagnostic，不能声称迁移成功
-```
+落地前先建立或升级以下 schema，Python model、导出副本和 TypeScript generated type 必须由同一源生成：
 
-definition registry transaction 与 model source transaction 是两套并行版本空间。前者批准“Conv2d 这个模块类型如何定义”，后者批准“某个项目源码中增加一个 Conv2d 实例”；review receipt、digest 和权限不能混用。
-
-### 18.16 测试与验收要求
-
-除第 16 节已有的视觉回归外，注册表和契约系统至少增加：
-
-1. 每个 definition 的 schema 默认值、序列化 round-trip 和版本 migration 测试；
-2. 每个端口的合法方向、错误方向、缺失必需连接、连接超额和非法 relation 测试；
-3. Conv2d/Linear/Add/Reshape/MHA 的具体 Shape、符号 Shape、未知维度和错误 Shape 测试；
-4. 参数变化触发 ports/shape/cost/code 缓存失效的测试；
-5. 同一文档和 registry 输入产生相同 digest、AnalysisSnapshot 和投影的确定性测试；
-6. engineering/paper 对同一 definition 解析到相同 `glyphId` 的测试；
-7. 未解锁时所有拓扑命令被 command/API 层拒绝的测试；
-8. 已批准 definition 不能原地修改、receipt 与 candidate digest 严格绑定的测试；
-9. breaking contract 未提供 migration 时无法发布的测试；
-10. topology draft 可暂存不完整图，但 blocking diagnostic 未清零时无法提交的测试；
-11. PyTorch printer 对 tuple、多输出、共享 module、特殊字符串和值的安全编码测试；
-12. synthetic proposal 经正式事务和源码重分析后被 canonical/evidence node 替换的集成测试。
-
-首批迁移完成的判据不是“菜单中能看到 14 类”，而是至少一组代表性节点从 registry 创建、经命名端口连接、完成 Shape/成本分析、投影到现有画布，并能在锁定/草稿/审核状态之间保持同一组稳定 ID。
-
-#### 18.16.1 与现有测试的衔接
-
-现有测试已经覆盖视觉层，新增测试应在其上补语义层，而不是替换：
-
-| 现有测试 | 已验证 | 新增断言 |
-|---|---|---|
-| [`model.test.ts`](./src/model.test.ts) | visual patch、clone、bounds | semantic command 不可由 `applyVisualPatch()` 触发；projection 不修改 graph |
-| [`transformer-scene.test.ts`](./src/transformer-scene.test.ts) | 经典/T2T 展开、递归 detail、路由 | 相同原子 definition 的 engineering/paper `glyphId` 相同 |
-| [`paper-transformer-scene.test.ts`](./src/paper-transformer-scene.test.ts) | 双列布局、底入顶出、semantic port | paper glyph 不为空；mask/memory slot 绑定到正式 port contract |
-| [`atomic-hierarchy.test.ts`](./src/atomic-hierarchy.test.ts) | portal chain、最深端点、隐藏桥接边 | 插入无关 primitive 后 slot-based atom ID 不变 |
-| [`routing.test.ts`](./src/routing.test.ts) | 选路和度量 | 端口投影 point/side 改变时 edge 仍引用同一 port ID |
-| [`expansion.test.ts`](./src/expansion.test.ts) | 父节点放大、邻居平移 | topology digest 不因展开、拖动或 offset 改变 |
-
-建议新增测试文件及职责：
-
-```text
-atomic-registry/registry.test.ts          # 唯一性、引用解析、digest、版本固定
-atomic-registry/definitions.test.ts       # 每个 definition 的 schema/port contract
-prototype-graph/commands.test.ts          # capability、stale digest、command receipt
-prototype-graph/validate-graph.test.ts    # cardinality/relation/tensor/cycle
-prototype-graph/project.test.ts           # 纯函数、稳定 ID、两种 preset
-analysis-rules/shape/*.test.ts            # known/symbolic/unknown/boundary
-analysis-rules/cost/*.test.ts             # shared params、重复调用、假设
-glyph-registry/glyphs.test.ts             # paper/engineering primitive parity
-codegen/printer.test.ts                   # AST、安全 literal、多输出和 source map
-contract-review/diff.test.ts              # major/minor/patch 与 migration gate
-```
-
-其中 registry definitions 适合做数据驱动的通用契约测试：遍历每个已注册 definition，验证所有 input/output port 至少有一个合法 fixture 和一个非法 fixture；但不能只靠通用测试，Conv、MHA、LSTM、Repeat 等规则仍需专门的语义测试。
-
-### 18.17 源码复用与许可证前置条件
-
-当前 DL-Playground checkout 根目录未发现 `LICENSE`、`COPYING` 或 `NOTICE`。在版权许可或项目授权明确前，只应复用架构思想、行为观察和公开接口形态，并按本节契约重新实现；不要直接复制其 TypeScript/TSX 源码、样式或测试夹具。
-
-实施时应保留一份来源记录，说明哪些能力是根据行为重新设计、哪些术语属于 PyTorch/React Flow 通用概念，以及是否有经授权的代码片段。若后续确认许可证，再由维护者决定是否保留 clean-room 实现或引入带 attribution 的依赖。
-
-## 19. 主程序 Python 编译前端 v2：允许重写时的源码读取方案
-
-第 18 节解决的是“模块契约、命名端口和原型构图如何建立”，但这些能力迁入正式 Studio 后还有一个更早的前置条件：Python 读取端必须能够从冻结的多文件源码中，稳定地产生模块实例、调用点、值、端口绑定、参数共享和父子关系。若仍在当前通用 `analyzer.py` 上逐项增加特殊分支，registry 最终只能绑定到不稳定的节点和顺序端口，保护锁也无法证明准备修改的是哪一段源码。
-
-如果允许较大范围重写，推荐新建一套并行的 **Python compiler frontend v2**，而不是把现有读取器继续扩成一个更大的 AST visitor。这里的“编译前端”不表示编译或执行用户模型，而是指借用编译器的分层方式，将源码字节、语法、名称、控制流、值流、框架语义和架构 IR 分开处理。
-
-必须继续遵守的既有工程约束为：
-
-- Source Evidence 和 Exact Architecture IR 仍是权威，Canvas 仍是派生视图；
-- 默认只做静态分析，不 `import`、不执行用户项目，不通过构造模型获得结构；
-- 无法证明的动态调用、控制流或容器生成必须形成 `opaque` boundary 和 diagnostic；
-- visual patch 不能写源码，语义修改继续走 prepare、verify、review、commit；
-- v2 读取结果必须能降级投影到现有正式 Studio，不能要求 visual-kernel 与读取器同时推倒重写。
-
-### 19.1 为什么不再对现有 AST 读取器逐项打补丁
-
-当前实现的问题并不是八个互不相关的小缺陷，而是源码字节、语法节点、架构节点和视觉节点之间缺少中间语义层：
-
-| 当前实现 | 直接后果 | 仅打补丁仍会保留的问题 |
-|---|---|---|
-| [`source_index.py`](../../../src/archcanvas_python/source_index.py) 每次从工作树读取并 `ast.parse()` | 解析输入没有冻结内容身份 | 名称索引、Evidence 和事务仍可能读到不同字节 |
-| [`analyzer.py`](../../../src/archcanvas_python/analyzer.py) 在遍历顶层执行语句时直接创建 `ArchitectureNode` | 定义、实例、调用和值被压成一个对象 | 无法严谨表达共享模块、多次调用和 tuple 输出 |
-| `_call_name()` 保留源码拼写 | `nn.Linear`、`torch.nn.Linear`、别名和 re-export 不统一 | 每增加一种导入形式就要补启发式 |
-| 输入端口按依赖遍历顺序生成 `in0/in1/...` | MHA/LSTM/Decoder 无法严格绑定语义参数 | 在端口名称上补字符串仍没有调用实参绑定 |
-| node/evidence ID 使用遍历序号和 `.2/.3` 后缀 | 前面插入语句会造成大面积 ID 漂移 | 只换一种序号规则仍不能区分精确 Evidence 与跨版本 lineage |
-| Autoformer 等分析器自行读取固定 `SOURCE_PATHS` 并手工构图 | 每个模型家族形成第二套读取器 | 公共修复无法自然覆盖专用分析器 |
-| 读取用 AST、写回用 LibCST | read anchor 与 write anchor 来自两棵不同的树 | 行号和表达式字符串只能做脆弱的二次比对 |
-
-可选方案的结论为：
-
-| 方案 | 可取之处 | 不采用为最终架构的原因 |
-|---|---|---|
-| 扩展现有 AST 分析器 | 改动小，短期可修具体 bug | 无损源码、稳定写回和跨文件语义仍然分裂 |
-| 只用 LibCST | 无损、精确 span、可统一读写 | 不完整解析对象属性类型和复杂跨文件调用 |
-| 只用 Pyright | 导入、类型、search path 能力成熟 | 不提供 ArchCanvas 模块/端口语义，也不是源码写回事实模型 |
-| Tree-sitter 作为核心 | 增量快、语法错误时仍能产生树 | 提供语法而不是 Python 导入、类型和调用语义 |
-| **LibCST + Pyright sidecar + ArchCanvas Semantic Graph** | 源码、解析、语义与产品契约各自有明确责任 | 需要固定 sidecar 版本和新的 v2 协议，但长期边界最稳定 |
-
-### 19.2 官方能力依据与采用边界
-
-本方案基于 2026-10-01 核对的官方资料，不依赖把第三方工具能力想象成完整 Python 解释器。
-
-#### 19.2.1 LibCST
-
-[LibCST 官方设计说明](https://libcst.readthedocs.io/en/latest/why_libcst.html)明确指出 Python AST 是有损的，会丢失注释、空白和换行形式；LibCST 是可精确重印的 lossless CST，同时使用接近 AST 语义的节点类型。对 ArchCanvas 来说，这意味着分析 Evidence 和事务写回可以建立在同一份语法表示上。
-
-[LibCST Metadata](https://libcst.readthedocs.io/en/latest/metadata.html)提供：
-
-- `PositionProvider`：行列范围，适合 UI 展示；
-- `ByteSpanPositionProvider`：从文件开头计算的字节 offset 与 length，适合作为精确源码锚点；
-- `ParentNodeProvider`：反向取得父节点；
-- `ScopeProvider`：局部变量定义、访问和作用域；
-- `QualifiedNameProvider`：模块内候选限定名；
-- `FullyQualifiedNameProvider`：结合仓库位置生成全限定名并解析相对导入；
-- `FullRepoManager`：为仓库级 provider 生成每文件 cache。
-
-但官方文档也明确说明 `ScopeProvider` 不负责任意对象属性的赋值/访问；LibCST 自带 `TypeInferenceProvider` 又依赖 Pyre Query API、Pyre server 和 watchman。因此 v2 使用 LibCST 负责**源码事实与局部名称**，不把其可选 Pyre 集成作为默认依赖。
-
-#### 19.2.2 Pyright Type Server
-
-[Pyright Type Server](https://microsoft.github.io/pyright/#/type-server)是单独发布的 `pyright-typeserver` 包，通过 stdio 上的 JSON-RPC 提供：
-
-- `typeServer/getComputedType`；
-- `typeServer/getDeclaredType`；
-- `typeServer/getExpectedType`；
-- `typeServer/resolveImport`；
-- `typeServer/getPythonSearchPaths`；
-- `typeServer/getSnapshot`；
-- virtual file redirection。
-
-它与 Pyright CLI/LSP 共用 analyzer、binder 和 type evaluator，适合补足 `self.attention`、继承方法、re-export、stub 和调用返回类型。但它只能提供 resolver/type evidence，不能直接产生 ArchCanvas 的 module instance、PortContract、TemplateBinding 或 Exact Architecture IR。
-
-[Pyright Import Resolution](https://github.com/microsoft/pyright/blob/main/docs/import-resolution.md)还揭示了一个必须显式处理的安全边界：未明确配置时，Pyright 可能调用配置的或默认 Python 解释器取得 search path。ArchCanvas 的静态分析进程不得允许这种隐式行为，因为解释器启动可能处理 `sitecustomize`、用户 site 或可执行 `.pth`。
-
-因此生产配置必须显式提供 workspace root、`extraPaths`、`stubPath` 和固定的 `typeshedPath`；默认不把用户环境的 Python executable 交给 Type Server。需要读取第三方类型时，只挂载已盘点并冻结的 `.pyi`、`py.typed` 包源码或审核过的 stub corpus，并把实际 read set 纳入分析输入摘要。
-
-#### 19.2.3 Tree-sitter
-
-[Tree-sitter 官方说明](https://tree-sitter.github.io/tree-sitter/)将其定位为增量 concrete syntax parser：足够快，可在每次按键时解析，并能在语法错误存在时继续返回有用语法树。因此它适合未来的“未完成编辑 buffer 预览”，不适合首期作为正式 Evidence、类型解析或源码写回的权威前端。
-
-只有满足以下需求后才引入 Tree-sitter：
-
-- Studio 已有真正的 staged multi-file source editor；
-- 用户需要在尚未形成合法 Python 时看到 provisional diagnostics；
-- Tree-sitter 节点只绑定临时 buffer revision，不生成 approved Evidence；
-- buffer 变为合法源码并提交后，仍由 LibCST v2 重新分析。
-
-#### 19.2.4 隔离启动与规范化摘要
-
-[Python `-I` isolated mode](https://docs.python.org/3.14/using/cmdline.html#cmdoption-I)会移除当前目录和用户 site-packages，并忽略 `PYTHON*` 环境变量。正式 analyzer 应从安装在可信环境中的入口以 isolated mode 启动，项目根只作为数据参数传入，不能再作为 `cwd` 或 `PYTHONPATH`。
-
-Python 与 TypeScript 都要计算 registry 和文档摘要，不能分别依赖语言自身的普通 JSON serializer。[RFC 8785 JSON Canonicalization Scheme](https://www.rfc-editor.org/rfc/rfc8785.html)定义了面向 hashing/signing 的确定性属性排序、primitive 序列化、UTF-8 和无多余空白规则。建议跨语言 bundle 使用 JCS 或严格等价的受测试实现，而不是仅约定 `sort_keys=True`。
-
-### 19.3 最终单向链路
-
-正式读取链路调整为：
-
-```text
-ProjectManifest / SourceRootResolver
-  -> Immutable SourceCorpus + content-addressed blobs
-  -> Frozen materialized repository
-  -> LibCST Repository Frontend
-       syntax + byte spans + parents + scopes + qualified names
-  -> optional/version-pinned Pyright Type Server
-       import target + declared/computed type + search path evidence
-  -> ArchCanvas Python Semantic Graph
-       definitions + instances + calls + values + control regions + parameter groups
-  -> Registry Binder
-       exact definition version + named port/parameter binding
-  -> Exact Architecture IR v2 + Evidence Ledger
-  -> Shape / Cost / Template predicate evaluation
-  -> existing hierarchy/publication/visual-kernel
-  -> engineering or paper projection
-```
-
-这里有五个不可反向的事实边界：
-
-| 层 | 权威事实 | 不允许做的事 |
-|---|---|---|
-| `SourceCorpus` | 本次分析实际冻结的源码 bytes 和路径空间 | 从工作树重新读取并假装仍是同一 snapshot |
-| LibCST frontend | 语法、源码 span、局部 scope 和限定名候选 | 根据图例或 registry 反向改写 CST 事实 |
-| Python Semantic Graph | 实例、调用、值流、参数共享和控制区域 | 保存 SVG、坐标或 paper lane |
-| Exact Architecture IR v2 | 经证据和契约绑定的正式架构事实 | 保存未审核的 UI 草稿和临时编辑 buffer |
-| Kernel/Lab projection | 图例、模板、布局、路由和视觉 preset | 重新猜测定义、端口、Shape 或父子模块 |
-
-### 19.4 `ProjectManifest` 与 source root 解析
-
-当前 `discover_project()` 同步遍历并解析全部小于 2 MB 的 Python 文件，而且调用发生在 Studio server lock 内。v2 应把“目录发现”“候选入口索引”和“正式分析”拆开。
-
-建议协议：
-
-```python
-class SourceRootSpec(StrictModel):
-    logical_prefix: str
-    relative_path: str
-    precedence: int
-
-
-class ProjectManifest(StrictModel):
-    schema_version: Literal["2.0"] = "2.0"
-    project_id: Identifier
-    project_root_hint: str
-    source_roots: list[SourceRootSpec]
-    include_globs: list[str]
-    exclude_globs: list[str]
-    config_paths: list[str]
-    python_target: str
-    platform_target: str
-    namespace_package_policy: Literal["enabled", "disabled"]
-    discovery_budget: DiscoveryBudget
-```
-
-解析顺序固定为：
-
-1. 读取显式 Studio 项目设置；
-2. 读取 `pyproject.toml` 中可静态解释的包目录、Pyright 配置和 include/exclude；
-3. 识别常见 root 与 `src/` layout；
-4. 建立有顺序的 source roots，保留冲突与 shadowing diagnostic；
-5. 只做快速候选索引，不在 `/api/projects/open` 的 server lock 中解析全项目；
-6. 正式分析 job 再捕获冻结 corpus 并构建仓库索引。
-
-发现结果必须包含 `included/skipped` manifest。文件过大、编码错误、符号链接逃逸、预算耗尽和不支持的 namespace layout 都要记录原因，不能静默忽略。
-
-### 19.5 不可变 `SourceCorpus` 与 CAS
-
-#### 19.5.1 v2 类型
-
-```python
-class SourceBlobRef(StrictModel):
-    logical_path: str
-    sha256: Sha256
-    blob_ref: str
-    size: int
-    encoding: str
-    file_kind: Literal["python", "stub", "config", "project-metadata"]
-
-
-class SourceCorpus(StrictModel):
-    schema_version: Literal["2.0"] = "2.0"
-    corpus_id: Identifier
-    source_corpus_digest: Sha256
-    vcs_revision: str | None = None
-    files: list[SourceBlobRef]
-    source_roots: list[SourceRootSpec]
-    excluded: list[ExcludedSource]
-
-
-class AnalysisInputManifest(StrictModel):
-    schema_version: Literal["2.0"] = "2.0"
-    source_corpus_digest: Sha256
-    registry_digest: Sha256
-    analyzer_build_digest: Sha256
-    pattern_pack_digests: list[Sha256]
-    resolver: ResolverManifest
-    task: str
-    execution_mode: Literal["eval", "train"]
-    entrypoint: str
-    config_digest: Sha256
-    analysis_input_digest: Sha256
-```
-
-`project_root_hint` 或当前绝对路径不能进入 corpus digest；同一份逻辑源码复制到另一台机器后应得到相同 digest。路径采用规范化 POSIX relative path，禁止 `..`、绝对路径和大小写折叠猜测。
-
-#### 19.5.2 捕获和读取规则
-
-```text
-工作树
-  -> 校验 confined path / symlink policy
-  -> 一次读取 bytes
-  -> 计算 sha256
-  -> 写入 CAS blob
-  -> 建立 logical path manifest
-  -> 从 CAS 物化只读 snapshot root
-  -> 后续 LibCST/Pyright/Evidence 全部读取 snapshot root
-```
-
-为防止读取过程中工作树变化，捕获器至少执行 `stat -> read -> stat` 一致性检查；检测到 inode、size 或 mtime 改变时重试有限次数，仍不稳定则终止 snapshot。更严格的平台实现可以持有打开的文件描述符并对实际 bytes 摘要，不应依赖捕获前的 mtime 作为内容身份。
-
-`source_corpus_digest` 对规范化的 source roots、逻辑路径、file kind 和每文件摘要计算。新增一个可能参与 import shadowing 的文件也必须改变 corpus digest；实际解析过的文件另存 `analysis_read_set`，用于审计和缓存命中解释，不能代替完整路径空间摘要。
-
-CAS 至少需要：
-
-- 原子写入和 `sha256` 二次核对；
-- 相同 bytes 跨分析去重；
-- bundle 引用计数或可重建的保留策略；
-- blob 缺失时返回结构化 `SOURCE_BLOB_MISSING`；
-- source excerpt 直接读取 blob，工作树变化后仍可展示当时证据；
-- 不把用户源码写入日志或 digest 之外的 telemetry。
-
-#### 19.5.3 不再重载 `revision`
-
-v1 同时用 `revision` 表示单文件内容摘要、上游 Git revision 和多文件组合摘要，导致事务层无法统一验证。v2 明确拆分：
-
-| 字段 | 用途 | 是否作为 freshness gate |
-|---|---|---|
-| `vcs_revision` | 人类可读来源，如 commit/tag | 否，允许为空或工作树状态 |
-| `source_corpus_digest` | 冻结源码路径空间与内容 | 是 |
-| `analysis_input_digest` | corpus + registry + analyzer + resolver + config | 是 |
-| `exact_ir_digest` | 最终 Exact IR 规范化内容 | 用于下游缓存和 review |
-
-事务准备仍要逐个比较将被修改文件的当前工作树摘要与 base blob；但“分析产物是否同源”比较的是 corpus/analysis input digest，不再要求组合 revision 等于 `source_files[0].sha256`。
-
-### 19.6 LibCST repository frontend
-
-#### 19.6.1 每文件解析结果
-
-```python
-class ParsedSourceUnit:
-    logical_path: str
-    blob_digest: str
-    module_name: str
-    package_name: str | None
-    module: cst.Module
-    wrapper: MetadataWrapper
-    positions: Mapping[CSTNode, CodeRange]
-    byte_spans: Mapping[CSTNode, CodeSpan]
-    parents: Mapping[CSTNode, CSTNode]
-    scopes: Mapping[CSTNode, Scope]
-    qualified_names: Mapping[CSTNode, set[QualifiedName]]
-```
-
-`FullRepoManager` 的 root 必须是冻结 corpus 的物化目录。不能让它的 `get_metadata_wrapper_for_path()` 指向实时项目，否则虽然 `SourceCorpus` 已冻结，metadata provider 仍可能偷偷读取更新后的工作树。
-
-如果某些数据流算法使用 Python AST 更简单，可以从**同一个 CAS bytes** 派生只读 AST view；AST 只能作为计算辅助，不得产生独立的 source span、Evidence ID 或写回 anchor。任何 CST/AST 对应失败都必须保留 CST 事实并降级相关语义分析。
-
-#### 19.6.2 精确 anchor 与稳定 lineage 是两套 ID
-
-不能要求一个 ID 同时表示“这段不可变源码证据”和“修改前后仍然是同一语义对象”。建议分开：
-
-```python
-class SourceAnchor(StrictModel):
-    logical_path: str
-    blob_digest: Sha256
-    byte_start: int
-    byte_length: int
-    line_span: SourceSpan
-    qualified_symbol: str
-    cst_node_kind: str
-    semantic_role: str
-    subtree_fingerprint: Sha256
-    parent_fingerprint: Sha256 | None
-
-
-class SemanticLineageKey(StrictModel):
-    qualified_owner: str
-    instance_path: str | None
-    semantic_role: str
-    definition_ref: DefinitionRef | None
-    local_fingerprint: Sha256
-```
-
-- `EvidenceRecord.evidence_id` 绑定 corpus 和 `SourceAnchor`，源码 bytes 变化后产生新 Evidence；
-- canonical node ID 在同一 Exact IR 内稳定；
-- `SemanticLineageKey` 用于重新分析后候选对应；
-- lineage remapper 输出 `preserved/replaced/ambiguous/deleted/created`，不在歧义时静默沿用旧 ID；
-- 行号和数组位置不进入长期 identity。
-
-`subtree_fingerprint` 对忽略非语义空白但保留字面量、运算符、关键字参数和调用目标的规范化 CST 计算。注释或前面插入无关语句时 lineage 可以保持，精确 Evidence 仍正确换代。
-
-### 19.7 Pyright Type Server sidecar
-
-#### 19.7.1 生命周期与一致性
-
-每个 analysis job 使用一个受控 sidecar 会话：
-
-```text
-start pinned pyright-typeserver --stdio
-  -> initialize with frozen snapshot root and explicit config
-  -> didOpen / virtual redirect selected corpus files
-  -> getSnapshot = S0
-  -> batch resolveImport/type queries
-  -> getSnapshot = S1
-  -> require S0 == S1
-  -> record query/result digests and resolver manifest
-  -> terminate sidecar
-```
-
-若 snapshot 在批次中变化，丢弃整批结果并有限重试；不能把不同 Pyright snapshot 的类型结果组合进一个 Exact IR。
-
-`ResolverManifest` 至少记录：
-
-```python
-class ResolverManifest(StrictModel):
-    kind: Literal["pyright-typeserver", "libcst-only"]
-    version: str
-    executable_digest: Sha256 | None
-    config_digest: Sha256
-    typeshed_digest: Sha256 | None
-    stub_corpus_digest: Sha256 | None
-    python_target: str
-    platform_target: str
-    search_paths: list[str]
-    snapshot_id: str | None
-```
-
-#### 19.7.2 安全配置
-
-Type Server 启动时必须：
-
-- `cwd` 指向专用分析 workspace，而不是用户项目；
-- 使用清理后的环境和固定 executable；
-- 显式配置 root、extra paths、typeshed 和 stub path；
-- 禁止自动选择或调用用户 Python 解释器；
-- 所有 workspace path 映射到冻结 snapshot root；
-- 默认禁网并设置 CPU、内存、PID、文件数和超时预算；
-- 丢弃非协议 stdout，stderr 只进入受限 diagnostic，不混入用户源码全文。
-
-Pyright 缺失、超时或无法解析时，核心分析仍可使用 LibCST/local symbol graph，但相关 binding confidence 必须降级并产生 diagnostic。正式发行版可以捆绑固定版本；协议上仍不能把 sidecar 的成功当成分析器总能成立的隐式前提。
-
-#### 19.7.3 Resolver 结果只是证据
-
-例如 Pyright 推导 `self.attn` 为 `torch.nn.MultiheadAttention` 时，Registry Binder 仍需：
-
-1. 保存查询位置、Pyright snapshot 和返回类型；
-2. 与构造函数中的 `self.attn = ...`、import binding 和 source matcher 交叉验证；
-3. 解析精确 definition version；
-4. 若多个 matcher 同时成立则保持 ambiguous；
-5. 绝不因为类型名称以 `Attention` 结尾就自动套用 MHA 契约。
-
-### 19.8 ArchCanvas Python Semantic Graph
-
-LibCST 和 Pyright 都不会直接产出指南第 18 节所需的模块实例图。因此 v2 在 Exact Architecture IR 之前增加不对 UI 暴露的中间语义图。
-
-```python
-class PythonSemanticGraph(StrictModel):
-    graph_id: Identifier
-    analysis_input_digest: Sha256
-    definitions: list[SemanticDefinition]
-    instances: list[ModuleInstance]
-    calls: list[CallSite]
-    values: list[SemanticValue]
-    parameter_groups: list[ParameterGroup]
-    control_regions: list[ControlRegion]
-    diagnostics: list[AnalysisDiagnostic]
-```
-
-各对象职责为：
-
-| 对象 | 表达的事实 | 不能合并到其他对象的原因 |
-|---|---|---|
-| `SemanticDefinition` | class/function 及其签名、body anchor | 同一个定义可有多个实例 |
-| `ModuleInstance` | `self.encoder.layers[0]` 等实例路径和父子关系 | 同一个实例可被调用多次 |
-| `CallSite` | 某一处实际调用及实参/返回绑定 | FLOPs 按调用计，参数不一定按调用复制 |
-| `SemanticValue` | 参数、局部变量、call result、tuple element | 端口边连接的是值，不是源码名称字符串 |
-| `ParameterGroup` | 同一 parameter identity 和共享关系 | tied embedding/output projection 必须只计一组参数 |
-| `ControlRegion` | if/loop/comprehension/repeat/opaque boundary | 控制语义不能伪装成普通 DAG 边 |
-
-#### 19.8.1 CFG/SSA-lite，而不是完整解释 Python
-
-目标是恢复架构相关数据流，不是实现完整 Python 编译器。支持范围建议为：
-
-- 函数参数、局部赋值、attribute field、tuple/list 构造与解构；
-- 直接函数/方法调用、关键字参数、`*args/**kwargs` 的可证明静态子集；
-- `if` 的静态 predicate 或分支合流；
-- `for range/static ModuleList` 的 Repeat 表达；
-- return、yield 不支持时的明确 boundary；
-- tensor/function/module call 的 value production；
-- 跨本地文件的有限深度展开。
-
-每个分析 job 设置独立预算：最大 corpus 文件、总字节、CST 节点、call depth、control-region 数、解析时间和 resolver query 数。预算耗尽时生成带 boundary ports 的 `ANALYSIS_BUDGET_EXCEEDED`，不能截断后仍标记 exact。
-
-#### 19.8.2 调用和命名端口绑定顺序
-
-```text
-Call CST node
-  -> local scope / FQN candidates
-  -> optional Pyright declared/computed type
-  -> resolve local definition or external canonical symbol
-  -> resolve module instance and parameter group
-  -> select registry sourceMatcher candidates
-  -> bind constructor parameters
-  -> bind positional/keyword call arguments to PortContract IDs
-  -> bind return structure to output PortContract IDs
-  -> produce CallSite + Value edges + Evidence
-```
-
-`CallArgumentBinding` 至少记录：
-
-```python
-class CallArgumentBinding(StrictModel):
-    call_id: Identifier
-    port_contract_id: str
-    value_id: Identifier
-    argument_kind: Literal["positional", "keyword", "vararg", "kwarg", "implicit"]
-    source_argument_index: int | None
-    source_keyword: str | None
-    ordinal: int | None
-    evidence_ids: list[Identifier]
-```
-
-绑定完成后才能创建正式 input port edge。不能先按 edge 顺序收集输入，再让 Shape rule 猜第 0 项是什么。
-
-#### 19.8.3 MHA、LSTM 和共享调用示例
-
-```python
-context, weights = self.attn(
-    query=x,
-    key=memory,
-    value=memory,
-    attn_mask=mask,
-    need_weights=True,
-)
-```
-
-应恢复：
-
-```text
-instance self.attn -> definition pytorch.nn.multihead_attention@...
-CallSite call:...attn
-  query            <- value:x
-  key               <- value:memory
-  value             <- value:memory
-  attention_mask    <- value:mask
-  context           -> value:context
-  weights           -> value:weights
-```
-
-关键字书写顺序变化不能改变端口绑定。对于：
-
-```python
-sequence, (hn, cn) = self.lstm(x, (h0, c0))
-```
-
-返回 binding 必须保留 tuple path：`sequence=[0]`、`hn=[1,0]`、`cn=[1,1]`。同一个 `self.lstm` 在两个 branch 被调用时产生两个 CallSite，但引用同一个 ModuleInstance/ParameterGroup。
-
-### 19.9 Registry 作为 Python/TypeScript 共用 ABI
-
-第 18 节建议在原型中以 TypeScript `defineAtomicModule()` 作者体验声明 registry。迁入正式程序后，不能让 Python 读取器重新手写一份对应表。构建产物应是唯一的 `module-contract-bundle.json`：
-
-```json
-{
-  "schemaVersion": "1.0",
-  "bundleDigest": "...",
-  "definitions": [
-    {
-      "id": "pytorch.nn.multihead_attention",
-      "version": "1.0.0",
-      "definitionDigest": "...",
-      "canonicalKind": "torch.nn.MultiheadAttention",
-      "parameters": { "schemaVersion": "1.0", "fields": [] },
-      "ports": [],
-      "sourceMatcherIds": ["python.torch.nn.MultiheadAttention.v1"],
-      "shapeRule": { "id": "mha.v1", "version": "1.0.0", "digest": "..." },
-      "glyphId": "multihead-attention",
-      "detailTemplateId": "attention"
-    }
-  ]
-}
-```
-
-规范为：
-
-- TypeScript authoring object 可以保留，但发布前必须导出纯数据 bundle；
-- bundle 中不允许函数、React component、日期、随机 ID 或绝对路径；
-- predicate 使用受限声明式 DSL，任意实现函数只能通过审核后的 rule/matcher ID 引用；
-- Python 和 TypeScript 分别实现 JCS 校验，并用同一 golden fixture 验证 byte-for-byte digest；
-- Python `RegistryBundleLoader` 与 TypeScript `createAtomicNodeRegistry()` 必须验证同一个 `bundleDigest`；
-- Exact IR 固定引用 `(definitionId, version, definitionDigest)`，不能只引用最新版 ID；
-- matcher implementation、shape rule 和 glyph renderer 可以位于不同运行时，但它们各自的版本/digest 都进入 bundle。
-
-这条 ABI 直接保证：源码恢复出的 MHA、用户从节点目录创建的 MHA，以及 engineering/paper 投影中的 MHA 都指向同一个 definition 和 `glyphId`。视图 preset 只能选择 glyph variant，不能改变 semantic identity。
-
-### 19.10 Exact Architecture IR v2
-
-现有 `ArchitectureIR` 可以继续作为兼容格式，但 v2 至少补充以下正式关系：
-
-```python
-class DefinitionRef(StrictModel):
-    definition_id: str
-    version: str
-    digest: Sha256
-
-
-class ArchitectureCall(StrictModel):
-    call_id: Identifier
-    instance_id: Identifier | None
-    definition_ref: DefinitionRef | None
-    parent_module_id: Identifier
-    input_bindings: list[CallArgumentBinding]
-    output_bindings: list[CallOutputBinding]
-    control_region_id: Identifier
-    evidence_ids: list[Identifier]
-    confidence: Confidence
-```
-
-IR v2 应同时保存：
-
-- module definition hierarchy；
-- module instance hierarchy；
-- call graph；
-- value/tensor flow graph；
-- materialized named ports；
-- shared parameter groups；
-- repeats 和 control regions；
-- source matcher/definition binding；
-- `analysis_input_digest` 与 `registry_digest`；
-- unresolved/ambiguous/opaque diagnostics。
-
-对下游兼容，先实现纯函数：
-
-```text
-ExactArchitectureIRv2
-  -> validate v2 invariants
-  -> projectArchitectureV1Compatibility()
-  -> existing hierarchy/publication/formal-state-adapter
-  -> current KernelDocument
-```
-
-兼容投影可以暂时把一个 `CallSite` 映射为现有 `ArchitectureNode`，但必须把 `call_id/instance_id/definitionRef` 保存在可追溯字段中。v1 无法表达的多输出、控制区域或端口契约要产生 compatibility diagnostic，禁止静默丢失后仍报告完整迁移。
-
-### 19.11 摘要、缓存键和内容身份
-
-不同摘要不能再互相替代：
-
-| 摘要 | 输入 | 用途 |
-|---|---|---|
-| `blobDigest` | 单文件原始 bytes | CAS identity、source freshness |
-| `sourceCorpusDigest` | source roots + 路径空间 + blob digests | 冻结源码身份 |
-| `registryDigest` | canonical module contract bundle | 定义/端口/规则版本身份 |
-| `resolverDigest` | Pyright/version/config/typeshed/stub corpus | 名称和类型解析环境 |
-| `analysisInputDigest` | corpus + registry + resolver + analyzer + packs + request | 完整分析缓存键 |
-| `semanticGraphDigest` | 规范化 Python Semantic Graph | 前端确定性检查 |
-| `exactIrDigest` | 规范化 Exact IR v2 | review、事务和下游缓存 |
-| `projectionDigest` | IR + template/glyph/layout engine versions + visual state | 渲染缓存，不参与源码事实 |
-
-建议所有 hash 使用 domain separation，例如：
-
-```text
-sha256("archcanvas:source-corpus:v2\0" + canonicalBytes)
-sha256("archcanvas:analysis-input:v2\0" + canonicalBytes)
-```
-
-时间戳、绝对路径、数组遍历偶然顺序、坐标、选中状态和 analysis cache 不进入语义摘要。浮点参数若需要跨语言完全确定，应限制为 JCS 可稳定表达的有限数值；超出 IEEE 754 安全范围的整数、Decimal 和符号维度使用字符串/结构化表达，不依赖 Python 与 JavaScript 的不同数字模型。
-
-### 19.12 模型家族分析器改为 pattern pack
-
-Autoformer、iTransformer、PatchTST、TimeMixer 等当前专用模块应保留其领域知识，但删除各自的源码加载、snapshot、端口生成和手工基础图构造。
-
-目标形式：
-
-```text
-common SourceCorpus / CST / Semantic Graph
-  -> builtin pattern pack predicates
-  -> architecture classification
-  -> repeat / parameter-share / template-slot bindings
-  -> Evidence-backed refinements
-  -> Exact IR v2
-```
-
-Pattern pack 只能：
-
-- 匹配已有 definition、instance、call、value 和 control facts；
-- 将一组已证明事实标注为 Transformer encoder、decomposition block 等复合语义；
-- 声明 template parameter 与 slot binding；
-- 增加带 Evidence 的关系或 diagnostic。
-
-Pattern pack 不能绕过公共 reader 重新读取文件，不能因为文件名/类名相似就创建 exact 节点，也不能把 reference architecture 当成 source fact。固定源码契约检查应改成对 Semantic Graph 的 predicate，而不是对 `ast.unparse()` 字符串片段做包含判断。
-
-### 19.13 与第 18 节模块契约系统的直接衔接
-
-| 第 18 节要求 | v2 读取端提供的正式输入 |
+| Schema | 用途 |
 |---|---|
-| `definitionId/version/digest` | Registry Binder 对 call/instance 的精确 `DefinitionRef` |
-| 命名 input/output port | `CallArgumentBinding` 与 `CallOutputBinding` |
-| `parentId` 和组合模块 | ModuleInstance hierarchy 与 composite pattern binding |
-| 参数来源和只读状态 | constructor/config/default/computed Evidence |
-| symbolic Shape | value graph、named port input 和源码约束 |
-| shared parameter cost | `ParameterGroup` 与多 CallSite 分离 |
-| `glyphId/detailTemplateId` | 从相同 DefinitionRef 读取，不从 label 推断 |
-| stable slot/binding ID | canonical node/call/value 与 template slot binding |
-| 保护锁和 review | corpus/analysis/registry digest + exact SourceAnchor |
-| prepare/verify/commit | 用 frozen base blob 变换，提交后重新生成 v2 IR |
-| synthetic proposal 回收 | correlation ID + lineage remapper + canonical binding |
+| `round-trip-conformance-report-v1` | 固定三类往返、normalization、delta 和 source writes |
+| `state-migration-plan-v1` | 固定状态 key/tensor/optimizer/shared identity 迁移及兼容性 |
+| `analysis-environment-manifest-v1` | 固定解析、运行和依赖环境 |
+| `transaction-journal-v1` | 固定多文件替换、恢复和 rollback proof |
+| `framework-adapter-capability-v2` | 增加 form-level codegen，并统一逐动作状态 |
+| `semantic-intent-v2` | 增加 ValueOrigin、EditTargetScope、affected-object review binding |
 
-这也修正一个容易被忽略的分层问题：TypeScript registry 负责用户创建节点时的语义契约，Python frontend 负责从已有源码恢复实例；两者必须通过 canonical bundle 汇合，不能让 Python 根据 `op_type` 字符串临时创造另一套端口。
+继续复用 `discrepancy-record-v1`、`artifact-set-v1` 和 `offline-bundle-manifest-v1`，不要建立语义重复的新文档。transaction prepare/verify/commit/reprepare、state migration verify/materialize 和 bundle create/verify 的每个响应都必须返回相应 schema 对象或稳定 ID；只返回字符串提示不构成协议实现。
 
-### 19.14 四个 Transformer 在 v2 中的恢复路径
+## 10. 场景投影和渲染
 
-第 8-11 节的四个场景迁移后只保留两份模型语义和两个视图 preset。v2 前端需要恢复以下证据，而不是直接生成 paper/freeform 节点：
+### 10.1 `projectToScene()` 是唯一适配器
 
-#### 19.14.1 经典 Transformer
-
-```text
-Transformer instance
-  src_tok_emb / tgt_tok_emb / generator ParameterGroup
-  Encoder instance -> Repeat(count=6)
-    EncoderLayer instance
-      self_attention CallSite
-      dropout CallSite
-      residual Add CallSite
-      layer_norm CallSite
-      feed_forward composite
-  Decoder instance -> Repeat(count=6)
-    masked_self_attention CallSite
-    cross_attention CallSite
-    feed_forward composite
+```ts
+function projectToScene(
+  architecture: ExactArchitecture,
+  hierarchy: PublicationHierarchy,
+  evidence: EvidenceRecord[],
+  bindings: VisualTemplateBinding[],
+  publicationProfile: PublicationStructureProfile | null,
+  preset: ViewPreset,
+  visualState: VisualState,
+): SourceBackedScene;
 ```
 
-需要特别证明：
+该函数负责：
 
-- `query/key/value` 在 self-attention 中引用同一 hidden value；
-- cross-attention 的 query 来自 decoder，key/value 来自 encoder memory；
-- padding/causal mask 分别绑定对应 PortContract；
-- embedding/output projection 的 tied parameter 指向同一 ParameterGroup；
-- `ModuleList` 和 loop 共同形成 stack Repeat，而不是创建六个无证据副本；
-- post-LN/pre-LN 由真实值流顺序决定，不从类名推断。
+- 按 preset 选择 canonical frontier；
+- 创建 view node/edge 和 scene binding；
+- 选择 glyph、detail template、orientation 和 tone；
+- 物化 named ports；
+- 应用 visual overrides；
+- 为新增对象生成确定性初始位置；
+- 输出 fidelity 和 diagnostics。
 
-#### 19.14.2 Tensor2Tensor
+它不能解析源码、执行 pattern matching、修改 IR、读取项目路径/fixture ID 或调用 React。`publicationProfile` 必须由上游根据 IR/evidence 推导；projector 只应用通用布局语法。
 
-同一 Transformer composite template 由不同 Evidence 参数化：
+### 10.2 详情模板
 
-- `target_space_id` 绑定 Encoder Prepare 的 condition/value slot；
-- padding 和 causal constraint 是 additive bias，而不是 bool mask；
-- timing signal、shift-left、`conv_hidden_relu` 是独立 call/value facts；
-- shared softmax 若来自 modality/runtime 层，Evidence 也必须来自对应框架文件，不能冒充 `model_fn_body()` 内调用；
-- T2T 与经典实现共享 MHA/Add/Norm 等原子 DefinitionRef，但 composite template parameters 不同。
+将 `module-details.ts` 和 `catalog-details.ts` 改为 registry：
 
-#### 19.14.3 视图投影
-
-```text
-一个 Exact IR v2
-  -> engineering preset: 左到右、显式 prepare/call/mask
-  -> paper preset: encoder/decoder 双列、底到顶、折叠部分调用细节
+```ts
+interface DetailTemplate {
+  templateId: string;
+  version: string;
+  applicableKinds: string[];
+  slots: DetailSlot[];
+  nestedTemplates: Record<string, string>;
+  render(context: DetailRenderContext): DetailDiagram;
+}
 ```
 
-两种 preset 读取同一 call ID、port ID、DefinitionRef、parameter group 和 Evidence。`paper` 只改变 orientation、lane、折叠策略、颜色和 glyph variant，因此相同组件自然获得相同 `glyphId`，不再需要修补 `!paperMode` 条件分支。
+每个 slot 明确绑定 node/edge/port/tensor/evidence。禁止 `inferNestedDetailKind()` 根据可见 label 推断。
 
-### 19.15 进程隔离、性能和预算
+30 个家族目录模板默认是 `schematic`。只有 predicate 和证据完整时才能升级为 `exact`；无法识别的组合显示 `opaque` 父框和真实边界端口。
 
-#### 19.15.1 Analyzer 进程
+### 10.3 层级路由
 
-当前 Studio 以项目目录为 `cwd`、继承环境并注入 `PYTHONPATH` 启动 `python -m archcanvas_engine.cli`。v2 目标为：
+继续复用原型的：
 
-```text
-trusted installed ArchCanvas interpreter
-  + isolated mode
-  + sanitized environment
-  + cwd = dedicated analysis workspace
-  + project path only as ordinary argument
-  + read-only frozen corpus mount
-  + closed stdin
-  + network denied where platform supports
-  + CPU / memory / PID / file-size / timeout limits
-```
+- recursive detail tree；
+- boundary portal；
+- portal chain；
+- projected atomic entry/exit；
+- hidden/foreground flow 分层；
+- semantic input port。
 
-由于 `-I` 不会把开发 checkout 自动加入 `sys.path`，正式发行应从可信环境中安装的 console entry point 启动；开发模式使用明确的受信 bootstrap，不通过用户项目 `PYTHONPATH` 寻找 ArchCanvas。
-
-#### 19.15.2 增量缓存
-
-缓存按不可变输入分层：
+替换三项输入：
 
 ```text
-blobDigest -> parsed CST + local metadata
-sourceCorpusDigest + resolverDigest -> repository symbol index
-analysisInputDigest -> Semantic Graph
-semanticGraphDigest + registryDigest -> Exact IR
-exactIrDigest + projection inputs -> Kernel scene
+primitive index -> stable slot ID
+label regex      -> explicit nested template binding
+point touching   -> named source/target port binding
 ```
 
-移动节点、改变 paper preset 或展开状态不能使 CST/semantic cache 失效。Registry rule 变化必须使 Exact IR/Shape/template binding 失效，但不需要重新解析未改变的 CST。
+几何只负责把端口投影到 point/side，不负责发现语义。
 
-#### 19.15.3 预算和部分结果
+### 10.4 屏幕和导出必须共用渲染树
 
-每个阶段返回自己的统计：
+当前原型 `NodeGraphic` 与 `svg-export.ts` 有重复图例分支。新程序应抽出：
 
 ```text
-files captured / skipped
-bytes captured
-CST files parsed / cache hits
-resolver queries / unresolved / ambiguous
-definitions / instances / calls / values
-opaque boundaries by reason
-elapsed time per stage
-peak worker memory where available
+scene-graphics.ts
+  -> create render primitives
+  -> React SVG renderer
+  -> string/SVG serializer
 ```
 
-超出预算后的独立子图仍可继续分析；受影响路径输出 blocked/unknown，不把全图清空，也不把缺失结果估成零。
+交互画布与 SVG/PNG/PDF 导出必须使用同一 `RoutedScene` 和图元定义。导出只能关闭 hover/selection/control overlay，不能重新计算另一套布局。
 
-### 19.16 现有源码的替换边界
+### 10.5 父子视图和大场景性能
 
-| 当前文件 | v2 处理方式 | 保留内容 |
+通用化不能以每次交互重跑全链路为代价。缓存和失效边界固定为：
+
+| 产物 | 缓存键 | 失效条件 |
 |---|---|---|
-| [`archcanvas_python/source_index.py`](../../../src/archcanvas_python/source_index.py) | 由 `project_manifest.py`、`corpus.py`、`cst_frontend.py`、`symbol_graph.py` 取代 | framework detection 可改成普通 Evidence predicate |
-| [`archcanvas_python/analyzer.py`](../../../src/archcanvas_python/analyzer.py) | 冻结为 v1；入口改为调用 v2 pipeline | CLI/API 兼容 facade 和 `AnalysisBundle` 概念 |
-| `profile_graph.py` | 删除通用固定路径 loader | 模型家族共享的领域 predicate helper |
-| `autoformer.py`、`itransformer.py`、`patchtst.py`、`timemixer.py` | 改成 pattern pack/semantic refinement | 已验证的架构语义、fixture 和 Evidence 断言 |
-| [`archcanvas_core/models.py`](../../../src/archcanvas_core/models.py) | 新增 v2 models/schema，不在第一步原地破坏 v1 | StrictModel、Confidence、Evidence 原则 |
-| [`archcanvas_studio/bundle.py`](../../../src/archcanvas_studio/bundle.py) | `source_excerpt()` 改读 blob store | excerpt API 形态和行数限制 |
-| [`archcanvas_studio/document.py`](../../../src/archcanvas_studio/document.py) | 用 `analysisInputDigest/exactIrDigest` 绑定 | visual state 与源码事实分离 |
-| [`archcanvas_studio/project.py`](../../../src/archcanvas_studio/project.py) | 快速发现与后台 corpus/index job 分离 | confined path、静态 entrypoint 候选思想 |
-| [`archcanvas_studio/server.py`](../../../src/archcanvas_studio/server.py) | 进程从项目 cwd/env 隔离，长索引移出全局 lock | generation-bound、可取消 job 生命周期 |
-| [`archcanvas_transactions/service.py`](../../../src/archcanvas_transactions/service.py) | freshness 改用 corpus/base blob，删除 first-file revision 假设 | prepare/verify/review/commit 状态机 |
-| [`archcanvas_transactions/transforms.py`](../../../src/archcanvas_transactions/transforms.py) | 接受共享 `SourceAnchor`，先在 frozen bytes 变换再比对工作树 | LibCST transformer 与 proposal 输出 |
+| Semantic Graph / Exact IR | source corpus + analyzer/registry/config digest | 源码或分析输入变化 |
+| Publication profile | exact IR + profile rule digest | 语义图或 profile rule 变化 |
+| canonical hierarchy/detail descriptor | IR + template binding digest | hierarchy/template 变化 |
+| preset scene projection | IR + preset + frontier + binding digest | preset/frontier/semantic binding 变化 |
+| expanded detail subtree | canonical node + detail template + expansion state | 该节点事实、模板或本分支展开变化 |
+| routed local region | affected bounds/ports + route policy | 受影响节点、端口或障碍变化 |
 
-建议新增目录：
+实现约束：
 
-```text
-src/archcanvas_core/
-  source_v2.py
-  architecture_v2.py
-  module_contract.py
-  digest_protocol.py
+- camera pan/zoom 只更新 SVG transform 和点阵呈现，不重建 IR、scene、详情树或路由；
+- 高频拖动每动画帧最多提交一次局部 preview，未受影响根模块和兄弟详情树保持引用稳定；
+- 展开只物化目标 canonical subtree，并只重算从目标到根的祖先链、受影响邻居和相关边；
+- 收起直接删除派生子树，不排队执行全场景布局；
+- source/Graph Delta 提交后按 changed canonical/lineage set 做局部失效，不能默认清空所有 preset cache；
+- 大型首次布局和显式全图重排可进 Worker，但 pointer move、camera 和单分支展开不能等待 Worker 全图结果；
+- 渲染层可按 viewport 降低非关键 label/detail 的绘制成本，但不能改变 scene 语义、命中对象或导出内容；
+- 开发构建记录 projector、detail build、layout、routing 的调用次数和耗时，用测试断言未受影响分支没有重建。
 
-src/archcanvas_python/
-  project_manifest.py
-  corpus.py
-  cst_frontend.py
-  anchors.py
-  symbol_graph.py
-  semantic_graph.py
-  control_flow.py
-  value_flow.py
-  call_binding.py
-  registry_binding.py
-  pyright_client.py
-  lineage.py
-  v1_compat.py
-  pattern_packs/
+性能验收直接采用 `REGRESSION_TEST_REQUIREMENTS.md` 第 1.8、3.7 节：完全展开后拖动预览在 `1 s` 内可见，松手后最终几何在 `2 s` 内提交；相机连续操作不触发布局重算。经典 Transformer、Tensor2Tensor 和 Tier A 中展开节点最多的案例都必须执行，不能只在小 fixture 上测量。
 
-src/archcanvas_engine/
-  source_blob_store.py
-  analysis_manifest.py
-```
+## 11. 新前端状态与组件边界
 
-协议和 schema 属于 `archcanvas_core`；Python 源码发现与恢复仍属于 `archcanvas_python`；CAS 持久化和 job orchestration 属于 engine/Studio。不要把 compiler frontend 放进 visual-kernel 或 React 层。
+### 11.1 Store 分片
 
-### 19.17 分阶段迁移，不做不可回滚的 big-bang
-
-允许大范围重写不等于一次切断现有正式链路。推荐按以下 gate 迁移：
-
-#### 阶段 0：锁定基线
-
-- 为 generic、四个 Transformer、Autoformer、iTransformer、PatchTST、TimeMixer 保存 v1 artifact；
-- 记录当前 Evidence、hierarchy、publication、Kernel scene 和 transaction fixtures；
-- 修复或单独记录现有 multi-file revision 冲突，避免把已知 bug 当成 v2 差异。
-
-#### 阶段 1：协议和 SourceCorpus
-
-- 增加 SourceSnapshot/AnalysisInput/SourceAnchor v2 schema；
-- 实现 JCS、domain-separated digest 和跨 Python/TypeScript golden vectors；
-- 实现 CAS、冻结物化目录和 blob source excerpt；
-- 事务仍消费 v1 IR，但 freshness 先能验证 v2 corpus。
-
-#### 阶段 2：LibCST frontend 与 Semantic Graph
-
-- 建立 repository metadata、definition/instance/call/value/control 模型；
-- generic fixture 双跑 v1/v2；
-- 对未知动态行为输出 opaque，不接 registry 猜测；
-- 实现 lineage report，但暂不替换正式 canonical IDs。
-
-#### 阶段 3：Registry ABI 与命名端口
-
-- 从第 18 节 TypeScript registry 导出 canonical bundle；
-- Python 加载并验证同一 digest；
-- 先打通 Input -> Conv2d -> ReLU，再打通 MHA 和 LSTM；
-- v2->v1 compatibility projector 继续供现有 Studio 使用。
-
-#### 阶段 4：Pyright sidecar
-
-- 固定版本、配置、typeshed 和 stub corpus；
-- 实现 snapshot-consistent query batch；
-- 用 alias/re-export/inheritance fixture 验证增益；
-- sidecar 关闭或失败时验证 deterministic degradation。
-
-#### 阶段 5：Transformer 与 family pattern packs
-
-- 先恢复经典/T2T 的共享原子定义、mask/memory port、Repeat 和 weight tying；
-- 用同一 IR 驱动 engineering/paper；
-- 再逐个将专用 family analyzer 改成 semantic pattern pack；
-- 每迁移一个 pack 即停止该 family 的旧手工 reader 双写。
-
-#### 阶段 6：事务和正式切换
-
-- transform 使用 v2 SourceAnchor 和 frozen blob；
-- commit 后 v2 重新分析并通过 correlation/lineage 回收 synthetic proposal；
-- Studio 默认读取 v2，保留一个发行周期的 v1 compatibility 开关；
-- 观测稳定后删除旧 generic AST 构图和固定路径 source loader。
-
-#### 阶段 7：可选 live editor
-
-只有 staged multi-file editor 已实现时，再增加 Tree-sitter provisional frontend。它不属于 v2 正式迁移的完成条件。
-
-### 19.18 测试与验收
-
-除第 16、18.16 节测试外，compiler frontend v2 至少增加：
-
-1. 同一 corpus、registry、resolver 和 request 重复分析得到 byte-identical Semantic Graph、Exact IR 与 digest；
-2. 项目复制到不同绝对路径后仍得到相同 source/analysis digest；
-3. `nn.Linear`、`torch.nn.Linear`、alias 和本地 re-export 绑定同一 definition；
-4. 条件 import 产生多个候选时保持 ambiguous，不选择遍历遇到的第一个；
-5. MHA 关键字顺序变化不改变 query/key/value/mask port binding；
-6. LSTM 嵌套 tuple 输出正确绑定 `sequence/hn/cn`；
-7. 同一个 module 调用两次只计一组共享参数、两次 FLOPs；
-8. tied embedding/projection 恢复为同一个 ParameterGroup；
-9. 前面插入注释或无关语句后 Evidence 换代、lineage 保持且无大面积序号漂移；
-10. 分析后修改/删除工作树文件，旧 Evidence excerpt 仍能从 CAS 展示；
-11. 新增可能 shadow import 的文件会改变 corpus digest 并使旧分析失效；
-12. multi-file snapshot 不再要求 corpus digest 等于第一文件摘要；
-13. 项目内恶意 `sitecustomize.py`、用户 site 和 `PYTHONPATH` 不会在 analyzer 启动时执行/生效；
-14. Pyright query batch 前后 snapshot 不同会整批丢弃；
-15. Pyright 缺失、超时、import unresolved 时产生明确降级结果，不阻断无关子图；
-16. 超出 call-depth/file/byte/query budget 时产生带端口的 opaque boundary；
-17. v2->v1 adapter 对无法表达的多输出/控制关系发出 compatibility diagnostic；
-18. 四个 Transformer 中相同 DefinitionRef 在 engineering/paper 使用相同 `glyphId`；
-19. prepare 时任一 base blob 改变都会拒绝 stale transaction；
-20. commit 后重新分析得到的 canonical node/port/evidence 能兑现 synthetic proposal，否则保留 blocking diagnostic。
-
-建议增加测试目录：
+建议使用 React reducer + context，先不引入第三方全局 store：
 
 ```text
-tests/source_v2/
-  test_corpus_capture.py
-  test_canonical_digest.py
-  test_cst_anchors.py
-  test_symbol_resolution.py
-  test_pyright_client.py
-  test_semantic_calls.py
-  test_tuple_outputs.py
-  test_parameter_sharing.py
-  test_lineage.py
-  test_v1_compat.py
-  test_process_isolation.py
-
-tests/fixtures/frontend_v2/
-  aliases/
-  reexports/
-  inheritance/
-  shared_module/
-  mha_ports/
-  lstm_outputs/
-  transformer_classic/
-  transformer_t2t/
-  dynamic_opaque/
+projectSlice      SourceProject、discovery、generation
+semanticSlice     IR、hierarchy、evidence、diagnostics、registry
+viewSlice         preset、SourceBackedScene、VisualState、selection
+interactionSlice  gesture、hover、connect mode、camera preview
+jobSlice          analysis/validation job
+transactionSlice  intent、proposal、transaction、diff、receipt
+sourceSlice       file list、buffers、editor selection
 ```
 
-### 19.19 主要风险和约束
+派生数据用纯 selector；不要把完整 state 复制到多个 `useState`。
 
-| 风险 | 处理方式 |
+### 11.2 模式
+
+保留三个清晰模式，但使用同一个画布：
+
+| 模式 | 允许操作 |
 |---|---|
-| LibCST 比 AST 更慢、内存更高 | 按 blob digest 缓存；批量 metadata provider；只展开入口闭包和预算内本地调用 |
-| Pyright Type Server 协议或包版本变化 | 固定版本、封装单一 client adapter、记录 executable/config digest、协议 golden tests |
-| Node sidecar 增加发行复杂度 | 作为显式 capability；正式包捆绑固定版本；无 sidecar 时确定性降级 |
-| Pyright 自动调用 Python 取得 search path | 显式 root/extraPaths/typeshed/stub 配置，禁止用户 Python，测试 `sitecustomize` 不执行 |
-| Python 动态特性无法静态证明 | 不追求完全解释；opaque/ambiguous 是合法结果，不用命名启发式伪造 exact |
-| CAS 增加磁盘使用 | blob 去重、按 bundle 引用、可审计 GC；不得删除仍被 Evidence/transaction 引用的 blob |
-| Python/TypeScript digest 不一致 | JCS/I-JSON、golden vectors、限制高精度数字表示、domain separation |
-| v2 schema 影响下游过大 | 新增 v2 而非原地破坏 v1；compatibility projector 让 UI 和 visual-kernel 后迁 |
-| lineage 错配造成错误事务目标 | 精确 Evidence 与 lineage key 分离；歧义时要求人工确认或重新 prepare |
+| 浏览 | 选择、导航、展开、搜索、证据、视图切换 |
+| 布局 | 拖动、缩放、尺寸、对齐、路由、视觉样式、导出 |
+| 模型 | palette、参数、增删、端口连线、源码事务 |
 
-### 19.20 推荐的第一个读取端 vertical slice
+模式只改变可用命令和 overlay，不切换画布实现。
 
-不要一开始就迁移所有 family analyzer。第一个切片使用一个真实多文件 PyTorch fixture：
+### 11.3 组件建议
 
 ```text
-model.py: Model.forward
-  -> blocks.py: ConvBlock
-  -> torch.nn.Conv2d
-  -> torch.nn.ReLU
+SceneStudioApp
+  AppToolbar
+  SourceProjectDialog
+  NavigationDrawer
+  ViewPresetSwitcher
+  SceneCanvas                 # 由原型 App 拆出
+    RoutedEdges
+    SceneNode
+    InlineDetailTree
+    SemanticPorts
+    GestureOverlay
+  InspectorDrawer
+    InspectPanel
+    VisualPanel
+    ModelEditPanel
+    EvidencePanel
+  SourceWorkspace
+  TransactionReview
+  ProblemsAndJobs
 ```
 
-完成条件为：
+桌面默认保留原型的工具栏、场景列表和检查器比例；新增能力优先使用抽屉、tab 和菜单，不能把画布压缩成旧主程序的四栏工作台。
 
-1. 三个源码文件和 `pyproject.toml` 被捕获到 SourceCorpus/CAS；
-2. LibCST 从 frozen root 生成 byte span、FQN 和 parent/scope metadata；
-3. `self.block` 恢复为 ModuleInstance，Conv/ReLU 恢复为两个 CallSite；
-4. 两个调用绑定 registry bundle 中的精确 definition version；
-5. 端口为 `Conv2d.input/output` 和 `ReLU.input/output`，不是 `in0/out`；
-6. Exact IR v2 能通过 compatibility projector 驱动当前 Studio；
-7. source excerpt 在工作树改变后仍显示冻结 blob；
-8. 修改 Conv 参数 proposal 使用同一个 LibCST SourceAnchor；
-9. commit 后重新分析并建立旧/新 lineage；
-10. 全程没有 import 或执行 fixture 项目。
+## 12. 建议目录
 
-随后第二个切片专门覆盖 MHA 命名输入与 LSTM tuple 输出；第三个切片再覆盖经典 Transformer 的 Repeat、memory/mask 和 weight tying。完成这三条链路后，才开始迁移 Autoformer 等 family pattern pack。
+`scene-studio` 只新增 UI 编排和适配层；现有 `studio/src/module-registry/`、`studio/src/prototype-graph/`、`studio/src/codegen/` 是共享领域模块，应补齐后直接复用，禁止在新目录复制第二份 registry、Graph IR 或 printer。
+
+```text
+studio/src/scene-studio/
+  SceneStudioApp.tsx
+  main.tsx
+  styles.css
+
+  state/
+    store.tsx
+    actions.ts
+    selectors.ts
+    normalize-studio-state.ts
+
+  api/
+    client.ts
+    project-api.ts
+    source-api.ts
+    transaction-api.ts
+    generated-project-api.ts
+    runtime-validation-api.ts
+
+  domain/
+    ids.ts
+    source-project.ts
+    semantic-intent.ts
+    view-preset.ts
+    source-backed-scene.ts
+    generated-project.ts
+
+  projection/
+    project-to-scene.ts
+    frontier.ts
+    derive-publication-profile.ts
+    transformer-binding.ts
+    visual-state-replay.ts
+
+  presets/
+    engineering-flow.ts
+    paper-publication.ts
+    paper-transformer.ts
+    module-hierarchy.ts
+    source-call.ts
+    tensor-dataflow.ts
+
+  templates/
+    registry.ts
+    generic-module.ts
+    generic-functional-group.ts
+    transformer.ts
+    attention.ts
+    feedforward.ts
+    add-norm.ts
+    catalog.ts
+
+  canvas/
+    SceneCanvas.tsx
+    scene-graphics.tsx
+    gestures.ts
+    canvas-viewport.ts
+    expansion.ts
+    detail-layout.ts
+    atomic-hierarchy.ts
+    routing.ts
+    export.ts
+
+  commands/
+    visual-commands.ts
+    semantic-commands.ts
+    capability.ts
+    transaction-controller.ts
+    graph-draft-controller.ts
+    generated-project-controller.ts
+
+  source/
+    SourceWorkspace.tsx
+    codemirror.ts
+    source-selection.ts
+    GeneratedProjectReview.tsx
+    generated-source-map.ts
+
+  panels/
+    Inspector.tsx
+    Navigation.tsx
+    TransactionReview.tsx
+    ProblemsAndJobs.tsx
+    RuntimeValidation.tsx
+
+  fixtures/
+    visual/
+    source-projects/
+
+  tests/
+    tier-a/
+```
+
+开始迁移时可先保留原型文件名，待第一阶段测试全部通过后再拆目录。禁止一次性改名和改行为，避免无法定位交互回归。
+
+## 13. 分阶段实施
+
+### 阶段 0：冻结基线并建立副本
+
+任务：
+
+- 对原型执行 TypeScript、Vitest、静态构建和 Playwright 基线；
+- 保存关键桌面/移动截图和路由指标；
+- 建立原型源码清单与 digest；
+- 审计当前 `studio/src/scene-studio/` 是否是原型等价副本；
+- 只把副本接到独立开发入口，不切换正式 `main.tsx`；
+- 给旧主程序标记 feature freeze。
+
+出口：副本在没有 API 数据时与原型行为一致，原型目录零改动。
+
+### 阶段 1：单画布壳层和状态边界
+
+任务：
+
+- 从 `App.tsx` 拆出 `SceneCanvas`，不改变 gesture 和渲染；
+- 建立七个 store slice；
+- 接入现有 `/api/state`，只显示项目元数据；
+- 视觉 fixture 和 source-backed scene 共用画布；
+- 抽出共享屏幕/导出图元。
+
+出口：原型 30 场景和 1350 组合无回归；不存在第二个 canvas renderer。
+
+### 阶段 2：“从源码构建”纵向切片
+
+任务：
+
+- 项目选择、discovery、入口、环境和 config；
+- analysis job 启动、轮询、取消和 stale generation；
+- `AnalysisEnvironmentManifest`、入口调用配置和 framework form capability hydrate；
+- `normalizeStudioState()`；
+- Exact IR -> `SourceBackedScene` 最小投影；
+- 选择节点后显示 source excerpt/evidence；
+- 默认 `engineering-flow`。
+
+出口：`tests/fixtures/frontend_v2/transformer_classic/` 可以完全从源码打开，不依赖 `SCENARIOS`。
+
+### 阶段 3：Transformer 二源多视图
+
+任务：
+
+- 从第 6.2 节两个权威归档建立固定 digest 的 Source Project manifest；
+- 完成参数化 Transformer template 和稳定 slots；
+- 完成 `engineering-flow`、`paper-publication` 和旧 `paper-transformer` alias；
+- 将四个手写场景降为视觉 golden，不再是运行时数据；
+- named mask/memory/target-space ports；
+- preset 独立 VisualState 和 camera；
+- 对折叠、单模块展开、全部展开和论文双列执行结构/截图/路由/性能 golden。
+
+出口：每份源码的 IR digest 在切换视图前后不变；两个 preset 都能递归展开到 attention/FFN/Add & Norm，并与最小原型达到第 15.2 节定义的硬基准。
+
+### 阶段 4：Tier A 通用化和性能门禁
+
+任务：
+
+- 用同一 SourceCorpus -> IR -> projector 链分析 `fixtures/tier_a` 五个项目；
+- 为每个项目生成 `engineering-flow` 和 `paper-publication`，不增加项目专用 scene builder；
+- 恢复 module instance 父子关系、functional semantic group、named boundary ports 和重复/控制区；
+- 完成结构 profile 推导及 generic glyph/detail fallback；
+- 增加目录/文件/非语义类名重命名的 metamorphic tests；
+- 增加 production bundle 禁止 import fixture/SCENARIOS 和 fixture ID 分支的静态门禁；
+- 关闭 `architecture_profile -> analyze_*` 专用分派，以声明式 Pattern Pack/annotation 取代 family canonical graph builder；
+- 加入 `stage-8.md` 七类关闭 Pattern Packs 的 holdout，并要求 generic 双视图、层级和 evidence 成立；
+- 实现 canonical hierarchy、detail subtree、preset projection 和局部路由缓存；
+- 按 `REGRESSION_TEST_REQUIREMENTS.md` 第 1.8、1.9、3.7、3.9 节执行标准/论文视图和完全展开性能测试；
+- 每次 Tier A 修复后重新执行两份 Transformer golden，不允许更新基准来掩盖退化。
+
+出口：五个 Tier A 项目均从源码自动生成非空、可展开、可定位证据的标准流程图和论文级视图；两个 Transformer 的结构、视觉、交互和性能 golden 零回退。
+
+### 阶段 5：视觉编辑与持久化
+
+任务：
+
+- 将原型 visual patch 映射到 `/api/patch` 和 `/api/patch-batch`；
+- 服务端 visual undo/redo；
+- 对齐、分布、固定、样式、相机和展开持久化；
+- lineage-based visual replay；
+- 统一 SVG/PNG/PDF/JSON 导出。
+
+出口：刷新浏览器后视觉状态恢复，且 exact IR digest 不变。
+
+### 阶段 6：视图增删改和连线回写源码
+
+任务：
+
+- registry palette 和 named port overlay；
+- `PrototypeGraphDocument`、拓扑草稿 session 和独立 draft history；
+- schema 参数检查器、符号 Shape、成本和 blocking diagnostics；
+- parameter、replace activation、insert norm；
+- create/delete/connect/disconnect intent；
+- capability decision、preview overlay、impact preview；
+- `ValueOrigin`、`EditTargetScope` 和共享实例/调用/Repeat 影响范围确认；
+- 第一批 LibCST lowering adapter，明确 adapter 的源码形态和 anchor 前置条件；
+- transaction prepare/verify/review/commit/discard；
+- observed delta 和 targeted tests；
+- `RoundTripConformanceReport`、intent 重试幂等和 no-op 零写入；
+- 静态/runtime/export 冲突进入 `DiscrepancyRecord`，不覆盖 canonical facts；
+- commit 后重分析和局部布局保持。
+
+出口：至少完成第 15.5 节既有源码端到端事务用例；任意新增、删除或连线如果没有受支持 adapter，都明确阻断且不改源码；提交后两个 Transformer 和受影响 Tier A 视图通过视觉门禁。
+
+### 阶段 7：源码生成、源码工作区和高级能力
+
+任务：
+
+- CodeMirror 6 staged buffer；
+- anchor/evidence/diagnostic 双向定位；
+- freeform source transaction；
+- 结构化 PyTorch Code IR、确定性 printer 和双向 source map；
+- Generated Source Project prepare/validate/review/materialize 生命周期；
+- `Input -> Conv2d -> ReLU` 构图、生成、物化和重新分析纵向切片；
+- DefinitionDraft、ModuleRef、Repeat 和复合模块边界；
+- module/source 双导航和统一搜索；
+- 受限 worker、验证配置、runtime receipt 和确定性 replay；
+- train/eval、动态 Shape、PRNG、alias/mutation、梯度、buffer 和共享身份的 semantic oracle；
+- checkpoint/state asset 绑定、`StateMigrationPlan` 和 source-only/source+state 双结果；
+- 多文件 transaction journal、外部变更 re-prepare、崩溃恢复和 rollback receipt；
+- encoding/newline/file mode/symlink 策略；
+- `.archcanvas` 离线 bundle、support matrix、环境/产物 digest inventory 和协议迁移 fixture；
+- pattern overlay；
+- module contract maintenance；
+- 其余 View Preset。
+
+出口：生成项目能在临时目录通过编译和静态重分析，经评审后物化为新 Source Project，并对重新打开的标准/论文视图执行视觉门禁；旧主程序功能清单逐项标为“已迁移”或“明确取消并有理由”。
+
+### 阶段 8：正式切换和删除旧前端
+
+任务：
+
+- 让 `studio/src/main.tsx` 只渲染 `SceneStudioApp`；
+- 更新 Vite build、Python static bundle 和启动脚本；
+- 运行完整 Python/TypeScript/Playwright/视觉验收；
+- 对 Round-trip、state compatibility、无 Pattern Pack holdout、事务崩溃恢复和 bundle verify 执行发布门禁；
+- 在一个发布周期内保留旧前端 tag/branch 和 bundle 回滚点；
+- 验收后删除旧 `app/main-view/visual-kernel/shell/inspector` 中不再被使用的实现；
+- 删除前以 `rg` 和 TypeScript 构建证明零引用。
+
+出口：生产入口只有原型派生画布；旧前端不再打包；原始最小原型仍可独立运行。
+
+## 14. 功能优先级
+
+### P0：切换前必须有
+
+- 原型全部交互；
+- 从源码构建；
+- 两份 Transformer 源码；
+- 通用自动 Source-to-View pipeline，不含按项目/fixture 身份分支；
+- production analyzer 不再通过 `architecture_profile` 返回专用 family canonical graph；
+- Tier A 五个项目的标准流程图和论文级视图；
+- 七类关闭 Pattern Packs 的 holdout 可生成通用双视图；
+- 两份 Transformer 标准/论文视图与最小原型的硬 golden；
+- 父子模块递归展开和完全展开交互性能门禁；
+- source/evidence 定位；
+- visual persistence/undo/redo；
+- Registry 驱动创建、严格 named ports、Shape 和 blocking diagnostics；
+- 参数修改、节点增删、端口连线的事务入口，且至少一组既有源码 adapter 可以正式提交；
+- 参数 `ValueOrigin`、`EditTargetScope` 和受影响共享对象必须可审查；
+- `Input -> Conv2d -> ReLU` 可以生成、验证、物化并从新源码重新打开；
+- 三类 `RoundTripConformanceReport`、no-op 零写入和 intent 重试幂等；
+- framework/form/action 能力矩阵；未验证能力明确 unavailable/partial；
+- 绑定 checkpoint 的事务必须产生状态兼容性结论，不能把源码成功误报为训练资产兼容；
+- 多文件提交具备 journal、rollback proof 和崩溃恢复；
+- diff/review/commit/discard；
+- SVG/JSON 导出；
+- 快速静态验证。
+
+### P1：切换发布必须有
+
+- module/source 导航；
+- 搜索、诊断、任务和取消；
+- PNG/PDF；
+- Source Workspace；
+- 其余 view presets；
+- 对齐、分布、固定和主题；
+- 扩展的 topology draft/codegen rule 和双向 source map；
+- 复合模块、Repeat、ModuleRef 和模块版本迁移；
+- runtime receipt/trace 的显示与显式授权入口；
+- `AnalysisEnvironmentManifest`、lockfile/adapter/analyzer/schema digest 和可复现等级；
+- 已支持有界变换的 `StateMigrationPlan` 物化与隔离验证；
+- `.archcanvas` 离线审计 bundle 和完整 inventory verify；
+- 持久化协议 major/minor 兼容、拒绝和迁移 receipt；
+- module contract maintenance。
+
+### P2：可在新基座上继续
+
+- 可选 Tree-sitter 即时语法；
+- ELK 显式重新布局；
+- 跨框架高级 lowering；
+- 大图虚拟化和 Worker 路由。
+
+P2 不得成为继续使用旧前端的理由。
+
+## 15. 测试与验收
+
+### 15.1 原型零回归
+
+每轮涉及 canvas、analyzer、registry、pattern/template binding、source-to-view mapping、hierarchy、layout、routing、detail、源码事务、codegen 或 export 的修改都必须执行本节。源码修改提交后和生成源码物化后，必须重新分析结果源码并对新视图执行同一门禁，不能以“只改后端/只改生成器”为理由跳过视觉检查。
+
+从 `studio/` 目录执行 `REGRESSION_TEST_REQUIREMENTS.md` 第 2 节的完整命令，而不是只运行新增测试：
+
+```bash
+npx vitest run --exclude 'e2e/**' --exclude 'tools/export-p0-acceptance.test.ts'
+npx tsc -p prototypes/scene-visual-lab/tsconfig.json --noEmit
+npm run prototype:build
+git diff --check
+```
+
+并遵循 `REGRESSION_TEST_REQUIREMENTS.md`：
+
+- 负坐标、向左拖动和无限画布；
+- atomic/recursive A/B；
+- 父框包含和同级避让；
+- 端口吸附、最短合法路径和 foreground edge；
+- 展开/收起确定性；
+- 屏幕/导出一致；
+- 第 1.9、3.9 节论文级视图的列顺序、底边锚定、侧挂条件输入和递归层级；
+- 第 1.8、3.7 节完全展开交互性能；
+- 30 场景和完整组合矩阵。
+
+自动化通过后还必须执行第 3 节真实浏览器截图检查，并记录场景、preset、展开层级、拖动方向、路由指标和性能结果。新程序不能只跑旧主程序测试、静态 SVG 或 DOM 数值后宣布通过。
+
+### 15.2 Transformer 硬性黄金基准
+
+对第 6.2 节两个权威归档分别断言：
+
+- 一个 Source Project、一个 source digest、一个 Exact IR digest；
+- 标准流程图和论文级视图均由源码自动生成，运行时不读取四个手写场景；
+- 切换 preset 不改变 canonical node/edge/tensor/port 集；
+- view node 可以不同，但 binding 必须回到同一 canonical IDs；
+- Encoder/Decoder、mask/bias、memory、FFN 和输出共享按源码证据出现；
+- paper 视图双列、底入顶出，展开后 mask/memory 连接内部 slot；
+- engineering 视图左到右，保留调用和条件输入；
+- 展开到 attention 后 Q/K/V、score、scale、mask、softmax、V、concat 和 output projection 的 slot 稳定；
+- 父子模块、直接父级包含、portal chain、atomic/recursive A/B 与最小原型一致；
+- 折叠、单独展开 Encoder/Decoder、递归全展开、收起恢复、拖动和导出行为与最小原型一致；
+- 节点相对顺序、论文双列、主流向、条件节点侧挂、图例种类和语义端口属于结构 hard assertions；
+- deterministic desktop/narrow screenshots 使用最小原型 golden；任何未审核像素差异、遮挡、重叠、断线、路由指标增加或性能回退都失败；
+- 缺失证据的 slot 不得伪装 exact。
+
+黄金文件只能在明确的视觉设计变更评审中更新，不能因 Tier A 修复、缓存优化、analyzer 改写、源码事务或 codegen 改动自动重录。若通用结果和 Transformer golden 冲突，先修复通用算法或声明式规则，禁止增加项目身份分支。
+
+### 15.3 Tier A 自动多视图矩阵
+
+对 `fixtures/tier_a/{transformer,autoformer,itransformer,patchtst,timemixer}` 逐项运行：
+
+1. 从 config/test manifest 选择入口和输入规格，捕获多文件 SourceCorpus；
+2. 生成非空 `engineering-flow` 与 `paper-publication`；
+3. 校验两个 preset 共享 source/exact IR digest 和 canonical 对象；
+4. 校验入口到子模块、深层子模块或 evidence-backed boundary 的父子层级；
+5. 校验输入、条件端口、分支/合流、重复区、Shape 和 opaque diagnostics；
+6. 对折叠、单模块展开、全部展开、atomic/recursive、拖动、缩放、窄视口和 SVG 导出截图；
+7. 运行目录/文件/非语义类名重命名测试，规范化语义和视图结构不变；
+8. 禁用可选 family pattern pack，仍可通过 generic hierarchy/glyph 生成两种可用视图；
+9. 静态检查 production bundle 不引用 `fixtures/tier_a`、`SCENARIOS` 或 fixture-specific scene builder；
+10. 每个案例完成后立即重跑第 15.2 节两个 Transformer golden。
+
+Tier A 论文级视图应用 `REGRESSION_TEST_REQUIREMENTS.md` 第 1.9、3.9 节的共同视觉原则，但按真实结构 profile 调整：只有 evidence 证明 encoder/decoder 时才要求双列；single-stack、multi-scale 和 decomposition-merge 分别使用紧凑单栈、多泳道和稳定分支/合流，不能为满足截图补造模块。
+
+### 15.4 交互契约
+
+Playwright 至少覆盖：
+
+- 画布 pan/zoom/fit；
+- 节点拖动/resize 和释放提交；
+- 父子递归展开、子节点拖动、复位；
+- 选择在画布、导航、源码和检查器之间同步；
+- preset 切换后 selection 保持；
+- 连接模式的端口过滤和取消；
+- visual undo/redo 不影响源码；
+- transaction active 时编辑锁；
+- 桌面和移动视口无重叠、文本不溢出。
+
+所有画布 E2E 需要截图和 canvas/SVG 非空像素检查。
+
+### 15.5 源码事务端到端用例
+
+切换前至少通过：
+
+1. 在 Classic Transformer 修改 `num_heads` 或另一个有精确 anchor 的参数：源码格式/注释保留，observed delta 精确，commit 后视图更新。
+2. 将一个受支持 activation 替换为另一个 registry activation：shape 不变，源码和 IR 同步。
+3. 在受支持顺序边插入 LayerNorm：节点、端口、边和源码调用均出现，undo 不能误当成视觉 undo。
+4. 从兼容 output port 向 input port 建立受支持连接：policy 明确，预期/实际 delta 一致。
+5. 尝试不兼容端口、歧义 source anchor 或未知控制流：操作被阻断，源码零变化。
+6. transaction 准备后外部修改源文件：commit 以 stale 失败，不能 fuzzy merge；使用原 semantic intent 在新 snapshot 上 re-prepare，重新解析 anchor、生成 diff 并执行全部门禁。
+7. 自由源码 buffer 修改：staged -> validate -> review -> commit -> reanalyze 完整闭环。
+8. 同一 `intentId + baseSourceDigest` 重试：不得重复应用，返回原事务或等价 receipt。
+9. literal、config key、共享 module、多 call site 和 Repeat template 的参数修改：作用域和 affected objects 与 review 一致。
+
+每个成功事务都要在 commit/reanalyze 后生成标准和论文视图，运行第 15.1 节视觉门禁，并断言 Graph Delta 外未受影响的 canonical subtree、preset VisualState 和布局保持稳定。涉及两份 Transformer 时必须额外通过第 15.2 节；涉及 Tier A 时必须通过对应第 15.3 节行。
+
+### 15.6 构图、代码生成和运行验证
+
+新增领域测试至少覆盖：
+
+1. registry definition ID 唯一、ref/digest 固定、默认参数可序列化，重复或缺失 rule 引用启动即失败；
+2. named port 的方向、required、cardinality、relation、ordered ordinal 和 tensor contract 正反例；
+3. Known/Symbolic/Unknown/Error Shape 的传播、局部阻断和诊断对象定位；
+4. 共享 parameter group 只计一次参数，同一实例的多个 call site 分别计 FLOPs；
+5. printer 对 tuple、嵌套 tuple、多输出、共享 module、functional op、loop 和安全 Python literal 的 golden tests；
+6. graph/node/port/edge/parameter 与 generated source span 的双向选择，歧义选择不得静默猜测；
+7. 既有源码 rewrite 和 greenfield project generation 使用不同 command/receipt，失败时不能互相降级；
+8. generated project 在 materialize 前完成 Python compile、导入静态解析、入口发现和 Exact IR 重分析；
+9. graph/registry/generator/input 任一 digest 变化后 generated/runtime receipt stale；
+10. runtime worker 的禁网、只读输入、CPU/内存/PID/文件大小/超时和进程组终止；
+11. 多输入、多输出、固定 seed、两次 replay digest 和 nondeterministic 结果；
+12. unsupported graph edit、codegen rule 缺失、目标目录冲突和未授权 runtime 均产生零源码写入。
+13. train/eval、Dropout、BatchNorm buffer、in-place op、tensor alias、hook 和参数共享的 observation/limitation；
+14. preserve-semantics 事务的输出容差、梯度、buffer 和共享身份 oracle，以及行为变化事务的未影响区域 oracle；
+15. 同一 SourceCorpus 与 analysis input manifest 重跑得到相同规范化 IR/scene digest；
+16. 各 framework form 对 static/runtime/parameter/structural/codegen/commit 分别返回 verified/partial/experimental/unavailable。
+
+端到端必须包含第 8.18 节的 `Input -> Conv2d -> ReLU` 两条用例：greenfield 生成后重新打开得到同构图；existing-source 只修改精确 anchors 并保留无关格式和注释。之后再增加 Add、MHA、LSTM、Repeat 和 ModuleRef，不能以单输入节点通过代替多输入/多输出测试。
+
+每个 materialized generated project 都必须作为全新 Source Project 重新打开，生成 `engineering-flow` 和 `paper-publication`，再执行第 15.1 节的自动化与浏览器视觉检查。比较 Graph Draft 与重分析 IR 的节点、端口、边、父子关系和 source map；不能只证明 Python 可编译而不检查生成源码对应的视图。
+
+### 15.7 Digest 和权限不变量
+
+自动测试必须证明：
+
+- Visual Patch 前后 source/exact IR digest 不变；
+- View Preset 切换前后 source/exact IR digest 不变；
+- failed/discarded/proposal-only intent 不产生 source write；
+- commit receipt 列出的 source writes 与真实修改文件完全一致；
+- analysis 不 import/execute 目标工程；
+- runtime trace 未授权时不能由 UI 暗中启动；
+- generated source preview 不能直接写入用户目录；
+- generated project 的 materialize receipt 与真实文件清单和 digest 完全一致；
+- RoundTrip report 绑定 source、IR、draft、normalization rule 和 expected/observed delta digest；
+- 相同 intent 重试不产生第二次 source write，no-op intent 不创建伪修改事务；
+- runtime/export/checkpoint evidence 不静默删除或改写 SourceCorpus 可证明的 canonical facts；
+- 缺失框架包/provider/自定义对象时只返回 unavailable，不触发联网安装；
+- 目录/文件/非语义类名变化不改变规范化架构和视图结构 digest；
+- production code 不读取 fixture ID、权威归档 digest 或手写 scene 来决定投影；
+- 归档导入不能路径穿越或写到 workspace 外。
+
+### 15.8 性能预算
+
+初始预算：
+
+| 操作 | 目标 |
+|---|---|
+| 拖动 preview | 常规场景保持 60 fps 感知，无网络请求 |
+| 单次 pointer move | 不重建 IR，不执行全图布局 |
+| preset 切换 | 已有 IR 下 300 ms 内出现首个 scene |
+| 展开/收起 | 只重算受影响 detail/layout/routing |
+| 完全展开拖动 preview | `1 s` 内可见，且未受影响根/兄弟不重建 |
+| 完全展开松手提交 | `2 s` 内完成最终几何和指标刷新 |
+| source selection -> anchor | 100 ms 内本地定位，缺 buffer 时再请求 |
+| 大型自动布局 | Worker 中运行，可取消，结果显式应用 |
+
+性能不达标时先做 selector memoization、局部重算和 Worker；不要引入第二画布。
+
+### 15.9 Round-trip 和编辑作用域验收
+
+建立独立 conformance suite，不能用普通单元测试名称中的 `round_trip` 代替系统级报告。至少覆盖：
+
+1. 同一 Source Project 连续分析两次，Exact IR、hierarchy、bindings 和每个 preset 的规范化 scene digest 一致；
+2. `SetParameter`、`ReplaceActivation`、`InsertLayerNorm` 各自产生 expected/observed delta 精确匹配的报告；
+3. Graph Draft 生成源码、物化、重新打开后，节点、named ports、边、父子关系、Repeat/control region、参数共享和 Shape 约束规范化同构；
+4. 对 generated source 再次执行 printer 不产生新的源码变化，source map 仍绑定同一 canonical/value identity；
+5. no-op、失败、discarded、proposal-only 和重复 intent 均为零新增 source write；
+6. 修改 config key 时报告所有受影响实例，选择 module instance/call site 但源码只有共享定义时必须阻断或要求改 scope；
+7. 共享 embedding/projection、同一 module 多 call site、共享 Repeat template 和独立 `ModuleList` 的作用域不能混淆；
+8. Graph Delta 外的 canonical subtree、evidence、其他 preset VisualState 和未受影响源码字节保持不变。
+
+每份报告必须由后端根据实际产物计算，前端不得提交 `semanticIsomorphism=exact`。报告失败时事务不能进入 review-ready；`equivalent` 只能由版本化 normalization rule 产生，并在 review 中列出被忽略的全部差异。
+
+### 15.10 状态、证据、恢复和交付验收
+
+发布前至少覆盖以下矩阵：
+
+| 测试域 | 必须证明 |
+|---|---|
+| 状态 preserve/rename | 参数、buffer、optimizer slot 和共享身份逐项映射，before/after digest 可复核 |
+| Shape 改变 | 无批准 reshape/initializer rule 时为 blocked；不得借 `strict=False` 静默丢权重 |
+| source-only | 源码可提交，但旧 checkpoint 明确 detached/unknown，UI 不显示可继续训练 |
+| source+state | 隔离迁移、严格加载、最小 replay、review 和产物 commit 全部通过 |
+| 不可信状态 | pickle/整模型默认不执行；只允许受限 metadata/weights-only 路径或明确阻断 |
+| 证据冲突 | static/runtime/export/checkpoint 差异生成 `DiscrepancyRecord`，未执行分支不从 IR 消失 |
+| 动态运行 | mode、input profile、动态 Shape、seed/PRNG、backend/device、路径覆盖和限制全部进入 receipt |
+| stale re-prepare | 旧事务保持 stale；新事务从 semantic intent 重新解析，不继承旧 anchor 成功状态 |
+| 中途崩溃 | 在每个文件替换点注入故障，重启后只能得到完整 after 或已证明的完整 before 状态 |
+| 文件保真 | UTF-8/非 UTF-8 Python encoding、BOM、LF/CRLF、末尾换行和 mode 按策略保留；symlink 越界被拒绝 |
+| 环境可复现 | 环境、lockfile、adapter/analyzer/schema digest 变化使相关缓存和 receipt stale |
+| 离线 bundle | inventory 对 missing/extra/modified file 均失败；绝对路径和未授权源码/checkpoint 不泄漏 |
+| 协议迁移 | 未知 major 被拒绝，支持的旧 minor/major 通过固定 migration 和 receipt 读取 |
+
+PyTorch 首批状态 fixture 至少包括 Linear 参数重命名、BatchNorm buffer、tied embedding/output projection、增加无权重 ReLU、插入有权重 LayerNorm 和改变 Linear 输出维度。Keras/JAX/ONNX 只执行 support matrix 对应 form 已声明的单元格；未验证单元格必须测试 unavailable，而不是跳过后仍显示 supported。
+
+## 16. 切换门禁
+
+只有同时满足以下条件，才允许把旧主程序从构建中移除：
+
+- 原始原型仍可单独构建和运行；
+- 新程序通过原型全部交互回归；
+- 两份 Transformer 都从第 6.2 节固定摘要的权威归档生成，而不是从手写场景或替代源码生成；
+- 两份 Transformer 的标准/论文视图通过第 15.2 节结构、截图、交互、路由和性能硬基准；
+- Tier A 五个项目都由同一通用链路生成标准流程图和论文级视图，并通过第 15.3 节；
+- `stage-8.md` 七类 holdout 在关闭 Pattern Packs 后仍通过通用结构、层级、evidence 和双视图门禁；
+- production analyzer/projector 不按项目名、路径、归档 digest、fixture ID 或入口类名选择专用构图器；
+- production analyzer 不再通过 `architecture_profile` 直接调用 Autoformer/iTransformer/PatchTST/TimeMixer canonical graph builder；
+- 父子模块、functional semantic group、boundary ports 和递归展开来自源码证据；
+- 第 15.5 节既有源码事务和第 15.6 节构图/代码生成用例通过，所有负例零写入；
+- `Input -> Conv2d -> ReLU` 生成项目可以物化、重新打开并恢复同构 Exact IR；
+- Source-to-View、Intent-to-Source 和 Draft-to-Source 三类 RoundTrip report 全部通过，no-op 和 intent 重试满足幂等；
+- create/delete/connect 不再以“前端能画出 draft”冒充完成：支持项有正式 receipt，不支持项明确阻断；
+- 参数编辑显示 ValueOrigin、EditTargetScope 和全部受影响实例/调用/共享组；
+- 项目打开、分析任务、搜索、证据、诊断、验证、源码工作区和导出可用；
+- runtime receipt/trace 具备显式授权和隔离限额，module contract maintenance 已完成迁移；
+- framework/form/action support matrix 与实际 adapter 门禁一致，不存在框架级过度声明；
+- 绑定状态资产的事务具有独立 state/training/inference compatibility 结论，source-only 不冒充 checkpoint 兼容；
+- 多文件事务通过故障注入、journal 恢复和 rollback proof，且文件 encoding/newline/mode 策略通过；
+- AnalysisEnvironmentManifest、离线 bundle inventory 和支持的协议迁移 fixture 可验证；
+- 源码事务和生成源码在重新分析后都执行 `REGRESSION_TEST_REQUIREMENTS.md` 的标准/论文视觉检查；
+- 完全展开的相机、拖动、收起和局部重算通过第 15.8 节性能预算；
+- 屏幕和导出使用同一 scene；
+- 当前主程序功能清单有逐项迁移记录；
+- TypeScript、Python、schema、Playwright 和视觉测试全部通过；
+- 新入口 bundle 不引用旧 `StudioApp`、`ArchitectureCanvas` 或 `visual-kernel`；
+- 有已验证的回滚构建。
+
+“代码已经复制到 `studio/src/scene-studio/`”不构成完成；“页面看起来像原型”也不构成完成。
+
+## 17. 风险与处理
+
+| 风险 | 处理 |
+|---|---|
+| 把四个 Transformer 继续维护成四份图 | 强制 Source Project 与 View Preset 分离；测试 IR digest 不变 |
+| 为通过 Transformer golden 把产品写成专项演示器 | 两份 Transformer 只作输出 hard baseline；Tier A、重命名 metamorphic test 和 bundle 静态门禁证明通用性 |
+| 为每个 Tier A 模型增加手写 mapper | 只允许 evidence-driven registry/pattern/template predicate；generic fallback 必须独立生成两种视图 |
+| 继续用 `architecture_profile` 分派专用 analyzer | 用无 Pattern Pack holdout 建立通用恢复门禁；family 知识只进入声明式 annotation/template binding |
+| 把所有论文视图强制画成 Transformer 双列 | 先推导结构 profile；只对真实 encoder/decoder 使用双列，其他结构使用单栈、多尺度或分解/合流布局 |
+| 通过重录 golden 掩盖通用化回归 | golden 更新需独立视觉设计评审；普通修复、缓存和 analyzer/codegen 改动禁止自动更新 |
+| 为兼容原型把正式语义降级为 node-to-node edge | scene binding 物化 named ports；语义命令只接受 port ID |
+| 新 UI 再次变成单体 | store slice、command controller 和纯 projector 分层；组件不得直接调用全部 API |
+| 旧 visual-kernel 又被引入 | 构建 lint/`rg` 门禁禁止从新目录 import 旧内核 |
+| 视觉手势误改源码 | VisualCommand/SemanticIntent 使用不相交联合类型和不同 endpoint |
+| 重分析后用户布局丢失 | canonical/lineage/slot ID 重放，禁止 label 匹配 |
+| 图、源码各自可用但往返后语义漂移 | 三类 RoundTripConformanceReport、版本化 normalization 和 fixed-point/no-op 门禁 |
+| 修改一个展示节点意外影响全部共享实例 | ValueOrigin + EditTargetScope + affected object review；共享定义无法拆分时阻断 |
+| 自动布局破坏空间记忆 | 默认增量布局；ELK 只在用户显式命令时应用 |
+| 通用父子展开导致交互卡顿 | 按 IR/preset/subtree/local route 分层缓存，camera 不重建，按第 1.8/3.7 节测调用次数与 `1 s/2 s` 门槛 |
+| LibCST 不能证明复杂动态 Python | opaque/proposal-only；不进行猜测式写回 |
+| lowering 失败后用全文件生成结果覆盖手写源码 | source strategy 固定；rewrite-existing 和 generate-project 使用不同 command、receipt 和目标目录策略 |
+| 代码预览被误当成可提交项目 | Generated Source Project 必须经过后端临时 workspace、compile、重分析、review 和 materialize |
+| 生成源码在主服务中直接执行 | 一次性受限 worker、禁网和资源上限；未授权不运行，runtime evidence 不替代静态事实 |
+| 单次 runtime/export 图覆盖未执行源码分支 | 证据分层、路径覆盖和 DiscrepancyRecord；动态证据只增加 observation/condition |
+| 源码提交成功但 checkpoint 已失效 | 独立 StateMigrationPlan 与 source/state/training/inference 四类结果；未知兼容性不显示成功 |
+| 使用 `strict=False` 或按位置复制掩盖权重丢失 | 每个 parameter/buffer/optimizer slot 明确 preserve/rename/reshape/initialize/drop/block |
+| 框架级 supported 掩盖某种源码形态不可编辑 | framework form/action matrix 驱动 UI、API 和 release support，未验证单元格为 unavailable |
+| 多文件提交中途崩溃留下混合版本 | 持久化 journal、逐文件 digest、启动恢复、备份和 rollback proof，不声称文件系统级原子 rename |
+| 环境变化后复用过期分析或运行结论 | AnalysisEnvironmentManifest 和 lockfile/adapter/analyzer/schema digest 参与 stale 判断 |
+| 复合模块只存在浏览器 localStorage | DefinitionDraft 经评审发布固定版本，ModuleRef 绑定 definition digest |
+| T2T 依赖面过大 | SourceCorpus 预算、静态可达闭包、partial diagnostics、固定归档 digest |
+| 源码编辑器和画布历史混淆 | buffer undo、visual undo、source transaction 三套边界分别呈现 |
+| 当前未提交 `scene-studio` 修改被覆盖 | 实施阶段先审计和 diff；不得重新复制覆盖用户工作 |
+| 过早删除旧主程序失去对照 | feature freeze 立即生效，物理删除延迟到切换门禁之后 |
+
+## 18. 联网核对结论与来源
+
+本指南在 2026-10-01 重新核对了下列官方资料，并结合仓库现有实现作出选型：
+
+- [LibCST: Why LibCST](https://libcst.readthedocs.io/en/latest/why_libcst.html)：LibCST 是可重新打印的 lossless CST，同时提供接近 AST 的语义节点；因此用于正式 Python source anchor 和保格式改写。
+- [Tree-sitter: Advanced Parsing / Editing](https://tree-sitter.github.io/tree-sitter/using-parsers/3-advanced-parsing.html#editing)：编辑后可先更新旧树位置，再将旧树传入 parser 进行结构共享的增量解析；因此仅适合作为编辑器即时反馈层。
+- [CodeMirror System Guide](https://codemirror.net/docs/guide/)：编辑器 state/document 不可变，修改通过 transaction/ChangeSet，支持位置映射和 viewport 渲染；与 staged source buffer 模型一致。
+- [ELK Layered](https://eclipse.dev/elk/reference/algorithms/org-eclipse-elk-layered.html)：支持分层方向、端口约束、正交路由、compound graph 和跨层边；因此适合显式批量重排，不适合替代原型实时交互。
+- [TensorBoard Graphs](https://www.tensorflow.org/tensorboard/graphs)：父节点展开/收起用于在概念层和算子层之间切换，支持继续保留原型的层级阅读模式。
+- [PyTorch MultiheadAttention](https://docs.pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html)：用于核对 Q/K/V、mask 和输出端口语义。
+- [PyTorch `torch.export`](https://docs.pytorch.org/docs/2.14/user_guide/torch_compiler/export.html)：导出图提供 sound/normalized 计算 IR、调用签名和动态 Shape 约束，但会内联子模块；训练 IR 可能包含 mutation/alias，数据依赖控制流仍有边界。因此它是运行语义 sidecar，不替代源码层级。
+- [PyTorch Saving and Loading Models](https://docs.pytorch.org/tutorials/beginner/saving_loading_models.html)：`state_dict` 同时包含参数和 registered buffers，optimizer state 独立；整模型 pickle 与类路径绑定，结构重构后脆弱。用于确定 StateMigrationPlan 和默认不加载不可信整模型对象。
+- [Keras Serialization and Saving](https://keras.io/guides/serialization_and_saving/)：模型资产包含 architecture/config、weights、optimizer、loss/metrics，自定义对象需要 config/注册机制；因此“可重建架构”不能代表训练状态兼容。
+- [Flax Save and Load Checkpoints](https://flax.readthedocs.io/en/latest/guides/checkpointing.html)：checkpoint 通常是参数、其他 state 和 optimizer state 的 PyTree，结构变化需要显式 checkpoint surgery/transform；用于 JAX/Flax 状态迁移边界。
+- [ONNX Shape Inference](https://onnx.ai/onnx/repo-docs/ShapeInference.html)：Shape inference 不保证完整，动态 Reshape、自定义算子和符号算术会产生 unknown；不得把 partial 推导伪装成 exact。
+
+本地 `DL-Playground/` 只作为行为和架构研究样本：Registry 驱动节点、Graph IR、依赖调度 Shape、代码 span、复合模块和运行 trace 是可重新设计的思路；弱语义 handle、按边顺序取输入、字符串/正则 codegen、长期进程 `exec` 和不完整隔离不进入目标方案。当前 checkout 根目录未发现明确许可证文件，因此禁止直接复制其 TypeScript/TSX、样式和测试夹具。
+
+仓库内事实优先级高于通用网页建议：
+
+1. 当前源码和测试；
+2. schemas 与 transaction receipts；
+3. 固定上游源码及其 digest/许可证；
+4. 官方文档；
+5. 其他设计参考。
+
+## 19. 现有资料的继续使用方式
+
+原指南中有价值但不再适合放在主实施链路中的细节，继续由以下文件承载：
+
+- `references/SOURCE_TRACEABILITY.md`：基础模块、Classic Transformer、Tensor2Tensor 的源码证据；
+- `references/MODEL_FAMILY_TRACEABILITY.md`：模型家族模板的证据和 schematic 边界；
+- `references/UPSTREAM_SOURCES.sha256` 与 `NEW_UPSTREAM_SOURCES.sha256`：固定上游摘要；
+- `BOTTOM_UP_ATOMIC_ROUTING.md`：原子收束算法；
+- `REGRESSION_TEST_REQUIREMENTS.md`：画布和视觉门禁；
+- 根目录 `README.md`、`PRODUCT.md`、`DESIGN.md`、`docs/contracts/protocols.md`、`docs/support-matrix.md`：当前正式后端能力和协议。
+
+实现人员不应从本文复制旧场景坐标或源码行号。源码更新后，证据与 anchor 必须由 analyzer 重新生成；视觉模板只消费稳定 binding。
+
+## 20. 第一条实施切片
+
+推荐先完成一个可以真实证明架构方向的切片，而不是先搭完整 shell：
+
+```text
+复制的 Scene Visual Lab
+  -> 点击“从源码构建”
+  -> 打开 pytorch_transformer_original.zip
+  -> 选择 pytorch_transformer_original/transformer.py:Transformer
+  -> 固定 AnalysisEnvironmentManifest、入口调用和 framework form capability
+  -> v2 静态分析
+  -> projectToScene(engineering-flow)
+  -> 原型画布显示并可递归展开
+  -> 切换 paper-publication
+  -> 选择 attention 定位源码/evidence
+  -> 修改一个有精确 anchor 的参数
+  -> prepare/verify/review/commit
+  -> 重分析
+  -> expected/observed delta 与 RoundTripConformanceReport 通过
+  -> 若绑定 checkpoint，显示独立 StateMigrationPlan/compatibility 结果
+  -> 两个 preset 同步更新且原布局按 lineage 保持
+```
+
+后续顺序固定为：
+
+1. 对 Tensor2Tensor 权威归档完成同样链路，冻结两个 Transformer hard golden；
+2. 在不增加项目身份分支的前提下跑通 Tier A 五项目和结构 profile；
+3. 删除 `architecture_profile -> analyze_*` canonical graph 分派，跑通七类关闭 Pattern Packs 的 holdout；
+4. 完成父子递归展开、局部缓存及完全展开性能门禁，并重跑 Transformer golden；
+5. 完成第 8.18 节 `Input -> Conv2d -> ReLU` 的 greenfield 生成与 existing-source 改写双链路；
+6. 为 literal/config/shared/Repeat 参数作用域、no-op/重试幂等和生成源码 fixed point 生成 RoundTrip report；
+7. 完成至少一组 checkpoint preserve/rename/block、事务崩溃恢复和离线 bundle verify；
+8. 对修改后源码和生成后源码重新执行 Tier A/Transformer 适用的标准与论文视觉检查。
+
+若任一链路依赖 `SCENARIOS` 中的节点数组、fixture/project ID、旧 `ArchitectureCanvas`、旧 `visual-kernel`，或只能显示 code preview 而不能得到验证后的源码和视图结果，说明重建方向尚未真正落地。

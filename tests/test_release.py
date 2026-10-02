@@ -11,6 +11,7 @@ import pytest
 
 from archcanvas_engine.cli import main
 from archcanvas_release import create_bundle, install_skill, release_support_matrix, verify_bundle
+from archcanvas_studio import prepare_studio_bundle
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "fixtures" / "holdout" / "residual_mlp"
@@ -90,6 +91,71 @@ def test_bundle_cli_create_and_verify(
     assert main(["bundle", "verify", str(output), "--json"]) == 0
     verified = json.loads(capsys.readouterr().out)
     assert verified["details"]["digest_verified"] is True
+
+
+def test_offline_bundle_includes_and_verifies_v2_reproducibility_chain(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    analysis = tmp_path / "analysis-v2"
+    assert main(
+        [
+            "analyze",
+            "--project",
+            str(ROOT / "tests/fixtures/frontend_v2/conv_relu"),
+            "--entry",
+            "app.model:Model",
+            "--task",
+            "inference",
+            "--mode",
+            "eval",
+            "--out",
+            str(analysis),
+            "--frontend",
+            "v2",
+            "--json",
+        ]
+    ) == 0
+    capsys.readouterr()
+    output = tmp_path / "v2.archcanvas"
+    manifest, _ = create_bundle(analysis / "architecture.json", output)
+
+    assert manifest.analysis_input_digest is not None
+    assert manifest.environment_manifest_digest is not None
+    assert manifest.support_matrix_digest
+    bundled = {item.path for item in manifest.files}
+    assert {
+        "analysis/source-corpus-v2.json",
+        "analysis/analysis-environment-manifest-v1.json",
+        "analysis/analysis-input-v2.json",
+        "analysis/semantic-graph-v2.json",
+        "analysis/architecture-v2.json",
+        "support-matrix.json",
+    } <= bundled
+    assert verify_bundle(output) == manifest
+
+
+def test_offline_bundle_includes_validated_studio_receipts(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    analysis = _analysis(tmp_path, capsys)
+    workspace = tmp_path / ".archcanvas"
+    prepare_studio_bundle(analysis / "architecture.json", workspace, write_static=False)
+    reopened = prepare_studio_bundle(
+        analysis / "architecture.json", workspace, write_static=False
+    )
+    output = tmp_path / "receipts.archcanvas"
+
+    manifest, _ = create_bundle(
+        analysis / "architecture.json",
+        output,
+        workspace=workspace,
+    )
+
+    bundled = {item.path for item in manifest.files}
+    assert any(path.startswith("receipts/conformance/") for path in bundled)
+    assert any(path.startswith("receipts/protocol-migrations/") for path in bundled)
+    assert reopened.state()["protocol_migration_receipts"][0]["status"] == "current"
+    assert verify_bundle(output) == manifest
 
 
 def test_codex_and_claude_installers_use_identical_skill_and_offline_runtime(

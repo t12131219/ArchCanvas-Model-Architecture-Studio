@@ -51,4 +51,16 @@ def test_lstm_nested_tuple_materializes_all_outputs(tmp_path: Path) -> None:
     values = {item.semantic_name for item in bundle.exact_ir.values}
     assert {"sequence", "hn", "cn"} <= values
     compatibility_codes = {item.code for item in bundle.compatibility.architecture.unresolved}
-    assert "V2_COMPAT_MULTIPLE_OUTPUTS" in compatibility_codes
+    assert "V2_COMPAT_MULTIPLE_OUTPUTS" not in compatibility_codes
+    output = next(
+        item
+        for item in bundle.compatibility.architecture.nodes
+        if item.attributes.get("io") == "output"
+    )
+    assert output.attributes["v2_value_id"] == bundle.exact_ir.graph_output_value_ids[0]
+    graph_output = next(
+        item
+        for item in bundle.exact_ir.values
+        if item.value_id == bundle.exact_ir.graph_output_value_ids[0]
+    )
+    assert graph_output.semantic_name == "sequence"

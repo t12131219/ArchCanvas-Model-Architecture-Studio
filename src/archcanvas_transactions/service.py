@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -19,6 +20,7 @@ from pydantic import TypeAdapter
 from archcanvas_adapters import (
     analyze_with_adapter,
     apply_model_transaction,
+    framework_form_capability,
     transaction_adapter_id,
     transaction_artifact_kind,
     validate_model_artifact,
@@ -29,23 +31,41 @@ from archcanvas_core.builtin_registry import BuiltinModuleRegistry
 from archcanvas_core.models import (
     ArchitectureIR,
     Diagnostic,
+    EditTargetScope,
     EvidenceKind,
     EvidenceRecord,
     FileChange,
     FreeformSourcePatch,
     GateResult,
+    ParameterEditContext,
+    ParameterOrigin,
+    RecoveryReceipt,
+    SemanticIntentV2,
     SemanticParameterPatch,
     SemanticStructuralPatch,
     SourceAnchor,
+    SourceFileMetadata,
     SourceSnapshot,
     SourceTransaction,
     TransactionBaseBlob,
+    TransactionJournal,
+    TransactionJournalFile,
+    TransactionJournalState,
     TransactionReceipt,
     TransactionState,
+    ValueOrigin,
+    ValueOriginKind,
 )
-from archcanvas_core.source_v2 import AnalysisInputManifest, ProjectManifest, SourceCorpus
+from archcanvas_core.protocols import read_exact_architecture_ir_v2_protocol
+from archcanvas_core.source_v2 import (
+    AnalysisEnvironmentManifest,
+    AnalysisInputManifest,
+    ProjectManifest,
+    SourceCorpus,
+)
 from archcanvas_core.validation import validate_architecture
 from archcanvas_engine.source_blob_store import SourceBlobStore
+from archcanvas_patterns import exact_ir_digest
 from archcanvas_publication import (
     build_scene,
     build_visual_spec,
@@ -63,7 +83,15 @@ from .registry import (
     apply_structural_transform,
     validate_structural_oracle,
 )
-from .store import load_transaction, save_transaction
+from .state_migration import build_state_migration_plan
+from .store import (
+    load_journal,
+    load_transaction,
+    save_journal,
+    save_recovery_receipt,
+    save_transaction,
+    save_transaction_receipt,
+)
 from .transforms import (
     insert_pytorch_module,
     set_class_field_parameter,
@@ -102,7 +130,35 @@ def _receipt(transaction: SourceTransaction, *, source_writes: bool = False) -> 
         TransactionState.COMMITTED,
         TransactionState.DISCARDED,
     }
-    return TransactionReceipt(
+    source_status = (
+        "committed"
+        if transaction.state is TransactionState.COMMITTED
+        else "discarded"
+        if transaction.state is TransactionState.DISCARDED
+        else "failed"
+        if transaction.state is TransactionState.FAILED
+        else "verified"
+        if transaction.state is TransactionState.REVIEW_READY
+        else "prepared"
+    )
+    plan = transaction.state_migration_plan
+    state_compatibility = "not-bound" if plan is None else plan.status
+    if state_compatibility == "not-requested":
+        state_compatibility = "not-bound"
+    training_compatibility = state_compatibility
+    inference_compatibility = state_compatibility
+    if plan is not None and plan.status == "verified":
+        binding = getattr(transaction.request, "state_asset_binding", None)
+        if binding is None or not all(
+            (
+                binding.optimizer_state_bound,
+                binding.scheduler_state_bound,
+                binding.progress_state_bound,
+                binding.random_state_bound,
+            )
+        ):
+            training_compatibility = "partial"
+    receipt = TransactionReceipt(
         transaction_id=transaction.transaction_id,
         framework=transaction.framework,
         transaction_adapter_id=transaction.transaction_adapter_id,
@@ -114,7 +170,17 @@ def _receipt(transaction: SourceTransaction, *, source_writes: bool = False) -> 
         proposal_correlation_id=transaction.proposal_correlation_id,
         realized_subject_ids=transaction.realized_subject_ids,
         source_writes=source_writes,
+        source_status=source_status,
+        state_compatibility=state_compatibility,
+        training_resume_compatibility=training_compatibility,
+        inference_compatibility=inference_compatibility,
+        state_migration_plan_id=(plan.plan_id if plan is not None else None),
     )
+    save_transaction_receipt(
+        receipt,
+        Path(transaction.workspace) / "transactions" / transaction.transaction_id,
+    )
+    return receipt
 
 
 @dataclass(frozen=True)
@@ -125,12 +191,131 @@ class _LoadedArtifact:
     evidence: list[EvidenceRecord]
     project_manifest: ProjectManifest | None = None
     source_corpus: SourceCorpus | None = None
+    environment_manifest: AnalysisEnvironmentManifest | None = None
     analysis_input: AnalysisInputManifest | None = None
     exact_ir: ExactArchitectureIRV2 | None = None
 
     @property
     def is_v2(self) -> bool:
         return self.source_corpus is not None
+
+
+@dataclass(frozen=True)
+class _ReanalysisBundle:
+    architecture: ArchitectureIR
+    snapshot: SourceSnapshot
+    evidence: list[EvidenceRecord]
+    source_corpus_digest: str
+    exact_ir_digest: str
+
+
+_UTF8_BOM = b"\xef\xbb\xbf"
+
+
+def _source_file_metadata(path: Path, content: bytes, kind: str) -> SourceFileMetadata:
+    if path.is_symlink():
+        raise ValueError(f"symbolic links are not writable source transaction targets: {path}")
+    mode = stat.S_IMODE(path.stat().st_mode)
+    if kind in {"binary", "onnx"}:
+        return SourceFileMetadata(
+            encoding="binary",
+            has_utf8_bom=False,
+            newline="none",
+            trailing_newline=False,
+            mode=mode,
+        )
+    has_bom = content.startswith(_UTF8_BOM)
+    payload = content[len(_UTF8_BOM) :] if has_bom else content
+    try:
+        payload.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ValueError(f"source transaction target is not lossless UTF-8: {path}") from error
+    crlf_count = payload.count(b"\r\n")
+    bare_lf_count = payload.count(b"\n") - crlf_count
+    bare_cr_count = payload.count(b"\r") - crlf_count
+    newline_kinds = sum(value > 0 for value in (crlf_count, bare_lf_count, bare_cr_count))
+    if bare_cr_count or newline_kinds > 1:
+        newline = "mixed"
+    elif crlf_count:
+        newline = "crlf"
+    elif bare_lf_count:
+        newline = "lf"
+    else:
+        newline = "none"
+    return SourceFileMetadata(
+        encoding="utf-8",
+        has_utf8_bom=has_bom,
+        newline=newline,
+        trailing_newline=payload.endswith((b"\n", b"\r")),
+        mode=mode,
+    )
+
+
+def _build_transaction_journal(
+    transaction: SourceTransaction,
+    state: TransactionJournalState,
+) -> TransactionJournal:
+    if (
+        transaction.base_source_corpus_digest is None
+        or transaction.result_source_corpus_digest is None
+    ):
+        raise ValueError("transaction journal requires bound base and result source digests")
+    files: list[TransactionJournalFile] = []
+    original_root = Path(transaction.original_project_root)
+    prepared_root = Path(transaction.temporary_project_root)
+    for index, change in enumerate(transaction.file_changes):
+        original = original_root / change.path
+        prepared = prepared_root / change.path
+        original_bytes = original.read_bytes()
+        prepared_bytes = prepared.read_bytes()
+        original_metadata = _source_file_metadata(original, original_bytes, change.kind)
+        prepared_metadata = _source_file_metadata(prepared, prepared_bytes, change.kind)
+        if original_metadata.newline == "mixed":
+            raise ValueError(f"mixed or legacy newline style cannot be rewritten losslessly: {change.path}")
+        if prepared_metadata != original_metadata:
+            raise ValueError(
+                "prepared source does not preserve encoding, BOM, newline, trailing newline, "
+                f"and mode: {change.path}"
+            )
+        files.append(
+            TransactionJournalFile(
+                logical_path=change.path,
+                working_path=change.path,
+                before_sha256=change.before_sha256,
+                after_sha256=change.after_sha256,
+                backup_relative_path=f"journal-backups/{index:04d}-{Path(change.path).name}",
+                original_metadata=original_metadata,
+                prepared_metadata=prepared_metadata,
+            )
+        )
+    now = datetime.now(UTC).isoformat()
+    return TransactionJournal(
+        journal_id=f"journal:{transaction.transaction_id.removeprefix('transaction:')}",
+        transaction_id=transaction.transaction_id,
+        base_source_digest=transaction.base_source_corpus_digest,
+        result_source_digest=transaction.result_source_corpus_digest,
+        state=state,
+        files=files,
+        created_at=now,
+        updated_at=now,
+    )
+
+
+def _transition_journal(
+    journal: TransactionJournal,
+    transaction_directory: Path,
+    state: TransactionJournalState,
+    **updates: Any,
+) -> TransactionJournal:
+    changed = journal.model_copy(
+        update={
+            "state": state,
+            "updated_at": datetime.now(UTC).isoformat(),
+            **updates,
+        }
+    )
+    save_journal(changed, transaction_directory)
+    return changed
 
 
 def _load_artifact(artifact_path: Path) -> _LoadedArtifact:
@@ -149,6 +334,7 @@ def _load_artifact(artifact_path: Path) -> _LoadedArtifact:
     v2_paths = {
         "project_manifest": artifact.parent / "project-manifest-v2.json",
         "source_corpus": artifact.parent / "source-corpus-v2.json",
+        "environment_manifest": artifact.parent / "analysis-environment-manifest-v1.json",
         "analysis_input": artifact.parent / "analysis-input-v2.json",
         "exact_ir": artifact.parent / "architecture-v2.json",
     }
@@ -165,15 +351,23 @@ def _load_artifact(artifact_path: Path) -> _LoadedArtifact:
     source_corpus = SourceCorpus.model_validate_json(
         v2_paths["source_corpus"].read_text(encoding="utf-8")
     )
+    environment_manifest = AnalysisEnvironmentManifest.model_validate_json(
+        v2_paths["environment_manifest"].read_text(encoding="utf-8")
+    )
     analysis_input = AnalysisInputManifest.model_validate_json(
         v2_paths["analysis_input"].read_text(encoding="utf-8")
     )
-    exact_ir = ExactArchitectureIRV2.model_validate_json(
-        v2_paths["exact_ir"].read_text(encoding="utf-8")
+    exact_ir, _ = read_exact_architecture_ir_v2_protocol(
+        json.loads(v2_paths["exact_ir"].read_text(encoding="utf-8"))
     )
     corpus_digest = source_corpus.source_corpus_digest
     if (
         analysis_input.source_corpus_digest != corpus_digest
+        or analysis_input.environment_manifest_digest
+        != environment_manifest.environment_manifest_digest
+        or analysis_input.registry_digest != environment_manifest.registry_digest
+        or analysis_input.analyzer_build_digest != environment_manifest.analyzer_digest
+        or analysis_input.pattern_pack_digests != environment_manifest.pattern_pack_digests
         or exact_ir.source_corpus_digest != corpus_digest
         or exact_ir.analysis_input_digest != analysis_input.analysis_input_digest
         or exact_ir.registry_digest != analysis_input.registry_digest
@@ -187,14 +381,15 @@ def _load_artifact(artifact_path: Path) -> _LoadedArtifact:
     if snapshot_files != expected_files:
         raise ValueError("v1 compatibility snapshot does not match the v2 source corpus")
     return _LoadedArtifact(
-        artifact,
-        architecture,
-        snapshot,
-        evidence,
-        project_manifest,
-        source_corpus,
-        analysis_input,
-        exact_ir,
+        path=artifact,
+        architecture=architecture,
+        snapshot=snapshot,
+        evidence=evidence,
+        project_manifest=project_manifest,
+        source_corpus=source_corpus,
+        environment_manifest=environment_manifest,
+        analysis_input=analysis_input,
+        exact_ir=exact_ir,
     )
 
 
@@ -292,6 +487,44 @@ def _transaction_base_blobs(artifact: _LoadedArtifact) -> list[TransactionBaseBl
         )
         for item in artifact.source_corpus.files
     ]
+
+
+def _base_source_digest(artifact: _LoadedArtifact) -> str:
+    if artifact.source_corpus is not None:
+        return artifact.source_corpus.source_corpus_digest
+    payload = {
+        "snapshot_id": artifact.snapshot.snapshot_id,
+        "revision": artifact.snapshot.revision,
+        "config_digest": artifact.snapshot.config_digest,
+        "source_files": [
+            {"path": item.path, "sha256": item.sha256}
+            for item in sorted(artifact.snapshot.source_files, key=lambda item: item.path)
+        ],
+    }
+    return _sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode())
+
+
+def _idempotent_transaction(
+    workspace: Path,
+    request: SemanticParameterPatch | SemanticStructuralPatch | FreeformSourcePatch,
+    base_source_digest: str,
+) -> SourceTransaction | None:
+    root = workspace / "transactions"
+    if not root.is_dir():
+        return None
+    for manifest in sorted(root.glob("*/transaction.json")):
+        transaction = load_transaction(manifest)
+        if (
+            transaction.request.patch_id != request.patch_id
+            or transaction.base_source_corpus_digest != base_source_digest
+        ):
+            continue
+        if transaction.request != request:
+            raise ValueError(
+                "intent id is already bound to a different request on this source digest"
+            )
+        return transaction
+    return None
 
 
 def _validate_snapshot(artifact: _LoadedArtifact) -> None:
@@ -446,6 +679,177 @@ def _exact_parameter_position(
         None,
     )
     return parameter.positional_index if parameter is not None else None
+
+
+def _parameter_edit_context(
+    artifact: _LoadedArtifact,
+    node: Any,
+    parameter: Any,
+) -> ParameterEditContext:
+    exact_anchor = _exact_source_anchor(artifact, node, parameter.name)
+    source_anchor_ids = (
+        [f"source-anchor:{_anchor_digest(exact_anchor)[:24]}"]
+        if exact_anchor is not None
+        else sorted(
+            item.evidence_id
+            for item in artifact.evidence
+            if item.evidence_id in parameter.evidence_ids
+            and item.kind in {EvidenceKind.SOURCE, EvidenceKind.CONFIG}
+        )
+    )
+    if artifact.architecture.framework == "onnx" and not source_anchor_ids:
+        source_anchor_ids = sorted(parameter.evidence_ids)
+    origin_kind = {
+        ParameterOrigin.LITERAL: ValueOriginKind.CONSTRUCTOR_LITERAL,
+        ParameterOrigin.CONFIG: ValueOriginKind.CONFIG_KEY,
+        ParameterOrigin.CONSTRUCTOR_DEFAULT: ValueOriginKind.FUNCTION_DEFAULT,
+        ParameterOrigin.COMPUTED: ValueOriginKind.COMPUTED_EXPRESSION,
+        ParameterOrigin.UNRESOLVED: ValueOriginKind.RUNTIME_ONLY,
+    }[parameter.origin]
+    if parameter.origin is ParameterOrigin.LITERAL and any(
+        f".field.{parameter.name}" in evidence_id
+        for evidence_id in parameter.evidence_ids
+    ):
+        origin_kind = ValueOriginKind.MODULE_FIELD
+    direct = parameter.origin in {ParameterOrigin.LITERAL, ParameterOrigin.CONFIG}
+    confidence = "exact" if direct and source_anchor_ids else (
+        "conditional" if parameter.origin is ParameterOrigin.CONSTRUCTOR_DEFAULT else "unknown"
+    )
+    editability = "direct" if direct and source_anchor_ids else (
+        "readonly"
+        if parameter.origin is ParameterOrigin.UNRESOLVED
+        else "adapter-required"
+    )
+
+    affected = {node.node_id}
+    instance_id = node.attributes.get("v2_instance_id")
+    parameter_identity = node.parameter_identity
+    has_parameter_group = parameter_identity.startswith("parameter-group:")
+    for candidate in artifact.architecture.nodes:
+        candidate_parameter = next(
+            (item for item in candidate.parameters if item.name == parameter.name),
+            None,
+        )
+        if candidate_parameter is None:
+            continue
+        same_config = (
+            parameter.origin is ParameterOrigin.CONFIG
+            and candidate_parameter.origin is ParameterOrigin.CONFIG
+            and candidate_parameter.source_expression == parameter.source_expression
+        )
+        same_instance = bool(
+            instance_id
+            and candidate.attributes.get("v2_instance_id") == instance_id
+        )
+        same_parameter_group = bool(
+            has_parameter_group
+            and candidate.parameter_identity == parameter_identity
+        )
+        if same_config or same_instance or same_parameter_group:
+            affected.add(candidate.node_id)
+
+    if parameter.origin is ParameterOrigin.CONFIG:
+        allowed_scopes = [EditTargetScope.CONFIG_VALUE]
+    elif node.repeat_id is not None:
+        allowed_scopes = [EditTargetScope.REPEAT_TEMPLATE]
+    elif has_parameter_group and len(
+        {
+            candidate.attributes.get("v2_instance_id")
+            for candidate in artifact.architecture.nodes
+            if candidate.node_id in affected
+        }
+    ) > 1:
+        allowed_scopes = [
+            EditTargetScope.PARAMETER_SHARING_GROUP,
+            EditTargetScope.ALL_SHARED_USES,
+        ]
+    elif origin_kind is ValueOriginKind.MODULE_FIELD:
+        allowed_scopes = [EditTargetScope.DEFINITION]
+    else:
+        allowed_scopes = [EditTargetScope.MODULE_INSTANCE]
+    if editability != "direct":
+        allowed_scopes = []
+
+    origin_payload = {
+        "node_id": node.node_id,
+        "parameter_name": parameter.name,
+        "kind": origin_kind.value,
+        "source_expression": parameter.source_expression,
+        "source_anchor_ids": source_anchor_ids,
+    }
+    origin_digest = _sha256(
+        json.dumps(origin_payload, sort_keys=True, separators=(",", ":")).encode()
+    )
+    value_origin = ValueOrigin(
+        origin_id=f"value-origin:{origin_digest[:24]}",
+        kind=origin_kind,
+        source_anchor_ids=source_anchor_ids,
+        config_path=artifact.snapshot.config_path if origin_kind is ValueOriginKind.CONFIG_KEY else None,
+        config_key_path=(
+            [parameter.source_expression]
+            if origin_kind is ValueOriginKind.CONFIG_KEY
+            else []
+        ),
+        confidence=confidence,
+        editability=editability,
+        evidence_ids=sorted(parameter.evidence_ids),
+    )
+    context_digest = _sha256(
+        json.dumps(
+            {
+                "origin_id": value_origin.origin_id,
+                "affected": sorted(affected),
+                "allowed_scopes": [item.value for item in allowed_scopes],
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    )
+    return ParameterEditContext(
+        context_id=f"parameter-edit:{context_digest[:24]}",
+        target_node_id=node.node_id,
+        parameter_name=parameter.name,
+        current_value=parameter.value,
+        value_origin=value_origin,
+        allowed_scopes=allowed_scopes,
+        default_scope=allowed_scopes[0] if len(allowed_scopes) == 1 else None,
+        affected_canonical_ids=sorted(affected),
+        blocking_reason=(
+            None
+            if editability == "direct"
+            else f"{origin_kind.value} requires a registered parameter lowering adapter"
+        ),
+    )
+
+
+def resolve_parameter_edit_context(
+    artifact_path: Path,
+    node_id: str,
+    parameter_name: str,
+) -> ParameterEditContext:
+    artifact = _load_artifact(artifact_path)
+    node = next(
+        (item for item in artifact.architecture.nodes if item.node_id == node_id),
+        None,
+    )
+    if node is None:
+        raise ValueError(f"parameter edit node is unavailable: {node_id}")
+    parameter = next(
+        (item for item in node.parameters if item.name == parameter_name),
+        None,
+    )
+    if parameter is None:
+        raise ValueError(f"parameter edit target is unavailable: {node_id}.{parameter_name}")
+    return _parameter_edit_context(artifact, node, parameter)
+
+
+def resolve_parameter_edit_contexts(artifact_path: Path) -> list[ParameterEditContext]:
+    artifact = _load_artifact(artifact_path)
+    return [
+        _parameter_edit_context(artifact, node, parameter)
+        for node in artifact.architecture.nodes
+        for parameter in node.parameters
+    ]
 
 
 def _python_literal(value: Any) -> str:
@@ -682,7 +1086,13 @@ def _analyze_at(
         ]
         if blocking:
             raise ValueError("v2 reanalysis produced blocking Exact IR diagnostics")
-        return frontend.compatibility
+        return _ReanalysisBundle(
+            architecture=frontend.compatibility.architecture,
+            snapshot=frontend.compatibility.snapshot,
+            evidence=frontend.compatibility.evidence,
+            source_corpus_digest=frontend.corpus.source_corpus_digest,
+            exact_ir_digest=frontend.exact_ir.exact_ir_digest,
+        )
     config_path: Path | None = None
     config_bytes = b"{}"
     if snapshot.config_path:
@@ -694,7 +1104,7 @@ def _analyze_at(
         )
         config_path = project / relative
         config_bytes = config_path.read_bytes()
-    return analyze_with_adapter(
+    compatibility = analyze_with_adapter(
         project,
         snapshot.entrypoint,
         snapshot.task,
@@ -703,6 +1113,17 @@ def _analyze_at(
         config_path,
         framework=snapshot.framework,
         pattern_packs_enabled=True,
+    )
+    return _ReanalysisBundle(
+        architecture=compatibility.architecture,
+        snapshot=compatibility.snapshot,
+        evidence=compatibility.evidence,
+        source_corpus_digest=(
+            compatibility.snapshot.revision.removeprefix("corpus:")
+            if compatibility.snapshot.revision.startswith("corpus:")
+            else _sha256(compatibility.snapshot.model_dump_json().encode())
+        ),
+        exact_ir_digest=exact_ir_digest(compatibility.architecture),
     )
 
 
@@ -720,6 +1141,8 @@ def _unified_diff(relative: Path, before: bytes, after: bytes) -> str:
 def prepare_transaction(
     request: SemanticParameterPatch | SemanticStructuralPatch,
     workspace: Path,
+    *,
+    semantic_intent: SemanticIntentV2 | None = None,
 ) -> tuple[SourceTransaction, TransactionReceipt]:
     artifact = Path(request.artifact_path).resolve()
     loaded = _load_artifact(artifact)
@@ -729,14 +1152,95 @@ def prepare_transaction(
     if architecture.framework != snapshot.framework:
         raise ValueError("architecture and snapshot framework bindings do not match")
     artifact_kind = transaction_artifact_kind(architecture.framework)
+    workspace = workspace.resolve()
+    base_source_digest = _base_source_digest(loaded)
+    if semantic_intent is not None:
+        expected_operation = (
+            "set-parameter"
+            if isinstance(request, SemanticParameterPatch)
+            else {
+                "replace_activation": "replace-operation",
+                "insert_layer_norm": "insert-normalization",
+                "insert_registered_module": "create-node",
+            }[request.operation]
+        )
+        expected_exact_ir_digest = exact_ir_digest(architecture)
+        if (
+            semantic_intent.framework != architecture.framework
+            or semantic_intent.operation != expected_operation
+            or request.target_node_id not in semantic_intent.target_ids
+            or semantic_intent.base_source_digest != base_source_digest
+            or semantic_intent.base_exact_ir_digest != expected_exact_ir_digest
+        ):
+            raise ValueError("semantic intent binding is stale or does not match the request")
+        capability_action = (
+            "parameter_transaction"
+            if isinstance(request, SemanticParameterPatch)
+            else "structural_transaction"
+        )
+        if framework_form_capability(
+            semantic_intent.framework,
+            semantic_intent.form_id,
+            capability_action,
+        ) == "unavailable":
+            raise ValueError(
+                f"{capability_action} is unavailable for {semantic_intent.form_id}"
+            )
+    existing = _idempotent_transaction(workspace, request, base_source_digest)
+    if existing is not None:
+        return existing, _receipt(
+            existing, source_writes=existing.state is TransactionState.COMMITTED
+        )
     _validate_snapshot(loaded)
     project = _working_project(loaded)
     node = next((item for item in architecture.nodes if item.node_id == request.target_node_id), None)
     if node is None:
         raise ValueError(f"target node is not present in Exact IR: {request.target_node_id}")
+    parameter_context: ParameterEditContext | None = None
+    if isinstance(request, SemanticParameterPatch):
+        parameter = next(
+            (item for item in node.parameters if item.name == request.parameter_name), None
+        )
+        if parameter is None:
+            raise ValueError(
+                f"target parameter is not present on {node.node_id}: {request.parameter_name}"
+            )
+        if parameter.value == request.new_value:
+            raise ValueError("new parameter value is identical to the current value")
+        parameter_context = _parameter_edit_context(loaded, node, parameter)
+        contract_supplied = any(
+            (
+                request.value_origin_id is not None,
+                request.edit_target_scope is not None,
+                bool(request.confirmed_affected_ids),
+                bool(request.confirmed_source_anchor_ids),
+            )
+        )
+        if contract_supplied and (
+            request.value_origin_id is None
+            or request.edit_target_scope is None
+            or not request.confirmed_affected_ids
+            or not request.confirmed_source_anchor_ids
+        ):
+            raise ValueError("parameter edit intent has an incomplete origin and scope contract")
+        if request.value_origin_id is not None:
+            if request.value_origin_id != parameter_context.value_origin.origin_id:
+                raise ValueError("parameter value origin binding is stale")
+            if request.edit_target_scope not in parameter_context.allowed_scopes:
+                raise ValueError("parameter edit target scope is unavailable")
+            if sorted(request.confirmed_affected_ids) != parameter_context.affected_canonical_ids:
+                raise ValueError("parameter edit affected canonical objects are stale")
+            if sorted(request.confirmed_source_anchor_ids) != sorted(
+                parameter_context.value_origin.source_anchor_ids
+            ):
+                raise ValueError("parameter edit source anchor confirmation is stale")
+        if parameter_context.value_origin.editability != "direct":
+            raise ValueError(
+                parameter_context.blocking_reason
+                or "parameter value origin is not directly editable"
+            )
     seed = json.dumps(request.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
     transaction_id = f"transaction:{_sha256((seed + datetime.now(UTC).isoformat()).encode())[:16]}"
-    workspace = workspace.resolve()
     directory = workspace / "transactions" / transaction_id
     temporary_project = directory / "project"
     directory.mkdir(parents=True, exist_ok=False)
@@ -914,6 +1418,9 @@ def prepare_transaction(
     prepared_path = temporary_project / relative
     write_prepared(prepared_path, transformed.content)
     after = prepared_path.read_bytes()
+    if artifact_kind == "source-artifact" and before == after:
+        shutil.rmtree(directory)
+        raise ValueError("semantic intent produces no source change")
     file_changes = [
         FileChange(
             path=relative.as_posix(),
@@ -1012,6 +1519,19 @@ def prepare_transaction(
             *inserted.evidence_ids,
         ]
 
+    state_binding = request.state_asset_binding
+    state_plan = (
+        build_state_migration_plan(
+            state_binding,
+            framework=architecture.framework,
+            base_source_digest=base_source_digest,
+            result_source_digest=prepared_bundle.source_corpus_digest,
+            result_exact_ir_digest=prepared_bundle.exact_ir_digest,
+            expected_delta=expected,
+        )
+        if state_binding is not None
+        else None
+    )
     transaction = SourceTransaction(
         transaction_id=transaction_id,
         framework=architecture.framework,
@@ -1029,6 +1549,9 @@ def prepare_transaction(
             TransactionState.PREPARED,
         ],
         request=request,
+        semantic_intent=semantic_intent,
+        parameter_edit_context=parameter_context,
+        state_migration_plan=state_plan,
         created_at=datetime.now(UTC).isoformat(),
         workspace=str(workspace),
         original_project_root=str(project),
@@ -1038,9 +1561,7 @@ def prepare_transaction(
         base_revision=snapshot.revision,
         anchor_fingerprint=anchor,
         source_anchor=source_anchor,
-        base_source_corpus_digest=(
-            loaded.source_corpus.source_corpus_digest if loaded.source_corpus else None
-        ),
+        base_source_corpus_digest=base_source_digest,
         base_analysis_input_digest=(
             loaded.analysis_input.analysis_input_digest if loaded.analysis_input else None
         ),
@@ -1048,6 +1569,8 @@ def prepare_transaction(
             loaded.analysis_input.registry_digest if loaded.analysis_input else None
         ),
         base_exact_ir_digest=(loaded.exact_ir.exact_ir_digest if loaded.exact_ir else None),
+        result_source_corpus_digest=prepared_bundle.source_corpus_digest,
+        result_exact_ir_digest=prepared_bundle.exact_ir_digest,
         base_source_blobs=_transaction_base_blobs(loaded),
         proposal_correlation_id=proposal_correlation_id,
         realized_subject_ids=realized_subject_ids,
@@ -1069,6 +1592,10 @@ def prepare_transaction(
         ],
     )
     save_transaction(transaction)
+    save_journal(
+        _build_transaction_journal(transaction, TransactionJournalState.PREPARED),
+        directory,
+    )
     (directory / "source.diff").write_text(transaction.source_diff, encoding="utf-8")
     return transaction, _receipt(transaction)
 
@@ -1086,12 +1613,18 @@ def prepare_freeform_transaction(
         raise ValueError("architecture and snapshot framework bindings do not match")
     if transaction_artifact_kind(architecture.framework) != "source-artifact":
         raise ValueError("freeform source buffers are unavailable for model artifacts")
+    workspace = workspace.resolve()
+    base_source_digest = _base_source_digest(loaded)
+    existing = _idempotent_transaction(workspace, request, base_source_digest)
+    if existing is not None:
+        return existing, _receipt(
+            existing, source_writes=existing.state is TransactionState.COMMITTED
+        )
     _validate_snapshot(loaded)
     project = _working_project(loaded)
     snapshot_files = {item.path: item for item in snapshot.source_files}
     seed = json.dumps(request.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
     transaction_id = f"transaction:{_sha256((seed + datetime.now(UTC).isoformat()).encode())[:16]}"
-    workspace = workspace.resolve()
     directory = workspace / "transactions" / transaction_id
     temporary_project = directory / "project"
     directory.mkdir(parents=True, exist_ok=False)
@@ -1200,9 +1733,7 @@ def prepare_freeform_transaction(
             source_snapshot_id=snapshot.snapshot_id,
             base_revision=snapshot.revision,
             anchor_fingerprint=anchor,
-            base_source_corpus_digest=(
-                loaded.source_corpus.source_corpus_digest if loaded.source_corpus else None
-            ),
+            base_source_corpus_digest=base_source_digest,
             base_analysis_input_digest=(
                 loaded.analysis_input.analysis_input_digest if loaded.analysis_input else None
             ),
@@ -1210,6 +1741,8 @@ def prepare_freeform_transaction(
                 loaded.analysis_input.registry_digest if loaded.analysis_input else None
             ),
             base_exact_ir_digest=(loaded.exact_ir.exact_ir_digest if loaded.exact_ir else None),
+            result_source_corpus_digest=prepared_bundle.source_corpus_digest,
+            result_exact_ir_digest=prepared_bundle.exact_ir_digest,
             base_source_blobs=_transaction_base_blobs(loaded),
             reanalysis_route=(
                 "analyze_project_v2+project_v1_compatibility"
@@ -1230,6 +1763,10 @@ def prepare_freeform_transaction(
             ],
         )
         save_transaction(transaction)
+        save_journal(
+            _build_transaction_journal(transaction, TransactionJournalState.PREPARED),
+            directory,
+        )
         (directory / "source.diff").write_text(transaction.source_diff, encoding="utf-8")
         return transaction, _receipt(transaction)
     except Exception:
@@ -1252,6 +1789,22 @@ def _fail(
         }
     )
     save_transaction(failed)
+    transaction_directory = (
+        Path(transaction.workspace) / "transactions" / transaction.transaction_id
+    )
+    journal_path = transaction_directory / "transaction-journal.json"
+    if journal_path.is_file():
+        journal = load_journal(journal_path)
+        if journal.state in {
+            TransactionJournalState.PREPARED,
+            TransactionJournalState.VERIFIED,
+        }:
+            _transition_journal(
+                journal,
+                transaction_directory,
+                TransactionJournalState.DISCARDED,
+                diagnostics=[*journal.diagnostics, diagnostic],
+            )
     return failed, _receipt(failed)
 
 
@@ -1263,7 +1816,7 @@ def _validate_source(path: Path, kind: str) -> None:
         if not path.is_file():
             raise ValueError(f"prepared binary artifact is unavailable: {path}")
         return
-    content = path.read_text(encoding="utf-8")
+    content = path.read_text(encoding="utf-8-sig")
     if kind == "python":
         ast.parse(content, filename=str(path))
     else:
@@ -1293,9 +1846,7 @@ def _validate_transaction_binding(
     artifact: _LoadedArtifact,
 ) -> None:
     expected = {
-        "base_source_corpus_digest": (
-            artifact.source_corpus.source_corpus_digest if artifact.source_corpus else None
-        ),
+        "base_source_corpus_digest": _base_source_digest(artifact),
         "base_analysis_input_digest": (
             artifact.analysis_input.analysis_input_digest if artifact.analysis_input else None
         ),
@@ -1305,6 +1856,12 @@ def _validate_transaction_binding(
         "base_exact_ir_digest": artifact.exact_ir.exact_ir_digest if artifact.exact_ir else None,
     }
     for field, value in expected.items():
+        if (
+            field == "base_source_corpus_digest"
+            and artifact.source_corpus is None
+            and transaction.base_source_corpus_digest is None
+        ):
+            continue
         if getattr(transaction, field) != value:
             raise ValueError(f"transaction {field} no longer matches its analysis artifact")
     if artifact.source_corpus is not None:
@@ -1622,26 +2179,187 @@ def verify_transaction(path: Path) -> tuple[SourceTransaction, TransactionReceip
             "state_history": [*history, TransactionState.REVIEW_READY],
             "gates": gates,
             "observed_delta": observed,
+            "result_source_corpus_digest": observed_bundle.source_corpus_digest,
+            "result_exact_ir_digest": observed_bundle.exact_ir_digest,
             "test_results": test_results,
         }
     )
     save_transaction(verified)
+    transaction_directory = (
+        Path(transaction.workspace) / "transactions" / transaction.transaction_id
+    )
+    journal = load_journal(transaction_directory)
+    _transition_journal(
+        journal,
+        transaction_directory,
+        TransactionJournalState.VERIFIED,
+    )
     return verified, _receipt(verified)
 
 
-def _atomic_replace(path: Path, content: bytes) -> None:
-    mode = path.stat().st_mode
+def _atomic_replace(path: Path, content: bytes, *, mode: int | None = None) -> None:
+    if path.is_symlink():
+        raise ValueError(f"refusing to replace symbolic link: {path}")
+    target_mode = stat.S_IMODE(path.stat().st_mode) if mode is None else mode
     with tempfile.NamedTemporaryFile("wb", dir=path.parent, delete=False) as handle:
         handle.write(content)
+        handle.flush()
+        os.fsync(handle.fileno())
+        temporary = Path(handle.name)
+    temporary.chmod(target_mode)
+    temporary.replace(path)
+    directory_fd = os.open(path.parent, os.O_RDONLY)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
+
+
+def _write_verified_backup(path: Path, content: bytes, *, mode: int, digest: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("wb", dir=path.parent, delete=False) as handle:
+        handle.write(content)
+        handle.flush()
+        os.fsync(handle.fileno())
         temporary = Path(handle.name)
     temporary.chmod(mode)
     temporary.replace(path)
+    directory_fd = os.open(path.parent, os.O_RDONLY)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
+    if _sha256(path.read_bytes()) != digest:
+        raise ValueError(f"transaction backup verification failed: {path}")
+
+
+def _validate_committed_result(
+    transaction: SourceTransaction,
+    artifact: _LoadedArtifact,
+    analysis_directory: Path,
+) -> _ReanalysisBundle:
+    committed_bundle = _analyze_at(
+        Path(transaction.original_project_root),
+        artifact,
+        analysis_directory,
+    )
+    committed_delta = graph_delta(
+        artifact.architecture,
+        committed_bundle.architecture,
+        artifact.evidence,
+        committed_bundle.evidence,
+    )
+    if committed_delta != transaction.expected_delta:
+        expected_payload = transaction.expected_delta.model_dump(mode="json")
+        committed_payload = committed_delta.model_dump(mode="json")
+        mismatched_fields = sorted(
+            key for key in expected_payload if expected_payload[key] != committed_payload[key]
+        )
+        raise ValueError(
+            "committed source did not reproduce the verified Graph Delta; "
+            f"mismatched fields: {', '.join(mismatched_fields)}"
+        )
+    if transaction.base_analysis_input_digest is not None and (
+        transaction.result_source_corpus_digest != committed_bundle.source_corpus_digest
+        or transaction.result_exact_ir_digest != committed_bundle.exact_ir_digest
+    ):
+        raise ValueError("post-commit analysis digests differ from the verified result")
+    return committed_bundle
+
+
+def _rollback_journal_files(
+    transaction: SourceTransaction,
+    journal: TransactionJournal,
+    transaction_directory: Path,
+) -> tuple[TransactionJournal, list[str]]:
+    recovered: list[str] = []
+    files = list(journal.files)
+    for index, entry in enumerate(files):
+        original = Path(transaction.original_project_root) / entry.working_path
+        backup = transaction_directory / entry.backup_relative_path
+        current_digest = _sha256(original.read_bytes())
+        if current_digest != entry.before_sha256:
+            if not backup.is_file() or _sha256(backup.read_bytes()) != entry.before_sha256:
+                raise ValueError(f"verified rollback backup is unavailable: {entry.logical_path}")
+            _atomic_replace(
+                original,
+                backup.read_bytes(),
+                mode=entry.original_metadata.mode,
+            )
+            recovered.append(entry.logical_path)
+        if _sha256(original.read_bytes()) != entry.before_sha256:
+            raise ValueError(f"rollback digest proof failed: {entry.logical_path}")
+        files[index] = entry.model_copy(
+            update={
+                "replacement_status": "rolled-back",
+                "rename_completed": True,
+                "directory_fsync_completed": True,
+            }
+        )
+        journal = _transition_journal(
+            journal,
+            transaction_directory,
+            TransactionJournalState.ROLLBACK_REQUIRED,
+            files=files,
+        )
+    return journal, recovered
+
+
+def _recovery_receipt(
+    transaction: SourceTransaction,
+    journal: TransactionJournal,
+    *,
+    outcome: str,
+    before_state_proven: bool,
+    after_state_proven: bool,
+    source_writes: bool,
+    recovered_files: list[str],
+    diagnostics: list[Diagnostic] | None = None,
+) -> RecoveryReceipt:
+    return RecoveryReceipt(
+        receipt_id=(
+            f"recovery:{transaction.transaction_id.removeprefix('transaction:')}:"
+            f"{outcome}"
+        ),
+        transaction_id=transaction.transaction_id,
+        journal_id=journal.journal_id,
+        outcome=outcome,
+        journal_state=journal.state,
+        before_state_proven=before_state_proven,
+        after_state_proven=after_state_proven,
+        source_writes=source_writes,
+        recovered_files=recovered_files,
+        diagnostics=diagnostics or [],
+        created_at=datetime.now(UTC).isoformat(),
+    )
 
 
 def commit_transaction(path: Path) -> tuple[SourceTransaction, TransactionReceipt]:
     transaction = load_transaction(path)
     if transaction.state is not TransactionState.REVIEW_READY:
         raise ValueError(f"only review-ready transactions can be committed, got {transaction.state.value}")
+    if (
+        transaction.semantic_intent is not None
+        and framework_form_capability(
+            transaction.semantic_intent.framework,
+            transaction.semantic_intent.form_id,
+            "artifact_commit",
+        )
+        == "unavailable"
+    ):
+        return _fail(
+            transaction,
+            _gate(
+                "F-form-artifact-commit",
+                False,
+                "Framework form permits artifact commit.",
+                "Artifact commit is unavailable for the selected framework form.",
+            ),
+            _diagnostic(
+                "FORM_ARTIFACT_COMMIT_UNAVAILABLE",
+                f"artifact_commit is unavailable for {transaction.semantic_intent.form_id}",
+            ),
+        )
     artifact = _load_artifact(Path(transaction.artifact_path))
     try:
         _validate_transaction_binding(transaction, artifact)
@@ -1660,49 +2378,142 @@ def commit_transaction(path: Path) -> tuple[SourceTransaction, TransactionReceip
             _diagnostic("CONCURRENT_MODIFICATION", str(error)),
         )
 
-    originals: dict[Path, bytes] = {}
+    transaction_directory = (
+        Path(transaction.workspace) / "transactions" / transaction.transaction_id
+    )
+    journal = load_journal(transaction_directory)
+    if journal.transaction_id != transaction.transaction_id:
+        raise ValueError("transaction journal identity does not match the transaction")
+    if journal.state is not TransactionJournalState.VERIFIED:
+        raise ValueError(f"transaction journal is not verified: {journal.state.value}")
     try:
-        for change in transaction.file_changes:
-            original = Path(transaction.original_project_root) / change.path
-            prepared = Path(transaction.temporary_project_root) / change.path
-            originals[original] = original.read_bytes()
-            _atomic_replace(original, prepared.read_bytes())
-        committed_bundle = _analyze_at(
-            Path(transaction.original_project_root),
-            artifact,
-            Path(transaction.workspace)
-            / "transactions"
-            / transaction.transaction_id
-            / "analysis-commit",
-        )
-        original_architecture = artifact.architecture
-        original_evidence = artifact.evidence
-        committed_delta = graph_delta(
-            original_architecture,
-            committed_bundle.architecture,
-            original_evidence,
-            committed_bundle.evidence,
-        )
-        if committed_delta != transaction.expected_delta:
-            expected_payload = transaction.expected_delta.model_dump(mode="json")
-            committed_payload = committed_delta.model_dump(mode="json")
-            mismatched_fields = sorted(
-                key
-                for key in expected_payload
-                if expected_payload[key] != committed_payload[key]
+        files = list(journal.files)
+        for index, entry in enumerate(files):
+            original = Path(transaction.original_project_root) / entry.working_path
+            backup = transaction_directory / entry.backup_relative_path
+            content = original.read_bytes()
+            _write_verified_backup(
+                backup,
+                content,
+                mode=entry.original_metadata.mode,
+                digest=entry.before_sha256,
             )
-            raise ValueError(
-                "committed source did not reproduce the verified Graph Delta; "
-                f"mismatched fields: {', '.join(mismatched_fields)}"
+            files[index] = entry.model_copy(update={"backup_verified": True})
+        journal = _transition_journal(
+            journal,
+            transaction_directory,
+            TransactionJournalState.COMMIT_INTENT_RECORDED,
+            files=files,
+        )
+        journal = _transition_journal(
+            journal,
+            transaction_directory,
+            TransactionJournalState.REPLACING_FILES,
+        )
+        files = list(journal.files)
+        for index, entry in enumerate(files):
+            original = Path(transaction.original_project_root) / entry.working_path
+            prepared = Path(transaction.temporary_project_root) / entry.working_path
+            _atomic_replace(
+                original,
+                prepared.read_bytes(),
+                mode=entry.original_metadata.mode,
             )
-    except Exception as error:  # noqa: BLE001
-        for original, content in originals.items():
-            _atomic_replace(original, content)
-        return _fail(
+            if _sha256(original.read_bytes()) != entry.after_sha256:
+                raise ValueError(f"replacement digest proof failed: {entry.logical_path}")
+            files[index] = entry.model_copy(
+                update={
+                    "replacement_status": "replaced",
+                    "rename_completed": True,
+                    "directory_fsync_completed": True,
+                }
+            )
+            journal = _transition_journal(
+                journal,
+                transaction_directory,
+                TransactionJournalState.REPLACING_FILES,
+                files=files,
+            )
+        journal = _transition_journal(
+            journal,
+            transaction_directory,
+            TransactionJournalState.POST_COMMIT_VALIDATING,
+        )
+        _validate_committed_result(
             transaction,
-            _gate("F-atomic-commit", False, "Commit passed.", "Atomic commit failed and was rolled back."),
-            _diagnostic("ATOMIC_COMMIT_FAILED", str(error)),
+            artifact,
+            transaction_directory / "analysis-commit",
         )
+    except Exception as error:  # noqa: BLE001
+        diagnostic = _diagnostic("ATOMIC_COMMIT_FAILED", str(error))
+        journal = _transition_journal(
+            journal,
+            transaction_directory,
+            TransactionJournalState.ROLLBACK_REQUIRED,
+            diagnostics=[*journal.diagnostics, diagnostic],
+        )
+        try:
+            journal, recovered_files = _rollback_journal_files(
+                transaction,
+                journal,
+                transaction_directory,
+            )
+            journal = _transition_journal(
+                journal,
+                transaction_directory,
+                TransactionJournalState.ROLLED_BACK,
+            )
+            recovery = _recovery_receipt(
+                transaction,
+                journal,
+                outcome="rolled-back",
+                before_state_proven=True,
+                after_state_proven=False,
+                source_writes=False,
+                recovered_files=recovered_files,
+                diagnostics=[diagnostic],
+            )
+        except Exception as rollback_error:  # noqa: BLE001
+            recovery_diagnostic = _diagnostic("RECOVERY_FAILED", str(rollback_error))
+            journal = _transition_journal(
+                journal,
+                transaction_directory,
+                TransactionJournalState.RECOVERY_FAILED,
+                diagnostics=[*journal.diagnostics, recovery_diagnostic],
+            )
+            recovery = _recovery_receipt(
+                transaction,
+                journal,
+                outcome="recovery-failed",
+                before_state_proven=False,
+                after_state_proven=False,
+                source_writes=True,
+                recovered_files=[],
+                diagnostics=[diagnostic, recovery_diagnostic],
+            )
+        save_recovery_receipt(recovery, transaction_directory)
+        failed = transaction.model_copy(
+            update={
+                "state": TransactionState.FAILED,
+                "state_history": [*transaction.state_history, TransactionState.FAILED],
+                "gates": [
+                    *transaction.gates,
+                    _gate(
+                        "F-atomic-commit",
+                        False,
+                        "Commit passed.",
+                        "Journaled commit failed; see the recovery receipt.",
+                    ),
+                ],
+                "diagnostics": [*transaction.diagnostics, diagnostic, *recovery.diagnostics],
+            }
+        )
+        save_transaction(failed)
+        receipt = _receipt(failed, source_writes=recovery.source_writes).model_copy(
+            update={"recovery_receipt_id": recovery.receipt_id}
+        )
+        save_transaction_receipt(receipt, transaction_directory)
+        return failed, receipt
 
     committed = transaction.model_copy(
         update={
@@ -1726,7 +2537,200 @@ def commit_transaction(path: Path) -> tuple[SourceTransaction, TransactionReceip
         }
     )
     save_transaction(committed)
+    journal = _transition_journal(
+        journal,
+        transaction_directory,
+        TransactionJournalState.COMMITTED,
+        post_commit_gates=[
+            *journal.post_commit_gates,
+            _gate(
+                "F-post-commit-reanalysis",
+                True,
+                "Committed source reproduced verified source and Exact IR digests.",
+                "Post-commit reanalysis failed.",
+            ),
+        ],
+    )
     return committed, _receipt(committed, source_writes=True)
+
+
+def _persist_recovery_failure(
+    transaction: SourceTransaction,
+    diagnostic: Diagnostic,
+) -> SourceTransaction:
+    if transaction.state is TransactionState.COMMITTED:
+        return transaction
+    failed = transaction.model_copy(
+        update={
+            "state": TransactionState.FAILED,
+            "state_history": [*transaction.state_history, TransactionState.FAILED],
+            "diagnostics": [*transaction.diagnostics, diagnostic],
+        }
+    )
+    save_transaction(failed)
+    return failed
+
+
+def recover_incomplete_transactions(workspace: Path) -> list[RecoveryReceipt]:
+    transaction_root = workspace.resolve() / "transactions"
+    if not transaction_root.is_dir():
+        return []
+    receipts: list[RecoveryReceipt] = []
+    recoverable = {
+        TransactionJournalState.COMMIT_INTENT_RECORDED,
+        TransactionJournalState.REPLACING_FILES,
+        TransactionJournalState.POST_COMMIT_VALIDATING,
+        TransactionJournalState.ROLLBACK_REQUIRED,
+    }
+    for transaction_directory in sorted(path for path in transaction_root.iterdir() if path.is_dir()):
+        journal_path = transaction_directory / "transaction-journal.json"
+        transaction_path = transaction_directory / "transaction.json"
+        if not journal_path.is_file() or not transaction_path.is_file():
+            continue
+        journal = load_journal(journal_path)
+        if journal.state not in recoverable:
+            continue
+        transaction = load_transaction(transaction_path)
+        before_matches: list[bool] = []
+        after_matches: list[bool] = []
+        try:
+            for entry in journal.files:
+                original = Path(transaction.original_project_root) / entry.working_path
+                current = _sha256(original.read_bytes())
+                before_matches.append(current == entry.before_sha256)
+                after_matches.append(current == entry.after_sha256)
+            all_before = all(before_matches)
+            all_after = all(after_matches)
+            if all_before:
+                outcome = (
+                    "rolled-back"
+                    if journal.state is TransactionJournalState.ROLLBACK_REQUIRED
+                    else "discarded"
+                )
+                terminal = (
+                    TransactionJournalState.ROLLED_BACK
+                    if outcome == "rolled-back"
+                    else TransactionJournalState.DISCARDED
+                )
+                journal = _transition_journal(
+                    journal,
+                    transaction_directory,
+                    terminal,
+                )
+                diagnostic = _diagnostic(
+                    "COMMIT_RECOVERY_DISCARDED",
+                    "Startup recovery proved that every source file remained at its before digest.",
+                )
+                _persist_recovery_failure(transaction, diagnostic)
+                receipt = _recovery_receipt(
+                    transaction,
+                    journal,
+                    outcome=outcome,
+                    before_state_proven=True,
+                    after_state_proven=False,
+                    source_writes=False,
+                    recovered_files=[],
+                    diagnostics=[diagnostic],
+                )
+            elif all_after:
+                artifact = _load_artifact(Path(transaction.artifact_path))
+                journal = _transition_journal(
+                    journal,
+                    transaction_directory,
+                    TransactionJournalState.POST_COMMIT_VALIDATING,
+                )
+                _validate_committed_result(
+                    transaction,
+                    artifact,
+                    transaction_directory / "analysis-recovery",
+                )
+                committed = transaction.model_copy(
+                    update={
+                        "state": TransactionState.COMMITTED,
+                        "state_history": [
+                            *transaction.state_history,
+                            TransactionState.COMMITTED,
+                        ],
+                    }
+                )
+                save_transaction(committed)
+                transaction = committed
+                journal = _transition_journal(
+                    journal,
+                    transaction_directory,
+                    TransactionJournalState.COMMITTED,
+                    post_commit_gates=[
+                        *journal.post_commit_gates,
+                        _gate(
+                            "F-recovery-reanalysis",
+                            True,
+                            "Startup recovery reproduced the verified source and Exact IR digests.",
+                            "Recovery reanalysis failed.",
+                        ),
+                    ],
+                )
+                receipt = _recovery_receipt(
+                    transaction,
+                    journal,
+                    outcome="committed",
+                    before_state_proven=False,
+                    after_state_proven=True,
+                    source_writes=True,
+                    recovered_files=[],
+                )
+            else:
+                journal = _transition_journal(
+                    journal,
+                    transaction_directory,
+                    TransactionJournalState.ROLLBACK_REQUIRED,
+                )
+                journal, recovered_files = _rollback_journal_files(
+                    transaction,
+                    journal,
+                    transaction_directory,
+                )
+                journal = _transition_journal(
+                    journal,
+                    transaction_directory,
+                    TransactionJournalState.ROLLED_BACK,
+                )
+                diagnostic = _diagnostic(
+                    "MIXED_COMMIT_RECOVERED",
+                    "Startup recovery found mixed before/after file state and restored verified backups.",
+                )
+                _persist_recovery_failure(transaction, diagnostic)
+                receipt = _recovery_receipt(
+                    transaction,
+                    journal,
+                    outcome="rolled-back",
+                    before_state_proven=True,
+                    after_state_proven=False,
+                    source_writes=False,
+                    recovered_files=recovered_files,
+                    diagnostics=[diagnostic],
+                )
+        except Exception as error:  # noqa: BLE001
+            diagnostic = _diagnostic("RECOVERY_FAILED", str(error))
+            journal = _transition_journal(
+                journal,
+                transaction_directory,
+                TransactionJournalState.RECOVERY_FAILED,
+                diagnostics=[*journal.diagnostics, diagnostic],
+            )
+            _persist_recovery_failure(transaction, diagnostic)
+            receipt = _recovery_receipt(
+                transaction,
+                journal,
+                outcome="recovery-failed",
+                before_state_proven=False,
+                after_state_proven=False,
+                source_writes=True,
+                recovered_files=[],
+                diagnostics=[diagnostic],
+            )
+        save_recovery_receipt(receipt, transaction_directory)
+        receipts.append(receipt)
+    return receipts
 
 
 def discard_transaction(path: Path) -> tuple[SourceTransaction, TransactionReceipt]:
@@ -1743,4 +2747,21 @@ def discard_transaction(path: Path) -> tuple[SourceTransaction, TransactionRecei
         }
     )
     save_transaction(discarded)
+    transaction_directory = (
+        Path(transaction.workspace) / "transactions" / transaction.transaction_id
+    )
+    journal_path = transaction_directory / "transaction-journal.json"
+    if journal_path.is_file():
+        journal = load_journal(journal_path)
+        if journal.state not in {
+            TransactionJournalState.COMMITTED,
+            TransactionJournalState.ROLLED_BACK,
+            TransactionJournalState.RECOVERY_FAILED,
+            TransactionJournalState.DISCARDED,
+        }:
+            _transition_journal(
+                journal,
+                transaction_directory,
+                TransactionJournalState.DISCARDED,
+            )
     return discarded, _receipt(discarded)

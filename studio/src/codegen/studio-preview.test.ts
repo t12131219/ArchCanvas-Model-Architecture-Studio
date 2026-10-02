@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import type { StudioState } from "../app/studio-types";
 import { resolveDefinitionId } from "../module-registry/registry";
+import type { DraftGraphState } from "../scene-studio/domain/source-backed-scene";
 import { compileStudioDraftPreview, studioDraftCodegenGraph } from "./studio-preview";
 
-function draft(): StudioState["draft"] {
+function draft(): DraftGraphState {
   const definition = resolveDefinitionId("pytorch.nn.gelu")!;
   return {
     draft_id: "draft:preview",

@@ -8,14 +8,15 @@ import pytest
 
 from archcanvas_core.models import EdgeType
 from archcanvas_core.validation import validate_architecture
-from archcanvas_python import AnalysisError, analyze_project
+from archcanvas_python import AnalysisError
+from archcanvas_python.legacy_profiles import analyze_project_legacy
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "fixtures" / "tier_a" / "autoformer"
 
 
 def autoformer_bundle():
-    return analyze_project(
+    return analyze_project_legacy(
         FIXTURE,
         "models.Autoformer:Model",
         "long_term_forecast",
@@ -115,7 +116,7 @@ def test_modified_upstream_fixture_is_rejected(tmp_path: Path) -> None:
     model_path = copied / "models" / "Autoformer.py"
     model_path.write_text(model_path.read_text(encoding="utf-8") + "\n", encoding="utf-8")
     with pytest.raises(AnalysisError) as caught:
-        analyze_project(
+        analyze_project_legacy(
             copied,
             "models.Autoformer:Model",
             "long_term_forecast",
@@ -126,7 +127,9 @@ def test_modified_upstream_fixture_is_rejected(tmp_path: Path) -> None:
     assert caught.value.code == "AUTOFORMER_SOURCE_STALE"
 
 
-def test_autoformer_cli_artifacts_have_correction_and_skipped_runtime(tmp_path, capsys) -> None:
+def test_autoformer_cli_v2_uses_generic_frontend_without_legacy_corrections(
+    tmp_path, capsys
+) -> None:
     from archcanvas_engine.cli import main
 
     exit_code = main(
@@ -144,21 +147,22 @@ def test_autoformer_cli_artifacts_have_correction_and_skipped_runtime(tmp_path, 
             "eval",
             "--out",
             str(tmp_path),
+            "--frontend",
+            "v2",
             "--json",
         ]
     )
     receipt = json.loads(capsys.readouterr().out)
     assert exit_code == 0
-    assert receipt["details"]["profile"] == "autoformer"
+    assert receipt["details"]["frontend"] == "v2"
+    assert receipt["details"]["profile"] == "generic"
     corrections = json.loads((tmp_path / "source-correction-report.json").read_text())
     runtime = json.loads((tmp_path / "runtime-receipt.json").read_text())
-    assert len(corrections["discrepancies"]) == 4
+    assert corrections["discrepancies"] == []
+    assert (tmp_path / "architecture-v2.json").is_file()
     assert runtime["status"] == "skipped"
 
     validate_exit = main(["validate", str(tmp_path / "architecture.json"), "--json"])
     validate_receipt = json.loads(capsys.readouterr().out)
     assert validate_exit == 0
-    assert (
-        next(gate for gate in validate_receipt["gates"] if gate["gate"] == "B-autoformer")["status"]
-        == "passed"
-    )
+    assert not [gate for gate in validate_receipt["gates"] if gate["gate"] == "B-autoformer"]

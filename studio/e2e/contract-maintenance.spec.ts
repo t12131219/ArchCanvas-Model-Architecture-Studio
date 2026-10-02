@@ -48,6 +48,16 @@ test.beforeEach(async ({ page }) => {
   if (await openDialog.isVisible().catch(() => false)) {
     await openDialog.getByRole("button", { name: "Close" }).click();
   }
+  const state = await studioState(page);
+  const capabilityId = state.contract_maintenance.session?.capability.capability_id;
+  if (capabilityId) {
+    const discarded = await page.request.post("/api/contracts/session/discard", {
+      headers: { "X-ArchCanvas-Nonce": state.session_nonce },
+      data: { capability_id: capabilityId },
+    });
+    expect(discarded.ok()).toBe(true);
+    await page.reload();
+  }
 });
 
 test("contract candidate is validated, approved, and published through the Studio UI", async ({ page }) => {
@@ -57,7 +67,6 @@ test("contract candidate is validated, approved, and published through the Studi
   const active = await studioState(page);
 
   expect(active.edit_session.mode).toBe("contract-maintenance");
-  await expect(page.getByRole("button", { name: "Unlock topology draft" })).toBeDisabled();
   const locked = await page.request.post("/api/draft/session/begin", {
     headers: { "X-ArchCanvas-Nonce": active.session_nonce },
     data: { base_document_digest: baseDocumentDigest },

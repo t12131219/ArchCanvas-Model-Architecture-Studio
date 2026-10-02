@@ -16,6 +16,7 @@ from archcanvas_core.models import (
     ArchitectureIR,
     CommandReceipt,
     Diagnostic,
+    EntryInvocationConfig,
     EvidenceRecord,
     GateResult,
     ProposedConnection,
@@ -235,6 +236,18 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
     config_bytes = args.config.read_bytes() if args.config else b"{}"
     out = args.out.resolve()
     frontend_v2 = None
+    entry_invocation = (
+        EntryInvocationConfig.model_validate_json(
+            args.entry_invocation.read_text(encoding="utf-8")
+        )
+        if args.entry_invocation
+        else EntryInvocationConfig(mode=args.mode)
+    )
+    if entry_invocation.mode != args.mode:
+        raise AnalysisError(
+            "ENTRY_INVOCATION_MODE_MISMATCH",
+            "entry invocation mode must match --mode",
+        )
     if args.frontend == "v2":
         if args.framework not in {"pytorch", "auto"}:
             raise AnalysisError(
@@ -250,6 +263,7 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
             config_bytes=config_bytes,
             pyright_executable=args.pyright_typeserver,
             pattern_packs_enabled=not args.no_pattern_packs,
+            entry_invocation=entry_invocation,
         )
         bundle = frontend_v2.compatibility
     else:
@@ -289,6 +303,9 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
             {
                 "source_corpus_v2": str(out / "source-corpus-v2.json"),
                 "project_manifest_v2": str(out / "project-manifest-v2.json"),
+                "analysis_environment_manifest": str(
+                    out / "analysis-environment-manifest-v1.json"
+                ),
                 "analysis_input_v2": str(out / "analysis-input-v2.json"),
                 "semantic_graph_v2": str(out / "semantic-graph-v2.json"),
                 "architecture_v2": str(out / "architecture-v2.json"),
@@ -317,7 +334,7 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
     candidate_reviews = build_candidate_reviews(bundle.architecture, registry)
     profile = "generic"
     if bundle.architecture.framework == "pytorch" and not args.no_pattern_packs:
-        profile = bundle.snapshot.resolved_config.get("architecture_profile") or next(
+        profile = next(
             (
                 str(node.attributes["architecture_profile"])
                 for node in bundle.architecture.nodes
@@ -342,10 +359,6 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
             "supported_profiles": [
                 "generic",
                 "transformer-l3",
-                "autoformer",
-                "itransformer",
-                "patchtst",
-                "timemixer",
             ],
             "semantic_transforms": ["set_parameter", *sorted(TRANSFORM_REGISTRY)],
         },
@@ -382,6 +395,10 @@ def analyze(args: argparse.Namespace) -> CommandReceipt:
     if frontend_v2 is not None:
         _write_json(Path(artifacts["project_manifest_v2"]), frontend_v2.manifest)
         _write_json(Path(artifacts["source_corpus_v2"]), frontend_v2.corpus)
+        _write_json(
+            Path(artifacts["analysis_environment_manifest"]),
+            frontend_v2.environment_manifest,
+        )
         _write_json(Path(artifacts["analysis_input_v2"]), frontend_v2.analysis_input)
         _write_json(Path(artifacts["semantic_graph_v2"]), frontend_v2.semantic_graph)
         _write_json(Path(artifacts["architecture_v2"]), frontend_v2.exact_ir)
@@ -630,7 +647,11 @@ def trace(args: argparse.Namespace) -> CommandReceipt:
 
 def bundle_command(args: argparse.Namespace) -> CommandReceipt:
     if args.bundle_command == "create":
-        manifest, passed_gates = create_bundle(args.artifact, args.out)
+        manifest, passed_gates = create_bundle(
+            args.artifact,
+            args.out,
+            workspace=args.workspace,
+        )
         return CommandReceipt(
             command="bundle create",
             status="ok",
@@ -769,6 +790,11 @@ def build_parser() -> argparse.ArgumentParser:
         default="pytorch",
     )
     analyze_parser.add_argument("--config", type=Path)
+    analyze_parser.add_argument(
+        "--entry-invocation",
+        type=Path,
+        help="JSON EntryInvocationConfig containing constructor/forward/static inputs.",
+    )
     analyze_parser.add_argument("--task", required=True)
     analyze_parser.add_argument("--mode", choices=("eval", "train"), required=True)
     analyze_parser.add_argument("--out", type=Path, required=True)
@@ -827,6 +853,7 @@ def build_parser() -> argparse.ArgumentParser:
     bundle_create_parser = bundle_subparsers.add_parser("create")
     bundle_create_parser.add_argument("artifact", type=Path)
     bundle_create_parser.add_argument("--out", type=Path, required=True)
+    bundle_create_parser.add_argument("--workspace", type=Path)
     bundle_create_parser.add_argument("--json", action="store_true")
     bundle_verify_parser = bundle_subparsers.add_parser("verify")
     bundle_verify_parser.add_argument("bundle", type=Path)

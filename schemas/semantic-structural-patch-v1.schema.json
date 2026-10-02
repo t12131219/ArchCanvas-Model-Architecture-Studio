@@ -1,4 +1,172 @@
 {
+  "$defs": {
+    "StateAssetBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "binding_id": {
+          "pattern": "^[a-z][a-z0-9._:-]*$",
+          "title": "Binding Id",
+          "type": "string"
+        },
+        "framework": {
+          "enum": [
+            "pytorch",
+            "keras",
+            "jax",
+            "onnx"
+          ],
+          "title": "Framework",
+          "type": "string"
+        },
+        "inventory": {
+          "items": {
+            "$ref": "#/$defs/StateInventoryEntry"
+          },
+          "minItems": 1,
+          "title": "Inventory",
+          "type": "array"
+        },
+        "inventory_digest": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Inventory Digest",
+          "type": "string"
+        },
+        "optimizer_state_bound": {
+          "default": false,
+          "title": "Optimizer State Bound",
+          "type": "boolean"
+        },
+        "progress_state_bound": {
+          "default": false,
+          "title": "Progress State Bound",
+          "type": "boolean"
+        },
+        "random_state_bound": {
+          "default": false,
+          "title": "Random State Bound",
+          "type": "boolean"
+        },
+        "scheduler_state_bound": {
+          "default": false,
+          "title": "Scheduler State Bound",
+          "type": "boolean"
+        },
+        "source_state_digest": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Source State Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "binding_id",
+        "framework",
+        "source_state_digest",
+        "inventory_digest",
+        "inventory"
+      ],
+      "title": "StateAssetBinding",
+      "type": "object"
+    },
+    "StateInventoryEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "optimizer_slot_keys": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Optimizer Slot Keys",
+          "type": "array"
+        },
+        "parameter_group_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parameter Group Id"
+        },
+        "role": {
+          "enum": [
+            "parameter",
+            "buffer",
+            "optimizer-slot"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "state_key": {
+          "minLength": 1,
+          "title": "State Key",
+          "type": "string"
+        },
+        "tensor": {
+          "$ref": "#/$defs/StateTensorSpec"
+        }
+      },
+      "required": [
+        "state_key",
+        "role",
+        "tensor"
+      ],
+      "title": "StateInventoryEntry",
+      "type": "object"
+    },
+    "StateTensorSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "device": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device"
+        },
+        "dimensions": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "title": "Dimensions",
+          "type": "array"
+        },
+        "dtype": {
+          "minLength": 1,
+          "title": "Dtype",
+          "type": "string"
+        }
+      },
+      "required": [
+        "dimensions",
+        "dtype"
+      ],
+      "title": "StateTensorSpec",
+      "type": "object"
+    }
+  },
   "additionalProperties": false,
   "properties": {
     "artifact_path": {
@@ -42,6 +210,17 @@
       "default": "1.0",
       "title": "Schema Version",
       "type": "string"
+    },
+    "state_asset_binding": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StateAssetBinding"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "target_node_id": {
       "pattern": "^[a-z][a-z0-9._:-]*$",

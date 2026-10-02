@@ -1,4 +1,3 @@
-import type { StudioState } from "../app/studio-types";
 import { resolveDefinitionId } from "../module-registry/registry";
 import type {
   GraphDiagnostic,
@@ -43,7 +42,7 @@ function externalInputNode(sourcePortId: string, ordinal: number): PrototypeNode
 }
 
 export function studioDraftCodegenGraph(
-  draft: StudioState["draft"],
+  draft: PrototypeGraphDocument,
 ): PrototypeGraphDocument {
   const nodes: PrototypeNode[] = draft.nodes.map((node) => ({
     node_id: node.node_id,
@@ -87,7 +86,7 @@ export function studioDraftCodegenGraph(
 }
 
 export function compileStudioDraftPreview(
-  draft: StudioState["draft"],
+  draft: PrototypeGraphDocument,
 ): StudioCodegenPreviewResult {
   if (!draft.nodes.length) {
     return {

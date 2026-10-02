@@ -1,0 +1,291 @@
+{
+  "$defs": {
+    "Diagnostic": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "pattern": "^[A-Z][A-Z0-9_]+$",
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "blocking",
+            "warning",
+            "unresolved",
+            "suggestion"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "target_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Target Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code",
+        "severity",
+        "message"
+      ],
+      "title": "Diagnostic",
+      "type": "object"
+    },
+    "GateResult": {
+      "additionalProperties": false,
+      "properties": {
+        "gate": {
+          "pattern": "^[A-Z][A-Za-z0-9_-]+$",
+          "title": "Gate",
+          "type": "string"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "failed",
+            "skipped"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "gate",
+        "status",
+        "message"
+      ],
+      "title": "GateResult",
+      "type": "object"
+    },
+    "SourceFileMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "encoding": {
+          "enum": [
+            "utf-8",
+            "binary"
+          ],
+          "title": "Encoding",
+          "type": "string"
+        },
+        "has_utf8_bom": {
+          "title": "Has Utf8 Bom",
+          "type": "boolean"
+        },
+        "mode": {
+          "maximum": 4095,
+          "minimum": 0,
+          "title": "Mode",
+          "type": "integer"
+        },
+        "newline": {
+          "enum": [
+            "lf",
+            "crlf",
+            "mixed",
+            "none"
+          ],
+          "title": "Newline",
+          "type": "string"
+        },
+        "symlink": {
+          "const": false,
+          "default": false,
+          "title": "Symlink",
+          "type": "boolean"
+        },
+        "trailing_newline": {
+          "title": "Trailing Newline",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "encoding",
+        "has_utf8_bom",
+        "newline",
+        "trailing_newline",
+        "mode"
+      ],
+      "title": "SourceFileMetadata",
+      "type": "object"
+    },
+    "TransactionJournalFile": {
+      "additionalProperties": false,
+      "properties": {
+        "after_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "After Sha256",
+          "type": "string"
+        },
+        "backup_relative_path": {
+          "minLength": 1,
+          "title": "Backup Relative Path",
+          "type": "string"
+        },
+        "backup_verified": {
+          "default": false,
+          "title": "Backup Verified",
+          "type": "boolean"
+        },
+        "before_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Before Sha256",
+          "type": "string"
+        },
+        "directory_fsync_completed": {
+          "default": false,
+          "title": "Directory Fsync Completed",
+          "type": "boolean"
+        },
+        "logical_path": {
+          "minLength": 1,
+          "title": "Logical Path",
+          "type": "string"
+        },
+        "original_metadata": {
+          "$ref": "#/$defs/SourceFileMetadata"
+        },
+        "prepared_metadata": {
+          "$ref": "#/$defs/SourceFileMetadata"
+        },
+        "rename_completed": {
+          "default": false,
+          "title": "Rename Completed",
+          "type": "boolean"
+        },
+        "replacement_status": {
+          "default": "pending",
+          "enum": [
+            "pending",
+            "replaced",
+            "rolled-back"
+          ],
+          "title": "Replacement Status",
+          "type": "string"
+        },
+        "working_path": {
+          "minLength": 1,
+          "title": "Working Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "logical_path",
+        "working_path",
+        "before_sha256",
+        "after_sha256",
+        "backup_relative_path",
+        "original_metadata",
+        "prepared_metadata"
+      ],
+      "title": "TransactionJournalFile",
+      "type": "object"
+    },
+    "TransactionJournalState": {
+      "enum": [
+        "prepared",
+        "verified",
+        "commit-intent-recorded",
+        "replacing-files",
+        "post-commit-validating",
+        "committed",
+        "rollback-required",
+        "rolled-back",
+        "recovery-failed",
+        "discarded"
+      ],
+      "title": "TransactionJournalState",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "base_source_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Base Source Digest",
+      "type": "string"
+    },
+    "created_at": {
+      "minLength": 1,
+      "title": "Created At",
+      "type": "string"
+    },
+    "diagnostics": {
+      "items": {
+        "$ref": "#/$defs/Diagnostic"
+      },
+      "title": "Diagnostics",
+      "type": "array"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/TransactionJournalFile"
+      },
+      "minItems": 1,
+      "title": "Files",
+      "type": "array"
+    },
+    "journal_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Journal Id",
+      "type": "string"
+    },
+    "post_commit_gates": {
+      "items": {
+        "$ref": "#/$defs/GateResult"
+      },
+      "title": "Post Commit Gates",
+      "type": "array"
+    },
+    "result_source_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Result Source Digest",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "state": {
+      "$ref": "#/$defs/TransactionJournalState"
+    },
+    "transaction_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Transaction Id",
+      "type": "string"
+    },
+    "updated_at": {
+      "minLength": 1,
+      "title": "Updated At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "journal_id",
+    "transaction_id",
+    "base_source_digest",
+    "result_source_digest",
+    "state",
+    "files",
+    "created_at",
+    "updated_at"
+  ],
+  "title": "TransactionJournal",
+  "type": "object"
+}

@@ -349,6 +349,7 @@ def binding_digest(
     port_slots: dict[str, list[str]],
     tensor_slots: dict[str, list[str]],
     fidelity: str,
+    parameters: dict[str, Any] | None = None,
 ) -> str:
     payload = {
         "template_id": template.template_id,
@@ -361,6 +362,8 @@ def binding_digest(
         "tensor_slots": {key: sorted(value) for key, value in sorted(tensor_slots.items())},
         "fidelity": fidelity,
     }
+    if parameters:
+        payload["parameters"] = parameters
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
 
@@ -442,6 +445,7 @@ def validate_template_binding(
         port_slots=binding.port_slots,
         tensor_slots=binding.tensor_slots,
         fidelity=binding.fidelity,
+        parameters=binding.parameters,
     )
     if binding.binding_digest != expected_digest:
         raise ValueError("visual template binding digest is stale")
@@ -459,6 +463,7 @@ def create_template_binding(
     tensor_slots: dict[str, list[str]] | None = None,
     predicate_ids: list[str] | None = None,
     fidelity: str = "exact",
+    parameters: dict[str, Any] | None = None,
 ) -> VisualTemplateBinding:
     facts = _GraphFacts(architecture)
     normalized = {
@@ -489,6 +494,7 @@ def create_template_binding(
         port_slots=normalized["port"],
         tensor_slots=normalized["tensor"],
         fidelity=fidelity,
+        parameters=parameters,
     )
     binding = VisualTemplateBinding(
         binding_id=f"binding:{template.template_id}:{digest[:16]}",
@@ -499,6 +505,7 @@ def create_template_binding(
         edge_slots=normalized["edge"],
         port_slots=normalized["port"],
         tensor_slots=normalized["tensor"],
+        parameters=parameters or {},
         evidence_ids=sorted(evidence_ids),
         predicate_ids=sorted(set(predicate_ids or [])),
         fidelity=fidelity,

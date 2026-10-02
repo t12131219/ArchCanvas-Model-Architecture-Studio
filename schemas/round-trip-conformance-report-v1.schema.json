@@ -1,0 +1,187 @@
+{
+  "$defs": {
+    "Diagnostic": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "pattern": "^[A-Z][A-Z0-9_]+$",
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "blocking",
+            "warning",
+            "unresolved",
+            "suggestion"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "target_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Target Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code",
+        "severity",
+        "message"
+      ],
+      "title": "Diagnostic",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "base_exact_ir_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Base Exact Ir Digest"
+    },
+    "base_source_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Base Source Digest"
+    },
+    "diagnostics": {
+      "items": {
+        "$ref": "#/$defs/Diagnostic"
+      },
+      "title": "Diagnostics",
+      "type": "array"
+    },
+    "draft_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Draft Digest"
+    },
+    "expected_delta_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expected Delta Digest"
+    },
+    "normalization_rule_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Normalization Rule Digest",
+      "type": "string"
+    },
+    "observed_delta_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Observed Delta Digest"
+    },
+    "path": {
+      "enum": [
+        "source-view",
+        "intent-source",
+        "draft-source"
+      ],
+      "title": "Path",
+      "type": "string"
+    },
+    "report_id": {
+      "pattern": "^[a-z][a-z0-9._:-]*$",
+      "title": "Report Id",
+      "type": "string"
+    },
+    "result_exact_ir_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Result Exact Ir Digest",
+      "type": "string"
+    },
+    "result_source_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Result Source Digest"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "semantic_isomorphism": {
+      "enum": [
+        "exact",
+        "equivalent",
+        "failed"
+      ],
+      "title": "Semantic Isomorphism",
+      "type": "string"
+    },
+    "source_writes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Source Writes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "report_id",
+    "path",
+    "result_exact_ir_digest",
+    "normalization_rule_digest",
+    "semantic_isomorphism"
+  ],
+  "title": "RoundTripConformanceReport",
+  "type": "object"
+}

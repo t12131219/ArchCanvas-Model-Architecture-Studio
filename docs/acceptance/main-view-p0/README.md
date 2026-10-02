@@ -1,5 +1,11 @@
 # Main View P0 Acceptance
 
+> Historical evidence only. The visual-kernel main view and the commands in
+> this document were retired when `studio/src/main.tsx` moved to the
+> scene-studio implementation. Current acceptance evidence is recorded in
+> `docs/acceptance/scene-studio-cutover.md`; do not use the commands below as
+> current release gates.
+
 This directory records the first-class visual-kernel acceptance inputs for the
 direct rebuild. `build/scene-visual-lab` remains the visual oracle; it is not a
 runtime dependency. Production output is generated from the decoupled
@@ -31,7 +37,7 @@ TypeScript kernel and the formal-state fixtures under
   verifies nonempty nodes/edges/legend, mobile overflow, successful theme and
   pin patches, and reload persistence.
 
-## Reproduction
+## Historical Reproduction
 
 ```bash
 cd studio
@@ -39,6 +45,10 @@ npm run acceptance:p0
 npm run acceptance:p0:visual
 npx playwright test e2e/main-view-p0-visual.spec.ts
 ```
+
+These commands and the referenced E2E file no longer exist in the active
+frontend. They are retained here only to explain how the archived records were
+produced before cutover.
 
 The build baseline is read from
 `build/scene-visual-lab/cases/manifest.json`. Production must never import or

@@ -18,28 +18,61 @@ def _by_id(items: list[Any], field: str) -> dict[str, Any]:
     return {getattr(item, field): item for item in items}
 
 
-def _changed_ids(before: dict[str, Any], after: dict[str, Any]) -> list[str]:
+def _payload(value: Any, *, ignore_evidence_ids: bool = False) -> Any:
+    if hasattr(value, "model_dump"):
+        value = value.model_dump(mode="json")
+    if isinstance(value, dict):
+        return {
+            key: _payload(item, ignore_evidence_ids=ignore_evidence_ids)
+            for key, item in value.items()
+            if not (ignore_evidence_ids and key == "evidence_ids")
+        }
+    if isinstance(value, list):
+        return [_payload(item, ignore_evidence_ids=ignore_evidence_ids) for item in value]
+    return value
+
+
+def _changed_ids(
+    before: dict[str, Any],
+    after: dict[str, Any],
+    *,
+    ignore_evidence_ids: bool = False,
+) -> list[str]:
     return sorted(
         key
         for key in before.keys() & after.keys()
-        if before[key].model_dump(mode="json") != after[key].model_dump(mode="json")
+        if _payload(before[key], ignore_evidence_ids=ignore_evidence_ids)
+        != _payload(after[key], ignore_evidence_ids=ignore_evidence_ids)
     )
 
 
 def _digest(value: Any) -> str:
-    if hasattr(value, "model_dump"):
-        value = value.model_dump(mode="json")
+    value = _payload(value)
     payload = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(payload.encode()).hexdigest()
 
 
-def _fact_changes(kind: str, before: dict[str, Any], after: dict[str, Any]) -> list[FactDelta]:
+def _fact_changes(
+    kind: str,
+    before: dict[str, Any],
+    after: dict[str, Any],
+    *,
+    ignore_evidence_ids: bool = False,
+) -> list[FactDelta]:
     changes: list[FactDelta] = []
     for subject_id in sorted(before.keys() | after.keys()):
         old = before.get(subject_id)
         new = after.get(subject_id)
-        old_digest = _digest(old) if old is not None else None
-        new_digest = _digest(new) if new is not None else None
+        old_digest = (
+            _digest(_payload(old, ignore_evidence_ids=ignore_evidence_ids))
+            if old is not None
+            else None
+        )
+        new_digest = (
+            _digest(_payload(new, ignore_evidence_ids=ignore_evidence_ids))
+            if new is not None
+            else None
+        )
         if old_digest != new_digest:
             changes.append(
                 FactDelta(
@@ -121,38 +154,43 @@ def graph_delta(
         for index, item in enumerate(after.unresolved)
     }
     fact_changes = [
-        *_fact_changes("node", before_nodes, after_nodes),
-        *_fact_changes("edge", before_edges, after_edges),
-        *_fact_changes("tensor", before_tensors, after_tensors),
+        *_fact_changes("node", before_nodes, after_nodes, ignore_evidence_ids=True),
+        *_fact_changes("edge", before_edges, after_edges, ignore_evidence_ids=True),
+        *_fact_changes("tensor", before_tensors, after_tensors, ignore_evidence_ids=True),
         *_fact_changes("port", before_ports, after_ports),
-        *_fact_changes("fanout", before_fanouts, after_fanouts),
-        *_fact_changes("repeat", before_repeats, after_repeats),
-        *_fact_changes("config-predicate", before_predicates, after_predicates),
+        *_fact_changes("fanout", before_fanouts, after_fanouts, ignore_evidence_ids=True),
+        *_fact_changes("repeat", before_repeats, after_repeats, ignore_evidence_ids=True),
+        *_fact_changes(
+            "config-predicate",
+            before_predicates,
+            after_predicates,
+            ignore_evidence_ids=True,
+        ),
         *_fact_changes("evidence", old_evidence, new_evidence),
-        *_fact_changes("unresolved", before_unresolved, after_unresolved),
+        *_fact_changes("unresolved", before_unresolved, after_unresolved, ignore_evidence_ids=True),
     ]
 
     return GraphDelta(
         added_nodes=sorted(after_nodes.keys() - before_nodes.keys()),
         removed_nodes=sorted(before_nodes.keys() - after_nodes.keys()),
-        changed_nodes=_changed_ids(before_nodes, after_nodes),
+        changed_nodes=_changed_ids(before_nodes, after_nodes, ignore_evidence_ids=True),
         added_edges=sorted(after_edges.keys() - before_edges.keys()),
         removed_edges=sorted(before_edges.keys() - after_edges.keys()),
-        changed_edges=_changed_ids(before_edges, after_edges),
+        changed_edges=_changed_ids(before_edges, after_edges, ignore_evidence_ids=True),
         changed_parameters=parameter_changes,
         added_ports=sorted(after_ports.keys() - before_ports.keys()),
         removed_ports=sorted(before_ports.keys() - after_ports.keys()),
         changed_ports=_changed_ids(before_ports, after_ports),
         added_tensors=sorted(after_tensors.keys() - before_tensors.keys()),
         removed_tensors=sorted(before_tensors.keys() - after_tensors.keys()),
-        changed_tensors=_changed_ids(before_tensors, after_tensors),
+        changed_tensors=_changed_ids(before_tensors, after_tensors, ignore_evidence_ids=True),
         changed_shapes=shape_changes,
         added_fanouts=sorted(after_fanouts.keys() - before_fanouts.keys()),
         removed_fanouts=sorted(before_fanouts.keys() - after_fanouts.keys()),
-        changed_fanouts=_changed_ids(before_fanouts, after_fanouts),
+        changed_fanouts=_changed_ids(before_fanouts, after_fanouts, ignore_evidence_ids=True),
         changed_repeats=sorted(
             (before_repeats.keys() ^ after_repeats.keys())
-            | set(_changed_ids(before_repeats, after_repeats))
+            | set(_changed_ids(before_repeats, after_repeats, ignore_evidence_ids=True))
         ),
         added_config_predicates=sorted(
             after_predicates.keys() - before_predicates.keys()
@@ -160,7 +198,11 @@ def graph_delta(
         removed_config_predicates=sorted(
             before_predicates.keys() - after_predicates.keys()
         ),
-        changed_config_predicates=_changed_ids(before_predicates, after_predicates),
+        changed_config_predicates=_changed_ids(
+            before_predicates,
+            after_predicates,
+            ignore_evidence_ids=True,
+        ),
         changed_sharing=sorted(changed_sharing),
         evidence_anchor_changes=sorted(set(evidence_changes)),
         unresolved_changes=(

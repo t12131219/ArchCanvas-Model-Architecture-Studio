@@ -36,6 +36,7 @@ from archcanvas_engine.cli import main
 from archcanvas_patterns import exact_ir_digest
 from archcanvas_publication import build_scene, build_visual_spec, render_svg, validate_geometry
 from archcanvas_python import analyze_project
+from archcanvas_python.legacy_profiles import analyze_project_legacy
 from archcanvas_studio import (
     apply_patch,
     apply_patch_batch,
@@ -68,6 +69,7 @@ from archcanvas_studio.project import (
 from archcanvas_studio.server import (
     StudioHTTPServer,
     StudioRequestHandler,
+    _convert_scene_svg,
     create_studio_server,
 )
 
@@ -188,6 +190,32 @@ def _handler_without_request(server: StudioHTTPServer) -> StudioRequestHandler:
     return handler
 
 
+def test_scene_svg_export_uses_one_safe_svg_for_png_and_pdf() -> None:
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 30">'
+        '<defs><marker id="arrow"><path d="M0 0L5 3L0 6Z"/></marker></defs>'
+        '<path d="M2 15L35 15" marker-end="url(#arrow)"/></svg>'
+    )
+    png, png_type = _convert_scene_svg(svg, "png")
+    pdf, pdf_type = _convert_scene_svg(svg, "pdf")
+
+    assert png.startswith(b"\x89PNG\r\n\x1a\n")
+    assert png_type == "image/png"
+    assert pdf.startswith(b"%PDF-")
+    assert pdf_type == "application/pdf"
+
+    with pytest.raises(ValueError, match="external resources"):
+        _convert_scene_svg(
+            '<svg xmlns="http://www.w3.org/2000/svg"><image href="file:///etc/passwd"/></svg>',
+            "png",
+        )
+    with pytest.raises(ValueError, match="forbidden"):
+        _convert_scene_svg(
+            '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+            "pdf",
+        )
+
+
 class _BlockingAnalysisProcess:
     def __init__(self) -> None:
         self.pid = 999_999
@@ -220,6 +248,28 @@ def _analysis_request(session, request_id: str) -> AnalysisRequest:  # type: ign
         task="inference",
         request_id=request_id,
     )
+
+
+def test_framework_form_capability_blocks_unavailable_analysis_and_runtime(
+    analysis_dir: Path,
+    tmp_path: Path,
+) -> None:
+    bundle = prepare_studio_bundle(
+        analysis_dir / "architecture.json", tmp_path / ".archcanvas-capability"
+    )
+    server = _server_without_socket(bundle)
+    request = _analysis_request(bundle.project_session, "request:blocked-form").model_copy(
+        update={"framework": "onnx", "form_id": "form:onnx-custom-op"}
+    )
+
+    with pytest.raises(ValueError, match="static_analysis is unavailable"):
+        server.start_analysis(request)
+
+    bundle.project_session = bundle.project_session.model_copy(
+        update={"framework": "onnx", "form_id": "form:onnx-custom-op"}
+    )
+    with pytest.raises(ValueError, match="runtime evidence is unavailable"):
+        server.start_validation("runtime-replay", runtime_execution_authorized=True)
 
 
 @pytest.fixture
@@ -579,6 +629,29 @@ def test_visual_patch_history_preserves_source_and_reopens_layout(
     assert reopened.document.source_digest == digest
     assert load_canvas_document(reopened.document_path) == reopened.document
     assert _source_hashes() == before
+
+
+def test_studio_reopens_and_records_canvas_protocol_migration(
+    analysis_dir: Path, tmp_path: Path
+) -> None:
+    workspace = tmp_path / ".archcanvas-protocol-migration"
+    bundle = prepare_studio_bundle(analysis_dir / "architecture.json", workspace)
+    payload = bundle.document.model_dump(mode="json")
+    payload["schema_version"] = "0.9"
+    payload["base_scene_ids"] = ["scene:legacy"]
+    payload.pop("base_hierarchy_id")
+    bundle.document_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    reopened = prepare_studio_bundle(analysis_dir / "architecture.json", workspace)
+
+    assert reopened.document.schema_version == "1.0"
+    persisted = json.loads(reopened.document_path.read_text(encoding="utf-8"))
+    assert persisted["schema_version"] == "1.0"
+    assert "base_scene_ids" not in persisted
+    receipts = reopened.state()["protocol_migration_receipts"]
+    assert len(receipts) == 1
+    assert receipts[0]["status"] == "migrated"
+    assert receipts[0]["migration_id"] == "migration:canvas-document.0-9-to-1-0"
 
 
 def test_visual_patch_rejects_unknown_target(analysis_dir: Path, tmp_path: Path) -> None:
@@ -1106,7 +1179,7 @@ def test_module_expansion_compiles_stable_arbitrary_frontiers(
 
 def test_autoformer_module_navigation_is_semantic_preorder(tmp_path: Path) -> None:
     fixture = ROOT / "fixtures" / "tier_a" / "autoformer"
-    analyzed = analyze_project(
+    analyzed = analyze_project_legacy(
         fixture,
         "models.Autoformer:Model",
         "long_term_forecast",

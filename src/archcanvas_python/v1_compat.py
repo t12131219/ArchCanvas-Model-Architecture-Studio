@@ -117,7 +117,9 @@ def project_v1_compatibility(
     fallback_evidence = evidence[0].evidence_id if evidence else None
     instances = {item.instance_id: item for item in ir.instances}
     registry_calls = [item for item in ir.calls if item.definition_ref is not None]
-    node_by_call = {item.call_id: _node_id(item.call_id) for item in registry_calls}
+    non_registry_calls = [item for item in ir.calls if item.definition_ref is None]
+    node_by_call = {item.call_id: _node_id(item.call_id) for item in ir.calls}
+    definitions = {item.definition_id: item for item in ir.definitions}
     parameter_group_by_instance = {
         instance_id: group
         for group in ir.parameter_groups
@@ -257,12 +259,69 @@ def project_v1_compatibility(
             )
         )
 
+    for call in non_registry_calls:
+        node_id = node_by_call[call.call_id]
+        instance = instances.get(call.instance_id) if call.instance_id else None
+        definition = definitions.get(call.local_definition_id or "")
+        input_port_ids = list(dict.fromkeys(item.port_id for item in call.input_bindings))
+        output_port_ids = list(dict.fromkeys(item.port_id for item in call.output_bindings))
+        evidence_ids = _evidence_for_anchor(ir, call.anchor) or (
+            [fallback_evidence] if fallback_evidence else []
+        )
+        nodes.append(
+            ArchitectureNode(
+                node_id=node_id,
+                kind=NodeKind.OPAQUE_COMPOSITE,
+                semantic_name=(
+                    instance.instance_path.split(".")[-1]
+                    if instance is not None
+                    else (
+                        definition.qualified_name.rsplit(".", 1)[-1]
+                        if definition is not None
+                        else call.anchor.qualified_symbol.rsplit(".", 1)[-1]
+                    )
+                ),
+                source_symbol=call.anchor.qualified_symbol,
+                parent_id=_nearest_local_parent(ir, call.parent_module_id),
+                input_ports=[
+                    Port(
+                        port_id=_port_id(node_id, port_id),
+                        name=port_id,
+                        direction="input",
+                        role=port_id,
+                    )
+                    for port_id in input_port_ids
+                ],
+                output_ports=[
+                    Port(
+                        port_id=_port_id(node_id, port_id),
+                        name=port_id,
+                        direction="output",
+                        role=port_id,
+                    )
+                    for port_id in output_port_ids
+                ],
+                parameter_identity="functional",
+                execution_predicate="static-v2",
+                evidence_ids=evidence_ids,
+                confidence=call.confidence,
+                attributes={
+                    "v2_call_id": call.call_id,
+                    "v2_instance_id": call.instance_id,
+                    "v2_local_definition_id": call.local_definition_id,
+                    "implementation_status": "boundary-only",
+                    "semantic_status": "unresolved",
+                },
+            )
+        )
+
     values = {item.value_id: item for item in ir.values}
     root_container = next((item for item in nodes if item.parent_id is None), None)
     root_parent = root_container.node_id if root_container else None
     input_nodes: dict[str, str] = {}
+    graph_input_ids = set(ir.graph_input_value_ids)
     for value in ir.values:
-        if value.producer_call_id is not None:
+        if value.value_id not in graph_input_ids:
             continue
         node_id = f"node:input.{value.value_id.removeprefix('value:')}"
         input_nodes[value.value_id] = node_id
@@ -292,11 +351,11 @@ def project_v1_compatibility(
         )
 
     edge_drafts: list[tuple[str, str, str, str, str, list[str]]] = []
-    registry_consumer_values: set[str] = set()
-    for call in registry_calls:
+    projected_consumer_values: set[str] = set()
+    for call in ir.calls:
         consumer_id = node_by_call[call.call_id]
         for binding in call.input_bindings:
-            registry_consumer_values.add(binding.value_id)
+            projected_consumer_values.add(binding.value_id)
             value = values.get(binding.value_id)
             if value is None:
                 continue
@@ -321,9 +380,9 @@ def project_v1_compatibility(
             )
 
     terminal_values = [
-        item
-        for item in ir.values
-        if item.producer_call_id in node_by_call and item.value_id not in registry_consumer_values
+        values[value_id]
+        for value_id in ir.graph_output_value_ids
+        if value_id in values and values[value_id].producer_call_id in node_by_call
     ]
     unresolved: list[UnresolvedFact] = []
     unresolved.extend(
