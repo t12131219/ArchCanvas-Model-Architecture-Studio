@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applyVisualBatch, buildScene, createDocument, createHistory, reduceHistory, renderSvg, RevisionConflict, validateDocument } from '../src/core/index.ts';
+import { applyVisualBatch, buildScene, createDocument, createHistory, reduceHistory, renderSvg, reconcileDocument, RevisionConflict, validateDocument } from '../src/core/index.ts';
 import type { Architecture, ArchitectureNode } from '../src/core/index.ts';
 import { textWidth, wrapText } from '../src/core/typography.ts';
 
@@ -134,4 +134,79 @@ test('long Chinese aliases and annotations retain text while their geometry grow
   assert.equal(rows.join(''), label); assert.ok(node.height >= rows.length * 16 + 26);
   assert.ok(annotation.height > 34); assert.equal(wrapText(note, 140, 11).join(''), note);
   assert.ok(renderSvg(scene).includes('这是包含完整说明'));
+});
+
+
+test('source refresh preserves unique identity presentation and resets source undo boundary', () => {
+  let prior = createDocument(gold());
+  prior = applyVisualBatch(prior, [
+    { type: 'expand', id: 'block', expanded: true },
+    { type: 'alias', id: 'linear', label: 'My Projection' },
+    { type: 'nodeStyle', id: 'linear', style: { fill: '#123456' } },
+    { type: 'edgeStyle', id: 'internal', style: { width: 3 } },
+    { type: 'move', ids: ['linear'], dx: 28, dy: 12 },
+    { type: 'pin', ids: ['linear'], pinned: true },
+  ]);
+  const architecture = structuredClone(prior.architecture);
+  architecture.sourceDigest = 'new-source'; architecture.irDigest = 'new-ir';
+  architecture.nodes.find(n => n.id === 'linear')!.parameters.p = 0.2;
+  const refreshed = reconcileDocument(prior, architecture);
+  assert.notEqual(refreshed.document.id, prior.id);
+  assert.equal(refreshed.document.sourceBindingDigest, 'new-source');
+  assert.equal(refreshed.document.displayAliases.linear, 'My Projection');
+  assert.deepEqual(refreshed.document.nodeStyleOverrides, prior.nodeStyleOverrides);
+  assert.deepEqual(refreshed.document.edgeStyleOverrides, prior.edgeStyleOverrides);
+  assert.deepEqual(refreshed.document.layout.linear, prior.layout.linear);
+  assert.deepEqual(refreshed.document.layoutByFrontier, prior.layoutByFrontier);
+  assert.deepEqual(refreshed.document.pinnedObjects, ['linear']);
+  const history = createHistory(refreshed.document);
+  assert.equal(history.past.length, 0);
+  assert.equal(reduceHistory(history, { type: 'undo' }).document.architecture.nodes.find(n => n.id === 'linear')!.parameters.p, 0.2);
+  architecture.nodes.find(n => n.id === 'linear')!.instanceId = 'different-source-instance';
+  const changed = reconcileDocument(prior, architecture);
+  assert.deepEqual(changed.removedNodeIds, ['linear']);
+  assert.equal(changed.document.displayAliases.linear, undefined);
+  assert.equal(changed.document.edgeStyleOverrides.internal, undefined);
+  assert.deepEqual(changed.document.pinnedObjects, []);
+});
+
+test('a rebound edge cannot inherit a style from its previous tensor binding', () => {
+  const prior = applyVisualBatch(createDocument(gold()), [
+    { type: 'expand', id: 'block', expanded: true },
+    { type: 'alias', id: 'linear', label: 'Kept consumer' },
+    { type: 'nodeStyle', id: 'linear', style: { fill: '#ece3f4' } },
+    { type: 'move', ids: ['linear'], dx: 24, dy: 16 },
+    { type: 'pin', ids: ['linear'], pinned: true },
+    { type: 'edgeStyle', id: 'internal', style: { stroke: '#bb3322', width: 4 } },
+    { type: 'edgeStyle', id: 'exit', style: { dashed: true } },
+  ]);
+  const frozen = JSON.stringify(prior);
+  const architecture = structuredClone(prior.architecture);
+  architecture.sourceDigest = 'rebound-source'; architecture.irDigest = 'rebound-ir';
+  architecture.edges[1].source = { nodeId: 'input', portId: 'out' };
+  architecture.edges[1].tensorId = 'x';
+  const result = reconcileDocument(prior, architecture);
+  assert.equal(result.document.edgeStyleOverrides.internal, undefined);
+  assert.deepEqual(result.document.edgeStyleOverrides.exit, { dashed: true });
+  assert.deepEqual(result.document.layout.linear, prior.layout.linear);
+  assert.equal(result.document.displayAliases.linear, 'Kept consumer');
+  assert.deepEqual(result.document.nodeStyleOverrides.linear, { fill: '#ece3f4' });
+  assert.deepEqual(result.document.pinnedObjects, ['linear']);
+  const scene = buildScene(result.document);
+  assert.equal(scene.edges.find(e => e.id === 'internal')!.source.nodeId, 'input');
+  assert.notEqual(scene.edges.find(e => e.id === 'internal')!.stroke, '#bb3322');
+  assert.equal(JSON.stringify(prior), frozen);
+});
+
+test('projected parallel edges retain differing canonical styles instead of discarding them', () => {
+  const architecture = gold();
+  architecture.edges.push({ ...structuredClone(architecture.edges[0]), id: 'second-enter', target: { nodeId: 'linear', portId: 'in' } });
+  let document = createDocument(architecture);
+  assert.equal(buildScene(document).edges.filter(e => e.tensorId === 'x').length, 1);
+  document = applyVisualBatch(document, [{ type: 'edgeStyle', id: 'second-enter', style: { stroke: '#bb3322', width: 3, dashed: true } }]);
+  const projected = buildScene(document).edges.filter(e => e.tensorId === 'x');
+  assert.equal(projected.length, 2);
+  const edited = projected.find(e => e.canonicalEdgeIds.includes('second-enter'))!;
+  assert.equal(edited.stroke, '#bb3322'); assert.equal(edited.width, 3); assert.equal(edited.dashed, true);
+  assert.deepEqual(projected.flatMap(e => e.canonicalEdgeIds).sort(), ['enter', 'second-enter']);
 });

@@ -7,7 +7,7 @@ import threading
 import unittest
 from pathlib import Path
 from urllib.error import HTTPError
-from urllib.request import Request, urlopen
+from urllib.request import ProxyHandler, Request, build_opener
 
 from archcanvas_python import analyze_project
 from archcanvas_cli.server import ArchCanvasServer, ConflictError, DocumentStore
@@ -87,6 +87,7 @@ class HTTPTests(unittest.TestCase):
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
         self.url = f"http://127.0.0.1:{self.server.server_address[1]}"
+        self.client = build_opener(ProxyHandler({}))
 
     def tearDown(self):
         self.server.shutdown()
@@ -97,7 +98,7 @@ class HTTPTests(unittest.TestCase):
     def request(self, path, method="GET", payload=None, headers=None):
         request = Request(self.url + path, data=json.dumps(payload).encode() if payload is not None else None, method=method, headers={"Content-Type": "application/json", **(headers or {})})
         try:
-            with urlopen(request, timeout=3) as response:
+            with self.client.open(request, timeout=3) as response:
                 return response.status, json.loads(response.read()), dict(response.headers)
         except HTTPError as error:
             return error.code, json.loads(error.read()), dict(error.headers)
@@ -105,10 +106,13 @@ class HTTPTests(unittest.TestCase):
     def test_examples_capabilities_and_text_only_source_import(self):
         status, result, _ = self.request("/api/capabilities")
         self.assertEqual(status, 200)
-        self.assertFalse(result["semanticWriteback"])
+        self.assertTrue(result["semanticWriteback"])
+        self.assertEqual(result["supportedIntents"], ["set_dropout_probability", "rebind_input"])
+        self.assertEqual(result["semanticScope"]["origins"], ["explicit-float-literal"])
+        self.assertEqual(result["semanticScope"]["httpCommit"], "managed-workspace-copy-only")
         status, examples, _ = self.request("/api/examples")
         self.assertEqual(status, 200)
-        self.assertEqual([example["id"] for example in examples], ["transformer", "mlp", "residual_cnn"])
+        self.assertEqual([example["id"] for example in examples], ["transformer", "mlp", "residual_cnn", "rebind"])
         status, architecture, _ = self.request("/api/examples/transformer")
         self.assertEqual((status, architecture["label"]), (200, "Transformer"))
         status, result, _ = self.request("/api/analyze", "POST", {"source": "from torch import nn\nclass Model(nn.Module):\n def forward(self,x): return x\n", "entry": "Model"})

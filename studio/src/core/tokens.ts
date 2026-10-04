@@ -3,7 +3,10 @@ import type { Glyph } from './types.ts';
 /** Versioned, source-independent visual grammar. No model names are special cased. */
 export const VISUAL_VERSION = '1.0';
 export const TOKENS = {
-  font: 'Inter, Noto Sans, Arial, sans-serif',
+  // Cairo's SVG toy-font path selects one family for a text element rather
+  // than performing browser-style per-glyph fallback. This family covers the
+  // shared Latin/CJK scene on hosts with the publication font installed.
+  font: 'Noto Sans CJK SC, Inter, Noto Sans, Arial, sans-serif',
   ink: '#24384b', muted: '#768697', border: '#9baabb',
   titleSize: 19, labelSize: 13, subtitleSize: 10,
   padding: 30, header: 46, gapX: 42, gapY: 38, nodeWidth: 194, nodeHeight: 62,

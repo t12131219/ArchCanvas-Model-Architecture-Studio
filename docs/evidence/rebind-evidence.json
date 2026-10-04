@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 1,
+  "status": "supported",
+  "supported": true,
+  "sourceDigest": "e10c2ff7d09aefbe47907c4bcf60e4c130b99c03ca56df34fcd3c05fc866fe53",
+  "irDigest": "1fb35c92e06ab8d94a841140cbb9a6723d5b38c91ef7f2bf83631fd20172b96d",
+  "scope": {
+    "version": 1,
+    "targetKinds": [
+      "Dropout",
+      "GELU",
+      "Identity",
+      "ReLU"
+    ],
+    "inputSyntax": "one positional Name in directly authored self.module(Name)",
+    "scope": "entry-root straight-line forward only",
+    "producerSyntax": "forward parameter or uniquely assigned preceding registered unary call",
+    "compatibility": "conditional same-base symbolic shape/dtype preservation",
+    "inplace": false,
+    "runtimeVerified": false,
+    "unsupported": [
+      "keyword inputs",
+      "different base tensors",
+      "reassignment",
+      "control flow",
+      "nested calls",
+      "unknown calls",
+      "mutation",
+      "inherited or shared authored scopes",
+      "unresolved imports or constructors"
+    ]
+  },
+  "target": {
+    "nodeId": "call:instance:model.Model.sink",
+    "portId": "call:instance:model.Model.sink:in:input",
+    "slot": {
+      "path": "model.py",
+      "line": 16,
+      "column": 27,
+      "endLine": 16,
+      "endColumn": 35,
+      "expression": "original",
+      "fileDigest": "17799d3538f54da1db3e86b7699857cac88b28ffca771e9e9a154187ae906025",
+      "variable": "original"
+    },
+    "currentBinding": {
+      "nodeId": "call:instance:model.Model.first",
+      "portId": "call:instance:model.Model.first:out:output",
+      "tensorId": "tensor:call:instance:model.Model.first:output"
+    },
+    "call": {
+      "path": "model.py",
+      "line": 16,
+      "column": 17,
+      "endLine": 16,
+      "endColumn": 36,
+      "expression": "self.sink(original)",
+      "fileDigest": "17799d3538f54da1db3e86b7699857cac88b28ffca771e9e9a154187ae906025"
+    },
+    "baseTensorId": "tensor:input:model.Model:x:x"
+  },
+  "candidates": [
+    {
+      "variable": "x",
+      "binding": {
+        "nodeId": "input:model.Model:x",
+        "portId": "input:model.Model:x:out:x",
+        "tensorId": "tensor:input:model.Model:x:x"
+      },
+      "definition": {
+        "path": "model.py",
+        "line": 12,
+        "column": 22,
+        "endLine": 12,
+        "endColumn": 23,
+        "expression": "x",
+        "fileDigest": "17799d3538f54da1db3e86b7699857cac88b28ffca771e9e9a154187ae906025"
+      },
+      "contract": {
+        "baseTensorId": "tensor:input:model.Model:x:x",
+        "shape": {
+          "kind": "symbol",
+          "identity": "shape:tensor:input:model.Model:x:x"
+        },
+        "dtype": {
+          "kind": "symbol",
+          "identity": "dtype:tensor:input:model.Model:x:x"
+        },
+        "basis": "registered same-origin shape/dtype preservation",
+        "runtimeVerified": false,
+        "conditional": true,
+        "condition": "The input is a tensor accepted by every registered operation on both source chains; concrete dimensions and dtype are unknown.",
+        "chain": []
+      }
+    },
+    {
+      "variable": "original",
+      "binding": {
+        "nodeId": "call:instance:model.Model.first",
+        "portId": "call:instance:model.Model.first:out:output",
+        "tensorId": "tensor:call:instance:model.Model.first:output"
+      },
+      "definition": {
+        "path": "model.py",
+        "line": 13,
+        "column": 19,
+        "endLine": 13,
+        "endColumn": 32,
+        "expression": "self.first(x)",
+        "fileDigest": "17799d3538f54da1db3e86b7699857cac88b28ffca771e9e9a154187ae906025"
+      },
+      "contract": {
+        "baseTensorId": "tensor:input:model.Model:x:x",
+        "shape": {
+          "kind": "symbol",
+          "identity": "shape:tensor:input:model.Model:x:x"
+        },
+        "dtype": {
+          "kind": "symbol",
+          "identity": "dtype:tensor:input:model.Model:x:x"
+        },
+        "basis": "registered same-origin shape/dtype preservation",
+        "runtimeVerified": false,
+        "conditional": true,
+        "condition": "The input is a tensor accepted by every registered operation on both source chains; concrete dimensions and dtype are unknown.",
+        "chain": [
+          {
+            "nodeId": "call:instance:model.Model.first",
+            "kind": "Identity",
+            "contract": "torch.nn.Identity",
+            "source": {
+              "path": "model.py",
+              "line": 13,
+              "column": 19,
+              "endLine": 13,
+              "endColumn": 32,
+              "expression": "self.first(x)",
+              "fileDigest": "17799d3538f54da1db3e86b7699857cac88b28ffca771e9e9a154187ae906025"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "variable": "candidate",
+      "binding": {
+        "nodeId": "call:instance:model.Model.branch",
+        "portId": "call:instance:model.Model.branch:out:output",
+        "tensorId": "tensor:call:instance:model.Model.branch:output"
+      },
+      "definition": {
+        "path": "model.py",
+        "line": 14,
+        "column": 20,
+        "endLine": 14,
+        "endColumn": 34,
+        "expression": "self.branch(x)",
+        "fileDigest": "17799d3538f54da1db3e86b7699857cac88b28ffca771e9e9a154187ae906025"
+      },
+      "contract": {
+        "baseTensorId": "tensor:input:model.Model:x:x",
+        "shape": {
+          "kind": "symbol",
+          "identity": "shape:tensor:input:model.Model:x:x"
+        },
+        "dtype": {
+          "kind": "symbol",
+          "identity": "dtype:tensor:input:model.Model:x:x"
+        },
+        "basis": "registered same-origin shape/dtype preservation",
+        "runtimeVerified": false,
+        "conditional": true,
+        "condition": "The input is a tensor accepted by every registered operation on both source chains; concrete dimensions and dtype are unknown.",
+        "chain": [
+          {
+            "nodeId": "call:instance:model.Model.branch",
+            "kind": "Dropout",
+            "contract": "torch.nn.Dropout",
+            "source": {
+              "path": "model.py",
+              "line": 14,
+              "column": 20,
+              "endLine": 14,
+              "endColumn": 34,
+              "expression": "self.branch(x)",
+              "fileDigest": "17799d3538f54da1db3e86b7699857cac88b28ffca771e9e9a154187ae906025"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "excludedCandidates": [
+    {
+      "variable": "memory",
+      "reason": "A different forward-input origin has no proven symbolic shape/dtype compatibility."
+    },
+    {
+      "variable": "separate",
+      "reason": "A different forward-input origin has no proven symbolic shape/dtype compatibility."
+    }
+  ],
+  "blockers": []
+}

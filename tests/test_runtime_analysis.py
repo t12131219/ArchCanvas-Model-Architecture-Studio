@@ -227,7 +227,10 @@ class Model(nn.Module):
             self.assertTrue(Path(path).is_relative_to(ROOT / "src"))
             self.assertTrue(Path(path).is_file())
         self.assertTrue(receipt["packageProvenance"]["independent"])
-        self.assertFalse(receipt["semanticWriteback"])
+        self.assertTrue(receipt["semanticWriteback"])
+        self.assertEqual(receipt["supportedIntents"], ["set_dropout_probability", "rebind_input"])
+        self.assertEqual(receipt["semanticScope"]["origins"], ["explicit-float-literal"])
+        self.assertEqual(receipt["semanticScope"]["httpCommit"], "managed-workspace-copy-only")
         self.assertFalse(receipt["runtimeObservation"])
         json.dumps(receipt)
 

@@ -1,0 +1,1511 @@
+{
+  "affectedNodeIds": [
+    "call:instance:model.Model.sink",
+    "call:instance:model.Model.tail",
+    "output:model.Model:0"
+  ],
+  "afterArchitecture": {
+    "diagnostics": [
+      {
+        "level": "info",
+        "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:0",
+        "role": "data",
+        "source": {
+          "nodeId": "input:model.Model:x",
+          "portId": "input:model.Model:x:out:x"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model",
+          "portId": "call:instance:model.Model:in:x"
+        },
+        "tensorId": "tensor:input:model.Model:x:x"
+      },
+      {
+        "id": "edge:1",
+        "role": "memory",
+        "source": {
+          "nodeId": "input:model.Model:memory",
+          "portId": "input:model.Model:memory:out:memory"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model",
+          "portId": "call:instance:model.Model:in:memory"
+        },
+        "tensorId": "tensor:input:model.Model:memory:memory"
+      },
+      {
+        "id": "edge:2",
+        "role": "data",
+        "source": {
+          "nodeId": "input:model.Model:x",
+          "portId": "input:model.Model:x:out:x"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model.first",
+          "portId": "call:instance:model.Model.first:in:input"
+        },
+        "tensorId": "tensor:input:model.Model:x:x"
+      },
+      {
+        "id": "edge:3",
+        "role": "data",
+        "source": {
+          "nodeId": "input:model.Model:x",
+          "portId": "input:model.Model:x:out:x"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model.branch",
+          "portId": "call:instance:model.Model.branch:in:input"
+        },
+        "tensorId": "tensor:input:model.Model:x:x"
+      },
+      {
+        "id": "edge:4",
+        "role": "data",
+        "source": {
+          "nodeId": "input:model.Model:memory",
+          "portId": "input:model.Model:memory:out:memory"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model.other",
+          "portId": "call:instance:model.Model.other:in:input"
+        },
+        "tensorId": "tensor:input:model.Model:memory:memory"
+      },
+      {
+        "id": "edge:5",
+        "role": "data",
+        "source": {
+          "nodeId": "call:instance:model.Model.branch",
+          "portId": "call:instance:model.Model.branch:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model.sink",
+          "portId": "call:instance:model.Model.sink:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.Model.branch:output"
+      },
+      {
+        "id": "edge:6",
+        "role": "data",
+        "source": {
+          "nodeId": "call:instance:model.Model.sink",
+          "portId": "call:instance:model.Model.sink:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model.tail",
+          "portId": "call:instance:model.Model.tail:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.Model.sink:output"
+      },
+      {
+        "id": "edge:7",
+        "role": "data",
+        "source": {
+          "nodeId": "call:instance:model.Model.tail",
+          "portId": "call:instance:model.Model.tail:out:output"
+        },
+        "target": {
+          "nodeId": "output:model.Model:0",
+          "portId": "output:model.Model:0:in:value"
+        },
+        "tensorId": "tensor:call:instance:model.Model.tail:output"
+      }
+    ],
+    "entry": "model:Model",
+    "id": "architecture:model.Model",
+    "irDigest": "16c33a1bd2950ff903540f63def4ebf57c3fa585ce5e4c3f7a56406ba4baed0b",
+    "label": "Model",
+    "nodes": [
+      {
+        "category": "input",
+        "children": [],
+        "evidence": "source",
+        "id": "input:model.Model:x",
+        "kind": "Input",
+        "label": "x",
+        "parameters": {},
+        "parentId": "call:instance:model.Model",
+        "ports": [
+          {
+            "direction": "out",
+            "id": "input:model.Model:x:out:x",
+            "name": "x",
+            "ordinal": 0,
+            "role": "data"
+          }
+        ],
+        "source": {
+          "endLine": 17,
+          "expression": "def forward(self, x, memory):\n        original = self.first(x)\n        candidate = self.branch(x)\n        separate = self.other(memory)\n        result = self.sink(candidate)  # exactly this Name, not every original\n        return self.tail(result)",
+          "line": 12,
+          "path": "model.py"
+        }
+      },
+      {
+        "category": "input",
+        "children": [],
+        "evidence": "source",
+        "id": "input:model.Model:memory",
+        "kind": "Input",
+        "label": "memory",
+        "parameters": {},
+        "parentId": "call:instance:model.Model",
+        "ports": [
+          {
+            "direction": "out",
+            "id": "input:model.Model:memory:out:memory",
+            "name": "memory",
+            "ordinal": 0,
+            "role": "data"
+          }
+        ],
+        "source": {
+          "endLine": 17,
+          "expression": "def forward(self, x, memory):\n        original = self.first(x)\n        candidate = self.branch(x)\n        separate = self.other(memory)\n        result = self.sink(candidate)  # exactly this Name, not every original\n        return self.tail(result)",
+          "line": 12,
+          "path": "model.py"
+        }
+      },
+      {
+        "callId": "call:instance:model.Model",
+        "category": "container",
+        "children": [
+          "input:model.Model:memory",
+          "input:model.Model:x",
+          "call:instance:model.Model.first",
+          "call:instance:model.Model.branch",
+          "call:instance:model.Model.other",
+          "call:instance:model.Model.sink",
+          "call:instance:model.Model.tail",
+          "output:model.Model:0"
+        ],
+        "evidence": "source",
+        "id": "call:instance:model.Model",
+        "instanceId": "instance:model.Model",
+        "kind": "Module",
+        "label": "Model",
+        "parameters": {},
+        "ports": [
+          {
+            "direction": "in",
+            "id": "call:instance:model.Model:in:x",
+            "name": "x",
+            "ordinal": 0,
+            "role": "data"
+          },
+          {
+            "direction": "in",
+            "id": "call:instance:model.Model:in:memory",
+            "name": "memory",
+            "ordinal": 1,
+            "role": "memory"
+          }
+        ],
+        "source": {
+          "endLine": 17,
+          "expression": "class Model(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.first = nn.Identity()\n        self.branch = nn.Dropout(p=0.1)\n        self.other = nn.GELU()\n        self.sink = nn.ReLU(inplace=False)\n        self.tail = nn.Identity()\n\n    def forward(self, x, memory):\n        original = self.first(x)\n        candidate = self.branch(x)\n        separate = self.other(memory)\n        result = self.sink(candidate)  # exactly this Name, not every original\n        return self.tail(result)",
+          "line": 3,
+          "path": "model.py"
+        }
+      },
+      {
+        "callId": "call:instance:model.Model.first",
+        "category": "operator",
+        "children": [],
+        "evidence": "contract",
+        "id": "call:instance:model.Model.first",
+        "instanceId": "instance:model.Model.first",
+        "kind": "Identity",
+        "label": "first",
+        "parameters": {},
+        "parentId": "call:instance:model.Model",
+        "ports": [
+          {
+            "direction": "in",
+            "id": "call:instance:model.Model.first:in:input",
+            "name": "input",
+            "ordinal": 0,
+            "role": "data"
+          },
+          {
+            "direction": "out",
+            "id": "call:instance:model.Model.first:out:output",
+            "name": "output",
+            "ordinal": 0,
+            "role": "data"
+          }
+        ],
+        "source": {
+          "endLine": 13,
+          "expression": "self.first(x)",
+          "line": 13,
+          "path": "model.py"
+        }
+      },
+      {
+        "callId": "call:instance:model.Model.branch",
+        "category": "regularization",
+        "children": [],
+        "evidence": "contract",
+        "id": "call:instance:model.Model.branch",
+        "instanceId": "instance:model.Model.branch",
+        "kind": "Dropout",
+        "label": "branch",
+        "parameterOrigins": {
+          "p": {
+            "column": 35,
+            "endColumn": 38,
+            "endLine": 7,
+            "expression": "0.1",
+            "kind": "literal",
+            "line": 7,
+            "path": "model.py"
+          }
+        },
+        "parameters": {
+          "p": 0.1
+        },
+        "parentId": "call:instance:model.Model",
+        "ports": [
+          {
+            "direction": "in",
+            "id": "call:instance:model.Model.branch:in:input",
+            "name": "input",
+            "ordinal": 0,
+            "role": "data"
+          },
+          {
+            "direction": "out",
+            "id": "call:instance:model.Model.branch:out:output",
+            "name": "output",
+            "ordinal": 0,
+            "role": "data"
+          }
+        ],
+        "source": {
+          "endLine": 14,
+          "expression": "self.branch(x)",
+          "line": 14,
+          "path": "model.py"
+        }
+      },
+      {
+        "callId": "call:instance:model.Model.other",
+        "category": "activation",
+        "children": [],
+        "evidence": "contract",
+        "id": "call:instance:model.Model.other",
+        "instanceId": "instance:model.Model.other",
+        "kind": "GELU",
+        "label": "other",
+        "parameters": {},
+        "parentId": "call:instance:model.Model",
+        "ports": [
+          {
+            "direction": "in",
+            "id": "call:instance:model.Model.other:in:input",
+            "name": "input",
+            "ordinal": 0,
+            "role": "data"
+          },
+          {
+            "direction": "out",
+            "id": "call:instance:model.Model.other:out:output",
+            "name": "output",
+            "ordinal": 0,
+            "role": "data"
+          }
+        ],
+        "source": {
+          "endLine": 15,
+          "expression": "self.other(memory)",
+          "line": 15,
+          "path": "model.py"
+        }
+      },
+      {
+        "callId": "call:instance:model.Model.sink",
+        "category": "activation",
+        "children": [],
+        "evidence": "contract",
+        "id": "call:instance:model.Model.sink",
+        "instanceId": "instance:model.Model.sink",
+        "kind": "ReLU",
+        "label": "sink",
+        "parameterOrigins": {
+          "inplace": {
+            "column": 36,
+            "endColumn": 41,
+            "endLine": 9,
+            "expression": "False",
+            "kind": "literal",
+            "line": 9,
+            "path": "model.py"
+          }
+        },
+        "parameters": {
+          "inplace": false
+        },
+        "parentId": "call:instance:model.Model",
+        "ports": [
+          {
+            "direction": "in",
+            "id": "call:instance:model.Model.sink:in:input",
+            "name": "input",
+            "ordinal": 0,
+            "role": "data"
+          },
+          {
+            "direction": "out",
+            "id": "call:instance:model.Model.sink:out:output",
+            "name": "output",
+            "ordinal": 0,
+            "role": "data"
+          }
+        ],
+        "source": {
+          "endLine": 16,
+          "expression": "self.sink(candidate)",
+          "line": 16,
+          "path": "model.py"
+        }
+      },
+      {
+        "callId": "call:instance:model.Model.tail",
+        "category": "operator",
+        "children": [],
+        "evidence": "contract",
+        "id": "call:instance:model.Model.tail",
+        "instanceId": "instance:model.Model.tail",
+        "kind": "Identity",
+        "label": "tail",
+        "parameters": {},
+        "parentId": "call:instance:model.Model",
+        "ports": [
+          {
+            "direction": "in",
+            "id": "call:instance:model.Model.tail:in:input",
+            "name": "input",
+            "ordinal": 0,
+            "role": "data"
+          },
+          {
+            "direction": "out",
+            "id": "call:instance:model.Model.tail:out:output",
+            "name": "output",
+            "ordinal": 0,
+            "role": "data"
+          }
+        ],
+        "source": {
+          "endLine": 17,
+          "expression": "self.tail(result)",
+          "line": 17,
+          "path": "model.py"
+        }
+      },
+      {
+        "category": "output",
+        "children": [],
+        "evidence": "source",
+        "id": "output:model.Model:0",
+        "kind": "Output",
+        "label": "output",
+        "parameters": {},
+        "parentId": "call:instance:model.Model",
+        "ports": [
+          {
+            "direction": "in",
+            "id": "output:model.Model:0:in:value",
+            "name": "value",
+            "ordinal": 0,
+            "role": "data"
+          }
+        ],
+        "source": {
+          "endLine": 17,
+          "expression": "def forward(self, x, memory):\n        original = self.first(x)\n        candidate = self.branch(x)\n        separate = self.other(memory)\n        result = self.sink(candidate)  # exactly this Name, not every original\n        return self.tail(result)",
+          "line": 12,
+          "path": "model.py"
+        }
+      }
+    ],
+    "schemaVersion": 1,
+    "sourceDigest": "bb8a0cd36e5173630d48e356c580f0b40691dccc4efc82975b70331dd73c8b75",
+    "sources": [
+      {
+        "content": "from torch import nn\n\nclass Model(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.first = nn.Identity()\n        self.branch = nn.Dropout(p=0.1)\n        self.other = nn.GELU()\n        self.sink = nn.ReLU(inplace=False)\n        self.tail = nn.Identity()\n\n    def forward(self, x, memory):\n        original = self.first(x)\n        candidate = self.branch(x)\n        separate = self.other(memory)\n        result = self.sink(candidate)  # exactly this Name, not every original\n        return self.tail(result)\n",
+        "digest": "17bd6c79d2a20695f99570548ef39dc5717f450b4f9b439e4f5df27d42c2a990",
+        "path": "model.py"
+      }
+    ]
+  },
+  "approvalId": "18df8affcfea8c11fa5b0f8c3ebb418eb0b4e7f5807f484272b2662e10f50b6f",
+  "beforeArchitecture": {
+    "diagnostics": [
+      {
+        "level": "info",
+        "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:0",
+        "role": "data",
+        "source": {
+          "nodeId": "input:model.Model:x",
+          "portId": "input:model.Model:x:out:x"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model",
+          "portId": "call:instance:model.Model:in:x"
+        },
+        "tensorId": "tensor:input:model.Model:x:x"
+      },
+      {
+        "id": "edge:1",
+        "role": "memory",
+        "source": {
+          "nodeId": "input:model.Model:memory",
+          "portId": "input:model.Model:memory:out:memory"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model",
+          "portId": "call:instance:model.Model:in:memory"
+        },
+        "tensorId": "tensor:input:model.Model:memory:memory"
+      },
+      {
+        "id": "edge:2",
+        "role": "data",
+        "source": {
+          "nodeId": "input:model.Model:x",
+          "portId": "input:model.Model:x:out:x"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model.first",
+          "portId": "call:instance:model.Model.first:in:input"
+        },
+        "tensorId": "tensor:input:model.Model:x:x"
+      },
+      {
+        "id": "edge:3",
+        "role": "data",
+        "source": {
+          "nodeId": "input:model.Model:x",
+          "portId": "input:model.Model:x:out:x"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model.branch",
+          "portId": "call:instance:model.Model.branch:in:input"
+        },
+        "tensorId": "tensor:input:model.Model:x:x"
+      },
+      {
+        "id": "edge:4",
+        "role": "data",
+        "source": {
+          "nodeId": "input:model.Model:memory",
+          "portId": "input:model.Model:memory:out:memory"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model.other",
+          "portId": "call:instance:model.Model.other:in:input"
+        },
+        "tensorId": "tensor:input:model.Model:memory:memory"
+      },
+      {
+        "id": "edge:5",
+        "role": "data",
+        "source": {
+          "nodeId": "call:instance:model.Model.first",
+          "portId": "call:instance:model.Model.first:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model.sink",
+          "portId": "call:instance:model.Model.sink:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.Model.first:output"
+      },
+      {
+        "id": "edge:6",
+        "role": "data",
+        "source": {
+          "nodeId": "call:instance:model.Model.sink",
+          "portId": "call:instance:model.Model.sink:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model.tail",
+          "portId": "call:instance:model.Model.tail:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.Model.sink:output"
+      },
+      {
+        "id": "edge:7",
+        "role": "data",
+        "source": {
+          "nodeId": "call:instance:model.Model.tail",
+          "portId": "call:instance:model.Model.tail:out:output"
+        },
+        "target": {
+          "nodeId": "output:model.Model:0",
+          "portId": "output:model.Model:0:in:value"
+        },
+        "tensorId": "tensor:call:instance:model.Model.tail:output"
+      }
+    ],
+    "entry": "model:Model",
+    "id": "architecture:model.Model",
+    "irDigest": "1fb35c92e06ab8d94a841140cbb9a6723d5b38c91ef7f2bf83631fd20172b96d",
+    "label": "Model",
+    "nodes": [
+      {
+        "category": "input",
+        "children": [],
+        "evidence": "source",
+        "id": "input:model.Model:x",
+        "kind": "Input",
+        "label": "x",
+        "parameters": {},
+        "parentId": "call:instance:model.Model",
+        "ports": [
+          {
+            "direction": "out",
+            "id": "input:model.Model:x:out:x",
+            "name": "x",
+            "ordinal": 0,
+            "role": "data"
+          }
+        ],
+        "source": {
+          "endLine": 17,
+          "expression": "def forward(self, x, memory):\n        original = self.first(x)\n        candidate = self.branch(x)\n        separate = self.other(memory)\n        result = self.sink(original)  # exactly this Name, not every original\n        return self.tail(result)",
+          "line": 12,
+          "path": "model.py"
+        }
+      },
+      {
+        "category": "input",
+        "children": [],
+        "evidence": "source",
+        "id": "input:model.Model:memory",
+        "kind": "Input",
+        "label": "memory",
+        "parameters": {},
+        "parentId": "call:instance:model.Model",
+        "ports": [
+          {
+            "direction": "out",
+            "id": "input:model.Model:memory:out:memory",
+            "name": "memory",
+            "ordinal": 0,
+            "role": "data"
+          }
+        ],
+        "source": {
+          "endLine": 17,
+          "expression": "def forward(self, x, memory):\n        original = self.first(x)\n        candidate = self.branch(x)\n        separate = self.other(memory)\n        result = self.sink(original)  # exactly this Name, not every original\n        return self.tail(result)",
+          "line": 12,
+          "path": "model.py"
+        }
+      },
+      {
+        "callId": "call:instance:model.Model",
+        "category": "container",
+        "children": [
+          "input:model.Model:memory",
+          "input:model.Model:x",
+          "call:instance:model.Model.first",
+          "call:instance:model.Model.branch",
+          "call:instance:model.Model.other",
+          "call:instance:model.Model.sink",
+          "call:instance:model.Model.tail",
+          "output:model.Model:0"
+        ],
+        "evidence": "source",
+        "id": "call:instance:model.Model",
+        "instanceId": "instance:model.Model",
+        "kind": "Module",
+        "label": "Model",
+        "parameters": {},
+        "ports": [
+          {
+            "direction": "in",
+            "id": "call:instance:model.Model:in:x",
+            "name": "x",
+            "ordinal": 0,
+            "role": "data"
+          },
+          {
+            "direction": "in",
+            "id": "call:instance:model.Model:in:memory",
+            "name": "memory",
+            "ordinal": 1,
+            "role": "memory"
+          }
+        ],
+        "source": {
+          "endLine": 17,
+          "expression": "class Model(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.first = nn.Identity()\n        self.branch = nn.Dropout(p=0.1)\n        self.other = nn.GELU()\n        self.sink = nn.ReLU(inplace=False)\n        self.tail = nn.Identity()\n\n    def forward(self, x, memory):\n        original = self.first(x)\n        candidate = self.branch(x)\n        separate = self.other(memory)\n        result = self.sink(original)  # exactly this Name, not every original\n        return self.tail(result)",
+          "line": 3,
+          "path": "model.py"
+        }
+      },
+      {
+        "callId": "call:instance:model.Model.first",
+        "category": "operator",
+        "children": [],
+        "evidence": "contract",
+        "id": "call:instance:model.Model.first",
+        "instanceId": "instance:model.Model.first",
+        "kind": "Identity",
+        "label": "first",
+        "parameters": {},
+        "parentId": "call:instance:model.Model",
+        "ports": [
+          {
+            "direction": "in",
+            "id": "call:instance:model.Model.first:in:input",
+            "name": "input",
+            "ordinal": 0,
+            "role": "data"
+          },
+          {
+            "direction": "out",
+            "id": "call:instance:model.Model.first:out:output",
+            "name": "output",
+            "ordinal": 0,
+            "role": "data"
+          }
+        ],
+        "source": {
+          "endLine": 13,
+          "expression": "self.first(x)",
+          "line": 13,
+          "path": "model.py"
+        }
+      },
+      {
+        "callId": "call:instance:model.Model.branch",
+        "category": "regularization",
+        "children": [],
+        "evidence": "contract",
+        "id": "call:instance:model.Model.branch",
+        "instanceId": "instance:model.Model.branch",
+        "kind": "Dropout",
+        "label": "branch",
+        "parameterOrigins": {
+          "p": {
+            "column": 35,
+            "endColumn": 38,
+            "endLine": 7,
+            "expression": "0.1",
+            "kind": "literal",
+            "line": 7,
+            "path": "model.py"
+          }
+        },
+        "parameters": {
+          "p": 0.1
+        },
+        "parentId": "call:instance:model.Model",
+        "ports": [
+          {
+            "direction": "in",
+            "id": "call:instance:model.Model.branch:in:input",
+            "name": "input",
+            "ordinal": 0,
+            "role": "data"
+          },
+          {
+            "direction": "out",
+            "id": "call:instance:model.Model.branch:out:output",
+            "name": "output",
+            "ordinal": 0,
+            "role": "data"
+          }
+        ],
+        "source": {
+          "endLine": 14,
+          "expression": "self.branch(x)",
+          "line": 14,
+          "path": "model.py"
+        }
+      },
+      {
+        "callId": "call:instance:model.Model.other",
+        "category": "activation",
+        "children": [],
+        "evidence": "contract",
+        "id": "call:instance:model.Model.other",
+        "instanceId": "instance:model.Model.other",
+        "kind": "GELU",
+        "label": "other",
+        "parameters": {},
+        "parentId": "call:instance:model.Model",
+        "ports": [
+          {
+            "direction": "in",
+            "id": "call:instance:model.Model.other:in:input",
+            "name": "input",
+            "ordinal": 0,
+            "role": "data"
+          },
+          {
+            "direction": "out",
+            "id": "call:instance:model.Model.other:out:output",
+            "name": "output",
+            "ordinal": 0,
+            "role": "data"
+          }
+        ],
+        "source": {
+          "endLine": 15,
+          "expression": "self.other(memory)",
+          "line": 15,
+          "path": "model.py"
+        }
+      },
+      {
+        "callId": "call:instance:model.Model.sink",
+        "category": "activation",
+        "children": [],
+        "evidence": "contract",
+        "id": "call:instance:model.Model.sink",
+        "instanceId": "instance:model.Model.sink",
+        "kind": "ReLU",
+        "label": "sink",
+        "parameterOrigins": {
+          "inplace": {
+            "column": 36,
+            "endColumn": 41,
+            "endLine": 9,
+            "expression": "False",
+            "kind": "literal",
+            "line": 9,
+            "path": "model.py"
+          }
+        },
+        "parameters": {
+          "inplace": false
+        },
+        "parentId": "call:instance:model.Model",
+        "ports": [
+          {
+            "direction": "in",
+            "id": "call:instance:model.Model.sink:in:input",
+            "name": "input",
+            "ordinal": 0,
+            "role": "data"
+          },
+          {
+            "direction": "out",
+            "id": "call:instance:model.Model.sink:out:output",
+            "name": "output",
+            "ordinal": 0,
+            "role": "data"
+          }
+        ],
+        "source": {
+          "endLine": 16,
+          "expression": "self.sink(original)",
+          "line": 16,
+          "path": "model.py"
+        }
+      },
+      {
+        "callId": "call:instance:model.Model.tail",
+        "category": "operator",
+        "children": [],
+        "evidence": "contract",
+        "id": "call:instance:model.Model.tail",
+        "instanceId": "instance:model.Model.tail",
+        "kind": "Identity",
+        "label": "tail",
+        "parameters": {},
+        "parentId": "call:instance:model.Model",
+        "ports": [
+          {
+            "direction": "in",
+            "id": "call:instance:model.Model.tail:in:input",
+            "name": "input",
+            "ordinal": 0,
+            "role": "data"
+          },
+          {
+            "direction": "out",
+            "id": "call:instance:model.Model.tail:out:output",
+            "name": "output",
+            "ordinal": 0,
+            "role": "data"
+          }
+        ],
+        "source": {
+          "endLine": 17,
+          "expression": "self.tail(result)",
+          "line": 17,
+          "path": "model.py"
+        }
+      },
+      {
+        "category": "output",
+        "children": [],
+        "evidence": "source",
+        "id": "output:model.Model:0",
+        "kind": "Output",
+        "label": "output",
+        "parameters": {},
+        "parentId": "call:instance:model.Model",
+        "ports": [
+          {
+            "direction": "in",
+            "id": "output:model.Model:0:in:value",
+            "name": "value",
+            "ordinal": 0,
+            "role": "data"
+          }
+        ],
+        "source": {
+          "endLine": 17,
+          "expression": "def forward(self, x, memory):\n        original = self.first(x)\n        candidate = self.branch(x)\n        separate = self.other(memory)\n        result = self.sink(original)  # exactly this Name, not every original\n        return self.tail(result)",
+          "line": 12,
+          "path": "model.py"
+        }
+      }
+    ],
+    "schemaVersion": 1,
+    "sourceDigest": "e10c2ff7d09aefbe47907c4bcf60e4c130b99c03ca56df34fcd3c05fc866fe53",
+    "sources": [
+      {
+        "content": "from torch import nn\n\nclass Model(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.first = nn.Identity()\n        self.branch = nn.Dropout(p=0.1)\n        self.other = nn.GELU()\n        self.sink = nn.ReLU(inplace=False)\n        self.tail = nn.Identity()\n\n    def forward(self, x, memory):\n        original = self.first(x)\n        candidate = self.branch(x)\n        separate = self.other(memory)\n        result = self.sink(original)  # exactly this Name, not every original\n        return self.tail(result)\n",
+        "digest": "17799d3538f54da1db3e86b7699857cac88b28ffca771e9e9a154187ae906025",
+        "path": "model.py"
+      }
+    ]
+  },
+  "blockers": [],
+  "checkpointImpact": {
+    "message": "Rebinding a unary input changes tensor provenance and model behavior, but adds/removes no parameter or buffer names/shapes. No checkpoint or model code was loaded.",
+    "status": "compatible"
+  },
+  "diff": "--- a/model.py\n+++ b/model.py\n@@ -13,5 +13,5 @@\n         original = self.first(x)\n         candidate = self.branch(x)\n         separate = self.other(memory)\n-        result = self.sink(original)  # exactly this Name, not every original\n+        result = self.sink(candidate)  # exactly this Name, not every original\n         return self.tail(result)\n",
+  "environment": {
+    "frontendContract": "archcanvas-stdlib-static-1",
+    "modelExecution": "none",
+    "pythonImplementation": "CPython",
+    "pythonVersion": [
+      3,
+      11,
+      5
+    ]
+  },
+  "gates": [
+    {
+      "id": "G0",
+      "label": "来源与能力",
+      "message": "The exact authored unary Name slot, in-scope dominating producer and same-base preserving chain are statically proven.",
+      "status": "passed"
+    },
+    {
+      "id": "G1",
+      "label": "源码有效性",
+      "message": "UTF-8 bytes/BOM/newlines preserved; exactly one direct unary call Name argument changes in the AST.",
+      "status": "passed"
+    },
+    {
+      "id": "G2",
+      "label": "名称与项目",
+      "message": "No reassignment, control flow, unresolved calls, shadowed framework symbols or in-place mutation exists in the registered forward region.",
+      "status": "passed"
+    },
+    {
+      "id": "G3",
+      "label": "重新分析",
+      "message": "The isolated staged corpus was parsed and its complete declared architecture was re-analyzed.",
+      "status": "passed"
+    },
+    {
+      "id": "G4",
+      "label": "意图兑现",
+      "message": "Independent ExpectedDelta changes exactly the chosen input edge source/tensor; every other declared node, port, edge, parameter, repeat and sharing fact matches.",
+      "status": "passed"
+    },
+    {
+      "id": "G5",
+      "label": "符号shape/type",
+      "message": "Conditional on a base tensor accepted by the registered operations, both producers preserve its same symbolic shape and dtype. Concrete dimensions/dtype remain unknown; different origins are refused and no numerical equivalence is claimed.",
+      "status": "passed"
+    },
+    {
+      "id": "G6",
+      "label": "运行验证",
+      "message": "symbolic-rebind-static profile: no user code execution, forward replay or numerical equivalence test was run.",
+      "status": "not_run"
+    },
+    {
+      "id": "G7",
+      "label": "状态兼容",
+      "message": "The registered connection operation changes no parameter/buffer definitions or shape; no checkpoint migration is performed.",
+      "status": "passed"
+    },
+    {
+      "id": "G8",
+      "label": "论文输出",
+      "message": "No publication/export gate was requested by this source transaction.",
+      "status": "not_run"
+    },
+    {
+      "id": "G9",
+      "label": "人工审核",
+      "message": "Explicit approval binds this exact transaction revision, corpus, staging, delta, diff and gate receipts.",
+      "status": "passed"
+    },
+    {
+      "id": "G10",
+      "label": "写回新鲜度",
+      "status": "passed",
+      "message": "Full source corpus, dependency discovery, staging, exact diff and approval bindings rechecked under the project lock."
+    },
+    {
+      "id": "G11",
+      "label": "写后核验",
+      "status": "passed",
+      "message": "Atomic single-file replacement, byte digest and independent complete architecture re-analysis match the approved transaction."
+    }
+  ],
+  "id": "fcd21d8d660cd63c5c9de5bb7a53c45a",
+  "intent": {
+    "after": {
+      "nodeId": "call:instance:model.Model.branch",
+      "portId": "call:instance:model.Model.branch:out:output",
+      "tensorId": "tensor:call:instance:model.Model.branch:output",
+      "variable": "candidate"
+    },
+    "before": {
+      "nodeId": "call:instance:model.Model.first",
+      "portId": "call:instance:model.Model.first:out:output",
+      "tensorId": "tensor:call:instance:model.Model.first:output",
+      "variable": "original"
+    },
+    "contract": {
+      "baseTensorId": "tensor:input:model.Model:x:x",
+      "basis": "registered same-origin shape/dtype preservation",
+      "chain": [
+        {
+          "contract": "torch.nn.Dropout",
+          "kind": "Dropout",
+          "nodeId": "call:instance:model.Model.branch",
+          "source": {
+            "column": 20,
+            "endColumn": 34,
+            "endLine": 14,
+            "expression": "self.branch(x)",
+            "fileDigest": "17799d3538f54da1db3e86b7699857cac88b28ffca771e9e9a154187ae906025",
+            "line": 14,
+            "path": "model.py"
+          }
+        }
+      ],
+      "condition": "The input is a tensor accepted by every registered operation on both source chains; concrete dimensions and dtype are unknown.",
+      "conditional": true,
+      "dtype": {
+        "identity": "dtype:tensor:input:model.Model:x:x",
+        "kind": "symbol"
+      },
+      "runtimeVerified": false,
+      "shape": {
+        "identity": "shape:tensor:input:model.Model:x:x",
+        "kind": "symbol"
+      }
+    },
+    "kind": "RebindInput",
+    "nodeId": "call:instance:model.Model.sink",
+    "origin": {
+      "column": 27,
+      "endColumn": 35,
+      "endLine": 16,
+      "expression": "original",
+      "fileDigest": "17799d3538f54da1db3e86b7699857cac88b28ffca771e9e9a154187ae906025",
+      "line": 16,
+      "path": "model.py",
+      "variable": "original"
+    },
+    "portId": "call:instance:model.Model.sink:in:input",
+    "scope": "single_call"
+  },
+  "irDigest": "1fb35c92e06ab8d94a841140cbb9a6723d5b38c91ef7f2bf83631fd20172b96d",
+  "reviewDigest": "6664eefb45694552a64646a1bbf5d5974a11cf7206c3b8570d7b0aef18e1f2d9",
+  "revision": 1,
+  "sourceChanges": [
+    {
+      "afterDigest": "17bd6c79d2a20695f99570548ef39dc5717f450b4f9b439e4f5df27d42c2a990",
+      "beforeDigest": "17799d3538f54da1db3e86b7699857cac88b28ffca771e9e9a154187ae906025",
+      "path": "model.py"
+    }
+  ],
+  "sourceDigest": "e10c2ff7d09aefbe47907c4bcf60e4c130b99c03ca56df34fcd3c05fc866fe53",
+  "status": "Committed",
+  "transform": {
+    "contract": "same-base-shape-and-dtype-preserving-chain",
+    "engine": "stdlib-ast-tokenize-byte-splice",
+    "id": "pytorch-symbolic-unary-rebind",
+    "operators": [
+      "Identity",
+      "Dropout",
+      "ReLU",
+      "GELU"
+    ],
+    "profile": "symbolic-rebind-static",
+    "scope": "entry-straightline-forward",
+    "version": 1
+  },
+  "committedArchitecture": {
+    "schemaVersion": 1,
+    "id": "architecture:model.Model",
+    "label": "Model",
+    "sourceDigest": "bb8a0cd36e5173630d48e356c580f0b40691dccc4efc82975b70331dd73c8b75",
+    "irDigest": "16c33a1bd2950ff903540f63def4ebf57c3fa585ce5e4c3f7a56406ba4baed0b",
+    "entry": "model:Model",
+    "nodes": [
+      {
+        "id": "input:model.Model:x",
+        "label": "x",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:model.Model:x:out:x",
+            "name": "x",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 12,
+          "endLine": 17,
+          "expression": "def forward(self, x, memory):\n        original = self.first(x)\n        candidate = self.branch(x)\n        separate = self.other(memory)\n        result = self.sink(candidate)  # exactly this Name, not every original\n        return self.tail(result)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.Model"
+      },
+      {
+        "id": "input:model.Model:memory",
+        "label": "memory",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:model.Model:memory:out:memory",
+            "name": "memory",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 12,
+          "endLine": 17,
+          "expression": "def forward(self, x, memory):\n        original = self.first(x)\n        candidate = self.branch(x)\n        separate = self.other(memory)\n        result = self.sink(candidate)  # exactly this Name, not every original\n        return self.tail(result)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.Model"
+      },
+      {
+        "id": "call:instance:model.Model",
+        "label": "Model",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "input:model.Model:memory",
+          "input:model.Model:x",
+          "call:instance:model.Model.first",
+          "call:instance:model.Model.branch",
+          "call:instance:model.Model.other",
+          "call:instance:model.Model.sink",
+          "call:instance:model.Model.tail",
+          "output:model.Model:0"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:model.Model:in:x",
+            "name": "x",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.Model:in:memory",
+            "name": "memory",
+            "direction": "in",
+            "role": "memory",
+            "ordinal": 1
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 3,
+          "endLine": 17,
+          "expression": "class Model(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.first = nn.Identity()\n        self.branch = nn.Dropout(p=0.1)\n        self.other = nn.GELU()\n        self.sink = nn.ReLU(inplace=False)\n        self.tail = nn.Identity()\n\n    def forward(self, x, memory):\n        original = self.first(x)\n        candidate = self.branch(x)\n        separate = self.other(memory)\n        result = self.sink(candidate)  # exactly this Name, not every original\n        return self.tail(result)"
+        },
+        "evidence": "source",
+        "instanceId": "instance:model.Model",
+        "callId": "call:instance:model.Model"
+      },
+      {
+        "id": "call:instance:model.Model.first",
+        "label": "first",
+        "kind": "Identity",
+        "category": "operator",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.Model.first:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.Model.first:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 13,
+          "endLine": 13,
+          "expression": "self.first(x)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.Model",
+        "instanceId": "instance:model.Model.first",
+        "callId": "call:instance:model.Model.first"
+      },
+      {
+        "id": "call:instance:model.Model.branch",
+        "label": "branch",
+        "kind": "Dropout",
+        "category": "regularization",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.Model.branch:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.Model.branch:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "p": 0.1
+        },
+        "source": {
+          "path": "model.py",
+          "line": 14,
+          "endLine": 14,
+          "expression": "self.branch(x)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.Model",
+        "instanceId": "instance:model.Model.branch",
+        "callId": "call:instance:model.Model.branch",
+        "parameterOrigins": {
+          "p": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 7,
+            "endLine": 7,
+            "expression": "0.1",
+            "column": 35,
+            "endColumn": 38
+          }
+        }
+      },
+      {
+        "id": "call:instance:model.Model.other",
+        "label": "other",
+        "kind": "GELU",
+        "category": "activation",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.Model.other:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.Model.other:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 15,
+          "endLine": 15,
+          "expression": "self.other(memory)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.Model",
+        "instanceId": "instance:model.Model.other",
+        "callId": "call:instance:model.Model.other"
+      },
+      {
+        "id": "call:instance:model.Model.sink",
+        "label": "sink",
+        "kind": "ReLU",
+        "category": "activation",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.Model.sink:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.Model.sink:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "inplace": false
+        },
+        "source": {
+          "path": "model.py",
+          "line": 16,
+          "endLine": 16,
+          "expression": "self.sink(candidate)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.Model",
+        "instanceId": "instance:model.Model.sink",
+        "callId": "call:instance:model.Model.sink",
+        "parameterOrigins": {
+          "inplace": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 9,
+            "endLine": 9,
+            "expression": "False",
+            "column": 36,
+            "endColumn": 41
+          }
+        }
+      },
+      {
+        "id": "call:instance:model.Model.tail",
+        "label": "tail",
+        "kind": "Identity",
+        "category": "operator",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.Model.tail:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.Model.tail:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 17,
+          "expression": "self.tail(result)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.Model",
+        "instanceId": "instance:model.Model.tail",
+        "callId": "call:instance:model.Model.tail"
+      },
+      {
+        "id": "output:model.Model:0",
+        "label": "output",
+        "kind": "Output",
+        "category": "output",
+        "children": [],
+        "ports": [
+          {
+            "id": "output:model.Model:0:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 12,
+          "endLine": 17,
+          "expression": "def forward(self, x, memory):\n        original = self.first(x)\n        candidate = self.branch(x)\n        separate = self.other(memory)\n        result = self.sink(candidate)  # exactly this Name, not every original\n        return self.tail(result)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.Model"
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:0",
+        "source": {
+          "nodeId": "input:model.Model:x",
+          "portId": "input:model.Model:x:out:x"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model",
+          "portId": "call:instance:model.Model:in:x"
+        },
+        "tensorId": "tensor:input:model.Model:x:x",
+        "role": "data"
+      },
+      {
+        "id": "edge:1",
+        "source": {
+          "nodeId": "input:model.Model:memory",
+          "portId": "input:model.Model:memory:out:memory"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model",
+          "portId": "call:instance:model.Model:in:memory"
+        },
+        "tensorId": "tensor:input:model.Model:memory:memory",
+        "role": "memory"
+      },
+      {
+        "id": "edge:2",
+        "source": {
+          "nodeId": "input:model.Model:x",
+          "portId": "input:model.Model:x:out:x"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model.first",
+          "portId": "call:instance:model.Model.first:in:input"
+        },
+        "tensorId": "tensor:input:model.Model:x:x",
+        "role": "data"
+      },
+      {
+        "id": "edge:3",
+        "source": {
+          "nodeId": "input:model.Model:x",
+          "portId": "input:model.Model:x:out:x"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model.branch",
+          "portId": "call:instance:model.Model.branch:in:input"
+        },
+        "tensorId": "tensor:input:model.Model:x:x",
+        "role": "data"
+      },
+      {
+        "id": "edge:4",
+        "source": {
+          "nodeId": "input:model.Model:memory",
+          "portId": "input:model.Model:memory:out:memory"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model.other",
+          "portId": "call:instance:model.Model.other:in:input"
+        },
+        "tensorId": "tensor:input:model.Model:memory:memory",
+        "role": "data"
+      },
+      {
+        "id": "edge:5",
+        "source": {
+          "nodeId": "call:instance:model.Model.branch",
+          "portId": "call:instance:model.Model.branch:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model.sink",
+          "portId": "call:instance:model.Model.sink:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.Model.branch:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:6",
+        "source": {
+          "nodeId": "call:instance:model.Model.sink",
+          "portId": "call:instance:model.Model.sink:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.Model.tail",
+          "portId": "call:instance:model.Model.tail:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.Model.sink:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:7",
+        "source": {
+          "nodeId": "call:instance:model.Model.tail",
+          "portId": "call:instance:model.Model.tail:out:output"
+        },
+        "target": {
+          "nodeId": "output:model.Model:0",
+          "portId": "output:model.Model:0:in:value"
+        },
+        "tensorId": "tensor:call:instance:model.Model.tail:output",
+        "role": "data"
+      }
+    ],
+    "diagnostics": [
+      {
+        "level": "info",
+        "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+      }
+    ],
+    "sources": [
+      {
+        "path": "model.py",
+        "content": "from torch import nn\n\nclass Model(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.first = nn.Identity()\n        self.branch = nn.Dropout(p=0.1)\n        self.other = nn.GELU()\n        self.sink = nn.ReLU(inplace=False)\n        self.tail = nn.Identity()\n\n    def forward(self, x, memory):\n        original = self.first(x)\n        candidate = self.branch(x)\n        separate = self.other(memory)\n        result = self.sink(candidate)  # exactly this Name, not every original\n        return self.tail(result)\n",
+        "digest": "17bd6c79d2a20695f99570548ef39dc5717f450b4f9b439e4f5df27d42c2a990"
+      }
+    ]
+  },
+  "committedSourceDigest": "bb8a0cd36e5173630d48e356c580f0b40691dccc4efc82975b70331dd73c8b75"
+}

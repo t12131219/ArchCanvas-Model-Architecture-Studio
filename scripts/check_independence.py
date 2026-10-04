@@ -23,10 +23,10 @@ EXCLUDED = {
     ".pytest_cache", ".mypy_cache", ".archcanvas", ".DS_Store", ".env", ".env.local",
 }
 RELEASE_ITEMS = (
-    "pyproject.toml", "README.md", "AGENTS.md", "LICENSE", "LICENSE.md", ".gitignore",
+    "pyproject.toml", "requirements.lock", "README.md", "AGENTS.md", "LICENSE", "LICENSE.md", ".gitignore",
     "src", "fixtures", "studio", "docs", "scripts", "skills", "tests",
 )
-MODULES = ("archcanvas_cli", "archcanvas_python")
+MODULES = ("archcanvas_cli", "archcanvas_python", "archcanvas_transactions", "archcanvas_publication")
 FIXTURES = (
     ("transformer", "model:Transformer"),
     ("mlp", "model:MLP"),
@@ -141,8 +141,24 @@ def verify(project: Path, build: bool) -> tuple[Path, dict[str, object]]:
     checks.append({"name": "package-provenance", "passed": True, "origins": origins})
 
     capabilities = json.loads(run_cli(copy, ["capabilities"], environment))
-    if capabilities.get("semanticWriteback") or capabilities.get("runtimeObservation"):
-        raise RuntimeError("Alpha capability contract unexpectedly claims writeback or execution")
+    if capabilities.get("runtimeObservation"):
+        raise RuntimeError("Static runtime unexpectedly claims execution observation")
+    if capabilities.get("semanticWriteback"):
+        scope = capabilities.get("semanticScope", {})
+        if (
+            capabilities.get("supportedIntents") != ["set_dropout_probability", "rebind_input"]
+            or scope.get("operators") != {"Dropout": ["p"], "MultiheadAttention": ["dropout"]}
+            or scope.get("origins") != ["explicit-float-literal"]
+            or scope.get("httpCommit") != "managed-workspace-copy-only"
+            or scope.get("runtimeVerified") is not False
+            or capabilities.get("rebindScope") != {
+                "operators": ["Identity", "Dropout", "ReLU", "GELU"],
+                "control": "entry-forward-straight-line",
+                "compatibility": "same-input-symbolic-shape-and-dtype",
+                "runtimeVerified": False,
+            }
+        ):
+            raise RuntimeError(f"Writeback capability is outside the independently tested M2/M3 scope: {scope}")
     provenance = capabilities.get("packageProvenance", {})
     if not provenance.get("independent") or Path(provenance.get("projectRoot", "")).resolve() != copy:
         raise RuntimeError(f"Capability receipt has wrong project provenance: {provenance}")

@@ -33,6 +33,39 @@ export function createDocument(architecture: Architecture, title = architecture.
   return document;
 }
 
+/** A canonical refresh starts a fresh source-bound document, outside visual undo. */
+export function reconcileDocument(previous: CanvasDocument, architecture: Architecture) {
+  validateDocument(previous); validateArchitecture(architecture);
+  const document = createDocument(architecture, previous.title);
+  const oldNodes = new Map(previous.architecture.nodes.map(n => [n.id, n]));
+  const preservedNodeIds = architecture.nodes.filter(n => {
+    const before = oldNodes.get(n.id);
+    return before && before.kind === n.kind && before.parentId === n.parentId && before.instanceId === n.instanceId && before.callId === n.callId;
+  }).map(n => n.id);
+  const nodes = new Set(preservedNodeIds);
+  const oldEdges = new Map(previous.architecture.edges.map(e => [e.id, e]));
+  const preservedEdgeIds = architecture.edges.filter(e => {
+    const old = oldEdges.get(e.id);
+    return old && nodes.has(e.source.nodeId) && nodes.has(e.target.nodeId) && old.source.nodeId === e.source.nodeId && old.source.portId === e.source.portId && old.target.nodeId === e.target.nodeId && old.target.portId === e.target.portId && old.tensorId === e.tensorId && old.role === e.role;
+  }).map(e => e.id);
+  const edges = new Set(preservedEdgeIds);
+  const filter = <T>(record: Record<string, T>, ids: Set<string>) => Object.fromEntries(Object.entries(record).filter(([id]) => ids.has(id))) as Record<string, T>;
+  document.displayAliases = clone(filter(previous.displayAliases, nodes));
+  document.nodeStyleOverrides = clone(filter(previous.nodeStyleOverrides, nodes));
+  document.edgeStyleOverrides = clone(filter(previous.edgeStyleOverrides, edges));
+  document.layout = { ...document.layout, ...clone(filter(previous.layout, nodes)) };
+  document.expandedIds = previous.expandedIds.filter(id => nodes.has(id) && architecture.nodes.find(n => n.id === id)!.children.length > 0);
+  document.pinnedObjects = previous.pinnedObjects.filter(id => nodes.has(id));
+  document.layoutByFrontier = {};
+  for (const [key, positions] of Object.entries(previous.layoutByFrontier)) {
+    if (!key || key.split('|').every(id => nodes.has(id))) document.layoutByFrontier[key] = clone(filter(positions, nodes));
+  }
+  document.legendItems = clone(previous.legendItems); document.annotations = clone(previous.annotations); document.pageSpec = clone(previous.pageSpec);
+  document.revision = previous.revision + 1;
+  materialize(document); validateDocument(document);
+  return { document, preservedNodeIds, preservedEdgeIds, removedNodeIds: previous.architecture.nodes.filter(n => !nodes.has(n.id)).map(n => n.id) };
+}
+
 function materialize(document: CanvasDocument) {
   for (const node of buildScene(document).nodes) if (!document.layout[node.id]) document.layout[node.id] = { x: node.localX, y: node.localY };
 }

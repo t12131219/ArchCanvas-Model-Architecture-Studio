@@ -290,6 +290,54 @@
         },
         "callId": {
           "type": "string"
+        },
+        "parameterOrigins": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "literal",
+                  "constructor_argument",
+                  "derived",
+                  "unknown"
+                ]
+              },
+              "path": {
+                "type": "string"
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "endLine": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "column": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "endColumn": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "expression": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "path",
+              "line",
+              "endLine",
+              "column",
+              "endColumn",
+              "expression"
+            ]
+          }
         }
       },
       "required": [

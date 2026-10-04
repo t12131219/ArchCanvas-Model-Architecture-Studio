@@ -39,11 +39,21 @@ export function validateArchitecture(value: unknown): Architecture {
   for (const k of ['id', 'label', 'sourceDigest', 'irDigest', 'entry']) textValue(a[k], `architecture.${k}`);
   const nodes = array(a.nodes, 'architecture.nodes').map((v, i) => {
     const n = object(v, `nodes[${i}]`);
-    fields(n, ['id', 'label', 'kind', 'category', 'parentId', 'children', 'ports', 'parameters', 'source', 'evidence', 'repeat', 'instanceId', 'callId'], 'node');
+    fields(n, ['id', 'label', 'kind', 'category', 'parentId', 'children', 'ports', 'parameters', 'parameterOrigins', 'source', 'evidence', 'repeat', 'instanceId', 'callId'], 'node');
     for (const k of ['id', 'label', 'kind', 'category']) textValue(n[k], `node.${k}`);
     for (const k of ['parentId', 'instanceId', 'callId']) if (n[k] !== undefined) textValue(n[k], `node.${k}`);
     unique(strings(n.children, 'node.children'), 'node.children');
     object(n.parameters, 'node.parameters');
+    if (n.parameterOrigins !== undefined) for (const [parameter, raw] of Object.entries(object(n.parameterOrigins, 'node.parameterOrigins'))) {
+      if (!(parameter in (n.parameters as Obj))) throw new ValidationError('parameter origin has no effective value');
+      const origin = object(raw, 'parameterOrigin');
+      fields(origin, ['kind', 'path', 'line', 'endLine', 'column', 'endColumn', 'expression'], 'parameterOrigin');
+      member(origin.kind, ['literal', 'constructor_argument', 'derived', 'unknown'], 'parameterOrigin.kind');
+      textValue(origin.path, 'parameterOrigin.path'); textValue(origin.expression, 'parameterOrigin.expression');
+      const line = finite(origin.line, 'origin.line'), end = finite(origin.endLine, 'origin.endLine');
+      const column = finite(origin.column, 'origin.column'), endColumn = finite(origin.endColumn, 'origin.endColumn');
+      if (![line, end, column, endColumn].every(Number.isInteger) || line < 1 || end < line || column < 0 || endColumn < 0 || (line === end && endColumn < column)) throw new ValidationError('parameterOrigin: invalid UTF-8 span');
+    }
     member(n.evidence, ['source', 'contract', 'opaque'], 'node.evidence');
     const ports = array(n.ports, 'node.ports').map(pv => {
       const p = object(pv, 'port');

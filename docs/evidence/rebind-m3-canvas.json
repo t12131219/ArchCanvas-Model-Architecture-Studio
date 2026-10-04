@@ -1,0 +1,472 @@
+{
+  "schemaVersion": 1,
+  "id": "canvas-architecture-model.RebindDemo-312181323c66-8f453840",
+  "title": "RebindDemo",
+  "revision": 4,
+  "sourceBindingDigest": "312181323c66fae8afdd9e942c6211e0c24320a52938690b0a87982ef18af771",
+  "architecture": {
+    "schemaVersion": 1,
+    "id": "architecture:model.RebindDemo",
+    "label": "RebindDemo",
+    "sourceDigest": "312181323c66fae8afdd9e942c6211e0c24320a52938690b0a87982ef18af771",
+    "irDigest": "8f453840754b7305ca7a9a3f2e81e6b9c16a506a18deec1f621d68b8903e1eb5",
+    "entry": "model:RebindDemo",
+    "nodes": [
+      {
+        "id": "input:model.RebindDemo:features",
+        "label": "features",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:model.RebindDemo:features:out:features",
+            "name": "features",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 15,
+          "endLine": 21,
+          "expression": "def forward(self, features):\n        base = self.first(features)\n        activated = self.activation(base)\n        alternative = self.branch(base)\n        regularized = self.regularizer(alternative)\n        result = self.output(regularized)\n        return result"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.RebindDemo"
+      },
+      {
+        "id": "call:instance:model.RebindDemo",
+        "label": "RebindDemo",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "input:model.RebindDemo:features",
+          "call:instance:model.RebindDemo.first",
+          "call:instance:model.RebindDemo.activation",
+          "call:instance:model.RebindDemo.branch",
+          "call:instance:model.RebindDemo.regularizer",
+          "call:instance:model.RebindDemo.output",
+          "output:model.RebindDemo:0"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:model.RebindDemo:in:features",
+            "name": "features",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 6,
+          "endLine": 21,
+          "expression": "class RebindDemo(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.first = nn.Identity()\n        self.activation = nn.GELU()\n        self.branch = nn.ReLU()\n        self.regularizer = nn.Dropout(0.1)\n        self.output = nn.Identity()\n\n    def forward(self, features):\n        base = self.first(features)\n        activated = self.activation(base)\n        alternative = self.branch(base)\n        regularized = self.regularizer(alternative)\n        result = self.output(regularized)\n        return result"
+        },
+        "evidence": "source",
+        "instanceId": "instance:model.RebindDemo",
+        "callId": "call:instance:model.RebindDemo"
+      },
+      {
+        "id": "call:instance:model.RebindDemo.first",
+        "label": "first",
+        "kind": "Identity",
+        "category": "operator",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.RebindDemo.first:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.RebindDemo.first:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 16,
+          "endLine": 16,
+          "expression": "self.first(features)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.RebindDemo",
+        "instanceId": "instance:model.RebindDemo.first",
+        "callId": "call:instance:model.RebindDemo.first"
+      },
+      {
+        "id": "call:instance:model.RebindDemo.activation",
+        "label": "activation",
+        "kind": "GELU",
+        "category": "activation",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.RebindDemo.activation:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.RebindDemo.activation:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 17,
+          "expression": "self.activation(base)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.RebindDemo",
+        "instanceId": "instance:model.RebindDemo.activation",
+        "callId": "call:instance:model.RebindDemo.activation"
+      },
+      {
+        "id": "call:instance:model.RebindDemo.branch",
+        "label": "branch",
+        "kind": "ReLU",
+        "category": "activation",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.RebindDemo.branch:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.RebindDemo.branch:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 18,
+          "endLine": 18,
+          "expression": "self.branch(base)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.RebindDemo",
+        "instanceId": "instance:model.RebindDemo.branch",
+        "callId": "call:instance:model.RebindDemo.branch"
+      },
+      {
+        "id": "call:instance:model.RebindDemo.regularizer",
+        "label": "regularizer",
+        "kind": "Dropout",
+        "category": "regularization",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.RebindDemo.regularizer:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.RebindDemo.regularizer:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "p": 0.1
+        },
+        "source": {
+          "path": "model.py",
+          "line": 19,
+          "endLine": 19,
+          "expression": "self.regularizer(alternative)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.RebindDemo",
+        "instanceId": "instance:model.RebindDemo.regularizer",
+        "callId": "call:instance:model.RebindDemo.regularizer",
+        "parameterOrigins": {
+          "p": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 12,
+            "endLine": 12,
+            "expression": "0.1",
+            "column": 38,
+            "endColumn": 41
+          }
+        }
+      },
+      {
+        "id": "call:instance:model.RebindDemo.output",
+        "label": "output",
+        "kind": "Identity",
+        "category": "operator",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.RebindDemo.output:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.RebindDemo.output:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 20,
+          "endLine": 20,
+          "expression": "self.output(regularized)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.RebindDemo",
+        "instanceId": "instance:model.RebindDemo.output",
+        "callId": "call:instance:model.RebindDemo.output"
+      },
+      {
+        "id": "output:model.RebindDemo:0",
+        "label": "output",
+        "kind": "Output",
+        "category": "output",
+        "children": [],
+        "ports": [
+          {
+            "id": "output:model.RebindDemo:0:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 15,
+          "endLine": 21,
+          "expression": "def forward(self, features):\n        base = self.first(features)\n        activated = self.activation(base)\n        alternative = self.branch(base)\n        regularized = self.regularizer(alternative)\n        result = self.output(regularized)\n        return result"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.RebindDemo"
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:0",
+        "source": {
+          "nodeId": "input:model.RebindDemo:features",
+          "portId": "input:model.RebindDemo:features:out:features"
+        },
+        "target": {
+          "nodeId": "call:instance:model.RebindDemo",
+          "portId": "call:instance:model.RebindDemo:in:features"
+        },
+        "tensorId": "tensor:input:model.RebindDemo:features:features",
+        "role": "data"
+      },
+      {
+        "id": "edge:1",
+        "source": {
+          "nodeId": "input:model.RebindDemo:features",
+          "portId": "input:model.RebindDemo:features:out:features"
+        },
+        "target": {
+          "nodeId": "call:instance:model.RebindDemo.first",
+          "portId": "call:instance:model.RebindDemo.first:in:input"
+        },
+        "tensorId": "tensor:input:model.RebindDemo:features:features",
+        "role": "data"
+      },
+      {
+        "id": "edge:2",
+        "source": {
+          "nodeId": "call:instance:model.RebindDemo.first",
+          "portId": "call:instance:model.RebindDemo.first:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.RebindDemo.activation",
+          "portId": "call:instance:model.RebindDemo.activation:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.RebindDemo.first:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:3",
+        "source": {
+          "nodeId": "call:instance:model.RebindDemo.first",
+          "portId": "call:instance:model.RebindDemo.first:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.RebindDemo.branch",
+          "portId": "call:instance:model.RebindDemo.branch:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.RebindDemo.first:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:4",
+        "source": {
+          "nodeId": "call:instance:model.RebindDemo.branch",
+          "portId": "call:instance:model.RebindDemo.branch:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.RebindDemo.regularizer",
+          "portId": "call:instance:model.RebindDemo.regularizer:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.RebindDemo.branch:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:5",
+        "source": {
+          "nodeId": "call:instance:model.RebindDemo.regularizer",
+          "portId": "call:instance:model.RebindDemo.regularizer:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.RebindDemo.output",
+          "portId": "call:instance:model.RebindDemo.output:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.RebindDemo.regularizer:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:6",
+        "source": {
+          "nodeId": "call:instance:model.RebindDemo.output",
+          "portId": "call:instance:model.RebindDemo.output:out:output"
+        },
+        "target": {
+          "nodeId": "output:model.RebindDemo:0",
+          "portId": "output:model.RebindDemo:0:in:value"
+        },
+        "tensorId": "tensor:call:instance:model.RebindDemo.output:output",
+        "role": "data"
+      }
+    ],
+    "diagnostics": [
+      {
+        "level": "info",
+        "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+      }
+    ],
+    "sources": [
+      {
+        "path": "model.py",
+        "content": "\"\"\"Authored straight-line branches for the bounded input-rebinding contract.\"\"\"\n\nfrom torch import nn\n\n\nclass RebindDemo(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.first = nn.Identity()\n        self.activation = nn.GELU()\n        self.branch = nn.ReLU()\n        self.regularizer = nn.Dropout(0.1)\n        self.output = nn.Identity()\n\n    def forward(self, features):\n        base = self.first(features)\n        activated = self.activation(base)\n        alternative = self.branch(base)\n        regularized = self.regularizer(alternative)\n        result = self.output(regularized)\n        return result\n",
+        "digest": "541937a20e1ef1a587ad078957fddd91879be9fbe82b702a9fe9683c4b660ebf"
+      }
+    ]
+  },
+  "displayAliases": {
+    "call:instance:model.RebindDemo.regularizer": "正则化输出"
+  },
+  "nodeStyleOverrides": {
+    "call:instance:model.RebindDemo.regularizer": {
+      "fill": "#ece3f4"
+    }
+  },
+  "edgeStyleOverrides": {},
+  "legendItems": [
+    {
+      "id": "legend:input",
+      "label": "Input",
+      "color": "#eef2f5",
+      "glyph": "tensor"
+    },
+    {
+      "id": "legend:container",
+      "label": "Container",
+      "color": "#f5f8fc",
+      "glyph": "module"
+    },
+    {
+      "id": "legend:activation",
+      "label": "Activation",
+      "color": "#f9eddc",
+      "glyph": "operator"
+    },
+    {
+      "id": "legend:output",
+      "label": "Output",
+      "color": "#eef2f5",
+      "glyph": "tensor"
+    }
+  ],
+  "annotations": [],
+  "pageSpec": {
+    "widthMm": 180,
+    "background": "#ffffff",
+    "preset": "paper"
+  },
+  "expandedIds": [
+    "call:instance:model.RebindDemo"
+  ],
+  "layout": {
+    "call:instance:model.RebindDemo": {
+      "x": 50,
+      "y": 92
+    },
+    "input:model.RebindDemo:features": {
+      "x": 148,
+      "y": 62
+    },
+    "call:instance:model.RebindDemo.first": {
+      "x": 148,
+      "y": 162
+    },
+    "call:instance:model.RebindDemo.activation": {
+      "x": 148,
+      "y": 262
+    },
+    "call:instance:model.RebindDemo.branch": {
+      "x": 384,
+      "y": 262
+    },
+    "call:instance:model.RebindDemo.regularizer": {
+      "x": 148,
+      "y": 362
+    },
+    "call:instance:model.RebindDemo.output": {
+      "x": 148,
+      "y": 462
+    },
+    "output:model.RebindDemo:0": {
+      "x": 148,
+      "y": 562
+    }
+  },
+  "layoutByFrontier": {},
+  "pinnedObjects": [
+    "call:instance:model.RebindDemo.regularizer"
+  ]
+}

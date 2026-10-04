@@ -130,10 +130,12 @@ export function buildScene(document: CanvasDocument): Scene {
     }
     return true;
   });
-  // Parallel bindings with the same tensor and role are one visual route. Keep every
-  // canonical edge ID on that route for selection and source navigation.
+  // Only bundle bindings with the same effective style. Every authored override
+  // must remain represented when collapsed hierarchy projects edges together.
   const projected = [...rawProjected.reduce((groups, item) => {
-    const key = `${item.s}|${item.t}|${item.e.tensorId}|${item.e.role}|${item.e.label ?? ''}`;
+    const style = document.edgeStyleOverrides[item.e.id] ?? {};
+    const appearance = [style.stroke ?? EDGE_COLORS[item.e.role], style.width ?? 1.5, style.dashed ?? item.e.role === 'mask'];
+    const key = `${item.s}|${item.t}|${item.e.tensorId}|${item.e.role}|${item.e.label ?? ''}|${JSON.stringify(appearance)}`;
     const current = groups.get(key);
     if (current) current.e = { ...current.e, id: current.e.id, label: current.e.label, _canonicalEdgeIds: [...(current.e as typeof current.e & { _canonicalEdgeIds?: string[] })._canonicalEdgeIds ?? [], item.e.id] } as typeof current.e;
     else groups.set(key, { ...item, e: { ...item.e, _canonicalEdgeIds: [item.e.id] } as typeof item.e });
@@ -174,7 +176,8 @@ export function buildScene(document: CanvasDocument): Scene {
       path = `M ${num(a.x)} ${num(a.y)} V ${num(a.y + 13)} H ${num(corridor)} V ${num(b.y - 13)} H ${num(b.x)} V ${num(b.y)}`;
       labelX = corridor + 7; labelY = (a.y + b.y) / 2;
     } else {
-      const mid = (a.y + b.y) / 2;
+      const parallelIndex = projected.slice(0, index).filter(p => p.s === s && p.t === t && p.e.tensorId === e.tensorId && p.e.role === e.role).length;
+      const mid = (a.y + b.y) / 2 + parallelIndex * 8;
       path = `M ${num(a.x)} ${num(a.y)} V ${num(mid)} H ${num(b.x)} V ${num(b.y)}`;
       labelX = (a.x + b.x) / 2 + 8; labelY = mid - 7;
     }

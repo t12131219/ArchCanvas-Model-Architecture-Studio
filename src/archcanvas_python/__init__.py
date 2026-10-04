@@ -1,11 +1,10 @@
 """Independent, non-executing ArchCanvas static frontend.
 
-The first implementation intentionally uses Python's standard-library AST. It
-does not implement source writeback. LibCST belongs to the later formatting-
-preserving semantic transaction implementation, not this analysis-only slice.
+Analysis uses Python's standard-library AST and never executes user code.
+The separate archcanvas_transactions package registers a bounded, formatting-
+preserving explicit float-token parameter transform; this module only analyzes.
 """
 
 from .frontend import AnalysisError, analyze_project, analyze_source
 
 __all__ = ["AnalysisError", "analyze_project", "analyze_source"]
-

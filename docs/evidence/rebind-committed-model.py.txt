@@ -1,0 +1,17 @@
+from torch import nn
+
+class Model(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.first = nn.Identity()
+        self.branch = nn.Dropout(p=0.1)
+        self.other = nn.GELU()
+        self.sink = nn.ReLU(inplace=False)
+        self.tail = nn.Identity()
+
+    def forward(self, x, memory):
+        original = self.first(x)
+        candidate = self.branch(x)
+        separate = self.other(memory)
+        result = self.sink(candidate)  # exactly this Name, not every original
+        return self.tail(result)

@@ -8,13 +8,18 @@ import os
 import re
 import tempfile
 import threading
+import secrets
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 import archcanvas_cli
 import archcanvas_python
+import archcanvas_transactions
+import archcanvas_publication
 from archcanvas_python import AnalysisError, analyze_project, analyze_source
+from archcanvas_transactions import TransactionManager
+from .workspace import Workspace
 
 MAX_REQUEST_BYTES = 4_000_000
 DOCUMENT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
@@ -22,6 +27,7 @@ EXAMPLES = (
     {"id": "transformer", "name": "Encoder–Decoder Transformer", "description": "Multi-file source, independent repeated encoder layers, cross-attention Q/K/V, masks and residual paths.", "entry": "model:Transformer"},
     {"id": "mlp", "name": "Multilayer Perceptron", "description": "A small source-backed Sequential classifier with Linear, GELU and Dropout.", "entry": "model:MLP"},
     {"id": "residual_cnn", "name": "Residual CNN", "description": "Multi-file residual blocks, shared-width convolutions, pooling and classifier.", "entry": "model:ResidualCNN"},
+    {"id": "rebind", "name": "Input Rebinding Lab", "description": "Authored straight-line tensor branches for reviewed input rebinding, without model execution.", "entry": "model:RebindDemo"},
 )
 
 
@@ -34,19 +40,23 @@ def project_root() -> Path | None:
 
 def capabilities() -> dict:
     root = project_root()
-    modules = {"archcanvas_cli": str(Path(archcanvas_cli.__file__).resolve()), "archcanvas_python": str(Path(archcanvas_python.__file__).resolve())}
+    modules = {name: str(Path(module.__file__).resolve()) for name, module in {"archcanvas_cli": archcanvas_cli, "archcanvas_python": archcanvas_python, "archcanvas_transactions": archcanvas_transactions, "archcanvas_publication": archcanvas_publication}.items()}
     independent = all("ArchCanvas_Model Architecture Studio_Temp" not in path for path in modules.values())
     return {
         "schemaVersion": 1,
         "runtimeVersion": archcanvas_cli.__version__,
         "sourceAnalysis": True,
         "documentPersistence": True,
-        "semanticWriteback": False,
+        "semanticWriteback": True,
+        "supportedIntents": ["set_dropout_probability", "rebind_input"],
+        "semanticScope": {"operators": {"Dropout": ["p"], "MultiheadAttention": ["dropout"]}, "origins": ["explicit-float-literal"], "httpCommit": "managed-workspace-copy-only", "runtimeVerified": False},
+        "rebindScope": {"operators": ["Identity", "Dropout", "ReLU", "GELU"], "control": "entry-forward-straight-line", "compatibility": "same-input-symbolic-shape-and-dtype", "runtimeVerified": False},
+        "publicationExport": archcanvas_publication.capabilities(),
         "runtimeObservation": False,
         "frontend": "stdlib-ast-subset",
         "packageProvenance": {"projectRoot": str(root) if root else None, "modules": modules, "independent": independent},
         "supported": ["local-module-imports", "literal-module-construction", "named-attention-ports", "tuple-outputs", "residual-dataflow", "bounded-module-list", "shared-instance-identity"],
-        "limitations": ["No execution, shape inference or source writeback", "Only directly authored forward methods", "Unsupported dynamic control, state, factories and reflection remain opaque", "80 source files, 2 MB corpus, 1200 nodes, 16 repeat iterations"],
+        "limitations": ["No execution or concrete shape inference; rebind compatibility is symbolic within one input lineage", "HTTP source edits affect managed copies only; dynamic connections and symbolic configuration edits unsupported", "Only directly authored forward methods", "Unsupported dynamic control, state, factories and reflection remain opaque", "80 source files, 2 MB corpus, 1200 nodes, 16 repeat iterations", "One service process per data directory; document CAS is process-local"],
     }
 
 
@@ -155,6 +165,9 @@ class ArchCanvasServer(ThreadingHTTPServer):
             raise ValueError("The ArchCanvas service accepts loopback addresses only.")
         root = project_root()
         self.store = DocumentStore(data_dir or (root or Path.cwd()) / ".archcanvas" / "documents")
+        self.workspace = Workspace(self.store.directory.parent, root)
+        self.transactions = TransactionManager(self.store.directory.parent / "transactions")
+        self.session_token = secrets.token_urlsafe(32)
         self.studio_dir = (studio_dir or (root / "studio" / "dist" if root else Path.cwd() / "studio" / "dist")).resolve()
         self.fixture_root = root / "fixtures" if root else None
         self.example_cache: dict[str, dict] = {}
@@ -222,7 +235,7 @@ class Handler(BaseHTTPRequestHandler):
         if origin:
             self.send_header("Access-Control-Allow-Origin", origin)
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-ArchCanvas-Session")
         self.send_header("Access-Control-Max-Age", "600")
         self.end_headers()
 
@@ -233,6 +246,30 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if path == "/api/capabilities":
                 self.send_json(200, capabilities())
+            elif path == "/api/session":
+                self.send_json(200, {"token": self.server.session_token})
+            elif path.startswith("/api/projects/"):
+                parts = path.removeprefix("/api/projects/").split("/")
+                if len(parts) == 1:
+                    self.send_json(200, self.server.workspace.project(parts[0]))
+                elif len(parts) == 3 and parts[1] == "transactions":
+                    self.transaction_binding(parts[0], parts[2])
+                    self.send_json(200, self.server.transactions.get(parts[2]))
+                else:
+                    self.send_json(404, {"error": "Unknown project route."})
+            elif path.startswith("/api/exports/"):
+                parts = path.removeprefix("/api/exports/").split("/")
+                if len(parts) != 2:
+                    raise ValueError("Invalid export artifact route.")
+                body, mime = self.server.workspace.artifact(*parts)
+                self.send_response(200)
+                self.send_header("Content-Type", mime)
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("X-Content-Type-Options", "nosniff")
+                self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox")
+                self.end_headers()
+                self.wfile.write(body)
             elif path == "/api/examples":
                 self.send_json(200, [{key: item[key] for key in ("id", "name", "description")} for item in EXAMPLES])
             elif path.startswith("/api/examples/"):
@@ -253,23 +290,97 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(404, {"error": "Unknown API route."})
             else:
                 self.static(path)
-        except (AnalysisError, ValueError) as exc:
+        except (AnalysisError, ValueError, OSError) as exc:
             self.send_json(400, {"error": str(exc)})
+
+    def transaction_binding(self, project_id: str, transaction_id: str, create=False):
+        if not isinstance(transaction_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,100}", transaction_id):
+            raise ValueError("Invalid transaction identity.")
+        directory = self.server.workspace.location("projects", project_id) / "transactions"
+        project = self.server.workspace.metadata(project_id)
+        if not self.server.transactions.matches_project(transaction_id, self.server.workspace.location("projects", project_id) / "source", project["entry"]):
+            raise ValueError("Transaction source binding does not match this registered project.")
+        if create:
+            directory.mkdir(exist_ok=True)
+            (directory / transaction_id).write_text("managed-copy", encoding="utf-8")
+        elif not (directory / transaction_id).is_file():
+            raise ValueError("Transaction does not belong to this registered project.")
+
+    def session_guard(self) -> bool:
+        if not secrets.compare_digest(self.headers.get("X-ArchCanvas-Session", ""), self.server.session_token):
+            self.send_json(403, {"error": "A current Studio session token is required for this action."})
+            return False
+        return True
 
     def do_POST(self):
         if not self.guard():
             return
-        if urlsplit(self.path).path != "/api/analyze":
-            self.send_json(404, {"error": "Unknown API route."})
+        path = urlsplit(self.path).path
+        if path != "/api/analyze" and not self.session_guard():
             return
         try:
             payload = self.body()
-            if set(payload) - {"source", "entry", "filename"}:
-                raise ValueError("Analyze accepts source text, entry and optional logical filename only; filesystem roots are not accepted over HTTP.")
-            if not isinstance(payload.get("entry"), str) or not isinstance(payload.get("filename", "model.py"), str):
-                raise ValueError("Entry and filename must be text.")
-            self.send_json(200, analyze_source(payload.get("source"), payload["entry"], payload.get("filename", "model.py")))
-        except (AnalysisError, ValueError) as exc:
+            if path == "/api/analyze":
+                if set(payload) - {"source", "entry", "filename"}:
+                    raise ValueError("Analyze accepts source text, entry and optional logical filename only; filesystem roots are not accepted over HTTP.")
+                if not isinstance(payload.get("entry"), str) or not isinstance(payload.get("filename", "model.py"), str):
+                    raise ValueError("Entry and filename must be text.")
+                self.send_json(200, analyze_source(payload.get("source"), payload["entry"], payload.get("filename", "model.py")))
+            elif path == "/api/projects":
+                self.send_json(201, self.server.workspace.register(payload))
+            elif path == "/api/exports":
+                if set(payload) != {"document", "format", "dpi"}:
+                    raise ValueError("Export requires the current document, format and DPI.")
+                document = payload["document"]
+                validate_document(document, document.get("id", "") if isinstance(document, dict) else "")
+                self.send_json(201, self.server.workspace.export(document, payload["format"], payload["dpi"]))
+            elif path.startswith("/api/projects/"):
+                parts = path.removeprefix("/api/projects/").split("/")
+                with self.server.workspace.lock:
+                    if len(parts) == 2 and parts[1] in ("transactions", "rebind", "rebind-options"):
+                        expected = {"nodeId", "baseSourceDigest", "baseIrDigest"}
+                        expected |= {"parameter", "value"} if parts[1] == "transactions" else {"portId"}
+                        if parts[1] == "rebind":
+                            expected |= {"producerNodeId", "producerPortId"}
+                        if set(payload) != expected:
+                            raise ValueError("A semantic request requires its exact target fields and source/IR versions.")
+                        project = self.server.workspace.project(parts[0])
+                        if project["sourceDigest"] != payload["baseSourceDigest"] or project["irDigest"] != payload["baseIrDigest"]:
+                            self.send_json(409, {"error": "The project source or IR changed; reload before preparing."})
+                            return
+                        if parts[1] == "rebind-options":
+                            from archcanvas_python.rebind import inspect_rebind
+                            options = inspect_rebind(self.server.workspace.source_root(parts[0]), project["entry"], payload["nodeId"], architecture=project["architecture"])
+                            if options["sourceDigest"] != payload["baseSourceDigest"] or options["irDigest"] != payload["baseIrDigest"]:
+                                self.send_json(409, {"error": "The project source or IR changed while inspecting; reload before preparing."})
+                                return
+                            if (options.get("target") or {}).get("portId") != payload["portId"]:
+                                # Invalid or unsupported canonical slot remains a proposal.
+                                options = {**options, "status": "unsupported", "supported": False, "candidates": [], "blockers": [*options.get("blockers", []), "The selected port is not the uniquely authored unary input slot."]}
+                            self.send_json(200, options)
+                            return
+                        if parts[1] == "rebind":
+                            receipt = self.server.transactions.prepare_rebind(root=self.server.workspace.source_root(parts[0]), entry=project["entry"], nodeId=payload["nodeId"], portId=payload["portId"], producerNodeId=payload["producerNodeId"], producerPortId=payload["producerPortId"], baseSourceDigest=payload["baseSourceDigest"])
+                        else:
+                            receipt = self.server.transactions.prepare(root=self.server.workspace.source_root(parts[0]), entry=project["entry"], nodeId=payload["nodeId"], parameter=payload["parameter"], value=payload["value"], baseSourceDigest=payload["baseSourceDigest"])
+                        self.transaction_binding(parts[0], receipt["id"], create=True)
+                    elif len(parts) == 4 and parts[1] == "transactions":
+                        self.transaction_binding(parts[0], parts[2])
+                        action = parts[3]
+                        if action == "approve" and set(payload) == {"reviewDigest"}:
+                            receipt = self.server.transactions.approve(parts[2], payload["reviewDigest"])
+                        elif action == "commit" and set(payload) == {"approvalId"}:
+                            receipt = self.server.transactions.commit(parts[2], payload["approvalId"])
+                        elif action == "discard" and not payload:
+                            receipt = self.server.transactions.discard(parts[2])
+                        else:
+                            raise ValueError("Invalid transaction action or approval binding.")
+                    else:
+                        raise ValueError("Unknown transaction route.")
+                self.send_json(200, receipt)
+            else:
+                self.send_json(404, {"error": "Unknown API route."})
+        except (AnalysisError, ValueError, OSError) as exc:
             self.send_json(400, {"error": str(exc)})
 
     def do_PUT(self):
@@ -310,4 +421,3 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.end_headers()
         self.wfile.write(body)
-

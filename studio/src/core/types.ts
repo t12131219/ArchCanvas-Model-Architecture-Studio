@@ -17,11 +17,16 @@ export interface ArchitectureNode {
   children: string[];
   ports: ArchitecturePort[];
   parameters: Record<string, unknown>;
+  parameterOrigins?: Record<string, ParameterOrigin>;
   source?: { path: string; line: number; endLine: number; expression: string };
   evidence: 'source' | 'contract' | 'opaque';
   repeat?: { count: number; sharing: 'independent' | 'shared' };
   instanceId?: string;
   callId?: string;
+}
+export interface ParameterOrigin {
+  kind: 'literal' | 'constructor_argument' | 'derived' | 'unknown';
+  path: string; line: number; endLine: number; column: number; endColumn: number; expression: string;
 }
 export interface ArchitectureEdge {
   id: string;

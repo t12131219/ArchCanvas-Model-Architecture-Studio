@@ -76,6 +76,7 @@ class Unit:
     imports: dict[str, str] = field(default_factory=dict)
     classes: dict[str, ast.ClassDef] = field(default_factory=dict)
     constants: dict[str, Any] = field(default_factory=dict)
+    raw_digest: str | None = None
 
     def expression(self, node: ast.AST) -> str:
         return ast.get_source_segment(self.content, node) or ast.unparse(node)
@@ -99,7 +100,7 @@ class Corpus:
         self.units: dict[str, Unit] = {}
         self.total_bytes = 0
 
-    def add(self, module: str, path: str, content: str) -> Unit:
+    def add(self, module: str, path: str, content: str, raw: bytes | None = None) -> Unit:
         if len(self.units) >= MAX_FILES or self.total_bytes + len(content.encode()) > MAX_BYTES:
             raise AnalysisError("Source corpus budget exceeded (80 files / 2 MB); no complete architecture was produced.")
         try:
@@ -111,6 +112,7 @@ class Corpus:
         if sum(1 for _ in ast.walk(tree)) > MAX_SYNTAX_NODES:
             raise AnalysisError(f"{path}: syntax node budget exceeded (100000).")
         unit = Unit(module, path, content, tree)
+        unit.raw_digest = digest(raw if raw is not None else content.encode("utf-8"))
         self.units[module] = unit
         self.total_bytes += len(content.encode())
         for statement in tree.body:
@@ -157,10 +159,11 @@ class Corpus:
                 if actual.stat().st_size > MAX_BYTES:
                     raise AnalysisError("A source file exceeds the 2 MB corpus budget.")
                 try:
-                    content = actual.read_text(encoding="utf-8")
+                    raw = actual.read_bytes()
+                    content = raw.decode("utf-8-sig")
                 except (OSError, UnicodeError) as exc:
                     raise AnalysisError(f"Cannot read Python source {candidate.name}: {exc}") from exc
-                unit = self.add(module, actual.relative_to(self.root).as_posix(), content)
+                unit = self.add(module, actual.relative_to(self.root).as_posix(), content, raw)
                 # Discover local import dependencies without importing packages.
                 for qualified in list(unit.imports.values()):
                     pieces = qualified.split(".")
@@ -221,6 +224,7 @@ class Spec:
     env: dict[str, Any] = field(default_factory=dict)
     attributes: dict[str, Any] = field(default_factory=dict)
     items: list["Spec"] = field(default_factory=list)
+    parameter_origins: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -255,6 +259,18 @@ class Analyzer:
 
     def source(self, unit: Unit, node: ast.AST) -> dict[str, Any]:
         return {"path": unit.path, "line": getattr(node, "lineno", 1), "endLine": getattr(node, "end_lineno", 1), "expression": unit.expression(node)}
+
+    def parameter_origin(self, unit: Unit, expression: ast.AST, env: dict[str, Any]) -> dict[str, Any]:
+        """Expose exact argument evidence; values resolved from names are not editable literals."""
+        if isinstance(expression, ast.Constant) and type(expression.value) in (int, float, str, bool):
+            kind = "literal"
+        elif isinstance(expression, ast.Name):
+            kind = "constructor_argument" if expression.id in env and expression.id not in unit.constants else "unknown"
+        elif isinstance(expression, (ast.BinOp, ast.UnaryOp)):
+            kind = "derived"
+        else:
+            kind = "unknown"
+        return {"kind": kind, **self.source(unit, expression), "column": getattr(expression, "col_offset", 0), "endColumn": getattr(expression, "end_col_offset", 0)}
 
     def node(self, key: str, label: str, kind: str, category: str, parent: str | None, unit: Unit, source: ast.AST, *, evidence: str = "source", parameters: dict[str, Any] | None = None, instance: str | None = None) -> dict[str, Any]:
         if len(self.nodes) >= MAX_NODES:
@@ -367,18 +383,22 @@ class Analyzer:
                                 local[target.id] = literal(statement.value, local)
             return spec
         params: dict[str, Any] = {}
+        origins: dict[str, Any] = {}
         contract = CONTRACTS.get(short) if qualified == f"torch.nn.{short}" and self.corpus.framework_is_unshadowed() else None
         positional = contract[0] if contract else []
         for index, arg in enumerate(expression.args):
             value = literal(arg, env)
-            params[positional[index] if index < len(positional) else f"arg{index}"] = value if value is not UNKNOWN else {"expression": unit.expression(arg), "origin": "unknown"}
+            name = positional[index] if index < len(positional) else f"arg{index}"
+            params[name] = value if value is not UNKNOWN else {"expression": unit.expression(arg), "origin": "unknown"}
+            origins[name] = self.parameter_origin(unit, arg, env)
         for keyword in expression.keywords:
             if keyword.arg:
                 value = literal(keyword.value, env)
                 params[keyword.arg] = value if value is not UNKNOWN else {"expression": unit.expression(keyword.value), "origin": "unknown"}
+                origins[keyword.arg] = self.parameter_origin(unit, keyword.value, env)
         if not contract:
             self.warn(f"Unknown constructor {qualified or unit.expression(expression.func)} at {unit.path}:{expression.lineno}; no type semantics inferred from its name.")
-        return Spec(identity, short or "Unknown", contract[1] if contract else "opaque", params, unit, expression)
+        return Spec(identity, short or "Unknown", contract[1] if contract else "opaque", params, unit, expression, parameter_origins=origins)
 
     @staticmethod
     def constant_range(expression: ast.AST, env: dict[str, Any]) -> list[int] | None:
@@ -396,6 +416,8 @@ class Analyzer:
         source_name = spec.identity.rsplit(".", 1)[-1]
         display_name = f"{spec.kind} {int(source_name) + 1}" if source_name.isdigit() else source_name.replace("_", " ")
         own = self.node(f"call:{spec.identity}", label or display_name, spec.kind if spec.category != "container" else "Module", spec.category, parent, call_unit, call_source, evidence="opaque" if spec.category == "opaque" else "source" if spec.definition or spec.items else "contract", parameters=spec.parameters, instance=spec.identity)
+        if spec.parameter_origins:
+            own["parameterOrigins"] = spec.parameter_origins
         if spec.category == "opaque":
             for index, arg in enumerate(args):
                 self.bind(arg, own, f"arg{index}")
@@ -642,10 +664,16 @@ class Analyzer:
         for index, value in enumerate(refs(outputs)):
             node = self.node(f"output:{module}.{name}:{index}", "output" if len(refs(outputs)) == 1 else f"output {index + 1}", "Output", "output", root_id, own_unit, forward)
             self.bind(value, node, "value")
-        source_files = [{"path": unit.path, "content": unit.content, "digest": digest(unit.content.encode())} for unit in sorted(self.corpus.units.values(), key=lambda value: value.path)]
+        source_files = [{"path": unit.path, "content": unit.content, "digest": unit.raw_digest} for unit in sorted(self.corpus.units.values(), key=lambda value: value.path)]
         source_digest = digest([{key: value for key, value in source.items() if key != "content"} for source in source_files])
-        semantic = {"entry": f"{module}:{name}", "nodes": [{key: value for key, value in node.items() if key != "source"} for node in self.nodes], "edges": self.edges}
-        self.diagnostics.insert(0, {"level": "info", "message": "Static AST subset only. User code was not imported or executed; no inferred shapes, runtime verification, or semantic writeback."})
+        semantic_nodes = []
+        for node in self.nodes:
+            item = {key: value for key, value in node.items() if key not in ("source", "parameterOrigins")}
+            if "parameterOrigins" in node:
+                item["parameterOrigins"] = {name: {"kind": origin["kind"], "expression": origin["expression"], "path": origin["path"]} for name, origin in node["parameterOrigins"].items()}
+            semantic_nodes.append(item)
+        semantic = {"entry": f"{module}:{name}", "nodes": semantic_nodes, "edges": self.edges}
+        self.diagnostics.insert(0, {"level": "info", "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."})
         return {"schemaVersion": 1, "id": f"architecture:{module}.{name}", "label": name, "sourceDigest": source_digest, "irDigest": digest(semantic), "entry": f"{module}:{name}", "nodes": self.nodes, "edges": self.edges, "diagnostics": self.diagnostics, "sources": source_files}
 
 
@@ -659,9 +687,11 @@ def analyze_project(root: str | Path, entry: str) -> dict[str, Any]:
     return Analyzer(Corpus(root_path)).analyze(module, name)
 
 
-def analyze_source(source: str, entry: str, filename: str = "model.py") -> dict[str, Any]:
+def analyze_source(source: str, entry: str, filename: str = "model.py", *, raw_bytes: bytes | None = None) -> dict[str, Any]:
     if not isinstance(source, str) or len(source.encode()) > MAX_BYTES:
         raise AnalysisError("Source must be UTF-8 text within the 2 MB analysis budget.")
+    if raw_bytes is not None and (not isinstance(raw_bytes, bytes) or raw_bytes.decode("utf-8-sig") != source):
+        raise AnalysisError("Explicit raw source bytes must decode to the supplied UTF-8 source text.")
     filename_path = Path(filename)
     if filename_path.is_absolute() or ".." in filename_path.parts or filename_path.suffix != ".py":
         raise AnalysisError("Filename must be a relative Python logical path without traversal.")
@@ -677,5 +707,5 @@ def analyze_source(source: str, entry: str, filename: str = "model.py") -> dict[
     if not name.isidentifier():
         raise AnalysisError("Source entry must name a ModelClass.")
     corpus = Corpus()
-    corpus.add(module, filename_path.as_posix(), source)
+    corpus.add(module, filename_path.as_posix(), source, raw_bytes)
     return Analyzer(corpus).analyze(module, name)
