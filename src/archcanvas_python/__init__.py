@@ -1,17 +1,11 @@
-"""Static, non-executing Python source recovery."""
+"""Independent, non-executing ArchCanvas static frontend.
 
-from .analyzer import AnalysisBundle, AnalysisError, analyze_project
-from .corpus import CorpusCaptureError, capture_source_corpus
-from .frontend_v2 import FrontendV2Bundle, analyze_project_v2
-from .project_manifest import discover_project_manifest
+The first implementation intentionally uses Python's standard-library AST. It
+does not implement source writeback. LibCST belongs to the later formatting-
+preserving semantic transaction implementation, not this analysis-only slice.
+"""
 
-__all__ = [
-    "AnalysisBundle",
-    "AnalysisError",
-    "CorpusCaptureError",
-    "FrontendV2Bundle",
-    "analyze_project",
-    "analyze_project_v2",
-    "capture_source_corpus",
-    "discover_project_manifest",
-]
+from .frontend import AnalysisError, analyze_project, analyze_source
+
+__all__ = ["AnalysisError", "analyze_project", "analyze_source"]
+

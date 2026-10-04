@@ -1,193 +1,75 @@
-# ArchCanvas
+# ArchCanvas Studio · 视觉 Alpha
 
-ArchCanvas is a source-grounded model architecture studio. The current rewrite baseline provides the protocol boundary, a short agent skill, deterministic Python source discovery, an Exact Architecture IR, and structured validation receipts.
+从模型 Python 源码生成可编辑的架构画布。正式工程从头实现，使用新的 stdlib AST 静态分析前端、`CanvasDocument`、视觉操作历史与单一 SVG scene；不运行或回退到失败原型。
 
-This repository is intentionally rebuilding from the source-truth boundary outward. The Studio
-keeps visual patches separate from source truth and provides an explicit prepare, verify, review,
-and commit flow for exact parameter edits and a small registry of bounded structural transforms.
+这是第一批视觉 Alpha。静态分析覆盖明确的源码子集，未知结构保留诊断；它不执行模型，不证明 tensor shape，也不提供源码写回。逐能力边界见 [docs/capability-matrix.md](docs/capability-matrix.md)，实际验收证据和未验证项见 [docs/acceptance.md](docs/acceptance.md)。
 
-## Quick start
+## 启动
 
-```bash
-python -m pip install -c .github/constraints-py311.txt -e .[dev,cross-framework,runtime-pytorch]
-archcanvas doctor --json
-archcanvas analyze \
-  --project fixtures/tier_a/transformer \
-  --entry model:Transformer \
-  --framework pytorch \
-  --frontend v2 \
-  --task inference \
-  --mode eval \
-  --out build/transformer \
-  --json
-archcanvas validate build/transformer/architecture.json --json
-archcanvas trace build/transformer/architecture.json \
-  --input-spec fixtures/tier_a/transformer/runtime-input.json \
-  --out build/transformer \
-  --json
-archcanvas render build/transformer/architecture.json \
-  --view all \
-  --out build/transformer/publication \
-  --json
-archcanvas studio build/transformer/architecture.json \
-  --workspace build/transformer/.archcanvas \
-  --serve \
-  --json
-```
-
-For local Studio development, start the API and Vite frontend together with one command:
+需要 Python 3.11+。前端使用支持 `--experimental-strip-types` 的 Node.js，建议 Node 24+。在本目录执行；Python runtime 不需要安装 PyTorch，也不导入用户模型：
 
 ```bash
-./start-studio.sh
+PYTHONPATH=src python -m archcanvas_cli capabilities
+PYTHONPATH=src python -m archcanvas_cli analyze --root fixtures/transformer --entry model:Transformer --output /tmp/archcanvas-transformer.json
 ```
 
-The launcher selects the newest compatible local analysis artifact, waits for the API on port
-`4310`, and then starts the frontend on port `4323`. Open
-<http://127.0.0.1:4323/>. Choose another analyzed artifact with
-`./start-studio.sh --artifact build/my-model/architecture.json`.
-
-For a hash-locked Linux CPython 3.11 core development environment, install
-`pylock.dev-linux-py311.toml`, then add the separately constrained PyTorch runtime:
+安装项目内前端依赖并构建：
 
 ```bash
-python -m pip install -r pylock.dev-linux-py311.toml
-python -m pip install -c .github/constraints-py311.txt "torch>=2.2"
-python -m pip check
+cd studio
+npm ci
+npm run build
+cd ..
+PYTHONPATH=src python -m archcanvas_cli serve --host 127.0.0.1 --port 8765
 ```
 
-The PEP 751 lock is intentionally platform-specific because binary wheels for LibCST, ONNX,
-NumPy, and Cairo differ by platform. macOS and Windows development use the cross-platform direct
-constraints above; CI resolves and tests the full dependency graph on all three operating systems.
+打开 [http://127.0.0.1:8765](http://127.0.0.1:8765)。服务和文档存储均由正式目录 runtime 提供。开发前端时，在另一个终端进入 `studio` 并执行 `npm run dev`；Vite 将 `/api` 转发到端口 8765 的同一个服务。
 
-Cross-framework static analysis and opt-in runtime tracing use the same pipeline:
+多文件用户工程可用 `analyze --root PATH --entry module:Class --output FILE.json` 分析，再在 Studio 导入对话框读取架构 JSON。单文件可直接粘贴或读取 `.py`，未知结构保留为 opaque。
+
+另外两个源码样例：
 
 ```bash
-archcanvas analyze --framework keras --project my-project --entry model:MyModel ...
-archcanvas analyze --framework jax --project my-project --entry model:my_function ...
-archcanvas analyze --framework onnx --project my-project --entry model.onnx ...
+PYTHONPATH=src python -m archcanvas_cli analyze --root fixtures/mlp --entry model:MLP
+PYTHONPATH=src python -m archcanvas_cli analyze --root fixtures/residual_cnn --entry model:ResidualCNN
 ```
 
-Keras and JAX adapters parse source without importing those frameworks. ONNX uses the optional
-official parser declared by `.[cross-framework]`; no adapter executes the target during analysis.
-Install only the runtime adapters you need with `.[runtime-keras]`, `.[runtime-jax]`,
-`.[runtime-onnx]`, or use `.[runtime-all]` for CPU development. `trace` dispatches through the
-framework registry and records framework/backend versions, device or provider, parameter/state
-digests, observation mechanism, and two-run replay evidence.
+## 首批范围
 
-Prepare and verify a semantic parameter transaction from a versioned request:
+| 能力 | Alpha 范围/边界 |
+|---|---|
+| 静态分析 | 明确模块构造与 forward 数据流子集；多输入、残差、具名端口和源码位置保留证据。未支持结构据实诊断 |
+| 层级视图 | 由同一事实图投影到画布；展开与折叠保留 canonical 连接身份 |
+| 对象编辑 | 显示别名、节点/边样式、独立图例、注释、位置、pin 与页规格属于视觉文档 |
+| 操作历史 | 视觉操作与 undo/redo 使用同一文档；不改模型源文件 |
+| 局部语言指令 | 对选中节点解析颜色、`命名为…`、展开/收起/固定等确定性指令，复用同一视觉操作与历史；没有通用 LLM 语言解析 |
+| 保存 | 本地服务保存文档；独立存储版本用于拒绝过期覆盖 |
+| 导出 | 从当前 scene 导出 SVG；PNG/PDF 尚未实现 |
+| 运行观察 / shape 证明 | 尚未实现；静态分析不会执行用户模型 |
+| 参数 / 连接写回 | 尚未实现；没有批准提交源码的接口 |
+| MCP | 尚未实现 |
+| Codex / Claude Code / DeepSeek Harness | `skills/archcanvas` 为可移植指令包；三宿主端到端尚未认证 |
+
+不以节点名称、颜色或画布上的示意细节推断完整模型语义。静态范围与人工关系基准见 [docs/source-oracle.md](docs/source-oracle.md)。出版质量、真实性能和空间连续性仍需独立浏览器验收。
+
+## 验证与独立发行
 
 ```bash
-archcanvas patch prepare request.json --workspace build/transformer/.archcanvas --json
-archcanvas patch verify build/transformer/.archcanvas/transactions/<transaction-id> --json
-archcanvas patch commit build/transformer/.archcanvas/transactions/<transaction-id> --json
+PYTHONPATH=src python -m unittest discover -s tests -v
+cd studio
+npm test
+cd ..
+python scripts/check_independence.py --build
 ```
 
-The same commands accept `SemanticStructuralPatch` requests for the registered
-`replace_activation` and `insert_layer_norm` transforms. Unsupported structural intent is routed
-to an `AgentProposal` instead of a source transaction:
+独立性脚本在 `/tmp/archcanvas-independent-*` 下留下可复核的正式源码副本、发行文件 SHA-256 清单与 JSON 报告。Python 使用 `-I -S` 禁止原环境和 site 包注入，检查包实际来源，再分析三个 fixture；不依赖相邻目录。`--build` 仅复制本项目已安装的 `studio/node_modules` 作为构建依赖，不安装全局包；这不等于干净网络安装认证。
+
+文档保存的 CAS 版本与 `CanvasDocument.revision` 分离，前者保护存储覆盖，后者属于视觉操作历史。事实 digest 随视觉编辑保持不变。实现基线与复用登记见 [ADR 0001](docs/adr/0001-independent-alpha.md)；目前没有采用任何失败原型代码片段。
+
+浏览器内导出使用下载。若宿主内置浏览器不提供下载，可从已保存的画布使用同一 renderer 输出本地 SVG 和摘要收据：
 
 ```bash
-archcanvas propose proposed-connection.json \
-  --out build/transformer/agent-proposal.json \
-  --json
+node scripts/export_canvas.mjs --document .archcanvas/documents/DOCUMENT_ID.json --output .archcanvas/exports/figure.svg
 ```
 
-`prepare` writes only to an isolated transaction copy. `verify` reparses, statically resolves local
-imports, reanalyzes Exact IR, requires an exact Expected/Observed Graph Delta match, checks
-shape/type invariants, runs the built-in compile check plus requested targeted tests, and recompiles
-the arbitrary-depth containment hierarchy plus collapsed and fully expanded projections. Only a `review-ready` transaction can replace the exact source/config artifact or
-managed ONNX artifact set under the rollback contract; stale revisions and concurrent changes to
-any member are rejected without fuzzy merging.
-
-`analyze` never imports the target project. It reads Python source, records file digests and source spans, and emits unresolved facts whenever the static subset cannot prove a claim.
-
-For PyTorch source projects, `--frontend v2` captures an immutable multi-file SourceCorpus,
-builds LibCST-backed source anchors and a Python Semantic Graph, binds exact registry definitions
-and named ports, and emits `architecture-v2.json` alongside the v1 compatibility projection used
-by existing consumers. Studio analysis jobs select v2 by default for `pytorch` and `auto`; the
-general CLI keeps `--frontend v1` as the compatibility default for cross-framework workflows.
-Pass `--no-pattern-packs` to exclude v2 pattern bindings and their digests from the analysis input.
-
-Pyright Type Server is an optional resolver capability. Supply a pinned executable explicitly with
-`--pyright-typeserver /trusted/path/pyright-typeserver`, or set
-`ARCHCANVAS_PYRIGHT_TYPESERVER` for Studio analysis jobs. Its executable digest, snapshot and query
-digests are recorded in `analysis-input-v2.json`. When the sidecar is absent, times out or changes
-snapshot during a query batch, analysis deterministically falls back to LibCST/local resolution and
-emits a resolver diagnostic without importing or executing the target project.
-
-`trace` is a separate, explicit opt-in boundary. It imports and executes the frozen entrypoint only
-inside an isolated subprocess with a temporary working directory, timeout, CPU/memory limits,
-network denial, and sandbox-only Python file writes. A seeded input spec is executed twice; only a
-matching structural replay digest can pass the runtime replay gate. CPU is the default. Request
-`"device": "cuda"` only when `doctor` and the runtime capability report confirm CUDA is available.
-Use `selected_target` for an ONNX Execution Provider or an explicit JAX platform.
-
-Use `--no-pattern-packs` to force source-only generic recovery. Unsupported control flow is
-preserved as an `opaque_composite` with explicit boundary ports and unresolved status instead of
-being filled with model-specific assumptions.
-
-Pattern Packs run only after Exact IR is complete. Builtin packs are declarative manifests;
-workspace packs require both an explicit `--pattern-workspace PATH` and
-`--pattern-lock PACK_ID=SHA256`. Use `--pattern-candidate PATH` to produce a preview-only candidate
-review. Candidates are never installed or activated, executable workspace matchers are rejected,
-and every receipt records the unchanged Exact IR digest before and after matching. The semantic
-overlay is consumed by publication and Studio as optional metadata without changing canonical
-nodes, tensors, edges, or ports.
-
-Install the same offline-capable skill package into either supported local host:
-
-```bash
-archcanvas install-skill --host codex --project /path/to/project --json
-archcanvas install-skill --host claude-code --project /path/to/project --json
-```
-
-Copy mode includes the ArchCanvas runtime and schemas. It performs no dependency downloads; Python
-3.11 and the dependencies reported by `doctor` must already exist. Create and verify a portable,
-path-redacted review bundle with:
-
-```bash
-archcanvas bundle create build/model/architecture.json --out build/model.archcanvas --json
-archcanvas bundle verify build/model.archcanvas --json
-```
-
-## Current support
-
-| Capability | Status |
-| --- | --- |
-| Doctor and environment receipt | Available |
-| Python entrypoint discovery | Available |
-| Static module/call recovery | Generic fallback plus all five Tier A source profiles |
-| Evidence ledger and Exact IR | Available |
-| Semantic validation | Available |
-| Arbitrary-depth publication hierarchy | Available; stable frontier projections follow tree expansion |
-| Family and generic DAG layout | Available |
-| Canonical SVG, PNG, PDF and self-contained HTML | Available; binary formats derive from the same SVG scene |
-| Publication and geometry validation | Available |
-| Interactive visual-only Studio | Available |
-| Two navigation projections | Module/source trees share canonical selection; stable expansion directly derives the current frontier scene |
-| CanvasDocument persistence and history | Available |
-| Studio project discovery and analysis jobs | Static, generation-bound, cancellable |
-| PatchBatch multi-select/alignment/layout history | Available; atomic validation and one-step undo/redo |
-| Unified semantic search | Node, Tensor, Port, Edge, Evidence, Diagnostic |
-| Active validation profiles | Fast static, publication, full; runtime requires explicit authorization |
-| Draft intent proof status | Connection handoffs surface unproven/invalid blockers before writeback |
-| Arbitrary draft nodes | Authored as blocked, zero-permission proposals until an adapter lowering is proven |
-| Staged multi-file source editor | Unavailable until snapshots inventory transitive source files |
-| ONNX external-data atomic commit | Same-size initializer updates with whole-set freshness and service-level rollback |
-| Runtime tracing | PyTorch verified; Keras/JAX/ONNX adapters available with per-form status |
-| Runtime shape/dtype evidence and replay | PyTorch hooks, Keras layer calls, JAXPR/eval-shape, ONNX graph outputs |
-| Form-level capability matrix | Explicit Keras subclass/Functional/custom, JAX pure/Flax/transformed, ONNX standard/external/custom rows |
-| Safe parameter transactions | Python config/literal/Functional/Flax field and ONNX initializer/attribute anchors |
-| Structural transactions | PyTorch transforms; bounded Keras/JAX activation and Keras normalization; bounded ONNX node replacement |
-| Proposed Connection and AgentProposal | Available; handoff grants no shell, network, or source-write permission |
-| Declarative Pattern Packs | Builtin registry, digest-locked workspace packs, preview-only candidates |
-| Holdout generalization | Seven source-only families pass semantic/publication/geometry gates without dedicated packs |
-| Keras adapter | Partial: Functional/subclass static + runtime; parameter and two bounded structural lowerings |
-| JAX adapter | Partial: pure function/Flax static + JAXPR runtime; config/field and bounded activation transactions |
-| ONNX adapter | Partial: ModelProto static/runtime; initializer, attribute and bounded node transactions |
-| Local skill installers | Codex verified; Claude Code filesystem installer tested |
-| Offline review bundle | Redacted hierarchy plus collapsed/full JSON/SVG/PNG/PDF/HTML with digest verification |
-
-See [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md),
-[docs/contracts/protocols.md](docs/contracts/protocols.md), and
-[docs/support-matrix.md](docs/support-matrix.md).
+文档保存的是当前视觉结果；撤销/重做历史目前属于当前浏览器会话。完整出版质量、性能、PNG/PDF 与源码写回仍属于后续阶段。

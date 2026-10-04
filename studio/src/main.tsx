@@ -1,10 +1,6 @@
-import React from "react";
-import { createRoot } from "react-dom/client";
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App';
+import './styles.css';
 
-import { SceneStudioApp } from "./scene-studio/SceneStudioApp";
-
-createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <SceneStudioApp />
-  </React.StrictMode>,
-);
+createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>);

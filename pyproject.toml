@@ -1,55 +1,17 @@
 [build-system]
-requires = ["setuptools>=65.5"]
+requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "archcanvas"
+name = "archcanvas-studio"
 version = "0.1.0"
-description = "Source-grounded model architecture analysis and review tooling."
-readme = "README.md"
+description = "Source-grounded model architecture analysis and local visual document service"
 requires-python = ">=3.11"
-dependencies = [
-  "cairosvg>=2.7,<3",
-  "jsonschema>=4.20,<5",
-  "libcst>=1.4,<2",
-  "pydantic>=2.7,<3",
-  "pyyaml>=6,<7",
-]
-
-[project.optional-dependencies]
-dev = ["pytest>=8,<9", "ruff>=0.8,<1"]
-runtime = ["torch>=2.2"]
-runtime-pytorch = ["torch>=2.2"]
-runtime-keras = ["keras>=3.6,<4"]
-runtime-jax = ["jax>=0.4,<0.6", "flax>=0.8,<0.11"]
-runtime-onnx = ["onnx>=1.16,<2", "onnxruntime>=1.18,<2"]
-runtime-all = [
-  "torch>=2.2",
-  "keras>=3.6,<4",
-  "jax>=0.4,<0.6",
-  "flax>=0.8,<0.11",
-  "onnx>=1.16,<2",
-  "onnxruntime>=1.18,<2",
-]
-cross-framework = ["onnx>=1.16,<2"]
+dependencies = []
 
 [project.scripts]
-archcanvas = "archcanvas_engine.cli:main"
+archcanvas = "archcanvas_cli.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["archcanvas_adapters*", "archcanvas_core*", "archcanvas_engine*", "archcanvas_patterns*", "archcanvas_publication*", "archcanvas_python*", "archcanvas_release*", "archcanvas_runtime*", "archcanvas_studio*", "archcanvas_transactions*"]
 
-[tool.setuptools.package-data]
-archcanvas_core = ["schemas/*.json"]
-archcanvas_studio = ["static/*.html", "static/assets/*"]
-archcanvas_patterns = ["builtin/*/pattern.json"]
-
-[tool.pytest.ini_options]
-addopts = "-q"
-pythonpath = ["src"]
-testpaths = ["tests"]
-
-[tool.ruff]
-line-length = 100
-target-version = "py311"

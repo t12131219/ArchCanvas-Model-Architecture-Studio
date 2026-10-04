@@ -1,27 +1,15 @@
-# ArchCanvas Engineering Contract
+# ArchCanvas implementation direction
 
-## Invariants
+The user identified `ArchCanvas_Model Architecture Studio_Temp` as a failed version. The formal project should be written from scratch.
 
-- Source evidence and Exact Architecture IR are authoritative; canvas geometry is not.
-- Static analysis is the default. Never import or execute a user's project during analysis.
-- Visual patches may only change `CanvasDocument` state and must not write model source.
-- Semantic source edits must use prepare, verify, review, and explicit commit phases.
-- Unsupported capabilities return a structured non-zero receipt. Never report a skipped gate as passed.
-- Stdout from CLI commands is reserved for a single machine-readable JSON receipt; diagnostics go to stderr.
+- Define the formal schemas, runtime, Studio, and tests independently from requirements, official framework contracts, and the licensed reference projects.
+- Treat the failed prototype as low-confidence historical evidence and a source of failure cases. Do not migrate its complete pipelines, maintain its internal v1/v2 compatibility, or use it as the default runtime or fallback.
+- Consult a small code candidate only when its purpose and dependencies are understood. Reuse requires independent evidence appropriate to its risk, a clear adaptation to the new contracts, and a recorded reason/source. Its own tests, README, or demo success are insufficient alone.
+- Keep formal builds and execution independent of the prototype directory, its interpreter, artifacts, and source packages. Verify resolved runtime paths and package provenance; do not execute an installed entry that resolves to the failed prototype as though it were the formal product.
+- No prototype code candidate is currently certified for reuse. Preserve that status until evidence is recorded; routine justified reuse does not introduce a separate user approval step.
 
-## Task Routing
+The product is a portable Skill for Codex, Claude Code, and the official DeepSeek Harness, backed by one shared runtime and Studio. Publication quality, object/legend editing, in-place expansion, spatial continuity, and faithful export are early acceptance gates.
 
-- Protocol and validation work belongs in `src/archcanvas_core` and `schemas`.
-- Python source discovery and recovery belongs in `src/archcanvas_python`.
-- Command orchestration and receipts belong in `src/archcanvas_engine`.
-- Skill routing stays concise in `skill/SKILL.md`; detailed contracts belong in `skill/references`.
+Visual gestures and language edits share the same CanvasDocument, typed operations, and undo history. Visual edits do not write model source. Semantic changes use supported intents, isolated preparation, independent verification, concrete human review, and guarded commit.
 
-## Validation
-
-Run from the repository root:
-
-```bash
-python -m pytest
-python -m compileall -q src tools tests
-python tools/export_schemas.py --check
-```
+The current `skills/archcanvas` distribution contains instructions and references only. Do not advertise planned runtime commands or editor functions as implemented.
