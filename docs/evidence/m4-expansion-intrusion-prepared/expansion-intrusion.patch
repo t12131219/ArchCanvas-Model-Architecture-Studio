@@ -1,0 +1,38 @@
+--- a/studio/src/core/document.ts
++++ b/studio/src/core/document.ts
+@@ -1,5 +1,5 @@
+ import type { Architecture, CanvasDocument, HistoryAction, HistoryState, Position, VisualOperation } from './types.ts';
+-import { CATEGORY_STYLES } from './tokens.ts';
++import { CATEGORY_STYLES, TOKENS } from './tokens.ts';
+ import { buildScene } from './scene.ts';
+ import { fields, finite, object, textValue, validateArchitecture, validateDocument, ValidationError } from './validate.ts';
+ 
+@@ -99,11 +99,23 @@
+     const grown = buildScene(document).nodes.find(node => node.id === previous.id)!;
+     const dx = grown.width - previous.width, dy = grown.height - previous.height;
+     if (dx <= 0 && dy <= 0) continue;
+-    for (const n of before.nodes) {
+-      if (n.id === previous.id || n.parentId !== previous.parentId || subtreePinned(document, n.id)) continue;
+-      const p = document.layout[n.id];
+-      if (dx > 0 && n.x >= previous.x + previous.width && n.y < grown.y + grown.height && n.y + n.height > grown.y) p.x += dx;
+-      else if (dy > 0 && n.y >= previous.y + previous.height && n.x < grown.x + grown.width && n.x + n.width > grown.x) p.y += dy;
++    const siblings = before.nodes.filter(n => n.id !== previous.id && n.parentId === previous.parentId && !subtreePinned(document, n.id));
++    const horizontal = dx > 0 ? siblings.filter(n => n.x >= previous.x + previous.width && n.y < grown.y + grown.height && n.y + n.height > grown.y) : [];
++    const horizontalIds = new Set(horizontal.map(n => n.id));
++    if (horizontal.length) {
++      const first = Math.min(...horizontal.map(n => n.x));
++      const clearance = Math.min(TOKENS.gapX, first - previous.x - previous.width);
++      const displacement = Math.max(0, grown.x + grown.width + clearance - first);
++      // Translate the whole affected frontier together, retaining its relative/manual gaps.
++      for (const n of horizontal) document.layout[n.id].x += displacement;
++    }
++    const vertical = dy > 0 ? siblings.filter(n => !horizontalIds.has(n.id) && n.y >= previous.y + previous.height && n.x < grown.x + grown.width && n.x + n.width > grown.x) : [];
++    if (vertical.length) {
++      const first = Math.min(...vertical.map(n => n.y));
++      const clearance = Math.min(TOKENS.gapY, first - previous.y - previous.height);
++      const displacement = Math.max(0, grown.y + grown.height + clearance - first);
++      // Existing free space absorbs growth; parallel branches must not add their heights.
++      for (const n of vertical) document.layout[n.id].y += displacement;
+     }
+   }
+ }

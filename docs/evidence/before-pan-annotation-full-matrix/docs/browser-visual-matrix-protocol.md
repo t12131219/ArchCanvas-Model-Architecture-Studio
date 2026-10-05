@@ -1,0 +1,92 @@
+# 三黄金模型浏览器视觉矩阵采集
+
+计划 §13.2、§18.1 的矩阵是实际源码前沿 × 彩色/黑白 × 85/180 mm，并独立保留编辑后导出与人工审看。当前三模型有九个可恢复前沿、36 个基础组合。MLP/CNN 的浅层不能伪造到三级。
+
+| 模型 | 总览 L0 | L1 | L2 | L3 |
+|---|---|---|---|---|
+| Transformer | 模型 root 展开，12 节点 | Encoder 与 Decoder，23 节点 | 两个 EncoderLayer 与 Decoder FF，41 节点 | 两个 Encoder FF，49 节点 |
+| MLP | 模型 root，4 节点 | Sequential network，8 节点 | 无真实层级 | 无真实层级 |
+| Residual CNN | 模型 root，8 节点 | blocks repeat，10 节点 | 两个 ResidualBlock，24 节点 | 无真实层级 |
+
+每级包含所有此前展开容器；不是只展开一个代表 layer/block。`capture-tasks.md` 和 `spec.json` 列出完整 canonical expandedIds。九前沿 × 两预设 × 两宽度=36。至少为每个模型另留一份编辑后实际 Canvas、浏览器画面和同 revision SVG；它是额外证据，不把36份基础截图充当已编辑矩阵，不声称仅三份编辑样本就是所有配置的编辑覆盖。
+
+## 冻结实际版本
+
+先完成正式 Studio 源码/build，再重新生成 core 候选到新目录，保留旧目录和报告。core PNG 是出版派生物，不是 Studio 截图：
+
+```bash
+.venv/bin/python scripts/check_visual_golds.py --output docs/evidence/visual-golds-current
+.venv/bin/python scripts/browser_visual_matrix.py prepare \
+  --core-dir docs/evidence/visual-golds-current --output .archcanvas/browser-visual-matrix
+.venv/bin/python scripts/browser_visual_matrix.py verify --matrix .archcanvas/browser-visual-matrix
+```
+
+`prepare` 从实际 Architecture 的 container parent depth 推导前沿，核对36份 Canvas 的源码/IR/展开/page，冻结 core文件、正式renderer/analyzer/publication来源和真实dist所有文件。后续源码/build有变即重新生成新路径；不得改manifest哈希以继续。它不创建浏览器截图或通过结论。
+
+## 保存当前浏览器工件
+
+在独立服务 data-dir 用真实 UI 打开 fixture、逐层展开全部容器、切预设/物理宽度，完成后点击保存。服务 `--data-dir` 的 `<documentId>.json` 是真实 DocumentStore envelope；复制这个文件即可取当前 Canvas，不需要依赖浏览器下载路径。每variant实际revision可以不同于core候选：检查器核source/IR/structure/frontier/page并从实际Canvas重新生成Scene，允许UI展开顺序导致的layout差异，但基础矩阵不能额外改别名/样式/图例/说明/pin。
+
+在 UI 导出整页 SVG 后，按链接 `/api/exports/<artifactId>/figure.svg` 取得该服务workspace下 `exports/<artifactId>/figure.svg` 和 `figure.svg.receipt.json`。复制导出器实际文件/receipt；需要时额外保存此目录的 `document.json` 用于追溯。不要用 core 候选SVG替代实际服务导出。
+
+使用实际浏览器 CUA 截图，并读取 `.publication-scene svg.outerHTML` 保存为 `browser-scene.svg`。浏览器中的SVG包含展开按钮、port hitbox，不能与publicationSVG直接字节比较。检查器独立调用正式 `renderSvg(scene,{interactive:true})`，按XML节点/属性/文本规范化比较DOM；另从同一Canvas重做publicationXML/物理尺寸规范化并逐字节核实际SVG。
+
+截图还需核可见像素，而不是只核 DOM metadata。本次实际采集发现 DOM 已更新而截图仍显示上一状态，甚至导出弹窗尚未消失；[绘制诊断](evidence/browser-visual-paint-diagnostics/README.md) 保留24张错图的摘要与观察。每次切换模型/frontier/page后，关闭弹窗并 fit，取得 AX/DOM 状态，先请求一次截图后丢弃，再在独立 tool call 保存第二次截图；操作员随后逐图检查可见模型、展开层级、页头宽度/PAPER COLOR 或 MONOCHROME、可见时对应 inspector active 控件和整页是否入 viewport。这个顺序只是一种已观察到有效的采集办法，不能代替逐图检查。错图移入 superseded/excluded 清单，保留原工件，新 caseId 重新绑定实际 Canvas/DOM/导出/截图收据。禁止仅更新旧截图的 receipt 来掩盖像素不一致。
+
+读取浏览器事实：SVG metadata 的 documentId/revision/source/IR/widthMm，wrapper `data-expanded-ids`，viewport/DPR/userAgent，`.paper` 的 computed transform，publicationSVG `getBoundingClientRect()`，实际载入script/link或Resource Timing assetURL。buildAsset sha256来自相应冻结dist文件并保存URL。若浏览器工具不开放 navigator/performance，保存真实 pageAssets inventory，并将UA等可用测量来自哪份同浏览器收据及其时间另写 provenance；不能伪称本次DOM读取取得。字体/硬件/具体浏览器version不能观察时留null并登记缺口，不能从UA或可见截图推定已锁定字体环境。
+
+## 采集格式
+
+每项目录包含 `canvas.json`、`figure.svg`、`export-receipt.json`、`screenshot.jpg`、`browser-scene.svg`、`screen-receipt.json`。36项基础记录的列表：
+
+```json
+{
+  "schemaVersion": 1,
+  "protocol": "archcanvas-browser-visual-matrix/1",
+  "captures": [
+    {
+      "caseId": "transformer-level0-paper-180",
+      "variantId": "transformer-level0-paper-180",
+      "state": "baseline",
+      "canvas": "transformer-level0-paper-180/canvas.json",
+      "svg": "transformer-level0-paper-180/figure.svg",
+      "exportReceipt": "transformer-level0-paper-180/export-receipt.json",
+      "screenshot": "transformer-level0-paper-180/screenshot.jpg",
+      "browserScene": "transformer-level0-paper-180/browser-scene.svg",
+      "screenReceipt": "transformer-level0-paper-180/screen-receipt.json"
+    }
+  ]
+}
+```
+
+路径相对列表文件所在目录。`caseId` 唯一；`variantId` 必须是spec声明的真实组合。编辑后记录使用另一caseId、`state="edited"`，variantId仍指其实际frontier/preset/width；需存在真实视觉差异。保存同源模型/不同revision可接受。重复基础组合不能覆盖先前工件。
+
+`screen-receipt-template.json` 给出最低字段。填写实际caseId/variantId/state/capturedAt（带时区）、`captureKind="studio-browser"`、documentBinding、pageSpec、expandedIds、环境viewport/DPR/userAgent、相机transform/Scene屏幕矩形、加载JS/CSS的path/url/sha256和captureScope。filehash可用工具填入实际文件摘要，不生成任何浏览器事实：
+
+```bash
+.venv/bin/python scripts/browser_visual_matrix.py stamp-hashes \
+  --receipt capture/screen-receipt.json --screenshot capture/screenshot.jpg \
+  --browser-scene capture/browser-scene.svg
+```
+
+`browserSceneDigest` 是检查器的XML语义摘要，非outerHTML原始SHA256；收集manifest另外绑定原始字节。用以下命令产出不可覆盖的证据快照、36格联系表和评分模板：
+
+```bash
+.venv/bin/python scripts/browser_visual_matrix.py collect \
+  --matrix .archcanvas/browser-visual-matrix --captures capture/captures.json \
+  --output docs/evidence/browser-visual-matrix
+```
+
+空列表也可生成36格缺图索引；所有卡明确写“缺浏览器截图 · 正式core候选”，capturedBaselineCount=0。每份实际图展示真实截图、SVG、Canvas与采集收据，并保留source/IR/rev/build/DOM/文件摘要。验证前缓存所有工件bytes，正式core运行之后只保存同一快照，避免service后续save混包。
+
+## 独立人工审看
+
+manifest始终 `visualAcceptance=pending-human-review`、`humanAcceptanceCertified=false`，即使36基础和3编辑后工件全部齐全。artifactCoverage只报告文件覆盖，不能升级人工门。截图哈希和operator收据不证明图像内容、捕获时间或实际浏览器请求；截图与SVG仍必须打开逐图复核。
+
+`index.html` 联系表便于比较9前沿 ×4配置；缺图预览、实际浏览器图和额外编辑后图明确标识。复核者复制review-template为独立review，填写真实reviewer、逐图布局/层级阅读/留白/色彩及黑白/字体与真实尺寸可读性/连接路由。窗口fit缩放图不是校准的85/180mm印样，必须另看SVG真实尺寸；字体缺字、最小字号建议未达和dense展开须如实登记。几何/DOM/字节一致不能代替审美评分，截图集合也不能代替真人任务/性能认证。
+
+## 已封存的历史采集
+
+`docs/evidence/browser-visual-matrix-before-intrusion-fix` 是 `index-D1WyCZV8.js` / `index-BO7yZQLO.css` 的36基础+3编辑后工件快照；collect的artifactCoverage=complete，人工仍pending。最终统一1280×720、DPR1，并逐图核像素，原绘制滞后和窗口裁切证据另保留。 [AI像素观察与环境来源](evidence/browser-visual-pixel-observation-before-intrusion-fix/README.md) 绑定最终manifest、每张截图和ancillary来源。它明确只适用于修复前版本；后续renderer/layout/source/build改变必须重新prepare到新目录、再采新截图，不能改历史hash或用旧矩阵认证新版本。
+
+最终相同协议重新采集 `index-oH4Ot2L9.js` 当前build，正式快照在 `docs/evidence/browser-visual-matrix-zoom-full`：36基础+3模型各一份edited/save/reopen，artifactCoverage=complete、人工pending。 [最终AI像素观察](evidence/browser-visual-pixel-observation-zoom-full/README.md)独立核234artifact字节/摘要、39真实截图可见页头和整页范围；它仍不认证字体、真实印样或六维审美。当前代表4样本、进行中观察和历史修复前39均保留，不能通过目录名推定completion。UA来源已如实改为同IAB先前8771native receipt并绑定source SHA，未伪称8772navigator读取。后续build改变仍须再freeze/重采。

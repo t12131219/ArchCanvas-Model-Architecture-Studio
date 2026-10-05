@@ -1,6 +1,30 @@
 # Alpha 验收记录与限制
 
+当前（2026-10-05）构建为 `index-BcFxpKDY.js`（SHA256 `98eae2934004ecaec4036f7b0746fb8304b3412c467b2417b68988dd4e4afe3a`），本轮产品字节未改。[完整浏览器矩阵与代理问题报告](m4-bcf-browser-matrix.md)记录 **36/36 基线＋3/3 编辑态、39张实际截图与234份工件**，三模型保存重开SVG一致。独立几何/像素复核已完成，Transformer深层交叉、手动移动越界/碰撞与17模块缺组合预制仍待修；材料覆盖不代表出版人审。当前原生输入诊断保留失败/缺失与分母，持续presented FPS/完整INP、活动取消、真实尺寸/字体/硬件和3–5真人任务仍未认证。五席8961–8965未分配、真人0，AI不计真人，M4保持partial，未进入M5。前轮Studio136/136、strict/build和独立发行9项保留Bc范围；Python319/319保留obx测试时绑定及未改Python字节范围，本轮未重复产品全套测试。
+
+本轮文档更新前的478个封印绑定和旧seal原字节已[逐字节归档](evidence/before-m4-bcf-browser-matrix/manifest.json)；下方历史记录按其明确构建/时点阅读，旧失败和seal不回写。
+
+本构建切换前的 **1277** 个封印绑定及旧seal原字节见[归档](evidence/before-m4-authoring-feedback/manifest.json)；更早327/904绑定继续通过此前归档解析。下方旧记录中的“当前/最终”仅指其绑定版本，旧浏览器矩阵、研究包和UI中间构建不继承为最终Bc证据。
+
+[边界修正前原字节](evidence/before-m4-boundary-corrections/manifest.json)保留旧文档与3188历史绑定；下方旧版本记录不计当前构建覆盖。
+
 验收依据是技术计划 §16、§18 和 §21，以及正式目录的 `AGENTS.md`。本记录只适用于新工程。
+
+## 完整有界 M3：通过
+
+首个静态片段的 103/103、`stage3-report.json` 和 `m3-browser-report.json` 是历史基线。新版独立证据补充实际 multi-input MHA `key` 修改、冻结 q `[2,3,8]` / memory `[2,5,8]` / bool mask `[3,5]`、train/eval、forward/backward、绑定/梯度/state replay、kernel isolation 反例及运行批准 freshness。具体硬门与首期欠项保持在 [m3-completion.md](m3-completion.md)，不以静态片段替代完整 profile。
+
+新增独立脚本 `check_m3_complete.py --build` 在纯正式 `/tmp` 源码副本运行 21 个独立 holdout：7 个 runtime/isolation、7 个 MHA 事务、7 个 config/activation；实际运行能力缺失或 skip 必须失败。2026-10-04 最终冻结副本 `/tmp/archcanvas-independent-2fyoa8t3` 用 182.114 秒无 skip 全部通过，报告和 stdout 已保存为 [`m3-complete-report.json`](evidence/m3-complete-report.json) 与 [`m3-complete-independent-suite.txt`](evidence/m3-complete-independent-suite.txt)。成功准备/批准/提交只操作脚本自行编写的 `/tmp` 模型。
+
+配置/激活独立 7/7 已实际通过：配置只改唯一模块 float 定义，全部 registered readers 改为 0.25，另一个 0.1 literal 保留，shared calls 全覆盖；derived、unregistered、hidden readers、shadow/reassignment 和 custom activation args 拒绝。实际 CPU samples 的 ReLU→GELU 已经过 mandatory G6、精确 source token、具体批准和提交。静态激活 API 的显式 `parameter-static` 与 Studio/CLI 的 mandatory `structural-verified` 分别标记。最终独立 receipt 同时保存 state entries/sharing 与 `checkpointLoaded=false`；不把未加载外部 optimizer/scheduler/progress/random state 说成已兼容。
+
+36 份真实源码视觉黄金候选的完整 canonical edge 覆盖、端点、无 pin 常规布局同层交叠、展开 anchor、另一个 pin 坐标与基础 frontier 恢复通过；修复 Residual CNN 展开后 pool 交叠。Node 实际 fixture 回归加入后 14/14。出版字号和全套浏览器/研究者评分仍为 partial，见 [visual-gold-audit.md](visual-gold-audit.md) 与 [稳定工件](evidence/visual-golds/README.md)。本机只有 Codex CLI 0.160.0；Claude Code / DeepSeek Harness 未发现，实际宿主打开未认证。
+
+M4 独立多家族 holdout 追加通过：`test_m4_holdout.py` 在纯正式副本中 6/6，无 skip；PatchVisionEncoder、LSTM 时序与共享调用、skip/concat 分割模型的静态关系符合手写 oracle，未知 Conv1d/ConvTranspose2d、自定义 GNN/SSM kernel 与依赖输入的条件/循环保留 opaque。证据见 [`m4-holdout-report.json`](evidence/m4-holdout-report.json) 与 [`m4-holdout-independent-suite.txt`](evidence/m4-holdout-independent-suite.txt)。这只证明声明 analyzer 子集的静态恢复及未知边界；不扩展为任意模型、动态内部语义、runtime 泛化或性能通过。M4 的详细 partial/未完成门见 [`m4-completion.md`](m4-completion.md)。
+
+M4 Studio 性能采样与独立收据校验已实现：`npm test` 26/26（包含第二帧边界、frame sampler 和伪造 percentile/frontier 反例），`npm run build` 通过；日志见 [`m4-studio-tests.txt`](evidence/m4-studio-tests.txt) / [`m4-studio-build.txt`](evidence/m4-studio-build.txt)。`?benchmark=1` 通过可见按钮采集 20 组非根容器展开/收起及 fit；两帧延迟从 typed visual handler 入口计时，排除浏览器事件队列，Event Timing 独立记录。完整真实浏览器小 frontier 收据及其竞争运行保留在 [`m4-studio-performance.json`](evidence/m4-studio-performance.json) / [`m4-studio-performance-contended.json`](evidence/m4-studio-performance-contended.json)，具体环境、数值和限制见 [`m4-performance.md`](m4-performance.md)。最终 Residual CNN 小 frontier 会从 8→10→8；visibility/focus 持续 visible/true，最终诊断收据的 idle 基线 1.01 FPS / frame p95 1000 ms；操作期间展开两帧 proxy p95 为 996.4 ms、收起 998.6 ms、帧率 1.68 FPS，同步 handler p95 仅 1.8/1.9 ms。约 1 秒帧节律在 idle 也存在，具体 IAB 原因未判定，性能不达标；不能以更早的快运行替换该结果。另一个源码支持的 300-layer stress 真实收据 [`m4-studio-performance-stress.json`](evidence/m4-studio-performance-stress.json) 记录 4→304→4 canonical frontier，20 组展开/收起、source/IR 绑定与持续 visible/focus；idle 基线 1.02 FPS / frame p95 1000 ms；展开 proxy p95 1005.4 ms、收起 p95 1955.2 ms、1.33 FPS、101 ms 最大 long task，同步 handler p95 44.1/40.0 ms。数据规模场景已实现并实测，但当前浏览器性能门未达标；3–5 位研究者任务仍未认证。
+
+本轮全套源码回归为 Python **219/219**（276.584 秒、无 skip）、Studio **35/35** 与生产构建通过，当前日志为 [`m4-python-tests-final.txt`](evidence/m4-python-tests-final.txt)、[`m4-studio-tests-current.txt`](evidence/m4-studio-tests-current.txt) 和 [`m4-studio-build-current.txt`](evidence/m4-studio-build-current.txt)。基础 MLP/CNN 完整源码 oracle 独立11/11，holdout/output/bypass独立28/28和copied Studio3/3；修正嵌套输出路径、动态字典丢项和固定左侧残差错标。scene-only独立CPU展开p95 38.78→20.07 ms；原生目标/状态绑定的两次浏览器冒烟均2024 ms、2.16 FPS、锚点/pin位移0，且全套Python竞争CPU，不认证性能。真人和完整黄金视觉人工门保持未执行；真实试用包只准备未分配席位。
 
 ## 必须分开记录的证据
 
@@ -89,4 +113,6 @@
 
 同一浏览器保存文档 revision 4 生成 SVG/PDF/PNG 与绑定收据；180 mm/300 DPI 的 PNG 为 2126 × 2534，实际审看中文、branch→regularizer 连线和完整画面无裁切。文件、画布文档和截图均已留存。此证据只覆盖该 authored fixture 和当前宿主，不能扩展为任意拖线、数值等价或完整出版任务认证。
 
-M3 当前仅首个受限静态片段。Compatibility 表示相同 base input 的 unary chains 在输入满足已注册操作合同的条件下保留符号 shape/dtype；G6 为 not_run，不 import/执行用户模型，不证明实际尺寸、dtype、数值或训练行为等价。不存在通用 RebindInput、完整 runtime profile、配置追踪或多文件原子事务承诺。
+上述历史 M3 记录仅覆盖首个受限静态片段。它的 Compatibility 表示相同 base input 的 unary chains 在输入满足已注册操作合同的条件下保留符号 shape/dtype；其 G6 为 not_run，不执行模型。新版 mandatory CPU profile、配置/激活和实际隔离证据见本页顶部及 `m3-completion.md`；仍不承诺通用 RebindInput、任意动态模型、外部 checkpoint 迁移或多文件原子事务。
+
+全套219项后追加的研究工件链快照/SVG重建校验有专项及独立12/12反例证据；没有把它们拼成新的全套数量。新包`.archcanvas/m4-research-trial-ready-final`冻结验证通过、五个未分配席位、0真人记录。实际SVG以最终文档重新渲染并按正式出版器规范化后核对字节；PDF和人工成功仍待审看。

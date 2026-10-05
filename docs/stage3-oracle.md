@@ -1,6 +1,8 @@
-# M3 局部连接重绑定：独立验收 oracle
+# M3 首片段局部连接重绑定：独立验收 oracle
 
 M3 的候选范围是直接编写的根 `forward` 中，一个 unary module 调用的准确 `Name` 参数替换。此记录先定义独立预期；实现、测试或浏览器任务未实际完成前，不能据此宣称连接写回已通过。
+
+此 oracle 与现有 `check_stage3.py` 只覆盖首个静态 unary 片段。完整 M3 的多输入运行、隔离、replay、状态报告和继承欠项另见 [m3-completion.md](m3-completion.md)，当前 pending。
 
 ## 可成立的受限合同
 

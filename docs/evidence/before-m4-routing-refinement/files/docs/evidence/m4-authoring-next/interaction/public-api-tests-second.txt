@@ -1,0 +1,43 @@
+✖ independent four-direction authored moves preserve exact graph and one-command undo/redo (5.194405ms)
+✔ merge ports stay distinct, fan-out is retained, malformed direction/foreign port and duplicate producers fail atomically (0.932791ms)
+✔ a new binding that closes a directed cycle leaves history and every prior edge unchanged (0.380868ms)
+✔ deleting a branch removes only its incident bindings and undo restores both merge ports (0.461555ms)
+✔ explicit DAG arrange handles merge longest-path dependencies without overlaps or semantic changes (0.720685ms)
+✔ manual covering overlaps keep anchors and report every retained routing obstruction (0.327809ms)
+✔ no-op changes and unavailable history travel preserve identity; a new edit after undo clears redo (0.272598ms)
+✔ public draft transport binds save CAS revision and reopens an independent exact draft while a conflict retains local edits (17.269182ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 7
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 104.479232
+
+✖ failing tests:
+
+test at studio/tests/authoring-interaction-independent.test.ts:61:1
+✖ independent four-direction authored moves preserve exact graph and one-command undo/redo (5.194405ms)
+  AssertionError [ERR_ASSERTION]: in-linear
+  + actual - expected
+  
+  + [
+  +   'input',
+  +   'linear'
+  + ]
+  - []
+  
+      at assertRoutes (file:///home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/studio/tests/authoring-interaction-independent.test.ts:54:31)
+      at TestContext.<anonymous> (file:///home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/studio/tests/authoring-interaction-independent.test.ts:74:5)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.start (node:internal/test_runner/test:1242:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [Array],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

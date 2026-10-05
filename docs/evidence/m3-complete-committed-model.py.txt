@@ -1,0 +1,12 @@
+from torch import nn
+
+class CrossAttention(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.key_activation = nn.ReLU(inplace=False)
+        self.attention = nn.MultiheadAttention(8, 2, dropout=0.2, batch_first=True)
+
+    def forward(self, q, memory, mask):
+        alternative = self.key_activation(memory)
+        output, weights = self.attention(q, alternative, memory, attn_mask=mask, need_weights=False)
+        return output

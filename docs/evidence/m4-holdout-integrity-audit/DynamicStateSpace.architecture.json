@@ -1,0 +1,253 @@
+{
+  "schemaVersion": 1,
+  "id": "architecture:model.DynamicStateSpace",
+  "label": "DynamicStateSpace",
+  "sourceDigest": "3a6976a808974cfbb911cf2bab8c44b7d302c20c0e28046e1a9e7002fe51b667",
+  "irDigest": "5ee62adef0ec248c697d2a0fb9f3a15e69344f16590f7aadf6bcf780fe447abe",
+  "entry": "model:DynamicStateSpace",
+  "nodes": [
+    {
+      "id": "input:model.DynamicStateSpace:sequence",
+      "label": "sequence",
+      "kind": "Input",
+      "category": "input",
+      "children": [],
+      "ports": [
+        {
+          "id": "input:model.DynamicStateSpace:sequence:out:sequence",
+          "name": "sequence",
+          "direction": "out",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {},
+      "source": {
+        "path": "model.py",
+        "line": 93,
+        "endLine": 97,
+        "expression": "def forward(self, sequence):\n        state = self.scan(sequence)\n        for index in range(sequence.shape[1]):\n            state = self.projection(state)\n        return state"
+      },
+      "evidence": "source",
+      "parentId": "call:instance:model.DynamicStateSpace"
+    },
+    {
+      "id": "call:instance:model.DynamicStateSpace",
+      "label": "DynamicStateSpace",
+      "kind": "Module",
+      "category": "container",
+      "children": [
+        "input:model.DynamicStateSpace:sequence",
+        "call:instance:model.DynamicStateSpace.scan",
+        "op:call:instance:model.DynamicStateSpace:DynamicLoop:640f12c267",
+        "output:model.DynamicStateSpace:0"
+      ],
+      "ports": [
+        {
+          "id": "call:instance:model.DynamicStateSpace:in:sequence",
+          "name": "sequence",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {},
+      "source": {
+        "path": "model.py",
+        "line": 87,
+        "endLine": 97,
+        "expression": "class DynamicStateSpace(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.scan = StateSpaceScan()\n        self.projection = nn.Linear(4, 4)\n\n    def forward(self, sequence):\n        state = self.scan(sequence)\n        for index in range(sequence.shape[1]):\n            state = self.projection(state)\n        return state"
+      },
+      "evidence": "source",
+      "instanceId": "instance:model.DynamicStateSpace",
+      "callId": "call:instance:model.DynamicStateSpace"
+    },
+    {
+      "id": "call:instance:model.DynamicStateSpace.scan",
+      "label": "scan",
+      "kind": "StateSpaceScan",
+      "category": "opaque",
+      "children": [],
+      "ports": [
+        {
+          "id": "call:instance:model.DynamicStateSpace.scan:in:arg0",
+          "name": "arg0",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        },
+        {
+          "id": "call:instance:model.DynamicStateSpace.scan:out:output",
+          "name": "output",
+          "direction": "out",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {},
+      "source": {
+        "path": "model.py",
+        "line": 94,
+        "endLine": 94,
+        "expression": "self.scan(sequence)"
+      },
+      "evidence": "opaque",
+      "parentId": "call:instance:model.DynamicStateSpace",
+      "instanceId": "instance:model.DynamicStateSpace.scan",
+      "callId": "call:instance:model.DynamicStateSpace.scan"
+    },
+    {
+      "id": "op:call:instance:model.DynamicStateSpace:DynamicLoop:640f12c267",
+      "label": "DynamicLoop",
+      "kind": "DynamicLoop",
+      "category": "opaque",
+      "children": [],
+      "ports": [
+        {
+          "id": "op:call:instance:model.DynamicStateSpace:DynamicLoop:640f12c267:in:sequence",
+          "name": "sequence",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        },
+        {
+          "id": "op:call:instance:model.DynamicStateSpace:DynamicLoop:640f12c267:in:state",
+          "name": "state",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 1
+        },
+        {
+          "id": "op:call:instance:model.DynamicStateSpace:DynamicLoop:640f12c267:out:output",
+          "name": "output",
+          "direction": "out",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {},
+      "source": {
+        "path": "model.py",
+        "line": 95,
+        "endLine": 96,
+        "expression": "for index in range(sequence.shape[1]):\n            state = self.projection(state)"
+      },
+      "evidence": "opaque",
+      "parentId": "call:instance:model.DynamicStateSpace"
+    },
+    {
+      "id": "output:model.DynamicStateSpace:0",
+      "label": "output",
+      "kind": "Output",
+      "category": "output",
+      "children": [],
+      "ports": [
+        {
+          "id": "output:model.DynamicStateSpace:0:in:value",
+          "name": "value",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {},
+      "source": {
+        "path": "model.py",
+        "line": 93,
+        "endLine": 97,
+        "expression": "def forward(self, sequence):\n        state = self.scan(sequence)\n        for index in range(sequence.shape[1]):\n            state = self.projection(state)\n        return state"
+      },
+      "evidence": "source",
+      "parentId": "call:instance:model.DynamicStateSpace",
+      "outputPath": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge:0",
+      "source": {
+        "nodeId": "input:model.DynamicStateSpace:sequence",
+        "portId": "input:model.DynamicStateSpace:sequence:out:sequence"
+      },
+      "target": {
+        "nodeId": "call:instance:model.DynamicStateSpace",
+        "portId": "call:instance:model.DynamicStateSpace:in:sequence"
+      },
+      "tensorId": "tensor:input:model.DynamicStateSpace:sequence:sequence",
+      "role": "data"
+    },
+    {
+      "id": "edge:1",
+      "source": {
+        "nodeId": "input:model.DynamicStateSpace:sequence",
+        "portId": "input:model.DynamicStateSpace:sequence:out:sequence"
+      },
+      "target": {
+        "nodeId": "call:instance:model.DynamicStateSpace.scan",
+        "portId": "call:instance:model.DynamicStateSpace.scan:in:arg0"
+      },
+      "tensorId": "tensor:input:model.DynamicStateSpace:sequence:sequence",
+      "role": "data"
+    },
+    {
+      "id": "edge:2",
+      "source": {
+        "nodeId": "input:model.DynamicStateSpace:sequence",
+        "portId": "input:model.DynamicStateSpace:sequence:out:sequence"
+      },
+      "target": {
+        "nodeId": "op:call:instance:model.DynamicStateSpace:DynamicLoop:640f12c267",
+        "portId": "op:call:instance:model.DynamicStateSpace:DynamicLoop:640f12c267:in:sequence"
+      },
+      "tensorId": "tensor:input:model.DynamicStateSpace:sequence:sequence",
+      "role": "data"
+    },
+    {
+      "id": "edge:3",
+      "source": {
+        "nodeId": "call:instance:model.DynamicStateSpace.scan",
+        "portId": "call:instance:model.DynamicStateSpace.scan:out:output"
+      },
+      "target": {
+        "nodeId": "op:call:instance:model.DynamicStateSpace:DynamicLoop:640f12c267",
+        "portId": "op:call:instance:model.DynamicStateSpace:DynamicLoop:640f12c267:in:state"
+      },
+      "tensorId": "tensor:call:instance:model.DynamicStateSpace.scan:output",
+      "role": "data"
+    },
+    {
+      "id": "edge:4",
+      "source": {
+        "nodeId": "op:call:instance:model.DynamicStateSpace:DynamicLoop:640f12c267",
+        "portId": "op:call:instance:model.DynamicStateSpace:DynamicLoop:640f12c267:out:output"
+      },
+      "target": {
+        "nodeId": "output:model.DynamicStateSpace:0",
+        "portId": "output:model.DynamicStateSpace:0:in:value"
+      },
+      "tensorId": "tensor:op:call:instance:model.DynamicStateSpace:DynamicLoop:640f12c267:output",
+      "role": "data"
+    }
+  ],
+  "diagnostics": [
+    {
+      "level": "info",
+      "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+    },
+    {
+      "level": "warning",
+      "message": "Unknown constructor model.StateSpaceScan at model.py:90; no type semantics inferred from its name."
+    },
+    {
+      "level": "warning",
+      "message": "Unsupported control/state region DynamicLoop at model.py:95; affected values are opaque."
+    }
+  ],
+  "sources": [
+    {
+      "path": "model.py",
+      "content": "\"\"\"Independent M4 temporal, skip-network and unknown/dynamic holdouts.\n\nThese are hand-authored source inputs, not graph templates. The unresolved\nsemantic kernels below deliberately have callable Python names without a\nregistered framework contract; static analysis must keep their calls opaque.\n\"\"\"\n\nimport torch\nfrom torch import nn\n\n\nclass TemporalForecaster(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.recurrent = nn.LSTM(6, 8, num_layers=2, batch_first=True)\n        self.projection = nn.Linear(8, 3)\n        self.shared_projection = self.projection\n\n    def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}\n\n\nclass ConvRefinement(nn.Module):\n    def __init__(self, channels=8):\n        super().__init__()\n        self.conv = nn.Conv2d(channels, channels, 3, padding=1)\n        self.activation = nn.ReLU()\n\n    def forward(self, image):\n        return self.activation(self.conv(image))\n\n\nclass SkipSegmentation(nn.Module):\n    \"\"\"A U-Net-style skip/concat source; transposed convolution is opaque.\"\"\"\n\n    def __init__(self):\n        super().__init__()\n        self.stem = nn.Conv2d(3, 8, 3, padding=1)\n        self.refinement = nn.ModuleList([ConvRefinement(8) for _ in range(2)])\n        self.downsample = nn.MaxPool2d(2)\n        self.bottleneck = nn.Conv2d(8, 16, 3, padding=1)\n        self.upsample = nn.ConvTranspose2d(16, 8, 2, stride=2)\n        self.head = nn.Conv2d(16, 2, 1)\n\n    def forward(self, image):\n        skip = self.stem(image)\n        for block in self.refinement:\n            skip = block(skip)\n        coarse = self.bottleneck(self.downsample(skip))\n        restored = self.upsample(coarse)\n        merged = torch.cat((skip, restored), dim=1)\n        return self.head(merged)\n\n\nclass GraphAttentionKernel:\n    \"\"\"This callable has no registered PyTorch contract despite its name.\"\"\"\n\n    def __call__(self, nodes, edge_index):\n        return nodes\n\n\nclass StateSpaceScan:\n    \"\"\"This callable has no registered recurrent/state-space contract.\"\"\"\n\n    def __call__(self, sequence):\n        return sequence\n\n\nclass GraphForecast(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.project = nn.Linear(4, 4)\n        self.message = GraphAttentionKernel()\n        self.activation = nn.ReLU()\n\n    def forward(self, nodes, edge_index):\n        features = self.project(nodes)\n        messages = self.message(features, edge_index)\n        if features.sum() > 0:\n            messages = self.activation(messages)\n        return messages\n\n\nclass DynamicStateSpace(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.scan = StateSpaceScan()\n        self.projection = nn.Linear(4, 4)\n\n    def forward(self, sequence):\n        state = self.scan(sequence)\n        for index in range(sequence.shape[1]):\n            state = self.projection(state)\n        return state\n",
+      "digest": "689a4e9a0c69ee1b9b440fc808fd98b4b4a8ab2786d21aa09290bb5fcbad3fb2"
+    }
+  ]
+}

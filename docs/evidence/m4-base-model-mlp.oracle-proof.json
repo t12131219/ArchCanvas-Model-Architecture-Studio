@@ -1,0 +1,178 @@
+{
+  "nodeCount": 8,
+  "edgeCount": 8,
+  "tensorCount": 5,
+  "portCount": 13,
+  "callCount": 6,
+  "instanceCount": 6,
+  "nodes": [
+    "input.features",
+    "network",
+    "network.0",
+    "network.1",
+    "network.2",
+    "network.3",
+    "output",
+    "root"
+  ],
+  "relations": [
+    [
+      "input.features",
+      "features",
+      "network",
+      "input",
+      "data"
+    ],
+    [
+      "input.features",
+      "features",
+      "network.0",
+      "input",
+      "data"
+    ],
+    [
+      "input.features",
+      "features",
+      "root",
+      "features",
+      "data"
+    ],
+    [
+      "network.0",
+      "output",
+      "network.1",
+      "input",
+      "data"
+    ],
+    [
+      "network.1",
+      "output",
+      "network.2",
+      "input",
+      "data"
+    ],
+    [
+      "network.2",
+      "output",
+      "network.3",
+      "input",
+      "data"
+    ],
+    [
+      "network.3",
+      "output",
+      "network",
+      "result",
+      "data"
+    ],
+    [
+      "network.3",
+      "output",
+      "output",
+      "value",
+      "data"
+    ]
+  ],
+  "tensors": [
+    {
+      "producer": [
+        "input.features",
+        "features"
+      ],
+      "consumers": [
+        [
+          "network",
+          "input",
+          "data"
+        ],
+        [
+          "network.0",
+          "input",
+          "data"
+        ],
+        [
+          "root",
+          "features",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "network.0",
+        "output"
+      ],
+      "consumers": [
+        [
+          "network.1",
+          "input",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "network.1",
+        "output"
+      ],
+      "consumers": [
+        [
+          "network.2",
+          "input",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "network.2",
+        "output"
+      ],
+      "consumers": [
+        [
+          "network.3",
+          "input",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "network.3",
+        "output"
+      ],
+      "consumers": [
+        [
+          "network",
+          "result",
+          "data"
+        ],
+        [
+          "output",
+          "value",
+          "data"
+        ]
+      ]
+    }
+  ],
+  "instanceCalls": {
+    "instance:model.MLP": [
+      "root"
+    ],
+    "instance:model.MLP.network": [
+      "network"
+    ],
+    "instance:model.MLP.network.0": [
+      "network.0"
+    ],
+    "instance:model.MLP.network.1": [
+      "network.1"
+    ],
+    "instance:model.MLP.network.2": [
+      "network.2"
+    ],
+    "instance:model.MLP.network.3": [
+      "network.3"
+    ]
+  }
+}

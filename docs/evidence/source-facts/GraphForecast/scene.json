@@ -1,0 +1,829 @@
+{
+  "version": "1.0",
+  "documentId": "canvas-architecture-model.GraphForecast-3a6976a80897-eb67d130",
+  "revision": 1,
+  "title": "GraphForecast",
+  "bounds": {
+    "x": 0,
+    "y": 0,
+    "width": 595,
+    "height": 750
+  },
+  "nodes": [
+    {
+      "x": 50,
+      "y": 92,
+      "width": 490,
+      "height": 554,
+      "localX": 50,
+      "localY": 92,
+      "id": "call:instance:model.GraphForecast",
+      "label": "GraphForecast",
+      "subtitle": "Module",
+      "headerHeight": 46,
+      "kind": "Module",
+      "category": "container",
+      "fill": "#f5f8fc",
+      "stroke": "#94a6ba",
+      "glyph": "module",
+      "expanded": true,
+      "expandable": true,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "call:instance:model.GraphForecast",
+        "sourceLabel": "GraphForecast",
+        "kind": "Module",
+        "category": "container",
+        "evidence": "source",
+        "instanceId": "instance:model.GraphForecast",
+        "callCount": 1,
+        "callId": "call:instance:model.GraphForecast",
+        "source": {
+          "path": "model.py",
+          "line": 72,
+          "endLine": 84,
+          "expression": "class GraphForecast(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.project = nn.Linear(4, 4)\n        self.message = GraphAttentionKernel()\n        self.activation = nn.ReLU()\n\n    def forward(self, nodes, edge_index):\n        features = self.project(nodes)\n        messages = self.message(features, edge_index)\n        if features.sum() > 0:\n            messages = self.activation(messages)\n        return messages"
+        }
+      },
+      "ports": []
+    },
+    {
+      "x": 316,
+      "y": 154,
+      "width": 194,
+      "height": 62,
+      "localX": 266,
+      "localY": 62,
+      "id": "input:model.GraphForecast:edge_index",
+      "parentId": "call:instance:model.GraphForecast",
+      "label": "edge_index",
+      "subtitle": "Input",
+      "headerHeight": 46,
+      "kind": "Input",
+      "category": "input",
+      "fill": "#eef2f5",
+      "stroke": "#98a6b1",
+      "glyph": "tensor",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "input:model.GraphForecast:edge_index",
+        "sourceLabel": "edge_index",
+        "kind": "Input",
+        "category": "input",
+        "evidence": "source",
+        "source": {
+          "path": "model.py",
+          "line": 79,
+          "endLine": 84,
+          "expression": "def forward(self, nodes, edge_index):\n        features = self.project(nodes)\n        messages = self.message(features, edge_index)\n        if features.sum() > 0:\n            messages = self.activation(messages)\n        return messages"
+        }
+      },
+      "ports": [
+        {
+          "id": "input:model.GraphForecast:edge_index:input:model.GraphForecast:edge_index:out:edge_index:data",
+          "canonicalNodeId": "input:model.GraphForecast:edge_index",
+          "canonicalPortId": "input:model.GraphForecast:edge_index:out:edge_index",
+          "canonicalBindings": [
+            {
+              "nodeId": "input:model.GraphForecast:edge_index",
+              "portId": "input:model.GraphForecast:edge_index:out:edge_index"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:4"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "edge_index",
+          "x": 413,
+          "y": 216,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 80,
+      "y": 154,
+      "width": 194,
+      "height": 62,
+      "localX": 30,
+      "localY": 62,
+      "id": "input:model.GraphForecast:nodes",
+      "parentId": "call:instance:model.GraphForecast",
+      "label": "nodes",
+      "subtitle": "Input",
+      "headerHeight": 46,
+      "kind": "Input",
+      "category": "input",
+      "fill": "#eef2f5",
+      "stroke": "#98a6b1",
+      "glyph": "tensor",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "input:model.GraphForecast:nodes",
+        "sourceLabel": "nodes",
+        "kind": "Input",
+        "category": "input",
+        "evidence": "source",
+        "source": {
+          "path": "model.py",
+          "line": 79,
+          "endLine": 84,
+          "expression": "def forward(self, nodes, edge_index):\n        features = self.project(nodes)\n        messages = self.message(features, edge_index)\n        if features.sum() > 0:\n            messages = self.activation(messages)\n        return messages"
+        }
+      },
+      "ports": [
+        {
+          "id": "input:model.GraphForecast:nodes:input:model.GraphForecast:nodes:out:nodes:data",
+          "canonicalNodeId": "input:model.GraphForecast:nodes",
+          "canonicalPortId": "input:model.GraphForecast:nodes:out:nodes",
+          "canonicalBindings": [
+            {
+              "nodeId": "input:model.GraphForecast:nodes",
+              "portId": "input:model.GraphForecast:nodes:out:nodes"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:2"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "nodes",
+          "x": 177,
+          "y": 216,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 198,
+      "y": 254,
+      "width": 194,
+      "height": 62,
+      "localX": 148,
+      "localY": 162,
+      "id": "call:instance:model.GraphForecast.project",
+      "parentId": "call:instance:model.GraphForecast",
+      "label": "project",
+      "subtitle": "4 → 4",
+      "headerHeight": 46,
+      "kind": "Linear",
+      "category": "linear",
+      "fill": "#e5f1ed",
+      "stroke": "#82a897",
+      "glyph": "operator",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.GraphForecast.project",
+        "sourceLabel": "project",
+        "kind": "Linear",
+        "category": "linear",
+        "evidence": "contract",
+        "instanceId": "instance:model.GraphForecast.project",
+        "callCount": 1,
+        "callId": "call:instance:model.GraphForecast.project",
+        "source": {
+          "path": "model.py",
+          "line": 80,
+          "endLine": 80,
+          "expression": "self.project(nodes)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.GraphForecast.project:call:instance:model.GraphForecast.project:in:input:data",
+          "canonicalNodeId": "call:instance:model.GraphForecast.project",
+          "canonicalPortId": "call:instance:model.GraphForecast.project:in:input",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.GraphForecast.project",
+              "portId": "call:instance:model.GraphForecast.project:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:2"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "input",
+          "x": 295,
+          "y": 254,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.GraphForecast.project:call:instance:model.GraphForecast.project:out:output:data",
+          "canonicalNodeId": "call:instance:model.GraphForecast.project",
+          "canonicalPortId": "call:instance:model.GraphForecast.project:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.GraphForecast.project",
+              "portId": "call:instance:model.GraphForecast.project:out:output"
+            },
+            {
+              "nodeId": "call:instance:model.GraphForecast.project",
+              "portId": "call:instance:model.GraphForecast.project:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:3",
+            "edge:5"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 295,
+          "y": 316,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 257,
+      "y": 354,
+      "width": 218.8,
+      "height": 62,
+      "localX": 207,
+      "localY": 262,
+      "id": "call:instance:model.GraphForecast.message",
+      "parentId": "call:instance:model.GraphForecast",
+      "label": "Reviewed source object",
+      "subtitle": "unresolved · opaque boundary",
+      "headerHeight": 55,
+      "kind": "GraphAttentionKernel",
+      "category": "opaque",
+      "fill": "#cddfda",
+      "stroke": "#a6a09a",
+      "glyph": "opaque",
+      "expanded": false,
+      "expandable": false,
+      "pinned": true,
+      "evidence": "opaque",
+      "sourceFact": {
+        "id": "call:instance:model.GraphForecast.message",
+        "sourceLabel": "message",
+        "kind": "GraphAttentionKernel",
+        "category": "opaque",
+        "evidence": "opaque",
+        "instanceId": "instance:model.GraphForecast.message",
+        "callCount": 1,
+        "callId": "call:instance:model.GraphForecast.message",
+        "source": {
+          "path": "model.py",
+          "line": 81,
+          "endLine": 81,
+          "expression": "self.message(features, edge_index)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.GraphForecast.message:call:instance:model.GraphForecast.message:in:arg0:data",
+          "canonicalNodeId": "call:instance:model.GraphForecast.message",
+          "canonicalPortId": "call:instance:model.GraphForecast.message:in:arg0",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.GraphForecast.message",
+              "portId": "call:instance:model.GraphForecast.message:in:arg0"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:3"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "arg0",
+          "x": 329.93333333333334,
+          "y": 354,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.GraphForecast.message:call:instance:model.GraphForecast.message:in:arg1:data",
+          "canonicalNodeId": "call:instance:model.GraphForecast.message",
+          "canonicalPortId": "call:instance:model.GraphForecast.message:in:arg1",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.GraphForecast.message",
+              "portId": "call:instance:model.GraphForecast.message:in:arg1"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:4"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "arg1",
+          "x": 402.8666666666667,
+          "y": 354,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.GraphForecast.message:call:instance:model.GraphForecast.message:out:output:data",
+          "canonicalNodeId": "call:instance:model.GraphForecast.message",
+          "canonicalPortId": "call:instance:model.GraphForecast.message:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.GraphForecast.message",
+              "portId": "call:instance:model.GraphForecast.message:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:6"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 366.4,
+          "y": 416,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 227.5,
+      "y": 454,
+      "width": 194,
+      "height": 62,
+      "localX": 177.5,
+      "localY": 362,
+      "id": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b",
+      "parentId": "call:instance:model.GraphForecast",
+      "label": "ConditionalRegion",
+      "subtitle": "unresolved · opaque boundary",
+      "headerHeight": 55,
+      "kind": "ConditionalRegion",
+      "category": "opaque",
+      "fill": "#f5f3f1",
+      "stroke": "#a6a09a",
+      "glyph": "opaque",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "opaque",
+      "sourceFact": {
+        "id": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b",
+        "sourceLabel": "ConditionalRegion",
+        "kind": "ConditionalRegion",
+        "category": "opaque",
+        "evidence": "opaque",
+        "source": {
+          "path": "model.py",
+          "line": 82,
+          "endLine": 83,
+          "expression": "if features.sum() > 0:\n            messages = self.activation(messages)"
+        }
+      },
+      "ports": [
+        {
+          "id": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b:op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b:in:features:data",
+          "canonicalNodeId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b",
+          "canonicalPortId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b:in:features",
+          "canonicalBindings": [
+            {
+              "nodeId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b",
+              "portId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b:in:features"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:5"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "features",
+          "x": 292.1666666666667,
+          "y": 454,
+          "proxy": false
+        },
+        {
+          "id": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b:op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b:in:messages:data",
+          "canonicalNodeId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b",
+          "canonicalPortId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b:in:messages",
+          "canonicalBindings": [
+            {
+              "nodeId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b",
+              "portId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b:in:messages"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:6"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "messages",
+          "x": 356.83333333333337,
+          "y": 454,
+          "proxy": false
+        },
+        {
+          "id": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b:op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b:out:output:data",
+          "canonicalNodeId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b",
+          "canonicalPortId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b",
+              "portId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:7"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 324.5,
+          "y": 516,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 227.5,
+      "y": 554,
+      "width": 194,
+      "height": 62,
+      "localX": 177.5,
+      "localY": 462,
+      "id": "output:model.GraphForecast:0",
+      "parentId": "call:instance:model.GraphForecast",
+      "label": "output",
+      "subtitle": "return",
+      "headerHeight": 46,
+      "kind": "Output",
+      "category": "output",
+      "fill": "#eef2f5",
+      "stroke": "#98a6b1",
+      "glyph": "tensor",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "output:model.GraphForecast:0",
+        "sourceLabel": "output",
+        "kind": "Output",
+        "category": "output",
+        "evidence": "source",
+        "outputPath": [],
+        "source": {
+          "path": "model.py",
+          "line": 79,
+          "endLine": 84,
+          "expression": "def forward(self, nodes, edge_index):\n        features = self.project(nodes)\n        messages = self.message(features, edge_index)\n        if features.sum() > 0:\n            messages = self.activation(messages)\n        return messages"
+        }
+      },
+      "ports": [
+        {
+          "id": "output:model.GraphForecast:0:output:model.GraphForecast:0:in:value:data",
+          "canonicalNodeId": "output:model.GraphForecast:0",
+          "canonicalPortId": "output:model.GraphForecast:0:in:value",
+          "canonicalBindings": [
+            {
+              "nodeId": "output:model.GraphForecast:0",
+              "portId": "output:model.GraphForecast:0:in:value"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:7"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "value",
+          "x": 324.5,
+          "y": 554,
+          "proxy": false
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge:2",
+      "sourceId": "input:model.GraphForecast:nodes",
+      "targetId": "call:instance:model.GraphForecast.project",
+      "source": {
+        "nodeId": "input:model.GraphForecast:nodes",
+        "portId": "input:model.GraphForecast:nodes:out:nodes"
+      },
+      "target": {
+        "nodeId": "call:instance:model.GraphForecast.project",
+        "portId": "call:instance:model.GraphForecast.project:in:input"
+      },
+      "canonicalEdgeIds": [
+        "edge:2"
+      ],
+      "tensorId": "tensor:input:model.GraphForecast:nodes:nodes",
+      "role": "data",
+      "path": "M 177 216 V 235 H 295 V 254",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 244,
+      "labelY": 228
+    },
+    {
+      "id": "edge:3",
+      "sourceId": "call:instance:model.GraphForecast.project",
+      "targetId": "call:instance:model.GraphForecast.message",
+      "source": {
+        "nodeId": "call:instance:model.GraphForecast.project",
+        "portId": "call:instance:model.GraphForecast.project:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.GraphForecast.message",
+        "portId": "call:instance:model.GraphForecast.message:in:arg0"
+      },
+      "canonicalEdgeIds": [
+        "edge:3"
+      ],
+      "tensorId": "tensor:call:instance:model.GraphForecast.project:output",
+      "role": "data",
+      "path": "M 295 316 V 335 H 329.9 V 354",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 320.4666666666667,
+      "labelY": 328
+    },
+    {
+      "id": "edge:4",
+      "sourceId": "input:model.GraphForecast:edge_index",
+      "targetId": "call:instance:model.GraphForecast.message",
+      "source": {
+        "nodeId": "input:model.GraphForecast:edge_index",
+        "portId": "input:model.GraphForecast:edge_index:out:edge_index"
+      },
+      "target": {
+        "nodeId": "call:instance:model.GraphForecast.message",
+        "portId": "call:instance:model.GraphForecast.message:in:arg1"
+      },
+      "canonicalEdgeIds": [
+        "edge:4"
+      ],
+      "tensorId": "tensor:input:model.GraphForecast:edge_index:edge_index",
+      "role": "data",
+      "path": "M 413 216 V 285 H 402.9 V 354",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 415.93333333333334,
+      "labelY": 278
+    },
+    {
+      "id": "edge:5",
+      "sourceId": "call:instance:model.GraphForecast.project",
+      "targetId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b",
+      "source": {
+        "nodeId": "call:instance:model.GraphForecast.project",
+        "portId": "call:instance:model.GraphForecast.project:out:output"
+      },
+      "target": {
+        "nodeId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b",
+        "portId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b:in:features"
+      },
+      "canonicalEdgeIds": [
+        "edge:5"
+      ],
+      "tensorId": "tensor:call:instance:model.GraphForecast.project:output",
+      "role": "data",
+      "path": "M 295 316 V 385 H 292.2 V 454",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 301.58333333333337,
+      "labelY": 378
+    },
+    {
+      "id": "edge:6",
+      "sourceId": "call:instance:model.GraphForecast.message",
+      "targetId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b",
+      "source": {
+        "nodeId": "call:instance:model.GraphForecast.message",
+        "portId": "call:instance:model.GraphForecast.message:out:output"
+      },
+      "target": {
+        "nodeId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b",
+        "portId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b:in:messages"
+      },
+      "canonicalEdgeIds": [
+        "edge:6"
+      ],
+      "tensorId": "tensor:call:instance:model.GraphForecast.message:output",
+      "role": "data",
+      "path": "M 366.4 416 V 435 H 356.8 V 454",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 369.6166666666667,
+      "labelY": 428
+    },
+    {
+      "id": "edge:7",
+      "sourceId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b",
+      "targetId": "output:model.GraphForecast:0",
+      "source": {
+        "nodeId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b",
+        "portId": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b:out:output"
+      },
+      "target": {
+        "nodeId": "output:model.GraphForecast:0",
+        "portId": "output:model.GraphForecast:0:in:value"
+      },
+      "canonicalEdgeIds": [
+        "edge:7"
+      ],
+      "tensorId": "tensor:op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b:output",
+      "role": "data",
+      "path": "M 324.5 516 V 535 H 324.5 V 554",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 332.5,
+      "labelY": 528
+    }
+  ],
+  "hiddenEdges": [
+    "edge:0",
+    "edge:1"
+  ],
+  "legend": [
+    {
+      "id": "legend:input",
+      "label": "Input",
+      "color": "#eef2f5",
+      "glyph": "tensor",
+      "x": 50,
+      "y": 698
+    },
+    {
+      "id": "legend:container",
+      "label": "Container",
+      "color": "#f5f8fc",
+      "glyph": "module",
+      "x": 235,
+      "y": 698
+    },
+    {
+      "id": "legend:linear",
+      "label": "Linear",
+      "color": "#e5f1ed",
+      "glyph": "operator",
+      "x": 420,
+      "y": 698
+    },
+    {
+      "id": "legend:opaque",
+      "label": "Opaque",
+      "color": "#f5f3f1",
+      "glyph": "opaque",
+      "x": 50,
+      "y": 725
+    },
+    {
+      "id": "legend:output",
+      "label": "Output",
+      "color": "#eef2f5",
+      "glyph": "tensor",
+      "x": 235,
+      "y": 725
+    }
+  ],
+  "annotations": [],
+  "pageSpec": {
+    "widthMm": 180,
+    "background": "#ffffff",
+    "preset": "paper"
+  },
+  "sourceDigest": "3a6976a808974cfbb911cf2bab8c44b7d302c20c0e28046e1a9e7002fe51b667",
+  "irDigest": "eb67d130131182f5b4f566aef12afa49cb23c729f93203c8054ea1c188acedbb",
+  "sourceFacts": [
+    {
+      "id": "input:model.GraphForecast:nodes",
+      "sourceLabel": "nodes",
+      "kind": "Input",
+      "category": "input",
+      "evidence": "source",
+      "source": {
+        "path": "model.py",
+        "line": 79,
+        "endLine": 84,
+        "expression": "def forward(self, nodes, edge_index):\n        features = self.project(nodes)\n        messages = self.message(features, edge_index)\n        if features.sum() > 0:\n            messages = self.activation(messages)\n        return messages"
+      }
+    },
+    {
+      "id": "input:model.GraphForecast:edge_index",
+      "sourceLabel": "edge_index",
+      "kind": "Input",
+      "category": "input",
+      "evidence": "source",
+      "source": {
+        "path": "model.py",
+        "line": 79,
+        "endLine": 84,
+        "expression": "def forward(self, nodes, edge_index):\n        features = self.project(nodes)\n        messages = self.message(features, edge_index)\n        if features.sum() > 0:\n            messages = self.activation(messages)\n        return messages"
+      }
+    },
+    {
+      "id": "call:instance:model.GraphForecast",
+      "sourceLabel": "GraphForecast",
+      "kind": "Module",
+      "category": "container",
+      "evidence": "source",
+      "instanceId": "instance:model.GraphForecast",
+      "callCount": 1,
+      "callId": "call:instance:model.GraphForecast",
+      "source": {
+        "path": "model.py",
+        "line": 72,
+        "endLine": 84,
+        "expression": "class GraphForecast(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.project = nn.Linear(4, 4)\n        self.message = GraphAttentionKernel()\n        self.activation = nn.ReLU()\n\n    def forward(self, nodes, edge_index):\n        features = self.project(nodes)\n        messages = self.message(features, edge_index)\n        if features.sum() > 0:\n            messages = self.activation(messages)\n        return messages"
+      }
+    },
+    {
+      "id": "call:instance:model.GraphForecast.project",
+      "sourceLabel": "project",
+      "kind": "Linear",
+      "category": "linear",
+      "evidence": "contract",
+      "instanceId": "instance:model.GraphForecast.project",
+      "callCount": 1,
+      "callId": "call:instance:model.GraphForecast.project",
+      "source": {
+        "path": "model.py",
+        "line": 80,
+        "endLine": 80,
+        "expression": "self.project(nodes)"
+      }
+    },
+    {
+      "id": "call:instance:model.GraphForecast.message",
+      "sourceLabel": "message",
+      "kind": "GraphAttentionKernel",
+      "category": "opaque",
+      "evidence": "opaque",
+      "instanceId": "instance:model.GraphForecast.message",
+      "callCount": 1,
+      "callId": "call:instance:model.GraphForecast.message",
+      "source": {
+        "path": "model.py",
+        "line": 81,
+        "endLine": 81,
+        "expression": "self.message(features, edge_index)"
+      }
+    },
+    {
+      "id": "op:call:instance:model.GraphForecast:ConditionalRegion:2af819b78b",
+      "sourceLabel": "ConditionalRegion",
+      "kind": "ConditionalRegion",
+      "category": "opaque",
+      "evidence": "opaque",
+      "source": {
+        "path": "model.py",
+        "line": 82,
+        "endLine": 83,
+        "expression": "if features.sum() > 0:\n            messages = self.activation(messages)"
+      }
+    },
+    {
+      "id": "output:model.GraphForecast:0",
+      "sourceLabel": "output",
+      "kind": "Output",
+      "category": "output",
+      "evidence": "source",
+      "outputPath": [],
+      "source": {
+        "path": "model.py",
+        "line": 79,
+        "endLine": 84,
+        "expression": "def forward(self, nodes, edge_index):\n        features = self.project(nodes)\n        messages = self.message(features, edge_index)\n        if features.sum() > 0:\n            messages = self.activation(messages)\n        return messages"
+      }
+    }
+  ],
+  "diagnostics": [
+    {
+      "level": "info",
+      "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+    },
+    {
+      "level": "warning",
+      "message": "Unknown constructor model.GraphAttentionKernel at model.py:76; no type semantics inferred from its name."
+    },
+    {
+      "level": "warning",
+      "message": "Unsupported control/state region ConditionalRegion at model.py:82; affected values are opaque."
+    }
+  ]
+}

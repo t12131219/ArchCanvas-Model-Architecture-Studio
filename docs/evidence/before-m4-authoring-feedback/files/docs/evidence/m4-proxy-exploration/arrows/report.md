@@ -1,0 +1,13 @@
+# 箭头排布与出版图探索报告
+
+本角色是AI视觉探索者，曾实现router，非独立正确性oracle、非真人研究使用者。子Agent CUA无浏览器；root在8938、浏览器2/tab42实际操作，本角色用`view_image`审看root采集的4张截图、公开DOM和实际SVG导出。未修改产品、未执行模型、未安装依赖。移动照片由另一Agent采集，这里只读审看，不记为自己操作。
+
+默认折叠overview的层级框、encoder/decoder主分区可以辨认，箭头与对象连接可见。展开至L3后页面很长，fit14%或20%不能阅读节点文字；100%聚焦sourceembedding/crossattention可读其局部，但整体去向需要反复平移。三条mask虚线路在顶部与右侧拥挤，crossattention多入口线靠近selectedhandles；局部主路径attention→Add仍有小横向折点。审看的100%截图/crop中未眼见文字被route贯穿或容器文字裁剪，不能扩大为全图没有问题。
+
+四向照片显示手动移动可能制造明确冲突：sourceembedding向上24screenpx变到y266时与tokens重叠，并显示“缺少畅通路径”；向右24screenpx变到x124时与targetembedding重叠并告警。向左24screenpx变到x36、向下12screenpx变到y334的照片未出现眼见全图紊乱，但54%倍率不能排除细小交叉。产品保留手动位置并告警，不能声称四向移动后都自动整齐。
+
+真实180mm全图导出预检180×598.6mm、最小文字5.36pt、节点名称6.97pt、主线0.80pt；建议236×784.8mm仍过长。这个展开范围不能视为常规论文版面合格，应选择更小详情范围再审看。此角色没有完成独立detail preview或实际打印/真人出版验收。
+
+改进优先项：显式推荐适合版面的详情scope并同时显示高度；可追踪tensorbinding的边高亮与明确汇合/跨线语法；选中handles避开端口；可由用户触发的对齐、edgecorridor或collisionguide。保留现有错误告警与undo，不能靠自动移动手动锚点掩盖冲突。
+
+细节、复现、角色边界和artifactSHA见`report.json`。CairoSVG派生crop来源见`actual-export-raster-review.json`，不是新浏览器截图或物理打印证据。AI证据不计入M4真人研究者/出版审看席位。

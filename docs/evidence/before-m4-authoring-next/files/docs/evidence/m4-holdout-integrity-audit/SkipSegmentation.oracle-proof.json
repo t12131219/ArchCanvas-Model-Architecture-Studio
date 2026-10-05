@@ -1,0 +1,363 @@
+{
+  "entry": "model:SkipSegmentation",
+  "nodeCount": 16,
+  "edgeCount": 15,
+  "portCount": 26,
+  "tensorCount": 11,
+  "callCount": 12,
+  "instanceCount": 12,
+  "opaqueNodeCount": 1,
+  "nodes": [
+    "Concat",
+    "bottleneck",
+    "downsample",
+    "head",
+    "input.image",
+    "output0",
+    "refinement.0",
+    "refinement.0.activation",
+    "refinement.0.conv",
+    "refinement.1",
+    "refinement.1.activation",
+    "refinement.1.conv",
+    "repeat.refinement",
+    "root",
+    "stem",
+    "upsample"
+  ],
+  "relations": [
+    [
+      "Concat",
+      "output",
+      "head",
+      "input",
+      "data"
+    ],
+    [
+      "bottleneck",
+      "output",
+      "upsample",
+      "arg0",
+      "data"
+    ],
+    [
+      "downsample",
+      "output",
+      "bottleneck",
+      "input",
+      "data"
+    ],
+    [
+      "head",
+      "output",
+      "output0",
+      "value",
+      "data"
+    ],
+    [
+      "input.image",
+      "image",
+      "root",
+      "image",
+      "data"
+    ],
+    [
+      "input.image",
+      "image",
+      "stem",
+      "input",
+      "data"
+    ],
+    [
+      "refinement.0.activation",
+      "output",
+      "refinement.1",
+      "image",
+      "data"
+    ],
+    [
+      "refinement.0.activation",
+      "output",
+      "refinement.1.conv",
+      "input",
+      "data"
+    ],
+    [
+      "refinement.0.conv",
+      "output",
+      "refinement.0.activation",
+      "input",
+      "data"
+    ],
+    [
+      "refinement.1.activation",
+      "output",
+      "Concat",
+      "arg0",
+      "data"
+    ],
+    [
+      "refinement.1.activation",
+      "output",
+      "downsample",
+      "input",
+      "data"
+    ],
+    [
+      "refinement.1.conv",
+      "output",
+      "refinement.1.activation",
+      "input",
+      "data"
+    ],
+    [
+      "stem",
+      "output",
+      "refinement.0",
+      "image",
+      "data"
+    ],
+    [
+      "stem",
+      "output",
+      "refinement.0.conv",
+      "input",
+      "data"
+    ],
+    [
+      "upsample",
+      "output",
+      "Concat",
+      "arg0.1",
+      "data"
+    ]
+  ],
+  "containment": {
+    "refinement.0": [
+      "refinement.0.activation",
+      "refinement.0.conv"
+    ],
+    "refinement.1": [
+      "refinement.1.activation",
+      "refinement.1.conv"
+    ],
+    "repeat.refinement": [
+      "refinement.0",
+      "refinement.1"
+    ],
+    "root": [
+      "Concat",
+      "bottleneck",
+      "downsample",
+      "head",
+      "input.image",
+      "output0",
+      "repeat.refinement",
+      "stem",
+      "upsample"
+    ]
+  },
+  "instanceCalls": {
+    "instance:model.SkipSegmentation": [
+      "root"
+    ],
+    "instance:model.SkipSegmentation.bottleneck": [
+      "bottleneck"
+    ],
+    "instance:model.SkipSegmentation.downsample": [
+      "downsample"
+    ],
+    "instance:model.SkipSegmentation.head": [
+      "head"
+    ],
+    "instance:model.SkipSegmentation.refinement.0": [
+      "refinement.0"
+    ],
+    "instance:model.SkipSegmentation.refinement.0.activation": [
+      "refinement.0.activation"
+    ],
+    "instance:model.SkipSegmentation.refinement.0.conv": [
+      "refinement.0.conv"
+    ],
+    "instance:model.SkipSegmentation.refinement.1": [
+      "refinement.1"
+    ],
+    "instance:model.SkipSegmentation.refinement.1.activation": [
+      "refinement.1.activation"
+    ],
+    "instance:model.SkipSegmentation.refinement.1.conv": [
+      "refinement.1.conv"
+    ],
+    "instance:model.SkipSegmentation.stem": [
+      "stem"
+    ],
+    "instance:model.SkipSegmentation.upsample": [
+      "upsample"
+    ]
+  },
+  "tensors": [
+    {
+      "producer": [
+        "bottleneck",
+        "output"
+      ],
+      "consumers": [
+        [
+          "upsample",
+          "arg0",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "downsample",
+        "output"
+      ],
+      "consumers": [
+        [
+          "bottleneck",
+          "input",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "head",
+        "output"
+      ],
+      "consumers": [
+        [
+          "output0",
+          "value",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "refinement.0.activation",
+        "output"
+      ],
+      "consumers": [
+        [
+          "refinement.1",
+          "image",
+          "data"
+        ],
+        [
+          "refinement.1.conv",
+          "input",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "refinement.0.conv",
+        "output"
+      ],
+      "consumers": [
+        [
+          "refinement.0.activation",
+          "input",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "refinement.1.activation",
+        "output"
+      ],
+      "consumers": [
+        [
+          "Concat",
+          "arg0",
+          "data"
+        ],
+        [
+          "downsample",
+          "input",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "refinement.1.conv",
+        "output"
+      ],
+      "consumers": [
+        [
+          "refinement.1.activation",
+          "input",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "stem",
+        "output"
+      ],
+      "consumers": [
+        [
+          "refinement.0",
+          "image",
+          "data"
+        ],
+        [
+          "refinement.0.conv",
+          "input",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "upsample",
+        "output"
+      ],
+      "consumers": [
+        [
+          "Concat",
+          "arg0.1",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "input.image",
+        "image"
+      ],
+      "consumers": [
+        [
+          "root",
+          "image",
+          "data"
+        ],
+        [
+          "stem",
+          "input",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "Concat",
+        "output"
+      ],
+      "consumers": [
+        [
+          "head",
+          "input",
+          "data"
+        ]
+      ]
+    }
+  ]
+}

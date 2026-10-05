@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "scope": "Read-only baseline investigation plus nonexecuting static analysis of independently handwritten constructor counterexamples; not authoring acceptance",
+  "runtimeExecuted": false,
+  "sourceFiles": [
+    {
+      "path": "src/archcanvas_cli/server.py",
+      "sha256": "44d0753a3053f507aba8c141ab419095ea47369f3bc5b5b12b555340e6339040"
+    },
+    {
+      "path": "src/archcanvas_cli/workspace.py",
+      "sha256": "6b7d99c74a4fb74ef558ac31ebf9fc33394c1878bef72c3cb954dc8ecd0a2ba6"
+    },
+    {
+      "path": "src/archcanvas_python/frontend.py",
+      "sha256": "ce7f7f733da28cb31ecff80ca029a53094e88f8451bffc3874f8167f80a07d00"
+    },
+    {
+      "path": "studio/src/api.ts",
+      "sha256": "b4fb70879b5e828c3e8c553eea22663d06d785333b1866475c280f548a72f856"
+    },
+    {
+      "path": "studio/src/core/types.ts",
+      "sha256": "2e1f3cb4ab7d33580050953088da00debce974341c7dd80b8471cdce912236ff"
+    },
+    {
+      "path": "studio/src/core/validate.ts",
+      "sha256": "a7fe1a700c68ad7536cedf54f7acb1a595efbd2495bb3b17e3e576f23449f120"
+    },
+    {
+      "path": "studio/src/core/document.ts",
+      "sha256": "a7f21768c718aa891701c73a150fd30aa4f05599b371ba22d41384130191694f"
+    },
+    {
+      "path": "studio/src/App.tsx",
+      "sha256": "e6bd3cf3f5464db2bca706d6befd96f1140d6d401dbbf734d64564a5f4e3b288"
+    },
+    {
+      "path": "skills/archcanvas/references/source-review.md",
+      "sha256": "a636f25056218366dbe09093fed16224625d8a6f8d3d7eecf1ef07ebf8900a55"
+    },
+    {
+      "path": "skills/archcanvas/references/runtime-compatibility.md",
+      "sha256": "ce26240e70aeaff18389fbfc18eeb288c0385ac6f4a2fda4b6d86ffa945e7422"
+    }
+  ],
+  "probes": [
+    {
+      "case": "linear-negative",
+      "sourcePath": "docs/evidence/m4-authoring-next/independent/linear-negative.py.txt",
+      "sourceSha256": "7316b1f88dc9341ece7e028c05498b2f108bf6fb5d642a38afca39a75dccbbec",
+      "constructor": "nn.Linear(-4, 2)",
+      "staticAnalysisAccepted": true,
+      "observedBlock": {
+        "kind": "Linear",
+        "evidence": "contract",
+        "category": "linear",
+        "parameters": {
+          "in_features": -4,
+          "out_features": 2
+        }
+      },
+      "runtimeExecuted": false
+    },
+    {
+      "case": "linear-bool",
+      "sourcePath": "docs/evidence/m4-authoring-next/independent/linear-bool.py.txt",
+      "sourceSha256": "2830305bfaa4d593ca125bb6cf44eb06c12e9f9a4b179ca26cef50edc9579e09",
+      "constructor": "nn.Linear(True, 2)",
+      "staticAnalysisAccepted": true,
+      "observedBlock": {
+        "kind": "Linear",
+        "evidence": "contract",
+        "category": "linear",
+        "parameters": {
+          "in_features": true,
+          "out_features": 2
+        }
+      },
+      "runtimeExecuted": false
+    },
+    {
+      "case": "dropout-out-of-range",
+      "sourcePath": "docs/evidence/m4-authoring-next/independent/dropout-out-of-range.py.txt",
+      "sourceSha256": "28fa6e4fd41ce29b1bb68cb121c3aa414c1b1667a79213117b2a9893f3011de5",
+      "constructor": "nn.Dropout(1.5)",
+      "staticAnalysisAccepted": true,
+      "observedBlock": {
+        "kind": "Dropout",
+        "evidence": "contract",
+        "category": "regularization",
+        "parameters": {
+          "p": 1.5
+        }
+      },
+      "runtimeExecuted": false
+    },
+    {
+      "case": "conv-zero-kernel",
+      "sourcePath": "docs/evidence/m4-authoring-next/independent/conv-zero-kernel.py.txt",
+      "sourceSha256": "5bb28b67c68e8b95a57d38133de5a74434ba9e5fbaf78dd36228df6c15a54daa",
+      "constructor": "nn.Conv2d(3, 4, 0)",
+      "staticAnalysisAccepted": true,
+      "observedBlock": {
+        "kind": "Conv2d",
+        "evidence": "contract",
+        "category": "convolution",
+        "parameters": {
+          "in_channels": 3,
+          "out_channels": 4,
+          "kernel_size": 0
+        }
+      },
+      "runtimeExecuted": false
+    },
+    {
+      "case": "layernorm-negative-eps",
+      "sourcePath": "docs/evidence/m4-authoring-next/independent/layernorm-negative-eps.py.txt",
+      "sourceSha256": "6e6ba0a8c64ff097fe208e834ce4738fe46b7d16ca43a78c6c0df406960c1f84",
+      "constructor": "nn.LayerNorm(4, eps=-1.0)",
+      "staticAnalysisAccepted": true,
+      "observedBlock": {
+        "kind": "LayerNorm",
+        "evidence": "contract",
+        "category": "norm",
+        "parameters": {
+          "normalized_shape": 4,
+          "eps": -1.0
+        }
+      },
+      "runtimeExecuted": false
+    },
+    {
+      "case": "unknown-constructor",
+      "sourcePath": "docs/evidence/m4-authoring-next/independent/unknown-constructor.py.txt",
+      "sourceSha256": "b4f5c6f2541b32a52d4ca713882ca62dca80d3d066146430d7c076c606f66f7c",
+      "constructor": "nn.NotRegistered(4)",
+      "staticAnalysisAccepted": true,
+      "observedBlock": {
+        "kind": "NotRegistered",
+        "evidence": "opaque",
+        "category": "opaque",
+        "parameters": {
+          "arg0": 4
+        }
+      },
+      "runtimeExecuted": false
+    }
+  ]
+}

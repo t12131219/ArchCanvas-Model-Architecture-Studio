@@ -1,0 +1,443 @@
+{
+  "draft": {
+    "schemaVersion": 1,
+    "mode": "authored-draft",
+    "id": "independent-axis-zero",
+    "title": "Independent independent-concat",
+    "revision": 0,
+    "nodes": [
+      {
+        "id": "a",
+        "kind": "Input",
+        "label": "a",
+        "parameters": {
+          "shape": [
+            2,
+            3
+          ],
+          "dtype": "float32"
+        },
+        "position": {
+          "x": 100,
+          "y": 100
+        }
+      },
+      {
+        "id": "b",
+        "kind": "Input",
+        "label": "b",
+        "parameters": {
+          "shape": [
+            5,
+            3
+          ],
+          "dtype": "float32"
+        },
+        "position": {
+          "x": 100,
+          "y": 100
+        }
+      },
+      {
+        "id": "cat",
+        "kind": "Concat",
+        "label": "cat",
+        "parameters": {
+          "dim": 0
+        },
+        "position": {
+          "x": 100,
+          "y": 100
+        }
+      },
+      {
+        "id": "out",
+        "kind": "Output",
+        "label": "out",
+        "parameters": {},
+        "position": {
+          "x": 100,
+          "y": 100
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "a-to-cat",
+        "source": {
+          "nodeId": "a",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "cat",
+          "portId": "a"
+        }
+      },
+      {
+        "id": "b-to-cat",
+        "source": {
+          "nodeId": "b",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "cat",
+          "portId": "b"
+        }
+      },
+      {
+        "id": "result",
+        "source": {
+          "nodeId": "cat",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "out",
+          "portId": "input"
+        }
+      }
+    ]
+  },
+  "draftDigest": "d2b4dc519a17835851b3ea08f91341c5b0c0f87fe59913be2bab9b9b5455c517",
+  "entry": "model:AuthoredModel",
+  "source": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\n\nclass AuthoredModel(nn.Module):\n    def __init__(self):\n        super().__init__()\n\n    def forward(self, node_ca978112ca1bbdca, node_3e23e8160039594a):\n        node_77af778b51abd4a3 = torch.cat((node_ca978112ca1bbdca, node_3e23e8160039594a), dim=0)\n        return {'out': node_77af778b51abd4a3}\n",
+  "architecture": {
+    "schemaVersion": 1,
+    "id": "architecture:model.AuthoredModel",
+    "label": "AuthoredModel",
+    "sourceDigest": "16f31b012193e98dc7d66ce43610fef5b0b786cdc1099f9cb39e9b0b3ba3b27c",
+    "irDigest": "0487ae1f2e65d5f1162c4a12c4eb5ae662ee01b7353fc812d490f6cdc3d154e0",
+    "entry": "model:AuthoredModel",
+    "nodes": [
+      {
+        "id": "input:model.AuthoredModel:node_ca978112ca1bbdca",
+        "label": "node_ca978112ca1bbdca",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:model.AuthoredModel:node_ca978112ca1bbdca:out:node_ca978112ca1bbdca",
+            "name": "node_ca978112ca1bbdca",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 10,
+          "endLine": 12,
+          "expression": "def forward(self, node_ca978112ca1bbdca, node_3e23e8160039594a):\n        node_77af778b51abd4a3 = torch.cat((node_ca978112ca1bbdca, node_3e23e8160039594a), dim=0)\n        return {'out': node_77af778b51abd4a3}"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.AuthoredModel"
+      },
+      {
+        "id": "input:model.AuthoredModel:node_3e23e8160039594a",
+        "label": "node_3e23e8160039594a",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:model.AuthoredModel:node_3e23e8160039594a:out:node_3e23e8160039594a",
+            "name": "node_3e23e8160039594a",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 10,
+          "endLine": 12,
+          "expression": "def forward(self, node_ca978112ca1bbdca, node_3e23e8160039594a):\n        node_77af778b51abd4a3 = torch.cat((node_ca978112ca1bbdca, node_3e23e8160039594a), dim=0)\n        return {'out': node_77af778b51abd4a3}"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.AuthoredModel"
+      },
+      {
+        "id": "call:instance:model.AuthoredModel",
+        "label": "AuthoredModel",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "input:model.AuthoredModel:node_3e23e8160039594a",
+          "input:model.AuthoredModel:node_ca978112ca1bbdca",
+          "op:call:instance:model.AuthoredModel:Concat:344538a677",
+          "output:model.AuthoredModel:0"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:model.AuthoredModel:in:node_ca978112ca1bbdca",
+            "name": "node_ca978112ca1bbdca",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.AuthoredModel:in:node_3e23e8160039594a",
+            "name": "node_3e23e8160039594a",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 1
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 6,
+          "endLine": 12,
+          "expression": "class AuthoredModel(nn.Module):\n    def __init__(self):\n        super().__init__()\n\n    def forward(self, node_ca978112ca1bbdca, node_3e23e8160039594a):\n        node_77af778b51abd4a3 = torch.cat((node_ca978112ca1bbdca, node_3e23e8160039594a), dim=0)\n        return {'out': node_77af778b51abd4a3}"
+        },
+        "evidence": "source",
+        "instanceId": "instance:model.AuthoredModel",
+        "callId": "call:instance:model.AuthoredModel"
+      },
+      {
+        "id": "op:call:instance:model.AuthoredModel:Concat:344538a677",
+        "label": "Concat",
+        "kind": "Concat",
+        "category": "operator",
+        "children": [],
+        "ports": [
+          {
+            "id": "op:call:instance:model.AuthoredModel:Concat:344538a677:in:arg0",
+            "name": "arg0",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "op:call:instance:model.AuthoredModel:Concat:344538a677:in:arg0.1",
+            "name": "arg0.1",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 1
+          },
+          {
+            "id": "op:call:instance:model.AuthoredModel:Concat:344538a677:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 11,
+          "endLine": 11,
+          "expression": "torch.cat((node_ca978112ca1bbdca, node_3e23e8160039594a), dim=0)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.AuthoredModel"
+      },
+      {
+        "id": "output:model.AuthoredModel:0",
+        "label": "output",
+        "kind": "Output",
+        "category": "output",
+        "children": [],
+        "ports": [
+          {
+            "id": "output:model.AuthoredModel:0:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 10,
+          "endLine": 12,
+          "expression": "def forward(self, node_ca978112ca1bbdca, node_3e23e8160039594a):\n        node_77af778b51abd4a3 = torch.cat((node_ca978112ca1bbdca, node_3e23e8160039594a), dim=0)\n        return {'out': node_77af778b51abd4a3}"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.AuthoredModel",
+        "outputPath": [
+          {
+            "kind": "key",
+            "key": "out"
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:0",
+        "source": {
+          "nodeId": "input:model.AuthoredModel:node_ca978112ca1bbdca",
+          "portId": "input:model.AuthoredModel:node_ca978112ca1bbdca:out:node_ca978112ca1bbdca"
+        },
+        "target": {
+          "nodeId": "call:instance:model.AuthoredModel",
+          "portId": "call:instance:model.AuthoredModel:in:node_ca978112ca1bbdca"
+        },
+        "tensorId": "tensor:input:model.AuthoredModel:node_ca978112ca1bbdca:node_ca978112ca1bbdca",
+        "role": "data"
+      },
+      {
+        "id": "edge:1",
+        "source": {
+          "nodeId": "input:model.AuthoredModel:node_3e23e8160039594a",
+          "portId": "input:model.AuthoredModel:node_3e23e8160039594a:out:node_3e23e8160039594a"
+        },
+        "target": {
+          "nodeId": "call:instance:model.AuthoredModel",
+          "portId": "call:instance:model.AuthoredModel:in:node_3e23e8160039594a"
+        },
+        "tensorId": "tensor:input:model.AuthoredModel:node_3e23e8160039594a:node_3e23e8160039594a",
+        "role": "data"
+      },
+      {
+        "id": "edge:2",
+        "source": {
+          "nodeId": "input:model.AuthoredModel:node_ca978112ca1bbdca",
+          "portId": "input:model.AuthoredModel:node_ca978112ca1bbdca:out:node_ca978112ca1bbdca"
+        },
+        "target": {
+          "nodeId": "op:call:instance:model.AuthoredModel:Concat:344538a677",
+          "portId": "op:call:instance:model.AuthoredModel:Concat:344538a677:in:arg0"
+        },
+        "tensorId": "tensor:input:model.AuthoredModel:node_ca978112ca1bbdca:node_ca978112ca1bbdca",
+        "role": "data"
+      },
+      {
+        "id": "edge:3",
+        "source": {
+          "nodeId": "input:model.AuthoredModel:node_3e23e8160039594a",
+          "portId": "input:model.AuthoredModel:node_3e23e8160039594a:out:node_3e23e8160039594a"
+        },
+        "target": {
+          "nodeId": "op:call:instance:model.AuthoredModel:Concat:344538a677",
+          "portId": "op:call:instance:model.AuthoredModel:Concat:344538a677:in:arg0.1"
+        },
+        "tensorId": "tensor:input:model.AuthoredModel:node_3e23e8160039594a:node_3e23e8160039594a",
+        "role": "data"
+      },
+      {
+        "id": "edge:4",
+        "source": {
+          "nodeId": "op:call:instance:model.AuthoredModel:Concat:344538a677",
+          "portId": "op:call:instance:model.AuthoredModel:Concat:344538a677:out:output"
+        },
+        "target": {
+          "nodeId": "output:model.AuthoredModel:0",
+          "portId": "output:model.AuthoredModel:0:in:value"
+        },
+        "tensorId": "tensor:op:call:instance:model.AuthoredModel:Concat:344538a677:output",
+        "role": "data"
+      }
+    ],
+    "diagnostics": [
+      {
+        "level": "info",
+        "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+      }
+    ],
+    "sources": [
+      {
+        "path": "model.py",
+        "content": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\n\nclass AuthoredModel(nn.Module):\n    def __init__(self):\n        super().__init__()\n\n    def forward(self, node_ca978112ca1bbdca, node_3e23e8160039594a):\n        node_77af778b51abd4a3 = torch.cat((node_ca978112ca1bbdca, node_3e23e8160039594a), dim=0)\n        return {'out': node_77af778b51abd4a3}\n",
+        "digest": "810492465d2e28dc3dc328040d6c7b13b24585753eb3b6cf1ada4713ae448f91"
+      }
+    ]
+  },
+  "nodeBindings": {
+    "a": "input:model.AuthoredModel:node_ca978112ca1bbdca",
+    "b": "input:model.AuthoredModel:node_3e23e8160039594a",
+    "cat": "op:call:instance:model.AuthoredModel:Concat:344538a677",
+    "out": "output:model.AuthoredModel:0"
+  },
+  "portBindings": {
+    "a": {
+      "output": "input:model.AuthoredModel:node_ca978112ca1bbdca:out:node_ca978112ca1bbdca"
+    },
+    "b": {
+      "output": "input:model.AuthoredModel:node_3e23e8160039594a:out:node_3e23e8160039594a"
+    },
+    "cat": {
+      "a": "op:call:instance:model.AuthoredModel:Concat:344538a677:in:arg0",
+      "b": "op:call:instance:model.AuthoredModel:Concat:344538a677:in:arg0.1",
+      "output": "op:call:instance:model.AuthoredModel:Concat:344538a677:out:output"
+    },
+    "out": {
+      "input": "output:model.AuthoredModel:0:in:value"
+    }
+  },
+  "tensors": {
+    "a": {
+      "shape": [
+        2,
+        3
+      ],
+      "dtype": "float32"
+    },
+    "b": {
+      "shape": [
+        5,
+        3
+      ],
+      "dtype": "float32"
+    },
+    "cat": {
+      "shape": [
+        7,
+        3
+      ],
+      "dtype": "float32"
+    },
+    "out": {
+      "shape": [
+        7,
+        3
+      ],
+      "dtype": "float32"
+    }
+  },
+  "verification": {
+    "status": "passed",
+    "scope": "exact-static-dag-and-declared-tensor-compatibility",
+    "modelExecution": "not_run",
+    "nodes": 4,
+    "edges": 3,
+    "nodeBindings": {
+      "a": "input:model.AuthoredModel:node_ca978112ca1bbdca",
+      "b": "input:model.AuthoredModel:node_3e23e8160039594a",
+      "cat": "op:call:instance:model.AuthoredModel:Concat:344538a677",
+      "out": "output:model.AuthoredModel:0"
+    },
+    "portBindings": {
+      "a": {
+        "output": "input:model.AuthoredModel:node_ca978112ca1bbdca:out:node_ca978112ca1bbdca"
+      },
+      "b": {
+        "output": "input:model.AuthoredModel:node_3e23e8160039594a:out:node_3e23e8160039594a"
+      },
+      "cat": {
+        "a": "op:call:instance:model.AuthoredModel:Concat:344538a677:in:arg0",
+        "b": "op:call:instance:model.AuthoredModel:Concat:344538a677:in:arg0.1",
+        "output": "op:call:instance:model.AuthoredModel:Concat:344538a677:out:output"
+      },
+      "out": {
+        "input": "output:model.AuthoredModel:0:in:value"
+      }
+    },
+    "scalarNormalizations": {
+      "cat": {
+        "declaredDim": 0,
+        "effectiveDim": 0
+      }
+    },
+    "limitations": [
+      "Input shapes and dtypes are declarations, not runtime observations.",
+      "Embedding index bounds, memory allocation, numerical behavior and train/eval execution are unverified.",
+      "This is a fresh managed model, not a structural rewrite of imported source."
+    ]
+  }
+}

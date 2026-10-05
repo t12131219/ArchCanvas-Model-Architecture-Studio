@@ -1,0 +1,3038 @@
+{
+  "id": "8d00646b4441316d7674595671756c9b",
+  "revision": 1,
+  "status": "ReviewReady",
+  "intent": {
+    "kind": "RebindInput",
+    "nodeId": "call:instance:model.CrossAttention.attention",
+    "portId": "call:instance:model.CrossAttention.attention:in:key",
+    "before": {
+      "nodeId": "input:model.CrossAttention:memory",
+      "portId": "input:model.CrossAttention:memory:out:memory",
+      "tensorId": "tensor:input:model.CrossAttention:memory:memory",
+      "variable": "memory"
+    },
+    "after": {
+      "nodeId": "call:instance:model.CrossAttention.key_activation",
+      "portId": "call:instance:model.CrossAttention.key_activation:out:output",
+      "tensorId": "tensor:call:instance:model.CrossAttention.key_activation:output",
+      "variable": "alternative"
+    },
+    "origin": {
+      "path": "model.py",
+      "line": 11,
+      "column": 44,
+      "endLine": 11,
+      "endColumn": 50,
+      "expression": "memory",
+      "fileDigest": "4bfa2d10cad0db390254842b19880cd78a53433c39e6e552e373175ba4a67534",
+      "variable": "memory",
+      "argumentName": "key",
+      "callKind": "MultiheadAttention",
+      "call": {
+        "path": "model.py",
+        "line": 11,
+        "column": 26,
+        "endLine": 11,
+        "endColumn": 95,
+        "expression": "self.attention(q, memory, memory, attn_mask=mask, need_weights=False)",
+        "fileDigest": "4bfa2d10cad0db390254842b19880cd78a53433c39e6e552e373175ba4a67534"
+      }
+    },
+    "scope": "single_named_call_slot",
+    "contract": {
+      "shape": [
+        2,
+        5,
+        8
+      ],
+      "dtype": "float32",
+      "inputSpecDigest": "5707c761d35835669c030d826949bf3db79a5ef107435652432da5c8278bbae5",
+      "basis": "frozen-concrete-input-spec-and-registered-operation-contracts",
+      "runtimeVerified": false,
+      "runtimeRequired": true,
+      "condition": "The staged model must pass isolated seeded forward/replay under this frozen input specification before review."
+    },
+    "validationProfile": "structural-verified",
+    "inputSpec": {
+      "schemaVersion": 1,
+      "inputs": {
+        "q": {
+          "shape": [
+            2,
+            3,
+            8
+          ],
+          "dtype": "float32",
+          "fill": "normal"
+        },
+        "memory": {
+          "shape": [
+            2,
+            5,
+            8
+          ],
+          "dtype": "float32",
+          "fill": "normal"
+        },
+        "mask": {
+          "shape": [
+            3,
+            5
+          ],
+          "dtype": "bool",
+          "fill": "zeros"
+        }
+      },
+      "constructor": {},
+      "seed": 37,
+      "modes": [
+        "eval",
+        "train"
+      ]
+    },
+    "inputSpecDigest": "5707c761d35835669c030d826949bf3db79a5ef107435652432da5c8278bbae5",
+    "expectedRuntimeContract": {
+      "calls": [
+        {
+          "nodeId": "call:instance:model.CrossAttention.key_activation",
+          "instanceId": "instance:model.CrossAttention.key_activation",
+          "modulePath": "key_activation",
+          "kind": "ReLU",
+          "inputs": {
+            "input": {
+              "binding": {
+                "nodeId": "input:model.CrossAttention:memory",
+                "portId": "input:model.CrossAttention:memory:out:memory",
+                "tensorId": "tensor:input:model.CrossAttention:memory:memory"
+              },
+              "contract": {
+                "shape": [
+                  2,
+                  5,
+                  8
+                ],
+                "dtype": "float32"
+              }
+            }
+          },
+          "outputs": {
+            "output": {
+              "shape": [
+                2,
+                5,
+                8
+              ],
+              "dtype": "float32"
+            }
+          }
+        },
+        {
+          "nodeId": "call:instance:model.CrossAttention.attention",
+          "instanceId": "instance:model.CrossAttention.attention",
+          "modulePath": "attention",
+          "kind": "MultiheadAttention",
+          "inputs": {
+            "query": {
+              "binding": {
+                "nodeId": "input:model.CrossAttention:q",
+                "portId": "input:model.CrossAttention:q:out:q",
+                "tensorId": "tensor:input:model.CrossAttention:q:q"
+              },
+              "contract": {
+                "shape": [
+                  2,
+                  3,
+                  8
+                ],
+                "dtype": "float32"
+              }
+            },
+            "key": {
+              "binding": {
+                "nodeId": "call:instance:model.CrossAttention.key_activation",
+                "portId": "call:instance:model.CrossAttention.key_activation:out:output",
+                "tensorId": "tensor:call:instance:model.CrossAttention.key_activation:output"
+              },
+              "contract": {
+                "shape": [
+                  2,
+                  5,
+                  8
+                ],
+                "dtype": "float32"
+              }
+            },
+            "value": {
+              "binding": {
+                "nodeId": "input:model.CrossAttention:memory",
+                "portId": "input:model.CrossAttention:memory:out:memory",
+                "tensorId": "tensor:input:model.CrossAttention:memory:memory"
+              },
+              "contract": {
+                "shape": [
+                  2,
+                  5,
+                  8
+                ],
+                "dtype": "float32"
+              }
+            },
+            "attn_mask": {
+              "binding": {
+                "nodeId": "input:model.CrossAttention:mask",
+                "portId": "input:model.CrossAttention:mask:out:mask",
+                "tensorId": "tensor:input:model.CrossAttention:mask:mask"
+              },
+              "contract": {
+                "shape": [
+                  3,
+                  5
+                ],
+                "dtype": "bool"
+              }
+            }
+          },
+          "outputs": {
+            "output": {
+              "shape": [
+                2,
+                3,
+                8
+              ],
+              "dtype": "float32"
+            },
+            "weights": null
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "variable": "output",
+          "contract": {
+            "shape": [
+              2,
+              3,
+              8
+            ],
+            "dtype": "float32"
+          }
+        }
+      ],
+      "state": [
+        {
+          "key": "attention.in_proj_bias",
+          "shape": [
+            24
+          ],
+          "dtype": "float32",
+          "role": "parameter"
+        },
+        {
+          "key": "attention.in_proj_weight",
+          "shape": [
+            24,
+            8
+          ],
+          "dtype": "float32",
+          "role": "parameter"
+        },
+        {
+          "key": "attention.out_proj.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "float32",
+          "role": "parameter"
+        },
+        {
+          "key": "attention.out_proj.weight",
+          "shape": [
+            8,
+            8
+          ],
+          "dtype": "float32",
+          "role": "parameter"
+        }
+      ],
+      "stateSharing": {
+        "sharedGroups": [],
+        "sharedStorageGroups": []
+      }
+    }
+  },
+  "reviewDigest": "a293356dc0960bbaf9e6b92cf4ec7a687205aff57f11c99c2b0a662c9e31d806",
+  "sourceDigest": "8a09567af76e077c5cc98fbff3a3a833a0fcbba8aed3d265c8f5da9168ff21f3",
+  "irDigest": "d20bc9b8c0559a5d2116077089dbaf5da75c919bd5933b51583370bd72c1bc61",
+  "diff": "--- a/model.py\n+++ b/model.py\n@@ -8,5 +8,5 @@\n \n     def forward(self, q, memory, mask):\n         alternative = self.key_activation(memory)\n-        output, weights = self.attention(q, memory, memory, attn_mask=mask, need_weights=False)\n+        output, weights = self.attention(q, alternative, memory, attn_mask=mask, need_weights=False)\n         return output\n",
+  "affectedNodeIds": [
+    "call:instance:model.CrossAttention.attention",
+    "output:model.CrossAttention:0"
+  ],
+  "gates": [
+    {
+      "id": "G0",
+      "label": "来源与能力",
+      "status": "passed",
+      "message": "Exact named/positional input slot, unique dominating producer and public unary/attention constructors are independently proven."
+    },
+    {
+      "id": "G1",
+      "label": "源码有效性",
+      "status": "passed",
+      "message": "UTF-8 bytes/BOM/newlines preserved; exactly one registered named/positional call argument Name changes in the AST."
+    },
+    {
+      "id": "G2",
+      "label": "名称与项目",
+      "status": "passed",
+      "message": "No reassignment, control flow, unresolved calls, shadowed framework symbols or in-place mutation exists in the registered forward region."
+    },
+    {
+      "id": "G3",
+      "label": "重新分析",
+      "status": "passed",
+      "message": "The isolated staged corpus was parsed and its complete declared architecture was re-analyzed."
+    },
+    {
+      "id": "G4",
+      "label": "意图兑现",
+      "status": "passed",
+      "message": "Independent ExpectedDelta changes the selected input binding and any consequent attention semantic role facts; every other declared graph fact matches."
+    },
+    {
+      "id": "G5",
+      "label": "具体shape/type/mask",
+      "status": "passed",
+      "message": "Frozen concrete InputSpec validates every registered input/output tensor, attention query/key/value/mask axis, feature/head divisibility, dtype and tuple output slot. The intentional change preserves those exact contracts."
+    },
+    {
+      "id": "G6",
+      "label": "隔离运行与replay",
+      "status": "passed",
+      "message": "Frozen staged source, declared modes and seeded inputs passed isolated CPU forward, replay, finiteness, concrete shape/dtype, named input bindings and tuple slot checks. This intentionally changed graph is not required to equal the previous model numerically."
+    },
+    {
+      "id": "G7",
+      "label": "状态兼容",
+      "status": "passed",
+      "message": "Observed parameter/buffer keys, shapes, dtypes and tied tensor/storage groups match the independently frozen unchanged constructor contract before/after all declared modes. No external checkpoint was loaded or migrated."
+    },
+    {
+      "id": "G8",
+      "label": "论文输出",
+      "status": "not_run",
+      "message": "No publication/export gate was requested by this source transaction."
+    },
+    {
+      "id": "G9",
+      "label": "人工审核",
+      "status": "not_run",
+      "message": "Exact reviewDigest approval is required before source replacement."
+    },
+    {
+      "id": "G10",
+      "label": "写回新鲜度",
+      "status": "not_run",
+      "message": "Full corpus, staging and approval will be rechecked under the project lock at commit."
+    },
+    {
+      "id": "G11",
+      "label": "写后核验",
+      "status": "not_run",
+      "message": "Re-analysis and digest verification run only after approved source replacement."
+    }
+  ],
+  "blockers": [],
+  "beforeArchitecture": {
+    "schemaVersion": 1,
+    "id": "architecture:model.CrossAttention",
+    "label": "CrossAttention",
+    "sourceDigest": "8a09567af76e077c5cc98fbff3a3a833a0fcbba8aed3d265c8f5da9168ff21f3",
+    "irDigest": "d20bc9b8c0559a5d2116077089dbaf5da75c919bd5933b51583370bd72c1bc61",
+    "entry": "model:CrossAttention",
+    "nodes": [
+      {
+        "id": "input:model.CrossAttention:q",
+        "label": "q",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:model.CrossAttention:q:out:q",
+            "name": "q",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 9,
+          "endLine": 12,
+          "expression": "def forward(self, q, memory, mask):\n        alternative = self.key_activation(memory)\n        output, weights = self.attention(q, memory, memory, attn_mask=mask, need_weights=False)\n        return output"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.CrossAttention"
+      },
+      {
+        "id": "input:model.CrossAttention:memory",
+        "label": "memory",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:model.CrossAttention:memory:out:memory",
+            "name": "memory",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 9,
+          "endLine": 12,
+          "expression": "def forward(self, q, memory, mask):\n        alternative = self.key_activation(memory)\n        output, weights = self.attention(q, memory, memory, attn_mask=mask, need_weights=False)\n        return output"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.CrossAttention"
+      },
+      {
+        "id": "input:model.CrossAttention:mask",
+        "label": "mask",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:model.CrossAttention:mask:out:mask",
+            "name": "mask",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 9,
+          "endLine": 12,
+          "expression": "def forward(self, q, memory, mask):\n        alternative = self.key_activation(memory)\n        output, weights = self.attention(q, memory, memory, attn_mask=mask, need_weights=False)\n        return output"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.CrossAttention"
+      },
+      {
+        "id": "call:instance:model.CrossAttention",
+        "label": "CrossAttention",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "input:model.CrossAttention:mask",
+          "input:model.CrossAttention:memory",
+          "input:model.CrossAttention:q",
+          "call:instance:model.CrossAttention.key_activation",
+          "call:instance:model.CrossAttention.attention",
+          "output:model.CrossAttention:0"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:model.CrossAttention:in:q",
+            "name": "q",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.CrossAttention:in:memory",
+            "name": "memory",
+            "direction": "in",
+            "role": "memory",
+            "ordinal": 1
+          },
+          {
+            "id": "call:instance:model.CrossAttention:in:mask",
+            "name": "mask",
+            "direction": "in",
+            "role": "mask",
+            "ordinal": 2
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 3,
+          "endLine": 12,
+          "expression": "class CrossAttention(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.key_activation = nn.ReLU(inplace=False)\n        self.attention = nn.MultiheadAttention(8, 2, dropout=0.2, batch_first=True)\n\n    def forward(self, q, memory, mask):\n        alternative = self.key_activation(memory)\n        output, weights = self.attention(q, memory, memory, attn_mask=mask, need_weights=False)\n        return output"
+        },
+        "evidence": "source",
+        "instanceId": "instance:model.CrossAttention",
+        "callId": "call:instance:model.CrossAttention"
+      },
+      {
+        "id": "call:instance:model.CrossAttention.key_activation",
+        "label": "key activation",
+        "kind": "ReLU",
+        "category": "activation",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.CrossAttention.key_activation:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.CrossAttention.key_activation:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "inplace": false
+        },
+        "source": {
+          "path": "model.py",
+          "line": 10,
+          "endLine": 10,
+          "expression": "self.key_activation(memory)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.CrossAttention",
+        "instanceId": "instance:model.CrossAttention.key_activation",
+        "callId": "call:instance:model.CrossAttention.key_activation",
+        "parameterOrigins": {
+          "inplace": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 6,
+            "endLine": 6,
+            "expression": "False",
+            "column": 46,
+            "endColumn": 51
+          }
+        }
+      },
+      {
+        "id": "call:instance:model.CrossAttention.attention",
+        "label": "attention",
+        "kind": "MultiheadAttention",
+        "category": "attention",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.CrossAttention.attention:in:query",
+            "name": "query",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.CrossAttention.attention:in:key",
+            "name": "key",
+            "direction": "in",
+            "role": "memory",
+            "ordinal": 1
+          },
+          {
+            "id": "call:instance:model.CrossAttention.attention:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "memory",
+            "ordinal": 2
+          },
+          {
+            "id": "call:instance:model.CrossAttention.attention:in:attn_mask",
+            "name": "attn_mask",
+            "direction": "in",
+            "role": "mask",
+            "ordinal": 3
+          },
+          {
+            "id": "call:instance:model.CrossAttention.attention:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.CrossAttention.attention:out:weights",
+            "name": "weights",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 1
+          }
+        ],
+        "parameters": {
+          "embed_dim": 8,
+          "num_heads": 2,
+          "dropout": 0.2,
+          "batch_first": true
+        },
+        "source": {
+          "path": "model.py",
+          "line": 11,
+          "endLine": 11,
+          "expression": "self.attention(q, memory, memory, attn_mask=mask, need_weights=False)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.CrossAttention",
+        "instanceId": "instance:model.CrossAttention.attention",
+        "callId": "call:instance:model.CrossAttention.attention",
+        "parameterOrigins": {
+          "embed_dim": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 7,
+            "endLine": 7,
+            "expression": "8",
+            "column": 47,
+            "endColumn": 48
+          },
+          "num_heads": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 7,
+            "endLine": 7,
+            "expression": "2",
+            "column": 50,
+            "endColumn": 51
+          },
+          "dropout": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 7,
+            "endLine": 7,
+            "expression": "0.2",
+            "column": 61,
+            "endColumn": 64
+          },
+          "batch_first": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 7,
+            "endLine": 7,
+            "expression": "True",
+            "column": 78,
+            "endColumn": 82
+          }
+        }
+      },
+      {
+        "id": "output:model.CrossAttention:0",
+        "label": "output",
+        "kind": "Output",
+        "category": "output",
+        "children": [],
+        "ports": [
+          {
+            "id": "output:model.CrossAttention:0:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 9,
+          "endLine": 12,
+          "expression": "def forward(self, q, memory, mask):\n        alternative = self.key_activation(memory)\n        output, weights = self.attention(q, memory, memory, attn_mask=mask, need_weights=False)\n        return output"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.CrossAttention"
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:0",
+        "source": {
+          "nodeId": "input:model.CrossAttention:q",
+          "portId": "input:model.CrossAttention:q:out:q"
+        },
+        "target": {
+          "nodeId": "call:instance:model.CrossAttention",
+          "portId": "call:instance:model.CrossAttention:in:q"
+        },
+        "tensorId": "tensor:input:model.CrossAttention:q:q",
+        "role": "data"
+      },
+      {
+        "id": "edge:1",
+        "source": {
+          "nodeId": "input:model.CrossAttention:memory",
+          "portId": "input:model.CrossAttention:memory:out:memory"
+        },
+        "target": {
+          "nodeId": "call:instance:model.CrossAttention",
+          "portId": "call:instance:model.CrossAttention:in:memory"
+        },
+        "tensorId": "tensor:input:model.CrossAttention:memory:memory",
+        "role": "memory"
+      },
+      {
+        "id": "edge:2",
+        "source": {
+          "nodeId": "input:model.CrossAttention:mask",
+          "portId": "input:model.CrossAttention:mask:out:mask"
+        },
+        "target": {
+          "nodeId": "call:instance:model.CrossAttention",
+          "portId": "call:instance:model.CrossAttention:in:mask"
+        },
+        "tensorId": "tensor:input:model.CrossAttention:mask:mask",
+        "role": "mask"
+      },
+      {
+        "id": "edge:3",
+        "source": {
+          "nodeId": "input:model.CrossAttention:memory",
+          "portId": "input:model.CrossAttention:memory:out:memory"
+        },
+        "target": {
+          "nodeId": "call:instance:model.CrossAttention.key_activation",
+          "portId": "call:instance:model.CrossAttention.key_activation:in:input"
+        },
+        "tensorId": "tensor:input:model.CrossAttention:memory:memory",
+        "role": "data"
+      },
+      {
+        "id": "edge:4",
+        "source": {
+          "nodeId": "input:model.CrossAttention:q",
+          "portId": "input:model.CrossAttention:q:out:q"
+        },
+        "target": {
+          "nodeId": "call:instance:model.CrossAttention.attention",
+          "portId": "call:instance:model.CrossAttention.attention:in:query"
+        },
+        "tensorId": "tensor:input:model.CrossAttention:q:q",
+        "role": "data"
+      },
+      {
+        "id": "edge:5",
+        "source": {
+          "nodeId": "input:model.CrossAttention:memory",
+          "portId": "input:model.CrossAttention:memory:out:memory"
+        },
+        "target": {
+          "nodeId": "call:instance:model.CrossAttention.attention",
+          "portId": "call:instance:model.CrossAttention.attention:in:key"
+        },
+        "tensorId": "tensor:input:model.CrossAttention:memory:memory",
+        "role": "memory"
+      },
+      {
+        "id": "edge:6",
+        "source": {
+          "nodeId": "input:model.CrossAttention:memory",
+          "portId": "input:model.CrossAttention:memory:out:memory"
+        },
+        "target": {
+          "nodeId": "call:instance:model.CrossAttention.attention",
+          "portId": "call:instance:model.CrossAttention.attention:in:value"
+        },
+        "tensorId": "tensor:input:model.CrossAttention:memory:memory",
+        "role": "memory"
+      },
+      {
+        "id": "edge:7",
+        "source": {
+          "nodeId": "input:model.CrossAttention:mask",
+          "portId": "input:model.CrossAttention:mask:out:mask"
+        },
+        "target": {
+          "nodeId": "call:instance:model.CrossAttention.attention",
+          "portId": "call:instance:model.CrossAttention.attention:in:attn_mask"
+        },
+        "tensorId": "tensor:input:model.CrossAttention:mask:mask",
+        "role": "mask"
+      },
+      {
+        "id": "edge:8",
+        "source": {
+          "nodeId": "call:instance:model.CrossAttention.attention",
+          "portId": "call:instance:model.CrossAttention.attention:out:output"
+        },
+        "target": {
+          "nodeId": "output:model.CrossAttention:0",
+          "portId": "output:model.CrossAttention:0:in:value"
+        },
+        "tensorId": "tensor:call:instance:model.CrossAttention.attention:output",
+        "role": "data"
+      }
+    ],
+    "diagnostics": [
+      {
+        "level": "info",
+        "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+      }
+    ],
+    "sources": [
+      {
+        "path": "model.py",
+        "content": "from torch import nn\n\nclass CrossAttention(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.key_activation = nn.ReLU(inplace=False)\n        self.attention = nn.MultiheadAttention(8, 2, dropout=0.2, batch_first=True)\n\n    def forward(self, q, memory, mask):\n        alternative = self.key_activation(memory)\n        output, weights = self.attention(q, memory, memory, attn_mask=mask, need_weights=False)\n        return output\n",
+        "digest": "4bfa2d10cad0db390254842b19880cd78a53433c39e6e552e373175ba4a67534"
+      }
+    ]
+  },
+  "afterArchitecture": {
+    "schemaVersion": 1,
+    "id": "architecture:model.CrossAttention",
+    "label": "CrossAttention",
+    "sourceDigest": "cbd8c321fbbfe84667f2c0359909c99387862e1556dcc50951267321c2efb142",
+    "irDigest": "8ad7448588474259b6aa5a60c2d9cf5a2097f1c20369a26aa830e8ae4a64bae8",
+    "entry": "model:CrossAttention",
+    "nodes": [
+      {
+        "id": "input:model.CrossAttention:q",
+        "label": "q",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:model.CrossAttention:q:out:q",
+            "name": "q",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 9,
+          "endLine": 12,
+          "expression": "def forward(self, q, memory, mask):\n        alternative = self.key_activation(memory)\n        output, weights = self.attention(q, alternative, memory, attn_mask=mask, need_weights=False)\n        return output"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.CrossAttention"
+      },
+      {
+        "id": "input:model.CrossAttention:memory",
+        "label": "memory",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:model.CrossAttention:memory:out:memory",
+            "name": "memory",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 9,
+          "endLine": 12,
+          "expression": "def forward(self, q, memory, mask):\n        alternative = self.key_activation(memory)\n        output, weights = self.attention(q, alternative, memory, attn_mask=mask, need_weights=False)\n        return output"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.CrossAttention"
+      },
+      {
+        "id": "input:model.CrossAttention:mask",
+        "label": "mask",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:model.CrossAttention:mask:out:mask",
+            "name": "mask",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 9,
+          "endLine": 12,
+          "expression": "def forward(self, q, memory, mask):\n        alternative = self.key_activation(memory)\n        output, weights = self.attention(q, alternative, memory, attn_mask=mask, need_weights=False)\n        return output"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.CrossAttention"
+      },
+      {
+        "id": "call:instance:model.CrossAttention",
+        "label": "CrossAttention",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "input:model.CrossAttention:mask",
+          "input:model.CrossAttention:memory",
+          "input:model.CrossAttention:q",
+          "call:instance:model.CrossAttention.key_activation",
+          "call:instance:model.CrossAttention.attention",
+          "output:model.CrossAttention:0"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:model.CrossAttention:in:q",
+            "name": "q",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.CrossAttention:in:memory",
+            "name": "memory",
+            "direction": "in",
+            "role": "memory",
+            "ordinal": 1
+          },
+          {
+            "id": "call:instance:model.CrossAttention:in:mask",
+            "name": "mask",
+            "direction": "in",
+            "role": "mask",
+            "ordinal": 2
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 3,
+          "endLine": 12,
+          "expression": "class CrossAttention(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.key_activation = nn.ReLU(inplace=False)\n        self.attention = nn.MultiheadAttention(8, 2, dropout=0.2, batch_first=True)\n\n    def forward(self, q, memory, mask):\n        alternative = self.key_activation(memory)\n        output, weights = self.attention(q, alternative, memory, attn_mask=mask, need_weights=False)\n        return output"
+        },
+        "evidence": "source",
+        "instanceId": "instance:model.CrossAttention",
+        "callId": "call:instance:model.CrossAttention"
+      },
+      {
+        "id": "call:instance:model.CrossAttention.key_activation",
+        "label": "key activation",
+        "kind": "ReLU",
+        "category": "activation",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.CrossAttention.key_activation:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.CrossAttention.key_activation:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "inplace": false
+        },
+        "source": {
+          "path": "model.py",
+          "line": 10,
+          "endLine": 10,
+          "expression": "self.key_activation(memory)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.CrossAttention",
+        "instanceId": "instance:model.CrossAttention.key_activation",
+        "callId": "call:instance:model.CrossAttention.key_activation",
+        "parameterOrigins": {
+          "inplace": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 6,
+            "endLine": 6,
+            "expression": "False",
+            "column": 46,
+            "endColumn": 51
+          }
+        }
+      },
+      {
+        "id": "call:instance:model.CrossAttention.attention",
+        "label": "attention",
+        "kind": "MultiheadAttention",
+        "category": "attention",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.CrossAttention.attention:in:query",
+            "name": "query",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.CrossAttention.attention:in:key",
+            "name": "key",
+            "direction": "in",
+            "role": "memory",
+            "ordinal": 1
+          },
+          {
+            "id": "call:instance:model.CrossAttention.attention:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "memory",
+            "ordinal": 2
+          },
+          {
+            "id": "call:instance:model.CrossAttention.attention:in:attn_mask",
+            "name": "attn_mask",
+            "direction": "in",
+            "role": "mask",
+            "ordinal": 3
+          },
+          {
+            "id": "call:instance:model.CrossAttention.attention:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.CrossAttention.attention:out:weights",
+            "name": "weights",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 1
+          }
+        ],
+        "parameters": {
+          "embed_dim": 8,
+          "num_heads": 2,
+          "dropout": 0.2,
+          "batch_first": true
+        },
+        "source": {
+          "path": "model.py",
+          "line": 11,
+          "endLine": 11,
+          "expression": "self.attention(q, alternative, memory, attn_mask=mask, need_weights=False)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.CrossAttention",
+        "instanceId": "instance:model.CrossAttention.attention",
+        "callId": "call:instance:model.CrossAttention.attention",
+        "parameterOrigins": {
+          "embed_dim": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 7,
+            "endLine": 7,
+            "expression": "8",
+            "column": 47,
+            "endColumn": 48
+          },
+          "num_heads": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 7,
+            "endLine": 7,
+            "expression": "2",
+            "column": 50,
+            "endColumn": 51
+          },
+          "dropout": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 7,
+            "endLine": 7,
+            "expression": "0.2",
+            "column": 61,
+            "endColumn": 64
+          },
+          "batch_first": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 7,
+            "endLine": 7,
+            "expression": "True",
+            "column": 78,
+            "endColumn": 82
+          }
+        }
+      },
+      {
+        "id": "output:model.CrossAttention:0",
+        "label": "output",
+        "kind": "Output",
+        "category": "output",
+        "children": [],
+        "ports": [
+          {
+            "id": "output:model.CrossAttention:0:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 9,
+          "endLine": 12,
+          "expression": "def forward(self, q, memory, mask):\n        alternative = self.key_activation(memory)\n        output, weights = self.attention(q, alternative, memory, attn_mask=mask, need_weights=False)\n        return output"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.CrossAttention"
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:0",
+        "source": {
+          "nodeId": "input:model.CrossAttention:q",
+          "portId": "input:model.CrossAttention:q:out:q"
+        },
+        "target": {
+          "nodeId": "call:instance:model.CrossAttention",
+          "portId": "call:instance:model.CrossAttention:in:q"
+        },
+        "tensorId": "tensor:input:model.CrossAttention:q:q",
+        "role": "data"
+      },
+      {
+        "id": "edge:1",
+        "source": {
+          "nodeId": "input:model.CrossAttention:memory",
+          "portId": "input:model.CrossAttention:memory:out:memory"
+        },
+        "target": {
+          "nodeId": "call:instance:model.CrossAttention",
+          "portId": "call:instance:model.CrossAttention:in:memory"
+        },
+        "tensorId": "tensor:input:model.CrossAttention:memory:memory",
+        "role": "memory"
+      },
+      {
+        "id": "edge:2",
+        "source": {
+          "nodeId": "input:model.CrossAttention:mask",
+          "portId": "input:model.CrossAttention:mask:out:mask"
+        },
+        "target": {
+          "nodeId": "call:instance:model.CrossAttention",
+          "portId": "call:instance:model.CrossAttention:in:mask"
+        },
+        "tensorId": "tensor:input:model.CrossAttention:mask:mask",
+        "role": "mask"
+      },
+      {
+        "id": "edge:3",
+        "source": {
+          "nodeId": "input:model.CrossAttention:memory",
+          "portId": "input:model.CrossAttention:memory:out:memory"
+        },
+        "target": {
+          "nodeId": "call:instance:model.CrossAttention.key_activation",
+          "portId": "call:instance:model.CrossAttention.key_activation:in:input"
+        },
+        "tensorId": "tensor:input:model.CrossAttention:memory:memory",
+        "role": "data"
+      },
+      {
+        "id": "edge:4",
+        "source": {
+          "nodeId": "input:model.CrossAttention:q",
+          "portId": "input:model.CrossAttention:q:out:q"
+        },
+        "target": {
+          "nodeId": "call:instance:model.CrossAttention.attention",
+          "portId": "call:instance:model.CrossAttention.attention:in:query"
+        },
+        "tensorId": "tensor:input:model.CrossAttention:q:q",
+        "role": "data"
+      },
+      {
+        "id": "edge:5",
+        "source": {
+          "nodeId": "call:instance:model.CrossAttention.key_activation",
+          "portId": "call:instance:model.CrossAttention.key_activation:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.CrossAttention.attention",
+          "portId": "call:instance:model.CrossAttention.attention:in:key"
+        },
+        "tensorId": "tensor:call:instance:model.CrossAttention.key_activation:output",
+        "role": "memory"
+      },
+      {
+        "id": "edge:6",
+        "source": {
+          "nodeId": "input:model.CrossAttention:memory",
+          "portId": "input:model.CrossAttention:memory:out:memory"
+        },
+        "target": {
+          "nodeId": "call:instance:model.CrossAttention.attention",
+          "portId": "call:instance:model.CrossAttention.attention:in:value"
+        },
+        "tensorId": "tensor:input:model.CrossAttention:memory:memory",
+        "role": "memory"
+      },
+      {
+        "id": "edge:7",
+        "source": {
+          "nodeId": "input:model.CrossAttention:mask",
+          "portId": "input:model.CrossAttention:mask:out:mask"
+        },
+        "target": {
+          "nodeId": "call:instance:model.CrossAttention.attention",
+          "portId": "call:instance:model.CrossAttention.attention:in:attn_mask"
+        },
+        "tensorId": "tensor:input:model.CrossAttention:mask:mask",
+        "role": "mask"
+      },
+      {
+        "id": "edge:8",
+        "source": {
+          "nodeId": "call:instance:model.CrossAttention.attention",
+          "portId": "call:instance:model.CrossAttention.attention:out:output"
+        },
+        "target": {
+          "nodeId": "output:model.CrossAttention:0",
+          "portId": "output:model.CrossAttention:0:in:value"
+        },
+        "tensorId": "tensor:call:instance:model.CrossAttention.attention:output",
+        "role": "data"
+      }
+    ],
+    "diagnostics": [
+      {
+        "level": "info",
+        "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+      }
+    ],
+    "sources": [
+      {
+        "path": "model.py",
+        "content": "from torch import nn\n\nclass CrossAttention(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.key_activation = nn.ReLU(inplace=False)\n        self.attention = nn.MultiheadAttention(8, 2, dropout=0.2, batch_first=True)\n\n    def forward(self, q, memory, mask):\n        alternative = self.key_activation(memory)\n        output, weights = self.attention(q, alternative, memory, attn_mask=mask, need_weights=False)\n        return output\n",
+        "digest": "cfb8e4253feda03d2efd69c0877d3b2ead582d4183370253ea0573899fd37075"
+      }
+    ]
+  },
+  "sourceChanges": [
+    {
+      "path": "model.py",
+      "beforeDigest": "4bfa2d10cad0db390254842b19880cd78a53433c39e6e552e373175ba4a67534",
+      "afterDigest": "cfb8e4253feda03d2efd69c0877d3b2ead582d4183370253ea0573899fd37075"
+    }
+  ],
+  "checkpointImpact": {
+    "status": "compatible",
+    "message": "Rebinding the selected input changes tensor provenance and model behavior. The frozen staged model was executed under the declared isolated CPU samples; its parameter/buffer keys, shapes, dtypes and tied tensor/storage groups match the unchanged original constructor contract before and after each mode. No checkpoint was loaded or migrated; compatibility with any external checkpoint remains untested.",
+    "modelExecuted": true,
+    "checkpointLoaded": false,
+    "basis": "original-constructor-contract-versus-isolated-staged-observation",
+    "coverage": "declared-input-samples-and-modes-only",
+    "entries": [
+      {
+        "key": "attention.in_proj_bias",
+        "shape": [
+          24
+        ],
+        "dtype": "float32",
+        "role": "parameter"
+      },
+      {
+        "key": "attention.in_proj_weight",
+        "shape": [
+          24,
+          8
+        ],
+        "dtype": "float32",
+        "role": "parameter"
+      },
+      {
+        "key": "attention.out_proj.bias",
+        "shape": [
+          8
+        ],
+        "dtype": "float32",
+        "role": "parameter"
+      },
+      {
+        "key": "attention.out_proj.weight",
+        "shape": [
+          8,
+          8
+        ],
+        "dtype": "float32",
+        "role": "parameter"
+      }
+    ],
+    "sharing": {
+      "sharedGroups": [],
+      "sharedStorageGroups": []
+    },
+    "observedModes": [
+      "eval",
+      "train"
+    ]
+  },
+  "transform": {
+    "id": "pytorch-concrete-multiinput-rebind",
+    "version": 1,
+    "profile": "structural-verified",
+    "engine": "stdlib-ast-tokenize-byte-splice",
+    "operators": [
+      "Identity",
+      "Dropout",
+      "ReLU",
+      "GELU",
+      "MultiheadAttention"
+    ],
+    "scope": "entry-straightline-forward",
+    "contract": "frozen-input-spec-named-port-and-isolated-replay"
+  },
+  "environment": {
+    "pythonImplementation": "CPython",
+    "pythonVersion": [
+      3,
+      11,
+      5
+    ],
+    "frontendContract": "archcanvas-stdlib-static-1",
+    "modelExecution": "none"
+  },
+  "runtimeVerification": {
+    "schemaVersion": 1,
+    "profile": "structural-verified",
+    "status": "passed",
+    "sourceDigest": "cbd8c321fbbfe84667f2c0359909c99387862e1556dcc50951267321c2efb142",
+    "testedIRDigest": "8ad7448588474259b6aa5a60c2d9cf5a2097f1c20369a26aa830e8ae4a64bae8",
+    "inputSpecDigest": "5707c761d35835669c030d826949bf3db79a5ef107435652432da5c8278bbae5",
+    "runtimeVerified": true,
+    "limitations": [
+      "Frozen CPU samples do not establish numerical equivalence or complete path coverage.",
+      "Hooks observe module calls; arbitrary functional operations may have unresolved producer identities.",
+      "Source and instrumentation share a Python process; supported semantic writes require a separate static contract/oracle."
+    ],
+    "manifest": {
+      "inputSpec": {
+        "schemaVersion": 1,
+        "inputs": {
+          "mask": {
+            "shape": [
+              3,
+              5
+            ],
+            "dtype": "bool",
+            "fill": "zeros"
+          },
+          "memory": {
+            "shape": [
+              2,
+              5,
+              8
+            ],
+            "dtype": "float32",
+            "fill": "normal"
+          },
+          "q": {
+            "shape": [
+              2,
+              3,
+              8
+            ],
+            "dtype": "float32",
+            "fill": "normal"
+          }
+        },
+        "constructor": {},
+        "seed": 37,
+        "modes": [
+          "eval",
+          "train"
+        ]
+      },
+      "constructor": {},
+      "environment": {
+        "interpreter": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/.venv-runtime/bin/python",
+        "virtualEnvironment": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/.venv-runtime",
+        "basePrefix": "/home/fzg/anaconda3",
+        "executable": "/home/fzg/anaconda3/bin/python3.11",
+        "executableDigest": "2886962487597d9eac12094e21a4a7ba749e9a2a7293734fbafd231b102a546c",
+        "virtualEnvironmentContentDigest": "2e0209a1f075546207b0666b2c9b461f84eb0d53956a4be2bad0a5082c8f1117",
+        "virtualEnvironmentFileCount": 19040,
+        "venvConfigDigest": "19d635d770a4932e43402446fc04e4ce08d97394e021bf00db1885218ab11ea0",
+        "stdlibPath": "/home/fzg/anaconda3/lib/python3.11",
+        "stdlibContentDigest": "8411535290bbd704f7764d59d3be69cd2337b20d506e4a7037b56ca42451db9f",
+        "stdlibFileCount": 1908,
+        "sharedLibraryMounts": [
+          {
+            "path": "/home/fzg/anaconda3/lib/libbz2.so.1.0",
+            "digest": "2aa4427cfdbae9ef95a402de9291102dd293e58d29409df9812c3c8fa9216ccd"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libcrypto.so.3",
+            "digest": "024b526dbcfea7594368d8bd847d907a6d352015e32dea5c89f750460ba312da"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libffi.so.8",
+            "digest": "a5d54aeb8ed2fd5e0ccf9d38b28cad6dec76517f69224a5d9687c1970b57b194"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/liblzma.so.5",
+            "digest": "0e5ab3623d8586efcddbe51cf7ad444bcd75092382bc781d30567699a4a6ba08"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libncursesw.so.6",
+            "digest": "7fa4e5e93804d78660b0eef727cdb4211209e1742e4ad3669348022668d90962"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libpanelw.so.6",
+            "digest": "d26f0c9d2c182d5de700a369a7ba4850be3ccb36bab4936addfc9551ef28526a"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libreadline.so.8",
+            "digest": "0b6a9d66a73115c872272bb479c8f29df1bf7d9b16e5913e083d64b7753ce1c6"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libsqlite3.so.0",
+            "digest": "6fea60dd09de040809ad67663e18f7c1f247535950e89a81290f567f2fe41565"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libssl.so.3",
+            "digest": "e69c92d062a0c048b4d8c8d08809ace6aa8269ee54986e68adab71da23129da3"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libtcl8.6.so",
+            "digest": "0cf512a333c12a0826c5ce8a7355798c2fbbda60f10d82078c5cdf33a07b3a49"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libtinfow.so.6",
+            "digest": "f15834b208dd1441c48f35009ebbb96c574c2658fba8adc98b8f53dbf37d7e19"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libtk8.6.so",
+            "digest": "d6f9e4af876bfad3c56c075e1b07237354d5e06c9a55e9c266b222dfb2959080"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libuuid.so.1",
+            "digest": "b42fa6cf1dcaca6b84e8155c4649d6bad561eaca2e8fa9473db178dbaa4aec53"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libz.so.1",
+            "digest": "0b0e682a9dc7fd4895a6783288f851b793dc89633f28714027974fa4d66f3914"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+            "digest": "9eb34cb2da3ae2a9398cc09b3cd2d069563ec40d9858cb711af15cd23fa80abf"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libX11.so.6",
+            "digest": "34b7869a1ba702462a1aa862fc0afe5b2608a7d5a09552c07796802fcf0c684b"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libXau.so.6",
+            "digest": "98343a8324ea62ed75a13c923ed5dea96b7a8ad41aeba9f18126c4cbf7178064"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libXdmcp.so.6",
+            "digest": "1dc3ff1269a5ede69ef9a8ec2436d73fccbcd10531055b359292e0bde4e29b46"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libbsd.so.0",
+            "digest": "e4ad21c203d8e8b9b7f49071311339af6b438026e1ad236403e3b379b022f23d"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libc.so.6",
+            "digest": "c53819710b163d3f1d2541778590d58d3ef31cb0ed75adcbe059faac68c1e72d"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libcrypt.so.1",
+            "digest": "d8b34ade1d95c6243a48e90f2873d65399dfb0cd3fa4ee2af45afc9e6cb8642b"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libdl.so.2",
+            "digest": "bf1783273aa79484bf5f70eddc013bc3982785d8aadef224aa09beb08fa95b42"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libgcc_s.so.1",
+            "digest": "fc9d43b2f6c20e53b009238f767c5b949d202389e20de9e202ea684b4ba3729a"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libm.so.6",
+            "digest": "00830df310aac5023e10bd7b715149ab8ddc682277fd8ae3539a7a44fcdd6c38"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libmd.so.0",
+            "digest": "bb376813876bb214535bbbdac70f2c0c4b00baecb81557dab78a79518248df06"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libnsl.so.1",
+            "digest": "59ddce25d15fac6e0b510791736cc4633f1eb5f786eb22e940132397ab70b06c"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libpthread.so.0",
+            "digest": "16e807d47ff2441f0203fb2b8805d471e555d932d3d8d262ec6a58ea1d640fd8"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/librt.so.1",
+            "digest": "c8124d69d67c4f94c162c36550c9244d60e2e368ecae98857754e3ba11824677"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libstdc++.so.6",
+            "digest": "ff0825e113603c3866680d5d52216bc6d8eedf3a59f52a0aef67ff01994db128"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libutil.so.1",
+            "digest": "8647a84d95565d4676d8fd8fa79569f3a81dedd19f9212029ac9225b546e25f1"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libxcb.so.1",
+            "digest": "aabc489094abd96c876d1c989a2da8a8aa6d28f5a676c4a84dd6d0a0c34aec5d"
+          },
+          {
+            "path": "/lib64/ld-linux-x86-64.so.2",
+            "digest": "9eb34cb2da3ae2a9398cc09b3cd2d069563ec40d9858cb711af15cd23fa80abf"
+          }
+        ],
+        "sharedLibraryContentDigest": "87f5c3671caf7727589845897755a775b337ffe76921c6d265b920e487ab1956",
+        "baseHiddenProbe": "/home/fzg/anaconda3/conda-meta/history",
+        "baseHiddenProbeExists": true,
+        "workerDigest": "23fd16bc63397ff2ee0005d575d1a786832ed4fcf5c9b7c28328bf9ed60a521f",
+        "controllerDigest": "2508b11edbdcc24501b22b4af40d91d4afb2f11f7dc019d91e6a24fe7df1acb0",
+        "seccompDigest": "04524e22f1fdbd5d194a9a88acdfe176c2998122a32b5ac381b3c938df0fc6fd",
+        "dependencyLockDigest": "91f79e88742d4df88631dea675b893b43b9dc0d7fab58600435ce28aa0b9fbb1",
+        "dependencyPins": {
+          "filelock": "3.32.3",
+          "fsspec": "2026.7.0",
+          "jinja2": "3.1.6",
+          "markupsafe": "3.0.3",
+          "mpmath": "1.3.0",
+          "networkx": "3.6.1",
+          "sympy": "1.13.1",
+          "torch": "2.5.1+cpu",
+          "typing-extensions": "4.16.0"
+        },
+        "backend": "pytorch",
+        "device": "cpu",
+        "environmentFreezeScope": "all venv files including bytecode, resolved Python executable, standard library excluding base site-packages, ELF dependency closure, config, dependency lock and trusted adapter; executable/stdlib/ELF mounts are private read-only copies, venv bytes are rechecked after execution",
+        "frameworkOrigin": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/.venv-runtime/lib/python3.11/site-packages/torch/__init__.py",
+        "frameworkVersion": "2.5.1+cpu",
+        "installedPackages": {
+          "filelock": "3.32.3",
+          "fsspec": "2026.7.0",
+          "jinja2": "3.1.6",
+          "markupsafe": "3.0.3",
+          "mpmath": "1.3.0",
+          "networkx": "3.6.1",
+          "pip": "23.2.1",
+          "setuptools": "65.5.0",
+          "sympy": "1.13.1",
+          "torch": "2.5.1+cpu",
+          "typing-extensions": "4.16.0"
+        },
+        "pythonVersion": "3.11.5",
+        "sysBasePrefix": "/home/fzg/anaconda3",
+        "sysPrefix": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/.venv-runtime"
+      },
+      "limits": {
+        "wallSeconds": 20,
+        "cpuSeconds": 20,
+        "addressSpaceBytes": 4294967296,
+        "fileBytes": 8000000,
+        "openFiles": 64,
+        "modelTaskLimit": 1,
+        "torchThreads": 1,
+        "uidTaskLimit": 256,
+        "threadLimitScope": "RLIMIT_NPROC counts all tasks for the real host UID; seccomp separately denies new processes",
+        "memoryScope": "per-process virtual address space; no cgroup RSS or aggregate tmpfs quota"
+      },
+      "observationMechanism": "PyTorch forward pre/post hooks, fresh same-seed reconstruction, autograd backward",
+      "sourceGeneration": [
+        {
+          "path": "model.py",
+          "digest": "cfb8e4253feda03d2efd69c0877d3b2ead582d4183370253ea0573899fd37075"
+        }
+      ],
+      "isolation": {
+        "available": true,
+        "checks": {
+          "addressSpaceLimitApplied": true,
+          "baseEnvironmentUnexposed": true,
+          "cpuLimitApplied": true,
+          "frozenSourceReadOnly": true,
+          "hostFileAbsent": true,
+          "hostHomeAbsent": true,
+          "kernelSeccompFilter": true,
+          "namespacesDistinct": true,
+          "privateWritable": true,
+          "processCreationDenied": true,
+          "socketDenied": true
+        },
+        "mechanism": "Linux Bubblewrap user/mount/pid/net/ipc/uts namespaces and mandatory x86-64 seccomp",
+        "namespaces": {
+          "mnt": "mnt:[4026533180]",
+          "net": "net:[4026533186]",
+          "pid": "pid:[4026533184]",
+          "user": "user:[4026533317]"
+        },
+        "network": "separate namespace plus socket/socketpair syscall denial",
+        "processLimit": "non-thread clone/fork/vfork denied; clone3 ENOSYS; RLIMIT_NPROC thread budget",
+        "reason": ""
+      }
+    },
+    "environmentDigest": "b0acc31c815321ca3d186a4ed8fa98e3da3cbc6c2ff4a8bab95be183da2e44bf",
+    "observation": {
+      "checkpointLoaded": false,
+      "coverage": "only declared modes and named frozen generated inputs",
+      "modes": [
+        {
+          "calls": [
+            {
+              "callId": "call:$root:0",
+              "inputs": {
+                "mask": {
+                  "device": "cpu",
+                  "dtype": "bool",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "kind": "input",
+                    "name": "mask"
+                  },
+                  "producerHistory": [
+                    {
+                      "kind": "input",
+                      "name": "mask"
+                    }
+                  ],
+                  "shape": [
+                    3,
+                    5
+                  ],
+                  "tensorId": "tensor:0",
+                  "valueDigest": "5322fecfc92a5e3248a297a3df3eddfb9bd9049504272e4f572b87fa36d4b3bd"
+                },
+                "memory": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "kind": "input",
+                    "name": "memory"
+                  },
+                  "producerHistory": [
+                    {
+                      "kind": "input",
+                      "name": "memory"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    5,
+                    8
+                  ],
+                  "tensorId": "tensor:1",
+                  "valueDigest": "a481c4179fe813e51297092d00c5541e09405a41161c415f73d3dae0640c7379"
+                },
+                "q": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "kind": "input",
+                    "name": "q"
+                  },
+                  "producerHistory": [
+                    {
+                      "kind": "input",
+                      "name": "q"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    3,
+                    8
+                  ],
+                  "tensorId": "tensor:2",
+                  "valueDigest": "4bbc58a9652ed6802f6953594bcbf7cdd13918f3bd478ac31a06eb671af09cdf"
+                }
+              },
+              "instanceId": "module:$root",
+              "modulePath": "",
+              "moduleType": "model.CrossAttention",
+              "outputs": {
+                "output": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "callId": "call:$root:0",
+                    "kind": "call",
+                    "modulePath": "",
+                    "portId": "output"
+                  },
+                  "producerHistory": [
+                    {
+                      "callId": "call:attention:0",
+                      "kind": "call",
+                      "modulePath": "attention",
+                      "portId": "output"
+                    },
+                    {
+                      "callId": "call:$root:0",
+                      "kind": "call",
+                      "modulePath": "",
+                      "portId": "output"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    3,
+                    8
+                  ],
+                  "tensorId": "tensor:4",
+                  "valueDigest": "0d07d84f787beef1cbe9b2171eda6cc2f52017304f2d2e262e194564f9f0a806"
+                }
+              },
+              "parentCallId": null,
+              "sequence": 0
+            },
+            {
+              "callId": "call:key_activation:0",
+              "inputs": {
+                "input": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "kind": "input",
+                    "name": "memory"
+                  },
+                  "producerHistory": [
+                    {
+                      "kind": "input",
+                      "name": "memory"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    5,
+                    8
+                  ],
+                  "tensorId": "tensor:1",
+                  "valueDigest": "a481c4179fe813e51297092d00c5541e09405a41161c415f73d3dae0640c7379"
+                }
+              },
+              "instanceId": "module:key_activation",
+              "modulePath": "key_activation",
+              "moduleType": "torch.nn.modules.activation.ReLU",
+              "outputs": {
+                "output": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "callId": "call:key_activation:0",
+                    "kind": "call",
+                    "modulePath": "key_activation",
+                    "portId": "output"
+                  },
+                  "producerHistory": [
+                    {
+                      "callId": "call:key_activation:0",
+                      "kind": "call",
+                      "modulePath": "key_activation",
+                      "portId": "output"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    5,
+                    8
+                  ],
+                  "tensorId": "tensor:3",
+                  "valueDigest": "0decd2646d55383bc4c290d6b3fdf1dacd3137e06b83a38ad5f86039d93266f2"
+                }
+              },
+              "parentCallId": "call:$root:0",
+              "sequence": 1
+            },
+            {
+              "callId": "call:attention:0",
+              "inputs": {
+                "attn_mask": {
+                  "device": "cpu",
+                  "dtype": "bool",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "kind": "input",
+                    "name": "mask"
+                  },
+                  "producerHistory": [
+                    {
+                      "kind": "input",
+                      "name": "mask"
+                    }
+                  ],
+                  "shape": [
+                    3,
+                    5
+                  ],
+                  "tensorId": "tensor:0",
+                  "valueDigest": "5322fecfc92a5e3248a297a3df3eddfb9bd9049504272e4f572b87fa36d4b3bd"
+                },
+                "average_attn_weights": {
+                  "kind": "scalar",
+                  "value": true
+                },
+                "is_causal": {
+                  "kind": "scalar",
+                  "value": false
+                },
+                "key": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "callId": "call:key_activation:0",
+                    "kind": "call",
+                    "modulePath": "key_activation",
+                    "portId": "output"
+                  },
+                  "producerHistory": [
+                    {
+                      "callId": "call:key_activation:0",
+                      "kind": "call",
+                      "modulePath": "key_activation",
+                      "portId": "output"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    5,
+                    8
+                  ],
+                  "tensorId": "tensor:3",
+                  "valueDigest": "0decd2646d55383bc4c290d6b3fdf1dacd3137e06b83a38ad5f86039d93266f2"
+                },
+                "key_padding_mask": {
+                  "kind": "none"
+                },
+                "need_weights": {
+                  "kind": "scalar",
+                  "value": false
+                },
+                "query": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "kind": "input",
+                    "name": "q"
+                  },
+                  "producerHistory": [
+                    {
+                      "kind": "input",
+                      "name": "q"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    3,
+                    8
+                  ],
+                  "tensorId": "tensor:2",
+                  "valueDigest": "4bbc58a9652ed6802f6953594bcbf7cdd13918f3bd478ac31a06eb671af09cdf"
+                },
+                "value": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "kind": "input",
+                    "name": "memory"
+                  },
+                  "producerHistory": [
+                    {
+                      "kind": "input",
+                      "name": "memory"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    5,
+                    8
+                  ],
+                  "tensorId": "tensor:1",
+                  "valueDigest": "a481c4179fe813e51297092d00c5541e09405a41161c415f73d3dae0640c7379"
+                }
+              },
+              "instanceId": "module:attention",
+              "modulePath": "attention",
+              "moduleType": "torch.nn.modules.activation.MultiheadAttention",
+              "outputs": {
+                "output": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "callId": "call:attention:0",
+                    "kind": "call",
+                    "modulePath": "attention",
+                    "portId": "output"
+                  },
+                  "producerHistory": [
+                    {
+                      "callId": "call:attention:0",
+                      "kind": "call",
+                      "modulePath": "attention",
+                      "portId": "output"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    3,
+                    8
+                  ],
+                  "tensorId": "tensor:4",
+                  "valueDigest": "0d07d84f787beef1cbe9b2171eda6cc2f52017304f2d2e262e194564f9f0a806"
+                },
+                "weights": {
+                  "kind": "none"
+                }
+              },
+              "parentCallId": "call:$root:0",
+              "sequence": 2
+            }
+          ],
+          "finite": true,
+          "gradients": {
+            "finite": true,
+            "items": [
+              {
+                "finite": true,
+                "kind": "input",
+                "name": "memory",
+                "shape": [
+                  2,
+                  5,
+                  8
+                ],
+                "status": "observed",
+                "valueDigest": "62c655e885d15f6044dc5e26939e637c28851edb08c2562d71ddf79afdda3f8c"
+              },
+              {
+                "finite": true,
+                "kind": "input",
+                "name": "q",
+                "shape": [
+                  2,
+                  3,
+                  8
+                ],
+                "status": "observed",
+                "valueDigest": "961899bcdad9455845c9f8725cce6afc6a1df89aedaafe50eb8139b54adf1285"
+              },
+              {
+                "finite": true,
+                "kind": "parameter",
+                "name": "attention.in_proj_weight",
+                "shape": [
+                  24,
+                  8
+                ],
+                "status": "observed",
+                "valueDigest": "06a2874b2e37f2266677a406c4fdcd68e84e841821dde8f75ca98a47386bd9ea"
+              },
+              {
+                "finite": true,
+                "kind": "parameter",
+                "name": "attention.in_proj_bias",
+                "shape": [
+                  24
+                ],
+                "status": "observed",
+                "valueDigest": "e74d2f5b4e159e784002fa30349cd5d0e7aaecd5e36d1068ac8f7faa6159e13c"
+              },
+              {
+                "finite": true,
+                "kind": "parameter",
+                "name": "attention.out_proj.weight",
+                "shape": [
+                  8,
+                  8
+                ],
+                "status": "observed",
+                "valueDigest": "d110124fd02996569278833f82f5eea41cec14414509deccfe33db177a0b2b5a"
+              },
+              {
+                "finite": true,
+                "kind": "parameter",
+                "name": "attention.out_proj.bias",
+                "shape": [
+                  8
+                ],
+                "status": "observed",
+                "valueDigest": "fba43e36d1c3c474425df01f22978aebcfa3fded729769b31b4fec9f65d2af34"
+              }
+            ],
+            "objective": "sum of floating differentiable output elements",
+            "status": "observed"
+          },
+          "inputs": {
+            "mask": {
+              "device": "cpu",
+              "dtype": "bool",
+              "finite": true,
+              "kind": "tensor",
+              "producer": {
+                "kind": "input",
+                "name": "mask"
+              },
+              "producerHistory": [
+                {
+                  "kind": "input",
+                  "name": "mask"
+                }
+              ],
+              "shape": [
+                3,
+                5
+              ],
+              "tensorId": "tensor:0",
+              "valueDigest": "5322fecfc92a5e3248a297a3df3eddfb9bd9049504272e4f572b87fa36d4b3bd"
+            },
+            "memory": {
+              "device": "cpu",
+              "dtype": "float32",
+              "finite": true,
+              "kind": "tensor",
+              "producer": {
+                "kind": "input",
+                "name": "memory"
+              },
+              "producerHistory": [
+                {
+                  "kind": "input",
+                  "name": "memory"
+                }
+              ],
+              "shape": [
+                2,
+                5,
+                8
+              ],
+              "tensorId": "tensor:1",
+              "valueDigest": "a481c4179fe813e51297092d00c5541e09405a41161c415f73d3dae0640c7379"
+            },
+            "q": {
+              "device": "cpu",
+              "dtype": "float32",
+              "finite": true,
+              "kind": "tensor",
+              "producer": {
+                "kind": "input",
+                "name": "q"
+              },
+              "producerHistory": [
+                {
+                  "kind": "input",
+                  "name": "q"
+                }
+              ],
+              "shape": [
+                2,
+                3,
+                8
+              ],
+              "tensorId": "tensor:2",
+              "valueDigest": "4bbc58a9652ed6802f6953594bcbf7cdd13918f3bd478ac31a06eb671af09cdf"
+            }
+          },
+          "mode": "eval",
+          "outputs": {
+            "device": "cpu",
+            "dtype": "float32",
+            "finite": true,
+            "kind": "tensor",
+            "producer": {
+              "callId": "call:$root:0",
+              "kind": "call",
+              "modulePath": "",
+              "portId": "output"
+            },
+            "producerHistory": [
+              {
+                "callId": "call:attention:0",
+                "kind": "call",
+                "modulePath": "attention",
+                "portId": "output"
+              },
+              {
+                "callId": "call:$root:0",
+                "kind": "call",
+                "modulePath": "",
+                "portId": "output"
+              }
+            ],
+            "shape": [
+              2,
+              3,
+              8
+            ],
+            "tensorId": "tensor:4",
+            "valueDigest": "0d07d84f787beef1cbe9b2171eda6cc2f52017304f2d2e262e194564f9f0a806"
+          },
+          "replay": {
+            "bindingsEqual": true,
+            "claim": "Fresh construction with the same seed and input sample; exact CPU equality only, not old/new numerical equivalence or all-input determinism.",
+            "gradientsEqual": true,
+            "outputEqual": true,
+            "stateEqual": true,
+            "structureEqual": true
+          },
+          "state": {
+            "after": {
+              "buffers": 0,
+              "digest": "671446063787a534c2caa767497daf8ee707d423d172b6635908266fd915a0e9",
+              "entries": [
+                {
+                  "dtype": "float32",
+                  "key": "attention.in_proj_bias",
+                  "requiresGrad": true,
+                  "role": "parameter",
+                  "shape": [
+                    24
+                  ],
+                  "valueDigest": "2ea9ab9198d1638007400cd2c3bef1cc745b864b76011a0e1bc52180ac6452d4"
+                },
+                {
+                  "dtype": "float32",
+                  "key": "attention.in_proj_weight",
+                  "requiresGrad": true,
+                  "role": "parameter",
+                  "shape": [
+                    24,
+                    8
+                  ],
+                  "valueDigest": "ce53be94722c12beb018d81663d6b74772e128dc7643d5ef19232663f28c49b7"
+                },
+                {
+                  "dtype": "float32",
+                  "key": "attention.out_proj.bias",
+                  "requiresGrad": true,
+                  "role": "parameter",
+                  "shape": [
+                    8
+                  ],
+                  "valueDigest": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+                },
+                {
+                  "dtype": "float32",
+                  "key": "attention.out_proj.weight",
+                  "requiresGrad": true,
+                  "role": "parameter",
+                  "shape": [
+                    8,
+                    8
+                  ],
+                  "valueDigest": "17be4e0890458a58d783b6199bc173cf91a6d15b590d4695483294c7c051708b"
+                }
+              ],
+              "parameters": 4,
+              "sharedGroups": [],
+              "sharedStorageGroups": []
+            },
+            "before": {
+              "buffers": 0,
+              "digest": "671446063787a534c2caa767497daf8ee707d423d172b6635908266fd915a0e9",
+              "entries": [
+                {
+                  "dtype": "float32",
+                  "key": "attention.in_proj_bias",
+                  "requiresGrad": true,
+                  "role": "parameter",
+                  "shape": [
+                    24
+                  ],
+                  "valueDigest": "2ea9ab9198d1638007400cd2c3bef1cc745b864b76011a0e1bc52180ac6452d4"
+                },
+                {
+                  "dtype": "float32",
+                  "key": "attention.in_proj_weight",
+                  "requiresGrad": true,
+                  "role": "parameter",
+                  "shape": [
+                    24,
+                    8
+                  ],
+                  "valueDigest": "ce53be94722c12beb018d81663d6b74772e128dc7643d5ef19232663f28c49b7"
+                },
+                {
+                  "dtype": "float32",
+                  "key": "attention.out_proj.bias",
+                  "requiresGrad": true,
+                  "role": "parameter",
+                  "shape": [
+                    8
+                  ],
+                  "valueDigest": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+                },
+                {
+                  "dtype": "float32",
+                  "key": "attention.out_proj.weight",
+                  "requiresGrad": true,
+                  "role": "parameter",
+                  "shape": [
+                    8,
+                    8
+                  ],
+                  "valueDigest": "17be4e0890458a58d783b6199bc173cf91a6d15b590d4695483294c7c051708b"
+                }
+              ],
+              "parameters": 4,
+              "sharedGroups": [],
+              "sharedStorageGroups": []
+            },
+            "mutatedKeys": []
+          }
+        },
+        {
+          "calls": [
+            {
+              "callId": "call:$root:0",
+              "inputs": {
+                "mask": {
+                  "device": "cpu",
+                  "dtype": "bool",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "kind": "input",
+                    "name": "mask"
+                  },
+                  "producerHistory": [
+                    {
+                      "kind": "input",
+                      "name": "mask"
+                    }
+                  ],
+                  "shape": [
+                    3,
+                    5
+                  ],
+                  "tensorId": "tensor:0",
+                  "valueDigest": "5322fecfc92a5e3248a297a3df3eddfb9bd9049504272e4f572b87fa36d4b3bd"
+                },
+                "memory": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "kind": "input",
+                    "name": "memory"
+                  },
+                  "producerHistory": [
+                    {
+                      "kind": "input",
+                      "name": "memory"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    5,
+                    8
+                  ],
+                  "tensorId": "tensor:1",
+                  "valueDigest": "a481c4179fe813e51297092d00c5541e09405a41161c415f73d3dae0640c7379"
+                },
+                "q": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "kind": "input",
+                    "name": "q"
+                  },
+                  "producerHistory": [
+                    {
+                      "kind": "input",
+                      "name": "q"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    3,
+                    8
+                  ],
+                  "tensorId": "tensor:2",
+                  "valueDigest": "4bbc58a9652ed6802f6953594bcbf7cdd13918f3bd478ac31a06eb671af09cdf"
+                }
+              },
+              "instanceId": "module:$root",
+              "modulePath": "",
+              "moduleType": "model.CrossAttention",
+              "outputs": {
+                "output": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "callId": "call:$root:0",
+                    "kind": "call",
+                    "modulePath": "",
+                    "portId": "output"
+                  },
+                  "producerHistory": [
+                    {
+                      "callId": "call:attention:0",
+                      "kind": "call",
+                      "modulePath": "attention",
+                      "portId": "output"
+                    },
+                    {
+                      "callId": "call:$root:0",
+                      "kind": "call",
+                      "modulePath": "",
+                      "portId": "output"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    3,
+                    8
+                  ],
+                  "tensorId": "tensor:4",
+                  "valueDigest": "226108a016ef89460a6112b6a5afb937c01e496cbc969c89040f432afe517a3c"
+                }
+              },
+              "parentCallId": null,
+              "sequence": 0
+            },
+            {
+              "callId": "call:key_activation:0",
+              "inputs": {
+                "input": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "kind": "input",
+                    "name": "memory"
+                  },
+                  "producerHistory": [
+                    {
+                      "kind": "input",
+                      "name": "memory"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    5,
+                    8
+                  ],
+                  "tensorId": "tensor:1",
+                  "valueDigest": "a481c4179fe813e51297092d00c5541e09405a41161c415f73d3dae0640c7379"
+                }
+              },
+              "instanceId": "module:key_activation",
+              "modulePath": "key_activation",
+              "moduleType": "torch.nn.modules.activation.ReLU",
+              "outputs": {
+                "output": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "callId": "call:key_activation:0",
+                    "kind": "call",
+                    "modulePath": "key_activation",
+                    "portId": "output"
+                  },
+                  "producerHistory": [
+                    {
+                      "callId": "call:key_activation:0",
+                      "kind": "call",
+                      "modulePath": "key_activation",
+                      "portId": "output"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    5,
+                    8
+                  ],
+                  "tensorId": "tensor:3",
+                  "valueDigest": "0decd2646d55383bc4c290d6b3fdf1dacd3137e06b83a38ad5f86039d93266f2"
+                }
+              },
+              "parentCallId": "call:$root:0",
+              "sequence": 1
+            },
+            {
+              "callId": "call:attention:0",
+              "inputs": {
+                "attn_mask": {
+                  "device": "cpu",
+                  "dtype": "bool",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "kind": "input",
+                    "name": "mask"
+                  },
+                  "producerHistory": [
+                    {
+                      "kind": "input",
+                      "name": "mask"
+                    }
+                  ],
+                  "shape": [
+                    3,
+                    5
+                  ],
+                  "tensorId": "tensor:0",
+                  "valueDigest": "5322fecfc92a5e3248a297a3df3eddfb9bd9049504272e4f572b87fa36d4b3bd"
+                },
+                "average_attn_weights": {
+                  "kind": "scalar",
+                  "value": true
+                },
+                "is_causal": {
+                  "kind": "scalar",
+                  "value": false
+                },
+                "key": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "callId": "call:key_activation:0",
+                    "kind": "call",
+                    "modulePath": "key_activation",
+                    "portId": "output"
+                  },
+                  "producerHistory": [
+                    {
+                      "callId": "call:key_activation:0",
+                      "kind": "call",
+                      "modulePath": "key_activation",
+                      "portId": "output"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    5,
+                    8
+                  ],
+                  "tensorId": "tensor:3",
+                  "valueDigest": "0decd2646d55383bc4c290d6b3fdf1dacd3137e06b83a38ad5f86039d93266f2"
+                },
+                "key_padding_mask": {
+                  "kind": "none"
+                },
+                "need_weights": {
+                  "kind": "scalar",
+                  "value": false
+                },
+                "query": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "kind": "input",
+                    "name": "q"
+                  },
+                  "producerHistory": [
+                    {
+                      "kind": "input",
+                      "name": "q"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    3,
+                    8
+                  ],
+                  "tensorId": "tensor:2",
+                  "valueDigest": "4bbc58a9652ed6802f6953594bcbf7cdd13918f3bd478ac31a06eb671af09cdf"
+                },
+                "value": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "kind": "input",
+                    "name": "memory"
+                  },
+                  "producerHistory": [
+                    {
+                      "kind": "input",
+                      "name": "memory"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    5,
+                    8
+                  ],
+                  "tensorId": "tensor:1",
+                  "valueDigest": "a481c4179fe813e51297092d00c5541e09405a41161c415f73d3dae0640c7379"
+                }
+              },
+              "instanceId": "module:attention",
+              "modulePath": "attention",
+              "moduleType": "torch.nn.modules.activation.MultiheadAttention",
+              "outputs": {
+                "output": {
+                  "device": "cpu",
+                  "dtype": "float32",
+                  "finite": true,
+                  "kind": "tensor",
+                  "producer": {
+                    "callId": "call:attention:0",
+                    "kind": "call",
+                    "modulePath": "attention",
+                    "portId": "output"
+                  },
+                  "producerHistory": [
+                    {
+                      "callId": "call:attention:0",
+                      "kind": "call",
+                      "modulePath": "attention",
+                      "portId": "output"
+                    }
+                  ],
+                  "shape": [
+                    2,
+                    3,
+                    8
+                  ],
+                  "tensorId": "tensor:4",
+                  "valueDigest": "226108a016ef89460a6112b6a5afb937c01e496cbc969c89040f432afe517a3c"
+                },
+                "weights": {
+                  "kind": "none"
+                }
+              },
+              "parentCallId": "call:$root:0",
+              "sequence": 2
+            }
+          ],
+          "finite": true,
+          "gradients": {
+            "finite": true,
+            "items": [
+              {
+                "finite": true,
+                "kind": "input",
+                "name": "memory",
+                "shape": [
+                  2,
+                  5,
+                  8
+                ],
+                "status": "observed",
+                "valueDigest": "8cfccbd87233896e491d2b74001aaf1e1542d00572187bca44532ab5b83c8f04"
+              },
+              {
+                "finite": true,
+                "kind": "input",
+                "name": "q",
+                "shape": [
+                  2,
+                  3,
+                  8
+                ],
+                "status": "observed",
+                "valueDigest": "847170c82f03eff1923c1eb754de00428a731b63e8f86de52f6c0bc7e8023b63"
+              },
+              {
+                "finite": true,
+                "kind": "parameter",
+                "name": "attention.in_proj_weight",
+                "shape": [
+                  24,
+                  8
+                ],
+                "status": "observed",
+                "valueDigest": "a52c51085999af368ed68db027709dd66ce517ba45b3ce1719ce20651f28f4e8"
+              },
+              {
+                "finite": true,
+                "kind": "parameter",
+                "name": "attention.in_proj_bias",
+                "shape": [
+                  24
+                ],
+                "status": "observed",
+                "valueDigest": "13edf70be1eb29e84046459a91f6c0da697498c13bdb9b1b94b174362ca66983"
+              },
+              {
+                "finite": true,
+                "kind": "parameter",
+                "name": "attention.out_proj.weight",
+                "shape": [
+                  8,
+                  8
+                ],
+                "status": "observed",
+                "valueDigest": "42e3fa814f56dd334f8aff9d0947352cb36d74e2aa25c012202db086a1bf6019"
+              },
+              {
+                "finite": true,
+                "kind": "parameter",
+                "name": "attention.out_proj.bias",
+                "shape": [
+                  8
+                ],
+                "status": "observed",
+                "valueDigest": "fba43e36d1c3c474425df01f22978aebcfa3fded729769b31b4fec9f65d2af34"
+              }
+            ],
+            "objective": "sum of floating differentiable output elements",
+            "status": "observed"
+          },
+          "inputs": {
+            "mask": {
+              "device": "cpu",
+              "dtype": "bool",
+              "finite": true,
+              "kind": "tensor",
+              "producer": {
+                "kind": "input",
+                "name": "mask"
+              },
+              "producerHistory": [
+                {
+                  "kind": "input",
+                  "name": "mask"
+                }
+              ],
+              "shape": [
+                3,
+                5
+              ],
+              "tensorId": "tensor:0",
+              "valueDigest": "5322fecfc92a5e3248a297a3df3eddfb9bd9049504272e4f572b87fa36d4b3bd"
+            },
+            "memory": {
+              "device": "cpu",
+              "dtype": "float32",
+              "finite": true,
+              "kind": "tensor",
+              "producer": {
+                "kind": "input",
+                "name": "memory"
+              },
+              "producerHistory": [
+                {
+                  "kind": "input",
+                  "name": "memory"
+                }
+              ],
+              "shape": [
+                2,
+                5,
+                8
+              ],
+              "tensorId": "tensor:1",
+              "valueDigest": "a481c4179fe813e51297092d00c5541e09405a41161c415f73d3dae0640c7379"
+            },
+            "q": {
+              "device": "cpu",
+              "dtype": "float32",
+              "finite": true,
+              "kind": "tensor",
+              "producer": {
+                "kind": "input",
+                "name": "q"
+              },
+              "producerHistory": [
+                {
+                  "kind": "input",
+                  "name": "q"
+                }
+              ],
+              "shape": [
+                2,
+                3,
+                8
+              ],
+              "tensorId": "tensor:2",
+              "valueDigest": "4bbc58a9652ed6802f6953594bcbf7cdd13918f3bd478ac31a06eb671af09cdf"
+            }
+          },
+          "mode": "train",
+          "outputs": {
+            "device": "cpu",
+            "dtype": "float32",
+            "finite": true,
+            "kind": "tensor",
+            "producer": {
+              "callId": "call:$root:0",
+              "kind": "call",
+              "modulePath": "",
+              "portId": "output"
+            },
+            "producerHistory": [
+              {
+                "callId": "call:attention:0",
+                "kind": "call",
+                "modulePath": "attention",
+                "portId": "output"
+              },
+              {
+                "callId": "call:$root:0",
+                "kind": "call",
+                "modulePath": "",
+                "portId": "output"
+              }
+            ],
+            "shape": [
+              2,
+              3,
+              8
+            ],
+            "tensorId": "tensor:4",
+            "valueDigest": "226108a016ef89460a6112b6a5afb937c01e496cbc969c89040f432afe517a3c"
+          },
+          "replay": {
+            "bindingsEqual": true,
+            "claim": "Fresh construction with the same seed and input sample; exact CPU equality only, not old/new numerical equivalence or all-input determinism.",
+            "gradientsEqual": true,
+            "outputEqual": true,
+            "stateEqual": true,
+            "structureEqual": true
+          },
+          "state": {
+            "after": {
+              "buffers": 0,
+              "digest": "671446063787a534c2caa767497daf8ee707d423d172b6635908266fd915a0e9",
+              "entries": [
+                {
+                  "dtype": "float32",
+                  "key": "attention.in_proj_bias",
+                  "requiresGrad": true,
+                  "role": "parameter",
+                  "shape": [
+                    24
+                  ],
+                  "valueDigest": "2ea9ab9198d1638007400cd2c3bef1cc745b864b76011a0e1bc52180ac6452d4"
+                },
+                {
+                  "dtype": "float32",
+                  "key": "attention.in_proj_weight",
+                  "requiresGrad": true,
+                  "role": "parameter",
+                  "shape": [
+                    24,
+                    8
+                  ],
+                  "valueDigest": "ce53be94722c12beb018d81663d6b74772e128dc7643d5ef19232663f28c49b7"
+                },
+                {
+                  "dtype": "float32",
+                  "key": "attention.out_proj.bias",
+                  "requiresGrad": true,
+                  "role": "parameter",
+                  "shape": [
+                    8
+                  ],
+                  "valueDigest": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+                },
+                {
+                  "dtype": "float32",
+                  "key": "attention.out_proj.weight",
+                  "requiresGrad": true,
+                  "role": "parameter",
+                  "shape": [
+                    8,
+                    8
+                  ],
+                  "valueDigest": "17be4e0890458a58d783b6199bc173cf91a6d15b590d4695483294c7c051708b"
+                }
+              ],
+              "parameters": 4,
+              "sharedGroups": [],
+              "sharedStorageGroups": []
+            },
+            "before": {
+              "buffers": 0,
+              "digest": "671446063787a534c2caa767497daf8ee707d423d172b6635908266fd915a0e9",
+              "entries": [
+                {
+                  "dtype": "float32",
+                  "key": "attention.in_proj_bias",
+                  "requiresGrad": true,
+                  "role": "parameter",
+                  "shape": [
+                    24
+                  ],
+                  "valueDigest": "2ea9ab9198d1638007400cd2c3bef1cc745b864b76011a0e1bc52180ac6452d4"
+                },
+                {
+                  "dtype": "float32",
+                  "key": "attention.in_proj_weight",
+                  "requiresGrad": true,
+                  "role": "parameter",
+                  "shape": [
+                    24,
+                    8
+                  ],
+                  "valueDigest": "ce53be94722c12beb018d81663d6b74772e128dc7643d5ef19232663f28c49b7"
+                },
+                {
+                  "dtype": "float32",
+                  "key": "attention.out_proj.bias",
+                  "requiresGrad": true,
+                  "role": "parameter",
+                  "shape": [
+                    8
+                  ],
+                  "valueDigest": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+                },
+                {
+                  "dtype": "float32",
+                  "key": "attention.out_proj.weight",
+                  "requiresGrad": true,
+                  "role": "parameter",
+                  "shape": [
+                    8,
+                    8
+                  ],
+                  "valueDigest": "17be4e0890458a58d783b6199bc173cf91a6d15b590d4695483294c7c051708b"
+                }
+              ],
+              "parameters": 4,
+              "sharedGroups": [],
+              "sharedStorageGroups": []
+            },
+            "mutatedKeys": []
+          }
+        }
+      ],
+      "seed": 37
+    },
+    "stateCompatibility": {
+      "status": "observed",
+      "strategy": "fresh default construction; no checkpoint loading or migration",
+      "checkpoint": "not_provided",
+      "optimizer": "not_provided",
+      "scheduler": "not_provided",
+      "trainingProgress": "not_provided",
+      "randomState": "profile seed reset per replay; no external training RNG restored",
+      "sourceVsCheckpointCompatibility": "unknown"
+    }
+  },
+  "runtimeEnvironment": {
+    "interpreter": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/.venv-runtime/bin/python",
+    "virtualEnvironment": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/.venv-runtime",
+    "basePrefix": "/home/fzg/anaconda3",
+    "executable": "/home/fzg/anaconda3/bin/python3.11",
+    "executableDigest": "2886962487597d9eac12094e21a4a7ba749e9a2a7293734fbafd231b102a546c",
+    "virtualEnvironmentContentDigest": "2e0209a1f075546207b0666b2c9b461f84eb0d53956a4be2bad0a5082c8f1117",
+    "virtualEnvironmentFileCount": 19040,
+    "venvConfigDigest": "19d635d770a4932e43402446fc04e4ce08d97394e021bf00db1885218ab11ea0",
+    "stdlibPath": "/home/fzg/anaconda3/lib/python3.11",
+    "stdlibContentDigest": "8411535290bbd704f7764d59d3be69cd2337b20d506e4a7037b56ca42451db9f",
+    "stdlibFileCount": 1908,
+    "sharedLibraryMounts": [
+      {
+        "path": "/home/fzg/anaconda3/lib/libbz2.so.1.0",
+        "digest": "2aa4427cfdbae9ef95a402de9291102dd293e58d29409df9812c3c8fa9216ccd"
+      },
+      {
+        "path": "/home/fzg/anaconda3/lib/libcrypto.so.3",
+        "digest": "024b526dbcfea7594368d8bd847d907a6d352015e32dea5c89f750460ba312da"
+      },
+      {
+        "path": "/home/fzg/anaconda3/lib/libffi.so.8",
+        "digest": "a5d54aeb8ed2fd5e0ccf9d38b28cad6dec76517f69224a5d9687c1970b57b194"
+      },
+      {
+        "path": "/home/fzg/anaconda3/lib/liblzma.so.5",
+        "digest": "0e5ab3623d8586efcddbe51cf7ad444bcd75092382bc781d30567699a4a6ba08"
+      },
+      {
+        "path": "/home/fzg/anaconda3/lib/libncursesw.so.6",
+        "digest": "7fa4e5e93804d78660b0eef727cdb4211209e1742e4ad3669348022668d90962"
+      },
+      {
+        "path": "/home/fzg/anaconda3/lib/libpanelw.so.6",
+        "digest": "d26f0c9d2c182d5de700a369a7ba4850be3ccb36bab4936addfc9551ef28526a"
+      },
+      {
+        "path": "/home/fzg/anaconda3/lib/libreadline.so.8",
+        "digest": "0b6a9d66a73115c872272bb479c8f29df1bf7d9b16e5913e083d64b7753ce1c6"
+      },
+      {
+        "path": "/home/fzg/anaconda3/lib/libsqlite3.so.0",
+        "digest": "6fea60dd09de040809ad67663e18f7c1f247535950e89a81290f567f2fe41565"
+      },
+      {
+        "path": "/home/fzg/anaconda3/lib/libssl.so.3",
+        "digest": "e69c92d062a0c048b4d8c8d08809ace6aa8269ee54986e68adab71da23129da3"
+      },
+      {
+        "path": "/home/fzg/anaconda3/lib/libtcl8.6.so",
+        "digest": "0cf512a333c12a0826c5ce8a7355798c2fbbda60f10d82078c5cdf33a07b3a49"
+      },
+      {
+        "path": "/home/fzg/anaconda3/lib/libtinfow.so.6",
+        "digest": "f15834b208dd1441c48f35009ebbb96c574c2658fba8adc98b8f53dbf37d7e19"
+      },
+      {
+        "path": "/home/fzg/anaconda3/lib/libtk8.6.so",
+        "digest": "d6f9e4af876bfad3c56c075e1b07237354d5e06c9a55e9c266b222dfb2959080"
+      },
+      {
+        "path": "/home/fzg/anaconda3/lib/libuuid.so.1",
+        "digest": "b42fa6cf1dcaca6b84e8155c4649d6bad561eaca2e8fa9473db178dbaa4aec53"
+      },
+      {
+        "path": "/home/fzg/anaconda3/lib/libz.so.1",
+        "digest": "0b0e682a9dc7fd4895a6783288f851b793dc89633f28714027974fa4d66f3914"
+      },
+      {
+        "path": "/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+        "digest": "9eb34cb2da3ae2a9398cc09b3cd2d069563ec40d9858cb711af15cd23fa80abf"
+      },
+      {
+        "path": "/lib/x86_64-linux-gnu/libX11.so.6",
+        "digest": "34b7869a1ba702462a1aa862fc0afe5b2608a7d5a09552c07796802fcf0c684b"
+      },
+      {
+        "path": "/lib/x86_64-linux-gnu/libXau.so.6",
+        "digest": "98343a8324ea62ed75a13c923ed5dea96b7a8ad41aeba9f18126c4cbf7178064"
+      },
+      {
+        "path": "/lib/x86_64-linux-gnu/libXdmcp.so.6",
+        "digest": "1dc3ff1269a5ede69ef9a8ec2436d73fccbcd10531055b359292e0bde4e29b46"
+      },
+      {
+        "path": "/lib/x86_64-linux-gnu/libbsd.so.0",
+        "digest": "e4ad21c203d8e8b9b7f49071311339af6b438026e1ad236403e3b379b022f23d"
+      },
+      {
+        "path": "/lib/x86_64-linux-gnu/libc.so.6",
+        "digest": "c53819710b163d3f1d2541778590d58d3ef31cb0ed75adcbe059faac68c1e72d"
+      },
+      {
+        "path": "/lib/x86_64-linux-gnu/libcrypt.so.1",
+        "digest": "d8b34ade1d95c6243a48e90f2873d65399dfb0cd3fa4ee2af45afc9e6cb8642b"
+      },
+      {
+        "path": "/lib/x86_64-linux-gnu/libdl.so.2",
+        "digest": "bf1783273aa79484bf5f70eddc013bc3982785d8aadef224aa09beb08fa95b42"
+      },
+      {
+        "path": "/lib/x86_64-linux-gnu/libgcc_s.so.1",
+        "digest": "fc9d43b2f6c20e53b009238f767c5b949d202389e20de9e202ea684b4ba3729a"
+      },
+      {
+        "path": "/lib/x86_64-linux-gnu/libm.so.6",
+        "digest": "00830df310aac5023e10bd7b715149ab8ddc682277fd8ae3539a7a44fcdd6c38"
+      },
+      {
+        "path": "/lib/x86_64-linux-gnu/libmd.so.0",
+        "digest": "bb376813876bb214535bbbdac70f2c0c4b00baecb81557dab78a79518248df06"
+      },
+      {
+        "path": "/lib/x86_64-linux-gnu/libnsl.so.1",
+        "digest": "59ddce25d15fac6e0b510791736cc4633f1eb5f786eb22e940132397ab70b06c"
+      },
+      {
+        "path": "/lib/x86_64-linux-gnu/libpthread.so.0",
+        "digest": "16e807d47ff2441f0203fb2b8805d471e555d932d3d8d262ec6a58ea1d640fd8"
+      },
+      {
+        "path": "/lib/x86_64-linux-gnu/librt.so.1",
+        "digest": "c8124d69d67c4f94c162c36550c9244d60e2e368ecae98857754e3ba11824677"
+      },
+      {
+        "path": "/lib/x86_64-linux-gnu/libstdc++.so.6",
+        "digest": "ff0825e113603c3866680d5d52216bc6d8eedf3a59f52a0aef67ff01994db128"
+      },
+      {
+        "path": "/lib/x86_64-linux-gnu/libutil.so.1",
+        "digest": "8647a84d95565d4676d8fd8fa79569f3a81dedd19f9212029ac9225b546e25f1"
+      },
+      {
+        "path": "/lib/x86_64-linux-gnu/libxcb.so.1",
+        "digest": "aabc489094abd96c876d1c989a2da8a8aa6d28f5a676c4a84dd6d0a0c34aec5d"
+      },
+      {
+        "path": "/lib64/ld-linux-x86-64.so.2",
+        "digest": "9eb34cb2da3ae2a9398cc09b3cd2d069563ec40d9858cb711af15cd23fa80abf"
+      }
+    ],
+    "sharedLibraryContentDigest": "87f5c3671caf7727589845897755a775b337ffe76921c6d265b920e487ab1956",
+    "baseHiddenProbe": "/home/fzg/anaconda3/conda-meta/history",
+    "baseHiddenProbeExists": true,
+    "workerDigest": "23fd16bc63397ff2ee0005d575d1a786832ed4fcf5c9b7c28328bf9ed60a521f",
+    "controllerDigest": "2508b11edbdcc24501b22b4af40d91d4afb2f11f7dc019d91e6a24fe7df1acb0",
+    "seccompDigest": "04524e22f1fdbd5d194a9a88acdfe176c2998122a32b5ac381b3c938df0fc6fd",
+    "dependencyLockDigest": "91f79e88742d4df88631dea675b893b43b9dc0d7fab58600435ce28aa0b9fbb1",
+    "dependencyPins": {
+      "filelock": "3.32.3",
+      "fsspec": "2026.7.0",
+      "jinja2": "3.1.6",
+      "markupsafe": "3.0.3",
+      "mpmath": "1.3.0",
+      "networkx": "3.6.1",
+      "sympy": "1.13.1",
+      "torch": "2.5.1+cpu",
+      "typing-extensions": "4.16.0"
+    },
+    "backend": "pytorch",
+    "device": "cpu",
+    "environmentFreezeScope": "all venv files including bytecode, resolved Python executable, standard library excluding base site-packages, ELF dependency closure, config, dependency lock and trusted adapter; executable/stdlib/ELF mounts are private read-only copies, venv bytes are rechecked after execution",
+    "frameworkOrigin": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/.venv-runtime/lib/python3.11/site-packages/torch/__init__.py",
+    "frameworkVersion": "2.5.1+cpu",
+    "installedPackages": {
+      "filelock": "3.32.3",
+      "fsspec": "2026.7.0",
+      "jinja2": "3.1.6",
+      "markupsafe": "3.0.3",
+      "mpmath": "1.3.0",
+      "networkx": "3.6.1",
+      "pip": "23.2.1",
+      "setuptools": "65.5.0",
+      "sympy": "1.13.1",
+      "torch": "2.5.1+cpu",
+      "typing-extensions": "4.16.0"
+    },
+    "pythonVersion": "3.11.5",
+    "sysBasePrefix": "/home/fzg/anaconda3",
+    "sysPrefix": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/.venv-runtime"
+  }
+}

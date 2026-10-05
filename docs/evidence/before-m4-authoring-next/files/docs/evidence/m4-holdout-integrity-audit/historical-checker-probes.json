@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "scope": "Mutation tests prove gaps in the historical holdout test checks; these deliberately corrupted JSON graphs are not product output failures.",
+  "modelExecution": false,
+  "passed": true,
+  "cases": [
+    {
+      "case": "foreign same-named target port",
+      "entry": "TemporalForecaster",
+      "originalPassedCompleteOracle": true,
+      "historicalCheckerAccepted": true,
+      "oldMethod": "test_temporal_lstm_nested_outputs_and_shared_projection",
+      "supplementaryCheckerRejected": true,
+      "reason": "target binding uses a foreign or missing local port"
+    },
+    {
+      "case": "split producer tensor at shared projection consumer",
+      "entry": "TemporalForecaster",
+      "originalPassedCompleteOracle": true,
+      "historicalCheckerAccepted": true,
+      "oldMethod": "test_temporal_lstm_nested_outputs_and_shared_projection",
+      "supplementaryCheckerRejected": true,
+      "reason": "one producer split into multiple tensor identities"
+    },
+    {
+      "case": "extra declared but unbound attention port",
+      "entry": "PatchVisionEncoder",
+      "originalPassedCompleteOracle": true,
+      "historicalCheckerAccepted": true,
+      "oldMethod": "test_vit_patch_attention_and_residual_oracle",
+      "supplementaryCheckerRejected": true,
+      "reason": "attention: complete declared port contract differs"
+    },
+    {
+      "case": "wrong parent for recovered repeat member operation",
+      "entry": "SkipSegmentation",
+      "originalPassedCompleteOracle": true,
+      "historicalCheckerAccepted": true,
+      "oldMethod": "test_unet_skip_concat_and_independent_repeat_with_opaque_upsampling",
+      "supplementaryCheckerRejected": true,
+      "reason": "refinement.1.conv: parent differs"
+    }
+  ],
+  "bindings": [
+    {
+      "path": "tests/test_m4_holdout.py",
+      "sha256": "e621d42811ab0a1f616e0fa5a5ee37375417ef4f3c4cb800d137cffbd83d7763"
+    },
+    {
+      "path": "tests/m4_holdout_oracle.py",
+      "sha256": "897b8b606cb46be47cc3d1ddfc012f6cf585f6ad5709d8a2a2a81924f6550c26"
+    },
+    {
+      "path": "tests/test_m4_holdout_integrity.py",
+      "sha256": "a7c31f77677e37eddc5ad9f27be572e66d537ed5522ae2d1c088e9fc0d82d562"
+    },
+    {
+      "path": "tests/m4_holdout_integrity_oracle.py",
+      "sha256": "d8808f926ace91db4a84216ad5075b704b4345ab4224f4e6f5eb1a31a6ba0152"
+    },
+    {
+      "path": "src/archcanvas_python/frontend.py",
+      "sha256": "ce7f7f733da28cb31ecff80ca029a53094e88f8451bffc3874f8167f80a07d00"
+    }
+  ],
+  "limitation": "Historical set+length relation checks already reject duplicates for their present unique expected relations; the demonstrated gaps concern local-port ownership, tensor identity, complete port declarations and parent containment."
+}

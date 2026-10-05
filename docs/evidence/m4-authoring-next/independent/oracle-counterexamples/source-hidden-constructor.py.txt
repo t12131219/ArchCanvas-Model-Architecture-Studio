@@ -1,0 +1,26 @@
+"""Fresh ArchCanvas authored model; static declarations are not runtime verification."""
+import torch
+from torch import nn
+
+
+class AuthoredModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.extra = nn.Identity()
+        self.node_a7937b64b8caa58f = nn.Linear(in_features=4, out_features=8, bias=False, dtype=torch.float32)
+        self.node_99e2995dbca8ca48 = nn.ReLU()
+        self.node_ce677f0f258927f8 = nn.GELU(approximate='tanh')
+        self.node_5377a56ff730ddd8 = nn.SiLU()
+        self.node_689f6a627384c7dc = nn.Identity()
+        self.node_d90ee9ccf6bea1d2 = nn.Dropout(p=0.25)
+        self.node_3547cb112ac4489a = nn.Linear(in_features=8, out_features=3, bias=True, dtype=torch.float32)
+
+    def forward(self, node_2d711642b726b044):
+        node_a7937b64b8caa58f = self.node_a7937b64b8caa58f(node_2d711642b726b044)
+        node_99e2995dbca8ca48 = self.node_99e2995dbca8ca48(node_a7937b64b8caa58f)
+        node_ce677f0f258927f8 = self.node_ce677f0f258927f8(node_99e2995dbca8ca48)
+        node_5377a56ff730ddd8 = self.node_5377a56ff730ddd8(node_ce677f0f258927f8)
+        node_689f6a627384c7dc = self.node_689f6a627384c7dc(node_5377a56ff730ddd8)
+        node_d90ee9ccf6bea1d2 = self.node_d90ee9ccf6bea1d2(node_689f6a627384c7dc)
+        node_3547cb112ac4489a = self.node_3547cb112ac4489a(node_d90ee9ccf6bea1d2)
+        return {'out': node_3547cb112ac4489a}

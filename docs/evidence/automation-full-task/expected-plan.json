@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "protocol": "archcanvas-automation-task-oracle-plan/1",
+  "status": "predeclared-intent-and-baseline-oracle-not-observed-outcome",
+  "participantKind": "automation",
+  "humanParticipants": 0,
+  "humanSuccessCertified": false,
+  "expectedBasis": {
+    "requirements": "Parent-specified edits before their UI execution; identities and bindings from the frozen pristine baseline/source, never from final outputs.",
+    "baseline": ".archcanvas/m4-research-trial-zoom-final/baseline/canvas.json",
+    "documentId": "canvas-architecture-model.Transformer-01ac6cd61f05-b0bd5bf0",
+    "sourceDigest": "01ac6cd61f058e9de5230b0c371527a1fa2b4f73842019e0e5785d5f0deb0916",
+    "irDigest": "b0bd5bf01fa364bf415f6aba9707f5d74d9b7bb058534c0dac54fc48fd3729e6",
+    "productionJavascript": "assets/index-oH4Ot2L9.js",
+    "productionJavascriptSha256": "2e77f8616f8408afc985740e77b6a69c7728816f7ec4231f0ee7fe9224752e9f",
+    "policy": "No source or saved Canvas JSON editing; execute every edit through ordinary visible Studio controls. Pre-input DOM may supply camera and geometry for explicitly declared relational expectations."
+  },
+  "canonicalTargets": {
+    "root": "call:instance:model.Transformer",
+    "encoder": "repeat:instance:model.Transformer.encoder",
+    "firstEncoderLayer": "call:instance:model.Transformer.encoder.0",
+    "selfAttention": "call:instance:model.Transformer.encoder.0.self_attention",
+    "feedforward": "call:instance:model.Transformer.encoder.0.feedforward",
+    "movedNode": "call:instance:model.Transformer.encoder.0.feedforward.expand",
+    "protectedPin": "input:model.Transformer:memory_mask"
+  },
+  "expectedSavedFields": {
+    "displayAliases": {
+      "repeat:instance:model.Transformer.encoder": "Encoder Context"
+    },
+    "nodeStyleOverrides": {
+      "repeat:instance:model.Transformer.encoder": {
+        "fill": "#deeee6"
+      }
+    },
+    "legendItemById": {
+      "id": "legend:residual",
+      "label": "Residual route",
+      "color": "#f4eddf",
+      "glyph": "add",
+      "preserveOtherLegendItemsAndOrder": true
+    },
+    "newAnnotation": {
+      "text": "Encoder context is reused by cross-attention.",
+      "width": 380,
+      "count": 1,
+      "identityRule": "Unique newly created annotation UUID, consistent across DOM/save/reload/export; do not require a preselected random UUID.",
+      "idRegex": "^annotation-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "initialPositionRule": "Capture SVG viewBox before clicking Add annotation: x=viewBox.x, y=viewBox.height-45. Record the captured basis before the action; do not learn expected position from the resulting annotation."
+    },
+    "edgeStyleOverrides": {
+      "edge:18": {
+        "width": 2,
+        "dashed": true
+      }
+    },
+    "pageSpec": {
+      "widthMm": 85,
+      "preset": "monochrome",
+      "background": "#ffffff"
+    },
+    "pinnedObjectsContains": [
+      "input:model.Transformer:memory_mask"
+    ],
+    "expandedIdsContains": [
+      "call:instance:model.Transformer",
+      "repeat:instance:model.Transformer.encoder",
+      "call:instance:model.Transformer.encoder.0",
+      "call:instance:model.Transformer.encoder.0.feedforward"
+    ]
+  },
+  "edgeBindingOracle": {
+    "id": "edge:18",
+    "source": {
+      "nodeId": "call:instance:model.Transformer.encoder.0.feedforward.expand",
+      "portId": "call:instance:model.Transformer.encoder.0.feedforward.expand:out:output"
+    },
+    "target": {
+      "nodeId": "call:instance:model.Transformer.encoder.0.feedforward.activation",
+      "portId": "call:instance:model.Transformer.encoder.0.feedforward.activation:in:input"
+    },
+    "tensorId": "tensor:call:instance:model.Transformer.encoder.0.feedforward.expand:output",
+    "role": "data",
+    "selectionRequirement": "Select the actual visible edge:18 after FFN expansion. Lock identity before changing width or dash; if a different edge is selected, report mismatch rather than deriving a new expected identity from edited output."
+  },
+  "moveOracle": {
+    "desiredScreenDeltaCssPixels": {
+      "x": 32,
+      "y": 20
+    },
+    "preferredPrecondition": "Click visible 100% control, focus moved node, and read exact .paper computed transform before pointerdown; rounded zoom label alone is insufficient.",
+    "preInputCapture": [
+      "target body rect canvas coordinates",
+      "protected pin body canvas and screen coordinates",
+      "exact camera zoom and translation",
+      "source/IR/document/revision",
+      "all edited fields before drag"
+    ],
+    "canvasDeltaFormula": "dx=4*Math.round(32/preInputCameraZoom/4); dy=4*Math.round(20/preInputCameraZoom/4)",
+    "ifPreInputZoomIsExactlyOne": {
+      "x": 32,
+      "y": 20
+    },
+    "actualInputRequirement": "Trusted same-pointer down/moves/up on movedNode; compare delivered input delta against planned +32/+20. Use the captured pre-input camera, never resulting geometry, to calculate the expected grid displacement.",
+    "protectedPinExpectation": "Canvas body remains exactly unchanged. With unchanged camera and viewport, screen body also remains unchanged. Offscreen/missing screen coverage is unknown rather than zero.",
+    "historyExpectation": "After undo, selected target and protected pin return exactly to pre-drag bodies and edited fields; after redo they return exactly to the declared post-drag state. Compare fields and geometry, not just revision increments."
+  },
+  "domAndExportOracle": {
+    "alias": "Actual node group for repeat encoder has Encoder Context as displayed label; source node label/identity remains encoder/repeat.",
+    "nodeFillBeforeMonochrome": "Actual Encoder body fill #deeee6 in paper mode; preserve screenshot before switching page preset.",
+    "nodeFillAfterMonochrome": "Actual Encoder body fill #ffffff while saved override remains #deeee6; monochrome overrides display colors.",
+    "legend": "Actual data-legend-id=legend:residual contains Residual route and add symbol; final monochrome color is white while saved legend color stays #f4eddf.",
+    "annotation": "One new data-annotation-id group matches the recorded UUID, exact text after joining wrapped tspans, and width 380.",
+    "edge": "Actual data-edge-id=edge:18 path has stroke-width=2 and stroke-dasharray=5 4; final monochrome stroke is #56616b, with original tensor/port binding preserved.",
+    "page": "Saved width85/presetmonochrome; final SVG physical width is 85mm, positive height, consistent viewBox aspect ratio and same source/IR/document/revision.",
+    "exportScope": "document",
+    "exportInput": "Each generated artifact document.json must equal the exact final saved CanvasDocument field by field.",
+    "publicationControls": "Publication SVG excludes expansion controls, selection outlines, toolbar and editing grid.",
+    "visualBoundary": "Matching fields/XML/bytes does not certify readable 85mm text, aesthetics, glyph occlusion or human success; inspect actual opened export and retain those gates."
+  },
+  "checkpointAndArtifactPlan": [
+    {
+      "task": 1,
+      "beforeRecording": "Expand Encoder then first layer and select self attention through visible UI; preserve start and step1 screenshots plus DOM identities/frontier."
+    },
+    {
+      "task": 2,
+      "beforeRecording": "Complete alias/fill/legend/annotation and additional edge/page edits. Preserve actual color screenshot before monochrome, then DOM and exposed saved-field evidence for all declared edits."
+    },
+    {
+      "task": 3,
+      "beforeRecording": "Pin memory_mask, expand FFN, move expand node under the declared camera precondition, undo and redo. Preserve before/after/undo/redo DOM facts and screenshots."
+    },
+    {
+      "task": 4,
+      "beforeRecording": "Click Save, wait for saved state, preserve exact storage envelope/Canvas. Refresh the same tab with study=1; wait for reopened document and compare all declared edited fields, UUID, layout/frontier and pins before recording checkpoint4. Study sessionStorage survives same-tab refresh; undo history does not."
+    },
+    {
+      "task": 5,
+      "beforeRecording": "Open export dialog after final save; use whole document at85mm. Generate SVG/PDF and immediately preserve each actual artifact ID, links, input document and receipt. Open actual file and capture it. Return to Studio with export result still displayed before recording checkpoint5 so exportLinks are observed. Do not edit the document after generating final exports."
+    }
+  ],
+  "studyBoundary": {
+    "participantTypeMustBe": "automation",
+    "participantCodeRule": "Unique automation code; never relabel as researcher.",
+    "storage": "Study recorder is sessionStorage keyed archcanvas.m4-study.v1; backup exposed Study JSON after checkpoints and preserve same tab/origin on refresh.",
+    "timer": "Elapsed checkpoint/task time includes pauses/reloads and is not input-to-paint latency. No <=180sec researcher success claim for agent operation.",
+    "completion": "Mark a checkpoint only after its actual actions/artifacts exist; absent actions become abandoned or unverified. Five automation checkpoints may establish engineering task coverage, never researcher completion rate.",
+    "researchPackage": "Leave existing five unassigned human slots intact. Use an isolated automation document workspace and record its provenance; do not assign a researcher slot or write review success.",
+    "exportLinks": "Study observe reads only current .export-result links. Cache remembers latest artifact only and checks matching document revision/source/IR/width/whole scope; preserve all earlier SVG/PDF IDs separately immediately."
+  }
+}

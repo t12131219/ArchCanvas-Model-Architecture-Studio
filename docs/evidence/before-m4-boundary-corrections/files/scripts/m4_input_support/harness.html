@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>M4 独立输入测量台</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#edf2f7;color:#25364a;font:13px system-ui,sans-serif}.controls{height:144px;padding:10px 16px;border-bottom:1px solid #afbcc9}h1{font-size:18px;display:inline;margin-right:12px}p{margin:6px 0}button,input,select{font:inherit;padding:5px 8px;margin-right:5px;border:1px solid #acbac9;border-radius:4px;background:#fff;color:inherit}input.ids{width:280px}button:disabled{opacity:.5}#status{display:inline-block;margin-left:8px}iframe{display:block;width:1280px;height:720px;border:0}textarea{width:100%;height:220px;font:11px monospace}label{margin-right:6px}.receipt-panel{padding:12px}
+</style>
+<div class="controls">
+<h1>M4 独立输入测量台</h1><span>代理操作诊断 · 未修改正式构建 · iframe 1280 × 720</span>
+<p>外页仅观察普通交互。连续拖动/滚轮只记录 DOM 观测代理值；缺少原生 Event Timing 时保持未知。</p>
+<div><label>会话标签<input id="label" aria-label="会话标签" value="final-build-input-diagnostic"></label><label>测量模式<select id="mode" aria-label="测量模式"><option value="full">完整输入观测</option><option value="raf-only">轻量 rAF 对照</option></select></label><button id="start">开始会话</button><button id="stop" disabled>结束会话并显示收据</button><output id="status" aria-live="polite">等待正式 Studio 载入</output></div>
+<p><label>操作<select id="operation" aria-label="测量操作"><option value="zoom">缩放</option><option value="drag">拖动节点</option><option value="pan">平移画布</option><option value="undo">撤销</option><option value="redo">重做</option><option value="toggle">展开/收起</option><option value="pin">固定/解锁</option></select></label><label>目标 ID<input class="ids" id="targets" aria-label="目标 ID" placeholder="每行或逗号分隔"></label><label>锚点 ID<input class="ids" id="anchors" aria-label="锚点 ID"></label><button id="arm" disabled>准备此操作</button><button id="finish" disabled>结束此操作</button></p>
+</div>
+<iframe id="studio" src="/" title="未修改的正式 ArchCanvas Studio"></iframe>
+<div class="receipt-panel"><label>原始输入测量收据<textarea id="receipt" aria-label="原始输入测量收据" readonly></textarea></label></div>
+<script type="module" src="/__m4/harness.mjs"></script>
+</html>

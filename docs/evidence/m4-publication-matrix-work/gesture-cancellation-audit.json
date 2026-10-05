@@ -1,0 +1,510 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-04T21:46:57.548202+00:00",
+  "scope": "read-only-source-and-existing-evidence-audit",
+  "formalRoot": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio",
+  "formalFromScratch": true,
+  "prototypeCodeInspected": false,
+  "productionBuild": {
+    "javascript": "studio/dist/assets/index-DPwoyNJW.js",
+    "sha256": "c7189a047fbd29cba25779a9098d5b2c1265e21c827620834379d0e611af3bc4",
+    "indexSha256": "2ae814208ad18879724331ae17834d8d5921091248900b4863b3a0928cb4b63a",
+    "productSourcesOrBuildChanged": false
+  },
+  "actions": {
+    "browserControlled": false,
+    "serviceStarted": false,
+    "testsRerun": false,
+    "productOrObserverEdited": false,
+    "newNativeTrials": 0,
+    "newHumanParticipants": 0,
+    "onlyNewFiles": [
+      "docs/evidence/m4-publication-matrix-work/gesture-cancellation-audit.md",
+      "docs/evidence/m4-publication-matrix-work/gesture-cancellation-audit.json"
+    ]
+  },
+  "requirements": {
+    "explicit": [
+      "RAF temporary preview; pointer-up one command (plan 591/641).",
+      "Text Enter commit/Esc cancel; input/IME guards (plan 631; Skill visual-workflow 35/37)."
+    ],
+    "hiddenOnlyCancellationExplicitRequirementFound": false,
+    "hiddenOnlyStatus": "enhancement-and-requested-audit-coverage-gap-not-demonstrated-contract-breach"
+  },
+  "paths": [
+    {
+      "event": "Escape",
+      "implemented": true,
+      "source": "studio/src/App.tsx:240",
+      "detail": "Global handler returns for editing targets/modals; otherwise cancelGesture and clear selection/inline at 244.",
+      "nativeActiveCancellationObserved": false
+    },
+    {
+      "event": "window blur",
+      "implemented": true,
+      "source": "studio/src/App.tsx:123",
+      "detail": "Clear Space; cancel transient ownership, RAF, preview; pan restores initial camera.",
+      "nativeActiveCancellationObserved": false
+    },
+    {
+      "event": "pointercancel",
+      "implemented": true,
+      "source": "studio/src/App.tsx:385",
+      "detail": "Cancel only matching active gesture/port pointer; React hook at578.",
+      "nativeActiveCancellationObserved": false
+    },
+    {
+      "event": "lostpointercapture",
+      "implemented": true,
+      "source": "studio/src/App.tsx:385",
+      "detail": "Same-owner cancellation; normal pointer-up clears owner before release and is not retroactively cancelled.",
+      "nativeActiveCancellationObserved": false
+    },
+    {
+      "event": "visibility hidden only",
+      "implemented": false,
+      "source": "studio/src/perf.ts:95",
+      "detail": "Telemetry records visibility; App no visibilitychange cancellation listener. Hidden with blur may use existing blur path.",
+      "nativeActiveCancellationObserved": false
+    }
+  ],
+  "gestures": {
+    "cameraPan": "transient camera restored on common cancellation; pure helper proof does not execute adapter rollback",
+    "nodeMove": "transient frozen preview; pointer-up single guarded commit; cancellation clears preview without reduceHistory",
+    "boxSelect": "transient marquee cleared; pointerdown can clear selection; no tested restore contract",
+    "portProposal": "request-generation/document/promise ownership guards; cancel invalidates late proposal response; no source commit on drop",
+    "routeDrag": "not implemented; edgeStyle stroke/width/dashed only",
+    "annotationDrag": "not implemented; select and explicit move-below action only",
+    "legendDrag": "not implemented; select and explicit property operations only",
+    "textEscape": "inline alias and shared TextField local flags avoid blur commit; no React lifecycle test"
+  },
+  "existingPureEvidence": [
+    {
+      "file": "studio/tests/camera-gesture.test.ts",
+      "tests": 8,
+      "status": "79-pass-final-Studio-log-subset",
+      "proves": [
+        "terminal input without move/RAF",
+        "actual terminal delta",
+        "CSS-pixel zoom-independent pan",
+        "return-to-start no drift",
+        "viewport origin removal",
+        "pointer identity",
+        "immutable snapshot",
+        "invalid input rejection"
+      ],
+      "doesNotProve": [
+        "App cancellation lifecycle",
+        "native pointer capture",
+        "Escape camera rollback"
+      ]
+    },
+    {
+      "file": "studio/tests/move-preview.test.ts",
+      "tests": 6,
+      "status": "79-pass-final-Studio-log-subset",
+      "proves": [
+        "complete Scene/SVG equivalence from independent hierarchy oracle",
+        "preview history/frontier/architecture bytes unchanged",
+        "guarded one command/undo/redo",
+        "pins and parent-child coverage",
+        "frozen semantic snapshot",
+        "invalid sessions"
+      ],
+      "doesNotProve": [
+        "App cancel handler event order",
+        "late RAF suppression in browser",
+        "actual native cancel source bytes"
+      ]
+    },
+    {
+      "file": "studio/tests/annotation-placement.test.ts",
+      "tests": 6,
+      "status": "79-pass-final-Studio-log-subset",
+      "proves": [
+        "absolute-note expansion invariance",
+        "explicit move-below single command",
+        "undo/redo/reopen/export fields"
+      ],
+      "doesNotProve": [
+        "annotation pointer drag or its cancellation"
+      ]
+    },
+    {
+      "file": "tests/m4_input_observation.test.mjs + tests/m4_input_observer_trigger.test.mjs",
+      "tests": 32,
+      "status": "historical-separate-tool-pass-log",
+      "proves": [
+        "validator rejects cancelled pan as successful",
+        "normal lostcapture after pointer-up not retroactive",
+        "missing/wrong/truncated terminal stays unmeasured",
+        "observer Space clears on window blur",
+        "descendant blur ignored"
+      ],
+      "doesNotProve": [
+        "product rollback",
+        "hidden-only cancellation",
+        "final-build native cancellation"
+      ]
+    }
+  ],
+  "historicalNativeEvidence": {
+    "panSamples": 4,
+    "cancellationSamples": 0,
+    "allCancelledFlagsFalse": true,
+    "sources": [
+      "docs/evidence/m4-pan-annotation-work/pan-native-v2-validation.json",
+      "docs/evidence/m4-pan-annotation-work/pan-priority-v2-validation.json"
+    ],
+    "buildScope": "historical-DWp-not-current-DPwoy-cancellation"
+  },
+  "observer": {
+    "protocol": "archcanvas-input-observation/2",
+    "runtimeAccess": "DOM-only",
+    "records": [
+      "pointerdown",
+      "pointermove",
+      "pointerup",
+      "pointercancel",
+      "lostpointercapture",
+      "click",
+      "keydown",
+      "keyup",
+      "wheel",
+      "window blur",
+      "visibility/focus trace",
+      "public camera/SVG/frontier/pins/selection"
+    ],
+    "operations": [
+      "drag",
+      "pan",
+      "zoom",
+      "undo",
+      "redo",
+      "toggle",
+      "pin"
+    ],
+    "missingOperations": [
+      "box",
+      "port",
+      "route drag",
+      "annotation drag",
+      "text edit"
+    ],
+    "cancellationClassifier": [
+      "same-pointer cancel/lostcapture before up",
+      "window blur before up",
+      "Escape before up"
+    ],
+    "hiddenTraceUsedAsCancellation": false,
+    "rollbackSuccessMetric": false,
+    "hiddenCanvasCertified": false,
+    "historyCertified": false,
+    "nativePerformanceSessionScope": "expand/collapse only"
+  },
+  "findings": [
+    {
+      "id": "hidden-only",
+      "classification": "proposed-enhancement",
+      "nativeDefectReproduced": false,
+      "explicitRequirementFound": false,
+      "source": "studio/src/App.tsx:122",
+      "detail": "No hidden-only cancellation hook. Do not infer blur from hidden."
+    },
+    {
+      "id": "cancellation-validator-boundary",
+      "classification": "measurement-capability-gap",
+      "source": "scripts/validate_input_observation.mjs:189",
+      "detail": "cancelled true rejects success; does not certify rollback. Visibility validated but not interruption classified."
+    },
+    {
+      "id": "input-focus-escape",
+      "classification": "unexecuted-native-risk",
+      "source": "studio/src/App.tsx:240",
+      "detail": "Global Escape ignored for editing targets; canvas preventDefault may preserve input focus. Need native reproduction and modal/target evidence before claiming defect."
+    },
+    {
+      "id": "selection-and-preview-revision",
+      "classification": "oracle-boundary",
+      "source": "studio/src/core/movePreview.ts:64",
+      "detail": "Preview revision base+1 is not hidden committed history; node/box pointerdown and Escape may legitimately change selection."
+    }
+  ],
+  "nextExperiment": {
+    "notExecuted": true,
+    "priority": [
+      "active-pan-Escape",
+      "active-node-drag-Escape"
+    ],
+    "isolatedServiceDataRequired": true,
+    "researchSlotsMustRemainUnused": true,
+    "preconditions": [
+      "actual frozen-build context and lifecycle",
+      "trusted host input can hold pointerdown through separate Escape; otherwise capability unmet",
+      "known sentinel command saved with source/Canvas bytes and SVG/camera baseline"
+    ],
+    "steps": [
+      "arm ordinary observer via measurement UI",
+      "native down/move until transient change, Escape before matching up, then release/move",
+      "raw event order and two post-cancel snapshots/screenshots",
+      "pan initial camera and node baseScene; same document revision/frontier/pins/bindings/source digests",
+      "Save actual DocumentStore bytes; Undo sentinel once/Redo once; normal subsequent drag; Save/reopen visual invariants"
+    ],
+    "appendWhenSupported": [
+      "window blur",
+      "active lostcapture",
+      "pointercancel",
+      "hidden-only with no concurrent blur/cancel/lostcapture"
+    ],
+    "additionalObserverNeeded": [
+      "box",
+      "port late-promise cancellation",
+      "text/annotation editing"
+    ],
+    "successBounds": [
+      "public rollback/source/save/undo behavior only",
+      "selection changes allowed by current contract",
+      "no hidden full history or cross-reload history certification"
+    ]
+  },
+  "certification": {
+    "nativeCancellation": false,
+    "human": false,
+    "publication": false,
+    "fixedEnvironmentPerformance": false,
+    "continuousPresentedPaint": false,
+    "presentedFPS": false,
+    "M4Complete": false
+  },
+  "limitations": [
+    "No new tests or native input were executed by this audit.",
+    "Existing pass logs bind their own historical/final scopes; counts are not summed.",
+    "Code absence is not an observed browser failure.",
+    "No mandatory hidden cancellation contract was found.",
+    "Saved full DOM equality does not certify hidden document/history state.",
+    "Trusted automation is not a human participant."
+  ],
+  "bindings": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "4356c80e92e8f1443caf14cc9c3c8cd2a5d7a2da6f73e044902a3227fd91c112",
+      "bytes": 2022,
+      "lineStart": 1,
+      "lineEnd": 15
+    },
+    {
+      "path": "skills/archcanvas/SKILL.md",
+      "sha256": "9db833e78cd0d61035790b401a08385194f9a6c05d832303f12eb35bda75287e",
+      "bytes": 5989,
+      "lineStart": 9,
+      "lineEnd": 41
+    },
+    {
+      "path": "skills/archcanvas/references/visual-workflow.md",
+      "sha256": "38475b399fa578f28df5629985a389723b69d475b78dada310ee6bc0659cf9ef",
+      "bytes": 5544,
+      "lineStart": 35,
+      "lineEnd": 37
+    },
+    {
+      "path": "studio/src/App.tsx",
+      "sha256": "0b5fa77c5405a71a7bac13171c6588e43430ff4bf702dcb771ad019be48a3d16",
+      "bytes": 68495,
+      "lineStart": 110,
+      "lineEnd": 120
+    },
+    {
+      "path": "studio/src/App.tsx",
+      "sha256": "0b5fa77c5405a71a7bac13171c6588e43430ff4bf702dcb771ad019be48a3d16",
+      "bytes": 68495,
+      "lineStart": 122,
+      "lineEnd": 127
+    },
+    {
+      "path": "studio/src/App.tsx",
+      "sha256": "0b5fa77c5405a71a7bac13171c6588e43430ff4bf702dcb771ad019be48a3d16",
+      "bytes": 68495,
+      "lineStart": 238,
+      "lineEnd": 254
+    },
+    {
+      "path": "studio/src/App.tsx",
+      "sha256": "0b5fa77c5405a71a7bac13171c6588e43430ff4bf702dcb771ad019be48a3d16",
+      "bytes": 68495,
+      "lineStart": 275,
+      "lineEnd": 386
+    },
+    {
+      "path": "studio/src/App.tsx",
+      "sha256": "0b5fa77c5405a71a7bac13171c6588e43430ff4bf702dcb771ad019be48a3d16",
+      "bytes": 68495,
+      "lineStart": 578,
+      "lineEnd": 585
+    },
+    {
+      "path": "studio/src/App.tsx",
+      "sha256": "0b5fa77c5405a71a7bac13171c6588e43430ff4bf702dcb771ad019be48a3d16",
+      "bytes": 68495,
+      "lineStart": 624,
+      "lineEnd": 628
+    },
+    {
+      "path": "studio/src/cameraGesture.ts",
+      "sha256": "c9306ee9a7a64ffb72d51dabdac3d863490d6dd1e65a5af81f98ee012d53460e",
+      "bytes": 1979,
+      "lineStart": 24,
+      "lineEnd": 48
+    },
+    {
+      "path": "studio/src/core/movePreview.ts",
+      "sha256": "098a718e8807d91a717e3843776ca952d101952c6fcccd483bcc367c050870da",
+      "bytes": 3419,
+      "lineStart": 20,
+      "lineEnd": 64
+    },
+    {
+      "path": "studio/src/core/document.ts",
+      "sha256": "a7f21768c718aa891701c73a150fd30aa4f05599b371ba22d41384130191694f",
+      "bytes": 13955,
+      "lineStart": 123,
+      "lineEnd": 182
+    },
+    {
+      "path": "studio/src/core/types.ts",
+      "sha256": "074379d84cf664a50f39b238ce27ed96b55510763358f56dd3855396af6c8205",
+      "bytes": 6506,
+      "lineStart": 62,
+      "lineEnd": 94
+    },
+    {
+      "path": "studio/src/perf.ts",
+      "sha256": "6e5e8faa14018b2db7d3f0604981bfd5a9386bd7d3ca6d7798c9cd3a2d5825ad",
+      "bytes": 10302,
+      "lineStart": 95,
+      "lineEnd": 135
+    },
+    {
+      "path": "studio/src/nativePerformance.ts",
+      "sha256": "905b7cf06fc6a4b7ef3bfe39ef1bd4d562b9f0f86bdb1be3c85b0f913ce98859",
+      "bytes": 10968,
+      "lineStart": 111,
+      "lineEnd": 156
+    },
+    {
+      "path": "studio/tests/camera-gesture.test.ts",
+      "sha256": "e6a4895492d46cb0538becbe65f8fa4700063fcb094a199e3b94357acf5c4cb0",
+      "bytes": 3755,
+      "lineStart": 8,
+      "lineEnd": 70
+    },
+    {
+      "path": "studio/tests/move-preview.test.ts",
+      "sha256": "64caea4df7f4cd4b59fa822987ecdbcc1dc8011418d6db3786a2e58071f0226a",
+      "bytes": 8674,
+      "lineStart": 29,
+      "lineEnd": 126
+    },
+    {
+      "path": "studio/tests/annotation-placement.test.ts",
+      "sha256": "32d5062d5df46c1ffe8dc0a1b57d5f0a4ebbb3879f5461195449b4c1e9a5037e",
+      "bytes": 10873,
+      "lineStart": 90,
+      "lineEnd": 144
+    },
+    {
+      "path": "studio/tests/core.test.ts",
+      "sha256": "600918cad1575d3567675eae79b6012e51e691a07b32b5eb3aa5f4a03c7a9a7b",
+      "bytes": 14677,
+      "lineStart": 55,
+      "lineEnd": 73
+    },
+    {
+      "path": "scripts/m4_input_observer.mjs",
+      "sha256": "b7b8b11da1d267caf5fe18050545bd70a798ea395a492a470349a81041a981b0",
+      "bytes": 17697,
+      "lineStart": 2,
+      "lineEnd": 237
+    },
+    {
+      "path": "scripts/validate_input_observation.mjs",
+      "sha256": "21426de5e08ab0fd7bbf20008ff4f050ba63983209cf1bb00c9aef5565d6d414",
+      "bytes": 25888,
+      "lineStart": 185,
+      "lineEnd": 242
+    },
+    {
+      "path": "tests/m4_input_observation.test.mjs",
+      "sha256": "eb61a82f3d2f9624a5f882a2fda23dac8770c226b35ef07e7acb04214e0f75f1",
+      "bytes": 21784,
+      "lineStart": 311,
+      "lineEnd": 343
+    },
+    {
+      "path": "tests/m4_input_observer_trigger.test.mjs",
+      "sha256": "53a485a4bb831f294cd3e3470dc2248e1fadceaaae3ce5b09b4e08ae240c3618",
+      "bytes": 6556,
+      "lineStart": 94,
+      "lineEnd": 109
+    },
+    {
+      "path": "scripts/m4_input_harness.py",
+      "sha256": "79d1a3bcd38684e1d886c3237c261c17a713ec688ff5f0d1c0f2ce1eea3f7fa4",
+      "bytes": 3709,
+      "lineStart": 73,
+      "lineEnd": 81
+    },
+    {
+      "path": "scripts/m4_input_support/harness.mjs",
+      "sha256": "f0307f5daa3ec76f8969f2f7852e687e16c125d0a2c14c73dd9504234bb4e2d5",
+      "bytes": 2475,
+      "lineStart": 10,
+      "lineEnd": 38
+    },
+    {
+      "path": "docs/evidence/m4-publication-refinement-work/studio-tests-final.txt",
+      "sha256": "9a685a8c26c280f963f4d69c0c049761ba4608b017ca5448cb46158de84a4f10",
+      "bytes": 8583,
+      "lineStart": 1,
+      "lineEnd": 91
+    },
+    {
+      "path": "docs/evidence/m4-pan-annotation-work/observer-tests-expanded.txt",
+      "sha256": "115fba771a005acd50caf2917a039462e46bafd982b5f85ce05e8ff3b3eeefb8",
+      "bytes": 3097,
+      "lineStart": 1,
+      "lineEnd": 40
+    },
+    {
+      "path": "docs/evidence/m4-pan-annotation-work/pan-native-v2-validation.json",
+      "sha256": "11eaae68e50e7b499427014e4cb815b7e492569de9ef36f519595e400dc7730f",
+      "bytes": 11191
+    },
+    {
+      "path": "docs/evidence/m4-pan-annotation-work/pan-priority-v2-validation.json",
+      "sha256": "65f0dc2a4557c70ad5389038e0c59a1c5ff6957da7e450c5045f6ad030c04093",
+      "bytes": 11095
+    },
+    {
+      "path": "studio/dist/index.html",
+      "sha256": "2ae814208ad18879724331ae17834d8d5921091248900b4863b3a0928cb4b63a",
+      "bytes": 477
+    },
+    {
+      "path": "studio/dist/assets/index-DPwoyNJW.js",
+      "sha256": "c7189a047fbd29cba25779a9098d5b2c1265e21c827620834379d0e611af3bc4",
+      "bytes": 375594
+    },
+    {
+      "path": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_双向模型可视化与编辑框架_技术计划书.md",
+      "sha256": "75ba91817eb9a39c70678b185326283fcb4ff5b6fe905e3c2fefb6d15f1a70fb",
+      "bytes": 126755,
+      "lineStart": 585,
+      "lineEnd": 649
+    },
+    {
+      "path": "docs/evidence/m4-publication-matrix-work/gesture-cancellation-audit.md",
+      "sha256": "8e080b2ef011ec694bfdc078c24a409458263b8c56d227f8b47de1208f7a5cb4",
+      "bytes": 13279
+    }
+  ]
+}

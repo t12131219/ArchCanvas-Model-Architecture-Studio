@@ -1,0 +1,14 @@
+Root tool-response transcription for independent audit attempt; not original PTY log.
+Command: python3 docs/evidence/m4-current-native-diagnostic/audit_current_native.py
+Tool chunk: 5d8597
+Exit: 1
+Traceback (most recent call last):
+  File "docs/evidence/m4-current-native-diagnostic/audit_current_native.py", line 377, in <module>
+    equal([a["id"] for a in affected], ["call:instance:model.MLP.network.3"], "pilot actual only affected node Linear4")
+  File "docs/evidence/m4-current-native-diagnostic/audit_current_native.py", line 29, in equal
+    require(actual == expected, message)
+  File "docs/evidence/m4-current-native-diagnostic/audit_current_native.py", line 25, in require
+    raise AssertionError(message)
+AssertionError: pilot actual only affected node Linear4
+
+This first audit failed due to an overly narrow authored assertion. Independently parsed XML also contains root body width +52 and network body width +52 / height +36. Raw evidence stayed unchanged. This failed attempt is not reported as a passing audit. The corrected audit checks all three actual body changes and separately records the true moved Linear4 target.

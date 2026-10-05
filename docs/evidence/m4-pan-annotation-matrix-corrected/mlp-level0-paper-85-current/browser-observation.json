@@ -1,0 +1,228 @@
+{
+  "observedAt": "2026-10-04T19:43:36.732Z",
+  "tabId": "22",
+  "url": "http://127.0.0.1:8880/",
+  "exportURL": "/api/exports/7726c68e5980409ebce8ecb968a1c8bf/figure.svg",
+  "facts": {
+    "assets": [
+      "http://127.0.0.1:8880/assets/index-DWpF-img.js",
+      "http://127.0.0.1:8880/assets/index-DK5lov-h.css"
+    ],
+    "expandedIds": [
+      "call:instance:model.MLP"
+    ],
+    "metadata": {
+      "documentId": "canvas-architecture-model.MLP-3654a3534b85-ab8e9edc",
+      "heightMm": 78.57142857142857,
+      "irDigest": "ab8e9edcf92df51583e5de7682b85072c483831855408f6509b0a4ddf304b72f",
+      "renderedBindings": [
+        {
+          "canonicalEdgeIds": [
+            "edge:1",
+            "edge:2"
+          ],
+          "role": "data",
+          "sceneEdgeId": "edge:1",
+          "source": {
+            "nodeId": "input:model.MLP:features",
+            "portId": "input:model.MLP:features:out:features"
+          },
+          "target": {
+            "nodeId": "call:instance:model.MLP.network",
+            "portId": "call:instance:model.MLP.network:in:input"
+          },
+          "tensorId": "tensor:input:model.MLP:features:features"
+        },
+        {
+          "canonicalEdgeIds": [
+            "edge:7"
+          ],
+          "role": "data",
+          "sceneEdgeId": "edge:7",
+          "source": {
+            "nodeId": "call:instance:model.MLP.network.3",
+            "portId": "call:instance:model.MLP.network.3:out:output"
+          },
+          "target": {
+            "nodeId": "output:model.MLP:0",
+            "portId": "output:model.MLP:0:in:value"
+          },
+          "tensorId": "tensor:call:instance:model.MLP.network.3:output"
+        }
+      ],
+      "renderedNodes": [
+        {
+          "boundary": false,
+          "canonicalNodeId": "call:instance:model.MLP",
+          "sceneNodeId": "call:instance:model.MLP"
+        },
+        {
+          "boundary": false,
+          "canonicalNodeId": "input:model.MLP:features",
+          "sceneNodeId": "input:model.MLP:features"
+        },
+        {
+          "boundary": false,
+          "canonicalNodeId": "call:instance:model.MLP.network",
+          "sceneNodeId": "call:instance:model.MLP.network"
+        },
+        {
+          "boundary": false,
+          "canonicalNodeId": "output:model.MLP:0",
+          "sceneNodeId": "output:model.MLP:0"
+        }
+      ],
+      "renderer": "archcanvas-svg/1.0",
+      "revision": 1,
+      "sourceDigest": "3654a3534b85af66c27e0a5ae154ac8cbe461bfe80d2786efb413e54a7365f17",
+      "sourceFactScope": "whole-source-architecture",
+      "sourceFacts": [
+        {
+          "category": "input",
+          "evidence": "source",
+          "id": "input:model.MLP:features",
+          "kind": "Input",
+          "source": {
+            "endLine": 17,
+            "expression": "def forward(self, features):\n        return self.network(features)",
+            "line": 16,
+            "path": "model.py"
+          },
+          "sourceLabel": "features"
+        },
+        {
+          "callCount": 1,
+          "callId": "call:instance:model.MLP",
+          "category": "container",
+          "evidence": "source",
+          "id": "call:instance:model.MLP",
+          "instanceId": "instance:model.MLP",
+          "kind": "Module",
+          "source": {
+            "endLine": 17,
+            "expression": "class MLP(nn.Module):\n    def __init__(self, input_dim=16, hidden_dim=32, output_dim=4):\n        super().__init__()\n        self.network = nn.Sequential(\n            nn.Linear(input_dim, hidden_dim),\n            nn.GELU(),\n            nn.Dropout(0.1),\n            nn.Linear(hidden_dim, output_dim),\n        )\n\n    def forward(self, features):\n        return self.network(features)",
+            "line": 6,
+            "path": "model.py"
+          },
+          "sourceLabel": "MLP"
+        },
+        {
+          "callCount": 1,
+          "callId": "call:instance:model.MLP.network",
+          "category": "container",
+          "evidence": "source",
+          "id": "call:instance:model.MLP.network",
+          "instanceId": "instance:model.MLP.network",
+          "kind": "Module",
+          "repeat": {
+            "count": 4,
+            "sharing": "independent"
+          },
+          "source": {
+            "endLine": 17,
+            "expression": "self.network(features)",
+            "line": 17,
+            "path": "model.py"
+          },
+          "sourceLabel": "network"
+        },
+        {
+          "callCount": 1,
+          "callId": "call:instance:model.MLP.network.0",
+          "category": "linear",
+          "evidence": "contract",
+          "id": "call:instance:model.MLP.network.0",
+          "instanceId": "instance:model.MLP.network.0",
+          "kind": "Linear",
+          "source": {
+            "endLine": 17,
+            "expression": "self.network(features)",
+            "line": 17,
+            "path": "model.py"
+          },
+          "sourceLabel": "Linear 1"
+        },
+        {
+          "callCount": 1,
+          "callId": "call:instance:model.MLP.network.1",
+          "category": "activation",
+          "evidence": "contract",
+          "id": "call:instance:model.MLP.network.1",
+          "instanceId": "instance:model.MLP.network.1",
+          "kind": "GELU",
+          "source": {
+            "endLine": 17,
+            "expression": "self.network(features)",
+            "line": 17,
+            "path": "model.py"
+          },
+          "sourceLabel": "GELU 2"
+        },
+        {
+          "callCount": 1,
+          "callId": "call:instance:model.MLP.network.2",
+          "category": "regularization",
+          "evidence": "contract",
+          "id": "call:instance:model.MLP.network.2",
+          "instanceId": "instance:model.MLP.network.2",
+          "kind": "Dropout",
+          "source": {
+            "endLine": 17,
+            "expression": "self.network(features)",
+            "line": 17,
+            "path": "model.py"
+          },
+          "sourceLabel": "Dropout 3"
+        },
+        {
+          "callCount": 1,
+          "callId": "call:instance:model.MLP.network.3",
+          "category": "linear",
+          "evidence": "contract",
+          "id": "call:instance:model.MLP.network.3",
+          "instanceId": "instance:model.MLP.network.3",
+          "kind": "Linear",
+          "source": {
+            "endLine": 17,
+            "expression": "self.network(features)",
+            "line": 17,
+            "path": "model.py"
+          },
+          "sourceLabel": "Linear 4"
+        },
+        {
+          "category": "output",
+          "evidence": "source",
+          "id": "output:model.MLP:0",
+          "kind": "Output",
+          "outputPath": [],
+          "source": {
+            "endLine": 17,
+            "expression": "def forward(self, features):\n        return self.network(features)",
+            "line": 16,
+            "path": "model.py"
+          },
+          "sourceLabel": "output"
+        }
+      ],
+      "widthMm": 85
+    },
+    "preset": "paper",
+    "sceneScreenBounds": {
+      "bottom": 595,
+      "height": 434,
+      "left": 386.7454528808594,
+      "right": 856.2545166015625,
+      "top": 161,
+      "width": 469.5090637207031,
+      "x": 386.7454528808594,
+      "y": 161
+    },
+    "transform": "translate(156.745px, 46px) scale(0.789091)",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  },
+  "snapshot": "- banner:\n  - text: ArchCanvas\n  - generic: MODEL ARCHITECTURE STUDIO\n  - generic: /\n  - generic: MLP\n  - generic: ALPHA\n  - generic: 已保存\n  - button \"保存\":\n    - text: 保存\n  - button \"导出论文图\":\n    - text: 导出论文图\n- complementary:\n  - generic: SOURCE WORKSPACE\n  - combobox \"示例模型\":\n    - option \"导入的模型\" [disabled] [selected]\n    - option \"Encoder–Decoder Transformer\"\n    - option \"Multilayer Perceptron\"\n    - option \"Residual CNN\"\n    - option \"Vision Transformer holdout\"\n    - option \"Dense 300-layer stress\"\n    - option \"Input Rebinding Lab\"\n    - option \"Multi-input Attention\"\n  - button \"导入 Python 源码\":\n    - text: 导入 Python 源码\n  - text: 模型层级\n  - generic: \"8\"\n  - tree \"模型层级\":\n    - treeitem \"收起 MLP MLP 展开 features features 展开 network network ×4 展开 output output\" [expanded]:\n      - button \"收起 MLP\":\n      - button \"MLP\":\n        - generic: MLP\n      - treeitem \"展开 features features\":\n        - button \"展开 features\" [disabled]:\n        - button \"features\":\n          - generic: features\n      - treeitem \"展开 network network ×4\":\n        - button \"展开 network\":\n        - button \"network ×4\":\n          - generic: network\n          - generic: ×4\n      - treeitem \"展开 output output\":\n        - button \"展开 output\" [disabled]:\n        - button \"output\":\n          - generic: output\n  - button \"查看源码证据\":\n    - text: 查看源码证据\n  - text: 静态分析 · 未执行模型\n  - paragraph: 样式和显示名仅修改画布。\n- main:\n  - button \"选择对象\" [pressed]:\n  - button \"平移画布\":\n  - button \"撤销 Ctrl+Z\":\n  - button \"重做 Ctrl+Shift+Z\" [disabled]:\n  - button \"左对齐\" [disabled]:\n  - button \"固定 / 解锁\" [disabled]:\n  - combobox \"页面预设\":\n    - option \"论文 · 彩色\" [selected]\n    - option \"论文 · 黑白\"\n  - button \"显示编辑网格\":\n  - button \"适合画布 F\" [active]:\n  - generic: FIGURE WORKSPACE\n  - text: 85 mm\n  - text: PAPER COLOR\n  - img \"MLP\":\n    - generic: MLP\n    - generic: MODEL ARCHITECTURE · SOURCE-BOUND VIEW\n    - button \"MLP\":\n      - generic: MLP\n      - button \"Collapse MLP\"\n    - generic \"edge:1 · data · tensor:input:model.MLP:features:features\"\n    - generic \"edge:7 · data · tensor:call:instance:model.MLP.network.3:output\"\n    - button \"features\":\n      - generic: features\n      - generic: Input\n    - button \"network\":\n      - generic: network\n      - generic: 4 × independent instances\n      - button \"Expand network\"\n    - button \"output\":\n      - generic: output\n      - generic: return\n    - generic \"features\"\n    - generic \"input · 拖向来源输出端口以创建改接提案\"\n    - generic \"output · projected boundary port\"\n    - generic \"value · 拖向来源输出端口以创建改接提案\"\n    - generic: Input\n    - generic: Container\n    - generic: Linear\n    - generic: Activation\n    - generic: Output\n  - button \"缩小\":\n  - button \"79%\"\n  - button \"放大\":\n  - button \"适合画布\":\n  - generic: 滚轮缩放·H / 空格平移·输入端口拖向来源创建提案\n  - textbox \"画布文字指令\":\n    - /placeholder: 选择一个节点，用文字修改画布…\n  - generic: 本地视觉指令\n  - button \"应用 ↵\" [disabled]:\n    - text: 应用\n    - generic: ↵\n- complementary:\n  - button \"对象\"\n  - button \"图例\"\n  - button \"页面\"\n  - heading \"出版页面\" [level=2]\n  - paragraph: SVG、PDF 与 PNG 共用当前画布场景。\n  - generic: 物理页宽\n  - button \"85 mm\"\n  - button \"180 mm\"\n  - generic: 背景\n  - textbox \"页面背景\": \"#ffffff\"\n  - code: \"#ffffff\"\n  - generic: 配色\n  - button \"论文彩色\"\n  - button \"黑白\"\n  - heading \"说明与工件\" [level=3]\n  - button \"添加说明文字\":\n    - text: 添加说明文字\n  - button \"下载画布文档\":\n    - text: 下载画布文档\n  - paragraph: 导出论文图可生成 SVG、PDF 或 PNG，并保留可重开的文件链接与导出收据。\n  - generic: 视觉编辑不修改模型源码\n- contentinfo:\n  - generic: 画布已保存到正式工程 .archcanvas；可重开继续编辑\n  - generic: SVG SCENE v1\n  - generic: rev 1"
+}

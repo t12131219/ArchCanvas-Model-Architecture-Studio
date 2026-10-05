@@ -1,0 +1,138 @@
+- banner:
+  - generic: ArchCanvas
+  - generic: 模型搭建
+  - textbox "模型草稿名称" [disabled]: AI小白代理_MLP
+  - generic: 有未保存编辑
+  - button "重开已保存" [disabled]
+  - button "保存草稿" [disabled]:
+    - text: 保存草稿
+  - button "生成模型与论文图" [disabled]
+  - button "返回制图" [disabled]
+- complementary:
+  - text: MODULE LIBRARY
+  - heading "常用模块 17" [level=2]:
+    - text: 常用模块
+    - generic: "17"
+  - paragraph:
+    - text: 拖入画布，或点击添加。
+    - text: 输入 → 计算模块 → 输出
+  - textbox "搜索模块":
+    - /placeholder: 搜索模块，如 Linear / 卷积
+  - button "新建空白模型" [disabled]
+  - heading "输入与输出" [level=3]
+  - button "添加 Input" [disabled]:
+    - generic: Input
+    - generic: 输入
+  - button "添加 Output" [disabled]:
+    - generic: Output
+    - generic: 输出
+  - heading "全连接" [level=3]
+  - button "添加 Linear" [disabled]:
+    - generic: Linear
+    - generic: 全连接
+  - heading "激活函数" [level=3]
+  - button "添加 ReLU" [disabled]:
+    - generic: ReLU
+    - generic: ReLU 激活
+  - button "添加 GELU" [disabled]:
+    - generic: GELU
+    - generic: GELU 激活
+  - button "添加 SiLU" [disabled]:
+    - generic: SiLU
+    - generic: SiLU 激活
+  - heading "基础算子" [level=3]
+  - button "添加 Identity" [disabled]:
+    - generic: Identity
+    - generic: 恒等映射
+  - heading "正则化" [level=3]
+  - button "添加 Dropout" [disabled]:
+    - generic: Dropout
+    - generic: 随机失活
+  - heading "形状变换" [level=3]
+  - button "添加 Flatten" [disabled]:
+    - generic: Flatten
+    - generic: 展平
+  - heading "卷积" [level=3]
+  - button "添加 Conv2d" [disabled]:
+    - generic: Conv2d
+    - generic: 二维卷积
+  - heading "池化" [level=3]
+  - button "添加 MaxPool2d" [disabled]:
+    - generic: MaxPool2d
+    - generic: 二维最大池化
+  - button "添加 AdaptiveAvgPool2d" [disabled]:
+    - generic: AdaptiveAvgPool2d
+    - generic: 自适应平均池化
+  - heading "归一化" [level=3]
+  - button "添加 BatchNorm2d" [disabled]:
+    - generic: BatchNorm2d
+    - generic: 二维批归一化
+  - button "添加 LayerNorm" [disabled]:
+    - generic: LayerNorm
+    - generic: 层归一化
+  - heading "嵌入" [level=3]
+  - button "添加 Embedding" [disabled]:
+    - generic: Embedding
+    - generic: 词嵌入
+  - heading "合并与分支" [level=3]
+  - button "添加 Add" [disabled]:
+    - generic: Add
+    - generic: 张量相加
+  - button "添加 Concat" [disabled]:
+    - generic: Concat
+    - generic: 张量拼接
+  - generic: 常用模型的无环草稿。参数和连线通过静态检查后，生成新模型。
+- main:
+  - button "选择" [pressed]:
+    - text: 选择
+  - button "平移":
+    - text: 平移
+  - button "撤销草稿" [disabled]:
+  - button "重做草稿" [disabled]:
+  - button "按连接排版" [disabled]
+  - button "适合画布":
+    - text: 适合画布
+  - button "草稿缩小": −
+  - button "草稿缩放百分比": 80%
+  - button "草稿放大": +
+  - img "模型搭建画布":
+    - generic: 输入
+    - generic: Input
+    - button "输入 output 输出端口":
+      - generic: output
+    - generic: 全连接
+    - generic: Linear
+    - button "全连接 input 输入端口":
+      - generic: input
+    - button "全连接 output 输出端口":
+      - generic: output
+    - generic: ReLU 激活
+    - generic: ReLU
+    - button "ReLU 激活 input 输入端口":
+      - generic: input
+    - button "ReLU 激活 output 输出端口":
+      - generic: output
+    - generic: 输出
+    - generic: Output
+    - button "输出 input 输入端口":
+      - generic: input
+  - generic: 拖动模块 · 输出端口 → 输入端口 · 方向键移动 16 · Delete 删除 · Escape 取消 · Ctrl+Z 撤销
+- complementary:
+  - text: MODEL PROPERTIES
+  - heading "Linear" [level=2]
+  - text: 显示名称
+  - textbox "模块显示名称" [disabled]: 全连接
+  - text: in_features
+  - textbox "in_features" [disabled]: "16"
+  - text: out_features
+  - textbox "out_features" [disabled]: "32"
+  - text: bias
+  - checkbox "bias" [checked] [disabled]
+  - paragraph: 把最后一维从输入宽度变为输出宽度，需要 float32 输入。
+  - text: X
+  - spinbutton "模块 X 坐标" [disabled]: "298"
+  - text: "Y"
+  - spinbutton "模块 Y 坐标" [disabled]: "70"
+  - button "删除模块及相连连线" [disabled]
+  - generic: 4 模块 3 连接
+- status: 正在检查模型…

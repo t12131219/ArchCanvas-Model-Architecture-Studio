@@ -1,0 +1,974 @@
+{
+  "draft": {
+    "schemaVersion": 1,
+    "mode": "authored-draft",
+    "id": "independent-mlp",
+    "title": "Independent independent-mlp",
+    "revision": 0,
+    "nodes": [
+      {
+        "id": "x",
+        "kind": "Input",
+        "label": "x",
+        "parameters": {
+          "shape": [
+            2,
+            4
+          ],
+          "dtype": "float32"
+        },
+        "position": {
+          "x": 100,
+          "y": 100
+        }
+      },
+      {
+        "id": "first",
+        "kind": "Linear",
+        "label": "投影",
+        "parameters": {
+          "in_features": 4,
+          "out_features": 8,
+          "bias": false
+        },
+        "position": {
+          "x": 100,
+          "y": 100
+        }
+      },
+      {
+        "id": "relu",
+        "kind": "ReLU",
+        "label": "relu",
+        "parameters": {},
+        "position": {
+          "x": 100,
+          "y": 100
+        }
+      },
+      {
+        "id": "gelu",
+        "kind": "GELU",
+        "label": "gelu",
+        "parameters": {
+          "approximate": "tanh"
+        },
+        "position": {
+          "x": 100,
+          "y": 100
+        }
+      },
+      {
+        "id": "silu",
+        "kind": "SiLU",
+        "label": "silu",
+        "parameters": {},
+        "position": {
+          "x": 100,
+          "y": 100
+        }
+      },
+      {
+        "id": "identity",
+        "kind": "Identity",
+        "label": "identity",
+        "parameters": {},
+        "position": {
+          "x": 100,
+          "y": 100
+        }
+      },
+      {
+        "id": "drop",
+        "kind": "Dropout",
+        "label": "drop",
+        "parameters": {
+          "p": 0.25
+        },
+        "position": {
+          "x": 100,
+          "y": 100
+        }
+      },
+      {
+        "id": "last",
+        "kind": "Linear",
+        "label": "投影",
+        "parameters": {
+          "in_features": 8,
+          "out_features": 3,
+          "bias": true
+        },
+        "position": {
+          "x": 100,
+          "y": 100
+        }
+      },
+      {
+        "id": "out",
+        "kind": "Output",
+        "label": "out",
+        "parameters": {},
+        "position": {
+          "x": 100,
+          "y": 100
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": {
+          "nodeId": "x",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "first",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e2",
+        "source": {
+          "nodeId": "first",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "relu",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e3",
+        "source": {
+          "nodeId": "relu",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "gelu",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e4",
+        "source": {
+          "nodeId": "gelu",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "silu",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e5",
+        "source": {
+          "nodeId": "silu",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "identity",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e6",
+        "source": {
+          "nodeId": "identity",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "drop",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e7",
+        "source": {
+          "nodeId": "drop",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "last",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e8",
+        "source": {
+          "nodeId": "last",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "out",
+          "portId": "input"
+        }
+      }
+    ]
+  },
+  "draftDigest": "cb7924c98d22e432a39f8e8d7ed7cb4255ee65ed2ac9969737d37f3629356918",
+  "entry": "model:AuthoredModel",
+  "source": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\n\nclass AuthoredModel(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.node_a7937b64b8caa58f = nn.Linear(in_features=4, out_features=8, bias=False, dtype=torch.float32)\n        self.node_99e2995dbca8ca48 = nn.ReLU()\n        self.node_ce677f0f258927f8 = nn.GELU(approximate='tanh')\n        self.node_5377a56ff730ddd8 = nn.SiLU()\n        self.node_689f6a627384c7dc = nn.Identity()\n        self.node_d90ee9ccf6bea1d2 = nn.Dropout(p=0.25)\n        self.node_3547cb112ac4489a = nn.Linear(in_features=8, out_features=3, bias=True, dtype=torch.float32)\n\n    def forward(self, node_2d711642b726b044):\n        node_a7937b64b8caa58f = self.node_a7937b64b8caa58f(node_2d711642b726b044)\n        node_99e2995dbca8ca48 = self.node_99e2995dbca8ca48(node_a7937b64b8caa58f)\n        node_ce677f0f258927f8 = self.node_ce677f0f258927f8(node_99e2995dbca8ca48)\n        node_5377a56ff730ddd8 = self.node_5377a56ff730ddd8(node_ce677f0f258927f8)\n        node_689f6a627384c7dc = self.node_689f6a627384c7dc(node_5377a56ff730ddd8)\n        node_d90ee9ccf6bea1d2 = self.node_d90ee9ccf6bea1d2(node_689f6a627384c7dc)\n        node_3547cb112ac4489a = self.node_3547cb112ac4489a(node_d90ee9ccf6bea1d2)\n        return {'out': node_3547cb112ac4489a}\n\nopen('untouched.txt', 'w').write('forbidden')\n",
+  "architecture": {
+    "schemaVersion": 1,
+    "id": "architecture:model.AuthoredModel",
+    "label": "AuthoredModel",
+    "sourceDigest": "e07214d119aa57d209e6395d0d626ec725cd8f0588fe3797a73faae31d41b676",
+    "irDigest": "84cafd24a03d05cd887f9de68f950cde5fff1c998c773fd283be88ed3e42d13b",
+    "entry": "model:AuthoredModel",
+    "nodes": [
+      {
+        "id": "input:model.AuthoredModel:node_2d711642b726b044",
+        "label": "node_2d711642b726b044",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:model.AuthoredModel:node_2d711642b726b044:out:node_2d711642b726b044",
+            "name": "node_2d711642b726b044",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 25,
+          "expression": "def forward(self, node_2d711642b726b044):\n        node_a7937b64b8caa58f = self.node_a7937b64b8caa58f(node_2d711642b726b044)\n        node_99e2995dbca8ca48 = self.node_99e2995dbca8ca48(node_a7937b64b8caa58f)\n        node_ce677f0f258927f8 = self.node_ce677f0f258927f8(node_99e2995dbca8ca48)\n        node_5377a56ff730ddd8 = self.node_5377a56ff730ddd8(node_ce677f0f258927f8)\n        node_689f6a627384c7dc = self.node_689f6a627384c7dc(node_5377a56ff730ddd8)\n        node_d90ee9ccf6bea1d2 = self.node_d90ee9ccf6bea1d2(node_689f6a627384c7dc)\n        node_3547cb112ac4489a = self.node_3547cb112ac4489a(node_d90ee9ccf6bea1d2)\n        return {'out': node_3547cb112ac4489a}"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.AuthoredModel"
+      },
+      {
+        "id": "call:instance:model.AuthoredModel",
+        "label": "AuthoredModel",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "input:model.AuthoredModel:node_2d711642b726b044",
+          "call:instance:model.AuthoredModel.node_a7937b64b8caa58f",
+          "call:instance:model.AuthoredModel.node_99e2995dbca8ca48",
+          "call:instance:model.AuthoredModel.node_ce677f0f258927f8",
+          "call:instance:model.AuthoredModel.node_5377a56ff730ddd8",
+          "call:instance:model.AuthoredModel.node_689f6a627384c7dc",
+          "call:instance:model.AuthoredModel.node_d90ee9ccf6bea1d2",
+          "call:instance:model.AuthoredModel.node_3547cb112ac4489a",
+          "output:model.AuthoredModel:0"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:model.AuthoredModel:in:node_2d711642b726b044",
+            "name": "node_2d711642b726b044",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 6,
+          "endLine": 25,
+          "expression": "class AuthoredModel(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.node_a7937b64b8caa58f = nn.Linear(in_features=4, out_features=8, bias=False, dtype=torch.float32)\n        self.node_99e2995dbca8ca48 = nn.ReLU()\n        self.node_ce677f0f258927f8 = nn.GELU(approximate='tanh')\n        self.node_5377a56ff730ddd8 = nn.SiLU()\n        self.node_689f6a627384c7dc = nn.Identity()\n        self.node_d90ee9ccf6bea1d2 = nn.Dropout(p=0.25)\n        self.node_3547cb112ac4489a = nn.Linear(in_features=8, out_features=3, bias=True, dtype=torch.float32)\n\n    def forward(self, node_2d711642b726b044):\n        node_a7937b64b8caa58f = self.node_a7937b64b8caa58f(node_2d711642b726b044)\n        node_99e2995dbca8ca48 = self.node_99e2995dbca8ca48(node_a7937b64b8caa58f)\n        node_ce677f0f258927f8 = self.node_ce677f0f258927f8(node_99e2995dbca8ca48)\n        node_5377a56ff730ddd8 = self.node_5377a56ff730ddd8(node_ce677f0f258927f8)\n        node_689f6a627384c7dc = self.node_689f6a627384c7dc(node_5377a56ff730ddd8)\n        node_d90ee9ccf6bea1d2 = self.node_d90ee9ccf6bea1d2(node_689f6a627384c7dc)\n        node_3547cb112ac4489a = self.node_3547cb112ac4489a(node_d90ee9ccf6bea1d2)\n        return {'out': node_3547cb112ac4489a}"
+        },
+        "evidence": "source",
+        "instanceId": "instance:model.AuthoredModel",
+        "callId": "call:instance:model.AuthoredModel"
+      },
+      {
+        "id": "call:instance:model.AuthoredModel.node_a7937b64b8caa58f",
+        "label": "node a7937b64b8caa58f",
+        "kind": "Linear",
+        "category": "linear",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.AuthoredModel.node_a7937b64b8caa58f:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.AuthoredModel.node_a7937b64b8caa58f:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "in_features": 4,
+          "out_features": 8,
+          "bias": false,
+          "dtype": {
+            "expression": "torch.float32",
+            "origin": "unknown"
+          }
+        },
+        "source": {
+          "path": "model.py",
+          "line": 18,
+          "endLine": 18,
+          "expression": "self.node_a7937b64b8caa58f(node_2d711642b726b044)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.AuthoredModel",
+        "instanceId": "instance:model.AuthoredModel.node_a7937b64b8caa58f",
+        "callId": "call:instance:model.AuthoredModel.node_a7937b64b8caa58f",
+        "parameterOrigins": {
+          "in_features": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 9,
+            "endLine": 9,
+            "expression": "4",
+            "column": 59,
+            "endColumn": 60
+          },
+          "out_features": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 9,
+            "endLine": 9,
+            "expression": "8",
+            "column": 75,
+            "endColumn": 76
+          },
+          "bias": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 9,
+            "endLine": 9,
+            "expression": "False",
+            "column": 83,
+            "endColumn": 88
+          },
+          "dtype": {
+            "kind": "unknown",
+            "path": "model.py",
+            "line": 9,
+            "endLine": 9,
+            "expression": "torch.float32",
+            "column": 96,
+            "endColumn": 109
+          }
+        }
+      },
+      {
+        "id": "call:instance:model.AuthoredModel.node_99e2995dbca8ca48",
+        "label": "node 99e2995dbca8ca48",
+        "kind": "ReLU",
+        "category": "activation",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.AuthoredModel.node_99e2995dbca8ca48:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.AuthoredModel.node_99e2995dbca8ca48:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 19,
+          "endLine": 19,
+          "expression": "self.node_99e2995dbca8ca48(node_a7937b64b8caa58f)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.AuthoredModel",
+        "instanceId": "instance:model.AuthoredModel.node_99e2995dbca8ca48",
+        "callId": "call:instance:model.AuthoredModel.node_99e2995dbca8ca48"
+      },
+      {
+        "id": "call:instance:model.AuthoredModel.node_ce677f0f258927f8",
+        "label": "node ce677f0f258927f8",
+        "kind": "GELU",
+        "category": "activation",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.AuthoredModel.node_ce677f0f258927f8:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.AuthoredModel.node_ce677f0f258927f8:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "approximate": "tanh"
+        },
+        "source": {
+          "path": "model.py",
+          "line": 20,
+          "endLine": 20,
+          "expression": "self.node_ce677f0f258927f8(node_99e2995dbca8ca48)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.AuthoredModel",
+        "instanceId": "instance:model.AuthoredModel.node_ce677f0f258927f8",
+        "callId": "call:instance:model.AuthoredModel.node_ce677f0f258927f8",
+        "parameterOrigins": {
+          "approximate": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 11,
+            "endLine": 11,
+            "expression": "'tanh'",
+            "column": 57,
+            "endColumn": 63
+          }
+        }
+      },
+      {
+        "id": "call:instance:model.AuthoredModel.node_5377a56ff730ddd8",
+        "label": "node 5377a56ff730ddd8",
+        "kind": "SiLU",
+        "category": "activation",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.AuthoredModel.node_5377a56ff730ddd8:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.AuthoredModel.node_5377a56ff730ddd8:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 21,
+          "endLine": 21,
+          "expression": "self.node_5377a56ff730ddd8(node_ce677f0f258927f8)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.AuthoredModel",
+        "instanceId": "instance:model.AuthoredModel.node_5377a56ff730ddd8",
+        "callId": "call:instance:model.AuthoredModel.node_5377a56ff730ddd8"
+      },
+      {
+        "id": "call:instance:model.AuthoredModel.node_689f6a627384c7dc",
+        "label": "node 689f6a627384c7dc",
+        "kind": "Identity",
+        "category": "operator",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.AuthoredModel.node_689f6a627384c7dc:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.AuthoredModel.node_689f6a627384c7dc:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 22,
+          "endLine": 22,
+          "expression": "self.node_689f6a627384c7dc(node_5377a56ff730ddd8)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.AuthoredModel",
+        "instanceId": "instance:model.AuthoredModel.node_689f6a627384c7dc",
+        "callId": "call:instance:model.AuthoredModel.node_689f6a627384c7dc"
+      },
+      {
+        "id": "call:instance:model.AuthoredModel.node_d90ee9ccf6bea1d2",
+        "label": "node d90ee9ccf6bea1d2",
+        "kind": "Dropout",
+        "category": "regularization",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.AuthoredModel.node_d90ee9ccf6bea1d2:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.AuthoredModel.node_d90ee9ccf6bea1d2:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "p": 0.25
+        },
+        "source": {
+          "path": "model.py",
+          "line": 23,
+          "endLine": 23,
+          "expression": "self.node_d90ee9ccf6bea1d2(node_689f6a627384c7dc)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.AuthoredModel",
+        "instanceId": "instance:model.AuthoredModel.node_d90ee9ccf6bea1d2",
+        "callId": "call:instance:model.AuthoredModel.node_d90ee9ccf6bea1d2",
+        "parameterOrigins": {
+          "p": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 14,
+            "endLine": 14,
+            "expression": "0.25",
+            "column": 50,
+            "endColumn": 54
+          }
+        }
+      },
+      {
+        "id": "call:instance:model.AuthoredModel.node_3547cb112ac4489a",
+        "label": "node 3547cb112ac4489a",
+        "kind": "Linear",
+        "category": "linear",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.AuthoredModel.node_3547cb112ac4489a:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.AuthoredModel.node_3547cb112ac4489a:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "in_features": 8,
+          "out_features": 3,
+          "bias": true,
+          "dtype": {
+            "expression": "torch.float32",
+            "origin": "unknown"
+          }
+        },
+        "source": {
+          "path": "model.py",
+          "line": 24,
+          "endLine": 24,
+          "expression": "self.node_3547cb112ac4489a(node_d90ee9ccf6bea1d2)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.AuthoredModel",
+        "instanceId": "instance:model.AuthoredModel.node_3547cb112ac4489a",
+        "callId": "call:instance:model.AuthoredModel.node_3547cb112ac4489a",
+        "parameterOrigins": {
+          "in_features": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 15,
+            "endLine": 15,
+            "expression": "8",
+            "column": 59,
+            "endColumn": 60
+          },
+          "out_features": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 15,
+            "endLine": 15,
+            "expression": "3",
+            "column": 75,
+            "endColumn": 76
+          },
+          "bias": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 15,
+            "endLine": 15,
+            "expression": "True",
+            "column": 83,
+            "endColumn": 87
+          },
+          "dtype": {
+            "kind": "unknown",
+            "path": "model.py",
+            "line": 15,
+            "endLine": 15,
+            "expression": "torch.float32",
+            "column": 95,
+            "endColumn": 108
+          }
+        }
+      },
+      {
+        "id": "output:model.AuthoredModel:0",
+        "label": "output",
+        "kind": "Output",
+        "category": "output",
+        "children": [],
+        "ports": [
+          {
+            "id": "output:model.AuthoredModel:0:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 25,
+          "expression": "def forward(self, node_2d711642b726b044):\n        node_a7937b64b8caa58f = self.node_a7937b64b8caa58f(node_2d711642b726b044)\n        node_99e2995dbca8ca48 = self.node_99e2995dbca8ca48(node_a7937b64b8caa58f)\n        node_ce677f0f258927f8 = self.node_ce677f0f258927f8(node_99e2995dbca8ca48)\n        node_5377a56ff730ddd8 = self.node_5377a56ff730ddd8(node_ce677f0f258927f8)\n        node_689f6a627384c7dc = self.node_689f6a627384c7dc(node_5377a56ff730ddd8)\n        node_d90ee9ccf6bea1d2 = self.node_d90ee9ccf6bea1d2(node_689f6a627384c7dc)\n        node_3547cb112ac4489a = self.node_3547cb112ac4489a(node_d90ee9ccf6bea1d2)\n        return {'out': node_3547cb112ac4489a}"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.AuthoredModel",
+        "outputPath": [
+          {
+            "kind": "key",
+            "key": "out"
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:0",
+        "source": {
+          "nodeId": "input:model.AuthoredModel:node_2d711642b726b044",
+          "portId": "input:model.AuthoredModel:node_2d711642b726b044:out:node_2d711642b726b044"
+        },
+        "target": {
+          "nodeId": "call:instance:model.AuthoredModel",
+          "portId": "call:instance:model.AuthoredModel:in:node_2d711642b726b044"
+        },
+        "tensorId": "tensor:input:model.AuthoredModel:node_2d711642b726b044:node_2d711642b726b044",
+        "role": "data"
+      },
+      {
+        "id": "edge:1",
+        "source": {
+          "nodeId": "input:model.AuthoredModel:node_2d711642b726b044",
+          "portId": "input:model.AuthoredModel:node_2d711642b726b044:out:node_2d711642b726b044"
+        },
+        "target": {
+          "nodeId": "call:instance:model.AuthoredModel.node_a7937b64b8caa58f",
+          "portId": "call:instance:model.AuthoredModel.node_a7937b64b8caa58f:in:input"
+        },
+        "tensorId": "tensor:input:model.AuthoredModel:node_2d711642b726b044:node_2d711642b726b044",
+        "role": "data"
+      },
+      {
+        "id": "edge:2",
+        "source": {
+          "nodeId": "call:instance:model.AuthoredModel.node_a7937b64b8caa58f",
+          "portId": "call:instance:model.AuthoredModel.node_a7937b64b8caa58f:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.AuthoredModel.node_99e2995dbca8ca48",
+          "portId": "call:instance:model.AuthoredModel.node_99e2995dbca8ca48:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.AuthoredModel.node_a7937b64b8caa58f:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:3",
+        "source": {
+          "nodeId": "call:instance:model.AuthoredModel.node_99e2995dbca8ca48",
+          "portId": "call:instance:model.AuthoredModel.node_99e2995dbca8ca48:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.AuthoredModel.node_ce677f0f258927f8",
+          "portId": "call:instance:model.AuthoredModel.node_ce677f0f258927f8:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.AuthoredModel.node_99e2995dbca8ca48:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:4",
+        "source": {
+          "nodeId": "call:instance:model.AuthoredModel.node_ce677f0f258927f8",
+          "portId": "call:instance:model.AuthoredModel.node_ce677f0f258927f8:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.AuthoredModel.node_5377a56ff730ddd8",
+          "portId": "call:instance:model.AuthoredModel.node_5377a56ff730ddd8:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.AuthoredModel.node_ce677f0f258927f8:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:5",
+        "source": {
+          "nodeId": "call:instance:model.AuthoredModel.node_5377a56ff730ddd8",
+          "portId": "call:instance:model.AuthoredModel.node_5377a56ff730ddd8:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.AuthoredModel.node_689f6a627384c7dc",
+          "portId": "call:instance:model.AuthoredModel.node_689f6a627384c7dc:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.AuthoredModel.node_5377a56ff730ddd8:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:6",
+        "source": {
+          "nodeId": "call:instance:model.AuthoredModel.node_689f6a627384c7dc",
+          "portId": "call:instance:model.AuthoredModel.node_689f6a627384c7dc:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.AuthoredModel.node_d90ee9ccf6bea1d2",
+          "portId": "call:instance:model.AuthoredModel.node_d90ee9ccf6bea1d2:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.AuthoredModel.node_689f6a627384c7dc:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:7",
+        "source": {
+          "nodeId": "call:instance:model.AuthoredModel.node_d90ee9ccf6bea1d2",
+          "portId": "call:instance:model.AuthoredModel.node_d90ee9ccf6bea1d2:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.AuthoredModel.node_3547cb112ac4489a",
+          "portId": "call:instance:model.AuthoredModel.node_3547cb112ac4489a:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.AuthoredModel.node_d90ee9ccf6bea1d2:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:8",
+        "source": {
+          "nodeId": "call:instance:model.AuthoredModel.node_3547cb112ac4489a",
+          "portId": "call:instance:model.AuthoredModel.node_3547cb112ac4489a:out:output"
+        },
+        "target": {
+          "nodeId": "output:model.AuthoredModel:0",
+          "portId": "output:model.AuthoredModel:0:in:value"
+        },
+        "tensorId": "tensor:call:instance:model.AuthoredModel.node_3547cb112ac4489a:output",
+        "role": "data"
+      }
+    ],
+    "diagnostics": [
+      {
+        "level": "info",
+        "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+      }
+    ],
+    "sources": [
+      {
+        "path": "model.py",
+        "content": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\n\nclass AuthoredModel(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.node_a7937b64b8caa58f = nn.Linear(in_features=4, out_features=8, bias=False, dtype=torch.float32)\n        self.node_99e2995dbca8ca48 = nn.ReLU()\n        self.node_ce677f0f258927f8 = nn.GELU(approximate='tanh')\n        self.node_5377a56ff730ddd8 = nn.SiLU()\n        self.node_689f6a627384c7dc = nn.Identity()\n        self.node_d90ee9ccf6bea1d2 = nn.Dropout(p=0.25)\n        self.node_3547cb112ac4489a = nn.Linear(in_features=8, out_features=3, bias=True, dtype=torch.float32)\n\n    def forward(self, node_2d711642b726b044):\n        node_a7937b64b8caa58f = self.node_a7937b64b8caa58f(node_2d711642b726b044)\n        node_99e2995dbca8ca48 = self.node_99e2995dbca8ca48(node_a7937b64b8caa58f)\n        node_ce677f0f258927f8 = self.node_ce677f0f258927f8(node_99e2995dbca8ca48)\n        node_5377a56ff730ddd8 = self.node_5377a56ff730ddd8(node_ce677f0f258927f8)\n        node_689f6a627384c7dc = self.node_689f6a627384c7dc(node_5377a56ff730ddd8)\n        node_d90ee9ccf6bea1d2 = self.node_d90ee9ccf6bea1d2(node_689f6a627384c7dc)\n        node_3547cb112ac4489a = self.node_3547cb112ac4489a(node_d90ee9ccf6bea1d2)\n        return {'out': node_3547cb112ac4489a}\n",
+        "digest": "144c30b9dcd8d57926ac1f4ceb1f05cc1f2787d4f4f14ce00ccad4b8c3a49bc6"
+      }
+    ]
+  },
+  "nodeBindings": {
+    "x": "input:model.AuthoredModel:node_2d711642b726b044",
+    "first": "call:instance:model.AuthoredModel.node_a7937b64b8caa58f",
+    "relu": "call:instance:model.AuthoredModel.node_99e2995dbca8ca48",
+    "gelu": "call:instance:model.AuthoredModel.node_ce677f0f258927f8",
+    "silu": "call:instance:model.AuthoredModel.node_5377a56ff730ddd8",
+    "identity": "call:instance:model.AuthoredModel.node_689f6a627384c7dc",
+    "drop": "call:instance:model.AuthoredModel.node_d90ee9ccf6bea1d2",
+    "last": "call:instance:model.AuthoredModel.node_3547cb112ac4489a",
+    "out": "output:model.AuthoredModel:0"
+  },
+  "portBindings": {
+    "x": {
+      "output": "input:model.AuthoredModel:node_2d711642b726b044:out:node_2d711642b726b044"
+    },
+    "first": {
+      "input": "call:instance:model.AuthoredModel.node_a7937b64b8caa58f:in:input",
+      "output": "call:instance:model.AuthoredModel.node_a7937b64b8caa58f:out:output"
+    },
+    "relu": {
+      "input": "call:instance:model.AuthoredModel.node_99e2995dbca8ca48:in:input",
+      "output": "call:instance:model.AuthoredModel.node_99e2995dbca8ca48:out:output"
+    },
+    "gelu": {
+      "input": "call:instance:model.AuthoredModel.node_ce677f0f258927f8:in:input",
+      "output": "call:instance:model.AuthoredModel.node_ce677f0f258927f8:out:output"
+    },
+    "silu": {
+      "input": "call:instance:model.AuthoredModel.node_5377a56ff730ddd8:in:input",
+      "output": "call:instance:model.AuthoredModel.node_5377a56ff730ddd8:out:output"
+    },
+    "identity": {
+      "input": "call:instance:model.AuthoredModel.node_689f6a627384c7dc:in:input",
+      "output": "call:instance:model.AuthoredModel.node_689f6a627384c7dc:out:output"
+    },
+    "drop": {
+      "input": "call:instance:model.AuthoredModel.node_d90ee9ccf6bea1d2:in:input",
+      "output": "call:instance:model.AuthoredModel.node_d90ee9ccf6bea1d2:out:output"
+    },
+    "last": {
+      "input": "call:instance:model.AuthoredModel.node_3547cb112ac4489a:in:input",
+      "output": "call:instance:model.AuthoredModel.node_3547cb112ac4489a:out:output"
+    },
+    "out": {
+      "input": "output:model.AuthoredModel:0:in:value"
+    }
+  },
+  "tensors": {
+    "x": {
+      "shape": [
+        2,
+        4
+      ],
+      "dtype": "float32"
+    },
+    "first": {
+      "shape": [
+        2,
+        8
+      ],
+      "dtype": "float32"
+    },
+    "relu": {
+      "shape": [
+        2,
+        8
+      ],
+      "dtype": "float32"
+    },
+    "gelu": {
+      "shape": [
+        2,
+        8
+      ],
+      "dtype": "float32"
+    },
+    "silu": {
+      "shape": [
+        2,
+        8
+      ],
+      "dtype": "float32"
+    },
+    "identity": {
+      "shape": [
+        2,
+        8
+      ],
+      "dtype": "float32"
+    },
+    "drop": {
+      "shape": [
+        2,
+        8
+      ],
+      "dtype": "float32"
+    },
+    "last": {
+      "shape": [
+        2,
+        3
+      ],
+      "dtype": "float32"
+    },
+    "out": {
+      "shape": [
+        2,
+        3
+      ],
+      "dtype": "float32"
+    }
+  },
+  "verification": {
+    "status": "passed",
+    "scope": "exact-static-dag-and-declared-tensor-compatibility",
+    "modelExecution": "not_run",
+    "nodes": 9,
+    "edges": 8,
+    "nodeBindings": {
+      "x": "input:model.AuthoredModel:node_2d711642b726b044",
+      "first": "call:instance:model.AuthoredModel.node_a7937b64b8caa58f",
+      "relu": "call:instance:model.AuthoredModel.node_99e2995dbca8ca48",
+      "gelu": "call:instance:model.AuthoredModel.node_ce677f0f258927f8",
+      "silu": "call:instance:model.AuthoredModel.node_5377a56ff730ddd8",
+      "identity": "call:instance:model.AuthoredModel.node_689f6a627384c7dc",
+      "drop": "call:instance:model.AuthoredModel.node_d90ee9ccf6bea1d2",
+      "last": "call:instance:model.AuthoredModel.node_3547cb112ac4489a",
+      "out": "output:model.AuthoredModel:0"
+    },
+    "portBindings": {
+      "x": {
+        "output": "input:model.AuthoredModel:node_2d711642b726b044:out:node_2d711642b726b044"
+      },
+      "first": {
+        "input": "call:instance:model.AuthoredModel.node_a7937b64b8caa58f:in:input",
+        "output": "call:instance:model.AuthoredModel.node_a7937b64b8caa58f:out:output"
+      },
+      "relu": {
+        "input": "call:instance:model.AuthoredModel.node_99e2995dbca8ca48:in:input",
+        "output": "call:instance:model.AuthoredModel.node_99e2995dbca8ca48:out:output"
+      },
+      "gelu": {
+        "input": "call:instance:model.AuthoredModel.node_ce677f0f258927f8:in:input",
+        "output": "call:instance:model.AuthoredModel.node_ce677f0f258927f8:out:output"
+      },
+      "silu": {
+        "input": "call:instance:model.AuthoredModel.node_5377a56ff730ddd8:in:input",
+        "output": "call:instance:model.AuthoredModel.node_5377a56ff730ddd8:out:output"
+      },
+      "identity": {
+        "input": "call:instance:model.AuthoredModel.node_689f6a627384c7dc:in:input",
+        "output": "call:instance:model.AuthoredModel.node_689f6a627384c7dc:out:output"
+      },
+      "drop": {
+        "input": "call:instance:model.AuthoredModel.node_d90ee9ccf6bea1d2:in:input",
+        "output": "call:instance:model.AuthoredModel.node_d90ee9ccf6bea1d2:out:output"
+      },
+      "last": {
+        "input": "call:instance:model.AuthoredModel.node_3547cb112ac4489a:in:input",
+        "output": "call:instance:model.AuthoredModel.node_3547cb112ac4489a:out:output"
+      },
+      "out": {
+        "input": "output:model.AuthoredModel:0:in:value"
+      }
+    },
+    "scalarNormalizations": {},
+    "limitations": [
+      "Input shapes and dtypes are declarations, not runtime observations.",
+      "Embedding index bounds, memory allocation, numerical behavior and train/eval execution are unverified.",
+      "This is a fresh managed model, not a structural rewrite of imported source."
+    ]
+  }
+}

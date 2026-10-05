@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "scope": "authored-draft-error-feedback",
+  "draftSchemaUnchanged": true,
+  "moduleCatalogUnchanged": true,
+  "modelExecution": "not_run",
+  "transport": {
+    "draftErrorStatus": 400,
+    "legacyEnglishErrorPreserved": true,
+    "diagnostics": "optional array; DraftError defaults to []; generic ValueError/HTTP guards/CAS do not receive fabricated diagnostics"
+  },
+  "diagnostic": {
+    "required": [
+      "code",
+      "message",
+      "technical"
+    ],
+    "optional": [
+      "nodeId",
+      "parameter",
+      "portId",
+      "portIds",
+      "nodeIds",
+      "edgeId",
+      "endpoint",
+      "expected",
+      "actual"
+    ],
+    "targetRule": "Only validated unique exact identities and declared parameters/ports are attached. Never parse labels or English strings. Global/schema/budget/invalid or duplicate identity have no nodeId. Invalid endpoints have edgeId/endpoint only. Unknown parameters have no field target. More than one missing port has portIds without portId.",
+    "expectedMeaning": "The consuming module contract, or the first merge input used as equality contract. Ranges/allowed-ranks/dtypes are explicit objects or arrays.",
+    "actualMeaning": "The corresponding upstream declaration or inferred declared tensor property; not a runtime observation. Arbitrary invalid parameter values are not echoed.",
+    "message": "Chinese advice; module kind and parameter names are data; display labels are absent.",
+    "technical": "Preserved English contract text; arbitrary display labels remain JSON text."
+  },
+  "incompleteDrafts": {
+    "validate": "200, complete=false, localized issues with previous codes and target inventories",
+    "save": "still saves incomplete but otherwise valid draft unchanged through CAS",
+    "generate": "400, diagnostics reuse issues; English error joins preserved technical messages; no writes"
+  },
+  "linearObserved": {
+    "error": "重复名称: final input dimension 16 does not equal in_features 12.",
+    "diagnostics": [
+      {
+        "code": "linear_input_features_mismatch",
+        "message": "Linear 的输入末维为 16，但 in_features 为 12。请让 in_features 与上游末维一致。",
+        "technical": "重复名称: final input dimension 16 does not equal in_features 12.",
+        "nodeId": "consumer",
+        "parameter": "in_features",
+        "portId": "input",
+        "expected": 12,
+        "actual": 16
+      }
+    ]
+  },
+  "checks": {
+    "newUnit": {
+      "passed": 13,
+      "skipped": 0,
+      "log": "unit-initial.txt"
+    },
+    "legacyUnit": {
+      "passed": 13,
+      "skipped": 0,
+      "log": "legacy-unit.txt"
+    },
+    "sandboxHTTP": {
+      "passed": 0,
+      "skipped": 6,
+      "log": "http-sandbox-initial.txt",
+      "scope": "not acceptance"
+    },
+    "permittedHostHTTP": {
+      "passed": 13,
+      "skipped": 0,
+      "log": "http-permitted-host-initial.txt",
+      "new": 6,
+      "legacy": 7
+    }
+  },
+  "sourceBindings": {
+    "src/archcanvas_authoring/draft.py": "cce519d8ae9e865fedccb5981b34a9884c51cceca43c951eff59333ba322231d",
+    "src/archcanvas_cli/server.py": "847c510d5a3cca7bcb7023f3c7b8b2025f671c3fc6faca76551b014c63a79815",
+    "tests/test_authoring_diagnostics.py": "9546c93f1daf93283d3ff9152ba321882e951660d2b7a10b4c34f732ae74af32",
+    "tests/test_authoring_diagnostics_http.py": "a9b164f9adc82cbd06c409bd081fdbaa729beb554275ba9b766ac2ef7733ca97"
+  },
+  "limitations": [
+    "Tests verify data contracts and transport, not rendered Studio text or screen-reader accessibility.",
+    "Declared shape/dtype checks do not execute a tensor model.",
+    "Generated IR verification errors without a validated draft target intentionally retain empty diagnostics."
+  ]
+}

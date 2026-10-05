@@ -1,0 +1,29 @@
+{
+  "schema": "archcanvas-ai-directional-gesture-protocol/1",
+  "role": "Independent offline AI-operated movement and pan auditor",
+  "humanParticipants": 0,
+  "productionCodeChangesAllowed": false,
+  "directions": {
+    "right": { "axis": "x", "sign": 1, "orthogonalDelta": 0 },
+    "left": { "axis": "x", "sign": -1, "orthogonalDelta": 0 },
+    "down": { "axis": "y", "sign": 1, "orthogonalDelta": 0 },
+    "up": { "axis": "y", "sign": -1, "orthogonalDelta": 0 }
+  },
+  "nodeMovement": {
+    "model": "MLP",
+    "target": "One same visible canonical Linear target across all four cases",
+    "phases": ["before", "moved", "undo", "redo"],
+    "terminal": "The same canonical target moves on the declared axis/sign while other visible leaf bodies stay fixed; enclosing container growth is reported separately. Expected snapped canvas delta is computed independently when actual input from/to and starting camera scale are recorded.",
+    "undo": "Complete interactive SVG byte equality after excluding only the root data-revision value and metadata revision value",
+    "redo": "Same complete interactive SVG comparison against moved phase",
+    "invariants": ["Stable document/source/IR digests and complete sourceFacts", "Same canonical visible nodes and binding records", "Exact canonical edge endpoints at the bound visible SVG port coordinates within renderer rounding", "Finite positive bodies inside current scene viewBox", "No source/IR or expanded/pinned membership change"]
+  },
+  "cameraPan": {
+    "phases": ["before", "panned", "reversed"],
+    "terminal": "Paper translation changes on declared CSS pixel axis/sign while scale and complete SVG remain unchanged",
+    "restore": "Opposite equal native pan restores original paper matrix and exact SVG",
+    "history": "Pan is camera navigation and does not enter CanvasDocument undo history; node undo/redo must not be misrepresented as pan undo/redo"
+  },
+  "export": "When an actual current export is captured, compare document/revision/source/IR/sourceFacts/renderedBindings/page geometry/node bodies/port coordinates/edge paths; exclude interactive-only controls by comparing facts rather than whole XML.",
+  "limits": ["Public SVG/camera evidence does not prove trusted input by itself; native/journal input is a separate scope.", "A geometric finding is not an aesthetic pass or publication review.", "AI task roles do not count as humans, researchers or independently observed presented-frame performance.", "Missing phase or actual export remains incomplete, not pass."]
+}
