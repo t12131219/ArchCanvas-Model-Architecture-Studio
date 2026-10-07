@@ -1,10 +1,13 @@
+// Historical M4 policy regression: this suite intentionally freezes the pre-atomic
+// projection (coarse container arrows and mask top ports). Current behavior is
+// independently checked by atomic-frontier-routing.test.ts; archived gold stays intact.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { applyVisualBatch, buildExportScene, createHistory, reduceHistory } from '../src/core/index.ts';
+import { applyVisualBatch, buildExportScene, createHistory, reduceHistory } from './historical-routing-core.ts';
 import * as prior from '../../docs/evidence/m4-memory-continuity-current/before-change/inputs/studio/src/core/index.ts';
 import type { CanvasDocument, SceneNode } from '../src/core/types.ts';
-import type { RouteRequest, RouteResult } from '../src/core/orthogonalRouter.ts';
+import type { RouteRequest, RouteResult } from './historical-routing-core.ts';
 import { MEMORY_CONTINUITY_BUDGET, projectMemoryContinuity } from '../src/core/memoryContinuity.ts';
 import { normalizeMemoryContinuityGeometry } from './historical-memory-continuity-compat.ts';
 
@@ -19,7 +22,7 @@ function parse(path: string) {
 function routeLength(path: string) { const p = parse(path); return p.slice(1).reduce((sum, b, i) => sum + Math.abs(b[0] - p[i][0]) + Math.abs(b[1] - p[i][1]), 0); }
 const serial = <T>(x: T): T => JSON.parse(JSON.stringify(x));
 
-test('source and target signed14/15 thresholds retain endpoint continuity and exact peers across caption preset size and detail combinations', () => {
+test('historical M4: source and target signed14/15 thresholds retain endpoint continuity and exact peers across caption preset size and detail combinations', () => {
   const input = JSON.stringify(source);
   for (const owner of [encoder, decoder]) for (const mode of ['default', 'empty', 'custom'])
     for (const preset of ['paper', 'monochrome'] as const) for (const widthMm of [85, 180]) for (const scope of [{}, { nodeId: source.expandedIds[0] }]) {
@@ -50,7 +53,7 @@ test('source and target signed14/15 thresholds retain endpoint continuity and ex
   assert.equal(JSON.stringify(source), input);
 });
 
-test('horizontal gap guards retain complete baseline when two six-unit leads are unavailable', () => {
+test('historical M4: horizontal gap guards retain complete baseline when two six-unit leads are unavailable', () => {
   for (const dx of [22.9, 23, 23.1, 34, 35, 36, 41, 42, 43]) {
     const doc = applyVisualBatch(source, [{ type: 'move', ids: [encoder], dx, dy: 15 }]), before = prior.buildExportScene(doc), scene = buildExportScene(doc);
     assert.deepEqual(scene.edges.filter(e => e.role !== 'memory').map(e => e.path), before.edges.filter(e => e.role !== 'memory').map(e => e.path));
@@ -60,7 +63,7 @@ test('horizontal gap guards retain complete baseline when two six-unit leads are
   }
 });
 
-test('continuity is detached and one typed move survives undo redo and JSON reopen', () => {
+test('historical M4: continuity is detached and one typed move survives undo redo and JSON reopen', () => {
   const initial = createHistory(source), before = JSON.stringify(initial);
   const moved = reduceHistory(initial, { type: 'apply', operations: [{ type: 'move', ids: [encoder], dx: 0, dy: 24 }] });
   const undone = reduceHistory(moved, { type: 'undo' }), redone = reduceHistory(undone, { type: 'redo' });
@@ -78,7 +81,7 @@ function literal() {
   const baseline: RouteResult = { path: request.preferredPath, points: parse(request.preferredPath).map(([x, y]) => ({ x, y })), changed: false, blockedBy: [] };
   return { nodes, requests: [request], baseline: [baseline] };
 }
-test('literal guards reject joint and same-tensor peers close strokes invalid widths gap bodies and exhausted checks', () => {
+test('historical M4: literal guards reject joint and same-tensor peers close strokes invalid widths gap bodies and exhausted checks', () => {
   const initial = literal(); assert.equal(projectMemoryContinuity(initial.nodes, initial.requests, initial.baseline).get(0)?.path, 'M 100 55 H 130 V 65 H 160');
   for (const path of ['M 130 30 V 55 H 145', 'M 105 56.9 H 125', 'M 100 55 H 160']) {
     const input = literal(); input.requests.push({ ...input.requests[0], role: 'data', preferredPath: path });
@@ -98,7 +101,7 @@ test('literal guards reject joint and same-tensor peers close strokes invalid wi
   assert.equal(projectMemoryContinuity(input.nodes, input.requests, input.baseline).size, 0);
 });
 
-test('version adapter rejects coherent geometry canonical nonmemory and consumer-coverage corruptions', () => {
+test('historical M4: version adapter rejects coherent geometry canonical nonmemory and consumer-coverage corruptions', () => {
   const doc = applyVisualBatch(source, [{ type: 'move', ids: [encoder], dx: 0, dy: 15 }]), scene = buildExportScene(doc);
   normalizeMemoryContinuityGeometry(doc, scene);
   const reject = (mutate: (s: typeof scene) => void) => { const forged = structuredClone(scene); mutate(forged); assert.throws(() => normalizeMemoryContinuityGeometry(doc, forged)); };
@@ -109,7 +112,7 @@ test('version adapter rejects coherent geometry canonical nonmemory and consumer
   reject(s => { s.edges.find(e => e.role === 'memory')!.source.portId = 'wrong'; });
 });
 
-test('detail mixed consumers keep retained port coverage and architecture-order bindings after memory projection', () => {
+test('historical M4: detail mixed consumers keep retained port coverage and architecture-order bindings after memory projection', () => {
   const document = JSON.parse(readFileSync(new URL('../../docs/evidence/m4-memory-continuity-current/implementation-work/detail-consumer-literal.json', import.meta.url), 'utf8')) as CanvasDocument;
   const before = prior.buildExportScene(document, { nodeId: 'owner' }), current = buildExportScene(document, { nodeId: 'owner' });
   const expectedBindings = (ids: string[], direction: 'in' | 'out') => document.architecture.edges.filter(e => ids.includes(e.id))

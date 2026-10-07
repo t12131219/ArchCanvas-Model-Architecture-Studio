@@ -60,7 +60,7 @@ def capabilities() -> dict:
         "schemaVersion": 1,
         "runtimeVersion": archcanvas_cli.__version__,
         "sourceAnalysis": True,
-        "modelAuthoring": {"mode": "authored-draft", "catalog": "/api/authoring/catalog", "generation": "new-managed-copy", "runtimeVerified": False},
+        "modelAuthoring": {"mode": "authored-draft", "catalog": "/api/authoring/catalog", "generation": "new-managed-copy", "sourceImport": "/api/authoring/import-source", "sourceFrontier": "/api/authoring/source-frontier", "runtimeVerified": False},
         "documentPersistence": True,
         "semanticWriteback": True,
         "supportedIntents": ["set_dropout_probability", "update_configuration", "replace_activation", "rebind_input"],
@@ -409,6 +409,17 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(200, analyze_source(payload.get("source"), payload["entry"], payload.get("filename", "model.py")))
             elif path == "/api/projects":
                 self.send_json(201, self.server.workspace.register(payload))
+            elif path == "/api/authoring/import-source":
+                if set(payload) != {"document", "scene"}:
+                    raise ValueError("Source import requires the current document and scene.")
+                validate_document(payload["document"], payload["document"].get("id", ""))
+                self.send_json(201, archcanvas_authoring.import_source_draft(payload["document"], payload["scene"]))
+            elif path == "/api/authoring/source-frontier":
+                if set(payload) != {"draft", "document", "scene"}:
+                    raise ValueError("Source frontier requires draft, current source document and scene.")
+                validate_document(payload["document"], payload["document"].get("id", ""))
+                from archcanvas_authoring.source_import import rebase_source_frontier
+                self.send_json(200, rebase_source_frontier(payload["draft"], payload["document"], payload["scene"]))
             elif path in ("/api/authoring/validate", "/api/authoring/generate"):
                 if set(payload) != {"draft"}:
                     raise ValueError("Authoring requires one draft; paths and existing project ids are not accepted.")

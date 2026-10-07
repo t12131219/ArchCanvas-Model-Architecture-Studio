@@ -18,7 +18,7 @@ import { prepareMovePreview, previewMoveScene } from './core/movePreview';
 import type { MovePreviewSession } from './core/movePreview';
 import { beginCameraPan, cameraAtPanInput } from './cameraGesture';
 import type { CameraState, CameraPan } from './cameraGesture';
-import { fitCameraToBounds, focusCameraOnPoint, paperTranslation, viewportToWorld, zoomCameraAtPoint } from './cameraProjection';
+import { canvasDotGrid, clampCanvasZoom, fitCameraToBounds, focusCameraOnPoint, paperTranslation, viewportToWorld, zoomCameraAtPoint } from './cameraProjection';
 import { canApplyCameraViewTicket, readCameraView, sameCameraViewDocument, writeCameraView } from './cameraViewState';
 import type { CameraViewIdentity, CameraViewStorage, CameraViewTicket } from './cameraViewState';
 import { cameraViewportSize, resizeCameraViewport } from './cameraViewport';
@@ -31,7 +31,10 @@ import { planLayoutRecovery } from './core/layoutRecovery';
 import { parseMoveCommand } from './moveCommand';
 import type { LayoutRecoveryPlan } from './core/layoutRecovery';
 import { AuthoringStudio } from './AuthoringStudio';
+import type { AuthoringWorkspace } from './AuthoringStudio';
 import type { GeneratedDraft } from './api';
+import { createGeneratedCanvas } from './generatedCanvas';
+import { followSourceView, resumeSourceAuthoring, sourceAuthoringKey } from './sourceAuthoringSession';
 
 type Selection = { kind: 'node' | 'edge' | 'legend' | 'annotation'; ids: string[] };
 type Camera = CameraState;
@@ -61,6 +64,9 @@ function statusText(evidence: string) { return evidence === 'opaque' ? '未解�
 
 export default function App() {
   const [authoringOpen, setAuthoringOpen] = useState(false);
+  const [authoringWorkspace, setAuthoringWorkspace] = useState<AuthoringWorkspace | undefined>();
+  const authoringSessions = useRef(new Map<string, AuthoringWorkspace>());
+  const authoringSessionKey = useRef<string | null>(null);
   const [history, setHistory] = useState<HistoryState | null>(null);
   const [examples, setExamples] = useState<Example[]>([]);
   const [exampleId, setExampleId] = useState('');
@@ -121,7 +127,7 @@ export default function App() {
   const committedScene = useMemo(() => current ? buildScene(current) : null, [current]);
   const activeRecovery = recoveryPreview && recoveryPreview.document === current && selection.kind === 'node' && selection.ids.length === 1 && selection.ids[0] === recoveryPreview.plan.id ? recoveryPreview : null;
   const scene = useMemo(() => activeRecovery ? activeRecovery.plan.scene : preview && preview.document === current ? previewMoveScene(preview.session, preview.dx, preview.dy) : committedScene, [current, committedScene, preview, activeRecovery]);
-  const markup = useMemo(() => scene ? renderSvg(scene, { interactive: true }) : '', [scene]);
+  const markup = useMemo(() => scene ? renderSvg(scene, { interactive: true, background: false }) : '', [scene]);
   const architecture = current?.architecture;
   const selectedNode = selection.kind === 'node' ? architecture?.nodes.find(n => n.id === selection.ids[0]) : undefined;
   const selectedEdge = selection.kind === 'edge' ? architecture?.edges.find(n => n.id === selection.ids[0]) : undefined;
@@ -131,6 +137,7 @@ export default function App() {
   const selectedSceneAnnotation = scene?.annotations.find(n => n.id === selectedAnnotation?.id);
   const annotationConflicts = scene && selectedSceneAnnotation ? findAnnotationBodyConflicts(scene, selectedSceneAnnotation) : [];
   const paperPosition = scene ? paperTranslation(camera, scene.bounds) : null;
+  const dotGrid = canvasDotGrid(camera);
   const dirty = !!current && current.revision !== savedVisualRevision;
   const layoutGuidance = layoutWarnings(scene);
   useEffect(() => {
@@ -437,7 +444,7 @@ export default function App() {
       synchronizeCameraViewport();
       const rect = viewport.getBoundingClientRect();
       const px = event.clientX - rect.left, py = event.clientY - rect.top;
-      const old = cameraRef.current, zoom = Math.max(0.15, Math.min(3, old.zoom * Math.exp(-event.deltaY * 0.0015)));
+      const old = cameraRef.current, zoom = clampCanvasZoom(old.zoom * Math.exp(-Math.max(-2000, Math.min(2000, event.deltaY)) * 0.0015));
       commitCamera({ x: px - (px - old.x) * zoom / old.zoom, y: py - (py - old.y) * zoom / old.zoom, zoom });
     };
     viewport.addEventListener('wheel', wheel, { passive: false });
@@ -751,35 +758,91 @@ export default function App() {
     const rect = viewportRef.current?.getBoundingClientRect();
     if (!rect) return;
     const old = cameraRef.current;
-    commitCamera(zoomCameraAtPoint(old, factor === 'reset' ? 1 : Math.max(0.15, Math.min(3, old.zoom * factor)), { x: rect.width / 2, y: rect.height / 2 }));
+    commitCamera(zoomCameraAtPoint(old, factor === 'reset' ? 1 : clampCanvasZoom(old.zoom * factor), { x: rect.width / 2, y: rect.height / 2 }));
   }
 
+  function sourceDraftKey(document: CanvasDocument) { return sourceAuthoringKey(document); }
+  function retainAuthoringWorkspace(workspace: AuthoringWorkspace) {
+    if (authoringSessionKey.current) authoringSessions.current.set(authoringSessionKey.current, { ...workspace,
+      sourceHistory: { past: historyRef.current?.past.length ?? 0, future: historyRef.current?.future.length ?? 0 } });
+  }
+  function openBlankAuthoring() {
+    cancelGesture();
+    authoringSessionKey.current = 'blank';
+    setAuthoringWorkspace(authoringSessions.current.get('blank'));
+    setAuthoringOpen(true);
+  }
+  async function continueModelAuthoring() {
+    cancelGesture();
+    const frozen = historyRef.current?.document;
+    if (!frozen || busy || activeRecovery) return;
+    const sequence = loadSequence.current, key = sourceDraftKey(frozen);
+    const retained = authoringSessions.current.get(key);
+    if (retained) {
+      const retainedRevision = retained.draft.sourceProvenance?.visualRevision;
+      if (retainedRevision === frozen.revision) {
+        const workspace = followSourceView(retained, { selection: selection.kind === 'node' ? selection.ids : [], camera: { ...cameraRef.current }, viewport: readCameraViewport() ?? undefined, tool,
+          sourceHistory: { past: historyRef.current?.past.length ?? 0, future: historyRef.current?.future.length ?? 0 } });
+        authoringSessions.current.set(key, workspace); authoringSessionKey.current = key; setAuthoringWorkspace(workspace); setAuthoringOpen(true); return;
+      }
+      setBusy(true); setFailure('');
+      try {
+        const workspace = await resumeSourceAuthoring(retained, frozen, { selection: selection.kind === 'node' ? selection.ids : [], camera: { ...cameraRef.current }, viewport: readCameraViewport() ?? undefined, tool,
+          sourceHistory: { past: historyRef.current?.past.length ?? 0, future: historyRef.current?.future.length ?? 0 } },
+          (draft, document, scene) => api.sourceDraftFrontier(draft, document, scene));
+        if (sequence !== loadSequence.current || frozen !== historyRef.current?.document) return;
+        authoringSessions.current.set(key, workspace); authoringSessionKey.current = key;
+        setAuthoringWorkspace(workspace); setAuthoringOpen(true); return;
+      } catch (error) {
+        if (sequence === loadSequence.current) setFailure(`源码视图已变化，无法安全重连编辑副本：${String(error)}`);
+        return;
+      } finally { if (sequence === loadSequence.current) setBusy(false); }
+    }
+    const conflicting = [...authoringSessions.current.values()].find(workspace => workspace.draft.sourceProvenance?.documentId === frozen.id &&
+      (workspace.draft.sourceProvenance.sourceDigest !== frozen.sourceBindingDigest || workspace.draft.sourceProvenance.irDigest !== frozen.architecture.irDigest));
+    if (conflicting) {
+      setFailure('源码或 IR 摘要已变化；原搭建会话仍保留，请先回到原模型或另建独立草稿。');
+      return;
+    }
+    setBusy(true); setFailure('');
+    try {
+      const imported = await api.importSourceDraft(frozen, buildScene(frozen));
+      if (sequence !== loadSequence.current || frozen !== historyRef.current?.document) return;
+      const workspace: AuthoringWorkspace = { draft: imported.draft, storageRevision: 0, savedRevision: -1,
+        selection: selection.kind === 'node' ? selection.ids.map(id => imported.sceneNodeBindings[id]).filter(Boolean) : [],
+        camera: { ...cameraRef.current }, viewport: readCameraViewport() ?? undefined, tool,
+        sourceHistory: { past: historyRef.current?.past.length ?? 0, future: historyRef.current?.future.length ?? 0 } };
+      authoringSessions.current.set(key, workspace); authoringSessionKey.current = key;
+      setAuthoringWorkspace(workspace); setAuthoringOpen(true);
+    } catch (error) {
+      if (sequence === loadSequence.current) setFailure(`无法进入模型编辑，当前画布已保留：${String(error)}`);
+    } finally { if (sequence === loadSequence.current) setBusy(false); }
+  }
   async function openGeneratedModel(generated: GeneratedDraft) {
     cancelGesture();
+    const workspace = authoringSessionKey.current ? authoringSessions.current.get(authoringSessionKey.current) : undefined;
     const sequence = ++loadSequence.current;
     cameraOwner.current = null; cameraIntent.current++;
     const project = await api.register(generated.architecture);
     if (sequence !== loadSequence.current) return;
     await openArchitecture(project.architecture, false, sequence, false);
     if (sequence !== loadSequence.current) return;
-    const aliases: Record<string, string> = {};
-    for (const node of generated.draft.nodes) {
-      const id = generated.nodeBindings[node.id];
-      if (id) aliases[id] = node.label;
-    }
-    const document = createDocument(project.architecture, generated.draft.title, aliases);
+    const retained = createGeneratedCanvas(project.architecture, generated.draft, generated, generated.presentationDraft);
+    const document = retained.document;
     historyRef.current = createHistory(document); setHistory(historyRef.current);
+    setSelection({ kind: 'node', ids: (workspace?.selection ?? []).flatMap(id => retained.nodeBindings[id] ? [retained.nodeBindings[id]] : []) });
     setProjectId(project.id); setExampleId(''); setAuthoringOpen(false);
-    initializeCamera(document, sequence, false);
-    setNotice('已打开草稿生成的新模型工作副本；可编辑论文图并导出。模型未执行。');
+    if (workspace?.camera) { commitCamera(workspace.camera, document); setTool(workspace.tool ?? 'select'); }
+    else initializeCamera(document, sequence, false);
+    setNotice(`已打开新模型工作副本，并保留搭建位置与视角。模型未执行。${retained.unmappedNodeIds.length ? ` ${retained.unmappedNodeIds.length} 个展示框没有对应的新源码节点。` : ''}${retained.unresolvedEdgeStyles.length ? ` ${retained.unresolvedEdgeStyles.length} 条连线样式待核对。` : ''}`);
   }
-  if (authoringOpen) return <AuthoringStudio onClose={() => setAuthoringOpen(false)} onOpen={openGeneratedModel} />;
+  if (authoringOpen) return <AuthoringStudio initialWorkspace={authoringWorkspace} onViewState={retainAuthoringWorkspace} onClose={() => setAuthoringOpen(false)} onOpen={openGeneratedModel} />;
 
   return <div className="studio">
     <header className="topbar">
       <div className="brand"><span className="brand-mark"><i /><i /><i /></span><span>ArchCanvas<small>MODEL ARCHITECTURE STUDIO</small></span></div>
       <div className="project-breadcrumb"><span className="slash">/</span><Icon name="file" size={15} /><span>{current?.title ?? '模型工作台'}</span><span className="alpha-tag">ALPHA</span></div>
-      <div className="header-actions"><button disabled={busy || !!review} onClick={() => { cancelGesture(); setAuthoringOpen(true); }}><Icon name="plus" size={15} />搭建模型</button><span className={`save-state ${dirty ? 'dirty' : ''}`}><i />{current ? dirty ? '有未保存编辑' : '已保存' : '等待文档'}</span><button onClick={save} disabled={!current || busy || !!activeRecovery}><Icon name="save" size={15} />保存</button><button className="primary" onClick={() => current && setExportDocument(structuredClone(current))} disabled={!current || busy || !!activeRecovery}><Icon name="export" size={16} />导出论文图</button></div>
+      <div className="header-actions"><div className="canvas-mode-actions"><button disabled={!current || busy || !!review || !!activeRecovery} onClick={() => void continueModelAuthoring()}><Icon name="layers" size={15} />编辑当前模型</button><button disabled={busy || !!review || !!activeRecovery} onClick={openBlankAuthoring}><Icon name="plus" size={15} />从零搭建</button></div><span className={`save-state ${dirty ? 'dirty' : ''}`}><i />{current ? dirty ? '有未保存编辑' : '已保存' : '等待文档'}</span><button onClick={save} disabled={!current || busy || !!activeRecovery}><Icon name="save" size={15} />保存</button><button className="primary" onClick={() => current && setExportDocument(structuredClone(current))} disabled={!current || busy || !!activeRecovery}><Icon name="export" size={16} />导出论文图</button></div>
     </header>
     <div className="workspace">
       <aside className="navigator">
@@ -791,10 +854,10 @@ export default function App() {
         <div className="navigator-bottom"><button className={sourceOpen ? 'active' : ''} onClick={() => setSourceOpen(x => !x)} disabled={!current}><Icon name="code" size={16} />查看源码证据<Icon name="chevron" size={13} /></button><div className="source-note"><span className="live-dot" />静态分析 · 未执行模型<p>{projectId ? '当前为 Studio 工作副本。' : '样式和显示名仅修改画布。'}</p></div></div>
       </aside>
       <main className="main">
-        <div className="canvas-toolbar"><div className="tool-group"><button title="选择 / Shift 多选 · V" aria-label="选择对象" aria-pressed={tool === 'select'} className={`tool ${tool === 'select' ? 'selected' : ''}`} onClick={() => chooseTool('select')}><Icon name="arrow" /></button><button title="拖动画布 · H" aria-label="平移画布" aria-pressed={tool === 'pan'} className={`tool ${tool === 'pan' ? 'selected' : ''}`} onClick={() => chooseTool('pan')}><Icon name="hand" /></button><span className="tool-divider" /><button className="tool" onClick={undo} disabled={!history?.past.length} title="撤销 Ctrl+Z"><Icon name="undo" /></button><button className="tool" onClick={redo} disabled={!history?.future.length} title="重做 Ctrl+Shift+Z"><Icon name="redo" /></button><span className="tool-divider" /><button className="tool" onClick={align} disabled={selection.ids.length < 2} title="左对齐"><Icon name="align" /></button><button className="tool" onClick={() => apply([{ type: 'pin', ids: selection.ids, pinned: !current?.pinnedObjects.includes(selection.ids[0]) }])} disabled={!selection.ids.length || selection.kind !== 'node'} title="固定 / 解锁"><Icon name="pin" /></button></div><div className="paper-preset"><span className="mini-paper" /><select aria-label="页面预设" value={current?.pageSpec.preset ?? 'paper'} disabled={!current} onChange={e => apply([{ type: 'page', page: { preset: e.target.value as 'paper' | 'monochrome' } }])}><option value="paper">论文 · 彩色</option><option value="monochrome">论文 · 黑白</option></select></div><div className="tool-group"><button className={`tool ${grid ? 'selected' : ''}`} title="显示编辑网格" onClick={() => setGrid(x => !x)}><Icon name="grid" size={16} /></button><button className="tool" onClick={() => fit()} title="适合画布 F"><Icon name="fit" /></button></div></div>
-        <div ref={viewportRef} className={`canvas-viewport ${grid ? 'with-grid' : ''} ${tool === 'pan' ? 'pan-tool' : ''} ${isPanning ? 'is-panning' : ''}`} data-canvas-tool={tool} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerCancelled} onLostPointerCapture={pointerCancelled} onDoubleClick={event => { if (tool === 'pan' || space.current || event.button !== 0 || editingTarget(event.target) || (event.target as Element).closest('[data-port-id],[data-expand-id]')) return; const id = (event.target as Element).closest('[data-node-id]')?.getAttribute('data-node-id'); const n = architecture?.nodes.find(n => n.id === id); if (n) { inlineCancelled.current = false; setInline({ id: n.id, label: current?.displayAliases[n.id] ?? n.label }); setSelection({ kind: 'node', ids: [n.id] }); } }}>
-          <div className="canvas-heading"><span>FIGURE WORKSPACE</span><div>{current?.pageSpec.widthMm ?? 180} mm <i /> {current?.pageSpec.preset === 'monochrome' ? 'MONOCHROME' : 'PAPER COLOR'}</div></div>
-          {scene && paperPosition && <div className="paper" style={{ width: scene.bounds.width, height: scene.bounds.height, transform: `translate(${paperPosition.x}px, ${paperPosition.y}px) scale(${camera.zoom})` }}>
+        <div className="canvas-toolbar"><div className="tool-group"><button title="选择 / Shift 多选 · V" aria-label="选择对象" aria-pressed={tool === 'select'} className={`tool ${tool === 'select' ? 'selected' : ''}`} onClick={() => chooseTool('select')}><Icon name="arrow" /></button><button title="拖动画布 · H" aria-label="平移画布" aria-pressed={tool === 'pan'} className={`tool ${tool === 'pan' ? 'selected' : ''}`} onClick={() => chooseTool('pan')}><Icon name="hand" /></button><span className="tool-divider" /><button className="tool" onClick={undo} disabled={!history?.past.length} title="撤销 Ctrl+Z"><Icon name="undo" /></button><button className="tool" onClick={redo} disabled={!history?.future.length} title="重做 Ctrl+Shift+Z"><Icon name="redo" /></button><span className="tool-divider" /><button className="tool" onClick={align} disabled={selection.ids.length < 2} title="左对齐"><Icon name="align" /></button><button className="tool" onClick={() => apply([{ type: 'pin', ids: selection.ids, pinned: !current?.pinnedObjects.includes(selection.ids[0]) }])} disabled={!selection.ids.length || selection.kind !== 'node'} title="固定 / 解锁"><Icon name="pin" /></button></div><div className="paper-preset"><span className="mini-paper" /><select aria-label="页面预设" value={current?.pageSpec.preset ?? 'paper'} disabled={!current} onChange={e => apply([{ type: 'page', page: { preset: e.target.value as 'paper' | 'monochrome' } }])}><option value="paper">论文 · 彩色</option><option value="monochrome">论文 · 黑白</option></select></div><div className="tool-group"><button className={`tool ${grid ? 'selected' : ''}`} title="显示点阵网格" aria-label="显示点阵网格" aria-pressed={grid} onClick={() => setGrid(x => !x)}><Icon name="grid" size={16} /></button><button className="tool" onClick={() => fit()} title="适合画布 F"><Icon name="fit" /></button></div></div>
+        <div ref={viewportRef} className={`canvas-viewport ${grid ? 'with-grid' : ''} ${tool === 'pan' ? 'pan-tool' : ''} ${isPanning ? 'is-panning' : ''}`} data-canvas-tool={tool} data-canvas-surface="infinite" data-camera={JSON.stringify(camera)} style={grid ? { backgroundSize: `${dotGrid.spacing}px ${dotGrid.spacing}px`, backgroundPosition: `${dotGrid.x - dotGrid.spacing / 2}px ${dotGrid.y - dotGrid.spacing / 2}px` } : undefined} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerCancelled} onLostPointerCapture={pointerCancelled} onDoubleClick={event => { if (tool === 'pan' || space.current || event.button !== 0 || editingTarget(event.target) || (event.target as Element).closest('[data-port-id],[data-expand-id]')) return; const id = (event.target as Element).closest('[data-node-id]')?.getAttribute('data-node-id'); const n = architecture?.nodes.find(n => n.id === id); if (n) { inlineCancelled.current = false; setInline({ id: n.id, label: current?.displayAliases[n.id] ?? n.label }); setSelection({ kind: 'node', ids: [n.id] }); } }}>
+          <div className="canvas-heading"><span>INFINITE CANVAS</span><div>{current?.pageSpec.widthMm ?? 180} mm <i /> {current?.pageSpec.preset === 'monochrome' ? 'MONOCHROME' : 'PAPER COLOR'}</div></div>
+          {scene && paperPosition && <div className="paper infinite-scene" style={{ width: scene.bounds.width, height: scene.bounds.height, transform: `translate(${paperPosition.x}px, ${paperPosition.y}px) scale(${camera.zoom})` }}>
             <div className="publication-scene" data-scene-kind={activeRecovery ? 'recovery-preview' : preview && preview.document === current ? 'move-preview' : 'committed'} data-committed-revision={current?.revision} data-pinned-ids={JSON.stringify(current?.pinnedObjects ?? [])} data-expanded-ids={JSON.stringify(current?.expandedIds ?? [])} dangerouslySetInnerHTML={{ __html: markup }} />
             {portDraft && <svg className="connection-draft" width={scene.bounds.width} height={scene.bounds.height} viewBox={`${scene.bounds.x} ${scene.bounds.y} ${scene.bounds.width} ${scene.bounds.height}`} aria-label="改接草稿与可用来源"><path d={`M ${portDraft.port.x} ${portDraft.port.y} L ${portDraft.x} ${portDraft.y}`} stroke="#bd7533" strokeWidth="2" strokeDasharray="5 4" fill="none" />{candidatePorts(portDraft.options).map(p => <circle key={p.id} cx={p.x} cy={p.y} r="9" stroke="#35876b" strokeWidth="2" fill="#deeee6" opacity=".8" />)}</svg>}
             {selection.kind === 'node' && scene.nodes.filter(n => selection.ids.includes(n.id)).map(n => <div key={n.id} className="selection-outline" style={{ left: n.x - scene.bounds.x - 3, top: n.y - scene.bounds.y - 3, width: n.width + 6, height: n.height + 6 }}><span /><span /><span /><span />{current?.pinnedObjects.includes(n.id) && <b>固定</b>}</div>)}

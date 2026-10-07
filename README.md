@@ -1,5 +1,11 @@
 # ArchCanvas Studio · 视觉与受限双向审核 Alpha
 
+> **当前统一编辑器（2026-10-07）**：本工作树正在把源码视图与独立搭建草稿连接为一条连续工作流。点击“编辑当前模型”会保留当前画布的布局、样式、折叠层级、选择、相机和操作历史；搭建草稿仍写入受管理副本，原始源码保持不变。画布视图使用无限点阵平面，导出仍来自不含编辑点阵的 publication renderer。
+
+当前作者模式目录包含 **74 个原子部件和 23 个透明网络起点**。原子部件覆盖激活、形状变换、1–3D 卷积/反卷积、池化、归一化、Embedding、Attention、RNN/GRU/LSTM、合并与张量算子；目录支持分类、别名、中文说明和参数搜索。网络起点只是由这些可编辑原子组成的草稿图，生成前会对完整参数、端口、声明形状和无环连接做静态核对，不执行模型。
+
+展开层级时，连线由原子事实索引投影到当前可见 frontier：已经有后代证据的父级粗边会隐藏，同一 canonical binding 的端口覆盖仍保留。正交路由会优先使用间隙、端口法向和独立 mask 通道，并对同层交叉、节点重叠和贴边情况进行可诊断的保护。当前专项证据见 [统一编辑器证据](docs/evidence/atomic-frontier-routing-v1/report.json)；这些是有限场景的工程验证，不代表全局最优路径或出版审看通过。
+
 2026-10-07：M5 已完成本地 Beta.2 出口，详见 [Beta.2 目录发现与安装生命周期](docs/m5-beta2.md) 和 [完成收据](docs/evidence/m5-completion-v1/receipt.json)：分类/别名/参数搜索、透明起点组成展示、可恢复卸载与恢复、安装版本拒绝/重启检查。当前 Studio **491/491**、strict/build 0、publication **11/11**；M4 `partial`、M5 `complete-local-beta`。Beta.1 冻结包保留，三宿主实际客户端 E2E、真人及出版审看按证据保持开放。
 
 以下阶段条目保留各自冻结构建的历史范围。
@@ -136,7 +142,7 @@ worker 读取冻结的只读源码 generation，仅映射正式 venv、私有只
 | 拖动预览 | gesture开始冻结snapshot，每帧仍用同一Scene/SVG，松开通过guarded history；source/revision变化使旧gesture失效。独立CPU优化不等同浏览器帧率通过 |
 | 操作历史 | 视觉操作与 undo/redo 使用同一文档；不改模型源文件 |
 | 局部语言指令 | 对选中节点解析颜色、`命名为…`、展开/收起/固定等确定性指令，复用同一视觉操作与历史；没有通用 LLM 语言解析 |
-| 从零建模 | 独立 authored draft，17种模块/参数/typed tensor端口/无环连接/删除/history/保存；严格声明shape/type核对后生成新Python并注册新工作副本，不修改已有导入模型 |
+| 从零建模 | 独立 authored draft，74种原子模块/参数/typed tensor端口/无环连接/删除/history/保存；严格声明shape/type核对后生成新Python并注册新工作副本，不修改已有导入模型 |
 | 保存 | 本地服务保存文档；独立存储版本用于拒绝过期覆盖 |
 | 导出 | 从当前 scene 导出 SVG，再用正式 publication runtime 派生 PDF/PNG；receipt 绑定文档、版本、scene hash、物理尺寸和实际依赖来源 |
 | 运行观察 / 实际 shape | 显式 Linux x86-64 CPU profile；默认静态。真实隔离、冻结输入/环境、多输入 eval/train、forward/backward、binding replay 和 state receipt；仅声明样本 |

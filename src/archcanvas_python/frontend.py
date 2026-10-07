@@ -213,6 +213,39 @@ CONTRACTS: dict[str, tuple[list[str], str]] = {
 }
 
 
+# Exact external framework contracts, researched against official PyTorch APIs.
+# Positional parameter lists preserve imported source facts; no model is executed.
+for _dim in (1, 2, 3):
+    for _transpose in (False, True):
+        _name = f'Conv{"Transpose" if _transpose else ""}{_dim}d'
+        _args = ['in_channels', 'out_channels', 'kernel_size', 'stride', 'padding']
+        if _transpose: _args += ['output_padding', 'groups', 'bias', 'dilation']
+        else: _args += ['dilation', 'groups', 'bias', 'padding_mode']
+        CONTRACTS[_name] = (_args, 'convolution')
+    for _operation in ('Max', 'Avg'):
+        _args = ['kernel_size', 'stride', 'padding'] + (['dilation', 'return_indices', 'ceil_mode'] if _operation == 'Max' else ['ceil_mode', 'count_include_pad'])
+        CONTRACTS[f'{_operation}Pool{_dim}d'] = (_args, 'pooling')
+        CONTRACTS[f'Adaptive{_operation}Pool{_dim}d'] = (['output_size'] + (['return_indices'] if _operation == 'Max' else []), 'pooling')
+    for _norm in ('Batch', 'Instance'):
+        CONTRACTS[f'{_norm}Norm{_dim}d'] = (['num_features', 'eps', 'momentum', 'affine', 'track_running_stats'], 'norm')
+for _kind, _args in {
+    'Sigmoid': [], 'Tanh': [], 'ReLU6': ['inplace'], 'LeakyReLU': ['negative_slope', 'inplace'],
+    'ELU': ['alpha', 'inplace'], 'SELU': ['inplace'], 'Softplus': ['beta', 'threshold'], 'Softsign': [],
+    'Hardsigmoid': ['inplace'], 'Hardswish': ['inplace'], 'PReLU': ['num_parameters', 'init'],
+    'Softmax': ['dim'], 'LogSoftmax': ['dim'],
+}.items(): CONTRACTS[_kind] = (_args, 'activation')
+for _kind in ('Dropout1d', 'Dropout2d', 'Dropout3d', 'AlphaDropout', 'FeatureAlphaDropout'):
+    CONTRACTS[_kind] = (['p', 'inplace'], 'regularization')
+CONTRACTS.update({
+    'Unflatten': (['dim', 'unflattened_size'], 'operator'),
+    'Upsample': (['size', 'scale_factor', 'mode', 'align_corners', 'recompute_scale_factor'], 'operator'),
+    'GroupNorm': (['num_groups', 'num_channels', 'eps', 'affine'], 'norm'),
+    'RMSNorm': (['normalized_shape', 'eps', 'elementwise_affine'], 'norm'),
+    'RNN': (['input_size', 'hidden_size', 'num_layers', 'nonlinearity', 'bias', 'batch_first', 'dropout', 'bidirectional'], 'recurrent'),
+    'GRU': (['input_size', 'hidden_size', 'num_layers', 'bias', 'batch_first', 'dropout', 'bidirectional'], 'recurrent'),
+})
+
+
 @dataclass
 class Spec:
     identity: str
@@ -766,6 +799,8 @@ class Analyzer:
             self.bind(value, own, name)
         if spec.kind == "LSTM":
             return self.out(own, "output"), (self.out(own, "h_n"), self.out(own, "c_n"))
+        if spec.kind in ('RNN', 'GRU'):
+            return self.out(own, 'output'), self.out(own, 'h_n')
         return self.out(own)
 
     def residual_operand(self, inputs: list[tuple[str, Any]]) -> str | None:

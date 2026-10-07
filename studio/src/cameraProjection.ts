@@ -4,6 +4,26 @@ type Point = Readonly<{ x: number; y: number }>;
 type Bounds = Readonly<{ x: number; y: number; width: number; height: number }>;
 type Viewport = Readonly<{ width: number; height: number }>;
 
+export const CANVAS_MIN_ZOOM = 0.04;
+export const CANVAS_MAX_ZOOM = 6;
+
+/** Navigation limits zoom, never the position of the infinite world plane. */
+export function clampCanvasZoom(zoom: number): number {
+  finite([zoom]);
+  return Math.max(CANVAS_MIN_ZOOM, Math.min(CANVAS_MAX_ZOOM, zoom));
+}
+
+/** A world-anchored dot lattice. Subsample at small zooms instead of aliasing. */
+export function canvasDotGrid(camera: CameraState): { spacing: number; x: number; y: number; worldSpacing: number } {
+  checkCamera(camera);
+  const octave = Math.ceil(Math.log2(14 / 24) - Math.log2(camera.zoom));
+  const worldSpacing = 24 * 2 ** octave;
+  const spacing = worldSpacing * camera.zoom;
+  if (!Number.isFinite(spacing) || spacing <= 0) throw new Error('Camera dot spacing cannot be represented');
+  const modulo = (value: number) => ((value % spacing) + spacing) % spacing;
+  return { spacing, x: modulo(camera.x), y: modulo(camera.y), worldSpacing };
+}
+
 function finite(values: number[]) {
   if (!values.every(Number.isFinite)) throw new Error('Camera projection requires finite coordinates');
 }

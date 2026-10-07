@@ -1,3 +1,6 @@
+// Historical M4 policy regression: this suite intentionally freezes the pre-atomic
+// projection (coarse container arrows and mask top ports). Current behavior is
+// independently checked by atomic-frontier-routing.test.ts; archived gold stays intact.
 import test from 'node:test';
 import { normalizeDefaultMemoryLabels } from './historical-memory-caption-compat.ts';
 import assert from 'node:assert/strict';
@@ -13,7 +16,7 @@ import { assertRefinement as verifyCollapsedResidualRefinement, stats as residua
 // archived formal ChS. Normal tests always run the current formal product.
 // Neither target imports a failed prototype or supplies a geometry oracle.
 const core = process.env.ARCHCANVAS_REPEAT_ORACLE_BASELINE === 'sealed-ChS'
-  ? new URL('../../docs/evidence/before-m4-repeat-outline/files/studio/src/core/', import.meta.url) : new URL('../src/core/', import.meta.url);
+  ? new URL('../../docs/evidence/before-m4-repeat-outline/files/studio/src/core/', import.meta.url) : new URL('../../docs/evidence/atomic-frontier-routing-v1/before-core/', import.meta.url);
 const { buildScene, buildExportScene, createDocument, applyVisualBatch, createHistory, reduceHistory, renderSvg } = await import(new URL('index.ts', core).href) as typeof import('../src/core/index.ts');
 const { createOrthogonalRouter } = await import(new URL('orthogonalRouter.ts', core).href) as typeof import('../src/core/orthogonalRouter.ts');
 const { prepareMovePreview, previewMoveScene } = await import(new URL('movePreview.ts', core).href) as typeof import('../src/core/movePreview.ts');
@@ -48,7 +51,7 @@ function checkSourceBound(record: BeforeRecord, scene: Scene, svg: string) {
   assertHealthy(scene, svg);
 }
 
-test('independent final-SVG oracle detects all six sealed ChS stack intrusions and three buried frontier outputs', () => {
+test('historical M4: independent final-SVG oracle detects all six sealed ChS stack intrusions and three buried frontier outputs', () => {
   const bad = before.records.filter(record => record.report.stackHits.length);
   assert.equal(bad.length, 6);
   assert.equal(frontiers.filter(record => record.report.buriedPorts.length).length, 3);
@@ -70,7 +73,7 @@ test('independent final-SVG oracle detects all six sealed ChS stack intrusions a
 // the same repair assertions failing against the archived implementation.
 
 for (const record of frontiers) {
-  test(`source-bound final SVG stack/endpoint/Canvas invariants: ${record.caseId}`, () => {
+  test(`historical M4: source-bound final SVG stack/endpoint/Canvas invariants: ${record.caseId}`, () => {
     const path = new URL(record.inputPath, project), raw = readFileSync(path, 'utf8');
     assert.equal(sha256(raw), record.inputSha256);
     const document = JSON.parse(raw) as CanvasDocument, original = JSON.stringify(document);
@@ -140,7 +143,7 @@ for (const record of frontiers) {
   });
 }
 
-test('reported CNN bottom and Transformer memory examples attach to exposed card union', () => {
+test('historical M4: reported CNN bottom and Transformer memory examples attach to exposed card union', () => {
   for (const [caseId, edgeId, expected] of [
     ['residual_cnn-level0-paper-180', 'edge:20', { x: 177, y: 423 }],
     ['transformer-level0-paper-180', 'edge:44', { x: 281, y: 444.1 }],
@@ -153,7 +156,7 @@ test('reported CNN bottom and Transformer memory examples attach to exposed card
   }
 });
 
-test('near-left bottom outputs follow actual +0/+3.5/+7 cards instead of empty envelope corners', () => {
+test('historical M4: near-left bottom outputs follow actual +0/+3.5/+7 cards instead of empty envelope corners', () => {
   const document = createDocument(cornerArchitecture());
   document.layout.stack = { x: 100, y: 100 }; document.layout.consumer = { x: 100, y: 320 };
   const original = JSON.stringify(document), scene = buildScene(document), svg = renderSvg(scene), geometry = parseSvg(svg);
@@ -174,7 +177,7 @@ test('near-left bottom outputs follow actual +0/+3.5/+7 cards instead of empty e
   assert.ok(analyzeSvg(polluted, renderSvg(polluted)).floatingPorts.some(port => port.portId === first.id), 'Independent oracle accepted an invented card corner');
 });
 
-test('same canonical memory output has coherent bottom and right display ports for multiple consumers', () => {
+test('historical M4: same canonical memory output has coherent bottom and right display ports for multiple consumers', () => {
   const document = createDocument(mixedSideArchitecture());
   document.layout.stack = { x: 100, y: 100 }; document.layout.below = { x: 100, y: 340 }; document.layout.right = { x: 500, y: 100 };
   const original = JSON.stringify(document), scene = buildScene(document), svg = renderSvg(scene), geometry = parseSvg(svg);
@@ -189,7 +192,7 @@ test('same canonical memory output has coherent bottom and right display ports f
   assert.ok(analyzeSvg(corrupted, renderSvg(corrupted)).endpointMisses.some(miss => miss.edgeId === 'to-below'), 'Oracle accepted later mutation of a previously bound circle');
 });
 
-test('unrelated backplate-only obstacle and source own-stack reentry are independently rejected and rerouted', () => {
+test('historical M4: unrelated backplate-only obstacle and source own-stack reentry are independently rejected and rerouted', () => {
   for (const [nodes, preferredPath, start, end, expectedOwner] of [
     [[sceneNode('a', 0, 0), sceneNode('b', 100, 150), sceneNode('stack', 40, 80, 40, 20, true)], 'M 10 20 V 104 H 110 V 150', { x: 10, y: 20 }, { x: 110, y: 150 }, 'stack'],
     [[sceneNode('a', 0, 0, 20, 20, true), sceneNode('b', 100, 100)], 'M 10 27 V 40 H 24 V 10 H 110 V 100', { x: 10, y: 27 }, { x: 110, y: 100 }, 'a'],
@@ -208,7 +211,7 @@ test('unrelated backplate-only obstacle and source own-stack reentry are indepen
   }
 });
 
-test('overlapping Repeat ownership is reported once and an endpoint covered by another body remains honestly blocked', () => {
+test('historical M4: overlapping Repeat ownership is reported once and an endpoint covered by another body remains honestly blocked', () => {
   const overlap = createOrthogonalRouter([sceneNode('first', 0, 0, 20, 20, true), sceneNode('second', 23, 23, 20, 20, true)]);
   assert.deepEqual(overlap.overlaps, [{ first: 'first', second: 'second' }]);
   const nodes = [sceneNode('a', 0, 0, 20, 20, true), sceneNode('b', 100, 100), sceneNode('cover', 8, 26, 4, 4)];
@@ -216,7 +219,7 @@ test('overlapping Repeat ownership is reported once and an endpoint covered by a
   assert.ok(result.blockedBy.includes('cover')); assert.equal(new Set(result.blockedBy).size, result.blockedBy.length);
 });
 
-test('detail fallback ports and translated stacks retain canonical boundary coverage and exposed endpoints', () => {
+test('historical M4: detail fallback ports and translated stacks retain canonical boundary coverage and exposed endpoints', () => {
   const graph = architecture([
     canonicalNode('model', { category: 'container', children: ['selected', 'other'] }),
     canonicalNode('selected', { category: 'container', parentId: 'model', children: ['stack'] }),
@@ -236,7 +239,7 @@ test('detail fallback ports and translated stacks retain canonical boundary cove
   assert.equal(JSON.stringify(document), original);
 });
 
-test('expanded/nonrepeat ports, in-place expansion, pins and move preview/history preserve presentation contracts', () => {
+test('historical M4: expanded/nonrepeat ports, in-place expansion, pins and move preview/history preserve presentation contracts', () => {
   let document = createDocument(hierarchyArchitecture());
   // Keep the pinned consumer beyond the expanded subtree. Pinning a body on
   // top of an expanding child intentionally leaves an unsatisfiable layout.

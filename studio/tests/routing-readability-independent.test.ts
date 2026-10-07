@@ -1,10 +1,13 @@
+// Historical M4 policy regression: this suite intentionally freezes the pre-atomic
+// projection (coarse container arrows and mask top ports). Current behavior is
+// independently checked by atomic-frontier-routing.test.ts; archived gold stays intact.
 import test from 'node:test';
 import { normalizeDefaultMemoryLabels } from './historical-memory-caption-compat.ts';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { buildScene, buildExportScene, createDocument, createHistory, reduceHistory, renderSvg, applyVisualBatch } from '../src/core/index.ts';
-import { prepareMovePreview, previewMoveScene } from '../src/core/movePreview.ts';
+import { buildScene, buildExportScene, createDocument, createHistory, reduceHistory, renderSvg, applyVisualBatch } from './historical-routing-core.ts';
+import { prepareMovePreview, previewMoveScene } from './historical-routing-core.ts';
 import type { CanvasDocument, Scene } from '../src/core/types.ts';
 // Oracle and fixtures are authored independently. No route/parser/intersection/scoring helpers are imported.
 import { metrics, parsePath, verifyRefinement, intrusions } from '../../docs/evidence/m4-routing-refinement/independent/oracle.ts';
@@ -19,13 +22,13 @@ const before = (key: string) => JSON.parse(readFileSync(new URL(`before/${key}.s
 const serializable = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 const sceneRevision = (scene: Scene) => ({ ...scene, revision: 0 });
 
-test('independent oracle rejects 15 corruptions including coherent graph displacement and tensor concealment', () => {
+test('historical M4: independent oracle rejects 15 corruptions including coherent graph displacement and tensor concealment', () => {
   const result = runControls(); assert.equal(result.negativeControls, 15); assert.equal(result.rejected, 15);
   assert.equal(result.positiveUnchangedControlPassed, true);
   assert.ok(result.rows.filter(row => row.coherentEndpoints).length >= 10);
 });
 
-test('independent strict-interior oracle excludes point contact and same tensor trunks, merges collinear intervals', () => {
+test('historical M4: independent strict-interior oracle excludes point contact and same tensor trunks, merges collinear intervals', () => {
   const scene = JSON.parse(readFileSync(new URL('before/fixtures.json', evidence), 'utf8')).records.find((record: { kind: string }) => record.kind === 'shared-trunk').scene as Scene;
   const report = metrics(scene);
   assert.equal(report.sameTensor.overlapPairs, 1); assert.equal(report.sameTensor.overlapLength, 119);
@@ -37,7 +40,7 @@ test('independent strict-interior oracle excludes point contact and same tensor 
   assert.deepEqual(metrics(subdivided).distinctTensor, metrics(fixture).distinctTensor);
 });
 
-test('outline compatibility rejects eight coherent corruptions while preserving the frozen routing oracle', () => {
+test('historical M4: outline compatibility rejects eight coherent corruptions while preserving the frozen routing oracle', () => {
   const cnn = frozen.records.find(record => record.key === 'residual_cnn-level0-paper-180')!;
   const transformer = frozen.records.find(record => record.key === 'transformer-level0-paper-180')!;
   const load = (record: Record) => buildScene(JSON.parse(readFileSync(new URL(`../../${record.inputPath!}`, import.meta.url), 'utf8')) as CanvasDocument);
@@ -69,7 +72,7 @@ test('outline compatibility rejects eight coherent corruptions while preserving 
 });
 
 for (const record of frozen.records.filter(record => record.kind === 'frontier')) {
-  test(`independent source-bound frontier/detail/four-direction history invariants: ${record.caseId}`, () => {
+  test(`historical M4: independent source-bound frontier/detail/four-direction history invariants: ${record.caseId}`, () => {
     const path = new URL(`../../${record.inputPath!}`, import.meta.url), raw = readFileSync(path, 'utf8'), document = JSON.parse(raw) as CanvasDocument;
     assert.equal(createHash('sha256').update(raw).digest('hex'), record.inputSha256, 'source-bound input changed since before capture');
     const original = JSON.stringify(document), scene = buildScene(document);
@@ -116,7 +119,7 @@ for (const record of frozen.records.filter(record => record.kind === 'frontier')
   });
 }
 
-test('real public source-bound Transformer metrics improve while preserving unresolved complex crossings', () => {
+test('historical M4: real public source-bound Transformer metrics improve while preserving unresolved complex crossings', () => {
   for (const level of [1, 2, 3]) {
     const caseId = `transformer-level${level}-paper-180`, record = frozen.records.find(item => item.key === caseId)!;
     const document = JSON.parse(readFileSync(new URL(`../../${record.inputPath!}`, import.meta.url), 'utf8')) as CanvasDocument;
@@ -129,7 +132,7 @@ test('real public source-bound Transformer metrics improve while preserving unre
   }
 });
 
-test('public differing-tensor geometry reduces overlap length while shared tensor trunk remains byte-identical', () => {
+test('historical M4: public differing-tensor geometry reduces overlap length while shared tensor trunk remains byte-identical', () => {
   const initial = JSON.parse(readFileSync(new URL('before/fixtures.json', evidence), 'utf8'));
   for (const kind of ['different-tensors', 'shared-trunk', 'unavoidable-stub'] as const) {
     const document = placeFixture(createDocument(architecture(kind))), original = JSON.stringify(document), scene = buildScene(document), prior = initial.records.find((row: { kind: string }) => row.kind === kind).scene as Scene;

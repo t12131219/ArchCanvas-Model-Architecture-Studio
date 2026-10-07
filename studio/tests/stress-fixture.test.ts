@@ -36,7 +36,9 @@ test('source-backed 300-layer Sequential expansion exposes 300 canonical layer o
   assert.equal(expanded.nodes.length, 304);
   assert.equal(expanded.nodes.filter(node => node.kind === 'Linear' || node.kind === 'ReLU').length, 300);
   assert.ok(expanded.nodes.every(node => canonicalIds.has(node.id)));
-  assert.equal(expanded.edges.length, 302);
+  assert.equal(expanded.edges.length, 301);
+  assert.ok(expanded.hiddenEdges.includes('edge:1'), 'expanded parent input is represented by its atomic layer binding');
+  assert.deepEqual([...expanded.hiddenEdges, ...expanded.edges.flatMap(edge => edge.canonicalEdgeIds)].sort(), architecture.edges.map(edge => edge.id).sort());
   const collapsed = buildScene(applyVisualBatch(expandedDocument, [{ type: 'expand', id: target.id, expanded: false }]));
   assert.deepEqual(collapsed.nodes.map(node => node.id), before.nodes.map(node => node.id));
 });

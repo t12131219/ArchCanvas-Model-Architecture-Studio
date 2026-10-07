@@ -277,7 +277,7 @@ class M4HoldoutIntegrityTests(unittest.TestCase):
 
     def test_rejects_opaque_constructor_argument_change(self):
         copy, fixture, nodes = self.corrupted("UnsupportedVision")
-        nodes["mixer.mixer"]["parameters"]["arg0"] = 32
+        nodes["mixer.mixer"]["parameters"]["size"] = 32
         with self.assertRaisesRegex(AssertionError, "parameters differs"):
             check_holdout(copy, "UnsupportedVision", fixture)
 

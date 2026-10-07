@@ -1,6 +1,7 @@
 import type { EdgeRole, SceneNode } from './types.ts';
 import { nodeVisualOutline, visualPortSide } from './nodeVisualOutline.ts';
 import { edgeAppearanceKey, edgeDashPattern } from './edgePresentation.ts';
+import { refineReadableRoutes } from './readableRouting.ts';
 
 export type RoutePoint = { x: number; y: number };
 type Rectangle = { id: string; left: number; top: number; right: number; bottom: number };
@@ -782,7 +783,7 @@ export function createOrthogonalRouter(nodes: readonly SceneNode[]) {
     };
     // A clear proxy residual can still make a long detour without conflict
     // pressure. It needs this bounded proposal even when the generic pass exits.
-    if (!conflicted.length) { refineCollapsedResiduals(); refineShortcuts(); refineComponents(); return results; }
+    if (!conflicted.length) { refineCollapsedResiduals(); refineShortcuts(); refineComponents(); return refineReadableRoutes(nodes, requests, results); }
     // Shared-source proposals use exact, resolved canonical identity and the
     // current rendered appearance. Equal tensor names alone are insufficient.
     const familyMembers = new Map<string, number[]>(), familyKeys = new Map<number, string>();
@@ -951,7 +952,7 @@ export function createOrthogonalRouter(nodes: readonly SceneNode[]) {
     refineCollapsedResiduals();
     refineShortcuts();
     refineComponents();
-    return results;
+    return refineReadableRoutes(nodes, requests, results);
   };
   return Object.assign(route, { overlaps, headerOverlaps, batch });
 }

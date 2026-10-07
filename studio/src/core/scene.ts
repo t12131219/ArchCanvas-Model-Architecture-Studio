@@ -6,10 +6,11 @@ import { textWidth, wrapText } from './typography.ts';
 import { compactOutputPath, sourceNodeFacts } from './nodeFacts.ts';
 import { createOrthogonalRouter, orthogonalPathPoints } from './orthogonalRouter.ts';
 import type { RoutePoint, RouteRequest } from './orthogonalRouter.ts';
-import { projectMemoryContinuity } from './memoryContinuity.ts';
+import { memoryDisplayY, projectMemoryContinuity } from './memoryContinuity.ts';
 import { nodeVisualOutline, projectVisualPort } from './nodeVisualOutline.ts';
 import type { VisualSide } from './nodeVisualOutline.ts';
 import { edgeLabelBounds, placeEdgeLabels } from './edgeLabelPlacement.ts';
+import { indexAtomicRelations } from './atomicFrontier.ts';
 
 type Box = { x: number; y: number; width: number; height: number };
 const num = (n: number) => Math.round(n * 10) / 10;
@@ -149,27 +150,13 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
         message: `Object "${node.id}" extends outside its expanded parent "${parent.id}". Its manual anchor is preserved; move it inside the parent or preview a position repair.` });
     }
   }
-  function representative(id: string): string {
-    let n = byId.get(id)!;
-    while (!visible.has(n.id) && n.parentId) n = byId.get(n.parentId)!;
-    return n.id;
-  }
-  const hiddenEdges: string[] = [];
   const isAncestor = (ancestor: string, descendant: string) => {
     let current = byId.get(descendant)?.parentId;
     while (current) { if (current === ancestor) return true; current = byId.get(current)?.parentId; }
     return false;
   };
-  const rawProjected = architecture.edges.map(e => ({ e, s: representative(e.source.nodeId), t: representative(e.target.nodeId) })).filter(({ e, s, t }) => {
-    if (s === t && (e.source.nodeId !== s || e.target.nodeId !== t)) { hiddenEdges.push(e.id); return false; }
-    // Structural adapter edges at a collapsed boundary are provenance only. Showing them
-    // creates a line from a child input/output back to its container, obscuring the main lane.
-    if ((e.target.nodeId === t && byId.get(t)!.children.length && isAncestor(t, e.source.nodeId)) ||
-        (e.source.nodeId === s && byId.get(s)!.children.length && isAncestor(s, e.target.nodeId))) {
-      hiddenEdges.push(e.id); return false;
-    }
-    return true;
-  });
+  const atomicProjection = indexAtomicRelations(architecture).project(visible, expanded);
+  const rawProjected = atomicProjection.edges, hiddenEdges = atomicProjection.hidden;
   // Only bundle bindings with the same effective style. Every authored override
   // must remain represented when collapsed hierarchy projects edges together.
   const projected = [...rawProjected.reduce((groups, item) => {
@@ -184,28 +171,85 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
     else groups.set(key, { ...item, e: { ...item.e, _canonicalEdgeIds: [item.e.id] } as typeof item.e });
     return groups;
   }, new Map<string, { e: typeof architecture.edges[number] & { _canonicalEdgeIds?: string[] }; s: string; t: string }>()).values()];
+  const centre = (node: SceneNode) => ({ x: node.x + node.width / 2, y: node.y + node.height / 2 });
   const displaySides = projected.map(({ e, s, t }): { source: VisualSide; target: VisualSide } => {
     const source = sceneById.get(s)!, target = sceneById.get(t)!;
-    return e.role === 'memory' && Math.abs(source.y - target.y) < 15 && source.x + source.width < target.x
-      ? { source: 'right', target: 'left' } : { source: 'bottom', target: 'top' };
+    if (e.role === 'mask') {
+      // Auxiliary tensors use the outside of their branch, rather than lying
+      // on top of every token/data lane at a module's top boundary.
+      const ancestors = (id: string) => { const ids: string[] = []; let node = byId.get(id);
+        while (node) { ids.push(node.id); node = node.parentId ? byId.get(node.parentId) : undefined; } return ids; };
+      const sourceChain = new Set(ancestors(s));
+      const branch = ancestors(t).filter(id => !sourceChain.has(id)).map(id => sceneById.get(id)).filter(Boolean).at(-1) ?? target;
+      const common = ancestors(t).find(id => sourceChain.has(id)), frame = common ? sceneById.get(common) : undefined;
+      const side: VisualSide = frame && branch.x + branch.width / 2 < frame.x + frame.width / 2 ? 'left' : 'right';
+      return { source: side === 'left' ? 'bottom' : 'top', target: side };
+    }
+    const sourceCentre = centre(source), targetCentre = centre(target);
+    if (e.role === 'memory') {
+      // Memory is a long-range typed lane. Let its target enter from the side
+      // facing the producer so it does not cross the local query/data lane.
+      // A same-row producer gets a direct horizontal ray; a distant producer
+      // still approaches the side after one outer vertical corridor.
+      if (sourceCentre.x < targetCentre.x - 12) return { source: 'bottom', target: 'left' };
+      if (sourceCentre.x > targetCentre.x + 12) return { source: 'bottom', target: 'right' };
+      if (source.x + source.width < target.x && Math.abs(sourceCentre.y - targetCentre.y) < 15)
+        return { source: 'right', target: 'left' };
+      return { source: 'bottom', target: 'top' };
+    }
+    if (e.role === 'residual') {
+      // Keep residuals on the ordinary vertical lane. The router reserves an
+      // outside corridor around expanded ancestors when this lane would
+      // otherwise meet a peer, while the canonical target port remains a
+      // stable top slot under manual movement.
+      return { source: 'bottom', target: 'top' };
+    }
+    return { source: 'bottom', target: 'top' };
   });
-  type PortGroups = { indices: Map<string, number>; canonicalIds: Map<string, Set<string>> };
+  type PortGroups = {
+    indices: Map<string, number>;
+    canonicalIds: Map<string, Set<string>>;
+    orderMeta: Map<string, { score: number; tie: number; role: EdgeRole }>;
+    sideOrder: Map<VisualSide, string[]>;
+  };
   const incoming = new Map<string, PortGroups>(), outgoing = new Map<string, PortGroups>();
-  // Build each projected port's order and canonical coverage once. The maps
-  // retain the same authored projection order used by the previous scans.
+  // Build each projected port's canonical coverage once. Visual slot order is
+  // derived after projection from the opposite lane geometry and typed role;
+  // canonical bindings themselves remain architecture ordered.
   for (const [projectedIndex, item] of projected.entries()) for (const direction of ['in', 'out'] as const) {
     const id = direction === 'out' ? item.s : item.t;
     const binding = direction === 'out' ? item.e.source : item.e.target;
     const registry = direction === 'out' ? outgoing : incoming;
-    const group = registry.get(id) ?? { indices: new Map<string, number>(), canonicalIds: new Map<string, Set<string>>() };
+    const group = registry.get(id) ?? { indices: new Map<string, number>(), canonicalIds: new Map<string, Set<string>>(), orderMeta: new Map<string, { score: number; tie: number; role: EdgeRole }>(), sideOrder: new Map<VisualSide, string[]>() };
     const key = `${binding.nodeId}:${binding.portId}:${item.e.role}`;
-    if (!group.indices.has(key)) group.indices.set(key, group.indices.size);
     const side = direction === 'out' ? displaySides[projectedIndex].source : displaySides[projectedIndex].target;
     const bindingKey = JSON.stringify([binding.nodeId, binding.portId, item.e.role, side]);
+    if (!group.indices.has(key)) group.indices.set(key, group.indices.size);
+    const opposite = sceneById.get(direction === 'out' ? item.t : item.s)!;
+    const oppositeCentre = centre(opposite);
+    const score = side === 'top' || side === 'bottom' ? oppositeCentre.x : oppositeCentre.y;
+    const previousMeta = group.orderMeta.get(bindingKey);
+    group.orderMeta.set(bindingKey, previousMeta
+      ? { ...previousMeta, score: (previousMeta.score + score) / 2 }
+      : { score, tie: projectedIndex, role: item.e.role });
     const canonicalIds = group.canonicalIds.get(bindingKey) ?? new Set<string>();
     for (const edgeId of item.e._canonicalEdgeIds ?? [item.e.id]) canonicalIds.add(edgeId);
     group.canonicalIds.set(bindingKey, canonicalIds); registry.set(id, group);
   }
+  const roleOrder: Record<EdgeRole, number> = { mask: 0, data: 1, residual: 2, memory: 3 };
+  const preparePortOrder = (registry: Map<string, PortGroups>) => {
+    for (const group of registry.values()) {
+      for (const key of group.canonicalIds.keys()) {
+        const side = (JSON.parse(key) as [string, string, EdgeRole, VisualSide])[3];
+        const entries = group.sideOrder.get(side) ?? []; entries.push(key); group.sideOrder.set(side, entries);
+      }
+      for (const [side, entries] of group.sideOrder) entries.sort((a, b) => {
+        const first = group.orderMeta.get(a)!, second = group.orderMeta.get(b)!;
+        return first.score - second.score || roleOrder[first.role] - roleOrder[second.role] || first.tie - second.tie || a.localeCompare(b);
+      });
+    }
+  };
+  preparePortOrder(incoming); preparePortOrder(outgoing);
   const canonicalEdges = new Map(architecture.edges.map((edge, index) => [edge.id, { edge, index }]));
   const existingPorts = new Map<string, Map<string, ScenePort>>();
   function port(id: string, nodeId: string, portId: string, direction: 'in' | 'out', role: EdgeRole, side: VisualSide): ScenePort {
@@ -215,14 +259,30 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
     if (existing) return existing;
     const canonical = byId.get(nodeId)!.ports.find(p => p.id === portId)!;
     const group = (direction === 'out' ? outgoing : incoming).get(id)!;
-    const index = group.indices.get(key)!;
+    const ordered = group.sideOrder.get(side) ?? [displayKey];
+    // Preserve the authored slot sequence for top/bottom lanes.  Sorting a
+    // shared source by the current opposite-card coordinate makes a manual
+    // move swap two ports and can create a new peer contact in the short
+    // lead outside the card.  Horizontal ports may still use their local
+    // side order because their y coordinate is independent of the lane x
+    // sequence.
+    const sideIndex = side === 'top' || side === 'bottom'
+      ? Math.max(0, group.indices.get(key) ?? 0)
+      : Math.max(0, ordered.indexOf(displayKey));
+    const sideCount = side === 'top' || side === 'bottom'
+      ? Math.max(1, group.indices.size)
+      : Math.max(1, ordered.length);
     const canonicalEdgeIds = [...group.canonicalIds.get(displayKey)!];
     // Canonical bindings follow architecture order, even if a collapsed
     // projection bundles non-adjacent canonical edges together.
     const canonicalBindings = canonicalEdgeIds.map(edgeId => canonicalEdges.get(edgeId)!).sort((a, b) => a.index - b.index).map(({ edge }) => direction === 'out' ? edge.source : edge.target);
+    const sideY = role === 'memory' && (side === 'left' || side === 'right') && sideCount === 1
+      ? memoryDisplayY(node)
+      : node.y + (node.expanded ? node.headerHeight + 12 : 12) +
+        (node.height - (node.expanded ? node.headerHeight + 24 : 24)) * (sideIndex + 1) / (sideCount + 1);
     const anchor = side === 'right' || side === 'left'
-      ? { x: side === 'right' ? node.x + node.width : node.x, y: node.y + node.height * .55 }
-      : { x: node.x + node.width * (index + 1) / (group.indices.size + 1), y: side === 'bottom' ? node.y + node.height : node.y };
+      ? { x: side === 'right' ? node.x + node.width : node.x, y: sideY }
+      : { x: node.x + node.width * (sideIndex + 1) / (sideCount + 1), y: side === 'bottom' ? node.y + node.height : node.y };
     const p: ScenePort = { id: side === (direction === 'out' ? 'bottom' : 'top') ? key : `${key}:${side}`,
       canonicalNodeId: nodeId, canonicalPortId: portId, canonicalBindings, canonicalEdgeIds, direction, role: canonical.role, name: canonical.name,
       ...projectVisualPort(node, anchor, side),
@@ -232,6 +292,10 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
     return p;
   }
   const parallelCounts = new Map<string, number>();
+  const maskSources = [...new Set(projected.filter(item => item.e.role === 'mask').map(item => item.s))];
+  const topMaskSources = maskSources.filter(id => projected.some((item, n) => item.s === id && item.e.role === 'mask' && displaySides[n].source === 'top'))
+    .sort((first, second) => sceneById.get(first)!.x - sceneById.get(second)!.x);
+  const maskChannels = new Map<string, number>();
   const route = createOrthogonalRouter(nodes), routeDiagnostics: Scene['diagnostics'] = [];
   const routePoints: RoutePoint[] = [];
   const routeRequests: RouteRequest[] = [];
@@ -244,16 +308,36 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
     const targetBox = sceneById.get(t)!;
     const sides = displaySides[index];
     const a = port(s, e.source.nodeId, e.source.portId, 'out', e.role, sides.source), b = port(t, e.target.nodeId, e.target.portId, 'in', e.role, sides.target);
-    const special = e.role !== 'data' || b.y < a.y;
+    const special = e.role !== 'data' || b.y < a.y || sides.source !== 'bottom' || sides.target !== 'top';
     let path: string, labelX: number, labelY: number;
-    if (sides.source === 'right') {
-      path = `M ${num(a.x)} ${num(a.y)} H ${num(b.x)}${num(a.y) === num(b.y) ? '' : ` V ${num(b.y)}`}`;
+    if (e.role === 'mask') {
+      const side = sides.target, targetOutline = visualBounds.get(t)!;
+      const laneKey = `${t}:${side}`, channel = maskChannels.get(laneKey) ?? 0; maskChannels.set(laneKey, channel + 1);
+      const branchChain: SceneNode[] = []; let ancestor: SceneNode | undefined = targetBox;
+      while (ancestor && !isAncestor(ancestor.id, s) && ancestor.id !== s) { branchChain.push(ancestor); ancestor = ancestor.parentId ? sceneById.get(ancestor.parentId) : undefined; }
+      const branch = branchChain.at(-1) ?? targetBox;
+      const corridor = side === 'left' ? Math.min(targetOutline.x, branch.x) - 14 - channel * 8
+        : Math.max(targetOutline.x + targetOutline.width, branch.x + branch.width) + 14 + channel * 8;
+      const gate = sides.source === 'top' ? Math.min(...maskSources.map(id => sceneById.get(id)!.y)) - 8 * (topMaskSources.length - topMaskSources.indexOf(s))
+        : a.y + 6 + channel * 8;
+      path = `M ${num(a.x)} ${num(a.y)} V ${num(gate)} H ${num(corridor)} V ${num(b.y)} H ${num(b.x)}`;
+      labelX = corridor + 7; labelY = (gate + b.y) / 2;
+    } else if (sides.source === 'right' || sides.source === 'left') {
+      // Horizontal source ports have a direct horizontal lead. The target
+      // normal is handled by the final orthogonal segment when it is vertical.
+      const sourceLead = { x: b.x, y: a.y };
+      path = `M ${num(a.x)} ${num(a.y)} H ${num(sourceLead.x)}${sourceLead.y === b.y ? '' : ` V ${num(b.y)}`}`;
       labelX = (a.x + b.x) / 2 - 18; labelY = a.y - 8;
     } else if (special) {
       const sourceOutline = visualBounds.get(s)!, targetOutline = visualBounds.get(t)!;
-      const corridor = Math.max(sourceOutline.x + sourceOutline.width, targetOutline.x + targetOutline.width) + 23 + index % 3 * 11;
-      path = `M ${num(a.x)} ${num(a.y)} V ${num(a.y + 13)} H ${num(corridor)} V ${num(b.y - 13)} H ${num(b.x)} V ${num(b.y)}`;
-      labelX = corridor + 7; labelY = (a.y + b.y) / 2;
+      const left = Math.min(sourceOutline.x, targetOutline.x), right = Math.max(sourceOutline.x + sourceOutline.width, targetOutline.x + targetOutline.width);
+      const corridor = sides.target === 'left' ? left - 23 - index % 3 * 11 : right + 23 + index % 3 * 11;
+      const sourceLeadY = sides.source === 'top' ? a.y - 13 : a.y + 13;
+      // Side targets should be met on their exact y coordinate. Top/bottom
+      // targets keep a short normal lead so the arrow approaches vertically.
+      const targetLeadY = sides.target === 'top' ? b.y - 13 : sides.target === 'bottom' ? b.y + 13 : b.y;
+      path = `M ${num(a.x)} ${num(a.y)} V ${num(sourceLeadY)} H ${num(corridor)} V ${num(targetLeadY)} H ${num(b.x)}${targetLeadY === b.y ? '' : ` V ${num(b.y)}`}`;
+      labelX = corridor + (sides.target === 'left' ? -7 : 7); labelY = (a.y + b.y) / 2;
     } else {
       const mid = (a.y + b.y) / 2 + parallelIndex * 8;
       path = `M ${num(a.x)} ${num(a.y)} V ${num(mid)} H ${num(b.x)} V ${num(b.y)}`;

@@ -69,8 +69,9 @@ test('Skip repeat is independent; expanding and detail export retain identities 
     assert.ok(receipt.renderedNodes.some((node: { sceneNodeId: string; canonicalNodeId: string; boundary: boolean }) =>
       node.sceneNodeId === boundary.id && node.canonicalNodeId === boundary.canonicalNodeId && node.boundary));
   }
-  const unknown = receipt.sourceFacts.find((fact: { kind: string }) => fact.kind === 'ConvTranspose2d');
-  assert.equal(unknown.evidence, 'opaque');
+  const supported = receipt.sourceFacts.find((fact: { kind: string }) => fact.kind === 'ConvTranspose2d');
+  assert.ok(supported, 'the expanded formal catalog must retain this operator in source facts');
+  assert.equal(supported.evidence, 'contract');
 });
 
 test('GNN names and arbitrary visual aliases do not turn unknown regions into known attention', async () => {

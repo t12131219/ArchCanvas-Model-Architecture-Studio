@@ -1,7 +1,10 @@
+// Historical M4 policy regression: this suite intentionally freezes the pre-atomic
+// projection (coarse container arrows and mask top ports). Current behavior is
+// independently checked by atomic-frontier-routing.test.ts; archived gold stays intact.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { applyVisualBatch, buildExportScene, buildScene, createDocument, createHistory, reduceHistory, renderSvg } from '../src/core/index.ts';
+import { applyVisualBatch, buildExportScene, buildScene, createDocument, createHistory, reduceHistory, renderSvg } from './historical-routing-core.ts';
 import * as before from '../../docs/evidence/m4-caption-stability-current/before-change/inputs/studio/src/core/index.ts';
 import type { Architecture, CanvasDocument, EdgeRole, Scene, SceneEdge } from '../src/core/types.ts';
 import { normalizeMemoryContinuityGeometry } from './historical-memory-continuity-compat.ts';
@@ -78,7 +81,7 @@ function protectedScene(old: Scene, scene: Scene, document: CanvasDocument) {
   }
 }
 
-test('source memory captions survive vertical threshold boundaries and all four movement directions in whole/detail and both presets', () => {
+test('historical M4: source memory captions survive vertical threshold boundaries and all four movement directions in whole/detail and both presets', () => {
   const base = sourceDocument(), bytes = JSON.stringify(base);
   for (const preset of ['paper', 'monochrome'] as const) for (const [dx, dy] of [[0, -24], [0, -16], [0, -15], [0, -14], [0, 0], [0, 14], [0, 15], [0, 16], [0, 24], [-24, 0], [24, 0]]) {
     const doc = applyVisualBatch(base, [{ type: 'page', page: { preset } }, { type: 'move', ids: [encoder], dx, dy }]), unchanged = JSON.stringify(doc);
@@ -93,7 +96,7 @@ test('source memory captions survive vertical threshold boundaries and all four 
   assert.equal(JSON.stringify(base), bytes);
 });
 
-test('the actual +24 encoder counterexample keeps its routed endpoints and visible memory after undo/redo and JSON reopening', () => {
+test('historical M4: the actual +24 encoder counterexample keeps its routed endpoints and visible memory after undo/redo and JSON reopening', () => {
   const base = sourceDocument(); let history = createHistory(base);
   history = reduceHistory(history, { type: 'apply', operations: [{ type: 'move', ids: [encoder], dx: 0, dy: 24 }] });
   const edited = copy(history.document), scene = buildScene(edited), memory = scene.edges.find(e => e.id === 'edge:44')!;
@@ -109,7 +112,7 @@ test('the actual +24 encoder counterexample keeps its routed endpoints and visib
   assert.ok(svg.includes('>memory</text>')); assert.deepEqual(edited.architecture, base.architecture);
 });
 
-test('source expansion and collapse retain every visible memory caption without adding hidden bindings or facts', () => {
+test('historical M4: source expansion and collapse retain every visible memory caption without adding hidden bindings or facts', () => {
   const base = sourceDocument(); let doc = applyVisualBatch(base, [{ type: 'move', ids: [encoder], dx: 0, dy: 24 }]);
   for (const expanded of [true, false, true, false]) {
     doc = applyVisualBatch(doc, [{ type: 'expand', id: encoder, expanded }]); const bytes = JSON.stringify(doc);
@@ -133,7 +136,7 @@ function generic(role: EdgeRole, label?: string): CanvasDocument {
   return applyVisualBatch(document, [{ type: 'move', ids: ['left'], dx: 80 - a.x, dy: 400 - a.y }, { type: 'move', ids: ['right'], dx: 340 - b.x, dy: 100 - b.y }]);
 }
 
-test('default memory naming is generic while explicit empty/authored labels and other roles retain their contracts', () => {
+test('historical M4: default memory naming is generic while explicit empty/authored labels and other roles retain their contracts', () => {
   for (const role of ['data', 'residual', 'mask', 'memory'] as const) for (const label of [undefined, '', '研究者指定说明']) {
     const doc = generic(role, label), bytes = JSON.stringify(doc), expected = label ?? (role === 'memory' ? 'memory' : '');
     for (const scope of [{}, { nodeId: 'owner' }]) {
@@ -144,7 +147,7 @@ test('default memory naming is generic while explicit empty/authored labels and 
   }
 });
 
-test('a genuinely blocked moved memory retains its text and reports association failure instead of disappearing', () => {
+test('historical M4: a genuinely blocked moved memory retains its text and reports association failure instead of disappearing', () => {
   const moved = applyVisualBatch(sourceDocument(), [{ type: 'move', ids: [encoder], dx: 0, dy: 24 }]);
   const doc = applyVisualBatch(moved, [{ type: 'annotation', annotation: { id: 'all-caption-space-blocked', text: 'An independently declared occupied note', x: 100, y: 330, width: 440, height: 300 } }]);
   const bytes = JSON.stringify(doc), scene = buildScene(doc), memory = scene.edges.find(e => e.id === 'edge:44')!;

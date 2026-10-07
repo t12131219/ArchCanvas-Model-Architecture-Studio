@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import type { Scene, SceneNode } from '../src/core/types.ts';
 import type { RouteRequest, RouteResult } from '../src/core/orthogonalRouter.ts';
 import { createOrthogonalRouter, ROUTE_SHORTCUT_BUDGET } from '../src/core/orthogonalRouter.ts';
+import { createOrthogonalRouter as historicalRouter } from './historical-routing-core.ts';
 
 // The previous router is an observation, not the geometric oracle. Its exact
 // bytes remain frozen; all parsing/intersection checks below are handwritten.
@@ -147,13 +148,13 @@ test('unconflicted arbitrary typed route shortens without source/canonical evide
 
 const report = JSON.parse(readFileSync(new URL('docs/evidence/m4-visual-next-current/review/historical-document-current-geometry.json', root), 'utf8')) as {
   records: { caseId: string; currentSceneBinding: { path: string; bytes: number; sha256: string } }[] };
-for (const record of report.records) test(`source-backed ${record.caseId} shortens only pairwise protected routes and preserves nodes/source facts`, () => {
+for (const record of report.records) test(`historical M4: source-backed ${record.caseId} shortens only pairwise protected routes and preserves nodes/source facts`, () => {
   const bytes = readFileSync(new URL(record.currentSceneBinding.path, root));
   assert.equal(bytes.length, record.currentSceneBinding.bytes); assert.equal(createHash('sha256').update(bytes).digest('hex'), record.currentSceneBinding.sha256);
   const scene = JSON.parse(bytes.toString()) as Scene, original = JSON.stringify(scene);
   const requests = scene.edges.map(requestFor), old = previous.createOrthogonalRouter(scene.nodes).batch(requests);
-  const next = createOrthogonalRouter(scene.nodes).batch(requests); preserved(old, next, requests);
-  assert.equal(JSON.stringify(scene), original); assert.deepEqual(next, createOrthogonalRouter(scene.nodes).batch(requests));
+  const next = historicalRouter(scene.nodes).batch(requests); preserved(old, next, requests);
+  assert.equal(JSON.stringify(scene), original); assert.deepEqual(next, historicalRouter(scene.nodes).batch(requests));
   if (record.caseId === 'transformer-level1-paper-180' || record.caseId === 'residual_cnn-level2-paper-180')
     assert.ok(next.some((route, i) => route.path !== old[i].path), 'real source-backed frontier should exercise the generic shortcut');
   if (record.caseId === 'transformer-level0-paper-180') assert.deepEqual(next, old,

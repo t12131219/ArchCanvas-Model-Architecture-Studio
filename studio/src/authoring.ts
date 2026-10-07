@@ -1,5 +1,6 @@
 import { createOrthogonalRouter } from './core/orthogonalRouter.ts';
 import type { SceneNode } from './core/types.ts';
+import type { Architecture, CanvasDocument } from './core/types.ts';
 import { refineDraftRoutes } from './draftRouting.ts';
 import { draftModuleSize, draftNodeBounds, draftNodeSize, draftPortPoint } from './draftNodeGeometry.ts';
 export { DRAFT_WIDTH, DRAFT_HEIGHT, DRAFT_PORT_PITCH, draftModuleSize, draftNodeBounds, draftNodeSize, draftPortSpacing } from './draftNodeGeometry.ts';
@@ -9,14 +10,47 @@ export type DraftPort = { id: string; name: string; direction: 'in' | 'out'; typ
 export type DraftParameter = { name: string; type: 'integer' | 'number' | 'boolean' | 'integer-array' | 'choice'; default: DraftValue; min?: number; max?: number; length?: number; minLength?: number; maxLength?: number; options?: string[] };
 export type DraftModule = { kind: string; label: string; category: string; description: string; defaults: Record<string, DraftValue>; parameters: DraftParameter[]; ports: DraftPort[] };
 export type DraftCatalog = { schemaVersion: 1; mode: 'authored-draft'; modules: DraftModule[]; unsupported: unknown[] };
-export type DraftNode = { id: string; kind: string; label: string; parameters: Record<string, DraftValue>; position: { x: number; y: number } };
+export type DraftPresentation = { width: number; height: number; fill: string; stroke: string; group: boolean; parentId?: string; ports: Record<string, { x: number; y: number }> };
+export type DraftNode = { id: string; kind: string; label: string; parameters: Record<string, DraftValue>; position: { x: number; y: number }; presentation?: DraftPresentation };
 export type DraftEndpoint = { nodeId: string; portId: string };
 export type DraftEdge = { id: string; source: DraftEndpoint; target: DraftEndpoint };
-export type AuthoredDraft = { schemaVersion: 1; mode: 'authored-draft'; id: string; title: string; revision: number; nodes: DraftNode[]; edges: DraftEdge[] };
+export type SourceDraftRef = { nodeId: string; sceneNodeId: string; kind: string; category: string; evidence: string; portBindings: Record<string, { nodeId: string; portId: string }[]>; originalParameters: Record<string, DraftValue>; group: boolean; instanceId?: string; repeat?: { count: number; sharing: 'independent' | 'shared' } };
+export type DraftSourceProvenance = { schemaVersion: 1; digest: string; documentId: string; visualRevision: number; sourceDigest: string; irDigest: string; architecture: Architecture; canvas: CanvasDocument; modules: DraftModule[]; nodeRefs: Record<string, SourceDraftRef>; edgeRefs: Record<string, string[]>; originalGraph: { nodes: DraftNode[]; edges: DraftEdge[] } };
+export type SourceDraftCache = { nodes: DraftNode[]; edges: DraftEdge[]; removedNodeIds: string[]; removedCanonicalEdgeIds: string[] };
+export type AuthoredDraft = { schemaVersion: 1; mode: 'authored-draft'; id: string; title: string; revision: number; nodes: DraftNode[]; edges: DraftEdge[]; sourceProvenance?: DraftSourceProvenance; sourceCache?: SourceDraftCache };
 export type DraftHistory = { draft: AuthoredDraft; past: AuthoredDraft[]; future: AuthoredDraft[] };
 export type DraftFlow = 'horizontal' | 'vertical';
 const MAX_DRAFT_NODES = 128;
 const MAX_DRAFT_EDGES = 384;
+
+/** Source frontier modules are retained in the draft, never advertised as presets. */
+export function sourceDraftCatalog(draft: AuthoredDraft, catalog: DraftCatalog | null): DraftCatalog | null {
+  return catalog && draft.sourceProvenance ? { ...catalog, modules: [...catalog.modules, ...draft.sourceProvenance.modules] } : catalog;
+}
+export function draftSourceKind(draft: AuthoredDraft, node: DraftNode): string {
+  return draft.sourceProvenance?.nodeRefs[node.id]?.kind ?? node.kind;
+}
+/** Moving an expanded source group moves its descendants in the same undo step. */
+export function draftMoveIds(draft: AuthoredDraft, selection: readonly string[]): string[] {
+  const selected = new Set(selection), waiting = [...selection];
+  while (waiting.length) {
+    const parent = waiting.pop()!;
+    for (const node of draft.nodes) if (node.presentation?.parentId === parent && !selected.has(node.id)) { selected.add(node.id); waiting.push(node.id); }
+  }
+  return draft.nodes.filter(node => selected.has(node.id)).map(node => node.id);
+}
+export function moveDraftNodes(draft: AuthoredDraft, selection: readonly string[], dx: number, dy: number) {
+  const ids = new Set(draftMoveIds(draft, selection));
+  for (const node of draft.nodes) if (ids.has(node.id)) { node.position.x += dx; node.position.y += dy; }
+  if (draft.sourceCache) {
+    const cached = { ...draft, nodes: draft.sourceCache.nodes };
+    const hiddenIds = new Set(draftMoveIds(cached, selection));
+    for (const node of draft.sourceCache.nodes) if (hiddenIds.has(node.id)) { node.position.x += dx; node.position.y += dy; }
+  }
+}
+export function selectDraftNode(current: readonly string[], id: string, additive: boolean): string[] {
+  return additive ? current.includes(id) ? current.filter(item => item !== id) : [...current, id] : current.includes(id) ? [...current] : [id];
+}
 
 /** Project ports along the connected graph's main axis without moving cards. */
 export function draftFlow(draft: AuthoredDraft): DraftFlow {
@@ -63,7 +97,7 @@ export function parseDraftCache(value: unknown): { draft: AuthoredDraft; storage
   const text = (label: unknown) => typeof label === 'string' && label.length > 0 && label.length <= 120 && !/[\x00-\x1f]/.test(label);
   const safeNumber = (n: unknown) => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= 1_000_000;
   const parameter = (p: unknown) => typeof p === 'boolean' || typeof p === 'string' || (typeof p === 'number' && Number.isFinite(p)) || (Array.isArray(p) && p.every(n => typeof n === 'number' && Number.isFinite(n)));
-  if (!draft || draft.mode !== 'authored-draft' || draft.schemaVersion !== 1 || !identity(draft.id) || !draft.id.startsWith('draft-') || !text(draft.title) || !Number.isSafeInteger(draft.revision) || draft.revision < 0 || !Array.isArray(draft.nodes) || draft.nodes.length > MAX_DRAFT_NODES || !Array.isArray(draft.edges) || draft.edges.length > MAX_DRAFT_EDGES) return null;
+  if (!draft || draft.mode !== 'authored-draft' || draft.schemaVersion !== 1 || !identity(draft.id) || !draft.id.startsWith('draft-') || !text(draft.title) || !Number.isSafeInteger(draft.revision) || draft.revision < 0 || !Array.isArray(draft.nodes) || draft.nodes.length > (draft.sourceProvenance ? 1200 : MAX_DRAFT_NODES) || !Array.isArray(draft.edges) || draft.edges.length > (draft.sourceProvenance ? 3600 : MAX_DRAFT_EDGES)) return null;
   const ids = new Set<string>(), edgeIds = new Set<string>();
   for (const node of draft.nodes) {
     if (!node || !identity(node.id) || ids.has(node.id) || !text(node.kind) || !text(node.label) || !node.position || !safeNumber(node.position.x) || !safeNumber(node.position.y) || !node.parameters || Array.isArray(node.parameters) || typeof node.parameters !== 'object' || !Object.values(node.parameters).every(parameter)) return null;
@@ -108,16 +142,17 @@ export function travelDraft(history: DraftHistory, action: 'undo' | 'redo'): Dra
     : { draft, past: [...history.past, history.draft], future: stack.slice(0, -1) };
 }
 export function addDraftNode(draft: AuthoredDraft, module: DraftModule, id: string, position: { x: number; y: number }) {
-  if (draft.nodes.length >= MAX_DRAFT_NODES) throw new Error('草稿最多允许 128 个模块；请删除一个模块后重试。');
+  if (draft.nodes.length >= (draft.sourceProvenance ? 1200 : MAX_DRAFT_NODES)) throw new Error(`草稿达到模块数量上限（最多 ${draft.sourceProvenance ? 1200 : MAX_DRAFT_NODES} 个）；请删除一个模块后重试。`);
   draft.nodes.push({ id, kind: module.kind, label: module.label, parameters: structuredClone(module.defaults), position });
 }
 export function removeDraftNode(draft: AuthoredDraft, id: string) {
-  draft.nodes = draft.nodes.filter(node => node.id !== id);
-  draft.edges = draft.edges.filter(edge => edge.source.nodeId !== id && edge.target.nodeId !== id);
+  const ids = new Set(draftMoveIds(draft, [id]));
+  draft.nodes = draft.nodes.filter(node => !ids.has(node.id));
+  draft.edges = draft.edges.filter(edge => !ids.has(edge.source.nodeId) && !ids.has(edge.target.nodeId));
 }
 /** A draft binding has one producer and preserves fan-out; cycles are rejected before mutation. */
 export function connectDraft(draft: AuthoredDraft, catalog: DraftCatalog, source: DraftEndpoint, target: DraftEndpoint, id: string) {
-  if (draft.edges.length >= MAX_DRAFT_EDGES) throw new Error('草稿最多允许 384 条连接；请删除一条连接后重试。');
+  if (draft.edges.length >= (draft.sourceProvenance ? 3600 : MAX_DRAFT_EDGES)) throw new Error(`草稿达到连接数量上限（最多 ${draft.sourceProvenance ? 3600 : MAX_DRAFT_EDGES} 条）；请删除一条连接后重试。`);
   const port = (end: DraftEndpoint) => catalog.modules.find(module => module.kind === draft.nodes.find(node => node.id === end.nodeId)?.kind)?.ports.find(item => item.id === end.portId);
   if (port(source)?.direction !== 'out' || port(target)?.direction !== 'in') throw new Error('请从输出端口连接到输入端口。');
   if (source.nodeId === target.nodeId) throw new Error('模块不能连接到自身。');
@@ -136,7 +171,7 @@ export function portPoint(node: DraftNode, module: DraftModule, portId: string, 
 }
 export function draftRoutes(draft: AuthoredDraft, catalog: DraftCatalog) {
   const flow = draftFlow(draft), nodeFlows = draftNodeFlows(draft);
-  const nodes: SceneNode[] = draft.nodes.map(node => ({ id: node.id, ...draftNodeBounds(node, catalog),
+  const nodes: SceneNode[] = draft.nodes.filter(node => !node.presentation?.group).map(node => ({ id: node.id, ...draftNodeBounds(node, catalog),
     localX: node.position.x, localY: node.position.y, label: node.label, subtitle: '', headerHeight: 0, kind: node.kind, category: 'operator',
     fill: '#ffffff', stroke: '#355247', glyph: 'operator', expanded: false, expandable: false, pinned: false, evidence: 'contract', ports: [] }));
   const router = createOrthogonalRouter(nodes), byId = new Map(draft.nodes.map(node => [node.id, node]));

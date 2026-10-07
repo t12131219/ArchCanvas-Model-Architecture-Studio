@@ -2,7 +2,9 @@
 
 The oracle describes the source-level facts of the independent vision fixture;
 it does not import or execute the fixture and does not derive expectations from
-the analyzer implementation.
+the analyzer implementation. Current catalog revisions support Conv1d and
+ConvTranspose2d; historical M4 fixtures/evidence remain byte-for-byte untouched.
+The new holdout_catalog_boundaries fixture exercises a still-unregistered API.
 """
 
 EXPECTED_VIT_CONTRACT_COUNTS = {
@@ -63,10 +65,10 @@ EXPECTED_VIT_PARAMETERS = {
 
 EXPECTED_OPAQUE = {
     "entry": "model:UnsupportedVision",
-    "kind": "Conv1d",
+    "kind": "LocalResponseNorm",
     "category": "opaque",
     "evidence": "opaque",
-    "warning_fragment": "Unknown constructor torch.nn.Conv1d",
+    "warning_fragment": "Unknown constructor torch.nn.LocalResponseNorm",
 }
 
 
@@ -122,7 +124,7 @@ FAMILY_EXPECTATIONS = {
             "refinement.1.activation": ("ReLU", "activation", "contract"),
             "downsample": ("MaxPool2d", "pooling", "contract"),
             "bottleneck": ("Conv2d", "convolution", "contract"),
-            "upsample": ("ConvTranspose2d", "opaque", "opaque"),
+            "upsample": ("ConvTranspose2d", "convolution", "contract"),
             "Concat": ("Concat", "operator", "contract"),
             "head": ("Conv2d", "convolution", "contract"),
             "output0": ("Output", "output", "source"),
@@ -138,7 +140,7 @@ FAMILY_EXPECTATIONS = {
             ("refinement.1.conv", "output", "refinement.1.activation", "input", "data"),
             ("refinement.1.activation", "output", "downsample", "input", "data"),
             ("downsample", "output", "bottleneck", "input", "data"),
-            ("bottleneck", "output", "upsample", "arg0", "data"),
+            ("bottleneck", "output", "upsample", "input", "data"),
             ("refinement.1.activation", "output", "Concat", "arg0", "data"),
             ("upsample", "output", "Concat", "arg0.1", "data"),
             ("Concat", "output", "head", "input", "data"),
@@ -150,7 +152,7 @@ FAMILY_EXPECTATIONS = {
             "bottleneck": {"in_channels": 8, "out_channels": 16, "kernel_size": 3, "padding": 1},
             "head": {"in_channels": 16, "out_channels": 2, "kernel_size": 1},
         },
-        "warnings": ["Unknown constructor torch.nn.ConvTranspose2d"],
+        "warnings": [],
     },
     "GraphForecast": {
         "nodes": {

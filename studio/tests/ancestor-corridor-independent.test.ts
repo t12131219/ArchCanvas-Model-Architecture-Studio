@@ -1,3 +1,6 @@
+// Historical M4 policy regression: this suite intentionally freezes the pre-atomic
+// projection (coarse container arrows and mask top ports). Current behavior is
+// independently checked by atomic-frontier-routing.test.ts; archived gold stays intact.
 import test from 'node:test';
 import { normalizeDefaultMemoryLabels } from './historical-memory-caption-compat.ts';
 import assert from 'node:assert/strict';
@@ -6,8 +9,8 @@ import { readFileSync } from 'node:fs';
 import type { CanvasDocument, Scene } from '../src/core/types.ts';
 // Product functions produce observations only. Expected geometry and invariants
 // come from frozen bytes, literal controls and the separate independent oracle.
-import { buildScene, buildExportScene, renderSvg } from '../src/core/index.ts';
-import { ROUTE_REFINEMENT_BUDGET } from '../src/core/orthogonalRouter.ts';
+import { buildScene, buildExportScene, renderSvg } from './historical-routing-core.ts';
+import { ROUTE_REFINEMENT_BUDGET } from './historical-routing-core.ts';
 import { assertCanonicalCoverage, assertProtectedMetrics, assertSvgAgreement, edgeFamilyMeta, familyEligible, mergedIntervalLength, metrics, parseOrthogonalPath, verifyRefinement } from '../../docs/evidence/m4-ancestor-corridor-work/ancestor-corridor-oracle.ts';
 
 const project = new URL('../../', import.meta.url);
@@ -36,12 +39,12 @@ function literalSharedCandidate() {
   return candidate;
 }
 
-test('independent corridor parser rejects ignored bytes, diagonal, partial, nonfinite and multiple subpaths', () => {
+test('historical M4: independent corridor parser rejects ignored bytes, diagonal, partial, nonfinite and multiple subpaths', () => {
   for (const bad of ['M 0 0 L 10 10', 'M 0 0 V', 'M 0 0 V NaN', 'M 0 0 V 1e999', 'M 0 0 Q 1 2 3 4', 'M 0 0 H 10 garbage', 'M 0 0 H 10 M 10 10 V 20', 'm 0 0 h 10', 'M 0 0 H 0', 'M 0 0 H 10 20']) assert.throws(() => parseOrthogonalPath(bad));
   assert.deepEqual(parseOrthogonalPath('M 0 0 V 10 V 10 V 20 H 30'), [{ x: 0, y: 0 }, { x: 0, y: 10 }, { x: 0, y: 10 }, { x: 0, y: 20 }, { x: 30, y: 20 }]);
 });
 
-test('independent corridor metrics preserve split crossings, point contacts and pair-local interval union', () => {
+test('historical M4: independent corridor metrics preserve split crossings, point contacts and pair-local interval union', () => {
   const original = pathOnly(['M 0 0 H 20', 'M 10 -10 V 10']);
   const split = pathOnly(['M 0 0 H 10 H 20', 'M 10 -10 V 0 V 10']);
   assert.equal(metrics(original).distinct.crossingPairs, 1); assert.equal(metrics(original).distinct.crossingPoints, 1);
@@ -61,7 +64,7 @@ test('independent corridor metrics preserve split crossings, point contacts and 
   assert.throws(() => assertProtectedMetrics(priorSame, exchangedSame), /new same-tensor crossing for pair/, 'removing one same-tensor crossing cannot conceal another new pair');
 });
 
-test('independent corridor frozen captures remain bound to exact archived source bytes', () => {
+test('historical M4: independent corridor frozen captures remain bound to exact archived source bytes', () => {
   assert.equal(frozen.records.length, 12); assert.equal(frozen.records.filter(record => !record.detailNodeId).length, 9); assert.equal(frozen.bindings.length, 34);
   assert.equal(sha256(readFileSync(new URL(frozen.archiveManifest.path, project))), frozen.archiveManifest.sha256);
   for (const binding of frozen.bindings) {
@@ -71,7 +74,7 @@ test('independent corridor frozen captures remain bound to exact archived source
   }
 });
 
-test('independent corridor family identity requires exact source, memory role, effective style, side and complete canonical membership', () => {
+test('historical M4: independent corridor family identity requires exact source, memory role, effective style, side and complete canonical membership', () => {
   const before = l3(), graph = canvasFor(transformerRecord).architecture;
   const first = edgeFamilyMeta(before, before.edges.find(edge => edge.id === 'edge:44')!, graph), second = edgeFamilyMeta(before, before.edges.find(edge => edge.id === 'edge:55')!, graph);
   assert.equal(familyEligible(first, second), true);
@@ -88,7 +91,7 @@ test('independent corridor family identity requires exact source, memory role, e
   for (const corrupted of negatives) assert.equal(familyEligible(first, corrupted), false, JSON.stringify(corrupted));
 });
 
-test('independent corridor rejects coherent semantic, branch, circle, style, body and same-tensor crossing corruptions', () => {
+test('historical M4: independent corridor rejects coherent semantic, branch, circle, style, body and same-tensor crossing corruptions', () => {
   const before = l3(), svg = svgFor(transformerRecord);
   verifyRefinement(before, before, svg, svg);
   const reject = (mutate: (scene: Scene) => void) => {
@@ -110,7 +113,7 @@ test('independent corridor rejects coherent semantic, branch, circle, style, bod
   assert.throws(() => assertSvgAgreement(before, published), /missing|differs/);
 });
 
-test('independent corridor literal shared-family improvement retains each branch and exposes crossing exchanges', () => {
+test('historical M4: independent corridor literal shared-family improvement retains each branch and exposes crossing exchanges', () => {
   const before = l3(), candidate = literalSharedCandidate(), report = verifyRefinement(before, candidate, renderSvg(candidate), svgFor(transformerRecord));
   assert.deepEqual(report.before.distinct, { crossingPairs: 20, crossingPoints: 23, overlapPairs: 19, overlapLength: 4314.21 });
   assert.equal(report.before.disjoint.crossingPairs, 17); assert.equal(report.before.disjoint.crossingPoints, 20); assert.equal(report.before.disjoint.overlapPairs, 13);
@@ -122,7 +125,7 @@ test('independent corridor literal shared-family improvement retains each branch
   assert.ok([...newPairs].some(pair => !oldPairs.has(pair)), 'literal controls retain real crossing exchanges rather than a pairwise monotonicity claim');
 });
 
-test('independent corridor current nine frontiers and three details preserve source, cards, ports, canonical branches and protected geometry', () => {
+test('historical M4: independent corridor current nine frontiers and three details preserve source, cards, ports, canonical branches and protected geometry', () => {
   for (const record of frozen.records) {
     const document = canvasFor(record), untouched = JSON.stringify(document), before = sceneFor(record);
     const current = record.detailNodeId ? buildExportScene(document, { nodeId: record.detailNodeId }) : buildScene(document), svg = renderSvg(current);
@@ -135,7 +138,7 @@ test('independent corridor current nine frontiers and three details preserve sou
   }
 });
 
-test('independent corridor current L3 cannot trade overlap for crosses or lose named canonical fanout branches', () => {
+test('historical M4: independent corridor current L3 cannot trade overlap for crosses or lose named canonical fanout branches', () => {
   const before = l3(), document = canvasFor(transformerRecord), current = buildScene(document);
   assertSvgAgreement(current, renderSvg(current));
   const historical = normalizeDefaultMemoryLabels(document, serializable(current), before);
@@ -153,7 +156,7 @@ test('independent corridor current L3 cannot trade overlap for crosses or lose n
   assert.equal(shared.sameTensor, true); assert.equal(shared.points.length, 0); assert.ok(shared.overlapLength > oldShared.overlapLength, 'the family retains a common trunk instead of hiding either branch');
 });
 
-test('independent corridor work caps remain their literal approved bounds', () => {
+test('historical M4: independent corridor work caps remain their literal approved bounds', () => {
   assert.deepEqual(ROUTE_REFINEMENT_BUDGET, { maxNodes: 1024, maxRoutes: 512, maxRoutePoints: 4096, maxPairChecks: 32768, maxSegmentChecks: 150000,
     maxObstacleChecks: 60000, maxCandidates: 384, maxCandidatesPerRoute: 80, maxRefinedRoutes: 8, passes: 2 });
 });

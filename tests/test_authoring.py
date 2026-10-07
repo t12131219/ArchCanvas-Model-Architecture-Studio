@@ -160,9 +160,10 @@ class AuthoringContractTests(unittest.TestCase):
     def test_catalog_only_advertises_static_supported_modules_and_returns_copy(self):
         catalog = module_catalog()
         kinds = {m["kind"] for m in catalog["modules"]}
-        self.assertEqual(kinds, {"Input", "Output", "Linear", "ReLU", "GELU", "SiLU", "Identity", "Dropout", "Flatten",
-                                 "Conv2d", "MaxPool2d", "AdaptiveAvgPool2d", "BatchNorm2d", "LayerNorm", "Embedding", "Add", "Concat"})
-        self.assertIn("MultiheadAttention", catalog["unsupported"])
+        self.assertEqual(len(kinds), 74)
+        self.assertTrue({"Input", "Output", "Linear", "Conv1d", "Conv2d", "Conv3d", "LSTM", "GRU", "MultiheadAttention"}.issubset(kinds))
+        self.assertIn("AttentionMask", catalog["unsupported"])
+        self.assertFalse(kinds.intersection(catalog['unsupported']))
         catalog["modules"][0]["defaults"]["shape"].append(99)
         self.assertEqual(module_catalog()["modules"][0]["defaults"]["shape"], [1, 16])
 

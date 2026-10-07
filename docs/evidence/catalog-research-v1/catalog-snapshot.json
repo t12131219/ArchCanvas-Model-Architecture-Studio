@@ -1,0 +1,3725 @@
+{
+  "schemaVersion": 1,
+  "mode": "authored-draft",
+  "modules": [
+    {
+      "kind": "Input",
+      "category": "io",
+      "label": "输入",
+      "description": "声明输入形状与类型；声明不是实测数据。",
+      "defaults": {
+        "shape": [
+          1,
+          16
+        ],
+        "dtype": "float32"
+      },
+      "parameters": [
+        {
+          "name": "shape",
+          "type": "integer-array",
+          "default": [
+            1,
+            16
+          ],
+          "min": 1,
+          "max": 1000000,
+          "minLength": 1,
+          "maxLength": 8
+        },
+        {
+          "name": "dtype",
+          "type": "choice",
+          "default": "float32",
+          "options": [
+            "float32",
+            "float64",
+            "int64"
+          ]
+        }
+      ],
+      "ports": [
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Output",
+      "category": "io",
+      "label": "输出",
+      "description": "将一条张量连接为命名输出。",
+      "defaults": {},
+      "parameters": [],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Linear",
+      "category": "dense",
+      "label": "全连接",
+      "description": "变换输入的最后一维，需要 float32。",
+      "defaults": {
+        "in_features": 16,
+        "out_features": 32,
+        "bias": true
+      },
+      "parameters": [
+        {
+          "name": "in_features",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "out_features",
+          "type": "integer",
+          "default": 32,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "bias",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Identity",
+      "category": "operator",
+      "label": "恒等映射",
+      "description": "保留张量形状与类型。",
+      "defaults": {},
+      "parameters": [],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Flatten",
+      "category": "reshape",
+      "label": "展平",
+      "description": "将起止维度之间的轴合并，默认保留批次轴。",
+      "defaults": {
+        "start_dim": 1,
+        "end_dim": -1
+      },
+      "parameters": [
+        {
+          "name": "start_dim",
+          "type": "integer",
+          "default": 1,
+          "min": -8,
+          "max": 7
+        },
+        {
+          "name": "end_dim",
+          "type": "integer",
+          "default": -1,
+          "min": -8,
+          "max": 7
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Unflatten",
+      "category": "reshape",
+      "label": "恢复多维",
+      "description": "把一个轴恢复为指定的多个尺寸，元素总数必须一致。",
+      "defaults": {
+        "dim": -1,
+        "unflattened_size": [
+          4,
+          4
+        ]
+      },
+      "parameters": [
+        {
+          "name": "dim",
+          "type": "integer",
+          "default": -1,
+          "min": -8,
+          "max": 7
+        },
+        {
+          "name": "unflattened_size",
+          "type": "integer-array",
+          "default": [
+            4,
+            4
+          ],
+          "min": 1,
+          "max": 1000000,
+          "minLength": 1,
+          "maxLength": 8
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Reshape",
+      "category": "reshape",
+      "label": "重塑形状",
+      "description": "显式声明整个输出形状；允许一个 -1 推导轴，元素总数不变。",
+      "defaults": {
+        "shape": [
+          1,
+          -1
+        ]
+      },
+      "parameters": [
+        {
+          "name": "shape",
+          "type": "integer-array",
+          "default": [
+            1,
+            -1
+          ],
+          "min": -1,
+          "max": 1000000,
+          "minLength": 1,
+          "maxLength": 8
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Transpose",
+      "category": "reshape",
+      "label": "交换两轴",
+      "description": "交换两个指定维度，保留元素与类型。",
+      "defaults": {
+        "dim0": -2,
+        "dim1": -1
+      },
+      "parameters": [
+        {
+          "name": "dim0",
+          "type": "integer",
+          "default": -2,
+          "min": -8,
+          "max": 7
+        },
+        {
+          "name": "dim1",
+          "type": "integer",
+          "default": -1,
+          "min": -8,
+          "max": 7
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Permute",
+      "category": "reshape",
+      "label": "重排维度",
+      "description": "完整列出维度顺序，每个轴必须恰好出现一次。",
+      "defaults": {
+        "dims": [
+          0,
+          2,
+          1
+        ]
+      },
+      "parameters": [
+        {
+          "name": "dims",
+          "type": "integer-array",
+          "default": [
+            0,
+            2,
+            1
+          ],
+          "min": 0,
+          "max": 7,
+          "minLength": 1,
+          "maxLength": 8
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Unsqueeze",
+      "category": "reshape",
+      "label": "新增单位轴",
+      "description": "在指定位置插入大小为 1 的轴。",
+      "defaults": {
+        "dim": 1
+      },
+      "parameters": [
+        {
+          "name": "dim",
+          "type": "integer",
+          "default": 1,
+          "min": -9,
+          "max": 8
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Squeeze",
+      "category": "reshape",
+      "label": "移除单位轴",
+      "description": "仅移除指定大小为 1 的轴，避免隐式丢失批次。",
+      "defaults": {
+        "dim": 1
+      },
+      "parameters": [
+        {
+          "name": "dim",
+          "type": "integer",
+          "default": 1,
+          "min": -8,
+          "max": 7
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "ReLU",
+      "category": "activation",
+      "label": "ReLU 激活",
+      "description": "逐元素浮点激活，保留形状；Softmax 按指定轴归一化。",
+      "defaults": {},
+      "parameters": [],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "GELU",
+      "category": "activation",
+      "label": "GELU 激活",
+      "description": "逐元素浮点激活，保留形状；Softmax 按指定轴归一化。",
+      "defaults": {
+        "approximate": "none"
+      },
+      "parameters": [
+        {
+          "name": "approximate",
+          "type": "choice",
+          "default": "none",
+          "options": [
+            "none",
+            "tanh"
+          ]
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "SiLU",
+      "category": "activation",
+      "label": "SiLU / Swish 激活",
+      "description": "逐元素浮点激活，保留形状；Softmax 按指定轴归一化。",
+      "defaults": {},
+      "parameters": [],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Sigmoid",
+      "category": "activation",
+      "label": "Sigmoid 激活",
+      "description": "逐元素浮点激活，保留形状；Softmax 按指定轴归一化。",
+      "defaults": {},
+      "parameters": [],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Tanh",
+      "category": "activation",
+      "label": "Tanh 激活",
+      "description": "逐元素浮点激活，保留形状；Softmax 按指定轴归一化。",
+      "defaults": {},
+      "parameters": [],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "ReLU6",
+      "category": "activation",
+      "label": "ReLU6 激活",
+      "description": "逐元素浮点激活，保留形状；Softmax 按指定轴归一化。",
+      "defaults": {},
+      "parameters": [],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "LeakyReLU",
+      "category": "activation",
+      "label": "Leaky ReLU 激活",
+      "description": "逐元素浮点激活，保留形状；Softmax 按指定轴归一化。",
+      "defaults": {
+        "negative_slope": 0.01
+      },
+      "parameters": [
+        {
+          "name": "negative_slope",
+          "type": "number",
+          "default": 0.01,
+          "min": 0,
+          "max": 100
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "ELU",
+      "category": "activation",
+      "label": "ELU 激活",
+      "description": "逐元素浮点激活，保留形状；Softmax 按指定轴归一化。",
+      "defaults": {
+        "alpha": 1.0
+      },
+      "parameters": [
+        {
+          "name": "alpha",
+          "type": "number",
+          "default": 1.0,
+          "min": 0,
+          "max": 100
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "SELU",
+      "category": "activation",
+      "label": "SELU 激活",
+      "description": "逐元素浮点激活，保留形状；Softmax 按指定轴归一化。",
+      "defaults": {},
+      "parameters": [],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Softplus",
+      "category": "activation",
+      "label": "Softplus 激活",
+      "description": "逐元素浮点激活，保留形状；Softmax 按指定轴归一化。",
+      "defaults": {
+        "beta": 1.0,
+        "threshold": 20.0
+      },
+      "parameters": [
+        {
+          "name": "beta",
+          "type": "number",
+          "default": 1.0,
+          "min": 1e-06,
+          "max": 100
+        },
+        {
+          "name": "threshold",
+          "type": "number",
+          "default": 20.0,
+          "min": 1e-06,
+          "max": 1000
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Softsign",
+      "category": "activation",
+      "label": "Softsign 激活",
+      "description": "逐元素浮点激活，保留形状；Softmax 按指定轴归一化。",
+      "defaults": {},
+      "parameters": [],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Hardsigmoid",
+      "category": "activation",
+      "label": "Hard Sigmoid 激活",
+      "description": "逐元素浮点激活，保留形状；Softmax 按指定轴归一化。",
+      "defaults": {},
+      "parameters": [],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Hardswish",
+      "category": "activation",
+      "label": "Hard Swish 激活",
+      "description": "逐元素浮点激活，保留形状；Softmax 按指定轴归一化。",
+      "defaults": {},
+      "parameters": [],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "PReLU",
+      "category": "activation",
+      "label": "可学习 PReLU",
+      "description": "逐元素浮点激活，保留形状；Softmax 按指定轴归一化。",
+      "defaults": {
+        "num_parameters": 1,
+        "init": 0.25
+      },
+      "parameters": [
+        {
+          "name": "num_parameters",
+          "type": "integer",
+          "default": 1,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "init",
+          "type": "number",
+          "default": 0.25,
+          "min": -100,
+          "max": 100
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Softmax",
+      "category": "activation",
+      "label": "Softmax 概率",
+      "description": "逐元素浮点激活，保留形状；Softmax 按指定轴归一化。",
+      "defaults": {
+        "dim": -1
+      },
+      "parameters": [
+        {
+          "name": "dim",
+          "type": "integer",
+          "default": -1,
+          "min": -8,
+          "max": 7
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "LogSoftmax",
+      "category": "activation",
+      "label": "Log Softmax",
+      "description": "逐元素浮点激活，保留形状；Softmax 按指定轴归一化。",
+      "defaults": {
+        "dim": -1
+      },
+      "parameters": [
+        {
+          "name": "dim",
+          "type": "integer",
+          "default": -1,
+          "min": -8,
+          "max": 7
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Dropout",
+      "category": "regularization",
+      "label": "Dropout 随机失活",
+      "description": "非原地随机失活；训练与评估行为不同，不证明数值效果。",
+      "defaults": {
+        "p": 0.1
+      },
+      "parameters": [
+        {
+          "name": "p",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Dropout1d",
+      "category": "regularization",
+      "label": "Dropout1d 随机失活",
+      "description": "非原地随机失活；训练与评估行为不同，不证明数值效果。",
+      "defaults": {
+        "p": 0.1
+      },
+      "parameters": [
+        {
+          "name": "p",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Dropout2d",
+      "category": "regularization",
+      "label": "Dropout2d 随机失活",
+      "description": "非原地随机失活；训练与评估行为不同，不证明数值效果。",
+      "defaults": {
+        "p": 0.1
+      },
+      "parameters": [
+        {
+          "name": "p",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Dropout3d",
+      "category": "regularization",
+      "label": "Dropout3d 随机失活",
+      "description": "非原地随机失活；训练与评估行为不同，不证明数值效果。",
+      "defaults": {
+        "p": 0.1
+      },
+      "parameters": [
+        {
+          "name": "p",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "AlphaDropout",
+      "category": "regularization",
+      "label": "AlphaDropout 随机失活",
+      "description": "非原地随机失活；训练与评估行为不同，不证明数值效果。",
+      "defaults": {
+        "p": 0.1
+      },
+      "parameters": [
+        {
+          "name": "p",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "FeatureAlphaDropout",
+      "category": "regularization",
+      "label": "FeatureAlphaDropout 随机失活",
+      "description": "非原地随机失活；训练与评估行为不同，不证明数值效果。",
+      "defaults": {
+        "p": 0.1
+      },
+      "parameters": [
+        {
+          "name": "p",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Conv1d",
+      "category": "convolution",
+      "label": "1维卷积",
+      "description": "float32 通道优先张量，支持批次或无批次；分组须整除输入输出通道。",
+      "defaults": {
+        "in_channels": 3,
+        "out_channels": 16,
+        "kernel_size": [
+          3
+        ],
+        "stride": [
+          1
+        ],
+        "padding": [
+          0
+        ],
+        "dilation": [
+          1
+        ],
+        "groups": 1,
+        "bias": true
+      },
+      "parameters": [
+        {
+          "name": "in_channels",
+          "type": "integer",
+          "default": 3,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "out_channels",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "kernel_size",
+          "type": "integer-array",
+          "default": [
+            3
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 1
+        },
+        {
+          "name": "stride",
+          "type": "integer-array",
+          "default": [
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 1
+        },
+        {
+          "name": "padding",
+          "type": "integer-array",
+          "default": [
+            0
+          ],
+          "min": 0,
+          "max": 10000,
+          "length": 1
+        },
+        {
+          "name": "dilation",
+          "type": "integer-array",
+          "default": [
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 1
+        },
+        {
+          "name": "groups",
+          "type": "integer",
+          "default": 1,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "bias",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "ConvTranspose1d",
+      "category": "convolution",
+      "label": "1维转置卷积",
+      "description": "float32 通道优先张量，支持批次或无批次；分组须整除输入输出通道。",
+      "defaults": {
+        "in_channels": 3,
+        "out_channels": 16,
+        "kernel_size": [
+          3
+        ],
+        "stride": [
+          1
+        ],
+        "padding": [
+          0
+        ],
+        "output_padding": [
+          0
+        ],
+        "dilation": [
+          1
+        ],
+        "groups": 1,
+        "bias": true
+      },
+      "parameters": [
+        {
+          "name": "in_channels",
+          "type": "integer",
+          "default": 3,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "out_channels",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "kernel_size",
+          "type": "integer-array",
+          "default": [
+            3
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 1
+        },
+        {
+          "name": "stride",
+          "type": "integer-array",
+          "default": [
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 1
+        },
+        {
+          "name": "padding",
+          "type": "integer-array",
+          "default": [
+            0
+          ],
+          "min": 0,
+          "max": 10000,
+          "length": 1
+        },
+        {
+          "name": "output_padding",
+          "type": "integer-array",
+          "default": [
+            0
+          ],
+          "min": 0,
+          "max": 10000,
+          "length": 1
+        },
+        {
+          "name": "dilation",
+          "type": "integer-array",
+          "default": [
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 1
+        },
+        {
+          "name": "groups",
+          "type": "integer",
+          "default": 1,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "bias",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "MaxPool1d",
+      "category": "pooling",
+      "label": "1维最大池化",
+      "description": "浮点通道优先张量，显式窗口与步长；最大池化仅返回结果张量。",
+      "defaults": {
+        "kernel_size": [
+          2
+        ],
+        "stride": [
+          2
+        ],
+        "padding": [
+          0
+        ],
+        "dilation": [
+          1
+        ],
+        "ceil_mode": false
+      },
+      "parameters": [
+        {
+          "name": "kernel_size",
+          "type": "integer-array",
+          "default": [
+            2
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 1
+        },
+        {
+          "name": "stride",
+          "type": "integer-array",
+          "default": [
+            2
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 1
+        },
+        {
+          "name": "padding",
+          "type": "integer-array",
+          "default": [
+            0
+          ],
+          "min": 0,
+          "max": 10000,
+          "length": 1
+        },
+        {
+          "name": "dilation",
+          "type": "integer-array",
+          "default": [
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 1
+        },
+        {
+          "name": "ceil_mode",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "AdaptiveMaxPool1d",
+      "category": "pooling",
+      "label": "1维自适应最大池化",
+      "description": "固定输出空间尺寸；仅返回结果张量，不返回最大值索引。",
+      "defaults": {
+        "output_size": [
+          1
+        ]
+      },
+      "parameters": [
+        {
+          "name": "output_size",
+          "type": "integer-array",
+          "default": [
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 1
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "AvgPool1d",
+      "category": "pooling",
+      "label": "1维平均池化",
+      "description": "浮点通道优先张量，显式窗口与步长；最大池化仅返回结果张量。",
+      "defaults": {
+        "kernel_size": [
+          2
+        ],
+        "stride": [
+          2
+        ],
+        "padding": [
+          0
+        ],
+        "ceil_mode": false,
+        "count_include_pad": true
+      },
+      "parameters": [
+        {
+          "name": "kernel_size",
+          "type": "integer-array",
+          "default": [
+            2
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 1
+        },
+        {
+          "name": "stride",
+          "type": "integer-array",
+          "default": [
+            2
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 1
+        },
+        {
+          "name": "padding",
+          "type": "integer-array",
+          "default": [
+            0
+          ],
+          "min": 0,
+          "max": 10000,
+          "length": 1
+        },
+        {
+          "name": "ceil_mode",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "count_include_pad",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "AdaptiveAvgPool1d",
+      "category": "pooling",
+      "label": "1维自适应平均池化",
+      "description": "固定输出空间尺寸；仅返回结果张量，不返回最大值索引。",
+      "defaults": {
+        "output_size": [
+          1
+        ]
+      },
+      "parameters": [
+        {
+          "name": "output_size",
+          "type": "integer-array",
+          "default": [
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 1
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "BatchNorm1d",
+      "category": "normalization",
+      "label": "1维批归一化",
+      "description": "float32 通道归一化；训练兼容静态检查要求足够的通道采样。",
+      "defaults": {
+        "num_features": 16,
+        "eps": 1e-05,
+        "momentum": 0.1,
+        "affine": true,
+        "track_running_stats": true
+      },
+      "parameters": [
+        {
+          "name": "num_features",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "eps",
+          "type": "number",
+          "default": 1e-05,
+          "min": 1e-12,
+          "max": 1
+        },
+        {
+          "name": "momentum",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "name": "affine",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "track_running_stats",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "InstanceNorm1d",
+      "category": "normalization",
+      "label": "1维实例归一化",
+      "description": "float32 通道归一化；训练兼容静态检查要求足够的通道采样。",
+      "defaults": {
+        "num_features": 16,
+        "eps": 1e-05,
+        "momentum": 0.1,
+        "affine": false,
+        "track_running_stats": false
+      },
+      "parameters": [
+        {
+          "name": "num_features",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "eps",
+          "type": "number",
+          "default": 1e-05,
+          "min": 1e-12,
+          "max": 1
+        },
+        {
+          "name": "momentum",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "name": "affine",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "track_running_stats",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Conv2d",
+      "category": "convolution",
+      "label": "2维卷积",
+      "description": "float32 通道优先张量，支持批次或无批次；分组须整除输入输出通道。",
+      "defaults": {
+        "in_channels": 3,
+        "out_channels": 16,
+        "kernel_size": [
+          3,
+          3
+        ],
+        "stride": [
+          1,
+          1
+        ],
+        "padding": [
+          0,
+          0
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "groups": 1,
+        "bias": true
+      },
+      "parameters": [
+        {
+          "name": "in_channels",
+          "type": "integer",
+          "default": 3,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "out_channels",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "kernel_size",
+          "type": "integer-array",
+          "default": [
+            3,
+            3
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 2
+        },
+        {
+          "name": "stride",
+          "type": "integer-array",
+          "default": [
+            1,
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 2
+        },
+        {
+          "name": "padding",
+          "type": "integer-array",
+          "default": [
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 10000,
+          "length": 2
+        },
+        {
+          "name": "dilation",
+          "type": "integer-array",
+          "default": [
+            1,
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 2
+        },
+        {
+          "name": "groups",
+          "type": "integer",
+          "default": 1,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "bias",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "ConvTranspose2d",
+      "category": "convolution",
+      "label": "2维转置卷积",
+      "description": "float32 通道优先张量，支持批次或无批次；分组须整除输入输出通道。",
+      "defaults": {
+        "in_channels": 3,
+        "out_channels": 16,
+        "kernel_size": [
+          3,
+          3
+        ],
+        "stride": [
+          1,
+          1
+        ],
+        "padding": [
+          0,
+          0
+        ],
+        "output_padding": [
+          0,
+          0
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "groups": 1,
+        "bias": true
+      },
+      "parameters": [
+        {
+          "name": "in_channels",
+          "type": "integer",
+          "default": 3,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "out_channels",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "kernel_size",
+          "type": "integer-array",
+          "default": [
+            3,
+            3
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 2
+        },
+        {
+          "name": "stride",
+          "type": "integer-array",
+          "default": [
+            1,
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 2
+        },
+        {
+          "name": "padding",
+          "type": "integer-array",
+          "default": [
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 10000,
+          "length": 2
+        },
+        {
+          "name": "output_padding",
+          "type": "integer-array",
+          "default": [
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 10000,
+          "length": 2
+        },
+        {
+          "name": "dilation",
+          "type": "integer-array",
+          "default": [
+            1,
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 2
+        },
+        {
+          "name": "groups",
+          "type": "integer",
+          "default": 1,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "bias",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "MaxPool2d",
+      "category": "pooling",
+      "label": "2维最大池化",
+      "description": "浮点通道优先张量，显式窗口与步长；最大池化仅返回结果张量。",
+      "defaults": {
+        "kernel_size": [
+          2,
+          2
+        ],
+        "stride": [
+          2,
+          2
+        ],
+        "padding": [
+          0,
+          0
+        ],
+        "dilation": [
+          1,
+          1
+        ],
+        "ceil_mode": false
+      },
+      "parameters": [
+        {
+          "name": "kernel_size",
+          "type": "integer-array",
+          "default": [
+            2,
+            2
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 2
+        },
+        {
+          "name": "stride",
+          "type": "integer-array",
+          "default": [
+            2,
+            2
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 2
+        },
+        {
+          "name": "padding",
+          "type": "integer-array",
+          "default": [
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 10000,
+          "length": 2
+        },
+        {
+          "name": "dilation",
+          "type": "integer-array",
+          "default": [
+            1,
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 2
+        },
+        {
+          "name": "ceil_mode",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "AdaptiveMaxPool2d",
+      "category": "pooling",
+      "label": "2维自适应最大池化",
+      "description": "固定输出空间尺寸；仅返回结果张量，不返回最大值索引。",
+      "defaults": {
+        "output_size": [
+          1,
+          1
+        ]
+      },
+      "parameters": [
+        {
+          "name": "output_size",
+          "type": "integer-array",
+          "default": [
+            1,
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 2
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "AvgPool2d",
+      "category": "pooling",
+      "label": "2维平均池化",
+      "description": "浮点通道优先张量，显式窗口与步长；最大池化仅返回结果张量。",
+      "defaults": {
+        "kernel_size": [
+          2,
+          2
+        ],
+        "stride": [
+          2,
+          2
+        ],
+        "padding": [
+          0,
+          0
+        ],
+        "ceil_mode": false,
+        "count_include_pad": true
+      },
+      "parameters": [
+        {
+          "name": "kernel_size",
+          "type": "integer-array",
+          "default": [
+            2,
+            2
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 2
+        },
+        {
+          "name": "stride",
+          "type": "integer-array",
+          "default": [
+            2,
+            2
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 2
+        },
+        {
+          "name": "padding",
+          "type": "integer-array",
+          "default": [
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 10000,
+          "length": 2
+        },
+        {
+          "name": "ceil_mode",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "count_include_pad",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "AdaptiveAvgPool2d",
+      "category": "pooling",
+      "label": "2维自适应平均池化",
+      "description": "固定输出空间尺寸；仅返回结果张量，不返回最大值索引。",
+      "defaults": {
+        "output_size": [
+          1,
+          1
+        ]
+      },
+      "parameters": [
+        {
+          "name": "output_size",
+          "type": "integer-array",
+          "default": [
+            1,
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 2
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "BatchNorm2d",
+      "category": "normalization",
+      "label": "2维批归一化",
+      "description": "float32 通道归一化；训练兼容静态检查要求足够的通道采样。",
+      "defaults": {
+        "num_features": 16,
+        "eps": 1e-05,
+        "momentum": 0.1,
+        "affine": true,
+        "track_running_stats": true
+      },
+      "parameters": [
+        {
+          "name": "num_features",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "eps",
+          "type": "number",
+          "default": 1e-05,
+          "min": 1e-12,
+          "max": 1
+        },
+        {
+          "name": "momentum",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "name": "affine",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "track_running_stats",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "InstanceNorm2d",
+      "category": "normalization",
+      "label": "2维实例归一化",
+      "description": "float32 通道归一化；训练兼容静态检查要求足够的通道采样。",
+      "defaults": {
+        "num_features": 16,
+        "eps": 1e-05,
+        "momentum": 0.1,
+        "affine": false,
+        "track_running_stats": false
+      },
+      "parameters": [
+        {
+          "name": "num_features",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "eps",
+          "type": "number",
+          "default": 1e-05,
+          "min": 1e-12,
+          "max": 1
+        },
+        {
+          "name": "momentum",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "name": "affine",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "track_running_stats",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Conv3d",
+      "category": "convolution",
+      "label": "3维卷积",
+      "description": "float32 通道优先张量，支持批次或无批次；分组须整除输入输出通道。",
+      "defaults": {
+        "in_channels": 3,
+        "out_channels": 16,
+        "kernel_size": [
+          3,
+          3,
+          3
+        ],
+        "stride": [
+          1,
+          1,
+          1
+        ],
+        "padding": [
+          0,
+          0,
+          0
+        ],
+        "dilation": [
+          1,
+          1,
+          1
+        ],
+        "groups": 1,
+        "bias": true
+      },
+      "parameters": [
+        {
+          "name": "in_channels",
+          "type": "integer",
+          "default": 3,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "out_channels",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "kernel_size",
+          "type": "integer-array",
+          "default": [
+            3,
+            3,
+            3
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 3
+        },
+        {
+          "name": "stride",
+          "type": "integer-array",
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 3
+        },
+        {
+          "name": "padding",
+          "type": "integer-array",
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 10000,
+          "length": 3
+        },
+        {
+          "name": "dilation",
+          "type": "integer-array",
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 3
+        },
+        {
+          "name": "groups",
+          "type": "integer",
+          "default": 1,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "bias",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "ConvTranspose3d",
+      "category": "convolution",
+      "label": "3维转置卷积",
+      "description": "float32 通道优先张量，支持批次或无批次；分组须整除输入输出通道。",
+      "defaults": {
+        "in_channels": 3,
+        "out_channels": 16,
+        "kernel_size": [
+          3,
+          3,
+          3
+        ],
+        "stride": [
+          1,
+          1,
+          1
+        ],
+        "padding": [
+          0,
+          0,
+          0
+        ],
+        "output_padding": [
+          0,
+          0,
+          0
+        ],
+        "dilation": [
+          1,
+          1,
+          1
+        ],
+        "groups": 1,
+        "bias": true
+      },
+      "parameters": [
+        {
+          "name": "in_channels",
+          "type": "integer",
+          "default": 3,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "out_channels",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "kernel_size",
+          "type": "integer-array",
+          "default": [
+            3,
+            3,
+            3
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 3
+        },
+        {
+          "name": "stride",
+          "type": "integer-array",
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 3
+        },
+        {
+          "name": "padding",
+          "type": "integer-array",
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 10000,
+          "length": 3
+        },
+        {
+          "name": "output_padding",
+          "type": "integer-array",
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 10000,
+          "length": 3
+        },
+        {
+          "name": "dilation",
+          "type": "integer-array",
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 3
+        },
+        {
+          "name": "groups",
+          "type": "integer",
+          "default": 1,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "bias",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "MaxPool3d",
+      "category": "pooling",
+      "label": "3维最大池化",
+      "description": "浮点通道优先张量，显式窗口与步长；最大池化仅返回结果张量。",
+      "defaults": {
+        "kernel_size": [
+          2,
+          2,
+          2
+        ],
+        "stride": [
+          2,
+          2,
+          2
+        ],
+        "padding": [
+          0,
+          0,
+          0
+        ],
+        "dilation": [
+          1,
+          1,
+          1
+        ],
+        "ceil_mode": false
+      },
+      "parameters": [
+        {
+          "name": "kernel_size",
+          "type": "integer-array",
+          "default": [
+            2,
+            2,
+            2
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 3
+        },
+        {
+          "name": "stride",
+          "type": "integer-array",
+          "default": [
+            2,
+            2,
+            2
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 3
+        },
+        {
+          "name": "padding",
+          "type": "integer-array",
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 10000,
+          "length": 3
+        },
+        {
+          "name": "dilation",
+          "type": "integer-array",
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 3
+        },
+        {
+          "name": "ceil_mode",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "AdaptiveMaxPool3d",
+      "category": "pooling",
+      "label": "3维自适应最大池化",
+      "description": "固定输出空间尺寸；仅返回结果张量，不返回最大值索引。",
+      "defaults": {
+        "output_size": [
+          1,
+          1,
+          1
+        ]
+      },
+      "parameters": [
+        {
+          "name": "output_size",
+          "type": "integer-array",
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 3
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "AvgPool3d",
+      "category": "pooling",
+      "label": "3维平均池化",
+      "description": "浮点通道优先张量，显式窗口与步长；最大池化仅返回结果张量。",
+      "defaults": {
+        "kernel_size": [
+          2,
+          2,
+          2
+        ],
+        "stride": [
+          2,
+          2,
+          2
+        ],
+        "padding": [
+          0,
+          0,
+          0
+        ],
+        "ceil_mode": false,
+        "count_include_pad": true
+      },
+      "parameters": [
+        {
+          "name": "kernel_size",
+          "type": "integer-array",
+          "default": [
+            2,
+            2,
+            2
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 3
+        },
+        {
+          "name": "stride",
+          "type": "integer-array",
+          "default": [
+            2,
+            2,
+            2
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 3
+        },
+        {
+          "name": "padding",
+          "type": "integer-array",
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 10000,
+          "length": 3
+        },
+        {
+          "name": "ceil_mode",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "count_include_pad",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "AdaptiveAvgPool3d",
+      "category": "pooling",
+      "label": "3维自适应平均池化",
+      "description": "固定输出空间尺寸；仅返回结果张量，不返回最大值索引。",
+      "defaults": {
+        "output_size": [
+          1,
+          1,
+          1
+        ]
+      },
+      "parameters": [
+        {
+          "name": "output_size",
+          "type": "integer-array",
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "min": 1,
+          "max": 10000,
+          "length": 3
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "BatchNorm3d",
+      "category": "normalization",
+      "label": "3维批归一化",
+      "description": "float32 通道归一化；训练兼容静态检查要求足够的通道采样。",
+      "defaults": {
+        "num_features": 16,
+        "eps": 1e-05,
+        "momentum": 0.1,
+        "affine": true,
+        "track_running_stats": true
+      },
+      "parameters": [
+        {
+          "name": "num_features",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "eps",
+          "type": "number",
+          "default": 1e-05,
+          "min": 1e-12,
+          "max": 1
+        },
+        {
+          "name": "momentum",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "name": "affine",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "track_running_stats",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "InstanceNorm3d",
+      "category": "normalization",
+      "label": "3维实例归一化",
+      "description": "float32 通道归一化；训练兼容静态检查要求足够的通道采样。",
+      "defaults": {
+        "num_features": 16,
+        "eps": 1e-05,
+        "momentum": 0.1,
+        "affine": false,
+        "track_running_stats": false
+      },
+      "parameters": [
+        {
+          "name": "num_features",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "eps",
+          "type": "number",
+          "default": 1e-05,
+          "min": 1e-12,
+          "max": 1
+        },
+        {
+          "name": "momentum",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "name": "affine",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "track_running_stats",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "LayerNorm",
+      "category": "normalization",
+      "label": "层归一化",
+      "description": "归一化匹配的末尾维度。",
+      "defaults": {
+        "normalized_shape": [
+          16
+        ],
+        "eps": 1e-05,
+        "elementwise_affine": true
+      },
+      "parameters": [
+        {
+          "name": "normalized_shape",
+          "type": "integer-array",
+          "default": [
+            16
+          ],
+          "min": 1,
+          "max": 1000000,
+          "minLength": 1,
+          "maxLength": 8
+        },
+        {
+          "name": "eps",
+          "type": "number",
+          "default": 1e-05,
+          "min": 1e-12,
+          "max": 1
+        },
+        {
+          "name": "elementwise_affine",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "RMSNorm",
+      "category": "normalization",
+      "label": "RMS 归一化",
+      "description": "按末尾维度均方根归一化；需要支持 RMSNorm 的 PyTorch 版本。",
+      "defaults": {
+        "normalized_shape": [
+          16
+        ],
+        "eps": 1e-05,
+        "elementwise_affine": true
+      },
+      "parameters": [
+        {
+          "name": "normalized_shape",
+          "type": "integer-array",
+          "default": [
+            16
+          ],
+          "min": 1,
+          "max": 1000000,
+          "minLength": 1,
+          "maxLength": 8
+        },
+        {
+          "name": "eps",
+          "type": "number",
+          "default": 1e-05,
+          "min": 1e-12,
+          "max": 1
+        },
+        {
+          "name": "elementwise_affine",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "GroupNorm",
+      "category": "normalization",
+      "label": "分组归一化",
+      "description": "N,C,... 布局，分组必须整除通道数。",
+      "defaults": {
+        "num_groups": 4,
+        "num_channels": 16,
+        "eps": 1e-05,
+        "affine": true
+      },
+      "parameters": [
+        {
+          "name": "num_groups",
+          "type": "integer",
+          "default": 4,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "num_channels",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "eps",
+          "type": "number",
+          "default": 1e-05,
+          "min": 1e-12,
+          "max": 1
+        },
+        {
+          "name": "affine",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Embedding",
+      "category": "embedding",
+      "label": "词嵌入",
+      "description": "int64 索引转 float32 向量；实际索引范围需要数据验证。",
+      "defaults": {
+        "num_embeddings": 1000,
+        "embedding_dim": 16
+      },
+      "parameters": [
+        {
+          "name": "num_embeddings",
+          "type": "integer",
+          "default": 1000,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "embedding_dim",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "MultiheadAttention",
+      "category": "attention",
+      "label": "多头注意力",
+      "description": "三路 float32 Q/K/V；固定返回注意力结果与平均权重，无掩码，无缓存。",
+      "defaults": {
+        "embed_dim": 16,
+        "num_heads": 4,
+        "dropout": 0.1,
+        "bias": true,
+        "batch_first": true
+      },
+      "parameters": [
+        {
+          "name": "embed_dim",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "num_heads",
+          "type": "integer",
+          "default": 4,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "dropout",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "name": "bias",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "batch_first",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "query",
+          "name": "query",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "key",
+          "name": "key",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "value",
+          "name": "value",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        },
+        {
+          "id": "weights",
+          "name": "weights",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "RNN",
+      "category": "recurrent",
+      "label": "RNN 循环层",
+      "description": "批次三维序列，默认零初态；返回序列与末态，不支持 PackedSequence 或 LSTM 投影。",
+      "defaults": {
+        "input_size": 16,
+        "hidden_size": 32,
+        "num_layers": 1,
+        "bias": true,
+        "batch_first": true,
+        "dropout": 0.0,
+        "bidirectional": false,
+        "nonlinearity": "tanh"
+      },
+      "parameters": [
+        {
+          "name": "input_size",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "hidden_size",
+          "type": "integer",
+          "default": 32,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "num_layers",
+          "type": "integer",
+          "default": 1,
+          "min": 1,
+          "max": 128
+        },
+        {
+          "name": "bias",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "batch_first",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "dropout",
+          "type": "number",
+          "default": 0.0,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "name": "bidirectional",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "nonlinearity",
+          "type": "choice",
+          "default": "tanh",
+          "options": [
+            "tanh",
+            "relu"
+          ]
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        },
+        {
+          "id": "h_n",
+          "name": "h_n",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "GRU",
+      "category": "recurrent",
+      "label": "GRU 循环层",
+      "description": "批次三维序列，默认零初态；返回序列与末态，不支持 PackedSequence 或 LSTM 投影。",
+      "defaults": {
+        "input_size": 16,
+        "hidden_size": 32,
+        "num_layers": 1,
+        "bias": true,
+        "batch_first": true,
+        "dropout": 0.0,
+        "bidirectional": false
+      },
+      "parameters": [
+        {
+          "name": "input_size",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "hidden_size",
+          "type": "integer",
+          "default": 32,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "num_layers",
+          "type": "integer",
+          "default": 1,
+          "min": 1,
+          "max": 128
+        },
+        {
+          "name": "bias",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "batch_first",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "dropout",
+          "type": "number",
+          "default": 0.0,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "name": "bidirectional",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        },
+        {
+          "id": "h_n",
+          "name": "h_n",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "LSTM",
+      "category": "recurrent",
+      "label": "LSTM 循环层",
+      "description": "批次三维序列，默认零初态；返回序列与末态，不支持 PackedSequence 或 LSTM 投影。",
+      "defaults": {
+        "input_size": 16,
+        "hidden_size": 32,
+        "num_layers": 1,
+        "bias": true,
+        "batch_first": true,
+        "dropout": 0.0,
+        "bidirectional": false
+      },
+      "parameters": [
+        {
+          "name": "input_size",
+          "type": "integer",
+          "default": 16,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "hidden_size",
+          "type": "integer",
+          "default": 32,
+          "min": 1,
+          "max": 1000000
+        },
+        {
+          "name": "num_layers",
+          "type": "integer",
+          "default": 1,
+          "min": 1,
+          "max": 128
+        },
+        {
+          "name": "bias",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "batch_first",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "dropout",
+          "type": "number",
+          "default": 0.0,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "name": "bidirectional",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        },
+        {
+          "id": "h_n",
+          "name": "h_n",
+          "direction": "out",
+          "type": "tensor"
+        },
+        {
+          "id": "c_n",
+          "name": "c_n",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Add",
+      "category": "merge",
+      "label": "张量相加",
+      "description": "两路形状与类型必须完全相同；不隐式广播，数值域未验证。",
+      "defaults": {},
+      "parameters": [],
+      "ports": [
+        {
+          "id": "left",
+          "name": "left",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "right",
+          "name": "right",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Subtract",
+      "category": "merge",
+      "label": "张量相减",
+      "description": "两路形状与类型必须完全相同；不隐式广播，数值域未验证。",
+      "defaults": {},
+      "parameters": [],
+      "ports": [
+        {
+          "id": "left",
+          "name": "left",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "right",
+          "name": "right",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Multiply",
+      "category": "merge",
+      "label": "张量相乘",
+      "description": "两路形状与类型必须完全相同；不隐式广播，数值域未验证。",
+      "defaults": {},
+      "parameters": [],
+      "ports": [
+        {
+          "id": "left",
+          "name": "left",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "right",
+          "name": "right",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Divide",
+      "category": "merge",
+      "label": "张量相除",
+      "description": "两路形状与类型必须完全相同；不隐式广播，数值域未验证。",
+      "defaults": {},
+      "parameters": [],
+      "ports": [
+        {
+          "id": "left",
+          "name": "left",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "right",
+          "name": "right",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Concat",
+      "category": "merge",
+      "label": "张量拼接",
+      "description": "沿一个轴拼接两路相同类型张量，其他轴相同。",
+      "defaults": {
+        "dim": 1
+      },
+      "parameters": [
+        {
+          "name": "dim",
+          "type": "integer",
+          "default": 1,
+          "min": -8,
+          "max": 7
+        }
+      ],
+      "ports": [
+        {
+          "id": "a",
+          "name": "a",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "b",
+          "name": "b",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "MatMul",
+      "category": "operator",
+      "label": "矩阵乘法",
+      "description": "相同类型的二维或批次矩阵；批次轴严格相同，不隐式广播。",
+      "defaults": {},
+      "parameters": [],
+      "ports": [
+        {
+          "id": "left",
+          "name": "left",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "right",
+          "name": "right",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Mean",
+      "category": "operator",
+      "label": "按轴平均",
+      "description": "沿一个指定轴求浮点均值。",
+      "defaults": {
+        "dim": 1,
+        "keepdim": true
+      },
+      "parameters": [
+        {
+          "name": "dim",
+          "type": "integer",
+          "default": 1,
+          "min": -8,
+          "max": 7
+        },
+        {
+          "name": "keepdim",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Sum",
+      "category": "operator",
+      "label": "按轴求和",
+      "description": "沿一个指定轴求和，保留声明类型。",
+      "defaults": {
+        "dim": 1,
+        "keepdim": true
+      },
+      "parameters": [
+        {
+          "name": "dim",
+          "type": "integer",
+          "default": 1,
+          "min": -8,
+          "max": 7
+        },
+        {
+          "name": "keepdim",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    },
+    {
+      "kind": "Upsample",
+      "category": "reshape",
+      "label": "固定尺寸上采样",
+      "description": "按显式目标空间尺寸最近邻插值；支持 1–3 维空间。",
+      "defaults": {
+        "size": [
+          64,
+          64
+        ],
+        "mode": "nearest"
+      },
+      "parameters": [
+        {
+          "name": "size",
+          "type": "integer-array",
+          "default": [
+            64,
+            64
+          ],
+          "min": 1,
+          "max": 10000,
+          "minLength": 1,
+          "maxLength": 3
+        },
+        {
+          "name": "mode",
+          "type": "choice",
+          "default": "nearest",
+          "options": [
+            "nearest",
+            "nearest-exact"
+          ]
+        }
+      ],
+      "ports": [
+        {
+          "id": "input",
+          "name": "input",
+          "direction": "in",
+          "type": "tensor"
+        },
+        {
+          "id": "output",
+          "name": "output",
+          "direction": "out",
+          "type": "tensor"
+        }
+      ]
+    }
+  ],
+  "unsupported": [
+    "PackedSequence",
+    "AttentionMask",
+    "DynamicControlFlow",
+    "LossAndOptimizer",
+    "CustomPythonExecution"
+  ],
+  "limits": {
+    "nodes": 128,
+    "edges": 384
+  },
+  "verification": "static-declared-tensors; no model import or execution"
+}

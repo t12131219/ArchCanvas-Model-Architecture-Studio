@@ -15,6 +15,10 @@ type Geometry = { contacts: RoutePoint[]; spans: Map<string, [number, number][]>
 const EPS = 1e-7, LEAD = 6;
 const rounded = (value: number) => Math.round(value * 100) / 100;
 const same = (a: RoutePoint, b: RoutePoint) => Math.abs(a.x - b.x) <= EPS && Math.abs(a.y - b.y) <= EPS;
+/** The stable vertical anchor used by the late horizontal memory projection.
+ * Scene port materialization calls the same helper so a projection cannot
+ * end between two dynamic side-port slots. */
+export const memoryDisplayY = (node: Pick<SceneNode, 'y' | 'height'>) => node.y + node.height * .55;
 function validPoints(points: readonly RoutePoint[]) {
   return points.length >= 2 && points.every((p, i) => Number.isFinite(p.x) && Number.isFinite(p.y) &&
     (!i || !same(p, points[i - 1]) && (p.x === points[i - 1].x || p.y === points[i - 1].y)));
@@ -129,8 +133,8 @@ export function projectMemoryContinuity(nodes: readonly SceneNode[], requests: r
     const owners = new Set([...sourceAncestors, ...targetAncestors]);
     const sourceBounds = nodeVisualOutline(source).bounds, targetBounds = nodeVisualOutline(target).bounds;
     if (Math.min(sourceBounds.y + sourceBounds.height, targetBounds.y + targetBounds.height) - Math.max(sourceBounds.y, targetBounds.y) <= EPS) continue;
-    const a = projectVisualPort(source, { x: source.x + source.width, y: source.y + source.height * .55 }, 'right');
-    const b = projectVisualPort(target, { x: target.x, y: target.y + target.height * .55 }, 'left');
+    const a = projectVisualPort(source, { x: source.x + source.width, y: memoryDisplayY(source) }, 'right');
+    const b = projectVisualPort(target, { x: target.x, y: memoryDisplayY(target) }, 'left');
     const start = { x: rounded(a.x), y: rounded(a.y) }, end = { x: rounded(b.x), y: rounded(b.y) };
     const lane = rounded((start.x + end.x) / 2);
     if (![start.x, start.y, end.x, end.y, lane].every(Number.isFinite) || lane - start.x < LEAD - EPS || end.x - lane < LEAD - EPS) continue;

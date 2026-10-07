@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://archcanvas.local/schemas/authored-draft.schema.json",
   "title": "Independent authored model draft v1",
-  "description": "A draft is separate from source-bound Architecture/CanvasDocument. Runtime validation additionally enforces unique node/edge identities, exact module parameter fields, typed tensor ports, one producer per input, acyclicity, declared shape/dtype consistency and complete generation reachability. No runtime observation is implied.",
+  "description": "A draft is separate from source-bound Architecture/CanvasDocument. Runtime validation additionally enforces unique node/edge identities, exact module parameter fields, typed tensor ports, one producer per input, acyclicity, declared shape/dtype consistency and complete generation reachability. No runtime observation is implied. Source-derived drafts additionally preserve an independently analyzed source corpus, current hierarchy and a hidden edit cache; their connections are checked without claiming unknown shapes.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -39,7 +39,7 @@
     },
     "nodes": {
       "type": "array",
-      "maxItems": 128,
+      "maxItems": 1200,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -56,24 +56,89 @@
             "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
           },
           "kind": {
-            "enum": [
-              "Input",
-              "Output",
-              "Linear",
-              "ReLU",
-              "GELU",
-              "SiLU",
-              "Identity",
-              "Dropout",
-              "Flatten",
-              "Conv2d",
-              "MaxPool2d",
-              "AdaptiveAvgPool2d",
-              "BatchNorm2d",
-              "LayerNorm",
-              "Embedding",
-              "Add",
-              "Concat"
+            "anyOf": [
+              {
+                "enum": [
+                  "Input",
+                  "Output",
+                  "Linear",
+                  "Identity",
+                  "Flatten",
+                  "Unflatten",
+                  "Reshape",
+                  "Transpose",
+                  "Permute",
+                  "Unsqueeze",
+                  "Squeeze",
+                  "ReLU",
+                  "GELU",
+                  "SiLU",
+                  "Sigmoid",
+                  "Tanh",
+                  "ReLU6",
+                  "LeakyReLU",
+                  "ELU",
+                  "SELU",
+                  "Softplus",
+                  "Softsign",
+                  "Hardsigmoid",
+                  "Hardswish",
+                  "PReLU",
+                  "Softmax",
+                  "LogSoftmax",
+                  "Dropout",
+                  "Dropout1d",
+                  "Dropout2d",
+                  "Dropout3d",
+                  "AlphaDropout",
+                  "FeatureAlphaDropout",
+                  "Conv1d",
+                  "ConvTranspose1d",
+                  "MaxPool1d",
+                  "AdaptiveMaxPool1d",
+                  "AvgPool1d",
+                  "AdaptiveAvgPool1d",
+                  "BatchNorm1d",
+                  "InstanceNorm1d",
+                  "Conv2d",
+                  "ConvTranspose2d",
+                  "MaxPool2d",
+                  "AdaptiveMaxPool2d",
+                  "AvgPool2d",
+                  "AdaptiveAvgPool2d",
+                  "BatchNorm2d",
+                  "InstanceNorm2d",
+                  "Conv3d",
+                  "ConvTranspose3d",
+                  "MaxPool3d",
+                  "AdaptiveMaxPool3d",
+                  "AvgPool3d",
+                  "AdaptiveAvgPool3d",
+                  "BatchNorm3d",
+                  "InstanceNorm3d",
+                  "LayerNorm",
+                  "RMSNorm",
+                  "GroupNorm",
+                  "Embedding",
+                  "MultiheadAttention",
+                  "RNN",
+                  "GRU",
+                  "LSTM",
+                  "Add",
+                  "Subtract",
+                  "Multiply",
+                  "Divide",
+                  "Concat",
+                  "MatMul",
+                  "Mean",
+                  "Sum",
+                  "Upsample"
+                ]
+              },
+              {
+                "type": "string",
+                "pattern": "^Source_[a-f0-9]{24}$"
+              }
             ]
           },
           "label": {
@@ -105,13 +170,68 @@
                 "maximum": 1000000
               }
             }
+          },
+          "presentation": {
+            "type": "object",
+            "required": [
+              "width",
+              "height",
+              "fill",
+              "stroke",
+              "group",
+              "ports"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "width": {
+                "type": "number",
+                "minimum": 10,
+                "maximum": 1000000
+              },
+              "height": {
+                "type": "number",
+                "minimum": 10,
+                "maximum": 1000000
+              },
+              "fill": {
+                "type": "string"
+              },
+              "stroke": {
+                "type": "string"
+              },
+              "group": {
+                "type": "boolean"
+              },
+              "parentId": {
+                "type": "string"
+              },
+              "ports": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "x",
+                    "y"
+                  ],
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    },
+                    "y": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "edges": {
       "type": "array",
-      "maxItems": 384,
+      "maxItems": 3600,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -163,6 +283,78 @@
           }
         }
       }
+    },
+    "sourceProvenance": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "digest",
+        "documentId",
+        "visualRevision",
+        "sourceDigest",
+        "irDigest",
+        "architecture",
+        "canvas",
+        "modules",
+        "nodeRefs",
+        "edgeRefs",
+        "originalGraph"
+      ],
+      "description": "Immutable source facts plus the imported visual frontier. Backend reconciles real source bytes before import and generation; the SHA256 binds the provenance snapshot."
+    },
+    "sourceCache": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nodes",
+        "edges",
+        "removedNodeIds",
+        "removedCanonicalEdgeIds"
+      ],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "maxItems": 1200
+        },
+        "edges": {
+          "type": "array",
+          "maxItems": 3600
+        },
+        "removedNodeIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "removedCanonicalEdgeIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Saved source edits hidden by a folded frontier, including removed-source tombstones."
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "not": {
+          "required": [
+            "sourceProvenance"
+          ]
+        }
+      },
+      "then": {
+        "properties": {
+          "nodes": {
+            "maxItems": 128
+          },
+          "edges": {
+            "maxItems": 384
+          }
+        }
+      }
+    }
+  ]
 }

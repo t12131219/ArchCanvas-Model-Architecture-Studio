@@ -1,14 +1,17 @@
+// Historical M4 policy regression: this suite intentionally freezes the pre-atomic
+// projection (coarse container arrows and mask top ports). Current behavior is
+// independently checked by atomic-frontier-routing.test.ts; archived gold stays intact.
 import test from 'node:test';
 import { normalizeDefaultMemoryLabels } from './historical-memory-caption-compat.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import type { CanvasDocument, Scene } from '../src/core/types.ts';
-import type { RouteRequest } from '../src/core/orthogonalRouter.ts';
+import type { RouteRequest } from './historical-routing-core.ts';
 // Product calls produce observations only. The literal paths, geometry,
 // candidate graph and protected metrics below belong to the separate oracle.
-import { buildScene, buildExportScene, renderSvg } from '../src/core/index.ts';
-import { createOrthogonalRouter } from '../src/core/orthogonalRouter.ts';
+import { buildScene, buildExportScene, renderSvg } from './historical-routing-core.ts';
+import { createOrthogonalRouter } from './historical-routing-core.ts';
 import { assertEndpoints, assertRefinement, assertSvg, intrusions, pair, penetrates, points, stats } from '../../docs/evidence/m4-collapsed-residual-work/acceptance/oracle.ts';
 import { addProtectedRoute, genericDocument, literalNode, literalPort, literalRoutingCase } from '../../docs/evidence/m4-collapsed-residual-work/acceptance/fixtures.ts';
 
@@ -34,7 +37,7 @@ function coverage(document:CanvasDocument,scene:Scene) {
   assert.deepEqual([...scene.hiddenEdges,...scene.edges.flatMap(edge=>edge.canonicalEdgeIds)].sort(),document.architecture.edges.map(edge=>edge.id).sort(),'canonical edges lost, duplicated or hidden');
 }
 
-test('independent residual baseline freezes all nine authored frontiers and actual public route bytes',()=>{
+test('historical M4: independent residual baseline freezes all nine authored frontiers and actual public route bytes',()=>{
   assert.equal(capture.records.length,9);assert.equal(capture.inputsUnchanged,true);assert.deepEqual(capture.inputsBefore,capture.inputsAfter);
   for(const record of capture.records)for(const value of Object.values(record.files)) {
     const copy=readFileSync(new URL(value.copy.path,root)), original=readFileSync(new URL(value.source.path,root));
@@ -49,7 +52,7 @@ test('independent residual baseline freezes all nine authored frontiers and actu
   assertRefinement(beforeFor(cnn),literal);assert.deepEqual(intrusions(literal),[]);
 });
 
-test('independent route parser and protected pair oracle expose split-vertex crossings and interval union',()=>{
+test('historical M4: independent route parser and protected pair oracle expose split-vertex crossings and interval union',()=>{
   for(const bad of ['M 0 0 L 10 10','M 0 0 V','M 0 0 V NaN','M 0 0 H 1 junk','M 0 0 H 1 M 1 1 V 2','m 0 0 v 1','M 0 0 H 1e999'])assert.throws(()=>points(bad));
   const unsplit=pair('M 0 75 H 100','M 60 65 V 85'),split=pair('M 0 75 H 60 H 100','M 60 65 V 75 V 85');
   assert.deepEqual(split,unsplit);assert.equal(split.crossings.length,1);
@@ -58,7 +61,7 @@ test('independent route parser and protected pair oracle expose split-vertex cro
   assert.equal(pair('M 0 0 H 10','M 10 -10 V 10').crossings.length,0,'whole-edge endpoint touch is not a strict crossing');
 });
 
-test('independent oracle rejects coherent branch, role/style, port, body/header and backplate corruptions',()=>{
+test('historical M4: independent oracle rejects coherent branch, role/style, port, body/header and backplate corruptions',()=>{
   const before=beforeFor(cnn);
   const rejects=(change:(scene:Scene)=>void)=>{const after=structuredClone(before);change(after);assert.throws(()=>assertRefinement(before,after,renderSvg(after)));};
   rejects(scene=>{scene.edges.find(edge=>edge.id==='edge:9')!.role='data';});
@@ -75,7 +78,7 @@ test('independent oracle rejects coherent branch, role/style, port, body/header 
   assert.ok(intrusions(bad).some(hit=>hit.includes('backplate')));assert.throws(()=>assertRefinement(f.scene,bad),/new intrusion/);
 });
 
-test('CNN collapsed proxy residual becomes the independent 38-unit straight route without merging its data lane',()=>{
+test('historical M4: CNN collapsed proxy residual becomes the independent 38-unit straight route without merging its data lane',()=>{
   const document=canvasFor(cnn), original=JSON.stringify(document), scene=serialized(buildScene(document));
   assertRefinement(beforeFor(cnn),scene,renderSvg(scene));coverage(document,scene);
   const edge=scene.edges.find(edge=>edge.id==='edge:9')!;
@@ -86,7 +89,7 @@ test('CNN collapsed proxy residual becomes the independent 38-unit straight rout
   assert.equal(JSON.stringify(document),original);assert.equal(renderSvg(buildExportScene(document)),renderSvg(scene));
 });
 
-for(const record of capture.records)test(`all protected branches/cards/ports and pair-local safety survive: ${record.key}`,()=>{
+for(const record of capture.records)test(`historical M4: all protected branches/cards/ports and pair-local safety survive: ${record.key}`,()=>{
   const document=canvasFor(record), original=JSON.stringify(document), before=beforeFor(record), scene=serialized(buildScene(document));
   assertSvg(scene, renderSvg(scene));
   const historical = normalizeDefaultMemoryLabels(document,scene,before);
@@ -103,7 +106,7 @@ for(const record of capture.records)test(`all protected branches/cards/ports and
   assert.equal(JSON.stringify(document),original);assert.equal(renderSvg(scene),renderSvg(buildScene(document)));
 });
 
-test('renamed generic graphs shorten collapsed module and repeat proxies while preserving manual pins and exposed repeat ports',()=>{
+test('historical M4: renamed generic graphs shorten collapsed module and repeat proxies while preserving manual pins and exposed repeat ports',()=>{
   for(const [prefix,repeat,sourceRepeat,pinned] of [['orbital-flow',false,false,false],['renamed-repeat',true,false,true],['shared-source',true,true,true]] as const) {
     const document=genericDocument(prefix,{repeat,sourceRepeat,pinned}), original=JSON.stringify(document), scene=buildScene(document);
     const skip=scene.edges.find(edge=>edge.id===`${prefix}/skip`)!;
@@ -118,19 +121,19 @@ test('renamed generic graphs shorten collapsed module and repeat proxies while p
   }
 });
 
-test('single-route collapsed proxy optimization works without pressure or model-name assumptions',()=>{
+test('historical M4: single-route collapsed proxy optimization works without pressure or model-name assumptions',()=>{
   const fixture=literalRoutingCase({repeat:true,pinned:true}), after=observe(fixture);
   assert.equal(after.edges[0].path,fixture.literalExpected);assert.deepEqual(stats(after.edges[0].path),{length:50,bends:0});
   assertRefinement(fixture.scene,after,renderSvg(after));
 });
 
-test('clear manually misaligned proxy endpoints attain the independent Manhattan minimum with two turns',()=>{
+test('historical M4: clear manually misaligned proxy endpoints attain the independent Manhattan minimum with two turns',()=>{
   const fixture=literalRoutingCase({misaligned:true,pinned:true}),after=observe(fixture);
   assert.deepEqual(stats(after.edges[0].path),{length:70,bends:2});
   assertRefinement(fixture.scene,after,renderSvg(after));
 });
 
-test('expanded or actual visible targets and other roles can shorten only when their geometry remains protected',()=>{
+test('historical M4: expanded or actual visible targets and other roles can shorten only when their geometry remains protected',()=>{
   for(const options of [{targetExpanded:true},{targetProxy:false},{upward:true},{role:'memory' as const},{role:'mask' as const}]) {
     const fixture=literalRoutingCase(options),after=observe(fixture);
     assertRefinement(fixture.scene,after);
@@ -143,7 +146,7 @@ test('expanded or actual visible targets and other roles can shorten only when t
   assertEndpoints(scene);assertSvg(scene,renderSvg(scene));assert.deepEqual(intrusions(scene),[]);
 });
 
-test('geometry shortcuts do not depend on, merge or rewrite missing or inconsistent canonical/proxy-port evidence',()=>{
+test('historical M4: geometry shortcuts do not depend on, merge or rewrite missing or inconsistent canonical/proxy-port evidence',()=>{
   const changes=[
     (f:ReturnType<typeof literalRoutingCase>)=>{delete (f.requests[0] as Partial<RouteRequest>).canonicalTarget;},
     (f:ReturnType<typeof literalRoutingCase>)=>{f.requests[0].canonicalTarget.nodeId='unrelated-hidden-node';},
@@ -161,7 +164,7 @@ test('geometry shortcuts do not depend on, merge or rewrite missing or inconsist
   }
 });
 
-test('unrelated body, ancestor header and repeat backplate blocking all retain safe old route and immutable anchors',()=>{
+test('historical M4: unrelated body, ancestor header and repeat backplate blocking all retain safe old route and immutable anchors',()=>{
   const body=literalRoutingCase();body.scene.nodes.push(literalNode('blocking-body',45,65,10,20));
   const plates=literalRoutingCase();plates.scene.nodes.push(literalNode('blocking-stack',30,60,18,15,{repeat:{count:2,sharing:'independent'},pinned:true}));
   const header=literalRoutingCase();header.scene.nodes.find(node=>node.id===header.sourceId)!.parentId=undefined;
@@ -173,7 +176,7 @@ test('unrelated body, ancestor header and repeat backplate blocking all retain s
   }
 });
 
-test('every other edge is protected even when sharing tensor but differing in role/style: crossing and overlap',()=>{
+test('historical M4: every other edge is protected even when sharing tensor but differing in role/style: crossing and overlap',()=>{
   for(const shape of ['horizontal','overlap'] as const)for(const same of [false,true])for(const role of ['data','memory','mask','residual'] as const) {
     const fixture=addProtectedRoute(literalRoutingCase(),shape,same,role),after=observe(fixture);
     assertRefinement(fixture.scene,after,renderSvg(after));assert.ok(stats(after.edges[0].path).bends>0,'short aligned lane introduces protected interference');
@@ -183,7 +186,7 @@ test('every other edge is protected even when sharing tensor but differing in ro
   }
 });
 
-test('misaligned short staircases cannot conceal crossings on another edge intermediate vertex, including same-tensor different styles',()=>{
+test('historical M4: misaligned short staircases cannot conceal crossings on another edge intermediate vertex, including same-tensor different styles',()=>{
   for(const shape of ['split-vertical','bend-vertex'] as const)for(const same of [false,true])for(const role of ['data','memory','mask','residual'] as const) {
     const fixture=addProtectedRoute(literalRoutingCase({misaligned:true}),shape,same,role);
     assert.deepEqual(pair(fixture.scene.edges[0].path,fixture.scene.edges[1].path).crossings,[]);
@@ -194,7 +197,7 @@ test('misaligned short staircases cannot conceal crossings on another edge inter
   }
 });
 
-test('retraced protected segments cannot inflate old pair overlap and license a larger same-tensor residual overlap',()=>{
+test('historical M4: retraced protected segments cannot inflate old pair overlap and license a larger same-tensor residual overlap',()=>{
   const fixture=literalRoutingCase(),edgeId='protected/retraced',sourceId='protected/source',targetId='protected/target';
   const start={x:-10,y:60},end={x:50,y:80},path='M -10 60 H 55 H 50 H 55 H 50 V 80';
   const source=literalNode(sourceId,-30,50,20,20,{parentId:'shell'}),target=literalNode(targetId,20,80,30,20,{parentId:'shell'});
@@ -223,7 +226,7 @@ test('retraced protected segments cannot inflate old pair overlap and license a 
   assert.ok(currentPair.crossings.length<=oldPair.crossings.length);
 });
 
-test('effective style overrides retain separate canonical residual branches and never merge them with the same-tensor data lane',()=>{
+test('historical M4: effective style overrides retain separate canonical residual branches and never merge them with the same-tensor data lane',()=>{
   const document=genericDocument('style-split');
   const extra=structuredClone(document.architecture.edges[1]);extra.id='style-split/alternate';document.architecture.edges.push(extra);
   document.edgeStyleOverrides[extra.id]={stroke:'#123456',width:2,dashed:true};
@@ -234,7 +237,7 @@ test('effective style overrides retain separate canonical residual branches and 
   assert.equal(renderSvg(buildExportScene(document)),renderSvg(scene));assert.equal(JSON.stringify(document),original);
 });
 
-test('bounded-work fallback preserves the old route instead of advertising an unchecked shortcut',()=>{
+test('historical M4: bounded-work fallback preserves the old route instead of advertising an unchecked shortcut',()=>{
   const fixture=literalRoutingCase();
   for(let i=0;i<1025;i++)fixture.scene.nodes.push(literalNode(`isolated-budget-${i}`,10000+i*30,10000,20,20));
   const after=observe(fixture);assert.equal(after.edges[0].path,fixture.scene.edges[0].path);

@@ -148,8 +148,17 @@ class M4HoldoutTests(unittest.TestCase):
         classifier = by_instance["classifier"]
         self.assertTrue(any(edge["source"]["nodeId"] == classifier["id"] and edge["target"]["nodeId"] == output["id"] for edge in edges))
 
+    def test_historical_conv1d_now_has_official_atomic_contract_without_execution(self):
+        architecture = analyze_project(FIXTURE, "model:UnsupportedVision")
+        mixer = next(n for n in architecture['nodes'] if n['kind'] == 'Conv1d')
+        self.assertEqual((mixer['category'], mixer['evidence']), ('convolution', 'contract'))
+        self.assertEqual(mixer['parameters'], {'in_channels': 16, 'out_channels': 16, 'kernel_size': 3, 'padding': 1})
+        self.assertEqual([(p['name'], p['direction']) for p in mixer['ports']], [('input', 'in'), ('output', 'out')])
+        self.assertEqual(mixer['children'], [])
+        self.assertFalse([d for d in architecture['diagnostics'] if d['level'] in ('warning', 'error')])
+
     def test_unsupported_holdout_is_an_explicit_opaque_boundary(self):
-        architecture = analyze_project(FIXTURE, EXPECTED_OPAQUE["entry"])
+        architecture = analyze_project(ROOT / "fixtures" / "holdout_catalog_boundaries", EXPECTED_OPAQUE["entry"])
         opaque = [node for node in architecture["nodes"] if node["kind"] == EXPECTED_OPAQUE["kind"]]
         self.assertEqual(len(opaque), 1)
         self.assertEqual(opaque[0]["category"], EXPECTED_OPAQUE["category"])
@@ -171,7 +180,7 @@ class M4HoldoutTests(unittest.TestCase):
         self.assertEqual(len(outputs), 4)
         self.assertEqual(len({edge["tensorId"] for edge in outputs}), 4)
 
-    def test_unet_skip_concat_and_independent_repeat_with_opaque_upsampling(self):
+    def test_unet_skip_concat_and_independent_repeat_with_supported_upsampling(self):
         architecture, nodes = self.family("SkipSegmentation")
         repeat = nodes["repeat.refinement"]
         self.assertEqual(repeat["repeat"], {"count": 2, "sharing": "independent"})

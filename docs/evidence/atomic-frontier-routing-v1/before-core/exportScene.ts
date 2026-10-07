@@ -1,0 +1,265 @@
+import { buildScene, buildSceneRouteBaseline } from './scene.ts';
+import { renderSvg } from './svg.ts';
+import { validateDocument, ValidationError } from './validate.ts';
+import { CATEGORY_STYLES } from './tokens.ts';
+import { effectiveEdgeAppearance, edgeAppearanceKey } from './edgePresentation.ts';
+import { buildEdgeLegend } from './edgeLegend.ts';
+import { textWidth, wrapText } from './typography.ts';
+import { createOrthogonalRouter, orthogonalPathPoints } from './orthogonalRouter.ts';
+import { nodeVisualOutline, projectVisualPort, visualPortSide } from './nodeVisualOutline.ts';
+import { edgeLabelBounds, placeEdgeLabels } from './edgeLabelPlacement.ts';
+import { projectMemoryContinuity } from './memoryContinuity.ts';
+import type { ArchitectureEdge, CanvasDocument, DetailExportScope, ExportSceneOptions, Scene, SceneNode, ScenePort } from './types.ts';
+
+function pathPoints(path: string): { x: number; y: number }[] {
+  let x = 0, y = 0;
+  return [...path.matchAll(/([MVH])\s*(-?[\d.]+)(?:\s+(-?[\d.]+))?/g)].map(([, op, a, b]) => {
+    if (op === 'M') { x = +a; y = +b; } else if (op === 'H') x = +a; else y = +a;
+    return { x, y };
+  });
+}
+function translatePath(path: string, dx: number, dy: number): string {
+  return path.replace(/([MVH])\s*(-?[\d.]+)(?:\s+(-?[\d.]+))?/g, (_, op, a, b) => {
+    const round = (value: number) => Math.round(value * 100) / 100;
+    return op === 'M' ? `M ${round(+a + dx)} ${round(+b + dy)}` : `${op} ${round(+a + (op === 'H' ? dx : dy))}`;
+  });
+}
+
+/** A view projection of an already expanded container, never a model rewrite. */
+export function buildExportScene(document: CanvasDocument, options: ExportSceneOptions = {}): Scene {
+  validateDocument(document);
+  if (Object.keys(options).some(key => !['nodeId', 'widthMm'].includes(key))) throw new ValidationError('Unknown export scene option');
+  const widthMm = options.widthMm ?? document.pageSpec.widthMm;
+  if (typeof widthMm !== 'number' || !Number.isFinite(widthMm) || widthMm < 25 || widthMm > 1000) throw new ValidationError('Export width must be within 25–1000 mm');
+  // A detail has its own full routed peer batch. Changing whole-scene memory
+  // inputs before that batch could move unrelated detail paths.
+  const scene = options.nodeId === undefined ? buildScene(document) : buildSceneRouteBaseline(document);
+  scene.pageSpec = { ...scene.pageSpec, widthMm };
+  if (options.nodeId === undefined) return scene;
+  const selected = scene.nodes.find(node => node.id === options.nodeId);
+  if (!selected || !selected.expanded || !selected.expandable) throw new ValidationError('Detail export requires a currently visible expanded container; expand it before previewing');
+  const architecture = document.architecture, canonical = new Map(architecture.nodes.map(node => [node.id, node]));
+  const inside = new Set<string>();
+  function collect(id: string) { inside.add(id); canonical.get(id)!.children.forEach(collect); }
+  collect(selected.id);
+  const internal = architecture.edges.filter(edge => inside.has(edge.source.nodeId) && inside.has(edge.target.nodeId));
+  const crossing = architecture.edges.filter(edge => inside.has(edge.source.nodeId) !== inside.has(edge.target.nodeId));
+  const omitted = architecture.edges.filter(edge => !inside.has(edge.source.nodeId) && !inside.has(edge.target.nodeId));
+  const boundaryGroups = new Map<string, { direction: 'in' | 'out'; external: ArchitectureEdge['source']; edges: ArchitectureEdge[] }>();
+  for (const edge of crossing) {
+    const direction = inside.has(edge.target.nodeId) ? 'in' : 'out', external = direction === 'in' ? edge.source : edge.target;
+    const key = JSON.stringify([direction, external.nodeId, external.portId, edge.role]);
+    const group = boundaryGroups.get(key);
+    if (group) group.edges.push(edge); else boundaryGroups.set(key, { direction, external, edges: [edge] });
+  }
+  const inputs = [...boundaryGroups.values()].filter(group => group.direction === 'in');
+  const outputs = [...boundaryGroups.values()].filter(group => group.direction === 'out');
+  const boundaryLayout = new Map([...boundaryGroups.values()].map(group => {
+    const external = canonical.get(group.external.nodeId)!;
+    const label = `${group.direction === 'in' ? 'FROM' : 'TO'} ${document.displayAliases[external.id] ?? external.label}`;
+    const width = Math.max(194, Math.min(300, textWidth(label) + 66));
+    return [group, { label, width, height: Math.max(62, wrapText(label, width - 62).length * 16 + 26) }];
+  }));
+  const bandHeight = (groups: typeof inputs) => groups.reduce((sum, group) => sum + boundaryLayout.get(group)!.height + 20, 0);
+  const dx = 35 - selected.x, dy = 104 + bandHeight(inputs) - selected.y;
+  const nodes: SceneNode[] = scene.nodes.filter(node => inside.has(node.id)).map(node => ({ ...structuredClone(node), x: node.x + dx, y: node.y + dy,
+    ports: node.ports.map(port => ({ ...structuredClone(port), x: port.x + dx, y: port.y + dy })) }));
+  const visible = new Map(nodes.map(node => [node.id, node]));
+  const internalIds = new Set(internal.map(edge => edge.id));
+  const edges = scene.edges.filter(edge => edge.canonicalEdgeIds.every(id => internalIds.has(id))).map(edge => ({ ...structuredClone(edge), path: translatePath(edge.path, dx, dy), labelX: edge.labelX + dx, labelY: edge.labelY + dy }));
+  const represented = new Set(edges.flatMap(edge => edge.canonicalEdgeIds));
+  function representative(id: string) {
+    let node = canonical.get(id)!;
+    while (!visible.has(node.id) && node.parentId && inside.has(node.parentId)) node = canonical.get(node.parentId)!;
+    return visible.get(node.id)!;
+  }
+  function insidePort(edge: ArchitectureEdge, direction: 'in' | 'out'): { node: SceneNode; port: ScenePort } {
+    const endpoint = direction === 'in' ? edge.target : edge.source, node = representative(endpoint.nodeId);
+    let port = node.ports.find(port => port.direction === direction && port.canonicalBindings.some(binding => binding.nodeId === endpoint.nodeId && binding.portId === endpoint.portId) && port.canonicalEdgeIds.includes(edge.id));
+    if (!port) {
+      const authored = canonical.get(endpoint.nodeId)!.ports.find(port => port.id === endpoint.portId)!;
+      const count = node.ports.filter(port => port.direction === direction).length;
+      port = { id: `detail:${edge.id}:${direction}`, canonicalNodeId: endpoint.nodeId, canonicalPortId: endpoint.portId,
+        canonicalBindings: [structuredClone(endpoint)], canonicalEdgeIds: [edge.id], direction, role: authored.role, name: authored.name,
+        ...projectVisualPort(node, { x: node.x + node.width * (count + 1) / (count + 2), y: direction === 'in' ? node.y : node.y + node.height }, direction === 'in' ? 'top' : 'bottom'),
+        proxy: node.id !== endpoint.nodeId };
+      node.ports.push(port);
+    }
+    return { node, port };
+  }
+  const mono = scene.pageSpec.preset === 'monochrome';
+  const contentBottom = Math.max(...nodes.map(node => { const bounds = nodeVisualOutline(node).bounds; return bounds.y + bounds.height; }));
+  for (const [index, group] of [...boundaryGroups.values()].entries()) {
+    const external = canonical.get(group.external.nodeId)!, direction = group.direction;
+    const siblings = direction === 'in' ? inputs : outputs, row = siblings.indexOf(group);
+    const y = (direction === 'in' ? 94 : contentBottom + 42) + bandHeight(siblings.slice(0, row));
+    const { label, width, height } = boundaryLayout.get(group)!;
+    let boundaryId = `detail-boundary:${index}`;
+    while (canonical.has(boundaryId)) boundaryId += ':boundary';
+    const base = CATEGORY_STYLES[direction === 'in' ? 'input' : 'output'];
+    const boundary: SceneNode = { id: boundaryId, canonicalNodeId: external.id, boundary: true,
+      x: 35, y, localX: 35, localY: y, width, height, parentId: undefined, label,
+      subtitle: `external ${direction === 'in' ? 'source' : 'consumer'} · ${group.edges[0].role}`, kind: 'Boundary', category: direction === 'in' ? 'input' : 'output',
+      fill: mono ? '#ffffff' : base.fill, stroke: mono ? '#56616b' : base.stroke, glyph: 'tensor',
+      headerHeight: height, expanded: false, expandable: false, pinned: false, evidence: external.evidence,
+      sourceFact: scene.sourceFacts.find(fact => fact.id === external.id), ports: [] };
+    const endpointDirection = direction === 'in' ? 'out' : 'in';
+    const name = external.ports.find(port => port.id === group.external.portId)!.name;
+    const boundaryPort: ScenePort = { id: `${boundary.id}:${group.external.portId}`, canonicalNodeId: external.id, canonicalPortId: group.external.portId,
+      canonicalBindings: [structuredClone(group.external)], canonicalEdgeIds: group.edges.map(edge => edge.id), direction: endpointDirection,
+      role: group.edges[0].role, name, x: boundary.x + boundary.width / 2,
+      y: direction === 'in' ? boundary.y + boundary.height : boundary.y, proxy: true };
+    boundary.ports.push(boundaryPort); nodes.push(boundary);
+    for (const [edgeIndex, edge] of group.edges.entries()) {
+      const endpoint = insidePort(edge, direction), a = direction === 'in' ? boundaryPort : endpoint.port, b = direction === 'in' ? endpoint.port : boundaryPort;
+      const corridor = selected.x + dx + selected.width + 18 + index * 5 + edgeIndex * 3;
+      const path = `M ${a.x} ${a.y} V ${a.y + 10} H ${corridor} V ${b.y - 10} H ${b.x} V ${b.y}`;
+      const appearance = effectiveEdgeAppearance(scene.pageSpec.preset, edge.role, document.edgeStyleOverrides[edge.id]);
+      edges.push({ id: edge.id, sourceId: direction === 'in' ? boundary.id : endpoint.node.id, targetId: direction === 'in' ? endpoint.node.id : boundary.id,
+        source: structuredClone(edge.source), target: structuredClone(edge.target), canonicalEdgeIds: [edge.id], tensorId: edge.tensorId, role: edge.role,
+        path, ...appearance, label: edge.label ?? '', labelX: corridor + 7, labelY: (a.y + b.y) / 2 });
+    }
+  }
+  // Reuse canvas obstacle routing after every boundary body exists. A later
+  // boundary row must be an obstacle for earlier incoming/outgoing stubs too.
+  const route = createOrthogonalRouter(nodes), routeDiagnostics: Scene['diagnostics'] = [];
+  const canonicalEdgeById = new Map(architecture.edges.map(edge => [edge.id, edge]));
+  const canonicalEdgeOrder = new Map(architecture.edges.map((edge, index) => [edge.id, index]));
+  for (const overlap of route.overlaps) routeDiagnostics.push({ level: 'warning', code: 'layout-overlap', objectIds: [overlap.first, overlap.second], message: `Detail objects "${overlap.first}" and "${overlap.second}" overlap. Their manual anchors are preserved; move the objects or increase spacing to resolve this layout conflict.` });
+  for (const overlap of route.headerOverlaps) routeDiagnostics.push({ level: 'warning', code: 'layout-header-overlap', objectIds: [overlap.node, overlap.ancestor], message: `Detail object "${overlap.node}" overlaps the header of its expanded ancestor "${overlap.ancestor}". Its manual anchor is preserved; move the object below the header to resolve this layout conflict.` });
+  const routeRequests = edges.map(edge => {
+    const original = orthogonalPathPoints(edge.path);
+    const sourceNode = nodes.find(node => node.id === edge.sourceId);
+    const sourceSide = sourceNode ? visualPortSide(sourceNode, original[0]) : undefined;
+    const appearance = { stroke: edge.stroke, width: edge.width, dashed: edge.dashed,
+      ...(edge.dashPattern === undefined ? {} : { dashPattern: edge.dashPattern }) };
+    const canonicalEdges = edge.canonicalEdgeIds.map(id => canonicalEdgeById.get(id)).filter(Boolean) as ArchitectureEdge[];
+    const exactSource = canonicalEdges[0]?.source;
+    const sourcePort = sourceNode?.ports.find(port => port.direction === 'out' && port.x === original[0].x && port.y === original[0].y &&
+      edge.canonicalEdgeIds.every(id => port.canonicalEdgeIds.includes(id)));
+    const resolved = !!exactSource && canonicalEdges.length === edge.canonicalEdgeIds.length && canonicalEdges.length > 0 && canonicalEdges.every(item => {
+      return item.source.nodeId === exactSource.nodeId && item.source.portId === exactSource.portId && item.tensorId === edge.tensorId && item.role === edge.role &&
+        edgeAppearanceKey(effectiveEdgeAppearance(scene.pageSpec.preset, item.role, document.edgeStyleOverrides[item.id])) === edgeAppearanceKey(appearance);
+    }) && !!sourcePort?.canonicalBindings.length && sourcePort.canonicalBindings.every(binding => binding.nodeId === exactSource.nodeId && binding.portId === exactSource.portId);
+    return { sourceId: edge.sourceId, targetId: edge.targetId, tensorId: edge.tensorId, role: edge.role,
+      appearance, canonicalSource: resolved ? { ...exactSource } : undefined, canonicalEdgeIds: edge.canonicalEdgeIds,
+      displaySide: sourceSide,
+      start: original[0], end: original.at(-1)!, preferredPath: edge.path };
+  });
+  const routedEdges = route.batch(routeRequests);
+  const memoryProjections = projectMemoryContinuity(nodes, routeRequests, routedEdges);
+  if (memoryProjections.size) {
+    const movedIds = new Set([...memoryProjections.keys()].flatMap(index => edges[index].canonicalEdgeIds));
+    for (const node of nodes) {
+      for (const port of node.ports) {
+        if (!port.canonicalEdgeIds.some(id => movedIds.has(id))) continue;
+        const retained = port.canonicalEdgeIds.filter(id => !movedIds.has(id));
+        port.canonicalEdgeIds = retained;
+        port.canonicalBindings = [...retained].sort((a, b) => canonicalEdgeOrder.get(a)! - canonicalEdgeOrder.get(b)!).map(id => canonicalEdgeById.get(id)!)
+          .map(edge => port.direction === 'out' ? edge.source : edge.target);
+      }
+      node.ports = node.ports.filter(port => port.canonicalEdgeIds.length);
+    }
+    for (const [index, projection] of memoryProjections) {
+      const edge = edges[index];
+      for (const direction of ['out', 'in'] as const) {
+        const node = visible.get(direction === 'out' ? edge.sourceId : edge.targetId) ?? nodes.find(n => n.id === (direction === 'out' ? edge.sourceId : edge.targetId))!;
+        const endpoint = direction === 'out' ? edge.source : edge.target;
+        const side = direction === 'out' ? 'right' : 'left';
+        const id = `${endpoint.nodeId}:${endpoint.portId}:${edge.role}:${side}`;
+        let port = node.ports.find(p => p.id === id);
+        const point = projectVisualPort(node, { x: direction === 'out' ? node.x + node.width : node.x, y: node.y + node.height * .55 }, side);
+        if (!port) {
+          const canonicalPort = canonical.get(endpoint.nodeId)!.ports.find(p => p.id === endpoint.portId)!;
+          port = { id, canonicalNodeId: endpoint.nodeId, canonicalPortId: endpoint.portId,
+            canonicalBindings: [], canonicalEdgeIds: [], direction, role: canonicalPort.role, name: canonicalPort.name,
+            ...point, proxy: endpoint.nodeId !== node.id };
+          node.ports.push(port);
+        }
+        for (const id of edge.canonicalEdgeIds) if (!port.canonicalEdgeIds.includes(id)) port.canonicalEdgeIds.push(id);
+        port.canonicalBindings = [...port.canonicalEdgeIds].sort((a, b) => canonicalEdgeOrder.get(a)! - canonicalEdgeOrder.get(b)!).map(id => canonicalEdgeById.get(id)!)
+          .map(item => direction === 'out' ? item.source : item.target);
+      }
+      routedEdges[index] = { path: projection.path, points: projection.points, changed: true, blockedBy: [] };
+    }
+  }
+  edges.forEach((edge, index) => {
+    const routed = routedEdges[index];
+    edge.path = routed.path;
+    if (routed.changed) {
+      const segments = routed.points.slice(1).map((point, index) => ({ a: routed.points[index], b: point,
+        length: Math.abs(point.x - routed.points[index].x) + Math.abs(point.y - routed.points[index].y) })).sort((a, b) => b.length - a.length);
+      const longest = segments[0]; edge.labelX = (longest.a.x + longest.b.x) / 2 + 7; edge.labelY = (longest.a.y + longest.b.y) / 2 - 7;
+    }
+    if (routed.blockedBy.length) routeDiagnostics.push({ level: 'warning', code: 'layout-route-blocked', objectIds: routed.blockedBy, edgeId: edge.id, message: `Detail edge "${edge.id}" crosses object bodies or headers (${routed.blockedBy.join(', ')}). No clear route was found within the routing budget. Object anchors are preserved; move the reported objects or increase spacing to resolve this routing conflict.` });
+  });
+  const contained = (annotation: Scene['annotations'][number]) => annotation.x >= selected.x && annotation.y >= selected.y && annotation.x + annotation.width <= selected.x + selected.width && annotation.y + annotation.height <= selected.y + selected.height;
+  const annotations = scene.annotations.filter(contained).map(annotation => ({ ...annotation, x: annotation.x + dx, y: annotation.y + dy }));
+  // Boundary cards and rerouted detail paths can invalidate a caption that was
+  // clear in the overview. Reuse the same deterministic presentation policy.
+  const labelPlacement = placeEdgeLabels(nodes, edges, annotations);
+  for (const edge of edges) {
+    const position = labelPlacement.placements.get(edge.id);
+    if (position) { edge.labelX = position.x; edge.labelY = position.y; }
+  }
+  const labelBounds = edges.filter(edge => edge.label).map(edge => edgeLabelBounds(edge.label, edge.labelX, edge.labelY));
+  const guidePoints = labelPlacement.guides.flatMap(guide => orthogonalPathPoints(guide.path));
+  const visualBounds = nodes.map(node => nodeVisualOutline(node).bounds);
+  const maxBottom = Math.max(...visualBounds.map(bounds => bounds.y + bounds.height), ...guidePoints.map(point => point.y), ...labelBounds.map(bounds => bounds.y + bounds.height), ...annotations.map(annotation => annotation.y + annotation.height));
+  const legend = scene.legend.map((item, i) => ({ ...item, x: 35, y: maxBottom + 38 + i * 27 }));
+  const scope: DetailExportScope = { kind: 'detail', selectedNodeId: selected.id, selectedLabel: selected.label, sourceDocumentTitle: document.title,
+    canonicalNodeIds: [...inside], internalEdgeIds: internal.map(edge => edge.id), hiddenInternalEdgeIds: internal.filter(edge => !represented.has(edge.id)).map(edge => edge.id),
+    boundaryEdges: crossing.map(edge => ({ edgeId: edge.id, direction: inside.has(edge.target.nodeId) ? 'in' : 'out', source: structuredClone(edge.source), target: structuredClone(edge.target), tensorId: edge.tensorId, role: edge.role })),
+    omittedEdgeIds: omitted.map(edge => edge.id), includedAnnotationIds: annotations.map(annotation => annotation.id), omittedAnnotationIds: scene.annotations.filter(annotation => !contained(annotation)).map(annotation => annotation.id) };
+  const points = edges.flatMap(edge => pathPoints(edge.path));
+  const contentRight = Math.max(selected.width + 35, ...visualBounds.map(bounds => bounds.x + bounds.width), ...labelBounds.map(bounds => bounds.x + bounds.width), ...guidePoints.map(point => point.x), ...points.map(point => point.x), ...legend.map(item => item.x + textWidth(item.label, 10) + 35));
+  const edgeLegendLayout = { x: 35, y: Math.max(maxBottom + 38, ...legend.map(item => item.y + 20), ...points.map(point => point.y + 20)) + 24,
+    availableWidth: Math.max(240, contentRight - 35) };
+  const edgeLegend = buildEdgeLegend(edges, scene.pageSpec.preset, edgeLegendLayout, annotations,
+    [...nodes, ...edges, ...legend, ...annotations].map(item => item.id));
+  const citationY = Math.max(maxBottom + 38, ...legend.map(item => item.y + 20), ...edgeLegend.map(item => item.y + item.height + 16));
+  const citationText = `${document.title} · ${selected.label} · rev ${document.revision}\n${crossing.length} boundary bindings shown; ${internal.length - represented.size} internal adapter/hidden bindings retained in metadata.`;
+  const citationWidth = Math.max(240, selected.width);
+  let citationId = 'detail-provenance';
+  while (annotations.some(annotation => annotation.id === citationId)) citationId += ':export';
+  annotations.push({ id: citationId, text: citationText, x: 35, y: citationY + 12, width: citationWidth,
+    height: Math.max(68, wrapText(citationText, citationWidth - 20, 11).length * 15 + 20) });
+  const subtitle = 'MODEL ARCHITECTURE · SOURCE-BOUND VIEW';
+  const right = Math.max(50 + textWidth(selected.label, 19), 50 + textWidth(subtitle, 10) + subtitle.length * 1.4, ...visualBounds.map(bounds => bounds.x + bounds.width), ...points.map(point => point.x), ...guidePoints.map(point => point.x), ...labelBounds.map(bounds => bounds.x + bounds.width), ...legend.map(item => item.x + textWidth(item.label, 10) + 35), ...annotations.map(annotation => annotation.x + annotation.width), ...edgeLegend.map(item => item.x + item.width));
+  const bottom = Math.max(...visualBounds.map(bounds => bounds.y + bounds.height), ...points.map(point => point.y), ...guidePoints.map(point => point.y), ...labelBounds.map(bounds => bounds.y + bounds.height), ...annotations.map(annotation => annotation.y + annotation.height));
+  const minX = Math.min(0, ...nodes.map(node => node.x - 15), ...points.map(point => point.x - 15), ...guidePoints.map(point => point.x - 15), ...labelBounds.map(bounds => bounds.x - 15), ...annotations.map(annotation => annotation.x - 15));
+  const minY = Math.min(0, ...nodes.map(node => node.y - 15), ...points.map(point => point.y - 15), ...guidePoints.map(point => point.y - 15), ...labelBounds.map(bounds => bounds.y - 15), ...annotations.map(annotation => annotation.y - 15));
+  const detailBase = { ...scene }; delete detailBase.edgeLegend; delete detailBase.edgeLegendLayout; delete detailBase.captionGuides;
+  return { ...detailBase, title: selected.label, bounds: { x: minX, y: minY, width: right + 35 - minX, height: bottom + 35 - minY }, nodes, edges,
+    hiddenEdges: scope.hiddenInternalEdgeIds, legend, annotations, exportScope: scope,
+    ...(edgeLegend.length ? { edgeLegend, edgeLegendLayout } : {}),
+    ...(labelPlacement.guides.length ? { captionGuides: labelPlacement.guides } : {}),
+    diagnostics: [...scene.diagnostics.filter(diagnostic => diagnostic.code !== 'layout-edge-label-blocked' && diagnostic.code !== 'layout-edge-label-association'), ...routeDiagnostics, ...labelPlacement.diagnostics,
+      { level: 'info', message: `Detail page of ${selected.id}; every boundary binding is explicitly shown. Unrelated edges and outside annotations are listed in exportScope metadata.` }] };
+}
+
+export function publicationPreflight(scene: Scene) {
+  const svg = renderSvg(scene), unitPt = scene.pageSpec.widthMm / scene.bounds.width * 72 / 25.4;
+  const minFont = Math.min(...Array.from(svg.matchAll(/font-size="([\d.]+)"/g), match => Number(match[1])));
+  const suggestedWidthFor7Pt = Math.ceil(7 / minFont * scene.bounds.width * 25.4 / 72);
+  return { widthMm: scene.pageSpec.widthMm, heightMm: scene.pageSpec.widthMm * scene.bounds.height / scene.bounds.width,
+    minTextPt: minFont * unitPt, nodeLabelPt: 13 * unitPt,
+    minMainLinePt: (scene.edges.length ? Math.min(...scene.edges.map(edge => edge.width)) : 1.5) * unitPt,
+    suggestedWidthFor7Pt, suggestedHeightFor7Pt: suggestedWidthFor7Pt * scene.bounds.height / scene.bounds.width, exampleTargetPt: 7,
+    claim: 'Physical-size measurement only; 7 pt is an adjustable starting recommendation, not a universal journal rule.' };
+}
+
+/** Explicit scope choices; this never expands, collapses or edits the canvas. */
+export function detailExportChoices(document: CanvasDocument, widthMm = document.pageSpec.widthMm) {
+  const full = buildExportScene(document, { widthMm });
+  const visible = new Map(full.nodes.map(node => [node.id, node]));
+  return full.nodes.filter(node => node.expanded && node.expandable).map(node => {
+    const scene = buildExportScene(document, { nodeId: node.id, widthMm });
+    const path = [node.label];
+    let parent = node.parentId ? visible.get(node.parentId) : undefined;
+    while (parent) { path.unshift(parent.label); parent = parent.parentId ? visible.get(parent.parentId) : undefined; }
+    return { nodeId: node.id, label: node.label, pathLabel: path.join(' › '),
+      visibleNodeCount: scene.nodes.filter(item => !item.boundary).length,
+      boundaryBindingCount: scene.exportScope!.boundaryEdges.length, ...publicationPreflight(scene) };
+  });
+}

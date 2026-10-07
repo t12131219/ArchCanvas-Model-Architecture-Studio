@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { buildScene, buildExportScene, createDocument, createHistory, reduceHistory, renderSvg } from '../src/core/index.ts';
+// Only the source-bound M4 capture is frozen here. Current public caption,
+// source/port and export invariants also run in atomic-frontier-routing.test.ts.
+import { buildScene, buildExportScene, createDocument, createHistory, reduceHistory, renderSvg } from './historical-routing-core.ts';
 import type { Architecture, CanvasDocument, Scene, SceneNode } from '../src/core/types.ts';
 import { placeEdgeLabels } from '../src/core/edgeLabelPlacement.ts';
 import { layoutWarnings } from '../src/layoutWarnings.ts';

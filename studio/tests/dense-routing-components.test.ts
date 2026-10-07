@@ -31,7 +31,9 @@ test('DenseStress300 component routing keeps bounded crossings, overlap and endp
   assert.ok(overlapPairs(scene) <= 1, `overlap pairs ${overlapPairs(scene)}`);
   assert.equal(summary.totalReversals, 0);
   assert.equal(scene.nodes.length, 304);
-  assert.equal(scene.edges.length, 302);
+  assert.equal(scene.edges.length, 301);
+  assert.ok(scene.hiddenEdges.includes('edge:1'));
+  assert.deepEqual([...scene.hiddenEdges, ...scene.edges.flatMap(edge => edge.canonicalEdgeIds)].sort(), document.architecture.edges.map((edge: { id: string }) => edge.id).sort());
 });
 
 test('four directional moves preserve architecture, preview/commit, history and endpoints', () => {
@@ -54,9 +56,9 @@ test('four directional moves preserve architecture, preview/commit, history and 
   }
 });
 
-test('down move retains six explicit intrusions and matching blocked diagnostics', () => {
+test('down move retains the five atomic intrusions and matching blocked diagnostics', () => {
   const scene = buildScene(applyVisualBatch(document, [move(0, 24)])), found = intrusions(scene);
-  assert.equal(found.length, 6);
+  assert.equal(found.length, 5);
   for (const item of found) {
     const diagnostic = scene.diagnostics.find(row => row.code === 'layout-route-blocked' && row.edgeId === item.edgeId && row.objectIds?.includes(item.nodeId));
     assert.ok(diagnostic, `missing blocked diagnostic for ${item.edgeId}/${item.nodeId}`);

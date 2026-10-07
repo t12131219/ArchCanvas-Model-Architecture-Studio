@@ -1,0 +1,9 @@
+/** Versioned M4 algorithm observations for exact historical oracle suites.
+ * These exports are test-only and refer to the formal Beta.2 implementation,
+ * never the failed prototype. The current runtime has no fallback or import
+ * path to this archive. Current atomic folding and routing have their own
+ * independent public-path/body/port/source/history/export assertions. */
+export * from '../../docs/evidence/atomic-frontier-routing-v1/before-core/index.ts';
+export * from '../../docs/evidence/atomic-frontier-routing-v1/before-core/orthogonalRouter.ts';
+export * from '../../docs/evidence/atomic-frontier-routing-v1/before-core/movePreview.ts';
+export { buildSceneRouteBaseline } from '../../docs/evidence/atomic-frontier-routing-v1/before-core/scene.ts';

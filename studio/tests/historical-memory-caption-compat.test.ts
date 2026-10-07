@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { buildScene, applyVisualBatch } from '../src/core/index.ts';
+// Exact pre-atomic port/route compatibility is a historical M4 contract.
+import { buildScene, applyVisualBatch } from './historical-routing-core.ts';
 import * as prior from '../../docs/evidence/m4-caption-stability-current/before-change/inputs/studio/src/core/index.ts';
 import { normalizeDefaultMemoryLabels } from './historical-memory-caption-compat.ts';
 import type { CanvasDocument, Scene } from '../src/core/types.ts';

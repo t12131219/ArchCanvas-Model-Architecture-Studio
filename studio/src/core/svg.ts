@@ -72,11 +72,11 @@ function renderNode(node: SceneNode, interactive: boolean): string {
 }
 
 /** The default output contains publication objects only; the UI opts into controls. */
-export function svgBody(scene: Scene, options: { interactive?: boolean } = {}): string {
+export function svgBody(scene: Scene, options: { interactive?: boolean; background?: boolean } = {}): string {
   const interactive = options.interactive ?? false;
   const colors = [...new Set(scene.edges.map(e => e.stroke))];
   let svg = `<defs>${colors.map((color, i) => `<marker id="archcanvas-arrow-${i}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse"><path d="M 1 1 L 9 5 L 1 9 Z" fill="${attr(color)}"/></marker>`).join('')}</defs>`;
-  svg += `<rect x="${n(scene.bounds.x)}" y="${n(scene.bounds.y)}" width="${n(scene.bounds.width)}" height="${n(scene.bounds.height)}" fill="${attr(scene.pageSpec.background)}"/>`;
+  if (options.background !== false) svg += `<rect x="${n(scene.bounds.x)}" y="${n(scene.bounds.y)}" width="${n(scene.bounds.width)}" height="${n(scene.bounds.height)}" fill="${attr(scene.pageSpec.background)}"/>`;
   svg += `<g font-family="${attr(TOKENS.font)}"><text x="50" y="40" fill="${TOKENS.ink}" font-size="19" font-weight="600">${attr(scene.title)}</text><text x="50" y="62" fill="${TOKENS.muted}" font-size="10" letter-spacing="1.4">MODEL ARCHITECTURE · SOURCE-BOUND VIEW</text>`;
   svg += scene.nodes.filter(node => node.expanded).map(node => renderNode(node, interactive)).join('');
   svg += `<g fill="none" stroke-linejoin="round" stroke-linecap="round">${scene.edges.map(e => `<g data-edge-id="${attr(e.id)}" data-tensor-id="${attr(e.tensorId)}"><title>${attr(e.id)} · ${attr(e.role)} · ${attr(e.tensorId)}</title><path d="${attr(e.path)}" stroke="${attr(e.stroke)}" stroke-width="${n(e.width)}"${dashAttribute(e)} marker-end="url(#archcanvas-arrow-${colors.indexOf(e.stroke)})"/>${e.label ? `<text x="${n(e.labelX)}" y="${n(e.labelY)}" font-size="9" fill="${attr(e.stroke)}" stroke="none">${attr(e.label)}</text>` : ''}</g>`).join('')}</g>`;
@@ -95,7 +95,7 @@ export function svgBody(scene: Scene, options: { interactive?: boolean } = {}): 
   return svg + '</g>';
 }
 
-export function renderSvg(scene: Scene, options: { interactive?: boolean } = {}): string {
+export function renderSvg(scene: Scene, options: { interactive?: boolean; background?: boolean } = {}): string {
   const b = scene.bounds;
   const heightMm = scene.pageSpec.widthMm * b.height / b.width;
   const metadata = { renderer: 'archcanvas-svg/1.0', documentId: scene.documentId, revision: scene.revision,

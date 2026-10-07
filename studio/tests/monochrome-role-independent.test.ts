@@ -1,15 +1,18 @@
+// Historical M4 policy regression: this suite intentionally freezes the pre-atomic
+// projection (coarse container arrows and mask top ports). Current behavior is
+// independently checked by atomic-frontier-routing.test.ts; archived gold stays intact.
 import test from 'node:test';
 import { normalizeDefaultMemoryLabels } from './historical-memory-caption-compat.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { applyVisualBatch, buildExportScene, buildScene, createHistory, reduceHistory, renderSvg, validateDocument } from '../src/core/index.ts';
+import { applyVisualBatch, buildExportScene, buildScene, createHistory, reduceHistory, renderSvg, validateDocument } from './historical-routing-core.ts';
 import type { CanvasDocument, EdgeRole, Scene } from '../src/core/types.ts';
 import { edgeAppearance } from '../src/edgeAppearance.ts';
 import { effectiveEdgeAppearance, edgeAppearanceKey, edgeDashPattern } from '../src/core/edgePresentation.ts';
 import { suggestAnnotationPosition } from '../src/core/annotationPlacement.ts';
-import { createOrthogonalRouter } from '../src/core/orthogonalRouter.ts';
-import type { RouteRequest } from '../src/core/orthogonalRouter.ts';
+import { createOrthogonalRouter } from './historical-routing-core.ts';
+import type { RouteRequest } from './historical-routing-core.ts';
 import { assertCoverage, assertLegend, assertProtectedScene, assertStyles, assertSvgStyles, expectedAppearance, flatten, parseXml, patterns, roleOrder } from '../../docs/evidence/m4-monochrome-role-work/acceptance/oracle.ts';
 import { roleDocument } from '../../docs/evidence/m4-monochrome-role-work/acceptance/fixtures.ts';
 import { assertEndpoints, intrusions, pair, points, stats } from '../../docs/evidence/m4-collapsed-residual-work/acceptance/oracle.ts';
@@ -60,7 +63,7 @@ function historicalPresentation(before: Scene, current: Scene, document: CanvasD
   return normalized;
 }
 
-test('independent frozen baseline contains all twelve actual CNN configurations with immutable narrow copies', () => {
+test('historical M4: independent frozen baseline contains all twelve actual CNN configurations with immutable narrow copies', () => {
   assert.equal(capture.cases.length, 12); assert.equal(capture.records.length, 166); assert.equal(capture.inputsUnchanged, true);
   assert.deepEqual(capture.inputsBefore, capture.inputsAfter);
   for (const record of capture.records) {
@@ -71,7 +74,7 @@ test('independent frozen baseline contains all twelve actual CNN configurations 
   }
 });
 
-for (const sample of capture.cases) test(`actual CNN baseline preserves canonical facts, ports and routes: ${sample.caseId}`, () => {
+for (const sample of capture.cases) test(`historical M4: actual CNN baseline preserves canonical facts, ports and routes: ${sample.caseId}`, () => {
   const prefix = `cnn12/${sample.caseId}`, document = json<CanvasDocument>(`${prefix}/browser-after-union/document.json`);
   const before = json<Scene>(`${prefix}/core-after-union/scene.json`), sourceBytes = JSON.stringify(document);
   const scene = serial(buildScene(document));
@@ -93,7 +96,7 @@ for (const sample of capture.cases) test(`actual CNN baseline preserves canonica
   assert.equal(JSON.stringify(document), sourceBytes, 'render mutated source/document');
 });
 
-for (let level = 0; level < 4; level++) test(`actual Transformer frontier ${level} retains source/ports while all four mono roles differ`, () => {
+for (let level = 0; level < 4; level++) test(`historical M4: actual Transformer frontier ${level} retains source/ports while all four mono roles differ`, () => {
   const prefix = `historical-transformer/transformer-level${level}-paper-180`, paperDocument = json<CanvasDocument>(`${prefix}.canvas.json`);
   const baselineScene = json<Scene>(`${prefix}.scene.json`), original = JSON.stringify(paperDocument);
   const paper = serial(buildScene(paperDocument));
@@ -117,7 +120,7 @@ for (let level = 0; level < 4; level++) test(`actual Transformer frontier ${leve
   assert.equal(renderSvg(buildExportScene(document)), renderSvg(scene));
 });
 
-test('effective line identity distinguishes role defaults from explicit solid/dashed local overrides', () => {
+test('historical M4: effective line identity distinguishes role defaults from explicit solid/dashed local overrides', () => {
   for (const role of roleOrder) for (const dashed of [undefined, false, true]) {
     const override = dashed === undefined ? { width: 2.5, stroke: '#123456' } : { width: 2.5, stroke: '#123456', dashed };
     const expectedPattern = dashed === undefined ? patterns[role] : dashed ? [5, 4] : [];
@@ -134,7 +137,7 @@ test('effective line identity distinguishes role defaults from explicit solid/da
   assert.notEqual(edgeAppearanceKey(memory), edgeAppearanceKey({ ...memory, stroke: '#000000' }));
 });
 
-test('derived pattern validation rejects sparse holes and unsafe arrays while retaining explicit legacy styles', () => {
+test('historical M4: derived pattern validation rejects sparse holes and unsafe arrays while retaining explicit legacy styles', () => {
   for (const dashPattern of [[0, 4], [-1, 4], [NaN, 4], [Infinity, 4], [9], [9, 4, 1], [101, 4],
     new Array(2), [9, ...new Array(1)], Array(10).fill(1), '9 4', null]) {
     assert.throws(() => edgeDashPattern({ dashed: true, dashPattern: dashPattern as number[] }), /Invalid derived edge dash pattern/);
@@ -146,7 +149,7 @@ test('derived pattern validation rejects sparse holes and unsafe arrays while re
   assert.deepEqual(result, valid); result[0] = 5; assert.deepEqual(valid, [9, 3, 1, 3], 'resolver returned mutable shared array');
 });
 
-test('same-tensor role and style branches stay separate, with truthful actual variant membership', () => {
+test('historical M4: same-tensor role and style branches stay separate, with truthful actual variant membership', () => {
   const base = roleDocument({ allRoles: true, duplicateResidual: true }), original = JSON.stringify(base);
   const document = applyVisualBatch(base, [
     { type: 'edgeStyle', id: 'literal-residual-solid', style: { dashed: false } },
@@ -172,7 +175,7 @@ test('same-tensor role and style branches stay separate, with truthful actual va
   assert.equal(colorScene.edgeLegend!.filter(item => item.role === 'residual').length, 1, 'legend should consolidate identical actual visible variant');
 });
 
-test('actual Transformer collapsed mask bundle splits solid/default/generic dashed with complete canonical membership', () => {
+test('historical M4: actual Transformer collapsed mask bundle splits solid/default/generic dashed with complete canonical membership', () => {
   const document = mono(json<CanvasDocument>('historical-transformer/transformer-level0-paper-180.canvas.json'));
   const base = buildScene(document), bundled = base.edges.find(edge => edge.canonicalEdgeIds.includes('edge:11')); assert.ok(bundled);
   assert.deepEqual(bundled.canonicalEdgeIds, ['edge:7', 'edge:11', 'edge:25', 'edge:29']);
@@ -186,7 +189,7 @@ test('actual Transformer collapsed mask bundle splits solid/default/generic dash
   assertSvgStyles(edited, scene, renderSvg(scene)); assert.deepEqual(edited.architecture, document.architecture);
 });
 
-test('memory trunk style identity rejects equal-dashed different patterns while preserving source facts', () => {
+test('historical M4: memory trunk style identity rejects equal-dashed different patterns while preserving source facts', () => {
   const document = mono(json<CanvasDocument>('historical-transformer/transformer-level2-paper-180.canvas.json'));
   const base = buildScene(document), edited = applyVisualBatch(document, [{ type: 'edgeStyle', id: 'edge:55', style: { dashed: true } },
     { type: 'edgeStyle', id: 'edge:56', style: { dashed: true } }]);
@@ -200,7 +203,7 @@ test('memory trunk style identity rejects equal-dashed different patterns while 
   assertSvgStyles(edited, scene, renderSvg(scene));
 });
 
-test('equal-dashed different-pattern memory cannot acquire the independently known shared-family corridor', () => {
+test('historical M4: equal-dashed different-pattern memory cannot acquire the independently known shared-family corridor', () => {
   const memory = new URL('../../docs/evidence/m4-monochrome-role-work/acceptance/memory-control/', import.meta.url);
   const before = JSON.parse(readFileSync(new URL('scene.json', memory), 'utf8')) as Scene;
   const document = mono(JSON.parse(readFileSync(new URL('canvas.json', memory), 'utf8')) as CanvasDocument);
@@ -250,7 +253,7 @@ test('equal-dashed different-pattern memory cannot acquire the independently kno
   assert.equal(JSON.stringify({ before, requests }), original, 'router mutated historical independent inputs');
 });
 
-test('hidden inspector fallback uses the same effective pattern and exposes no hidden-only role legend', () => {
+test('historical M4: hidden inspector fallback uses the same effective pattern and exposes no hidden-only role legend', () => {
   const base = roleDocument({ hiddenMemory: true }), original = JSON.stringify(base);
   for (const dashed of [undefined, false, true]) {
     const document = dashed === undefined ? base : applyVisualBatch(base, [{ type: 'edgeStyle', id: 'literal-hidden-memory', style: { dashed } }]);
@@ -265,7 +268,7 @@ test('hidden inspector fallback uses the same effective pattern and exposes no h
   assert.throws(() => edgeAppearance(base, 'not-a-canonical-edge', buildScene(base)), /Unknown canonical edge/);
 });
 
-test('expanded detail boundary paths inherit actual role signatures and citation clears the footer', () => {
+test('historical M4: expanded detail boundary paths inherit actual role signatures and citation clears the footer', () => {
   const source = roleDocument({ allRoles: true, duplicateResidual: true });
   const document = applyVisualBatch(source, [{ type: 'expand', id: 'unit', expanded: true },
     { type: 'edgeStyle', id: 'literal-residual-solid', style: { dashed: false } },
@@ -285,7 +288,7 @@ test('expanded detail boundary paths inherit actual role signatures and citation
   assert.equal(JSON.stringify(document), original); assert.deepEqual(scene, buildExportScene(document, { nodeId: 'unit', widthMm: 85 }));
 });
 
-test('line legend clears edited annotations and manual symbols without deleting user objects', () => {
+test('historical M4: line legend clears edited annotations and manual symbols without deleting user objects', () => {
   const source = roleDocument({ allRoles: true }), first = buildScene(source); assert.ok(first.edgeLegend!.length);
   const band = first.edgeLegend![0], document = applyVisualBatch(source, [
     { type: 'legend', items: [{ id: band.id, label: 'User ID deliberately collides with generated legend', color: '#fedcba', glyph: 'attention' },
@@ -300,7 +303,7 @@ test('line legend clears edited annotations and manual symbols without deleting 
   assert.ok(scene.edgeLegend!.every(item => item.y >= note.y + note.height), 'new band did not move below actual edited note');
 });
 
-test('real SVG marker and stroke sample extents fit their boxes at every supported line-width boundary', () => {
+test('historical M4: real SVG marker and stroke sample extents fit their boxes at every supported line-width boundary', () => {
   for (const width of [.25, 1.5, 8, 12]) {
     const source = roleDocument({ allRoles: true }), document = applyVisualBatch(source,
       roleOrder.map(role => ({ type: 'edgeStyle' as const, id: `literal-${role}`, style: { width } })));
@@ -311,13 +314,13 @@ test('real SVG marker and stroke sample extents fit their boxes at every support
   }
 });
 
-test('empty visible graph has no fabricated line roles or samples', () => {
+test('historical M4: empty visible graph has no fabricated line roles or samples', () => {
   const document = roleDocument({ empty: true }), scene = buildScene(document);
   assert.deepEqual(scene.edgeLegend ?? [], []); assertLegend(document, scene, renderSvg(scene)); assertCoverage(document, scene);
   assert.equal(flatten(parseXml(renderSvg(scene))).filter(node => node.attributes['data-edge-legend-id']).length, 0);
 });
 
-test('placing a note below objects does not make its own derived footer chase it downward', () => {
+test('historical M4: placing a note below objects does not make its own derived footer chase it downward', () => {
   let document = roleDocument({ allRoles: true }); const base = buildScene(document);
   const initial = suggestAnnotationPosition(base);
   document = applyVisualBatch(document, [{ type: 'annotation', annotation: { id: 'move-below-note', text: '保持稳定位置', ...initial } }]);
@@ -329,7 +332,7 @@ test('placing a note below objects does not make its own derived footer chase it
   assertLegend(document, next, renderSvg(next));
 });
 
-test('preset and override history preserves source/layout and real patterns through JSON roundtrip', () => {
+test('historical M4: preset and override history preserves source/layout and real patterns through JSON roundtrip', () => {
   const base = roleDocument({ allRoles: true }); base.pageSpec.preset = 'paper'; const original = JSON.stringify(base);
   let history = createHistory(base);
   history = reduceHistory(history, { type: 'apply', operations: [{ type: 'page', page: { preset: 'monochrome' } }] });
@@ -349,7 +352,7 @@ test('preset and override history preserves source/layout and real patterns thro
   assert.equal(JSON.stringify(base), original, 'history modified initial input');
 });
 
-test('independent oracle rejects coherent role/line/legend corruption rather than accepting changed expected output', () => {
+test('historical M4: independent oracle rejects coherent role/line/legend corruption rather than accepting changed expected output', () => {
   const document = roleDocument({ allRoles: true, duplicateResidual: true }), scene = buildScene(document);
   const corrupt = (edit: (scene: Scene) => void, check = (copy: Scene) => assertStyles(document, copy)) => {
     const copy = structuredClone(scene); edit(copy); assert.throws(() => check(copy));

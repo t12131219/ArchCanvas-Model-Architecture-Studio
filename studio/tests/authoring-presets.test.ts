@@ -21,9 +21,9 @@ test('a transparent network is one history step and redo restores its stable nod
     const added = changeDraft(initial, draft => insertDraftPreset(draft, catalog, preset.id, { x: 50, y: 70 }, ids()));
     assert.equal(JSON.stringify(initial), before);
     assert.equal(added.past.length, 1); assert.equal(added.draft.revision, 1);
-    assert.equal(added.draft.nodes.length, preset.id === 'cnn' ? 8 : preset.id === 'mlp' ? 5 : 6);
-    assert.equal(added.draft.edges.length, preset.id === 'cnn' ? 7 : preset.id === 'mlp' ? 4 : 6);
-    assert.equal(added.draft.nodes.filter(node => node.kind === 'Input').length, 1);
+    assert.equal(added.draft.nodes.length, preset.nodes.length);
+    assert.equal(added.draft.edges.length, preset.edges.length);
+    assert.equal(added.draft.nodes.filter(node => node.kind === 'Input').length, preset.nodes.filter(node => node.kind === 'Input').length);
     assert.equal(added.draft.nodes.filter(node => node.kind === 'Output').length, 1);
     const undone = travelDraft(added, 'undo');
     assert.deepEqual(undone.draft.nodes, []); assert.deepEqual(undone.draft.edges, []);
@@ -186,5 +186,10 @@ test('actual inserted graphs pass the formal nonexecuting backend source pipelin
     assert.equal(results[index].verification.status, 'passed'); assert.equal(results[index].verification.modelExecution, 'not_run');
     assert.match(results[index].source, /class AuthoredModel\(nn.Module\)/);
   }
-  assert.ok(results[3].issues.includes('unbound-input')); assert.ok(results[3].issues.includes('unused-node'));
+  assert.ok(results.at(-1).issues.includes('unbound-input')); assert.ok(results.at(-1).issues.includes('unused-node'));
+  for (const [index, preset] of draftPresets.entries()) {
+    const expected = JSON.parse(preset.output);
+    assert.deepEqual(Object.values(results[index].outputs), [{ shape: expected, dtype: 'float32' }], preset.id);
+    assert.equal(results[index].verification.status, 'passed', preset.id);
+  }
 });

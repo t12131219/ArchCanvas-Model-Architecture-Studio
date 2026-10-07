@@ -1,0 +1,229 @@
+{
+  "schema": "archcanvas.unified-editor-requirements-audit/1",
+  "generatedAt": "2026-10-07T06:09:39.858054+00:00",
+  "scope": "Current working tree read-only audit for session continuity, expanded authoring catalog, infinite canvas, and atomic frontier/routing.",
+  "humanAcceptance": {
+    "status": "open",
+    "participants": 0,
+    "publicationReview": false,
+    "reason": "User authorized proceeding to M5 without waiting for human seats or publication review."
+  },
+  "requirements": {
+    "sourceToAuthoringContinuity": {
+      "status": "bounded-passed",
+      "evidence": [
+        "studio/tests/source-authoring-session.test.ts",
+        "studio/tests/source-authoring-compact-ui.test.ts",
+        "tests/test_source_authoring_bridge.py"
+      ],
+      "actualNodeTests": {
+        "passed": 9,
+        "failed": 0
+      },
+      "coverage": [
+        "same-revision return follows selection/camera/tool",
+        "visual-revision reprojects current/past/future atomically",
+        "digest mismatch rejects replacement",
+        "save/reopen preserves view and draft history",
+        "viewport resize keeps world centre",
+        "compact source card pointer hit and grouped drag",
+        "collapsed source frontier generation materializes complete canonical facts and projects bindings back to the visible draft"
+      ]
+    },
+    "catalogGeneration": {
+      "status": "bounded-passed",
+      "catalog": {
+        "atomic": 74,
+        "categories": 13,
+        "transparentPresets": 23
+      },
+      "readback": "catalog-independent-readback.json",
+      "actualStudioTests": {
+        "passed": 20,
+        "failed": 0
+      },
+      "pythonFocused": {
+        "passed": 18,
+        "failed": 0,
+        "command": "PYTHONPATH=src .venv/bin/python -m unittest tests.test_source_authoring_bridge tests.test_authoring_group_generation tests.test_authoring_catalog_expanded",
+        "log": "python-focused-current.log"
+      },
+      "limits": [
+        "model execution not run",
+        "complex custom source groups remain experimental",
+        "RNN/GRU/LSTM PackedSequence/explicit init/LSTM projection unsupported",
+        "MHA mask/KV cache/kdim/vdim/causal unsupported"
+      ]
+    },
+    "infiniteCanvas": {
+      "status": "bounded-passed",
+      "evidence": [
+        "studio/tests/infinite-canvas.test.ts"
+      ],
+      "actualTests": {
+        "passed": 3,
+        "failed": 0
+      },
+      "coverage": [
+        "world-anchored dot lattice across pan quadrants and zoom",
+        "unbounded position and pointer-preserving zoom",
+        "editor grid omitted from transparent publication SVG"
+      ]
+    },
+    "atomicFrontier": {
+      "status": "bounded-passed",
+      "evidence": [
+        "studio/tests/atomic-frontier-routing.test.ts",
+        "docs/evidence/unified-editor-review-v1/routing-audit-after/receipt.json"
+      ],
+      "actualTests": {
+        "passed": 13,
+        "failed": 0
+      },
+      "routingReceipt": {
+        "beforeCases": 41,
+        "afterCases": 41,
+        "pairComparisonsWithGeometryChanges": 2,
+        "pairViolations": 0,
+        "fullStudioTestsReceipt": "523/523",
+        "build": "passed"
+      },
+      "limits": [
+        "bounded cases only",
+        "does not establish global minimum crossings or aesthetic publication quality",
+        "no human/physical publication/performance acceptance"
+      ]
+    }
+  },
+  "userVisibleClaimsReview": {
+    "sourceGeneration": "static generation is provenance-bound and explicitly marked modelExecution=not_run; collapsed frontiers materialize only canonical source facts and do not infer topology from display labels",
+    "export": "preflight reports dimensions and minimum text/line sizes; UI says fonts, lines and actual readability still need review",
+    "remainingRisk": "Complex custom source groups remain experimental; ordinary/imported dynamic-port groups and collapsed MLP/Residual CNN/Transformer frontiers pass focused generation tests."
+  },
+  "bindings": [
+    {
+      "path": "studio/src/sourceAuthoringSession.ts",
+      "bytes": 9758,
+      "sha256": "6904643a8b3710fc47521e1fcc3dc1bea66484a6da07d47849b63f6b0f0c6c4a"
+    },
+    {
+      "path": "studio/src/AuthoringStudio.tsx",
+      "bytes": 65486,
+      "sha256": "108fd36651fd192930ac3fcc39fd7556c76ab826014dffc1c6f8c2943cfb0776"
+    },
+    {
+      "path": "studio/src/App.tsx",
+      "bytes": 87453,
+      "sha256": "51972f1862835e732393cb56f1e000a74fc86531779216563e8b763c3d58c23e"
+    },
+    {
+      "path": "studio/src/cameraProjection.ts",
+      "bytes": 3758,
+      "sha256": "745e3219285ffd61e7da898f42029352c6cd43887e025fcca6beca4042b06870"
+    },
+    {
+      "path": "studio/src/core/atomicFrontier.ts",
+      "bytes": 3799,
+      "sha256": "40dd4c3cf43f1c9e316cf2223156973ef8de8b74bf12a4ee7d6772969bad127e"
+    },
+    {
+      "path": "studio/src/core/readableRouting.ts",
+      "bytes": 16542,
+      "sha256": "98e5e9fc2f6608ab5c21309c7e7f1ad3d244db7faf02f84fb776a287c4da2fce"
+    },
+    {
+      "path": "studio/src/core/orthogonalRouter.ts",
+      "bytes": 72960,
+      "sha256": "6973ac4a42cc0836408262bd3a72f87b3668ede4416112d59dad438ea52315bb"
+    },
+    {
+      "path": "studio/src/core/scene.ts",
+      "bytes": 36175,
+      "sha256": "c3977e25ad6cc85c98955a4a87d47b94651557412a3d58bebb8a5b152bb7b263"
+    },
+    {
+      "path": "studio/src/core/memoryContinuity.ts",
+      "bytes": 12467,
+      "sha256": "277ddc016d9dd9db8f4f64cda25a479f52aa3cad48ac2f7030f6cd4ef0909356"
+    },
+    {
+      "path": "studio/src/core/svg.ts",
+      "bytes": 11805,
+      "sha256": "7a3ae689d4c40d8c9eab472af867010102975cd08a769a5a30e6ab7020cf32e1"
+    },
+    {
+      "path": "studio/src/generatedCanvas.ts",
+      "bytes": 5720,
+      "sha256": "a7a51ca1199cadbfa72c7261971ed4fcd3eb5d9939afe6bef2ad160dfd6dae6e"
+    },
+    {
+      "path": "src/archcanvas_authoring/source_import.py",
+      "bytes": 47093,
+      "sha256": "fa3df6d26666c297fb13658a0b5e2d9a6abd9c654d370b52316790c39d880cb0"
+    },
+    {
+      "path": "src/archcanvas_authoring/source_generation_groups.py",
+      "bytes": 24958,
+      "sha256": "7ad2d4e87e14f6c88b69727692b30efc37510fcfea698fdaa2375728122d6130"
+    },
+    {
+      "path": "tests/test_source_authoring_bridge.py",
+      "bytes": 8506,
+      "sha256": "b552f096fa8baab6321507c81b1428b7f4093681a139395c3b5f584628545e69"
+    },
+    {
+      "path": "tests/test_authoring_group_generation.py",
+      "bytes": 6802,
+      "sha256": "9cbaeacc7af4e6e67909a4dcf9434303b9ed8090211e3ab0757338ad88b214bb"
+    },
+    {
+      "path": "studio/tests/atomic-frontier-routing.test.ts",
+      "bytes": 12653,
+      "sha256": "c634be5187f244026af9136b3bdcefaf7528f6af94abaef3ed9668bfdd086c6a"
+    },
+    {
+      "path": "studio/tests/readable-routing-current.test.ts",
+      "bytes": 10436,
+      "sha256": "5f3746aea76c30159bb2ce90db2ab9496c8f8988f2b061bfc4d812c285faa483"
+    },
+    {
+      "path": "studio/tests/infinite-canvas.test.ts",
+      "bytes": 3344,
+      "sha256": "6b67567d5bd6eee61c9509fb1e731031da1cb5189c1f10f54ca17a1bd74fc9cc"
+    },
+    {
+      "path": "studio/tests/source-authoring-session.test.ts",
+      "bytes": 16941,
+      "sha256": "6a5c4901c00783d2d81c9548d5aebd81fbe9b1b0033c1e0885e94943b99db87d"
+    },
+    {
+      "path": "studio/tests/source-authoring-compact-ui.test.ts",
+      "bytes": 7110,
+      "sha256": "035718b2a7898bb62dde16c1c52ab5679c5c18d14d400c7a8a345fb5b5404411"
+    },
+    {
+      "path": "docs/evidence/catalog-research-v1/catalog-contract-receipt.json",
+      "bytes": 1994,
+      "sha256": "ba953d3f3cf906de0d37a051956d352ccd8976bab4b833171d26cd5abbfccfc9"
+    }
+  ],
+  "artifacts": [
+    "python-focused-current.log",
+    "catalog-current.log",
+    "catalog-independent-readback.json",
+    "npm-test-current.log",
+    "build-current.log"
+  ],
+  "fullCurrentNodeSuite": {
+    "command": "npm test",
+    "passed": 523,
+    "failed": 0,
+    "log": "npm-test-current.log"
+  },
+  "currentBuild": {
+    "command": "npm run build",
+    "status": "passed",
+    "warning": "Vite chunk >500 kB",
+    "log": "build-current.log"
+  }
+}
