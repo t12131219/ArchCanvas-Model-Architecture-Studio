@@ -1,0 +1,69 @@
+{
+  "schema": "archcanvas-camera-history-clone-correction/1",
+  "createdUtc": "2026-10-06T11:28:32.984013+00:00",
+  "actor": "AI subagent /root/stage_docs",
+  "scope": "Camera-only App correction and independent callback harness with actual formal createHistory; parent owns build/CUA.",
+  "problem": {
+    "actualTrigger": "Saved Canvas rev23, 100% zoom, native pan32,16, same-tab reload",
+    "actualResult": "paper33.5556,15.3889,scale1 returned to35,35,scale.9; same document/revision/source/IR and public SVG",
+    "cause": "createHistory validates and clones its input. initializeCamera compared active history clone !== raw loader document and returned before restoration or fit.",
+    "testGap": "Initial harness supplied historyRef.current.document as the raw original reference; 24/24 attempt3 did not exercise real cloning and cannot certify App initialization.",
+    "beforeControl": "After changing harness to real createHistory, unchanged old App produced22/24 pass and2fail; saved before-fix.* logs and source snapshots."
+  },
+  "change": {
+    "productFiles": [
+      "studio/src/App.tsx",
+      "studio/src/cameraViewState.ts"
+    ],
+    "testFile": "studio/tests/camera-view-state-independent.test.ts",
+    "appCorrection": "Drop raw object reference equality; retain exact document/source/IR/revision/load/intent ticket; buildScene and persist use actual active history document.",
+    "guardKept": "persistCamera refuses active pan; terminal/cancel write only after clearing gesture.",
+    "historyContract": "No change to createHistory, CanvasDocument, history, source facts, or model/source execution.",
+    "sourceSnapshot": "correction-attempt-4/final-source/"
+  },
+  "validation": {
+    "final": "focused-final-2.process.json",
+    "result": {
+      "tests": 24,
+      "pass": 24,
+      "fail": 0,
+      "skipped": 0,
+      "cancelled": 0
+    },
+    "strict": "strict-final-2.process.json",
+    "strictExitCode": 0,
+    "scopedDiff": "diff-check-final.process.json",
+    "diffExitCode": 0,
+    "allOwnedWhitespace": "owned-whitespace-final.json",
+    "actualCallbackCases": [
+      "formal history clone initial read before write and crossviewport same-centre restore",
+      "active pan preview refusal and terminal/rollback writes",
+      "six later intent/load/revision/id/source/IR controls and tinyviewport bounded retry"
+    ],
+    "activeSceneInput": "Actual callback harness asserts fit receives the active formal history clone rather than raw loader document.",
+    "retainedAttempts": [
+      {
+        "path": "before-fix.process.json",
+        "result": "22/24,2fail; intended old App clone regression"
+      },
+      {
+        "path": "focused-final.process.json",
+        "result": "23/24,1fail; source digest negative fixture violated formal architecture/source binding equality; product never reached for that fixture"
+      },
+      {
+        "path": "focused-final-2.process.json",
+        "result": "24/24; corrected source digest fixture also updates architecture.sourceDigest"
+      },
+      {
+        "path": "../manifest.json",
+        "result": "Historical previous24/24 and original mock gap kept exact; superseded for camera initialization confidence"
+      }
+    ]
+  },
+  "limitations": [
+    "Callback harness still does not mount React; actual browser reload/viewport/pan/source/export verification is pending corrected build.",
+    "Actual before-fix CUA failure is retained and is not relabelled success.",
+    "No ResizeObserver/live resize policy or new-tab persistence is implemented; sessionStorage and at most4initial rAF readiness attempts remain scope.",
+    "No human participants, publication-size acceptance, presented FPS, M4 completion or M5 advancement."
+  ]
+}

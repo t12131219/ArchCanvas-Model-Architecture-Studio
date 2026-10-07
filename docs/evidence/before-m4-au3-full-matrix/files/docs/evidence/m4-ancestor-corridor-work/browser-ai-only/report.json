@@ -1,0 +1,388 @@
+{
+  "schemaVersion": 1,
+  "auditKind": "AI-only browser authoring usability smoke",
+  "humanParticipants": 0,
+  "countsAsHumanResearch": false,
+  "observedAtUtc": "2026-10-05T17:43:24.756606+00:00",
+  "projectRoot": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio",
+  "url": "http://127.0.0.1:8986/",
+  "assetScripts": [
+    "/assets/index-BGj2ZBSY.js"
+  ],
+  "browser": "CUA in-app browser 2, temporary tab 1; closed at end",
+  "buildScope": "Existing BG Repeat-outline build served on 8986; current source changes from other agents were not reloaded or validated.",
+  "dataHandling": {
+    "newBlankDraftViaUI": true,
+    "saveDraftClicked": false,
+    "createWorkingCopyClicked": false,
+    "userSavedDraftOverwritten": false,
+    "modelExecuted": false,
+    "serviceRestarted": false,
+    "sealedEvidenceModified": false
+  },
+  "checks": [
+    {
+      "id": "module-library-clicks",
+      "status": "pass",
+      "scope": "Each of the 17 advertised basic module controls clicked in one fresh unsaved blank draft; visible nodes monotonically 1 through 17. Module parameter correctness and complete generation not checked for each.",
+      "evidence": [
+        "all-17-click-add.json",
+        "all-17-click-add.dom.txt"
+      ]
+    },
+    {
+      "id": "module-library-drag",
+      "status": "pass",
+      "scope": "Native library Input drag into blank canvas created one Input; CNN preset native drag created 8 nodes and 7 edges.",
+      "evidence": [
+        "input-library-native-drag.json",
+        "input-library-native-drag.jpg",
+        "cnn-preset-native-drag.json",
+        "cnn-preset-native-drag.jpg"
+      ]
+    },
+    {
+      "id": "preset-clicks",
+      "status": "pass",
+      "scope": "MLP 5 nodes/4 edges, CNN 8/7, residual MLP 6/6. All cards and arrow directions were visually inspected at current screen size.",
+      "evidence": [
+        "preset-click-trials.json",
+        "preset-mlp.jpg",
+        "preset-cnn.jpg",
+        "preset-residual-mlp.jpg"
+      ]
+    },
+    {
+      "id": "from-zero-authoring",
+      "status": "partial",
+      "scope": "Input, Linear, ReLU, Output were added via left library and connected using native circle drag to 4 nodes/3 edges. Connection-based layout produced straight chain. This from-zero draft was not generated or saved.",
+      "evidence": [
+        "from-zero-modules.dom.txt",
+        "from-zero-connected.svg",
+        "from-zero-arranged.svg",
+        "from-zero-arranged.jpg"
+      ]
+    },
+    {
+      "id": "port-label-clicks",
+      "status": "fail",
+      "scope": "Full role-button port group locator center clicks did not establish Input→Linear. Native circle hit-area clicks and native drag both succeeded. Group bbox centers fall on text rather than circle. Root notified to repair; this old-build failed evidence is preserved.",
+      "evidence": [
+        "input-linear.dom.txt",
+        "input-linear.svg",
+        "port-click-geometry.json",
+        "exact-circle-click.json",
+        "exact-circle-click.dom.txt",
+        "input-linear-after-native-drag.svg"
+      ]
+    },
+    {
+      "id": "four-way-move",
+      "status": "pass-with-limited-scope",
+      "scope": "Selected Linear moved up/down/left/right by 16 authored-canvas units through native direction keys. From-zero sequence: (298,70)→(298,54)→(298,70)→(282,70)→(298,70). Later MLP sequence: (42,188)→(42,172)→(42,188)→(26,188)→(42,188). Correct synchronized managed screenshot sampling obtained for latter sequence. No large or model-family stress drag in this audit.",
+      "evidence": [
+        "four-way-moves.json",
+        "preset-mlp-synchronized-moves.json",
+        "preset-mlp-up-public.svg",
+        "preset-mlp-up-managed.jpg",
+        "preset-mlp-down-managed.jpg",
+        "preset-mlp-left-managed.jpg",
+        "preset-mlp-right-managed.jpg"
+      ]
+    },
+    {
+      "id": "line-readability",
+      "status": "limited-pass",
+      "scope": "AI pixel inspection of the arranged 4-node chain and all three presets found clear arrow flow, no visually disruptive crossing or card intrusion. CNN wraps once between two rows using a long orthogonal connector; residual route uses one bottom corridor for its skip. 9 captured public SVG cases have zero strict nominal centerline/card-interior hits, zero strict edge crossing pairs and zero collinear overlap pairs. This is not rounded stroke clearance or physical-publication certification.",
+      "evidence": [
+        "public-nominal-geometry.json",
+        "preset-cnn.jpg",
+        "preset-residual-mlp.jpg",
+        "preset-mlp-up-managed.jpg"
+      ]
+    },
+    {
+      "id": "generated-source-feedback",
+      "status": "pass",
+      "scope": "Residual MLP generation opened real modal: model generated and statically checked; visible Python nn.Linear/ReLU plus residual Add and output. UI explicitly says model not executed. No working-copy creation, runtime execution, save/reopen or publication export in this smoke.",
+      "evidence": [
+        "residual-generated.dom.txt",
+        "residual-generated-public.json",
+        "residual-generated.jpg"
+      ]
+    }
+  ],
+  "captureIssues": [
+    {
+      "file": "move-up.jpg",
+      "validForPixelPass": false,
+      "reason": "Native screenshot wrapper captured prior Y70 raster while same step public SVG/AX stated Y54; original retained and excluded from pixel pass. Synchronized preset-mlp-*-managed.jpg were obtained afterward using tab.screenshot and separately inspected."
+    }
+  ],
+  "untested": [
+    "True novice learnability or timing; no humans recruited or counted",
+    "All 17 kinds complete valid parameterized generation",
+    "All 17 native drag interactions",
+    "Three preset drag interactions (only CNN native drag)",
+    "Authoring save/reopen persistence",
+    "Formal source-grounded model canvas drag across four large displacements",
+    "Publication-size PDF or printed page review",
+    "300-object performance and presented-frame measurement",
+    "Full visual matrix on current or next build",
+    "New pointer-label fix in fresh build"
+  ],
+  "findings": [
+    {
+      "priority": "P1",
+      "title": "Port text hit area can fail two-click connection",
+      "nextStep": "Root to validate a fresh build with the same role-button center-click path and preserve old failure."
+    },
+    {
+      "priority": "P2",
+      "title": "Module-library count exceeds visible screen area",
+      "detail": "17 controls are present but require scrolling or search; search Input/CNN worked. Three network starts are usable and include shape declarations. No toolbarless discoverability claim."
+    },
+    {
+      "priority": "P2",
+      "title": "Long CNN wrap is readable but adds route length",
+      "detail": "The two-row wrap connector remains orthogonal and clear at 85% fit; no evidence here compares its aesthetic quality with a one-row or compact alternative."
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "all-17-click-add.dom.txt",
+      "bytes": 7675,
+      "sha256": "b5fcf6558e495c21bdd906cec1daad306007a41bf59dfddc5f2737ce88b81c90"
+    },
+    {
+      "path": "all-17-click-add.json",
+      "bytes": 1482,
+      "sha256": "76bcbe8219354fff14fd7529eb37ec8c4ad214837cbd6e363fd5fdd915a26f64"
+    },
+    {
+      "path": "blank-public.json",
+      "bytes": 2283,
+      "sha256": "670c75303b128251e341eeb3b1979f8c61bcf11798d77c92a9887bcc50fa5c33"
+    },
+    {
+      "path": "blank.dom.txt",
+      "bytes": 4754,
+      "sha256": "95556f6dd9ca4ad4fd64ad047ee23ac0f6b5243f0fc7654087f4e61b4b5b2d57"
+    },
+    {
+      "path": "cnn-preset-native-drag.jpg",
+      "bytes": 63419,
+      "sha256": "1a42ca47c281c5e69bc96d4090dbb8badfb508d49e72b97b04d001405c3ddaa4"
+    },
+    {
+      "path": "cnn-preset-native-drag.json",
+      "bytes": 11201,
+      "sha256": "9d0e674404b7e3bdb77946add6568e90b0fd981181c3b523ba7edeefc73664c7"
+    },
+    {
+      "path": "exact-circle-click.dom.txt",
+      "bytes": 4907,
+      "sha256": "84d36a43c0e975514df2bf84f57e3fb963d9edccefbc4533898c69728f8a229f"
+    },
+    {
+      "path": "exact-circle-click.json",
+      "bytes": 407,
+      "sha256": "84f9b13e10b67a1322593fe59a42d314adac37e7d142508beda3e8038dd87181"
+    },
+    {
+      "path": "four-way-moves.json",
+      "bytes": 1796,
+      "sha256": "594c42da9535454938b57c6ddaa22f95b94568fb1df23d32f5ccb76921aff529"
+    },
+    {
+      "path": "from-zero-arranged.dom.txt",
+      "bytes": 5225,
+      "sha256": "5592f1cb2374cb39329b60f6a7bf39ce72618b036cb849e0307b717eaa55fa89"
+    },
+    {
+      "path": "from-zero-arranged.jpg",
+      "bytes": 71895,
+      "sha256": "57c951c8da15d93e4d0ca37d5d53785008627c6ef8bbcdb7f311195e64258865"
+    },
+    {
+      "path": "from-zero-arranged.svg",
+      "bytes": 4820,
+      "sha256": "7b05a95d6a5c6081970cd0af213d66f6972192f733cf604ca1cc86c686dfcd07"
+    },
+    {
+      "path": "from-zero-before-connect.svg",
+      "bytes": 3876,
+      "sha256": "4dfbadaf3d75dce5d2a14c2f2073f42e2fb14051826a607eeb0b03775dc9cc9a"
+    },
+    {
+      "path": "from-zero-connected.svg",
+      "bytes": 4794,
+      "sha256": "2592b76cd30f35fd836289b95dcbe696f7f0592c63f744a056ce1f1ce7c7939f"
+    },
+    {
+      "path": "from-zero-modules.dom.txt",
+      "bytes": 4914,
+      "sha256": "7ef13558dcb0e86226f259ac6b4b39a80e803930971472e165703b1824096244"
+    },
+    {
+      "path": "input-library-native-drag.jpg",
+      "bytes": 52325,
+      "sha256": "4e0331c434f904ae64f37212c45945ebe3b8891c57401ed8bed2bb25fd8d4db6"
+    },
+    {
+      "path": "input-library-native-drag.json",
+      "bytes": 1532,
+      "sha256": "92c384d4fbbcef8c91a3ae956a067a4372e7a5facd52870d84a0f5c9078c1a07"
+    },
+    {
+      "path": "input-linear-after-native-drag.svg",
+      "bytes": 4182,
+      "sha256": "b054576e8761f5449965c53ce4a7abdee2e7e636284eaeed759eeb97165c8f04"
+    },
+    {
+      "path": "input-linear.dom.txt",
+      "bytes": 5233,
+      "sha256": "f0c8440f031da4bd3eaec78f2d156b076c298c86f3a3217780c30cba9d19e321"
+    },
+    {
+      "path": "input-linear.svg",
+      "bytes": 3876,
+      "sha256": "82fc175baf5cf985e1ff360f23bee62b66953cc6a8f94315449de560d332f37a"
+    },
+    {
+      "path": "move-up.dom.txt",
+      "bytes": 5225,
+      "sha256": "bd1baf63f8f78e0ac3329618bd8c4d749e8142e39f16f2d505b151f9cf6313f8"
+    },
+    {
+      "path": "move-up.jpg",
+      "bytes": 71909,
+      "sha256": "edf87fe1f993fefc46adc62c097fc5de1421ac6014b09263df76e92a482cf441"
+    },
+    {
+      "path": "move-up.svg",
+      "bytes": 4820,
+      "sha256": "cd2f628773d0260497f0818eb09d33a8e6be64d4597784f305f3e5f747f468bd"
+    },
+    {
+      "path": "port-click-geometry.json",
+      "bytes": 1062,
+      "sha256": "8908abe8fac6bcc7816f6d0bd2dbb548eeaec12816420ddfe056e5f98d64d8f9"
+    },
+    {
+      "path": "preset-click-trials.json",
+      "bytes": 6343,
+      "sha256": "4b30c26c99fcb3f1f8e178328b4e6093162091792bf1c5d817a3d23493b3eee0"
+    },
+    {
+      "path": "preset-cnn.dom.txt",
+      "bytes": 6030,
+      "sha256": "1f4c63a192b28e987bb58b4342ffe2e48742c164f85f845bd750555fa914e424"
+    },
+    {
+      "path": "preset-cnn.jpg",
+      "bytes": 79620,
+      "sha256": "674543c21e24a1d21a11986baf4d680782b88939eed90ab4210105156d98df23"
+    },
+    {
+      "path": "preset-cnn.svg",
+      "bytes": 10080,
+      "sha256": "d823d3893975e2b1fdd48d2c2d300d4466b019cdcb37000f38862924061de095"
+    },
+    {
+      "path": "preset-mlp-down-managed.jpg",
+      "bytes": 84557,
+      "sha256": "e7c0e0f19618fa26c9b4fc79b86d1f0a17759d59e0ceace44bdccc3623e7705c"
+    },
+    {
+      "path": "preset-mlp-down-public.svg",
+      "bytes": 6157,
+      "sha256": "df19dbbd7f8595643c191d9f75c951eb45ae08629b7f46d276b206d23e1680f8"
+    },
+    {
+      "path": "preset-mlp-left-managed.jpg",
+      "bytes": 84536,
+      "sha256": "5168c39c79b713715f28a09999854f0c64a20d368b3176668fed2495c0e6fbc8"
+    },
+    {
+      "path": "preset-mlp-left-public.svg",
+      "bytes": 6159,
+      "sha256": "b4578b29088146e55903bc6c79304a86e6d79f1173f06e75c923b83b752632a8"
+    },
+    {
+      "path": "preset-mlp-right-managed.jpg",
+      "bytes": 84557,
+      "sha256": "e7c0e0f19618fa26c9b4fc79b86d1f0a17759d59e0ceace44bdccc3623e7705c"
+    },
+    {
+      "path": "preset-mlp-right-public.svg",
+      "bytes": 6157,
+      "sha256": "df19dbbd7f8595643c191d9f75c951eb45ae08629b7f46d276b206d23e1680f8"
+    },
+    {
+      "path": "preset-mlp-synchronized-moves.json",
+      "bytes": 2824,
+      "sha256": "0c2fa7423ff0148eaf7a86a51ee54a0b4afd4be03178f78f6b53da6e47e617dd"
+    },
+    {
+      "path": "preset-mlp-up-managed.jpg",
+      "bytes": 84674,
+      "sha256": "5f4bcc94b5feaf99d7768efaaa462c9da765534b3ff94f3d71dd5708b10cef6b"
+    },
+    {
+      "path": "preset-mlp-up-public.svg",
+      "bytes": 6157,
+      "sha256": "bbaa62dce161d360eb1974e9cc8acbb2359d5f3e82a8eaec10bf4b26157d9e0f"
+    },
+    {
+      "path": "preset-mlp.dom.txt",
+      "bytes": 5404,
+      "sha256": "c1469ca8f43b2907b4b041b3a32bfb08ddd2f8b9bb5cc8d9d1e97b6621716cd7"
+    },
+    {
+      "path": "preset-mlp.jpg",
+      "bytes": 80338,
+      "sha256": "2b376197a63284c619d2cc4106cfedff129d668caa692317b6279568a03da71c"
+    },
+    {
+      "path": "preset-mlp.svg",
+      "bytes": 6157,
+      "sha256": "fcc48fd8c620b1366107406f02baa0c731b90c10a11c180498c9a3ea5253ad75"
+    },
+    {
+      "path": "preset-residual-mlp.dom.txt",
+      "bytes": 5667,
+      "sha256": "fb3d02ead5a21047efe791ce9f37354c6be67cd5da26fc6b2363b1c5746263c6"
+    },
+    {
+      "path": "preset-residual-mlp.jpg",
+      "bytes": 88965,
+      "sha256": "cac5a09a76d9c054358e9ee3165335f84aea2410de0b38c7136e0b1ec2742dde"
+    },
+    {
+      "path": "preset-residual-mlp.svg",
+      "bytes": 8083,
+      "sha256": "87a6220a014cf8fdf93cbb60fad6d2980e628ca50ad7ff3df3f7700ed77d27a7"
+    },
+    {
+      "path": "public-nominal-geometry.json",
+      "bytes": 2684,
+      "sha256": "6bdcc853d78ab3647276e7c29a93431c04a103e54ac535d5da0022e570818645"
+    },
+    {
+      "path": "residual-generated-public.json",
+      "bytes": 1359,
+      "sha256": "6113c3564c1935364f9037fd5562a948690f537ee9912f1d6912ed529db109e3"
+    },
+    {
+      "path": "residual-generated.dom.txt",
+      "bytes": 6897,
+      "sha256": "c767c295673873abe2ecde0f618774af89b4a766dada224a676b4d8b84369b77"
+    },
+    {
+      "path": "residual-generated.jpg",
+      "bytes": 65225,
+      "sha256": "3bfd1c5684c96802d91fe90b5bdfb92b0e48dc59c02bb1f0befbb4416df99356"
+    }
+  ]
+}

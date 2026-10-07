@@ -1,0 +1,41 @@
+--- docs/evidence/before-m4-collapsed-residual/files/studio/tests/repeat-outline-independent.test.ts
++++ studio/tests/repeat-outline-independent.test.ts
+@@ -6,6 +6,7 @@
+ import { analyzeSvg, assertHealthy, frontCards, ordinaryPorts, parseSvg, penetrates } from '../../docs/evidence/m4-repeat-outline-work/oracle/oracle.ts';
+ import { architecture, canonicalNode, cornerArchitecture, hierarchyArchitecture, manualScene, mixedSideArchitecture, repeat, sceneNode } from '../../docs/evidence/m4-repeat-outline-work/oracle/fixtures.ts';
+ import { verifyRefinement as verifyCorridorRefinement } from '../../docs/evidence/m4-ancestor-corridor-work/ancestor-corridor-oracle.ts';
++import { assertRefinement as verifyCollapsedResidualRefinement, stats as residualRouteStats } from '../../docs/evidence/m4-collapsed-residual-work/acceptance/oracle.ts';
+ 
+ // The explicit sealed target is used only to demonstrate this suite failing on
+ // archived formal ChS. Normal tests always run the current formal product.
+@@ -75,7 +76,29 @@
+     const scene = buildScene(document), svg = renderSvg(scene);
+     checkSourceBound(record, scene, svg);
+     if (!scene.nodes.some(node => node.repeat && !node.expanded)) {
+-      if (process.env.ARCHCANVAS_REPEAT_ORACLE_BASELINE !== 'sealed-ChS' && ['transformer-level1-paper-180', 'transformer-level2-paper-180', 'transformer-level3-paper-180'].includes(record.caseId)) {
++      if (process.env.ARCHCANVAS_REPEAT_ORACLE_BASELINE !== 'sealed-ChS' && record.caseId === 'residual_cnn-level1-paper-180') {
++        // This later revision deliberately shortens the proxy residual. Use
++        // this suite's own original revision-9 Scene, not a normalized newer
++        // capture. Every card/port/branch and pair-local safety remains frozen.
++        const prior = JSON.parse(readFileSync(new URL(record.scenePath, evidence), 'utf8')) as Scene;
++        assert.equal(prior.revision, document.revision);
++        verifyCollapsedResidualRefinement(prior, JSON.parse(JSON.stringify(scene)), svg);
++        const canonical = new Map(document.architecture.nodes.map(node => [node.id, node]));
++        const changed = scene.edges.filter(edge => edge.path !== prior.edges.find(item => item.id === edge.id)!.path);
++        assert.equal(changed.length, 1, 'Only the independently identified proxy residual may change');
++        for (const edge of changed) {
++          assert.equal(edge.role, 'residual');
++          const owner = scene.nodes.find(node => node.id === edge.targetId)!;
++          assert.ok(owner.expandable && !owner.expanded && edge.target.nodeId !== owner.id);
++          let ancestor = canonical.get(edge.target.nodeId)?.parentId;
++          while (ancestor && ancestor !== owner.id) ancestor = canonical.get(ancestor)?.parentId;
++          assert.equal(ancestor, owner.id, 'The real target must be hidden inside this collapsed owner');
++          const oldRoute = residualRouteStats(prior.edges.find(item => item.id === edge.id)!.path);
++          assert.ok(Math.abs(oldRoute.length - 235.4) < 1e-9);
++          assert.equal(oldRoute.bends, 4);
++          assert.deepEqual(residualRouteStats(edge.path), { length: 38, bends: 0 });
++        }
++      } else if (process.env.ARCHCANVAS_REPEAT_ORACLE_BASELINE !== 'sealed-ChS' && ['transformer-level1-paper-180', 'transformer-level2-paper-180', 'transformer-level3-paper-180'].includes(record.caseId)) {
+         // These three current frontiers may improve routing. The archived BG
+         // cards, ports, semantic branches and protected counts remain frozen.
+         // The explicit sealed-ChS negative-control run retains its old scope.

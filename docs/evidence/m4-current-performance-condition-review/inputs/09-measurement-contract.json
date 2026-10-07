@@ -1,0 +1,65 @@
+{
+  "protocol": "archcanvas-performance-control-contract/1",
+  "status": "contract-frozen-before-implementation; no-browser-run",
+  "scope": "Independent DOM-only scheduling and native discrete-event diagnostic. The product renderer, telemetry, CanvasDocument and production build are unchanged by this helper.",
+  "humanParticipants": 0,
+  "phases": {
+    "warmupMs": 2000,
+    "captureMs": 20000,
+    "nativeInputDeadlineFromCaptureStartMs": 10000,
+    "minimumPostInputSettleMs": 10000,
+    "deliveryDrainMs": 2000,
+    "rule": "All deadlines are predetermined from the capture start. Late timer callbacks, late input and missing entries remain in the raw receipt. A slow operation never receives a selectively longer capture or drain."
+  },
+  "surfaces": {
+    "control": "Top-level minimal static control page, one native clickable button, no React, product telemetry or model.",
+    "studio": "Same-origin iframe of the actual unchanged formal studio/dist, using a new independent document store.",
+    "viewportProfiles": [
+      {"name": "1280x720", "width": 1280, "height": 720},
+      {"name": "1280x576", "width": 1280, "height": 576}
+    ],
+    "viewportRule": "Pick one profile before starting and use the same actual measured size for compared control/product sessions. A 144 px controller is outside the measurement rectangle. The start gate requires the entire 1280 px-wide target rectangle to be inside the actual top viewport. 720 px target needs at least 864 px outer height; 576 px target needs at least 720 px. Never call a clipped iframe fully visible.",
+    "foregroundRule": "Keep the selected tab/surface visibly foreground and unobstructed. DOM visibility/focus/lifecycle records are diagnostic observations; they do not prove external window visibility, no occlusion or actual presentation. External tool screenshots/state and action times must be preserved by the collector outside capture."
+  },
+  "modes": {
+    "raf-only": "One callback chain, timestamp/observation/self-cost records and visibility/focus/lifecycle listeners. No native-input listener, PerformanceObserver or per-frame geometry. Initial/final public binding snapshots are outside capture. Manual action annotations and tool logs remain separate; this mode cannot prove native gesture duration.",
+    "full": "The same callback chain and common listeners plus passive native input capture, EventTiming at threshold 16 ms, longtasks, and minimal public DOM geometry for configured targets/camera each callback. Full SVG/metadata is copied only before and after the capture. Direct observer self-cost is recorded by category; nested geometry/frame durations must not be summed as disjoint total CPU."
+  },
+  "nativeInput": {
+    "operationLabels": ["idle", "click", "drag", "pan", "zoom", "toggle", "undo", "redo", "pin"],
+    "singleOperationPerSession": true,
+    "types": ["pointerdown", "pointermove", "pointerup", "pointercancel", "lostpointercapture", "click", "keydown", "keyup", "wheel"],
+    "gestureBounds": "Group actual trusted pointerdown through same-pointer pointerup/pointercancel, with raw event timestamp and observer timestamp. Retain orphan releases, unclosed pointers, multiple gestures, clicks and keyboard inputs. Armed/controller waits and post-input settle are never part of native gesture duration.",
+    "eventTimingCandidateTypes": ["pointerdown", "pointerup", "click", "keydown", "keyup"],
+    "matching": "Within the predetermined capture interval, require event name, exact DOM target token and at most 2 ms timestamp difference. Only one-to-one pairs count as matched. Keep missing, ambiguous, invalid and out-of-window entries; no fabricated zero duration.",
+    "quantization": "Native EventTiming uses browser duration quantization (commonly 8 ms) and a requested 16 ms threshold. Missing entries can be below threshold, pending, unsupported or otherwise absent; the receipt does not choose a cause.",
+    "denominators": ["all raw native events by phase/type/trusted/surface", "trusted discrete candidates in capture", "unique matched candidates", "missing candidates", "ambiguous candidates", "all observed EventTiming entries by delivery phase and measured surface", "all observed positive interaction IDs", "matched-subset positive interaction IDs", "all longtasks and attribution", "orphan/unclosed gestures", "buffer drops and errors"]
+  },
+  "drain": {
+    "captureBoundary": "At the planned capture deadline, preserve actual callback time/lateness and call takeRecords on each observer, retaining entry origin and count. Keep observers alive for the fixed drain interval.",
+    "finalBoundary": "At the planned capture deadline plus 2000 ms, preserve actual callback time/lateness, takeRecords again, then disconnect. All delivered entries remain raw with entry start time and delivery time.",
+    "limit": "takeRecords cannot compel the browser to finish or deliver an entry. Pending entries after final disconnect remain unobservable and cannot be declared absent, fast or complete."
+  },
+  "environment": {
+    "capture": ["start/end UTC", "performance.timeOrigin and monotonic timestamps", "userAgent/platform/languages", "hardwareConcurrency/deviceMemory if exposed", "screen/viewport/DPR", "top/frame rectangle coverage", "document visibility/focus and lifecycle", "actual script/style URLs", "document/revision/sourceDigest/irDigest/expanded/pinned/visible membership and target geometry when public", "CSS declared font families, FontFaceSet status and exposed faces", "server package/interpreter/assets/helper hashes"],
+    "unknownUnlessIndependentEvidence": ["actual resolved glyph font bytes", "real display refresh/presentation", "GPU model/clock", "CPU/power/governor lock", "external window occlusion", "precise browser embed/headless policy"]
+  },
+  "comparisonPlan": {
+    "minimumMatchedReplicates": 3,
+    "conditions": ["control top-level: raf-only/full, idle/native click", "product iframe four-node collapsed frontier: raf-only/full, idle/native drag", "product iframe 304-rendered frontier: raf-only/full, idle/native drag"],
+    "order": "Alternate modes and control/product order across replicates. Freeze actual assets, viewport, camera, selected target, native path and workload before each comparison. Retain every attempted session including cancellations, inadequate viewport, late input, no input, hidden/frozen transitions or missing native entries.",
+    "scope": "This is the planned matched comparison, not an executed result or a newly passed M4 gate. A bounded first batch may be collected and reported without extrapolating to the uncollected conditions."
+  },
+  "prohibitedClaims": [
+    "rAF callback cadence is presented FPS or continuous input-to-paint",
+    "visible/focused DOM flags prove continuous presentation or no external occlusion",
+    "small direct callback costs prove no observer perturbation",
+    "control latency can be subtracted to make product latency pass",
+    "matched-subset EventTiming p95 is all-page INP",
+    "EventTiming arithmetic remainder identifies paint/GPU cost",
+    "AI or trusted native automation is a human participant",
+    "source existence or syntax checks mean a real browser run occurred"
+  ],
+  "presentedPerformanceCertified": false,
+  "modelsExecuted": false
+}

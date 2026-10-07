@@ -1,0 +1,124 @@
+- banner:
+  - generic: ArchCanvas
+  - generic: 模型搭建
+  - textbox "模型草稿名称": 我的模型
+  - generic: 有未保存编辑
+  - button "重开已保存" [disabled]
+  - button "保存草稿":
+    - text: 保存草稿
+  - button "生成模型与论文图"
+  - button "返回制图"
+- complementary:
+  - text: MODULE LIBRARY
+  - heading "常用模块 17" [level=2]:
+    - text: 常用模块
+    - generic: "17"
+  - paragraph:
+    - text: 拖入画布，或点击添加。
+    - text: 输入 → 计算模块 → 输出
+  - group "模块库浏览方式":
+    - button "基础模块 17":
+      - text: 基础模块
+      - generic: "17"
+    - button "网络起点 3" [pressed]:
+      - text: 网络起点
+      - generic: "3"
+  - textbox "搜索模块":
+    - /placeholder: 搜索模块或网络，如 Linear / CNN
+    - text: 残差
+  - button "新建空白模型"
+  - status: 搜索全部：基础模块 1 · 网络起点 1。清空后返回网络起点。
+  - button "清空搜索"
+  - region "网络起点":
+    - heading "网络起点 1" [level=3]:
+      - text: 网络起点
+      - generic: "1"
+    - paragraph: 添加一个独立网络。所有基础模块与连线都可修改。
+    - button "添加 残差 MLP":
+      - generic: 残差 MLP
+      - generic: 两层全连接与输入跳连 · 6 模块
+      - text: 输入 float32 · [1, 16]
+      - text: 输出 [1, 16]
+    - paragraph: 形状是可编辑的声明；生成前会静态检查，模型尚未执行。
+  - heading "基础模块 · 1" [level=3]
+  - heading "合并与分支" [level=3]
+  - button "添加 Add":
+    - generic: Add
+    - generic: 张量相加
+  - generic: 常用模型的无环草稿。参数和连线通过静态检查后，生成新模型。
+- main:
+  - button "选择" [pressed]:
+    - text: 选择
+  - button "平移":
+    - text: 平移
+  - button "撤销草稿" [active]:
+  - button "重做草稿" [disabled]:
+  - button "按连接排版"
+  - button "检查模型"
+  - button "适合画布":
+    - text: 适合画布
+  - button "草稿缩小": −
+  - button "草稿缩放百分比": 53%
+  - button "草稿放大": +
+  - img "模型搭建画布":
+    - generic "数据流"
+    - generic "数据流"
+    - generic "数据流"
+    - generic "数据流"
+    - generic "跳连：跳过中间模块后相加"
+    - generic "数据流"
+    - generic "输入"
+    - generic "Input"
+    - button "输入 output 输出端口":
+      - generic: output
+    - generic "隐藏层 16 → 32": 隐藏层 1…
+    - generic "Linear"
+    - button "隐藏层 16 → 32 input 输入端口":
+      - generic: input
+    - button "隐藏层 16 → 32 output 输出端口":
+      - generic: output
+    - generic "ReLU 激活"
+    - generic "ReLU"
+    - button "ReLU 激活 input 输入端口":
+      - generic: input
+    - button "ReLU 激活 output 输出端口":
+      - generic: output
+    - generic "投影层 32 → 16": 投影层 3…
+    - generic "Linear"
+    - button "投影层 32 → 16 input 输入端口":
+      - generic: input
+    - button "投影层 32 → 16 output 输出端口":
+      - generic: output
+    - generic "残差相加"
+    - generic "Add"
+    - button "残差相加 left 输入端口":
+      - generic: left
+    - button "残差相加 right 输入端口":
+      - generic: right
+    - button "残差相加 output 输出端口":
+      - generic: output
+    - generic "输出"
+    - generic "Output"
+    - button "输出 input 输入端口":
+      - generic: input
+  - generic "模型连线图例":
+    - generic: 数据流
+    - generic "跳过中间模块后相加；仅根据当前连接结构识别": 跳连
+  - generic: 拖动模块 · 输出端口 → 输入端口 · 方向键移动 16 · Delete 删除 · Escape 取消 · Ctrl+Z 撤销
+- complementary:
+  - text: MODEL PROPERTIES
+  - heading "Add" [level=2]
+  - text: 显示名称
+  - textbox "模块显示名称": 残差相加
+  - paragraph: 相加两路形状与类型完全相同的张量，可用于残差连接。
+  - text: X
+  - spinbutton "模块 X 坐标": "1014"
+  - text: "Y"
+  - spinbutton "模块 Y 坐标": "70"
+  - button "删除模块及相连连线"
+  - region "模型静态检查":
+    - heading "检查当前结构" [level=3]
+    - paragraph: 参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。
+    - button "检查模型"
+  - generic: 6 模块 6 连接
+- status: 已按连接排版并适合画布；Ctrl+Z 可撤销排版。

@@ -1,0 +1,55 @@
+--- 
++++ 
+@@ -32,12 +32,46 @@
+     try { const ids: unknown = JSON.parse(key.slice(FRONTIER_PREFIX.length)); if (valid(ids)) return ids; }
+     catch { /* Legacy arbitrary IDs can start with this prefix; inspect them below. */ }
+   }
+-  const ids = key ? key.split('|') : [];
+-  // An old key can be ambiguous between one literal identity and several IDs.
+-  // Preserve its bytes but do not use that ambiguity to choose another layout.
+-  const separatedValid = valid(ids), literal = byId.get(key)?.children.length ? [key] : undefined;
+-  if (literal && separatedValid && (ids.length !== 1 || ids[0] !== key)) return undefined;
+-  return separatedValid ? ids : literal;
++  if (!key) return byId.get('')?.children.length ? undefined : [];
++  // Old keys joined sorted identities with '|', which can also occur inside an
++  // identity. Find at most two complete, sorted interpretations, including
++  // composite identities such as ['a|b', 'root']. A split-only lookup is unsafe.
++  const candidates = new Map<number, { id: string; next: number }[]>();
++  const interpretations = new Map<string, string[][]>();
++  let budget = 20_000, exhausted = false;
++  function parse(start: number, previous?: string): string[][] {
++    const memoKey = JSON.stringify([start, previous ?? null]);
++    const memo = interpretations.get(memoKey);
++    if (memo) return memo;
++    if (--budget < 0) { exhausted = true; return []; }
++    let matches = candidates.get(start);
++    if (!matches) {
++      matches = [];
++      for (let end = start; end <= key.length; end++) {
++        if (--budget < 0) { exhausted = true; return []; }
++        if (end !== key.length && key[end] !== '|') continue;
++        const id = key.slice(start, end);
++        if (byId.get(id)?.children.length) matches.push({ id, next: end === key.length ? -1 : end + 1 });
++      }
++      candidates.set(start, matches);
++    }
++    const solutions: string[][] = [];
++    for (const match of matches) {
++      // Strict order also excludes duplicate identities, matching the old key writer.
++      if (previous !== undefined && match.id <= previous) continue;
++      const tails = match.next === -1 ? [[]] : parse(match.next, match.id);
++      for (const tail of tails) {
++        solutions.push([match.id, ...tail]);
++        if (solutions.length === 2) break;
++      }
++      if (solutions.length === 2 || exhausted) break;
++    }
++    interpretations.set(memoKey, solutions);
++    return solutions;
++  }
++  const solutions = parse(0);
++  // Preserve old bytes but never choose geometry on ambiguous or bounded-out parsing.
++  return !exhausted && solutions.length === 1 ? solutions[0] : undefined;
+ }
+ 
+ function snapshotFor(document: CanvasDocument, target: Frontier): Record<string, Position> | undefined {

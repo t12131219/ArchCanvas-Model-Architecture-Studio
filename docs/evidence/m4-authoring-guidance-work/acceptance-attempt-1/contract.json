@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "stage": "m4-authoring-guidance",
+  "reviewer": "AI subagent guidance_acceptance; not a human participant",
+  "createdAt": "2026-10-06T03:32:49.920658+00:00",
+  "status": "preimplementation-contract",
+  "scope": "Independent source and final receipt readback; browser interaction owned by root. No model execution, dependency installation, or edits to product and old evidence.",
+  "checks": [
+    {
+      "id": "C1",
+      "requirement": "检查模型仅调用现有静态validate API；显示declared/static shape与not executed边界，不能声称训练、forward或runtime观察。",
+      "evidence": "UI/source wording; api endpoint; backend no-execution contract; root actual browser evidence."
+    },
+    {
+      "id": "C2",
+      "requirement": "成功结果和错误响应必须绑定请求semantic key及当前draft identity，过时异步响应不得覆盖新语义。",
+      "evidence": "semantic-key helper and integration response guard; meaningful tests with changed semantic snapshot."
+    },
+    {
+      "id": "C3",
+      "requirement": "未连完整图和shape错误仍可编辑；仅已登记且唯一node/parameter/port可定位。",
+      "evidence": "validation issue parser; feedback resolver; UI targeting and editing controls; browser invalid/incomplete graph evidence."
+    },
+    {
+      "id": "C4",
+      "requirement": "仅移动、显示名、title变化保留适用的静态shape；参数、kind、node或edge语义变化使其失效；undo/redo也不能显示不适用的结果。",
+      "evidence": "semantic projection tests; integrated derived validation state; browser move/label/parameter/edge and history evidence."
+    },
+    {
+      "id": "C5",
+      "requirement": "hover/focus端口提示以viewport像素可读，缩放不缩小字号；不得改变canonical端点、命中区域、peer归属或遮挡点击。",
+      "evidence": "tooltip placement/source/CSS; unchanged portPoint; pointer-events:none; hit-neighbor geometry tests; browser hover/focus at two zooms."
+    },
+    {
+      "id": "C6",
+      "requirement": "新参数中文解释保持原catalog key/值/提交逻辑；Escape恢复有效值且提示与事实相符。",
+      "evidence": "parameter helper coverage and UI aria/help integration; DraftField restore/blur flow; browser invalid-escape evidence."
+    },
+    {
+      "id": "C7",
+      "requirement": "检查、显示shape、hover/focus、取消提示不得移动用户节点或建立history项。",
+      "evidence": "source control-flow review and before/after semantic/layout/history assertions from available tests/browser evidence."
+    },
+    {
+      "id": "C8",
+      "requirement": "最终源文件与测试/build receipt绑定当前字节；原始浏览器截图和DOM范围明确，AI证据不可提升为真人或presentation性能认证。",
+      "evidence": "exact input hashes, stdout/exit checks and relevant artifact readback; bounded report."
+    }
+  ],
+  "preliminaryRisks": [
+    "Current baseline boot validate discards successful tensors; final explicit check must retain only results applicable to current semantic identity.",
+    "Backend validate normalizes defaults and contains revision/title/layout in draftDigest; frontend shape validity must derive independently from shape semantics, not use full draftDigest equality for movement.",
+    "Backend issues may use nodeIds (unused-node) or portIds (unbound-input); parser must not manufacture a unique target or lose explanatory issues.",
+    "DraftField baseline Escape restores text but baseline footer still describes only invalid input; revised notices must remain accurate through React blur/state timing."
+  ],
+  "inputs": [
+    {
+      "path": "AGENTS.md",
+      "bytes": 2022,
+      "sha256": "4356c80e92e8f1443caf14cc9c3c8cd2a5d7a2da6f73e044902a3227fd91c112"
+    },
+    {
+      "path": "skills/archcanvas/SKILL.md",
+      "bytes": 6395,
+      "sha256": "099f47ea174e19ce9e658a944ba3805b5c66e7febf7ab8d90498da36b713df2d"
+    },
+    {
+      "path": "studio/src/AuthoringStudio.tsx",
+      "bytes": 37020,
+      "sha256": "187dc1b7ec06ba03d48eda636077cbada2acccf58e1c371f5886cc6237e41ac2"
+    },
+    {
+      "path": "studio/src/AuthoringStudio.css",
+      "bytes": 9202,
+      "sha256": "d8cdfaa23f6d620e9134f2876b344f33b0fc2a7187c39878365e7b8ca9958eb9"
+    },
+    {
+      "path": "studio/src/authoring.ts",
+      "bytes": 13097,
+      "sha256": "47781941259f1f70d69d00ff0276efff6572ac69399a3a6b8d502f44ad2d0571"
+    },
+    {
+      "path": "studio/src/authoringFeedback.ts",
+      "bytes": 3688,
+      "sha256": "d66aed97645a579917130f2d1783fa4f31bca1a926805c0ee12bfbe5d2920f2a"
+    },
+    {
+      "path": "studio/src/draftPortPresentation.ts",
+      "bytes": 1157,
+      "sha256": "bc1663fe66ee91f3b442f7aad74adff88bebdc01e215c6aca00b77da088905e6"
+    },
+    {
+      "path": "studio/src/api.ts",
+      "bytes": 11399,
+      "sha256": "38f4bbe9d8f61d4f1bac798b02acdba2cf29028b7574d8816f9cf7a4deda3a92"
+    },
+    {
+      "path": "src/archcanvas_authoring/draft.py",
+      "bytes": 43984,
+      "sha256": "cce519d8ae9e865fedccb5981b34a9884c51cceca43c951eff59333ba322231d"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+# Visual workflow
+
+## Current bounded memory route continuity (2026-10-06)
+
+`index-CU5JhnoS.js` / `index--unhoRTb.css` [checks](../../../docs/evidence/m4-memory-continuity-current/checks-final-attempt-2/receipt.json): Studio **436/436**,0fail/skip/cancel,strict TypeScript/Vite exit0,publication **11/11**0skip.115source/test/config+3dist=**118**,11publication inputs separately;36historicalcore+1detailfixture separately frozen.115 is not complete transitive inventory. See [stage](../../../docs/m4-memory-continuity.md),[gate](../../../docs/evidence/m4-current-gate-audit.json),[source seal](../../../docs/evidence/m4-memory-continuity-current/implementation-work/source-seal-attempt-2/report.json).
+
+After the complete same-scene route batch, eligible collapsed memory tries Repeat-aware side/midpoint projection against fixed/chosen peers,nominal body/header/stroke,port normals and two6-unit leads. Unknown/budget exhaustion retains that same-scene batch. Exampledy14→15 length49→644.3 becomes49→50,endpoints1/0; nonmemory routes/ports/canonical facts stay exact.840production rows14623relations,624adoptions(y576/gap48);140actualcases18272independent relations are finite geometry,not840models/globalminimalcrossings/aesthetic approval. Narrow gaps,expanded/retained routes,mask congestion,fonts/arrowheads remain open.
+
+[Browser/export readback](../../../docs/evidence/m4-memory-continuity-current/independent-browser-export-review/readback-attempt-2/report.json)2840/2840 data relations cover17records,16fullpublicXML and2actual artifacts. FiniteEncoderup/down16,left/right24world with4undo,save47/storage7 andsettledreopen observed;12initialcamera defaults90percent before eventual68percent. Stale02/04footers,10status,16modal retained; root finite17sees wholefigure/legend/footer47withoutmodal,notallrasterfresh/firstpaint. Actualwhole180SVG/PDF2/2exact saved47fulldocument,minnominaltext6.56018pt. First2838/2840twooracleerrors retained,no85/180mmhumanapproval.
+
+[Historical KAUB native diagnostic](../../../docs/evidence/m4-readable-grid-browser-next/README.md) retains4togglep95520ms,collapsedoutputy-28236 defect and unapproved300small text. [Continuous readback](../../../docs/evidence/m4-readable-grid-browser-next/continuous-browser/independent-readback-attempt-2/README.md)26/29 retains3realproxy disagreements: independentpan994.9/drag1716.1/wheel45.2ms is firstDOMchange,not causal input-to-paint. rAF is not presented FPS. Currentreadable300,continuous≤50ms,medium<500ms,fixedhardware/fontsA/Bx3 andpresented≥50FPS remain unverified.
+
+M4`partial`,M5`not_started`,humans 0. AI is not a human participant. Historical3AIroles and17basekinds+3transparentstarts retain original scope,no per-kindgeneration/execution. [Fresh readiness](../../../docs/evidence/m4-memory-continuity-current/research-readiness-independent/report.json)313/313:87implementation4baseline,5pristine seats43631–43635;old25packages427filesexact,priorviewportofficialverifyexit1stale. No service/probe/assignment/collection;real3–5researcher five-step≤180seconds/≥80percent and85/180mmphysicalreview remain open. History from second`##`,oldstage/gold/failure/packages remain exact. Formalfrom-scratch implementation is independent ofTemp runtime/fallback,no newreuse certified,and no generated model was executed. Laterbytes do not inherit this evidence.
+
+Use this reference for figure creation, visual refinement, expansion, and export. These are acceptance contracts for a compatible Studio, not assertions that every installed runtime supports them. Check operations before invoking them.
+
+## First view and visual grammar
+
+Create a composed overview that can be understood without opening a property panel. Choose an overview/detail scope, flow direction, page profile, and visual preset. Use a restrained palette, consistent typography, generous container padding, aligned stages, and enough whitespace for labels and bypass routes.
+
+For a Transformer, a suitable starting grammar has encoder/decoder lanes, repeated-layer frames, compact Attention/FFN stages, external residual corridors, and explicit memory connections. Pre-/Post-LN order, mask roles, positional encoding, output Softmax, and repetition must follow the analyzed implementation. An interpretive mathematical view of fused attention is labeled schematic and retains its source reference.
+
+Use shapes as well as color: framed containers for modules, compact boxes for operators, tensor strips/grids for values, `+` for addition, a named concat glyph, a junction for fan-out, and a distinct opaque frame. A fan-out junction must not imply a learned Split layer. Do not fabricate activation values when only structure is available.
+
+Publication defaults may start at 85 mm or 180 mm width, 7–9 pt final labels, and 0.5–1 pt main strokes. Adapt to the intended venue and actual amount of information; export details separately when a full expansion is too dense.
+
+## Editing targets and operations
+
+Maintain stable canonical references and independent presentation identities. A visual document should preserve the following objects when its runtime supports them:
+
+| Target | Presentation changes | Preserve |
+|---|---|---|
+| Node/container | Display alias, subtitle, fill/stroke, typography, padding, corner radius, title placement, registered glyph | Canonical operator/module identity and source name |
+| Edge | Stroke, dash, arrow, routing bends/corridor, displayed label and position | Canonical tensor/port binding |
+| Legend | Add/remove/reorder items, edit text and symbol sample, place, horizontal/vertical arrangement | Clear correspondence with the displayed visual language |
+| Annotation | Text/formula, callout, position, style | Separate identity from executable model structure |
+| Page | Background, margin, width, orientation, monochrome/color preset | Model facts and current document revision |
+
+Style precedence: global tokens → semantic category → per-object override. Reset removes the local override. “Apply to similar objects” specifies its scope and becomes one undoable operation. A display alias is not a symbol rename.
+
+Treat legend entries as objects, not only a computed footer. Automatic entries may derive from visible categories; manual entries retain user text and order. Distinguish decorative explanatory lines from actual tensor edges. Renaming a legend cannot relabel an Add operation as Concat.
+
+Use the runtime's typed visual patch interface when available. Retrieve the base document revision, resolve selection/identity, apply one atomic batch, inspect the resulting receipt, and refresh the same scene. Do not invent an `apply-visual` command or submit a guessed JSON schema.
+
+The current formal local Studio exposes an explicit position-recovery preview for a selected visible object. Free dragging retains the chosen position and reports body/header/outside-parent/blocked-route conflicts. Inspect the proposed position, apply or cancel it, and verify undo and save/reopen. Pins and infeasible candidates are refused. Recovery protects unrelated geometry according to its recorded conflict metrics; route severity is total reported intrusion length, not a guarantee for each obstacle or every crossing. This local capability does not imply globally optimal or publication-ready routing. Verify the actual runtime before claiming it in another installation.
+
+## Interaction and history
+
+Direct manipulation and language edits share selection, revisions, and command history. A completed drag, text edit, multi-object alignment, or accepted layout forms one undo command, rather than one per pointer event. Reversible visual edits preview immediately and save without invoking source review.
+
+Expected interaction: pointer-centered zoom; pan; fit/reset/focus selection; click, Shift multi-select and box select; move/resize; align/distribute; guide snapping; pin/unpin; double-click label editing with Enter/Esc; undo/redo. Keep inline editing from triggering global keyboard shortcuts.
+
+For in-place expansion, keep the selected container's screen anchor, move only the necessary neighborhood, and preserve unrelated pins. Restore that level's prior layout on collapse/re-expansion. A short animation may help continuity but respect reduced-motion and do not delay interaction to disguise slow computation.
+
+After a source refresh, retain camera, selection, styles, and arrangement only for unique identity matches. Report unmatched objects for reconciliation; never attach a previous override to an arbitrary node with the same displayed name.
+
+## Check and export
+
+Inspect the actual rendered view with available browser/screenshot tools, not only serialized fields. Check one collapsed overview, one expanded detail, and final physical export size. Look for clipped glyph/text, detached endpoints, illegal node crossings, congested residual/memory routes, unreadable small labels, inconsistent legend symbols, and excessive empty space.
+
+Export the current CanvasDocument/Scene revision through the shared renderer. SVG is the vector authority; PDF/PNG are derived. Exclude handles, selection boxes, toolbars, and editor grid unless the user explicitly asks for them. Preserve fonts/page dimensions and source/document digests in the export receipt when supported.
+
+Verify save/reopen and undo/redo for substantive edits. A fresh static render of the original architecture does not prove it exported user overrides. If the renderer cannot consume the edited document, report the export gap and do not claim screen/export equivalence.

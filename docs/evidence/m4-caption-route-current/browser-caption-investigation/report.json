@@ -1,0 +1,75 @@
+{
+  "schema": "archcanvas-memory-caption-policy-investigation/1",
+  "currentCoreUnchangedSinceSnapshot": true,
+  "observations": {
+    "exactCanonicalBindingAcrossCaptures": true,
+    "exactSourceFactsAcrossCaptures": true,
+    "exactSourceAndIrDigestsAcrossCaptures": true,
+    "actualMoveReproducedByDetachedCurrentScene": true,
+    "baselineAlsoDropsLabel": true,
+    "undoRestoresMemoryTextAndGuide": true,
+    "noCaptionAssociationDiagnosticAfterDrop": true
+  },
+  "rootCause": {
+    "path": "studio/src/core/scene.ts",
+    "line": 271,
+    "policy": "e.label ?? (e.role === 'memory' && Math.abs(sourceBox.y - targetBox.y) < 15 ? 'memory' : '')",
+    "sameConditionInBaseline": true,
+    "policyPrecedesCaptionPlacement": true,
+    "placementHelperDoesNotMutateText": true,
+    "helperSkipsEmptyLabels": true,
+    "displaySidePolicy": {
+      "line": 178,
+      "effect": "At the same y threshold memory projection switches from right\u2192left display ports to bottom\u2192top; canonical binding remains exact."
+    }
+  },
+  "thresholdMatrix": {
+    "cases": 11,
+    "dy": [
+      -24,
+      -16,
+      -15,
+      -14,
+      0,
+      14,
+      15,
+      16,
+      24
+    ],
+    "dx": [
+      -24,
+      24
+    ],
+    "bothBaselineAndCurrentDropAtAbsDyAtLeast15": true,
+    "wholeAndRootDetailAgree": true,
+    "inputCopiesImmutable": true
+  },
+  "userImpact": {
+    "classification": "existing real presentation stability gap, not new helper deletion or semantic binding corruption",
+    "trigger": "Move Encoder vertically by 24 world units; model role/port binding stays memory but its visible caption silently disappears",
+    "unprovedGate": "General four-direction gesture stability and readable memory association after layout changes cannot pass from this capture",
+    "notASuccessfulAssociationRepair": true
+  },
+  "preciseFuturePolicy": {
+    "proposedSceneLabel": "e.label ?? (e.role === 'memory' ? 'memory' : '')",
+    "reason": "Memory is a canonical role, independent of display geometry; preserve explicit canonical labels including intentionally empty strings. The bounded helper then places/associates existing text or emits an honest diagnostic. Do not edit architecture labels or source to implement this presentation default.",
+    "displaySides": "Keep display-side policy as a separate general routing/port design question. Removing the label threshold does not establish side/route/anchor stability.",
+    "detachedCounterfactual": {
+      "scope": "Label memory added only to copied IR to demonstrate placement feasibility on the actual rerouted path; no product/source mutation",
+      "path": "M 177 503 V 509 H 281 V 404 H 380.67 V 410",
+      "caption": "memory",
+      "labelX": 288,
+      "labelY": 489.5,
+      "guides": 0,
+      "diagnostics": []
+    },
+    "necessaryFollowup": "Implement as a separate source/build/research stage with failing-before tests at \u00b114/\u00b115/\u00b124 plus horizontal moves, save/undo/reopen, whole/detail and actual settled browser/export review. Preserve current 389/dist/research receipts as historical."
+  },
+  "productChangedInThisInvestigation": false,
+  "limits": [
+    "Finite detached threshold matrix and three real browser captures",
+    "No source model execution or semantic/source writeback",
+    "No fonts/physical/human/performance proof",
+    "Publication exporter integration repair is separate evidence directory"
+  ]
+}

@@ -1,0 +1,43 @@
+--- before/orthogonalRouter.ts
++++ after/orthogonalRouter.ts
+@@ -120,6 +120,7 @@
+  * additionally counts intermediate vertices, excluding only whole-edge ends. */
+ function pairConflict(first: RoutePoint[], second: RoutePoint[], budget: { segmentChecks: number }, wholePolyline = false) {
+   const crossingPoints = new Set<string>(); let overlapLength = 0;
++  const overlapIntervals = wholePolyline ? new Map<string, [number, number][]>() : undefined;
+   for (let i = 1; i < first.length; i++) for (let j = 1; j < second.length; j++) {
+     if (budget.segmentChecks >= ROUTE_REFINEMENT_BUDGET.maxSegmentChecks) return undefined;
+     budget.segmentChecks++;
+@@ -138,11 +139,27 @@
+       if (intersects && !atWholeEndpoint) {
+         crossingPoints.add(`${verticalA.x}:${horizontalA.y}`);
+       }
+-    } else if (av && Math.abs(a.x - c.x) < EPSILON) {
+-      overlapLength += Math.max(0, Math.min(Math.max(a.y, b.y), Math.max(c.y, d.y)) - Math.max(Math.min(a.y, b.y), Math.min(c.y, d.y)));
+-    } else if (!av && Math.abs(a.y - c.y) < EPSILON) {
+-      overlapLength += Math.max(0, Math.min(Math.max(a.x, b.x), Math.max(c.x, d.x)) - Math.max(Math.min(a.x, b.x), Math.min(c.x, d.x)));
+-    }
++    } else if (av ? Math.abs(a.x - c.x) < EPSILON : Math.abs(a.y - c.y) < EPSILON) {
++      const low = Math.max(av ? Math.min(a.y, b.y) : Math.min(a.x, b.x), av ? Math.min(c.y, d.y) : Math.min(c.x, d.x));
++      const high = Math.min(av ? Math.max(a.y, b.y) : Math.max(a.x, b.x), av ? Math.max(c.y, d.y) : Math.max(c.x, d.x));
++      if (high > low) {
++        if (overlapIntervals) {
++          const key = `${av ? 'v' : 'h'}:${av ? a.x : a.y}`;
++          const intervals = overlapIntervals.get(key);
++          if (intervals) intervals.push([low, high]); else overlapIntervals.set(key, [[low, high]]);
++        } else overlapLength += high - low;
++      }
++    }
++  }
++  // The residual guard measures occupied geometry, not retracing multiplicity.
++  // Existing generic/family refinement retains its segment-pair metric.
++  for (const intervals of overlapIntervals?.values() ?? []) {
++    intervals.sort((a, b) => a[0] - b[0]); let low = intervals[0][0], high = intervals[0][1];
++    for (const [nextLow, nextHigh] of intervals.slice(1)) {
++      if (nextLow <= high) high = Math.max(high, nextHigh);
++      else { overlapLength += high - low; low = nextLow; high = nextHigh; }
++    }
++    overlapLength += high - low;
+   }
+   return { crossingPairs: Number(crossingPoints.size > 0), crossingPoints: crossingPoints.size,
+     overlapPairs: Number(overlapLength > EPSILON), overlapLength };

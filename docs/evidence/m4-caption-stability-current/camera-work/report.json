@@ -1,0 +1,101 @@
+{
+  "schema": "archcanvas-camera-view-implementation-review/2",
+  "createdUtc": "2026-10-06T11:20:01.695174+00:00",
+  "scope": "Independent camera state numerical/storage checks, actual App callback harness and App source diff review; no React mounting, browser operation or human acceptance.",
+  "implementation": {
+    "storage": "sessionStorage, key bound to documentId/sourceBindingDigest/irDigest; visualRevision is exact restore guard",
+    "restore": "captures world centre and zoom, recomputes translation for current viewport",
+    "guards": "load sequence, intent sequence, identity and revision guard delayed initialization",
+    "persistence": "Committed fit/zoom/focus/terminal pan and cancelled-pan rollback; active pan preview is rejected by the persistCamera callback before storage access.",
+    "fallback": "malformed, unavailable or quota-failed storage falls back to fit/current camera without CanvasDocument mutation"
+  },
+  "verification": {
+    "focusedTest": "docs/evidence/m4-caption-stability-current/camera-work/final-attempt-3/final-attempt-3-focused.process.json",
+    "focusedResult": "24/24 passing across camera view state, projection, gesture, and App callback harness checks",
+    "strictTypeScript": "docs/evidence/m4-caption-stability-current/camera-work/final-attempt-3/final-attempt-3-strict.process.json",
+    "strictResult": "npx tsc --noEmit exit 0",
+    "diffCheck": "docs/evidence/m4-caption-stability-current/camera-work/final-attempt-3/scoped-diff-check-root.process.json",
+    "diffCheckResult": "root-scoped git diff --check exit 0; all three owned file bodies additionally checked for trailing whitespace and final newline",
+    "appCallbackHarness": {
+      "cases": [
+        "initial callback reads owned saved view before write",
+        "persistCamera rejects active pan preview then accepts terminal/rollback camera",
+        "delayed callback rejects later intent/load/revision and defers tiny viewport"
+      ],
+      "result": "3/3 harness tests passing",
+      "boundary": "Uses actual App callback bodies transpiled into a controlled harness; does not mount React or replace CUA."
+    },
+    "allOwnedWhitespace": "docs/evidence/m4-caption-stability-current/camera-work/final-attempt-3/all-owned-file-whitespace.json",
+    "retainedAttempts": [
+      {
+        "attempt": "1",
+        "tests": 21,
+        "result": "pass",
+        "scope": "pure helper/gesture/projection before explicit active-pan persist guard"
+      },
+      {
+        "attempt": "2",
+        "tests": 25,
+        "result": "pass",
+        "scope": "intermediate helper gate and App callback harness; not final source"
+      },
+      {
+        "attempt": "3",
+        "tests": 24,
+        "result": "pass",
+        "scope": "final direct active-pan guard and actual App identity/callback harness"
+      },
+      {
+        "attempt": "3 diff-check from studio cwd",
+        "result": "mis-scoped pathspec, no claimed source check",
+        "correction": "scoped-diff-check-root receipt is final; original empty receipt retained"
+      }
+    ]
+  },
+  "sourceReview": {
+    "changedProductFiles": [
+      "studio/src/App.tsx",
+      "studio/src/cameraViewState.ts"
+    ],
+    "changedTestFile": [
+      "studio/tests/camera-view-state-independent.test.ts"
+    ],
+    "appDiffSummary": "Only camera identity/storage helpers, guarded initialization, intent/load invalidation, camera persistence call sites, and active-pan persistence guard were added relative to frozen App snapshot.",
+    "beforeSnapshot": "docs/evidence/m4-caption-stability-current/before-change/inputs/studio/src/App.tsx",
+    "diffArtifact": "docs/evidence/m4-caption-stability-current/camera-work/final-attempt-3/app-camera-final.diff",
+    "reviewCategories": [
+      "imports and camera identity/session storage helpers",
+      "camera owner/intent/initialization refs and committed persistence callbacks",
+      "active-pan preview refusal and terminal/cancel storage calls",
+      "initial restore-or-fit scheduling with document object, revision, load and intent checks",
+      "existing example, mount reload and generated model load generation checks",
+      "existing fit/zoom/focus and semantic reconciliation camera adoption call sites"
+    ],
+    "outsideCameraScope": "No core Canvas/history/source contracts, authoring, performance observer, build/dist or current-entry documents were edited by this subtask.",
+    "snapshotBindings": [
+      {
+        "path": "docs/evidence/m4-caption-stability-current/camera-work/final-attempt-3/source-snapshot/studio/src/App.tsx",
+        "bytes": 75810,
+        "sha256": "e93801c2b6900b5f9a4bc515f2d550134adb57f088a4aa99575a8ae379a747a1"
+      },
+      {
+        "path": "docs/evidence/m4-caption-stability-current/camera-work/final-attempt-3/source-snapshot/studio/src/cameraViewState.ts",
+        "bytes": 5747,
+        "sha256": "9fe21b67e341c2c4742276765d7c711dc29c171db544a2b6b7e305bc786c2110"
+      },
+      {
+        "path": "docs/evidence/m4-caption-stability-current/camera-work/final-attempt-3/source-snapshot/studio/tests/camera-view-state-independent.test.ts",
+        "bytes": 17285,
+        "sha256": "2f163d7f0b5be7e58c39b0f230ab1c3c5854f6f61beb48d79152875fbf63a614"
+      }
+    ]
+  },
+  "limitations": [
+    "3 actual callback harness tests execute current App identity and callback bodies with controlled refs, storage and rAF; they do not mount React App or prove browser effect timing.",
+    "Actual same-viewport reload, cross-viewport restore, explicit-fit precedence, native pan preview/cancel/commit, save/reopen and export/source/history invariants require parent-owned browser/build evidence.",
+    "There is no ResizeObserver or live viewport resizing policy. Reload/initialization uses the current viewport and world centre; viewport readiness is retried for at most 4 frames, then requires an explicit view operation.",
+    "Session storage is the reload scope; close/new-tab persistence is not claimed. Exact visualRevision rejection deliberately avoids restoring a view captured from a different unsaved visual state.",
+    "A visual document change before initialization invalidates the conservative document-object/revision ticket; initialization does not replace that newer document.",
+    "No claim is made for human participants, publication-size review, presented FPS, or M4 completion."
+  ]
+}

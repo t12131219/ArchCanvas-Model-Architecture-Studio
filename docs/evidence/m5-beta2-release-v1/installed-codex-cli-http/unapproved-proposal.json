@@ -1,0 +1,1038 @@
+{
+  "id": "74201487650537053a752e47cac4ccc8",
+  "revision": 1,
+  "status": "ReviewReady",
+  "intent": {
+    "nodeId": "call:instance:model.MLP.network.2",
+    "parameter": "p",
+    "before": 0.1,
+    "after": 0.2,
+    "scope": "source_origin",
+    "origin": {
+      "kind": "literal",
+      "path": "model.py",
+      "line": 12,
+      "endLine": 12,
+      "expression": "0.1",
+      "column": 23,
+      "endColumn": 26
+    }
+  },
+  "reviewDigest": "af019178b91f2176eb20e2d53a8d5bd18261875eddedaa2c2610a8d900c92825",
+  "sourceDigest": "3654a3534b85af66c27e0a5ae154ac8cbe461bfe80d2786efb413e54a7365f17",
+  "irDigest": "ab8e9edcf92df51583e5de7682b85072c483831855408f6509b0a4ddf304b72f",
+  "diff": "--- a/model.py\n+++ b/model.py\n@@ -9,7 +9,7 @@\n         self.network = nn.Sequential(\n             nn.Linear(input_dim, hidden_dim),\n             nn.GELU(),\n-            nn.Dropout(0.1),\n+            nn.Dropout(0.2),\n             nn.Linear(hidden_dim, output_dim),\n         )\n \n",
+  "affectedNodeIds": [
+    "call:instance:model.MLP.network.2"
+  ],
+  "gates": [
+    {
+      "id": "G0",
+      "label": "来源与能力",
+      "status": "passed",
+      "message": "External PyTorch constructor, exact float-token anchor and complete source-origin call scope are proven within the registered static subset."
+    },
+    {
+      "id": "G1",
+      "label": "源码有效性",
+      "status": "passed",
+      "message": "UTF-8 bytes/BOM/newlines preserved; the AST changes exactly one intended float argument."
+    },
+    {
+      "id": "G2",
+      "label": "名称与项目",
+      "status": "passed",
+      "message": "Original external constructor and frozen local dependency corpus were statically resolved; no model imports or execution."
+    },
+    {
+      "id": "G3",
+      "label": "重新分析",
+      "status": "passed",
+      "message": "The isolated staged corpus was parsed and its complete declared architecture was re-analyzed."
+    },
+    {
+      "id": "G4",
+      "label": "意图兑现",
+      "status": "passed",
+      "message": "ExpectedDelta was frozen before lowering and matches ObservedDelta for every declared node, port, edge, parameter, repeat and sharing fact."
+    },
+    {
+      "id": "G5",
+      "label": "参数约束",
+      "status": "passed",
+      "message": "Finite dropout probability in [0, 1]; this operation changes no tensor shape or type contract."
+    },
+    {
+      "id": "G6",
+      "label": "运行验证",
+      "status": "not_run",
+      "message": "parameter-static profile: user model code was not executed; no forward/numerical equivalence claim."
+    },
+    {
+      "id": "G7",
+      "label": "状态兼容",
+      "status": "passed",
+      "message": "Registered probability-only operation changes no parameter/buffer tensor shape; no checkpoint migration is performed."
+    },
+    {
+      "id": "G8",
+      "label": "论文输出",
+      "status": "not_run",
+      "message": "No publication/export gate was requested by this source transaction."
+    },
+    {
+      "id": "G9",
+      "label": "人工审核",
+      "status": "not_run",
+      "message": "Exact reviewDigest approval is required before source replacement."
+    },
+    {
+      "id": "G10",
+      "label": "写回新鲜度",
+      "status": "not_run",
+      "message": "Full corpus, staging and approval will be rechecked under the project lock at commit."
+    },
+    {
+      "id": "G11",
+      "label": "写后核验",
+      "status": "not_run",
+      "message": "Re-analysis and digest verification run only after approved source replacement."
+    }
+  ],
+  "blockers": [],
+  "beforeArchitecture": {
+    "schemaVersion": 1,
+    "id": "architecture:model.MLP",
+    "label": "MLP",
+    "sourceDigest": "3654a3534b85af66c27e0a5ae154ac8cbe461bfe80d2786efb413e54a7365f17",
+    "irDigest": "ab8e9edcf92df51583e5de7682b85072c483831855408f6509b0a4ddf304b72f",
+    "entry": "model:MLP",
+    "nodes": [
+      {
+        "id": "input:model.MLP:features",
+        "label": "features",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:model.MLP:features:out:features",
+            "name": "features",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 16,
+          "endLine": 17,
+          "expression": "def forward(self, features):\n        return self.network(features)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.MLP"
+      },
+      {
+        "id": "call:instance:model.MLP",
+        "label": "MLP",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "input:model.MLP:features",
+          "call:instance:model.MLP.network",
+          "output:model.MLP:0"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:model.MLP:in:features",
+            "name": "features",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "input_dim": 16,
+          "hidden_dim": 32,
+          "output_dim": 4
+        },
+        "source": {
+          "path": "model.py",
+          "line": 6,
+          "endLine": 17,
+          "expression": "class MLP(nn.Module):\n    def __init__(self, input_dim=16, hidden_dim=32, output_dim=4):\n        super().__init__()\n        self.network = nn.Sequential(\n            nn.Linear(input_dim, hidden_dim),\n            nn.GELU(),\n            nn.Dropout(0.1),\n            nn.Linear(hidden_dim, output_dim),\n        )\n\n    def forward(self, features):\n        return self.network(features)"
+        },
+        "evidence": "source",
+        "instanceId": "instance:model.MLP",
+        "callId": "call:instance:model.MLP"
+      },
+      {
+        "id": "call:instance:model.MLP.network",
+        "label": "network",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "call:instance:model.MLP.network.0",
+          "call:instance:model.MLP.network.1",
+          "call:instance:model.MLP.network.2",
+          "call:instance:model.MLP.network.3"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:model.MLP.network:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.MLP.network:in:result",
+            "name": "result",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 1
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 17,
+          "expression": "self.network(features)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.MLP",
+        "instanceId": "instance:model.MLP.network",
+        "callId": "call:instance:model.MLP.network",
+        "repeat": {
+          "count": 4,
+          "sharing": "independent"
+        }
+      },
+      {
+        "id": "call:instance:model.MLP.network.0",
+        "label": "Linear 1",
+        "kind": "Linear",
+        "category": "linear",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.MLP.network.0:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.MLP.network.0:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "in_features": 16,
+          "out_features": 32
+        },
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 17,
+          "expression": "self.network(features)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.MLP.network",
+        "instanceId": "instance:model.MLP.network.0",
+        "callId": "call:instance:model.MLP.network.0",
+        "parameterOrigins": {
+          "in_features": {
+            "kind": "constructor_argument",
+            "path": "model.py",
+            "line": 10,
+            "endLine": 10,
+            "expression": "input_dim",
+            "column": 22,
+            "endColumn": 31
+          },
+          "out_features": {
+            "kind": "constructor_argument",
+            "path": "model.py",
+            "line": 10,
+            "endLine": 10,
+            "expression": "hidden_dim",
+            "column": 33,
+            "endColumn": 43
+          }
+        }
+      },
+      {
+        "id": "call:instance:model.MLP.network.1",
+        "label": "GELU 2",
+        "kind": "GELU",
+        "category": "activation",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.MLP.network.1:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.MLP.network.1:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 17,
+          "expression": "self.network(features)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.MLP.network",
+        "instanceId": "instance:model.MLP.network.1",
+        "callId": "call:instance:model.MLP.network.1"
+      },
+      {
+        "id": "call:instance:model.MLP.network.2",
+        "label": "Dropout 3",
+        "kind": "Dropout",
+        "category": "regularization",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.MLP.network.2:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.MLP.network.2:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "p": 0.1
+        },
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 17,
+          "expression": "self.network(features)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.MLP.network",
+        "instanceId": "instance:model.MLP.network.2",
+        "callId": "call:instance:model.MLP.network.2",
+        "parameterOrigins": {
+          "p": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 12,
+            "endLine": 12,
+            "expression": "0.1",
+            "column": 23,
+            "endColumn": 26
+          }
+        }
+      },
+      {
+        "id": "call:instance:model.MLP.network.3",
+        "label": "Linear 4",
+        "kind": "Linear",
+        "category": "linear",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.MLP.network.3:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.MLP.network.3:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "in_features": 32,
+          "out_features": 4
+        },
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 17,
+          "expression": "self.network(features)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.MLP.network",
+        "instanceId": "instance:model.MLP.network.3",
+        "callId": "call:instance:model.MLP.network.3",
+        "parameterOrigins": {
+          "in_features": {
+            "kind": "constructor_argument",
+            "path": "model.py",
+            "line": 13,
+            "endLine": 13,
+            "expression": "hidden_dim",
+            "column": 22,
+            "endColumn": 32
+          },
+          "out_features": {
+            "kind": "constructor_argument",
+            "path": "model.py",
+            "line": 13,
+            "endLine": 13,
+            "expression": "output_dim",
+            "column": 34,
+            "endColumn": 44
+          }
+        }
+      },
+      {
+        "id": "output:model.MLP:0",
+        "label": "output",
+        "kind": "Output",
+        "category": "output",
+        "children": [],
+        "ports": [
+          {
+            "id": "output:model.MLP:0:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 16,
+          "endLine": 17,
+          "expression": "def forward(self, features):\n        return self.network(features)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.MLP",
+        "outputPath": []
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:0",
+        "source": {
+          "nodeId": "input:model.MLP:features",
+          "portId": "input:model.MLP:features:out:features"
+        },
+        "target": {
+          "nodeId": "call:instance:model.MLP",
+          "portId": "call:instance:model.MLP:in:features"
+        },
+        "tensorId": "tensor:input:model.MLP:features:features",
+        "role": "data"
+      },
+      {
+        "id": "edge:1",
+        "source": {
+          "nodeId": "input:model.MLP:features",
+          "portId": "input:model.MLP:features:out:features"
+        },
+        "target": {
+          "nodeId": "call:instance:model.MLP.network",
+          "portId": "call:instance:model.MLP.network:in:input"
+        },
+        "tensorId": "tensor:input:model.MLP:features:features",
+        "role": "data"
+      },
+      {
+        "id": "edge:2",
+        "source": {
+          "nodeId": "input:model.MLP:features",
+          "portId": "input:model.MLP:features:out:features"
+        },
+        "target": {
+          "nodeId": "call:instance:model.MLP.network.0",
+          "portId": "call:instance:model.MLP.network.0:in:input"
+        },
+        "tensorId": "tensor:input:model.MLP:features:features",
+        "role": "data"
+      },
+      {
+        "id": "edge:3",
+        "source": {
+          "nodeId": "call:instance:model.MLP.network.0",
+          "portId": "call:instance:model.MLP.network.0:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.MLP.network.1",
+          "portId": "call:instance:model.MLP.network.1:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.MLP.network.0:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:4",
+        "source": {
+          "nodeId": "call:instance:model.MLP.network.1",
+          "portId": "call:instance:model.MLP.network.1:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.MLP.network.2",
+          "portId": "call:instance:model.MLP.network.2:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.MLP.network.1:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:5",
+        "source": {
+          "nodeId": "call:instance:model.MLP.network.2",
+          "portId": "call:instance:model.MLP.network.2:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.MLP.network.3",
+          "portId": "call:instance:model.MLP.network.3:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.MLP.network.2:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:6",
+        "source": {
+          "nodeId": "call:instance:model.MLP.network.3",
+          "portId": "call:instance:model.MLP.network.3:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.MLP.network",
+          "portId": "call:instance:model.MLP.network:in:result"
+        },
+        "tensorId": "tensor:call:instance:model.MLP.network.3:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:7",
+        "source": {
+          "nodeId": "call:instance:model.MLP.network.3",
+          "portId": "call:instance:model.MLP.network.3:out:output"
+        },
+        "target": {
+          "nodeId": "output:model.MLP:0",
+          "portId": "output:model.MLP:0:in:value"
+        },
+        "tensorId": "tensor:call:instance:model.MLP.network.3:output",
+        "role": "data"
+      }
+    ],
+    "diagnostics": [
+      {
+        "level": "info",
+        "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+      }
+    ],
+    "sources": [
+      {
+        "path": "model.py",
+        "content": "\"\"\"Source fixture with a registered Sequential construction contract.\"\"\"\n\nfrom torch import nn\n\n\nclass MLP(nn.Module):\n    def __init__(self, input_dim=16, hidden_dim=32, output_dim=4):\n        super().__init__()\n        self.network = nn.Sequential(\n            nn.Linear(input_dim, hidden_dim),\n            nn.GELU(),\n            nn.Dropout(0.1),\n            nn.Linear(hidden_dim, output_dim),\n        )\n\n    def forward(self, features):\n        return self.network(features)\n",
+        "digest": "e4e9a27e0e49eabd8a7f17afe1041e532fc8b576f8402e685873216e0e5485bc"
+      }
+    ]
+  },
+  "afterArchitecture": {
+    "schemaVersion": 1,
+    "id": "architecture:model.MLP",
+    "label": "MLP",
+    "sourceDigest": "5f8eee3d82ad16be19898327c8a6a5b2797ff6ba4904b23060b3419823da444f",
+    "irDigest": "f560dd9b87fc924d8ee5aa097642dd3d304ad6178365dc57f09216fa61a62021",
+    "entry": "model:MLP",
+    "nodes": [
+      {
+        "id": "input:model.MLP:features",
+        "label": "features",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:model.MLP:features:out:features",
+            "name": "features",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 16,
+          "endLine": 17,
+          "expression": "def forward(self, features):\n        return self.network(features)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.MLP"
+      },
+      {
+        "id": "call:instance:model.MLP",
+        "label": "MLP",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "input:model.MLP:features",
+          "call:instance:model.MLP.network",
+          "output:model.MLP:0"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:model.MLP:in:features",
+            "name": "features",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "input_dim": 16,
+          "hidden_dim": 32,
+          "output_dim": 4
+        },
+        "source": {
+          "path": "model.py",
+          "line": 6,
+          "endLine": 17,
+          "expression": "class MLP(nn.Module):\n    def __init__(self, input_dim=16, hidden_dim=32, output_dim=4):\n        super().__init__()\n        self.network = nn.Sequential(\n            nn.Linear(input_dim, hidden_dim),\n            nn.GELU(),\n            nn.Dropout(0.2),\n            nn.Linear(hidden_dim, output_dim),\n        )\n\n    def forward(self, features):\n        return self.network(features)"
+        },
+        "evidence": "source",
+        "instanceId": "instance:model.MLP",
+        "callId": "call:instance:model.MLP"
+      },
+      {
+        "id": "call:instance:model.MLP.network",
+        "label": "network",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "call:instance:model.MLP.network.0",
+          "call:instance:model.MLP.network.1",
+          "call:instance:model.MLP.network.2",
+          "call:instance:model.MLP.network.3"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:model.MLP.network:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.MLP.network:in:result",
+            "name": "result",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 1
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 17,
+          "expression": "self.network(features)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.MLP",
+        "instanceId": "instance:model.MLP.network",
+        "callId": "call:instance:model.MLP.network",
+        "repeat": {
+          "count": 4,
+          "sharing": "independent"
+        }
+      },
+      {
+        "id": "call:instance:model.MLP.network.0",
+        "label": "Linear 1",
+        "kind": "Linear",
+        "category": "linear",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.MLP.network.0:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.MLP.network.0:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "in_features": 16,
+          "out_features": 32
+        },
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 17,
+          "expression": "self.network(features)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.MLP.network",
+        "instanceId": "instance:model.MLP.network.0",
+        "callId": "call:instance:model.MLP.network.0",
+        "parameterOrigins": {
+          "in_features": {
+            "kind": "constructor_argument",
+            "path": "model.py",
+            "line": 10,
+            "endLine": 10,
+            "expression": "input_dim",
+            "column": 22,
+            "endColumn": 31
+          },
+          "out_features": {
+            "kind": "constructor_argument",
+            "path": "model.py",
+            "line": 10,
+            "endLine": 10,
+            "expression": "hidden_dim",
+            "column": 33,
+            "endColumn": 43
+          }
+        }
+      },
+      {
+        "id": "call:instance:model.MLP.network.1",
+        "label": "GELU 2",
+        "kind": "GELU",
+        "category": "activation",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.MLP.network.1:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.MLP.network.1:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 17,
+          "expression": "self.network(features)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.MLP.network",
+        "instanceId": "instance:model.MLP.network.1",
+        "callId": "call:instance:model.MLP.network.1"
+      },
+      {
+        "id": "call:instance:model.MLP.network.2",
+        "label": "Dropout 3",
+        "kind": "Dropout",
+        "category": "regularization",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.MLP.network.2:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.MLP.network.2:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "p": 0.2
+        },
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 17,
+          "expression": "self.network(features)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.MLP.network",
+        "instanceId": "instance:model.MLP.network.2",
+        "callId": "call:instance:model.MLP.network.2",
+        "parameterOrigins": {
+          "p": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 12,
+            "endLine": 12,
+            "expression": "0.2",
+            "column": 23,
+            "endColumn": 26
+          }
+        }
+      },
+      {
+        "id": "call:instance:model.MLP.network.3",
+        "label": "Linear 4",
+        "kind": "Linear",
+        "category": "linear",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.MLP.network.3:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.MLP.network.3:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "in_features": 32,
+          "out_features": 4
+        },
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 17,
+          "expression": "self.network(features)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.MLP.network",
+        "instanceId": "instance:model.MLP.network.3",
+        "callId": "call:instance:model.MLP.network.3",
+        "parameterOrigins": {
+          "in_features": {
+            "kind": "constructor_argument",
+            "path": "model.py",
+            "line": 13,
+            "endLine": 13,
+            "expression": "hidden_dim",
+            "column": 22,
+            "endColumn": 32
+          },
+          "out_features": {
+            "kind": "constructor_argument",
+            "path": "model.py",
+            "line": 13,
+            "endLine": 13,
+            "expression": "output_dim",
+            "column": 34,
+            "endColumn": 44
+          }
+        }
+      },
+      {
+        "id": "output:model.MLP:0",
+        "label": "output",
+        "kind": "Output",
+        "category": "output",
+        "children": [],
+        "ports": [
+          {
+            "id": "output:model.MLP:0:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 16,
+          "endLine": 17,
+          "expression": "def forward(self, features):\n        return self.network(features)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.MLP",
+        "outputPath": []
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:0",
+        "source": {
+          "nodeId": "input:model.MLP:features",
+          "portId": "input:model.MLP:features:out:features"
+        },
+        "target": {
+          "nodeId": "call:instance:model.MLP",
+          "portId": "call:instance:model.MLP:in:features"
+        },
+        "tensorId": "tensor:input:model.MLP:features:features",
+        "role": "data"
+      },
+      {
+        "id": "edge:1",
+        "source": {
+          "nodeId": "input:model.MLP:features",
+          "portId": "input:model.MLP:features:out:features"
+        },
+        "target": {
+          "nodeId": "call:instance:model.MLP.network",
+          "portId": "call:instance:model.MLP.network:in:input"
+        },
+        "tensorId": "tensor:input:model.MLP:features:features",
+        "role": "data"
+      },
+      {
+        "id": "edge:2",
+        "source": {
+          "nodeId": "input:model.MLP:features",
+          "portId": "input:model.MLP:features:out:features"
+        },
+        "target": {
+          "nodeId": "call:instance:model.MLP.network.0",
+          "portId": "call:instance:model.MLP.network.0:in:input"
+        },
+        "tensorId": "tensor:input:model.MLP:features:features",
+        "role": "data"
+      },
+      {
+        "id": "edge:3",
+        "source": {
+          "nodeId": "call:instance:model.MLP.network.0",
+          "portId": "call:instance:model.MLP.network.0:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.MLP.network.1",
+          "portId": "call:instance:model.MLP.network.1:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.MLP.network.0:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:4",
+        "source": {
+          "nodeId": "call:instance:model.MLP.network.1",
+          "portId": "call:instance:model.MLP.network.1:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.MLP.network.2",
+          "portId": "call:instance:model.MLP.network.2:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.MLP.network.1:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:5",
+        "source": {
+          "nodeId": "call:instance:model.MLP.network.2",
+          "portId": "call:instance:model.MLP.network.2:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.MLP.network.3",
+          "portId": "call:instance:model.MLP.network.3:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.MLP.network.2:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:6",
+        "source": {
+          "nodeId": "call:instance:model.MLP.network.3",
+          "portId": "call:instance:model.MLP.network.3:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.MLP.network",
+          "portId": "call:instance:model.MLP.network:in:result"
+        },
+        "tensorId": "tensor:call:instance:model.MLP.network.3:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:7",
+        "source": {
+          "nodeId": "call:instance:model.MLP.network.3",
+          "portId": "call:instance:model.MLP.network.3:out:output"
+        },
+        "target": {
+          "nodeId": "output:model.MLP:0",
+          "portId": "output:model.MLP:0:in:value"
+        },
+        "tensorId": "tensor:call:instance:model.MLP.network.3:output",
+        "role": "data"
+      }
+    ],
+    "diagnostics": [
+      {
+        "level": "info",
+        "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+      }
+    ],
+    "sources": [
+      {
+        "path": "model.py",
+        "content": "\"\"\"Source fixture with a registered Sequential construction contract.\"\"\"\n\nfrom torch import nn\n\n\nclass MLP(nn.Module):\n    def __init__(self, input_dim=16, hidden_dim=32, output_dim=4):\n        super().__init__()\n        self.network = nn.Sequential(\n            nn.Linear(input_dim, hidden_dim),\n            nn.GELU(),\n            nn.Dropout(0.2),\n            nn.Linear(hidden_dim, output_dim),\n        )\n\n    def forward(self, features):\n        return self.network(features)\n",
+        "digest": "2d884531ca2f5d5e4bf23137254fdae3cc2949c6f92fa4969607734413133938"
+      }
+    ]
+  },
+  "sourceChanges": [
+    {
+      "path": "model.py",
+      "beforeDigest": "e4e9a27e0e49eabd8a7f17afe1041e532fc8b576f8402e685873216e0e5485bc",
+      "afterDigest": "2d884531ca2f5d5e4bf23137254fdae3cc2949c6f92fa4969607734413133938"
+    }
+  ],
+  "checkpointImpact": {
+    "status": "compatible",
+    "message": "Changing a dropout probability does not alter state_dict tensor names or shapes. No checkpoint was loaded and runtime behavior was not executed."
+  },
+  "transform": {
+    "id": "pytorch-explicit-dropout-float",
+    "version": 1,
+    "profile": "parameter-static",
+    "engine": "stdlib-ast-tokenize-byte-splice",
+    "parameters": {
+      "Dropout": "p",
+      "MultiheadAttention": "dropout"
+    }
+  },
+  "environment": {
+    "pythonImplementation": "CPython",
+    "pythonVersion": [
+      3,
+      11,
+      5
+    ],
+    "frontendContract": "archcanvas-stdlib-static-1",
+    "modelExecution": "none"
+  }
+}

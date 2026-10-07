@@ -1,0 +1,99 @@
+diff --git a/studio/src/perf.ts b/studio/src/perf.ts
+index 52476cb..44e9a8e 100644
+--- a/studio/src/perf.ts
++++ b/studio/src/perf.ts
+@@ -90,6 +90,7 @@ export class StudioTelemetry {
+   private readonly frameSamples: FrameSample[] = [];
+   private readonly observer: PerformanceObserver | null;
+   private readonly eventObserver: PerformanceObserver | null;
++  private observationWindowStart = now();
+   private visibilityAtStart = visibility();
+   private readonly visibilityChanges: VisibilitySample[] = [];
+   private readonly visibilityChanged = () => {
+@@ -103,13 +104,7 @@ export class StudioTelemetry {
+     const Observer = (globalThis as { PerformanceObserver?: typeof PerformanceObserver }).PerformanceObserver;
+     try {
+       if (Observer && Observer.supportedEntryTypes?.includes('longtask')) {
+-        observer = new Observer(list => {
+-          for (const entry of list.getEntries()) {
+-            this.longTasks.push({ startAt: entry.startTime, durationMs: entry.duration, name: entry.name });
+-          }
+-          // Keep the probe bounded during long editing sessions.
+-          if (this.longTasks.length > 200) this.longTasks.splice(0, this.longTasks.length - 200);
+-        });
++        observer = new Observer(list => this.ingestLongTasks(list.getEntries()));
+         observer.observe({ entryTypes: ['longtask'] });
+       }
+     } catch {
+@@ -119,15 +114,7 @@ export class StudioTelemetry {
+     let eventObserver: PerformanceObserver | null = null;
+     try {
+       if (Observer && Observer.supportedEntryTypes?.includes('event')) {
+-        eventObserver = new Observer(list => {
+-          for (const entry of list.getEntries()) {
+-            const event = entry as PerformanceEntry & { processingStart: number; processingEnd: number; interactionId?: number; target?: EventTarget | null };
+-            const target = typeof Element !== 'undefined' && event.target instanceof Element ? event.target : null;
+-            const targetCanonicalNodeId = target?.closest('[data-expand-id]')?.getAttribute('data-expand-id') ?? target?.closest('[data-tree-node-id]')?.getAttribute('data-tree-node-id') ?? null;
+-            this.eventTiming.push({ name: event.name, startAt: event.startTime, durationMs: event.duration, processingStart: event.processingStart, processingEnd: event.processingEnd, interactionId: event.interactionId ?? 0, targetCanonicalNodeId });
+-          }
+-          if (this.eventTiming.length > 200) this.eventTiming.splice(0, this.eventTiming.length - 200);
+-        });
++        eventObserver = new Observer(list => this.ingestEventTiming(list.getEntries()));
+         eventObserver.observe({ type: 'event', durationThreshold: 16 } as PerformanceObserverInit);
+       }
+     } catch { eventObserver = null; }
+@@ -135,6 +122,32 @@ export class StudioTelemetry {
+     if (typeof document !== 'undefined') document.addEventListener('visibilitychange', this.visibilityChanged);
+   }
+ 
++  private ingestLongTasks(entries: PerformanceEntry[]): void {
++    for (const entry of entries) {
++      if (entry.startTime < this.observationWindowStart) continue;
++      this.longTasks.push({ startAt: entry.startTime, durationMs: entry.duration, name: entry.name });
++    }
++    // Retention remains the last 200 delivered entries, not an all-input log.
++    if (this.longTasks.length > 200) this.longTasks.splice(0, this.longTasks.length - 200);
++  }
++
++  private ingestEventTiming(entries: PerformanceEntry[]): void {
++    for (const entry of entries) {
++      // A delayed callback may already own entries that reset could not drain.
++      if (entry.startTime < this.observationWindowStart) continue;
++      const event = entry as PerformanceEntry & { processingStart: number; processingEnd: number; interactionId?: number; target?: EventTarget | null };
++      const target = typeof Element !== 'undefined' && event.target instanceof Element ? event.target : null;
++      const targetCanonicalNodeId = target?.closest('[data-expand-id]')?.getAttribute('data-expand-id') ?? target?.closest('[data-tree-node-id]')?.getAttribute('data-tree-node-id') ?? null;
++      this.eventTiming.push({ name: event.name, startAt: event.startTime, durationMs: event.duration, processingStart: event.processingStart, processingEnd: event.processingEnd, interactionId: event.interactionId ?? 0, targetCanonicalNodeId });
++    }
++    if (this.eventTiming.length > 200) this.eventTiming.splice(0, this.eventTiming.length - 200);
++  }
++
++  private flushObservers(): void {
++    if (this.observer) this.ingestLongTasks(this.observer.takeRecords());
++    if (this.eventObserver) this.ingestEventTiming(this.eventObserver.takeRecords());
++  }
++
+   beginInteraction(name: string): string {
+     const id = `interaction-${++this.sequence}`;
+     this.pending.set(id, { id, name, inputAt: now(), handlerEndAt: null, handlerDurationMs: null, paintAt: null, durationMs: null });
+@@ -193,6 +206,9 @@ export class StudioTelemetry {
+   }
+ 
+   snapshot(): PerfSnapshot {
++    // Include records already queued at this boundary. This does not force a
++    // browser to produce entries that are still pending paint or delivery.
++    this.flushObservers();
+     return {
+       schemaVersion: 1,
+       generatedAt: now(),
+@@ -212,6 +228,11 @@ export class StudioTelemetry {
+   }
+ 
+   reset(): void {
++    // Discard queued records before opening the next window; timestamp checks
++    // in both ingest paths also exclude old entries from delayed callbacks.
++    this.observer?.takeRecords();
++    this.eventObserver?.takeRecords();
++    this.observationWindowStart = now();
+     this.pending.clear();
+     this.interactions.splice(0);
+     this.longTasks.splice(0);

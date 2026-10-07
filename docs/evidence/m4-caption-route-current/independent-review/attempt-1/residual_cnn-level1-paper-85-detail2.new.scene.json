@@ -1,0 +1,1220 @@
+{
+  "version": "1.0",
+  "documentId": "canvas-architecture-model.ResidualCNN-321c9de228e6-15e673da",
+  "revision": 2,
+  "title": "blocks",
+  "bounds": {
+    "x": 0,
+    "y": 0,
+    "width": 347,
+    "height": 946
+  },
+  "nodes": [
+    {
+      "x": 35,
+      "y": 268,
+      "width": 254,
+      "height": 254,
+      "localX": 30,
+      "localY": 262,
+      "id": "repeat:instance:model.ResidualCNN.blocks",
+      "parentId": "call:instance:model.ResidualCNN",
+      "label": "blocks",
+      "subtitle": "2 × independent instances",
+      "headerHeight": 46,
+      "kind": "Repeat",
+      "category": "container",
+      "fill": "#f5f8fc",
+      "stroke": "#94a6ba",
+      "glyph": "module",
+      "expanded": true,
+      "expandable": true,
+      "pinned": false,
+      "evidence": "source",
+      "repeat": {
+        "count": 2,
+        "sharing": "independent"
+      },
+      "sourceFact": {
+        "id": "repeat:instance:model.ResidualCNN.blocks",
+        "sourceLabel": "blocks",
+        "kind": "Repeat",
+        "category": "container",
+        "evidence": "source",
+        "repeat": {
+          "count": 2,
+          "sharing": "independent"
+        },
+        "source": {
+          "path": "model.py",
+          "line": 18,
+          "endLine": 19,
+          "expression": "for block in self.blocks:\n            x = block(x)"
+        }
+      },
+      "ports": []
+    },
+    {
+      "x": 65,
+      "y": 330,
+      "width": 194,
+      "height": 62,
+      "localX": 30,
+      "localY": 62,
+      "id": "call:instance:model.ResidualCNN.blocks.0",
+      "parentId": "repeat:instance:model.ResidualCNN.blocks",
+      "label": "ResidualBlock 1",
+      "subtitle": "Module",
+      "headerHeight": 46,
+      "kind": "Module",
+      "category": "container",
+      "fill": "#f5f8fc",
+      "stroke": "#94a6ba",
+      "glyph": "module",
+      "expanded": false,
+      "expandable": true,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "call:instance:model.ResidualCNN.blocks.0",
+        "sourceLabel": "ResidualBlock 1",
+        "kind": "Module",
+        "category": "container",
+        "evidence": "source",
+        "instanceId": "instance:model.ResidualCNN.blocks.0",
+        "callCount": 1,
+        "callId": "call:instance:model.ResidualCNN.blocks.0",
+        "source": {
+          "path": "model.py",
+          "line": 19,
+          "endLine": 19,
+          "expression": "block(x)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.ResidualCNN.blocks.0:call:instance:model.ResidualCNN.blocks.0:in:x:data",
+          "canonicalNodeId": "call:instance:model.ResidualCNN.blocks.0",
+          "canonicalPortId": "call:instance:model.ResidualCNN.blocks.0:in:x",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.ResidualCNN.blocks.0",
+              "portId": "call:instance:model.ResidualCNN.blocks.0:in:x"
+            },
+            {
+              "nodeId": "call:instance:model.ResidualCNN.blocks.0.conv1",
+              "portId": "call:instance:model.ResidualCNN.blocks.0.conv1:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:2",
+            "edge:3"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "x",
+          "x": 129.66666666666669,
+          "y": 330,
+          "proxy": false
+        },
+        {
+          "id": "op:call:instance:model.ResidualCNN.blocks.0:Add:d5f8495254:op:call:instance:model.ResidualCNN.blocks.0:Add:d5f8495254:in:right:residual",
+          "canonicalNodeId": "op:call:instance:model.ResidualCNN.blocks.0:Add:d5f8495254",
+          "canonicalPortId": "op:call:instance:model.ResidualCNN.blocks.0:Add:d5f8495254:in:right",
+          "canonicalBindings": [
+            {
+              "nodeId": "op:call:instance:model.ResidualCNN.blocks.0:Add:d5f8495254",
+              "portId": "op:call:instance:model.ResidualCNN.blocks.0:Add:d5f8495254:in:right"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:9"
+          ],
+          "direction": "in",
+          "role": "residual",
+          "name": "right",
+          "x": 194.33333333333334,
+          "y": 330,
+          "proxy": true
+        },
+        {
+          "id": "call:instance:model.ResidualCNN.blocks.0.activation@2:call:instance:model.ResidualCNN.blocks.0.activation@2:out:output:data",
+          "canonicalNodeId": "call:instance:model.ResidualCNN.blocks.0.activation@2",
+          "canonicalPortId": "call:instance:model.ResidualCNN.blocks.0.activation@2:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.ResidualCNN.blocks.0.activation@2",
+              "portId": "call:instance:model.ResidualCNN.blocks.0.activation@2:out:output"
+            },
+            {
+              "nodeId": "call:instance:model.ResidualCNN.blocks.0.activation@2",
+              "portId": "call:instance:model.ResidualCNN.blocks.0.activation@2:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:11",
+            "edge:12"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 129.66666666666669,
+          "y": 392,
+          "proxy": true
+        },
+        {
+          "id": "call:instance:model.ResidualCNN.blocks.0.activation@2:call:instance:model.ResidualCNN.blocks.0.activation@2:out:output:residual",
+          "canonicalNodeId": "call:instance:model.ResidualCNN.blocks.0.activation@2",
+          "canonicalPortId": "call:instance:model.ResidualCNN.blocks.0.activation@2:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.ResidualCNN.blocks.0.activation@2",
+              "portId": "call:instance:model.ResidualCNN.blocks.0.activation@2:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:18"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 194.33333333333334,
+          "y": 392,
+          "proxy": true
+        }
+      ]
+    },
+    {
+      "x": 65,
+      "y": 430,
+      "width": 194,
+      "height": 62,
+      "localX": 30,
+      "localY": 162,
+      "id": "call:instance:model.ResidualCNN.blocks.1",
+      "parentId": "repeat:instance:model.ResidualCNN.blocks",
+      "label": "ResidualBlock 2",
+      "subtitle": "Module",
+      "headerHeight": 46,
+      "kind": "Module",
+      "category": "container",
+      "fill": "#f5f8fc",
+      "stroke": "#94a6ba",
+      "glyph": "module",
+      "expanded": false,
+      "expandable": true,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "call:instance:model.ResidualCNN.blocks.1",
+        "sourceLabel": "ResidualBlock 2",
+        "kind": "Module",
+        "category": "container",
+        "evidence": "source",
+        "instanceId": "instance:model.ResidualCNN.blocks.1",
+        "callCount": 1,
+        "callId": "call:instance:model.ResidualCNN.blocks.1",
+        "source": {
+          "path": "model.py",
+          "line": 19,
+          "endLine": 19,
+          "expression": "block(x)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.ResidualCNN.blocks.1:call:instance:model.ResidualCNN.blocks.1:in:x:data",
+          "canonicalNodeId": "call:instance:model.ResidualCNN.blocks.1",
+          "canonicalPortId": "call:instance:model.ResidualCNN.blocks.1:in:x",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.ResidualCNN.blocks.1",
+              "portId": "call:instance:model.ResidualCNN.blocks.1:in:x"
+            },
+            {
+              "nodeId": "call:instance:model.ResidualCNN.blocks.1.conv1",
+              "portId": "call:instance:model.ResidualCNN.blocks.1.conv1:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:11",
+            "edge:12"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "x",
+          "x": 129.66666666666669,
+          "y": 430,
+          "proxy": false
+        },
+        {
+          "id": "op:call:instance:model.ResidualCNN.blocks.1:Add:d5f8495254:op:call:instance:model.ResidualCNN.blocks.1:Add:d5f8495254:in:right:residual",
+          "canonicalNodeId": "op:call:instance:model.ResidualCNN.blocks.1:Add:d5f8495254",
+          "canonicalPortId": "op:call:instance:model.ResidualCNN.blocks.1:Add:d5f8495254:in:right",
+          "canonicalBindings": [
+            {
+              "nodeId": "op:call:instance:model.ResidualCNN.blocks.1:Add:d5f8495254",
+              "portId": "op:call:instance:model.ResidualCNN.blocks.1:Add:d5f8495254:in:right"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:18"
+          ],
+          "direction": "in",
+          "role": "residual",
+          "name": "right",
+          "x": 194.33333333333334,
+          "y": 430,
+          "proxy": true
+        },
+        {
+          "id": "call:instance:model.ResidualCNN.blocks.1.activation@2:call:instance:model.ResidualCNN.blocks.1.activation@2:out:output:data",
+          "canonicalNodeId": "call:instance:model.ResidualCNN.blocks.1.activation@2",
+          "canonicalPortId": "call:instance:model.ResidualCNN.blocks.1.activation@2:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.ResidualCNN.blocks.1.activation@2",
+              "portId": "call:instance:model.ResidualCNN.blocks.1.activation@2:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:20"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 162,
+          "y": 492,
+          "proxy": true
+        }
+      ]
+    },
+    {
+      "id": "detail-boundary:0",
+      "canonicalNodeId": "call:instance:model.ResidualCNN.stem",
+      "boundary": true,
+      "x": 35,
+      "y": 94,
+      "localX": 35,
+      "localY": 94,
+      "width": 194,
+      "height": 62,
+      "label": "FROM stem",
+      "subtitle": "external source · data",
+      "kind": "Boundary",
+      "category": "input",
+      "fill": "#eef2f5",
+      "stroke": "#98a6b1",
+      "glyph": "tensor",
+      "headerHeight": 62,
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.ResidualCNN.stem",
+        "sourceLabel": "stem",
+        "kind": "Conv2d",
+        "category": "convolution",
+        "evidence": "contract",
+        "instanceId": "instance:model.ResidualCNN.stem",
+        "callCount": 1,
+        "callId": "call:instance:model.ResidualCNN.stem",
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 17,
+          "expression": "self.stem(image)"
+        }
+      },
+      "ports": [
+        {
+          "id": "detail-boundary:0:call:instance:model.ResidualCNN.stem:out:output",
+          "canonicalNodeId": "call:instance:model.ResidualCNN.stem",
+          "canonicalPortId": "call:instance:model.ResidualCNN.stem:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.ResidualCNN.stem",
+              "portId": "call:instance:model.ResidualCNN.stem:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:2",
+            "edge:3"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 132,
+          "y": 156,
+          "proxy": true
+        }
+      ]
+    },
+    {
+      "id": "detail-boundary:1",
+      "canonicalNodeId": "call:instance:model.ResidualCNN.stem",
+      "boundary": true,
+      "x": 35,
+      "y": 176,
+      "localX": 35,
+      "localY": 176,
+      "width": 194,
+      "height": 62,
+      "label": "FROM stem",
+      "subtitle": "external source · residual",
+      "kind": "Boundary",
+      "category": "input",
+      "fill": "#eef2f5",
+      "stroke": "#98a6b1",
+      "glyph": "tensor",
+      "headerHeight": 62,
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.ResidualCNN.stem",
+        "sourceLabel": "stem",
+        "kind": "Conv2d",
+        "category": "convolution",
+        "evidence": "contract",
+        "instanceId": "instance:model.ResidualCNN.stem",
+        "callCount": 1,
+        "callId": "call:instance:model.ResidualCNN.stem",
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 17,
+          "expression": "self.stem(image)"
+        }
+      },
+      "ports": [
+        {
+          "id": "detail-boundary:1:call:instance:model.ResidualCNN.stem:out:output",
+          "canonicalNodeId": "call:instance:model.ResidualCNN.stem",
+          "canonicalPortId": "call:instance:model.ResidualCNN.stem:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.ResidualCNN.stem",
+              "portId": "call:instance:model.ResidualCNN.stem:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:9"
+          ],
+          "direction": "out",
+          "role": "residual",
+          "name": "output",
+          "x": 132,
+          "y": 238,
+          "proxy": true
+        }
+      ]
+    },
+    {
+      "id": "detail-boundary:2",
+      "canonicalNodeId": "call:instance:model.ResidualCNN.pool",
+      "boundary": true,
+      "x": 35,
+      "y": 564,
+      "localX": 35,
+      "localY": 564,
+      "width": 194,
+      "height": 62,
+      "label": "TO pool",
+      "subtitle": "external consumer · data",
+      "kind": "Boundary",
+      "category": "output",
+      "fill": "#eef2f5",
+      "stroke": "#98a6b1",
+      "glyph": "tensor",
+      "headerHeight": 62,
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.ResidualCNN.pool",
+        "sourceLabel": "pool",
+        "kind": "AdaptiveAvgPool2d",
+        "category": "pooling",
+        "evidence": "contract",
+        "instanceId": "instance:model.ResidualCNN.pool",
+        "callCount": 1,
+        "callId": "call:instance:model.ResidualCNN.pool",
+        "source": {
+          "path": "model.py",
+          "line": 20,
+          "endLine": 20,
+          "expression": "self.pool(x)"
+        }
+      },
+      "ports": [
+        {
+          "id": "detail-boundary:2:call:instance:model.ResidualCNN.pool:in:input",
+          "canonicalNodeId": "call:instance:model.ResidualCNN.pool",
+          "canonicalPortId": "call:instance:model.ResidualCNN.pool:in:input",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.ResidualCNN.pool",
+              "portId": "call:instance:model.ResidualCNN.pool:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:20"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "input",
+          "x": 132,
+          "y": 564,
+          "proxy": true
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge:11",
+      "sourceId": "call:instance:model.ResidualCNN.blocks.0",
+      "targetId": "call:instance:model.ResidualCNN.blocks.1",
+      "source": {
+        "nodeId": "call:instance:model.ResidualCNN.blocks.0.activation@2",
+        "portId": "call:instance:model.ResidualCNN.blocks.0.activation@2:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.ResidualCNN.blocks.1",
+        "portId": "call:instance:model.ResidualCNN.blocks.1:in:x"
+      },
+      "canonicalEdgeIds": [
+        "edge:11",
+        "edge:12"
+      ],
+      "tensorId": "tensor:call:instance:model.ResidualCNN.blocks.0.activation@2:output",
+      "role": "data",
+      "path": "M 129.7 392 V 411 H 129.7 V 430",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 137.66666666666669,
+      "labelY": 404
+    },
+    {
+      "id": "edge:18",
+      "sourceId": "call:instance:model.ResidualCNN.blocks.0",
+      "targetId": "call:instance:model.ResidualCNN.blocks.1",
+      "source": {
+        "nodeId": "call:instance:model.ResidualCNN.blocks.0.activation@2",
+        "portId": "call:instance:model.ResidualCNN.blocks.0.activation@2:out:output"
+      },
+      "target": {
+        "nodeId": "op:call:instance:model.ResidualCNN.blocks.1:Add:d5f8495254",
+        "portId": "op:call:instance:model.ResidualCNN.blocks.1:Add:d5f8495254:in:right"
+      },
+      "canonicalEdgeIds": [
+        "edge:18"
+      ],
+      "tensorId": "tensor:call:instance:model.ResidualCNN.blocks.0.activation@2:output",
+      "role": "residual",
+      "path": "M 194.3 392 V 430",
+      "stroke": "#b69967",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 201.3,
+      "labelY": 404
+    },
+    {
+      "id": "edge:2",
+      "sourceId": "detail-boundary:0",
+      "targetId": "call:instance:model.ResidualCNN.blocks.0",
+      "source": {
+        "nodeId": "call:instance:model.ResidualCNN.stem",
+        "portId": "call:instance:model.ResidualCNN.stem:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.ResidualCNN.blocks.0",
+        "portId": "call:instance:model.ResidualCNN.blocks.0:in:x"
+      },
+      "canonicalEdgeIds": [
+        "edge:2"
+      ],
+      "tensorId": "tensor:call:instance:model.ResidualCNN.stem:output",
+      "role": "data",
+      "path": "M 132 156 V 166 H 307 V 320 H 129.66666666666669 V 330",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 314,
+      "labelY": 243
+    },
+    {
+      "id": "edge:3",
+      "sourceId": "detail-boundary:0",
+      "targetId": "call:instance:model.ResidualCNN.blocks.0",
+      "source": {
+        "nodeId": "call:instance:model.ResidualCNN.stem",
+        "portId": "call:instance:model.ResidualCNN.stem:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.ResidualCNN.blocks.0.conv1",
+        "portId": "call:instance:model.ResidualCNN.blocks.0.conv1:in:input"
+      },
+      "canonicalEdgeIds": [
+        "edge:3"
+      ],
+      "tensorId": "tensor:call:instance:model.ResidualCNN.stem:output",
+      "role": "data",
+      "path": "M 132 156 V 166 H 310 V 320 H 129.66666666666669 V 330",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 317,
+      "labelY": 243
+    },
+    {
+      "id": "edge:9",
+      "sourceId": "detail-boundary:1",
+      "targetId": "call:instance:model.ResidualCNN.blocks.0",
+      "source": {
+        "nodeId": "call:instance:model.ResidualCNN.stem",
+        "portId": "call:instance:model.ResidualCNN.stem:out:output"
+      },
+      "target": {
+        "nodeId": "op:call:instance:model.ResidualCNN.blocks.0:Add:d5f8495254",
+        "portId": "op:call:instance:model.ResidualCNN.blocks.0:Add:d5f8495254:in:right"
+      },
+      "canonicalEdgeIds": [
+        "edge:9"
+      ],
+      "tensorId": "tensor:call:instance:model.ResidualCNN.stem:output",
+      "role": "residual",
+      "path": "M 132 238 V 248 H 312 V 320 H 194.33333333333334 V 330",
+      "stroke": "#b69967",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 319,
+      "labelY": 284
+    },
+    {
+      "id": "edge:20",
+      "sourceId": "call:instance:model.ResidualCNN.blocks.1",
+      "targetId": "detail-boundary:2",
+      "source": {
+        "nodeId": "call:instance:model.ResidualCNN.blocks.1.activation@2",
+        "portId": "call:instance:model.ResidualCNN.blocks.1.activation@2:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.ResidualCNN.pool",
+        "portId": "call:instance:model.ResidualCNN.pool:in:input"
+      },
+      "canonicalEdgeIds": [
+        "edge:20"
+      ],
+      "tensorId": "tensor:call:instance:model.ResidualCNN.blocks.1.activation@2:output",
+      "role": "data",
+      "path": "M 162 492 V 498 H 132 V 564",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 139,
+      "labelY": 524
+    }
+  ],
+  "hiddenEdges": [
+    "edge:4",
+    "edge:5",
+    "edge:6",
+    "edge:7",
+    "edge:8",
+    "edge:10",
+    "edge:13",
+    "edge:14",
+    "edge:15",
+    "edge:16",
+    "edge:17",
+    "edge:19"
+  ],
+  "legend": [
+    {
+      "id": "legend:input",
+      "label": "Input",
+      "color": "#eef2f5",
+      "glyph": "tensor",
+      "x": 35,
+      "y": 664
+    },
+    {
+      "id": "legend:container",
+      "label": "Container",
+      "color": "#f5f8fc",
+      "glyph": "module",
+      "x": 35,
+      "y": 691
+    },
+    {
+      "id": "legend:norm",
+      "label": "Norm",
+      "color": "#f5e7ef",
+      "glyph": "norm",
+      "x": 35,
+      "y": 718
+    },
+    {
+      "id": "legend:activation",
+      "label": "Activation",
+      "color": "#f9eddc",
+      "glyph": "operator",
+      "x": 35,
+      "y": 745
+    },
+    {
+      "id": "legend:residual",
+      "label": "Residual",
+      "color": "#f4eddf",
+      "glyph": "add",
+      "x": 35,
+      "y": 772
+    },
+    {
+      "id": "legend:linear",
+      "label": "Linear",
+      "color": "#e5f1ed",
+      "glyph": "operator",
+      "x": 35,
+      "y": 799
+    }
+  ],
+  "annotations": [
+    {
+      "id": "detail-provenance",
+      "text": "ResidualCNN · blocks · rev 2\n4 boundary bindings shown; 12 internal adapter/hidden bindings retained in metadata.",
+      "x": 35,
+      "y": 831,
+      "width": 254,
+      "height": 80
+    }
+  ],
+  "pageSpec": {
+    "widthMm": 85,
+    "background": "#ffffff",
+    "preset": "paper"
+  },
+  "sourceDigest": "321c9de228e64557a14c2f6e53e659daa6c4c88f45594b97632940a730e96624",
+  "irDigest": "15e673daa52db933a56ffa707b88f3260e72ea211928da4b533bbed46884c137",
+  "sourceFacts": [
+    {
+      "id": "input:model.ResidualCNN:image",
+      "sourceLabel": "image",
+      "kind": "Input",
+      "category": "input",
+      "evidence": "source",
+      "source": {
+        "path": "model.py",
+        "line": 16,
+        "endLine": 21,
+        "expression": "def forward(self, image):\n        x = self.stem(image)\n        for block in self.blocks:\n            x = block(x)\n        x = self.flatten(self.pool(x))\n        return self.classifier(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN",
+      "sourceLabel": "ResidualCNN",
+      "kind": "Module",
+      "category": "container",
+      "evidence": "source",
+      "instanceId": "instance:model.ResidualCNN",
+      "callCount": 1,
+      "callId": "call:instance:model.ResidualCNN",
+      "source": {
+        "path": "model.py",
+        "line": 7,
+        "endLine": 21,
+        "expression": "class ResidualCNN(nn.Module):\n    def __init__(self, channels=16, classes=10):\n        super().__init__()\n        self.stem = nn.Conv2d(3, channels, 3, padding=1)\n        self.blocks = nn.ModuleList([ResidualBlock(channels) for _ in range(2)])\n        self.pool = nn.AdaptiveAvgPool2d(1)\n        self.flatten = nn.Flatten(1)\n        self.classifier = nn.Linear(channels, classes)\n\n    def forward(self, image):\n        x = self.stem(image)\n        for block in self.blocks:\n            x = block(x)\n        x = self.flatten(self.pool(x))\n        return self.classifier(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.stem",
+      "sourceLabel": "stem",
+      "kind": "Conv2d",
+      "category": "convolution",
+      "evidence": "contract",
+      "instanceId": "instance:model.ResidualCNN.stem",
+      "callCount": 1,
+      "callId": "call:instance:model.ResidualCNN.stem",
+      "source": {
+        "path": "model.py",
+        "line": 17,
+        "endLine": 17,
+        "expression": "self.stem(image)"
+      }
+    },
+    {
+      "id": "repeat:instance:model.ResidualCNN.blocks",
+      "sourceLabel": "blocks",
+      "kind": "Repeat",
+      "category": "container",
+      "evidence": "source",
+      "repeat": {
+        "count": 2,
+        "sharing": "independent"
+      },
+      "source": {
+        "path": "model.py",
+        "line": 18,
+        "endLine": 19,
+        "expression": "for block in self.blocks:\n            x = block(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.blocks.0",
+      "sourceLabel": "ResidualBlock 1",
+      "kind": "Module",
+      "category": "container",
+      "evidence": "source",
+      "instanceId": "instance:model.ResidualCNN.blocks.0",
+      "callCount": 1,
+      "callId": "call:instance:model.ResidualCNN.blocks.0",
+      "source": {
+        "path": "model.py",
+        "line": 19,
+        "endLine": 19,
+        "expression": "block(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.blocks.0.conv1",
+      "sourceLabel": "conv1",
+      "kind": "Conv2d",
+      "category": "convolution",
+      "evidence": "contract",
+      "instanceId": "instance:model.ResidualCNN.blocks.0.conv1",
+      "callCount": 1,
+      "callId": "call:instance:model.ResidualCNN.blocks.0.conv1",
+      "source": {
+        "path": "blocks.py",
+        "line": 17,
+        "endLine": 17,
+        "expression": "self.conv1(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.blocks.0.norm1",
+      "sourceLabel": "norm1",
+      "kind": "BatchNorm2d",
+      "category": "norm",
+      "evidence": "contract",
+      "instanceId": "instance:model.ResidualCNN.blocks.0.norm1",
+      "callCount": 1,
+      "callId": "call:instance:model.ResidualCNN.blocks.0.norm1",
+      "source": {
+        "path": "blocks.py",
+        "line": 17,
+        "endLine": 17,
+        "expression": "self.norm1(self.conv1(x))"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.blocks.0.activation",
+      "sourceLabel": "activation",
+      "kind": "ReLU",
+      "category": "activation",
+      "evidence": "contract",
+      "instanceId": "instance:model.ResidualCNN.blocks.0.activation",
+      "callCount": 2,
+      "callId": "call:instance:model.ResidualCNN.blocks.0.activation",
+      "source": {
+        "path": "blocks.py",
+        "line": 17,
+        "endLine": 17,
+        "expression": "self.activation(self.norm1(self.conv1(x)))"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.blocks.0.conv2",
+      "sourceLabel": "conv2",
+      "kind": "Conv2d",
+      "category": "convolution",
+      "evidence": "contract",
+      "instanceId": "instance:model.ResidualCNN.blocks.0.conv2",
+      "callCount": 1,
+      "callId": "call:instance:model.ResidualCNN.blocks.0.conv2",
+      "source": {
+        "path": "blocks.py",
+        "line": 18,
+        "endLine": 18,
+        "expression": "self.conv2(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.blocks.0.norm2",
+      "sourceLabel": "norm2",
+      "kind": "BatchNorm2d",
+      "category": "norm",
+      "evidence": "contract",
+      "instanceId": "instance:model.ResidualCNN.blocks.0.norm2",
+      "callCount": 1,
+      "callId": "call:instance:model.ResidualCNN.blocks.0.norm2",
+      "source": {
+        "path": "blocks.py",
+        "line": 18,
+        "endLine": 18,
+        "expression": "self.norm2(self.conv2(x))"
+      }
+    },
+    {
+      "id": "op:call:instance:model.ResidualCNN.blocks.0:Add:d5f8495254",
+      "sourceLabel": "Add",
+      "kind": "Add",
+      "category": "residual",
+      "evidence": "source",
+      "source": {
+        "path": "blocks.py",
+        "line": 19,
+        "endLine": 19,
+        "expression": "x + residual"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.blocks.0.activation@2",
+      "sourceLabel": "activation",
+      "kind": "ReLU",
+      "category": "activation",
+      "evidence": "contract",
+      "instanceId": "instance:model.ResidualCNN.blocks.0.activation",
+      "callCount": 2,
+      "callId": "call:instance:model.ResidualCNN.blocks.0.activation@2",
+      "source": {
+        "path": "blocks.py",
+        "line": 19,
+        "endLine": 19,
+        "expression": "self.activation(x + residual)"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.blocks.1",
+      "sourceLabel": "ResidualBlock 2",
+      "kind": "Module",
+      "category": "container",
+      "evidence": "source",
+      "instanceId": "instance:model.ResidualCNN.blocks.1",
+      "callCount": 1,
+      "callId": "call:instance:model.ResidualCNN.blocks.1",
+      "source": {
+        "path": "model.py",
+        "line": 19,
+        "endLine": 19,
+        "expression": "block(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.blocks.1.conv1",
+      "sourceLabel": "conv1",
+      "kind": "Conv2d",
+      "category": "convolution",
+      "evidence": "contract",
+      "instanceId": "instance:model.ResidualCNN.blocks.1.conv1",
+      "callCount": 1,
+      "callId": "call:instance:model.ResidualCNN.blocks.1.conv1",
+      "source": {
+        "path": "blocks.py",
+        "line": 17,
+        "endLine": 17,
+        "expression": "self.conv1(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.blocks.1.norm1",
+      "sourceLabel": "norm1",
+      "kind": "BatchNorm2d",
+      "category": "norm",
+      "evidence": "contract",
+      "instanceId": "instance:model.ResidualCNN.blocks.1.norm1",
+      "callCount": 1,
+      "callId": "call:instance:model.ResidualCNN.blocks.1.norm1",
+      "source": {
+        "path": "blocks.py",
+        "line": 17,
+        "endLine": 17,
+        "expression": "self.norm1(self.conv1(x))"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.blocks.1.activation",
+      "sourceLabel": "activation",
+      "kind": "ReLU",
+      "category": "activation",
+      "evidence": "contract",
+      "instanceId": "instance:model.ResidualCNN.blocks.1.activation",
+      "callCount": 2,
+      "callId": "call:instance:model.ResidualCNN.blocks.1.activation",
+      "source": {
+        "path": "blocks.py",
+        "line": 17,
+        "endLine": 17,
+        "expression": "self.activation(self.norm1(self.conv1(x)))"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.blocks.1.conv2",
+      "sourceLabel": "conv2",
+      "kind": "Conv2d",
+      "category": "convolution",
+      "evidence": "contract",
+      "instanceId": "instance:model.ResidualCNN.blocks.1.conv2",
+      "callCount": 1,
+      "callId": "call:instance:model.ResidualCNN.blocks.1.conv2",
+      "source": {
+        "path": "blocks.py",
+        "line": 18,
+        "endLine": 18,
+        "expression": "self.conv2(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.blocks.1.norm2",
+      "sourceLabel": "norm2",
+      "kind": "BatchNorm2d",
+      "category": "norm",
+      "evidence": "contract",
+      "instanceId": "instance:model.ResidualCNN.blocks.1.norm2",
+      "callCount": 1,
+      "callId": "call:instance:model.ResidualCNN.blocks.1.norm2",
+      "source": {
+        "path": "blocks.py",
+        "line": 18,
+        "endLine": 18,
+        "expression": "self.norm2(self.conv2(x))"
+      }
+    },
+    {
+      "id": "op:call:instance:model.ResidualCNN.blocks.1:Add:d5f8495254",
+      "sourceLabel": "Add",
+      "kind": "Add",
+      "category": "residual",
+      "evidence": "source",
+      "source": {
+        "path": "blocks.py",
+        "line": 19,
+        "endLine": 19,
+        "expression": "x + residual"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.blocks.1.activation@2",
+      "sourceLabel": "activation",
+      "kind": "ReLU",
+      "category": "activation",
+      "evidence": "contract",
+      "instanceId": "instance:model.ResidualCNN.blocks.1.activation",
+      "callCount": 2,
+      "callId": "call:instance:model.ResidualCNN.blocks.1.activation@2",
+      "source": {
+        "path": "blocks.py",
+        "line": 19,
+        "endLine": 19,
+        "expression": "self.activation(x + residual)"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.pool",
+      "sourceLabel": "pool",
+      "kind": "AdaptiveAvgPool2d",
+      "category": "pooling",
+      "evidence": "contract",
+      "instanceId": "instance:model.ResidualCNN.pool",
+      "callCount": 1,
+      "callId": "call:instance:model.ResidualCNN.pool",
+      "source": {
+        "path": "model.py",
+        "line": 20,
+        "endLine": 20,
+        "expression": "self.pool(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.flatten",
+      "sourceLabel": "flatten",
+      "kind": "Flatten",
+      "category": "operator",
+      "evidence": "contract",
+      "instanceId": "instance:model.ResidualCNN.flatten",
+      "callCount": 1,
+      "callId": "call:instance:model.ResidualCNN.flatten",
+      "source": {
+        "path": "model.py",
+        "line": 20,
+        "endLine": 20,
+        "expression": "self.flatten(self.pool(x))"
+      }
+    },
+    {
+      "id": "call:instance:model.ResidualCNN.classifier",
+      "sourceLabel": "classifier",
+      "kind": "Linear",
+      "category": "linear",
+      "evidence": "contract",
+      "instanceId": "instance:model.ResidualCNN.classifier",
+      "callCount": 1,
+      "callId": "call:instance:model.ResidualCNN.classifier",
+      "source": {
+        "path": "model.py",
+        "line": 21,
+        "endLine": 21,
+        "expression": "self.classifier(x)"
+      }
+    },
+    {
+      "id": "output:model.ResidualCNN:0",
+      "sourceLabel": "output",
+      "kind": "Output",
+      "category": "output",
+      "evidence": "source",
+      "outputPath": [],
+      "source": {
+        "path": "model.py",
+        "line": 16,
+        "endLine": 21,
+        "expression": "def forward(self, image):\n        x = self.stem(image)\n        for block in self.blocks:\n            x = block(x)\n        x = self.flatten(self.pool(x))\n        return self.classifier(x)"
+      }
+    }
+  ],
+  "diagnostics": [
+    {
+      "level": "info",
+      "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+    },
+    {
+      "level": "info",
+      "message": "Detail page of repeat:instance:model.ResidualCNN.blocks; every boundary binding is explicitly shown. Unrelated edges and outside annotations are listed in exportScope metadata."
+    }
+  ],
+  "exportScope": {
+    "kind": "detail",
+    "selectedNodeId": "repeat:instance:model.ResidualCNN.blocks",
+    "selectedLabel": "blocks",
+    "sourceDocumentTitle": "ResidualCNN",
+    "canonicalNodeIds": [
+      "repeat:instance:model.ResidualCNN.blocks",
+      "call:instance:model.ResidualCNN.blocks.0",
+      "call:instance:model.ResidualCNN.blocks.0.conv1",
+      "call:instance:model.ResidualCNN.blocks.0.norm1",
+      "call:instance:model.ResidualCNN.blocks.0.activation",
+      "call:instance:model.ResidualCNN.blocks.0.conv2",
+      "call:instance:model.ResidualCNN.blocks.0.norm2",
+      "op:call:instance:model.ResidualCNN.blocks.0:Add:d5f8495254",
+      "call:instance:model.ResidualCNN.blocks.0.activation@2",
+      "call:instance:model.ResidualCNN.blocks.1",
+      "call:instance:model.ResidualCNN.blocks.1.conv1",
+      "call:instance:model.ResidualCNN.blocks.1.norm1",
+      "call:instance:model.ResidualCNN.blocks.1.activation",
+      "call:instance:model.ResidualCNN.blocks.1.conv2",
+      "call:instance:model.ResidualCNN.blocks.1.norm2",
+      "op:call:instance:model.ResidualCNN.blocks.1:Add:d5f8495254",
+      "call:instance:model.ResidualCNN.blocks.1.activation@2"
+    ],
+    "internalEdgeIds": [
+      "edge:4",
+      "edge:5",
+      "edge:6",
+      "edge:7",
+      "edge:8",
+      "edge:10",
+      "edge:11",
+      "edge:12",
+      "edge:13",
+      "edge:14",
+      "edge:15",
+      "edge:16",
+      "edge:17",
+      "edge:18",
+      "edge:19"
+    ],
+    "hiddenInternalEdgeIds": [
+      "edge:4",
+      "edge:5",
+      "edge:6",
+      "edge:7",
+      "edge:8",
+      "edge:10",
+      "edge:13",
+      "edge:14",
+      "edge:15",
+      "edge:16",
+      "edge:17",
+      "edge:19"
+    ],
+    "boundaryEdges": [
+      {
+        "edgeId": "edge:2",
+        "direction": "in",
+        "source": {
+          "nodeId": "call:instance:model.ResidualCNN.stem",
+          "portId": "call:instance:model.ResidualCNN.stem:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.ResidualCNN.blocks.0",
+          "portId": "call:instance:model.ResidualCNN.blocks.0:in:x"
+        },
+        "tensorId": "tensor:call:instance:model.ResidualCNN.stem:output",
+        "role": "data"
+      },
+      {
+        "edgeId": "edge:3",
+        "direction": "in",
+        "source": {
+          "nodeId": "call:instance:model.ResidualCNN.stem",
+          "portId": "call:instance:model.ResidualCNN.stem:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.ResidualCNN.blocks.0.conv1",
+          "portId": "call:instance:model.ResidualCNN.blocks.0.conv1:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.ResidualCNN.stem:output",
+        "role": "data"
+      },
+      {
+        "edgeId": "edge:9",
+        "direction": "in",
+        "source": {
+          "nodeId": "call:instance:model.ResidualCNN.stem",
+          "portId": "call:instance:model.ResidualCNN.stem:out:output"
+        },
+        "target": {
+          "nodeId": "op:call:instance:model.ResidualCNN.blocks.0:Add:d5f8495254",
+          "portId": "op:call:instance:model.ResidualCNN.blocks.0:Add:d5f8495254:in:right"
+        },
+        "tensorId": "tensor:call:instance:model.ResidualCNN.stem:output",
+        "role": "residual"
+      },
+      {
+        "edgeId": "edge:20",
+        "direction": "out",
+        "source": {
+          "nodeId": "call:instance:model.ResidualCNN.blocks.1.activation@2",
+          "portId": "call:instance:model.ResidualCNN.blocks.1.activation@2:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.ResidualCNN.pool",
+          "portId": "call:instance:model.ResidualCNN.pool:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.ResidualCNN.blocks.1.activation@2:output",
+        "role": "data"
+      }
+    ],
+    "omittedEdgeIds": [
+      "edge:0",
+      "edge:1",
+      "edge:21",
+      "edge:22",
+      "edge:23"
+    ],
+    "includedAnnotationIds": [],
+    "omittedAnnotationIds": []
+  }
+}

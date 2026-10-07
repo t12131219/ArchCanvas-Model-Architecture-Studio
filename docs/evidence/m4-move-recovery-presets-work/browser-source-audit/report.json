@@ -1,0 +1,377 @@
+{
+  "passed": true,
+  "scope": "Actual browser saved drafts and source read from generated modal",
+  "modelExecution": "not_run",
+  "basis": "Independent handwritten preset contracts and full stdlib AST oracle",
+  "cases": [
+    {
+      "case": "mlp",
+      "draftId": "draft-39440de6-e592-481c-a437-67bc1293de22",
+      "storageRevision": 1,
+      "nodes": 5,
+      "edges": 4,
+      "declaredShapes": {
+        "n_939ca751ceda4b4e84559be188eb086b": {
+          "shape": [
+            2,
+            16
+          ],
+          "dtype": "float32"
+        },
+        "n_c6dd0c56097044e7aa98d148b37f6e0f": {
+          "shape": [
+            2,
+            32
+          ],
+          "dtype": "float32"
+        },
+        "n_16d107bf11b040b5a7d93e5a6c9ec834": {
+          "shape": [
+            2,
+            32
+          ],
+          "dtype": "float32"
+        },
+        "n_85ed819375c142e680c61045b6cb56a4": {
+          "shape": [
+            2,
+            4
+          ],
+          "dtype": "float32"
+        },
+        "n_127bfecbe6bd4dc4ad9d128768c54d54": {
+          "shape": [
+            2,
+            4
+          ],
+          "dtype": "float32"
+        }
+      },
+      "ast": {
+        "constructorCount": 3,
+        "forwardAssignmentCount": 3,
+        "inputs": 1,
+        "namedOutputCount": 1,
+        "nodeSymbols": {
+          "n_939ca751ceda4b4e84559be188eb086b": "node_e57a82ab2c77b393",
+          "n_85ed819375c142e680c61045b6cb56a4": "node_642cf9e6ec526192",
+          "n_16d107bf11b040b5a7d93e5a6c9ec834": "node_6099b5c846d628dd",
+          "n_c6dd0c56097044e7aa98d148b37f6e0f": "node_df48300bc2fe1b8e"
+        },
+        "returnBindings": {
+          "n_127bfecbe6bd4dc4ad9d128768c54d54": "node_642cf9e6ec526192"
+        },
+        "basis": "Handwritten frontend topology, full stdlib AST traversal from actual named return outputs; no generated-name hash oracle."
+      },
+      "negativeControls": [
+        {
+          "name": "wrong-constructor-kind",
+          "status": "rejected-as-required",
+          "reason": "n_c6dd0c56097044e7aa98d148b37f6e0f: exact generated constructor type/parameters differ",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_df48300bc2fe1b8e = nn.Identity(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_6099b5c846d628dd = nn.ReLU()\n        self.node_642cf9e6ec526192 = nn.Linear(in_features=32, out_features=4, bias=True, dtype=torch.float32)\n\n    def forward(self, node_e57a82ab2c77b393):\n        node_df48300bc2fe1b8e = self.node_df48300bc2fe1b8e(node_e57a82ab2c77b393)\n        node_6099b5c846d628dd = self.node_6099b5c846d628dd(node_df48300bc2fe1b8e)\n        node_642cf9e6ec526192 = self.node_642cf9e6ec526192(node_6099b5c846d628dd)\n        return {'n_127bfecbe6bd4dc4ad9d128768c54d54': node_642cf9e6ec526192}\n"
+        },
+        {
+          "name": "wrong-constructor-parameter",
+          "status": "rejected-as-required",
+          "reason": "n_c6dd0c56097044e7aa98d148b37f6e0f: exact generated constructor type/parameters differ",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_df48300bc2fe1b8e = nn.Linear(in_features=16, out_features=33, bias=True, dtype=torch.float32)\n        self.node_6099b5c846d628dd = nn.ReLU()\n        self.node_642cf9e6ec526192 = nn.Linear(in_features=32, out_features=4, bias=True, dtype=torch.float32)\n\n    def forward(self, node_e57a82ab2c77b393):\n        node_df48300bc2fe1b8e = self.node_df48300bc2fe1b8e(node_e57a82ab2c77b393)\n        node_6099b5c846d628dd = self.node_6099b5c846d628dd(node_df48300bc2fe1b8e)\n        node_642cf9e6ec526192 = self.node_642cf9e6ec526192(node_6099b5c846d628dd)\n        return {'n_127bfecbe6bd4dc4ad9d128768c54d54': node_642cf9e6ec526192}\n"
+        },
+        {
+          "name": "wrong-constructor-dtype",
+          "status": "rejected-as-required",
+          "reason": "n_c6dd0c56097044e7aa98d148b37f6e0f: exact generated constructor type/parameters differ",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_df48300bc2fe1b8e = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float64)\n        self.node_6099b5c846d628dd = nn.ReLU()\n        self.node_642cf9e6ec526192 = nn.Linear(in_features=32, out_features=4, bias=True, dtype=torch.float32)\n\n    def forward(self, node_e57a82ab2c77b393):\n        node_df48300bc2fe1b8e = self.node_df48300bc2fe1b8e(node_e57a82ab2c77b393)\n        node_6099b5c846d628dd = self.node_6099b5c846d628dd(node_df48300bc2fe1b8e)\n        node_642cf9e6ec526192 = self.node_642cf9e6ec526192(node_6099b5c846d628dd)\n        return {'n_127bfecbe6bd4dc4ad9d128768c54d54': node_642cf9e6ec526192}\n"
+        },
+        {
+          "name": "wrong-forward-producer",
+          "status": "rejected-as-required",
+          "reason": "missing assignment for n_c6dd0c56097044e7aa98d148b37f6e0f",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_df48300bc2fe1b8e = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_6099b5c846d628dd = nn.ReLU()\n        self.node_642cf9e6ec526192 = nn.Linear(in_features=32, out_features=4, bias=True, dtype=torch.float32)\n\n    def forward(self, node_e57a82ab2c77b393):\n        node_df48300bc2fe1b8e = self.node_df48300bc2fe1b8e(node_e57a82ab2c77b393)\n        node_6099b5c846d628dd = self.node_6099b5c846d628dd(node_e57a82ab2c77b393)\n        node_642cf9e6ec526192 = self.node_642cf9e6ec526192(node_6099b5c846d628dd)\n        return {'n_127bfecbe6bd4dc4ad9d128768c54d54': node_642cf9e6ec526192}\n"
+        },
+        {
+          "name": "wrong-return-key",
+          "status": "rejected-as-required",
+          "reason": "return dictionary keys differ from draft output node identities",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_df48300bc2fe1b8e = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_6099b5c846d628dd = nn.ReLU()\n        self.node_642cf9e6ec526192 = nn.Linear(in_features=32, out_features=4, bias=True, dtype=torch.float32)\n\n    def forward(self, node_e57a82ab2c77b393):\n        node_df48300bc2fe1b8e = self.node_df48300bc2fe1b8e(node_e57a82ab2c77b393)\n        node_6099b5c846d628dd = self.node_6099b5c846d628dd(node_df48300bc2fe1b8e)\n        node_642cf9e6ec526192 = self.node_642cf9e6ec526192(node_6099b5c846d628dd)\n        return {'n_127bfecbe6bd4dc4ad9d128768c54d54_wrong_output': node_642cf9e6ec526192}\n"
+        },
+        {
+          "name": "wrong-return-producer",
+          "status": "rejected-as-required",
+          "reason": "missing assignment for n_85ed819375c142e680c61045b6cb56a4",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_df48300bc2fe1b8e = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_6099b5c846d628dd = nn.ReLU()\n        self.node_642cf9e6ec526192 = nn.Linear(in_features=32, out_features=4, bias=True, dtype=torch.float32)\n\n    def forward(self, node_e57a82ab2c77b393):\n        node_df48300bc2fe1b8e = self.node_df48300bc2fe1b8e(node_e57a82ab2c77b393)\n        node_6099b5c846d628dd = self.node_6099b5c846d628dd(node_df48300bc2fe1b8e)\n        node_642cf9e6ec526192 = self.node_642cf9e6ec526192(node_6099b5c846d628dd)\n        return {'n_127bfecbe6bd4dc4ad9d128768c54d54': node_e57a82ab2c77b393}\n"
+        },
+        {
+          "name": "undeclared-forward-assignment",
+          "status": "rejected-as-required",
+          "reason": "unexpected or unused forward assignments",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_df48300bc2fe1b8e = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_6099b5c846d628dd = nn.ReLU()\n        self.node_642cf9e6ec526192 = nn.Linear(in_features=32, out_features=4, bias=True, dtype=torch.float32)\n\n    def forward(self, node_e57a82ab2c77b393):\n        node_df48300bc2fe1b8e = self.node_df48300bc2fe1b8e(node_e57a82ab2c77b393)\n        node_6099b5c846d628dd = self.node_6099b5c846d628dd(node_df48300bc2fe1b8e)\n        node_642cf9e6ec526192 = self.node_642cf9e6ec526192(node_6099b5c846d628dd)\n        undeclared_value = 7\n        return {'n_127bfecbe6bd4dc4ad9d128768c54d54': node_642cf9e6ec526192}\n"
+        }
+      ],
+      "sourceSha256": "dbca5eb4269950d892ea54a6038a0b52bbd59c9e3f1511ef908b8299ec8aed71",
+      "draftEnvelopeSha256": "b0507d8b21336022bd6a9f75c0f5aa5358ef54ae73aacc2fcbda6f3cc298e76d"
+    },
+    {
+      "case": "cnn",
+      "draftId": "draft-146ecdea-4aa7-4c97-8580-da391b1f7402",
+      "storageRevision": 1,
+      "nodes": 8,
+      "edges": 7,
+      "declaredShapes": {
+        "n_59060a25dda547d8acd28f30aac0509a": {
+          "shape": [
+            1,
+            3,
+            32,
+            32
+          ],
+          "dtype": "float32"
+        },
+        "n_487e9640db6b448894765159e0d75b5c": {
+          "shape": [
+            1,
+            8,
+            32,
+            32
+          ],
+          "dtype": "float32"
+        },
+        "n_4adfb161c2be4ed3bb92f35e4c85f8fd": {
+          "shape": [
+            1,
+            8,
+            32,
+            32
+          ],
+          "dtype": "float32"
+        },
+        "n_4d6456b684654080885134b2e3d94b5d": {
+          "shape": [
+            1,
+            8,
+            16,
+            16
+          ],
+          "dtype": "float32"
+        },
+        "n_ae8977c0d3ea492ba7a5052aa9c3c5d6": {
+          "shape": [
+            1,
+            8,
+            1,
+            1
+          ],
+          "dtype": "float32"
+        },
+        "n_b1648ae6e89f40ebb66643adfc4da750": {
+          "shape": [
+            1,
+            8
+          ],
+          "dtype": "float32"
+        },
+        "n_319605704f7a4cf9b6ab161cbe0c4cdf": {
+          "shape": [
+            1,
+            4
+          ],
+          "dtype": "float32"
+        },
+        "n_465fe97561dd4929a838a92f6d936d44": {
+          "shape": [
+            1,
+            4
+          ],
+          "dtype": "float32"
+        }
+      },
+      "ast": {
+        "constructorCount": 6,
+        "forwardAssignmentCount": 6,
+        "inputs": 1,
+        "namedOutputCount": 1,
+        "nodeSymbols": {
+          "n_59060a25dda547d8acd28f30aac0509a": "node_8d194828c6bb4a49",
+          "n_319605704f7a4cf9b6ab161cbe0c4cdf": "node_59dd6a50c384ad99",
+          "n_b1648ae6e89f40ebb66643adfc4da750": "node_58b143e627e923e2",
+          "n_ae8977c0d3ea492ba7a5052aa9c3c5d6": "node_ccf6db78f78730f2",
+          "n_4d6456b684654080885134b2e3d94b5d": "node_d396979306f50d3b",
+          "n_4adfb161c2be4ed3bb92f35e4c85f8fd": "node_28c9661a04576f4f",
+          "n_487e9640db6b448894765159e0d75b5c": "node_7567b9aefaafec18"
+        },
+        "returnBindings": {
+          "n_465fe97561dd4929a838a92f6d936d44": "node_59dd6a50c384ad99"
+        },
+        "basis": "Handwritten frontend topology, full stdlib AST traversal from actual named return outputs; no generated-name hash oracle."
+      },
+      "negativeControls": [
+        {
+          "name": "wrong-constructor-kind",
+          "status": "rejected-as-required",
+          "reason": "n_487e9640db6b448894765159e0d75b5c: exact generated constructor type/parameters differ",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_7567b9aefaafec18 = nn.Identity(in_channels=3, out_channels=8, kernel_size=[3, 3], stride=[1, 1], padding=[1, 1], dilation=[1, 1], groups=1, bias=True, dtype=torch.float32)\n        self.node_28c9661a04576f4f = nn.ReLU()\n        self.node_d396979306f50d3b = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=[0, 0], dilation=[1, 1], ceil_mode=False)\n        self.node_ccf6db78f78730f2 = nn.AdaptiveAvgPool2d(output_size=[1, 1])\n        self.node_58b143e627e923e2 = nn.Flatten(start_dim=1, end_dim=-1)\n        self.node_59dd6a50c384ad99 = nn.Linear(in_features=8, out_features=4, bias=True, dtype=torch.float32)\n\n    def forward(self, node_8d194828c6bb4a49):\n        node_7567b9aefaafec18 = self.node_7567b9aefaafec18(node_8d194828c6bb4a49)\n        node_28c9661a04576f4f = self.node_28c9661a04576f4f(node_7567b9aefaafec18)\n        node_d396979306f50d3b = self.node_d396979306f50d3b(node_28c9661a04576f4f)\n        node_ccf6db78f78730f2 = self.node_ccf6db78f78730f2(node_d396979306f50d3b)\n        node_58b143e627e923e2 = self.node_58b143e627e923e2(node_ccf6db78f78730f2)\n        node_59dd6a50c384ad99 = self.node_59dd6a50c384ad99(node_58b143e627e923e2)\n        return {'n_465fe97561dd4929a838a92f6d936d44': node_59dd6a50c384ad99}\n"
+        },
+        {
+          "name": "wrong-constructor-parameter",
+          "status": "rejected-as-required",
+          "reason": "n_319605704f7a4cf9b6ab161cbe0c4cdf: exact generated constructor type/parameters differ",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_7567b9aefaafec18 = nn.Conv2d(in_channels=3, out_channels=8, kernel_size=[3, 3], stride=[1, 1], padding=[1, 1], dilation=[1, 1], groups=1, bias=True, dtype=torch.float32)\n        self.node_28c9661a04576f4f = nn.ReLU()\n        self.node_d396979306f50d3b = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=[0, 0], dilation=[1, 1], ceil_mode=False)\n        self.node_ccf6db78f78730f2 = nn.AdaptiveAvgPool2d(output_size=[1, 1])\n        self.node_58b143e627e923e2 = nn.Flatten(start_dim=1, end_dim=-1)\n        self.node_59dd6a50c384ad99 = nn.Linear(in_features=8, out_features=5, bias=True, dtype=torch.float32)\n\n    def forward(self, node_8d194828c6bb4a49):\n        node_7567b9aefaafec18 = self.node_7567b9aefaafec18(node_8d194828c6bb4a49)\n        node_28c9661a04576f4f = self.node_28c9661a04576f4f(node_7567b9aefaafec18)\n        node_d396979306f50d3b = self.node_d396979306f50d3b(node_28c9661a04576f4f)\n        node_ccf6db78f78730f2 = self.node_ccf6db78f78730f2(node_d396979306f50d3b)\n        node_58b143e627e923e2 = self.node_58b143e627e923e2(node_ccf6db78f78730f2)\n        node_59dd6a50c384ad99 = self.node_59dd6a50c384ad99(node_58b143e627e923e2)\n        return {'n_465fe97561dd4929a838a92f6d936d44': node_59dd6a50c384ad99}\n"
+        },
+        {
+          "name": "wrong-constructor-dtype",
+          "status": "rejected-as-required",
+          "reason": "n_487e9640db6b448894765159e0d75b5c: exact generated constructor type/parameters differ",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_7567b9aefaafec18 = nn.Conv2d(in_channels=3, out_channels=8, kernel_size=[3, 3], stride=[1, 1], padding=[1, 1], dilation=[1, 1], groups=1, bias=True, dtype=torch.float64)\n        self.node_28c9661a04576f4f = nn.ReLU()\n        self.node_d396979306f50d3b = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=[0, 0], dilation=[1, 1], ceil_mode=False)\n        self.node_ccf6db78f78730f2 = nn.AdaptiveAvgPool2d(output_size=[1, 1])\n        self.node_58b143e627e923e2 = nn.Flatten(start_dim=1, end_dim=-1)\n        self.node_59dd6a50c384ad99 = nn.Linear(in_features=8, out_features=4, bias=True, dtype=torch.float32)\n\n    def forward(self, node_8d194828c6bb4a49):\n        node_7567b9aefaafec18 = self.node_7567b9aefaafec18(node_8d194828c6bb4a49)\n        node_28c9661a04576f4f = self.node_28c9661a04576f4f(node_7567b9aefaafec18)\n        node_d396979306f50d3b = self.node_d396979306f50d3b(node_28c9661a04576f4f)\n        node_ccf6db78f78730f2 = self.node_ccf6db78f78730f2(node_d396979306f50d3b)\n        node_58b143e627e923e2 = self.node_58b143e627e923e2(node_ccf6db78f78730f2)\n        node_59dd6a50c384ad99 = self.node_59dd6a50c384ad99(node_58b143e627e923e2)\n        return {'n_465fe97561dd4929a838a92f6d936d44': node_59dd6a50c384ad99}\n"
+        },
+        {
+          "name": "wrong-forward-producer",
+          "status": "rejected-as-required",
+          "reason": "missing assignment for n_487e9640db6b448894765159e0d75b5c",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_7567b9aefaafec18 = nn.Conv2d(in_channels=3, out_channels=8, kernel_size=[3, 3], stride=[1, 1], padding=[1, 1], dilation=[1, 1], groups=1, bias=True, dtype=torch.float32)\n        self.node_28c9661a04576f4f = nn.ReLU()\n        self.node_d396979306f50d3b = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=[0, 0], dilation=[1, 1], ceil_mode=False)\n        self.node_ccf6db78f78730f2 = nn.AdaptiveAvgPool2d(output_size=[1, 1])\n        self.node_58b143e627e923e2 = nn.Flatten(start_dim=1, end_dim=-1)\n        self.node_59dd6a50c384ad99 = nn.Linear(in_features=8, out_features=4, bias=True, dtype=torch.float32)\n\n    def forward(self, node_8d194828c6bb4a49):\n        node_7567b9aefaafec18 = self.node_7567b9aefaafec18(node_8d194828c6bb4a49)\n        node_28c9661a04576f4f = self.node_28c9661a04576f4f(node_8d194828c6bb4a49)\n        node_d396979306f50d3b = self.node_d396979306f50d3b(node_28c9661a04576f4f)\n        node_ccf6db78f78730f2 = self.node_ccf6db78f78730f2(node_d396979306f50d3b)\n        node_58b143e627e923e2 = self.node_58b143e627e923e2(node_ccf6db78f78730f2)\n        node_59dd6a50c384ad99 = self.node_59dd6a50c384ad99(node_58b143e627e923e2)\n        return {'n_465fe97561dd4929a838a92f6d936d44': node_59dd6a50c384ad99}\n"
+        },
+        {
+          "name": "wrong-return-key",
+          "status": "rejected-as-required",
+          "reason": "return dictionary keys differ from draft output node identities",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_7567b9aefaafec18 = nn.Conv2d(in_channels=3, out_channels=8, kernel_size=[3, 3], stride=[1, 1], padding=[1, 1], dilation=[1, 1], groups=1, bias=True, dtype=torch.float32)\n        self.node_28c9661a04576f4f = nn.ReLU()\n        self.node_d396979306f50d3b = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=[0, 0], dilation=[1, 1], ceil_mode=False)\n        self.node_ccf6db78f78730f2 = nn.AdaptiveAvgPool2d(output_size=[1, 1])\n        self.node_58b143e627e923e2 = nn.Flatten(start_dim=1, end_dim=-1)\n        self.node_59dd6a50c384ad99 = nn.Linear(in_features=8, out_features=4, bias=True, dtype=torch.float32)\n\n    def forward(self, node_8d194828c6bb4a49):\n        node_7567b9aefaafec18 = self.node_7567b9aefaafec18(node_8d194828c6bb4a49)\n        node_28c9661a04576f4f = self.node_28c9661a04576f4f(node_7567b9aefaafec18)\n        node_d396979306f50d3b = self.node_d396979306f50d3b(node_28c9661a04576f4f)\n        node_ccf6db78f78730f2 = self.node_ccf6db78f78730f2(node_d396979306f50d3b)\n        node_58b143e627e923e2 = self.node_58b143e627e923e2(node_ccf6db78f78730f2)\n        node_59dd6a50c384ad99 = self.node_59dd6a50c384ad99(node_58b143e627e923e2)\n        return {'n_465fe97561dd4929a838a92f6d936d44_wrong_output': node_59dd6a50c384ad99}\n"
+        },
+        {
+          "name": "wrong-return-producer",
+          "status": "rejected-as-required",
+          "reason": "missing assignment for n_319605704f7a4cf9b6ab161cbe0c4cdf",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_7567b9aefaafec18 = nn.Conv2d(in_channels=3, out_channels=8, kernel_size=[3, 3], stride=[1, 1], padding=[1, 1], dilation=[1, 1], groups=1, bias=True, dtype=torch.float32)\n        self.node_28c9661a04576f4f = nn.ReLU()\n        self.node_d396979306f50d3b = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=[0, 0], dilation=[1, 1], ceil_mode=False)\n        self.node_ccf6db78f78730f2 = nn.AdaptiveAvgPool2d(output_size=[1, 1])\n        self.node_58b143e627e923e2 = nn.Flatten(start_dim=1, end_dim=-1)\n        self.node_59dd6a50c384ad99 = nn.Linear(in_features=8, out_features=4, bias=True, dtype=torch.float32)\n\n    def forward(self, node_8d194828c6bb4a49):\n        node_7567b9aefaafec18 = self.node_7567b9aefaafec18(node_8d194828c6bb4a49)\n        node_28c9661a04576f4f = self.node_28c9661a04576f4f(node_7567b9aefaafec18)\n        node_d396979306f50d3b = self.node_d396979306f50d3b(node_28c9661a04576f4f)\n        node_ccf6db78f78730f2 = self.node_ccf6db78f78730f2(node_d396979306f50d3b)\n        node_58b143e627e923e2 = self.node_58b143e627e923e2(node_ccf6db78f78730f2)\n        node_59dd6a50c384ad99 = self.node_59dd6a50c384ad99(node_58b143e627e923e2)\n        return {'n_465fe97561dd4929a838a92f6d936d44': node_8d194828c6bb4a49}\n"
+        },
+        {
+          "name": "undeclared-forward-assignment",
+          "status": "rejected-as-required",
+          "reason": "unexpected or unused forward assignments",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_7567b9aefaafec18 = nn.Conv2d(in_channels=3, out_channels=8, kernel_size=[3, 3], stride=[1, 1], padding=[1, 1], dilation=[1, 1], groups=1, bias=True, dtype=torch.float32)\n        self.node_28c9661a04576f4f = nn.ReLU()\n        self.node_d396979306f50d3b = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=[0, 0], dilation=[1, 1], ceil_mode=False)\n        self.node_ccf6db78f78730f2 = nn.AdaptiveAvgPool2d(output_size=[1, 1])\n        self.node_58b143e627e923e2 = nn.Flatten(start_dim=1, end_dim=-1)\n        self.node_59dd6a50c384ad99 = nn.Linear(in_features=8, out_features=4, bias=True, dtype=torch.float32)\n\n    def forward(self, node_8d194828c6bb4a49):\n        node_7567b9aefaafec18 = self.node_7567b9aefaafec18(node_8d194828c6bb4a49)\n        node_28c9661a04576f4f = self.node_28c9661a04576f4f(node_7567b9aefaafec18)\n        node_d396979306f50d3b = self.node_d396979306f50d3b(node_28c9661a04576f4f)\n        node_ccf6db78f78730f2 = self.node_ccf6db78f78730f2(node_d396979306f50d3b)\n        node_58b143e627e923e2 = self.node_58b143e627e923e2(node_ccf6db78f78730f2)\n        node_59dd6a50c384ad99 = self.node_59dd6a50c384ad99(node_58b143e627e923e2)\n        undeclared_value = 7\n        return {'n_465fe97561dd4929a838a92f6d936d44': node_59dd6a50c384ad99}\n"
+        }
+      ],
+      "sourceSha256": "514f46e64135b023ddf888d0d339e31942d2a432e6d9728c360863bb4792db9b",
+      "draftEnvelopeSha256": "0d6b8438c0e9d643f8c4dacd5ac3d58e61234266dc985338f4904fab027bd750"
+    },
+    {
+      "case": "residual",
+      "draftId": "draft-da510043-966c-45aa-9db3-cb66bbbf5c55",
+      "storageRevision": 1,
+      "nodes": 6,
+      "edges": 6,
+      "declaredShapes": {
+        "n_28144f774fe84119ab32b4f2e5eb747a": {
+          "shape": [
+            1,
+            16
+          ],
+          "dtype": "float32"
+        },
+        "n_f9f4c7b6687c48c7b92a7adc89987428": {
+          "shape": [
+            1,
+            32
+          ],
+          "dtype": "float32"
+        },
+        "n_b4460895eca7424d9a2ba0fde594033f": {
+          "shape": [
+            1,
+            32
+          ],
+          "dtype": "float32"
+        },
+        "n_f4be0b5295034999801a3d0fa55aab2c": {
+          "shape": [
+            1,
+            16
+          ],
+          "dtype": "float32"
+        },
+        "n_0ed6c0b5356f4bcc92ef8f6688efbf5d": {
+          "shape": [
+            1,
+            16
+          ],
+          "dtype": "float32"
+        },
+        "n_80e67fd4ff4748fb8c58030c803a21ff": {
+          "shape": [
+            1,
+            16
+          ],
+          "dtype": "float32"
+        }
+      },
+      "ast": {
+        "constructorCount": 3,
+        "forwardAssignmentCount": 4,
+        "inputs": 1,
+        "namedOutputCount": 1,
+        "nodeSymbols": {
+          "n_28144f774fe84119ab32b4f2e5eb747a": "node_cb013717db3463c3",
+          "n_0ed6c0b5356f4bcc92ef8f6688efbf5d": "node_c37a27e889430834",
+          "n_f4be0b5295034999801a3d0fa55aab2c": "node_81e2e05c5fe25011",
+          "n_b4460895eca7424d9a2ba0fde594033f": "node_0eb751eac88dd550",
+          "n_f9f4c7b6687c48c7b92a7adc89987428": "node_e2a3a40259c863a4"
+        },
+        "returnBindings": {
+          "n_80e67fd4ff4748fb8c58030c803a21ff": "node_c37a27e889430834"
+        },
+        "basis": "Handwritten frontend topology, full stdlib AST traversal from actual named return outputs; no generated-name hash oracle."
+      },
+      "negativeControls": [
+        {
+          "name": "wrong-constructor-kind",
+          "status": "rejected-as-required",
+          "reason": "n_f9f4c7b6687c48c7b92a7adc89987428: exact generated constructor type/parameters differ",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_e2a3a40259c863a4 = nn.Identity(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_0eb751eac88dd550 = nn.ReLU()\n        self.node_81e2e05c5fe25011 = nn.Linear(in_features=32, out_features=16, bias=True, dtype=torch.float32)\n\n    def forward(self, node_cb013717db3463c3):\n        node_e2a3a40259c863a4 = self.node_e2a3a40259c863a4(node_cb013717db3463c3)\n        node_0eb751eac88dd550 = self.node_0eb751eac88dd550(node_e2a3a40259c863a4)\n        node_81e2e05c5fe25011 = self.node_81e2e05c5fe25011(node_0eb751eac88dd550)\n        node_c37a27e889430834 = node_81e2e05c5fe25011 + node_cb013717db3463c3\n        return {'n_80e67fd4ff4748fb8c58030c803a21ff': node_c37a27e889430834}\n"
+        },
+        {
+          "name": "wrong-constructor-parameter",
+          "status": "rejected-as-required",
+          "reason": "n_f9f4c7b6687c48c7b92a7adc89987428: exact generated constructor type/parameters differ",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_e2a3a40259c863a4 = nn.Linear(in_features=16, out_features=33, bias=True, dtype=torch.float32)\n        self.node_0eb751eac88dd550 = nn.ReLU()\n        self.node_81e2e05c5fe25011 = nn.Linear(in_features=32, out_features=16, bias=True, dtype=torch.float32)\n\n    def forward(self, node_cb013717db3463c3):\n        node_e2a3a40259c863a4 = self.node_e2a3a40259c863a4(node_cb013717db3463c3)\n        node_0eb751eac88dd550 = self.node_0eb751eac88dd550(node_e2a3a40259c863a4)\n        node_81e2e05c5fe25011 = self.node_81e2e05c5fe25011(node_0eb751eac88dd550)\n        node_c37a27e889430834 = node_81e2e05c5fe25011 + node_cb013717db3463c3\n        return {'n_80e67fd4ff4748fb8c58030c803a21ff': node_c37a27e889430834}\n"
+        },
+        {
+          "name": "wrong-constructor-dtype",
+          "status": "rejected-as-required",
+          "reason": "n_f9f4c7b6687c48c7b92a7adc89987428: exact generated constructor type/parameters differ",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_e2a3a40259c863a4 = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float64)\n        self.node_0eb751eac88dd550 = nn.ReLU()\n        self.node_81e2e05c5fe25011 = nn.Linear(in_features=32, out_features=16, bias=True, dtype=torch.float32)\n\n    def forward(self, node_cb013717db3463c3):\n        node_e2a3a40259c863a4 = self.node_e2a3a40259c863a4(node_cb013717db3463c3)\n        node_0eb751eac88dd550 = self.node_0eb751eac88dd550(node_e2a3a40259c863a4)\n        node_81e2e05c5fe25011 = self.node_81e2e05c5fe25011(node_0eb751eac88dd550)\n        node_c37a27e889430834 = node_81e2e05c5fe25011 + node_cb013717db3463c3\n        return {'n_80e67fd4ff4748fb8c58030c803a21ff': node_c37a27e889430834}\n"
+        },
+        {
+          "name": "wrong-forward-producer",
+          "status": "rejected-as-required",
+          "reason": "missing assignment for n_f9f4c7b6687c48c7b92a7adc89987428",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_e2a3a40259c863a4 = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_0eb751eac88dd550 = nn.ReLU()\n        self.node_81e2e05c5fe25011 = nn.Linear(in_features=32, out_features=16, bias=True, dtype=torch.float32)\n\n    def forward(self, node_cb013717db3463c3):\n        node_e2a3a40259c863a4 = self.node_e2a3a40259c863a4(node_cb013717db3463c3)\n        node_0eb751eac88dd550 = self.node_0eb751eac88dd550(node_cb013717db3463c3)\n        node_81e2e05c5fe25011 = self.node_81e2e05c5fe25011(node_0eb751eac88dd550)\n        node_c37a27e889430834 = node_81e2e05c5fe25011 + node_cb013717db3463c3\n        return {'n_80e67fd4ff4748fb8c58030c803a21ff': node_c37a27e889430834}\n"
+        },
+        {
+          "name": "wrong-return-key",
+          "status": "rejected-as-required",
+          "reason": "return dictionary keys differ from draft output node identities",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_e2a3a40259c863a4 = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_0eb751eac88dd550 = nn.ReLU()\n        self.node_81e2e05c5fe25011 = nn.Linear(in_features=32, out_features=16, bias=True, dtype=torch.float32)\n\n    def forward(self, node_cb013717db3463c3):\n        node_e2a3a40259c863a4 = self.node_e2a3a40259c863a4(node_cb013717db3463c3)\n        node_0eb751eac88dd550 = self.node_0eb751eac88dd550(node_e2a3a40259c863a4)\n        node_81e2e05c5fe25011 = self.node_81e2e05c5fe25011(node_0eb751eac88dd550)\n        node_c37a27e889430834 = node_81e2e05c5fe25011 + node_cb013717db3463c3\n        return {'n_80e67fd4ff4748fb8c58030c803a21ff_wrong_output': node_c37a27e889430834}\n"
+        },
+        {
+          "name": "wrong-return-producer",
+          "status": "rejected-as-required",
+          "reason": "missing assignment for n_0ed6c0b5356f4bcc92ef8f6688efbf5d",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_e2a3a40259c863a4 = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_0eb751eac88dd550 = nn.ReLU()\n        self.node_81e2e05c5fe25011 = nn.Linear(in_features=32, out_features=16, bias=True, dtype=torch.float32)\n\n    def forward(self, node_cb013717db3463c3):\n        node_e2a3a40259c863a4 = self.node_e2a3a40259c863a4(node_cb013717db3463c3)\n        node_0eb751eac88dd550 = self.node_0eb751eac88dd550(node_e2a3a40259c863a4)\n        node_81e2e05c5fe25011 = self.node_81e2e05c5fe25011(node_0eb751eac88dd550)\n        node_c37a27e889430834 = node_81e2e05c5fe25011 + node_cb013717db3463c3\n        return {'n_80e67fd4ff4748fb8c58030c803a21ff': node_cb013717db3463c3}\n"
+        },
+        {
+          "name": "undeclared-forward-assignment",
+          "status": "rejected-as-required",
+          "reason": "unexpected or unused forward assignments",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_e2a3a40259c863a4 = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_0eb751eac88dd550 = nn.ReLU()\n        self.node_81e2e05c5fe25011 = nn.Linear(in_features=32, out_features=16, bias=True, dtype=torch.float32)\n\n    def forward(self, node_cb013717db3463c3):\n        node_e2a3a40259c863a4 = self.node_e2a3a40259c863a4(node_cb013717db3463c3)\n        node_0eb751eac88dd550 = self.node_0eb751eac88dd550(node_e2a3a40259c863a4)\n        node_81e2e05c5fe25011 = self.node_81e2e05c5fe25011(node_0eb751eac88dd550)\n        node_c37a27e889430834 = node_81e2e05c5fe25011 + node_cb013717db3463c3\n        undeclared_value = 7\n        return {'n_80e67fd4ff4748fb8c58030c803a21ff': node_c37a27e889430834}\n"
+        },
+        {
+          "name": "swapped-ordered-add-producers",
+          "status": "rejected-as-required",
+          "reason": "missing assignment for n_f4be0b5295034999801a3d0fa55aab2c",
+          "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_e2a3a40259c863a4 = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_0eb751eac88dd550 = nn.ReLU()\n        self.node_81e2e05c5fe25011 = nn.Linear(in_features=32, out_features=16, bias=True, dtype=torch.float32)\n\n    def forward(self, node_cb013717db3463c3):\n        node_e2a3a40259c863a4 = self.node_e2a3a40259c863a4(node_cb013717db3463c3)\n        node_0eb751eac88dd550 = self.node_0eb751eac88dd550(node_e2a3a40259c863a4)\n        node_81e2e05c5fe25011 = self.node_81e2e05c5fe25011(node_0eb751eac88dd550)\n        node_c37a27e889430834 = node_cb013717db3463c3 + node_81e2e05c5fe25011\n        return {'n_80e67fd4ff4748fb8c58030c803a21ff': node_c37a27e889430834}\n"
+        }
+      ],
+      "sourceSha256": "d77fac8642d42f58a4fa26b1bf72816c9dd671f02fa0ce8b6569404c9f966ad6",
+      "draftEnvelopeSha256": "4e30de433545e18478f78ead175df6a58d55025fdddb8815adb2a81f168ac8f6"
+    }
+  ],
+  "limitations": [
+    "Does not certify pixel frame synchronization, runtime numeric behavior, or physical publication."
+  ]
+}

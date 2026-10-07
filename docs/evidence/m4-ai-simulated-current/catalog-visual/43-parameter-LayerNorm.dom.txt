@@ -1,0 +1,91 @@
+- banner:
+  - generic: ArchCanvas
+  - generic: 模型搭建
+  - textbox "模型草稿名称": 我的模型
+  - generic: 有未保存编辑
+  - button "重开已保存" [disabled]
+  - button "保存草稿":
+    - text: 保存草稿
+  - button "生成模型与论文图"
+  - button "返回制图"
+- complementary:
+  - text: MODULE LIBRARY
+  - heading "常用模块 17" [level=2]:
+    - text: 常用模块
+    - generic: "17"
+  - paragraph:
+    - text: 拖入画布，或点击添加。
+    - text: 输入 → 计算模块 → 输出
+  - group "模块库浏览方式":
+    - button "基础模块 17":
+      - text: 基础模块
+      - generic: "17"
+    - button "网络起点 3" [pressed]:
+      - text: 网络起点
+      - generic: "3"
+  - textbox "搜索模块":
+    - /placeholder: 搜索模块或网络，如 Linear / CNN
+    - text: LayerNorm
+  - button "新建空白模型"
+  - status: 搜索全部：基础模块 1 · 网络起点 0。清空后返回网络起点。
+  - button "清空搜索"
+  - heading "基础模块 · 1" [level=3]
+  - heading "归一化" [level=3]
+  - button "添加 LayerNorm" [active]:
+    - generic: LayerNorm
+    - generic: 层归一化
+  - generic: 常用模型的无环草稿。参数和连线通过静态检查后，生成新模型。
+- main:
+  - button "选择" [pressed]:
+    - text: 选择
+  - button "平移":
+    - text: 平移
+  - button "撤销草稿":
+  - button "重做草稿" [disabled]:
+  - button "按连接排版"
+  - button "检查模型"
+  - button "适合画布":
+    - text: 适合画布
+  - button "草稿缩小": −
+  - button "草稿缩放百分比": 100%
+  - button "草稿放大": +
+  - img "模型搭建画布":
+    - generic "层归一化"
+    - generic "LayerNorm"
+    - button "层归一化 input 输入端口":
+      - generic: input
+    - button "层归一化 output 输出端口":
+      - generic: output
+  - generic "模型连线图例":
+    - generic: 数据流
+    - generic "跳过中间模块后相加；仅根据当前连接结构识别": 跳连
+  - generic: 拖动模块 · 输出端口 → 输入端口 · 方向键移动 16 · Delete 删除 · Escape 取消 · Ctrl+Z 撤销
+- complementary:
+  - text: MODEL PROPERTIES
+  - heading "LayerNorm" [level=2]
+  - text: 显示名称
+  - textbox "模块显示名称": 层归一化
+  - text: 归一化末尾形状
+  - code: normalized_shape
+  - textbox "normalized_shape": "16"
+  - generic: 须与 float32 输入的末尾若干维完全相同。例如 [2, 3, 16] 可填 [16] 或 [3, 16]；这些维一起归一化，输出形状保留。 填写逗号分隔的数字（如 1, 3），无需输入方括号。
+  - text: 数值稳定项
+  - code: eps
+  - textbox "eps": "0.00001"
+  - generic: 归一化时加在方差上的小正数，用于避免除数为零。可填 1e-12–1，默认 1e-5；不改变张量形状。
+  - text: 学习逐元素缩放与偏移
+  - code: elementwise_affine
+  - checkbox "elementwise_affine" [checked]
+  - generic: 开启后，归一化形状中的每个位置具有可学习的缩放和偏移参数；关闭后只做归一化。训练和评估均使用当前输入的统计。
+  - paragraph: 归一化 float32 张量的末尾若干维，形状须与设置匹配。
+  - text: X
+  - spinbutton "模块 X 坐标": "290"
+  - text: "Y"
+  - spinbutton "模块 Y 坐标": "172"
+  - button "删除模块及相连连线"
+  - region "模型静态检查":
+    - heading "检查当前结构" [level=3]
+    - paragraph: 参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。
+    - button "检查模型"
+  - generic: 1 模块 0 连接
+- status: 已添加 层归一化；在右侧编辑参数。

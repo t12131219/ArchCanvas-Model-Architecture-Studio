@@ -1,0 +1,90 @@
+{
+  "protocol": "archcanvas-draft-legibility-ai-ui-integration-read/1",
+  "reviewer": "au3_pixel_audit",
+  "scope": "Independent read-only integration review of draft card geometry, port presentation, selected/role arrow presentation and tooltip bounds.",
+  "status": "source-read-resolutions-observed-pixels-pending",
+  "initialSourceReadBinding": "source-read-bindings.json",
+  "initialSourceReadBindingSha256": "5e5f24f3faf4f43f74edcc146e215bff77a35e6b1f38d374639a175a5be1c839",
+  "bindingLimit": "The initial binding was captured after actual source reads, not before them. Product edits are concurrent. No final product freeze or final build identity is asserted in this report.",
+  "performed": {
+    "sourceReads": true,
+    "sourceSearches": true,
+    "productEdits": false,
+    "testEdits": false,
+    "testsExecuted": false,
+    "buildsExecuted": false,
+    "modelsExecuted": false,
+    "browserActions": false,
+    "newBuildPixelsPersonallyViewed": 0
+  },
+  "findings": [
+    {
+      "id": "selected-arrow-color",
+      "initialSeverity": "definite-source-presentation-mismatch",
+      "initialObservation": "The selected visible edge stroke was #c18543, but markerEnd selected only the ordinary green or residual brown marker by role. The selected edge therefore retained a differently colored arrow tip.",
+      "initialReferences": ["studio/src/AuthoringStudio.tsx:348", "studio/src/AuthoringStudio.tsx:350", "studio/src/AuthoringStudio.css:7", "studio/src/AuthoringStudio.css:23"],
+      "resolutionReadback": "A draft-selected-arrow marker now has fill #c18543. markerEnd checks selection.edge === route.id before role and selects that marker. The selected CSS stroke remains #c18543; residual dash style remains present.",
+      "sourceStatus": "resolved-in-observed-source",
+      "pixelStatus": "pending-new-build-actual-selected-data-and-residual-frames"
+    },
+    {
+      "id": "vertical-output-caption-overlap",
+      "initialSeverity": "nominal-text-box-risk-needs-pixel-confirmation",
+      "initialObservation": "The original vertical output label used baseline y + fontSize/3 at y = card height, while the kind caption used baseline card height - 8. With fontSize = 9 * s, a nominal one-em output label begins at card height - 6*s. It reaches the kind baseline when s > 4/3. At zoom about 0.53, s about 1.698, the nominal overlap is about 2.19 world units; this was a geometric risk, not a certified browser glyph collision.",
+      "initialReferences": ["studio/src/draftPortPresentation.ts:14", "studio/src/AuthoringStudio.tsx:351", "studio/src/draftTextReadability.ts:11"],
+      "resolutionReadback": "Vertical input labels now have baseline y - 4 and output labels y + labelFontSize + 4. Their nominal one-em boxes lie outside the card, above and below respectively. Their horizontal offset remains on opposite sides of the flow line. This removes the original nominal overlap with the bottom kind caption.",
+      "sourceStatus": "original-risk-removed-in-observed-source",
+      "pixelStatus": "pending-new-build-vertical-single-port-and-merge-overview-frames",
+      "residualLimit": "Browser font ascenders/descenders, neighboring exterior labels, route proximity and actual visibility still require pixels. Text receives events on its own port group even where the exterior text extends past the bounded dot hit rectangle."
+    }
+  ],
+  "integrationReadback": [
+    {
+      "topic": "catalog-driven-card-and-port-geometry",
+      "observation": "The shared helper defines width 176, base height 100, side pitch 32, first side y 66 and last-port clearance 42. Two-input Add/Concat cards therefore have height 140 with input anchors y 66 and 98. Height is derived from declared port counts rather than an operator-name special case. Unknown kinds occupy the base body without invented ports.",
+      "references": ["studio/src/draftNodeGeometry.ts:3", "studio/src/draftNodeGeometry.ts:10", "studio/src/draftNodeGeometry.ts:15", "studio/src/draftNodeGeometry.ts:32"]
+    },
+    {
+      "topic": "geometry-consumers",
+      "observation": "The renderer uses draftModuleSize. Routing obstacles use draftNodeBounds; route endpoints delegate to draftPortPoint. Fit includes shared node bounds and route points. New-node placement, preset size/collision, arrangement column height, focus/add centering and tooltip owner/obstacle bounds use the shared dynamic height. The read/search found no stale fixed-height consumer among these integration paths; DRAFT_HEIGHT is retained as the base/fallback constant and re-export.",
+      "references": ["studio/src/AuthoringStudio.tsx:121", "studio/src/AuthoringStudio.tsx:327", "studio/src/AuthoringStudio.tsx:328", "studio/src/AuthoringStudio.tsx:351", "studio/src/authoring.ts:79", "studio/src/authoring.ts:135", "studio/src/authoring.ts:143", "studio/src/authoring.ts:173", "studio/src/authoringFeedback.ts:20", "studio/src/authoringPresets.ts:65", "studio/src/authoringPresets.ts:80"]
+    },
+    {
+      "topic": "edge-title-and-css-selectors",
+      "observation": "Each edge group has a title before the transparent hit path and visible path. Both selected rules and the role rule now use >path:nth-of-type(2), which targets the visible second path despite the title. The transparent 14-world-unit path remains the interaction target, while the visible path has pointer-events:none. The node selected rect:first-child selector still targets its body rect because title elements are nested within text.",
+      "references": ["studio/src/AuthoringStudio.tsx:350", "studio/src/AuthoringStudio.css:7", "studio/src/AuthoringStudio.css:23"]
+    },
+    {
+      "topic": "horizontal-port-occupancy",
+      "observation": "At pitch 32, the horizontal hit rectangles have half-height 14 and a nominal gap of 4. The font cap permits 16.2-world-unit compensated labels at the text-scale cap 1.8. The inspected side anchors, tensor baseline 49 and kind baseline height - 8 do not show the earlier Add left/right slot crowding in nominal geometry. This is not a rendered glyph measurement or a declaration of complete pixel legibility.",
+      "references": ["studio/src/draftPortPresentation.ts:10", "studio/src/draftPortPresentation.ts:20", "studio/src/AuthoringStudio.tsx:351", "studio/src/draftNodeGeometry.ts:5"]
+    },
+    {
+      "topic": "tooltip-owner-bounds",
+      "observation": "Tooltip owner and all node obstacle rectangles use draftNodeSize(node,catalog).height at camera zoom, including the new merge height. Initial placement uses 230x114 and useLayoutEffect reruns with the actual measured tooltip dimensions. Placement tries clear candidates and otherwise retains the least-covered fallback. No unconditional zero-overlap guarantee is inferred for cramped viewports.",
+      "references": ["studio/src/AuthoringStudio.tsx:327", "studio/src/AuthoringStudio.tsx:328", "studio/src/AuthoringStudio.tsx:329", "studio/src/AuthoringStudio.tsx:332", "studio/src/draftTooltipPlacement.ts:36"]
+    },
+    {
+      "topic": "edge-role-semantics-and-legend",
+      "observation": "Ordinary data is solid green and residual bypass is dashed brown; the visible legend uses the same unselected presentation. The classifier starts with ordinary data and only marks a strict-ancestor bypass into the registered Add left/right/output contract within a complete acyclic known component. Labels, positions, route length and coincident layout do not establish residual role. This role projection does not mutate draft/source and is not parameter/shape correctness proof.",
+      "references": ["studio/src/draftEdgeRoles.ts:9", "studio/src/AuthoringStudio.tsx:350", "studio/src/AuthoringStudio.tsx:367", "studio/src/AuthoringStudio.css:23"]
+    },
+    {
+      "topic": "overview-text-and-full-label-content",
+      "observation": "Text compensation is bounded by 1.8 and fitted labels retain complete node name, kind and declaration in nested SVG title elements. Accessible port labels include node label, port name and direction. Neither complete title content nor nominal fitted width alone certifies readable native pixels.",
+      "references": ["studio/src/draftTextReadability.ts:11", "studio/src/draftTextReadability.ts:17", "studio/src/AuthoringStudio.tsx:351", "studio/src/AuthoringStudio.tsx:356"]
+    }
+  ],
+  "requiredNextEvidence": [
+    "Bind a final, root-notified product/build version; preserve differences from the initial post-read binding.",
+    "Personally view actual new-build authoring overview and detail frames with the widened Add/Concat card and distinct left/right labels and arrow tips.",
+    "View vertical Input, calculation and Output at overview compensation; include exterior input/output labels, bottom kind captions, routes and neighboring cards.",
+    "View selected ordinary and residual edges; inspect gold tip/stroke consistency and retained residual dash.",
+    "View actual tooltip at a merge port and its relation to owner/neighbor text, with public state matched to that frame.",
+    "Preserve original failures and any new mismatches; DOM/public-state readback is not pixel proof."
+  ],
+  "AIOnly": true,
+  "humanParticipantsAdded": 0,
+  "humanPublicationReviewersAdded": 0,
+  "acceptanceLimit": "This is an AI source integration audit. It adds no real research participant or human publication review and does not close M4 human acceptance."
+}

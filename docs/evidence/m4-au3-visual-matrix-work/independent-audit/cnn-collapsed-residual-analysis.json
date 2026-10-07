@@ -1,0 +1,146 @@
+{
+  "protocol": "archcanvas-au3-cnn-collapsed-residual-readonly-analysis/1",
+  "createdAt": "2026-10-05T19:24:07.163429+00:00",
+  "actualSvgCases": [
+    {
+      "file": "docs/evidence/m4-au3-visual-matrix-work/raw/residual_cnn-level0-monochrome-180/browser-scene.svg",
+      "edgeId": "edge:9",
+      "tensorId": "tensor:call:instance:model.ResidualCNN.stem:output",
+      "path": "M 209.3 316 V 329 H 326 V 341 H 209.3 V 354",
+      "stroke": "#56616b"
+    },
+    {
+      "file": "docs/evidence/m4-au3-visual-matrix-work/raw/residual_cnn-level0-monochrome-85/browser-scene.svg",
+      "edgeId": "edge:9",
+      "tensorId": "tensor:call:instance:model.ResidualCNN.stem:output",
+      "path": "M 209.3 316 V 329 H 326 V 341 H 209.3 V 354",
+      "stroke": "#56616b"
+    },
+    {
+      "file": "docs/evidence/m4-au3-visual-matrix-work/raw/residual_cnn-level0-paper-180/browser-scene.svg",
+      "edgeId": "edge:9",
+      "tensorId": "tensor:call:instance:model.ResidualCNN.stem:output",
+      "path": "M 209.3 316 V 329 H 326 V 341 H 209.3 V 354",
+      "stroke": "#b69967"
+    },
+    {
+      "file": "docs/evidence/m4-au3-visual-matrix-work/raw/residual_cnn-level0-paper-85/browser-scene.svg",
+      "edgeId": "edge:9",
+      "tensorId": "tensor:call:instance:model.ResidualCNN.stem:output",
+      "path": "M 209.3 316 V 329 H 326 V 341 H 209.3 V 354",
+      "stroke": "#b69967"
+    }
+  ],
+  "facts": {
+    "sourceCanonical": "call:instance:model.ResidualCNN.stem:out:output",
+    "residualTargetCanonical": "op:call:instance:model.ResidualCNN.blocks.0:Add:d5f8495254:in:right",
+    "projectedTarget": "repeat:instance:model.ResidualCNN.blocks",
+    "dataProjectedCanonicalEdgeIds": [
+      "edge:2",
+      "edge:3"
+    ],
+    "residualProjectedCanonicalEdgeIds": [
+      "edge:9"
+    ],
+    "tensorId": "tensor:call:instance:model.ResidualCNN.stem:output",
+    "dataSourceTargetX": 144.7,
+    "residualSourceTargetX": 209.3,
+    "residualStartY": 316,
+    "residualEndY": 354,
+    "detourX": 326,
+    "expandedModelRight": 304,
+    "collapsedRepeatVisualRight": 281,
+    "detourBeyondModel": 22,
+    "existingManhattanLength": 271.4,
+    "candidateStraightLength": 38,
+    "existingBends": 4,
+    "candidateStraightBends": 0
+  },
+  "causes": [
+    {
+      "file": "studio/src/core/scene.ts",
+      "line": 162,
+      "fact": "Projection grouping includes role and appearance, so data and residual remain distinct scene edges despite same tensor and projected source/target."
+    },
+    {
+      "file": "studio/src/core/scene.ts",
+      "line": 182,
+      "fact": "Projected ports use canonical source/target plus role; data and residual occupy separate x coordinates."
+    },
+    {
+      "file": "studio/src/core/scene.ts",
+      "line": 228,
+      "fact": "Every non-data role is special; residual preferred path is forced to right outline +23+index%3*11 even in a 38-unit gap with aligned endpoints."
+    },
+    {
+      "file": "studio/src/core/orthogonalRouter.ts",
+      "line": 261,
+      "fact": "Obstacle-clear preferred route returns unchanged; no reason to shorten an unblocked path."
+    },
+    {
+      "file": "studio/src/core/orthogonalRouter.ts",
+      "line": 333,
+      "fact": "Same tensor skipped for generic pressure; sparse nonconflicting path has no refinement trigger."
+    }
+  ],
+  "recommendation": {
+    "priority": "Future product revision only, after au3 matrix freeze",
+    "firstChange": "Keep edge:9 and its own residual ports/style/canonical bindings; prefer a direct vertical route for a forward residual whose actual target is hidden behind a collapsed proxy and aligned projected endpoints, subject to complete body/header/backplate/other-edge checks. Avoid the outside-container detour when no obstacle demands it.",
+    "candidate": "M 209.3 316 V 354",
+    "sharing": "Do not merge data/residual roles into one rendered trunk merely because tensor is equal. In paper mode strokes differ; ports and canonical residual destination remain distinct. Existing two short parallel vertical segments best preserve current binding semantics. A shared trunk would need a separate explicit representation contract preserving role/style/branch mapping.",
+    "scope": "Do not shortcut expanded residual paths around visible intermediate operations; do not change canonical IR, ports, pin/geometry, model-specific rules or current matrix bytes.",
+    "futureValidation": "Independent actual SVG obstacle intersections, source/target endpoint and per-edge semantic bindings, crossing/overlap and length/bends; verify paper/monochrome, expanded frontiers, custom styles and pinned layouts in a new version scope."
+  },
+  "productChanged": false,
+  "testsRun": false,
+  "buildRun": false,
+  "modelsRun": false,
+  "inputs": [
+    {
+      "path": "studio/src/core/scene.ts",
+      "bytes": 23387,
+      "sha256": "ee48e711e3c89cd74926a44c3a95d525ae548668cd157338ad8ba055e031a994"
+    },
+    {
+      "path": "studio/src/core/orthogonalRouter.ts",
+      "bytes": 39816,
+      "sha256": "aca081973d1c3134eaaf38bb8f39b82cc666cf122cdb3ec3a7402365aa61090b"
+    },
+    {
+      "path": "studio/src/core/nodeVisualOutline.ts",
+      "bytes": 2978,
+      "sha256": "9b0b4049865f6bc8b34343f26758998d78d5d6c1d621da14f25c61ac4a00d939"
+    },
+    {
+      "path": "docs/evidence/visual-golds-au3-matrix/residual_cnn.architecture.json",
+      "bytes": 34481,
+      "sha256": "e7a9777da10827a8889ad4cf8c931e5eaa6d282bb31d786519e44d57dbe211c9"
+    },
+    {
+      "path": "docs/evidence/visual-golds-au3-matrix/residual_cnn-level0-paper-180.scene.json",
+      "bytes": 27930,
+      "sha256": "571b7e7dace31c1c26969a8cad845f840b309cce179b16165bd4a4981e7d4234"
+    },
+    {
+      "path": "docs/evidence/m4-au3-visual-matrix-work/raw/residual_cnn-level0-monochrome-180/browser-scene.svg",
+      "bytes": 29996,
+      "sha256": "1eff494abd4c7f3ba571f7848355657efc08bc247951fa608c78f2693c964bc0"
+    },
+    {
+      "path": "docs/evidence/m4-au3-visual-matrix-work/raw/residual_cnn-level0-monochrome-85/browser-scene.svg",
+      "bytes": 29994,
+      "sha256": "402d94c94e49741d8458f56aea70ed2b6051ce2a1f32ef3c6a3f011277ac5a2c"
+    },
+    {
+      "path": "docs/evidence/m4-au3-visual-matrix-work/raw/residual_cnn-level0-paper-180/browser-scene.svg",
+      "bytes": 30194,
+      "sha256": "ec33f9cce4d0852472ec7d5b6623d788cc8f4c4ca464a40f54718196ac2ffffc"
+    },
+    {
+      "path": "docs/evidence/m4-au3-visual-matrix-work/raw/residual_cnn-level0-paper-85/browser-scene.svg",
+      "bytes": 30192,
+      "sha256": "c2eb03539108aa2c5f62758906adde842d715ce5f53aa17e8157da0a5c407399"
+    }
+  ],
+  "inputsUnchanged": true
+}

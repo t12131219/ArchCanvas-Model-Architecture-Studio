@@ -1,0 +1,109 @@
+{
+  "draft": {
+    "schemaVersion": 1,
+    "mode": "authored-draft",
+    "id": "draft-ab123",
+    "title": "AI static contract check",
+    "revision": 0,
+    "nodes": [
+      {
+        "id": "in",
+        "kind": "Input",
+        "label": "Input",
+        "parameters": {
+          "shape": [
+            1,
+            16
+          ],
+          "dtype": "float32"
+        },
+        "position": {
+          "x": 50,
+          "y": 70
+        }
+      },
+      {
+        "id": "layer",
+        "kind": "ReLU",
+        "label": "ReLU",
+        "parameters": {},
+        "position": {
+          "x": 300,
+          "y": 70
+        }
+      },
+      {
+        "id": "out",
+        "kind": "Output",
+        "label": "Output",
+        "parameters": {},
+        "position": {
+          "x": 550,
+          "y": 70
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e0",
+        "source": {
+          "nodeId": "in",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "layer",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e1",
+        "source": {
+          "nodeId": "layer",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "out",
+          "portId": "input"
+        }
+      }
+    ]
+  },
+  "generatedSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\n\nclass AuthoredModel(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.node_dac1d7cfa9502176 = nn.ReLU()\n\n    def forward(self, node_582967534d0f909d):\n        node_dac1d7cfa9502176 = self.node_dac1d7cfa9502176(node_582967534d0f909d)\n        return {'out': node_dac1d7cfa9502176}\n",
+  "output": {
+    "shape": [
+      1,
+      16
+    ],
+    "dtype": "float32"
+  },
+  "verification": {
+    "status": "passed",
+    "scope": "exact-static-dag-and-declared-tensor-compatibility",
+    "modelExecution": "not_run",
+    "nodes": 3,
+    "edges": 2,
+    "nodeBindings": {
+      "in": "input:model.AuthoredModel:node_582967534d0f909d",
+      "layer": "call:instance:model.AuthoredModel.node_dac1d7cfa9502176",
+      "out": "output:model.AuthoredModel:0"
+    },
+    "portBindings": {
+      "in": {
+        "output": "input:model.AuthoredModel:node_582967534d0f909d:out:node_582967534d0f909d"
+      },
+      "layer": {
+        "input": "call:instance:model.AuthoredModel.node_dac1d7cfa9502176:in:input",
+        "output": "call:instance:model.AuthoredModel.node_dac1d7cfa9502176:out:output"
+      },
+      "out": {
+        "input": "output:model.AuthoredModel:0:in:value"
+      }
+    },
+    "scalarNormalizations": {},
+    "limitations": [
+      "Input shapes and dtypes are declarations, not runtime observations.",
+      "Embedding index bounds, memory allocation, numerical behavior and train/eval execution are unverified.",
+      "This is a fresh managed model, not a structural rewrite of imported source."
+    ]
+  }
+}

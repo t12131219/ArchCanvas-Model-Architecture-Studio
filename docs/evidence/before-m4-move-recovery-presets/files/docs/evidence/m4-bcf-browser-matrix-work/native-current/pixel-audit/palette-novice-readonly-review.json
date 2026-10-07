@@ -1,0 +1,528 @@
+{
+  "schema": "archcanvas.bcf-palette-novice-readonly-review.v1",
+  "createdAtUtc": "2026-10-05T11:19:59.426093+00:00",
+  "reviewer": "Codex subagent /root/proxy_novice",
+  "method": "Read-only ASTliteral extraction of declaredcatalog and staticUI code; no catalog import/execute, browser interaction or human proxy claim",
+  "inputBindings": [
+    {
+      "path": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/src/archcanvas_authoring/draft.py",
+      "sha256": "cce519d8ae9e865fedccb5981b34a9884c51cceca43c951eff59333ba322231d",
+      "bytes": 43984
+    },
+    {
+      "path": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/studio/src/AuthoringStudio.tsx",
+      "sha256": "762ee90921f93be10cd744a4b4f3894162b61c78de4f6d5d3f158cfb02683edc",
+      "bytes": 32474
+    },
+    {
+      "path": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/studio/src/authoring.ts",
+      "sha256": "f14acb450b134fa562f6ea74a39d1923c5f91321c8000bcf5f36a01a6d0bfd96",
+      "bytes": 10413
+    },
+    {
+      "path": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/studio/src/authoringFeedback.ts",
+      "sha256": "d66aed97645a579917130f2d1783fa4f31bca1a926805c0ee12bfbe5d2920f2a",
+      "bytes": 3688
+    }
+  ],
+  "moduleCount": 17,
+  "categoryCount": 11,
+  "modules": [
+    {
+      "kind": "Input",
+      "category": "io",
+      "label": "输入",
+      "description": "声明输入张量的形状与类型，再连接后续模块。",
+      "parameters": [
+        {
+          "name": "shape",
+          "type": "integer-array",
+          "default": [
+            1,
+            16
+          ]
+        },
+        {
+          "name": "dtype",
+          "type": "choice",
+          "default": "float32"
+        }
+      ],
+      "inputs": [],
+      "outputs": [
+        "output"
+      ]
+    },
+    {
+      "kind": "Output",
+      "category": "io",
+      "label": "输出",
+      "description": "连接模型结果；可以添加多个命名输出。",
+      "parameters": [],
+      "inputs": [
+        "input"
+      ],
+      "outputs": []
+    },
+    {
+      "kind": "Linear",
+      "category": "dense",
+      "label": "全连接",
+      "description": "把最后一维从输入宽度变为输出宽度，需要 float32 输入。",
+      "parameters": [
+        {
+          "name": "in_features",
+          "type": "integer",
+          "default": 16
+        },
+        {
+          "name": "out_features",
+          "type": "integer",
+          "default": 32
+        },
+        {
+          "name": "bias",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "inputs": [
+        "input"
+      ],
+      "outputs": [
+        "output"
+      ]
+    },
+    {
+      "kind": "ReLU",
+      "category": "activation",
+      "label": "ReLU 激活",
+      "description": "逐元素把负数置零，保留形状，不修改上游张量。",
+      "parameters": [],
+      "inputs": [
+        "input"
+      ],
+      "outputs": [
+        "output"
+      ]
+    },
+    {
+      "kind": "GELU",
+      "category": "activation",
+      "label": "GELU 激活",
+      "description": "对浮点张量逐元素应用 GELU，可选 tanh 近似。",
+      "parameters": [
+        {
+          "name": "approximate",
+          "type": "choice",
+          "default": "none"
+        }
+      ],
+      "inputs": [
+        "input"
+      ],
+      "outputs": [
+        "output"
+      ]
+    },
+    {
+      "kind": "SiLU",
+      "category": "activation",
+      "label": "SiLU 激活",
+      "description": "对浮点张量逐元素应用 SiLU，保留形状。",
+      "parameters": [],
+      "inputs": [
+        "input"
+      ],
+      "outputs": [
+        "output"
+      ]
+    },
+    {
+      "kind": "Identity",
+      "category": "operator",
+      "label": "恒等映射",
+      "description": "直接传递输入，保留形状和类型。",
+      "parameters": [],
+      "inputs": [
+        "input"
+      ],
+      "outputs": [
+        "output"
+      ]
+    },
+    {
+      "kind": "Dropout",
+      "category": "regularization",
+      "label": "随机失活",
+      "description": "训练时以概率 p 丢弃元素，评估时直接传递输入。",
+      "parameters": [
+        {
+          "name": "p",
+          "type": "number",
+          "default": 0.1
+        }
+      ],
+      "inputs": [
+        "input"
+      ],
+      "outputs": [
+        "output"
+      ]
+    },
+    {
+      "kind": "Flatten",
+      "category": "reshape",
+      "label": "展平",
+      "description": "将起止维度之间的轴合并；默认保留批次维度。",
+      "parameters": [
+        {
+          "name": "start_dim",
+          "type": "integer",
+          "default": 1
+        },
+        {
+          "name": "end_dim",
+          "type": "integer",
+          "default": -1
+        }
+      ],
+      "inputs": [
+        "input"
+      ],
+      "outputs": [
+        "output"
+      ]
+    },
+    {
+      "kind": "Conv2d",
+      "category": "convolution",
+      "label": "二维卷积",
+      "description": "处理 CHW 或 NCHW 的 float32 张量，可设置卷积核、步长、填充和分组。",
+      "parameters": [
+        {
+          "name": "in_channels",
+          "type": "integer",
+          "default": 3
+        },
+        {
+          "name": "out_channels",
+          "type": "integer",
+          "default": 16
+        },
+        {
+          "name": "kernel_size",
+          "type": "integer-array",
+          "default": [
+            3,
+            3
+          ]
+        },
+        {
+          "name": "stride",
+          "type": "integer-array",
+          "default": [
+            1,
+            1
+          ]
+        },
+        {
+          "name": "padding",
+          "type": "integer-array",
+          "default": [
+            0,
+            0
+          ]
+        },
+        {
+          "name": "dilation",
+          "type": "integer-array",
+          "default": [
+            1,
+            1
+          ]
+        },
+        {
+          "name": "groups",
+          "type": "integer",
+          "default": 1
+        },
+        {
+          "name": "bias",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "inputs": [
+        "input"
+      ],
+      "outputs": [
+        "output"
+      ]
+    },
+    {
+      "kind": "MaxPool2d",
+      "category": "pooling",
+      "label": "二维最大池化",
+      "description": "缩小 CHW 或 NCHW 的空间尺寸，保留每个窗口的最大值。",
+      "parameters": [
+        {
+          "name": "kernel_size",
+          "type": "integer-array",
+          "default": [
+            2,
+            2
+          ]
+        },
+        {
+          "name": "stride",
+          "type": "integer-array",
+          "default": [
+            2,
+            2
+          ]
+        },
+        {
+          "name": "padding",
+          "type": "integer-array",
+          "default": [
+            0,
+            0
+          ]
+        },
+        {
+          "name": "dilation",
+          "type": "integer-array",
+          "default": [
+            1,
+            1
+          ]
+        },
+        {
+          "name": "ceil_mode",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "inputs": [
+        "input"
+      ],
+      "outputs": [
+        "output"
+      ]
+    },
+    {
+      "kind": "AdaptiveAvgPool2d",
+      "category": "pooling",
+      "label": "自适应平均池化",
+      "description": "将 CHW 或 NCHW 的空间尺寸变为指定大小。",
+      "parameters": [
+        {
+          "name": "output_size",
+          "type": "integer-array",
+          "default": [
+            1,
+            1
+          ]
+        }
+      ],
+      "inputs": [
+        "input"
+      ],
+      "outputs": [
+        "output"
+      ]
+    },
+    {
+      "kind": "BatchNorm2d",
+      "category": "normalization",
+      "label": "二维批归一化",
+      "description": "按通道归一化 NCHW 的 float32 张量，通道数须匹配。",
+      "parameters": [
+        {
+          "name": "num_features",
+          "type": "integer",
+          "default": 16
+        },
+        {
+          "name": "eps",
+          "type": "number",
+          "default": 1e-05
+        },
+        {
+          "name": "momentum",
+          "type": "number",
+          "default": 0.1
+        },
+        {
+          "name": "affine",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "track_running_stats",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "inputs": [
+        "input"
+      ],
+      "outputs": [
+        "output"
+      ]
+    },
+    {
+      "kind": "LayerNorm",
+      "category": "normalization",
+      "label": "层归一化",
+      "description": "归一化 float32 张量的末尾若干维，形状须与设置匹配。",
+      "parameters": [
+        {
+          "name": "normalized_shape",
+          "type": "integer-array",
+          "default": [
+            16
+          ]
+        },
+        {
+          "name": "eps",
+          "type": "number",
+          "default": 1e-05
+        },
+        {
+          "name": "elementwise_affine",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "inputs": [
+        "input"
+      ],
+      "outputs": [
+        "output"
+      ]
+    },
+    {
+      "kind": "Embedding",
+      "category": "embedding",
+      "label": "词嵌入",
+      "description": "把 int64 索引变为 float32 向量；最后增加嵌入维度。",
+      "parameters": [
+        {
+          "name": "num_embeddings",
+          "type": "integer",
+          "default": 1000
+        },
+        {
+          "name": "embedding_dim",
+          "type": "integer",
+          "default": 16
+        }
+      ],
+      "inputs": [
+        "input"
+      ],
+      "outputs": [
+        "output"
+      ]
+    },
+    {
+      "kind": "Add",
+      "category": "merge",
+      "label": "张量相加",
+      "description": "相加两路形状与类型完全相同的张量，可用于残差连接。",
+      "parameters": [],
+      "inputs": [
+        "left",
+        "right"
+      ],
+      "outputs": [
+        "output"
+      ]
+    },
+    {
+      "kind": "Concat",
+      "category": "merge",
+      "label": "张量拼接",
+      "description": "沿指定轴拼接两路张量，其他维度与类型须相同。",
+      "parameters": [
+        {
+          "name": "dim",
+          "type": "integer",
+          "default": 1
+        }
+      ],
+      "inputs": [
+        "a",
+        "b"
+      ],
+      "outputs": [
+        "output"
+      ]
+    }
+  ],
+  "unsupported": [
+    "Sigmoid",
+    "Tanh",
+    "Conv1d",
+    "AvgPool2d",
+    "BatchNorm1d",
+    "MultiheadAttention",
+    "LSTM"
+  ],
+  "existingFeatures": [
+    {
+      "item": "左侧预制原子模块",
+      "evidence": "17 modules grouped by11categories with Englishkind/Chinese label; buttons draggable and clickable.",
+      "scope": "Code evidence; current palette screenshot not captured by this reviewer."
+    },
+    {
+      "item": "空白搭建/端口连接",
+      "evidence": "createBlank/new blank action and empty state explicitly prompts Input→Linear/activation→Output; drag or sequential clicks link output to input.",
+      "scope": "Code path evidence, not a new novice-use interaction trial."
+    },
+    {
+      "item": "参数与反馈",
+      "evidence": "Right inspector offers typed parameter fields, invalid-state inline alert and disabled save/generate; stable-ID errors can focus module/port. Linear has shape/in_features example.",
+      "scope": "Code evidence; supports prior current-build authoring-feedback work but not new human acceptance."
+    },
+    {
+      "item": "整理、保存与生成",
+      "evidence": "arrange performs connection layout plusfit andundo; save/reopen/generate exist; source-review dialog names static check and offers new managed paper copy.",
+      "scope": "Source UI capability; runtime execution/training excluded by product text."
+    }
+  ],
+  "noviceGaps": [
+    {
+      "priority": "next",
+      "gap": "Module breadth limited",
+      "detail": "17 atomicmodules; explicit unsupported7=Sigmoid,Tanh,Conv1d,AvgPool2d,BatchNorm1d,MultiheadAttention,LSTM. Searchempty also declares no Attention/LSTM/composednetwork presets.",
+      "recommendation": "Extend common small modules only with parameter/tensorshape/generated-source/staticIR contracts and independent correctness evidence; add catalog+UI after the backend contract."
+    },
+    {
+      "priority": "next",
+      "gap": "No composite network presets",
+      "detail": "Only createBlank and individual catalog adds visible in currentcode; no authored MLP/ConvBlock/ResidualBlock/Transformer combo template on left.",
+      "recommendation": "Add minimal ready-to-edit MLP/ConvBlock/ResidualBlock templates with explicit Input/Output, source provenance, parameter/shape contracts and full generatedIR verification before broadnetwork presets."
+    },
+    {
+      "priority": "next",
+      "gap": "Tensor shape reasoning remains mostly user knowledge",
+      "detail": "Node labels showkind andports but no continuously surfaced declared tensor shape/dtype perwire/port; shape checks happen when generate/savevalidate. Parameterlabel names remain English; only Linear has dedicated example.",
+      "recommendation": "Show declaredinput/output shape anddtype nearports orinspector, give Chinese parameter explanations with model-specific examples, and suggest exact compatible next module settings."
+    },
+    {
+      "priority": "later",
+      "gap": "Limited workflow guidance",
+      "detail": "Empty-state4steps help, but no progressguide/smallexample sequence/reset wizard or broadexamples selection path visible inauthoring UI.",
+      "recommendation": "Offer guided firstmodel with completed steps and discoverable starttemplate; validate with real novice users, record AI proxy separately."
+    }
+  ],
+  "humanAcceptanceCertified": false,
+  "limitations": [
+    "Source capability does not establish discoverability/usability to realnovices. No current palette pixels/UI actions were performed in this review.",
+    "NoDL-Playground feature parity claim; no source/runtime borrowed from failedprototype.",
+    "All suggestedmodules/templates are future work until independent formal contracts/evidence exist."
+  ]
+}

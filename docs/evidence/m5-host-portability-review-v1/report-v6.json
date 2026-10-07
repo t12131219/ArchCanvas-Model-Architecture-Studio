@@ -1,0 +1,64 @@
+{
+  "schema": "archcanvas-m5-host-portability-review/2",
+  "date": "2026-10-07",
+  "status": "partial",
+  "scope": "project-local Skill install, portable embedded runtime, Codex metadata discovery and CLI/HTTP smoke; no host client E2E",
+  "frozenBundle": {
+    "path": ".archcanvas/releases/archcanvas-0.1.0-beta.1.tar.gz",
+    "sha256": "2c44459c195540fd3ac99a0fa7f52583090d85eae47b26fea4a64d1da85ff9ff",
+    "sourceChanged": false
+  },
+  "installer": {
+    "script": "scripts/m5_host_install.py",
+    "docs": "docs/m5-host-install.md",
+    "receipt": "../m5-host-install-work/v7/receipt.json",
+    "hosts": [
+      "codex",
+      "claude-code",
+      "deepseek-harness"
+    ],
+    "fileCount": 226,
+    "movedCopyVerification": "passed",
+    "embeddedSkillExcluded": "skills/archcanvas",
+    "hostE2E": {
+      "codex": "not-tested",
+      "claude-code": "not-tested",
+      "deepseek-harness": "not-tested"
+    }
+  },
+  "codexDiscovery": {
+    "cliVersion": "codex-cli 0.160.0",
+    "probe": "probe_codex_skills.py",
+    "receipt": "codex-installed-v6/receipt.json",
+    "status": "passed",
+    "archcanvasRowCount": 1,
+    "exactExpectedMatches": 1,
+    "modelRequests": 0,
+    "threadRequests": 0,
+    "turnRequests": 0,
+    "globalSkillWrites": false
+  },
+  "packageSmoke": {
+    "script": "scripts/m5_host_smoke.py",
+    "receipt": "installed-smoke-v6/receipt.json",
+    "status": "passed",
+    "checks": 7,
+    "modelExecution": false,
+    "humanApproval": false,
+    "hostE2E": "not-tested"
+  },
+  "browserWalkthrough": {
+    "receipt": "../m5-browser-walkthrough-v1/receipt.json",
+    "status": "partial",
+    "humanOperator": false,
+    "video": false,
+    "sharedService": true,
+    "sourceAndIrBound": "recorded but not independently promoted"
+  },
+  "limits": [
+    "Claude Code and official DeepSeek Harness executables are unavailable in this host and remain not-tested.",
+    "Codex metadata discovery does not prove prompt-body loading or full client workflow.",
+    "CLI/HTTP smoke constructs a document and does not prove browser gestures, undo, novice usability, publication approval, or physical readability.",
+    "Beta.1 frozen archive does not include this working-tree host installer/smoke slice; a later candidate must be packed and reverified."
+  ]
+}

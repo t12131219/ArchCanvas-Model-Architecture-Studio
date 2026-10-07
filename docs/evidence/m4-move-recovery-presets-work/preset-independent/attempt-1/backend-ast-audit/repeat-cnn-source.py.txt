@@ -1,0 +1,35 @@
+"""Fresh ArchCanvas authored model; static declarations are not runtime verification."""
+import torch
+from torch import nn
+
+
+class AuthoredModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.node_dd71c633fe8206d6 = nn.Conv2d(in_channels=3, out_channels=8, kernel_size=[3, 3], stride=[1, 1], padding=[1, 1], dilation=[1, 1], groups=1, bias=True, dtype=torch.float32)
+        self.node_d1b848ea647070e7 = nn.Conv2d(in_channels=3, out_channels=8, kernel_size=[3, 3], stride=[1, 1], padding=[1, 1], dilation=[1, 1], groups=1, bias=True, dtype=torch.float32)
+        self.node_d4fe76021447a53d = nn.ReLU()
+        self.node_d5721b35f177e16f = nn.ReLU()
+        self.node_2c66688d834a7c35 = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=[0, 0], dilation=[1, 1], ceil_mode=False)
+        self.node_c410d33a448bd85b = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=[0, 0], dilation=[1, 1], ceil_mode=False)
+        self.node_cfa743a4bb94d1c2 = nn.AdaptiveAvgPool2d(output_size=[1, 1])
+        self.node_d2397d47dce357d2 = nn.AdaptiveAvgPool2d(output_size=[1, 1])
+        self.node_71b75f38d37c611a = nn.Flatten(start_dim=1, end_dim=-1)
+        self.node_52150ba6fecf6412 = nn.Flatten(start_dim=1, end_dim=-1)
+        self.node_06a9416f46195131 = nn.Linear(in_features=8, out_features=4, bias=True, dtype=torch.float32)
+        self.node_f6dfd89e0ac165a1 = nn.Linear(in_features=8, out_features=4, bias=True, dtype=torch.float32)
+
+    def forward(self, node_e0f3235a3b536f6e, node_f64ba03c50eb3aa4):
+        node_dd71c633fe8206d6 = self.node_dd71c633fe8206d6(node_e0f3235a3b536f6e)
+        node_d1b848ea647070e7 = self.node_d1b848ea647070e7(node_f64ba03c50eb3aa4)
+        node_d4fe76021447a53d = self.node_d4fe76021447a53d(node_dd71c633fe8206d6)
+        node_d5721b35f177e16f = self.node_d5721b35f177e16f(node_d1b848ea647070e7)
+        node_2c66688d834a7c35 = self.node_2c66688d834a7c35(node_d4fe76021447a53d)
+        node_c410d33a448bd85b = self.node_c410d33a448bd85b(node_d5721b35f177e16f)
+        node_cfa743a4bb94d1c2 = self.node_cfa743a4bb94d1c2(node_2c66688d834a7c35)
+        node_d2397d47dce357d2 = self.node_d2397d47dce357d2(node_c410d33a448bd85b)
+        node_71b75f38d37c611a = self.node_71b75f38d37c611a(node_cfa743a4bb94d1c2)
+        node_52150ba6fecf6412 = self.node_52150ba6fecf6412(node_d2397d47dce357d2)
+        node_06a9416f46195131 = self.node_06a9416f46195131(node_71b75f38d37c611a)
+        node_f6dfd89e0ac165a1 = self.node_f6dfd89e0ac165a1(node_52150ba6fecf6412)
+        return {'n_restart_7': node_06a9416f46195131, 'n_restart_15': node_f6dfd89e0ac165a1}

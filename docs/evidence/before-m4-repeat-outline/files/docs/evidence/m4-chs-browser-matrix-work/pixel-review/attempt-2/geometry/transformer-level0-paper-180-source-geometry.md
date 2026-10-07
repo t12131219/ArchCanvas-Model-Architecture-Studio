@@ -1,0 +1,7 @@
+# transformer-level0-paper-180 source geometry review
+
+8 assigned structural inputs were bound and rehashed unchanged at finish. Declared ID, revision 2, source/IR digests, paper width 180 mm, and only the Transformer root expanded agree. SVG: 180mm × 208.45mm, viewBox 0 0 696 806. Final before/after DOM is byte identical and has no dialog; this does not prove raster state. Available export-complete modal and post-close nonmodal observations are evaluated separately.
+
+All 12 routes / 24 role-specific endpoints match within the declared 0.051 scene-unit serialization rounding tolerance (max 0.030000). Eleven main front card rectangles have 0 overlaps and 0 route penetrations. Expanded root is an enclosing container, not a leaf obstacle. edge:44 enters both repeat encoder decorative backplate strips; 8 distinct route pairs retain 22 point-touch, 10 collinear-overlap and 1 strict-perpendicular-crossing segment incidences. The strict crossing is mask edge:7 / data edge:43 at (348.3,397); masking and residual spans also overlap. Source correctness of endpoints does not make routing clean.
+
+Nominal min emitted font size is 6.5979 pt; node-name 13 scene units is 9.5303 pt at this width. The fitted same-shape scene does not prove readability at physical size. This is source geometry only, no image review, glyph or arrowhead certification, raster synchronization, live-store acquisition proof, runtime/performance or human acceptance.

@@ -1,0 +1,11 @@
+--- 
++++ 
+@@ -162,7 +162,7 @@
+ test('literal node identities containing delimiter characters do not discard latent expansion memory or visible geometry', () => {
+   const before = fixture(), identities: Record<string, string> = { root: 'root|Ω', block: 'block|nested', layer: 'layer|深层' };
+   const id = (value: string) => identities[value] ?? value;
+-  before.architecture.nodes = before.architecture.nodes.map(n => ({ ...n, id: id(n.id), parentId: n.parentId ? id(n.parentId) : undefined, children: n.children.map(id) }));
++  before.architecture.nodes = before.architecture.nodes.map(n => ({ ...n, id: id(n.id), ...(n.parentId ? { parentId: id(n.parentId) } : {}), children: n.children.map(id) }));
+   before.architecture.edges = before.architecture.edges.map(e => ({ ...e, source: { ...e.source, nodeId: id(e.source.nodeId) }, target: { ...e.target, nodeId: id(e.target.nodeId) } }));
+   const remap = (values: Record<string, Position>) => Object.fromEntries(Object.entries(values).map(([key, point]) => [id(key), clone(point)]));
+   before.layout = remap(DEEP);

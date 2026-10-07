@@ -1,0 +1,228 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-06T05:46:41.202867+00:00",
+  "status": "passed_with_explicit_boundaries",
+  "scope": "Current M4 no-template holdout and shared/repeat/opaque static accuracy audit",
+  "formalProject": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio",
+  "objectiveCoverage": {
+    "noTemplateHoldout": {
+      "status": "passed_for_declared_six_entries",
+      "entries": [
+        "PatchVisionEncoder",
+        "UnsupportedVision",
+        "TemporalForecaster",
+        "SkipSegmentation",
+        "GraphForecast",
+        "DynamicStateSpace"
+      ],
+      "freshIndependentRun": true,
+      "source": "scripts/check_m4_holdout.py",
+      "report": "fresh-holdout-report.json"
+    },
+    "sharedRepeatOpaque": {
+      "status": "passed_for_declared_static_contracts",
+      "shared": "TemporalForecaster has separate call identities for the shared projection; the checker rejects merged shared-instance call identities and split shared tensors.",
+      "repeat": "SkipSegmentation repeat members are checked as an ordered containment contract with independent sharing; the checker rejects swapped members, duplicate containment and false shared repeat metadata.",
+      "opaque": "UnsupportedVision, SkipSegmentation, GraphForecast and DynamicStateSpace preserve source-backed unknown/dynamic boundaries; the checker rejects registered-semantics substitution, invented opaque children, altered opaque arguments and missing diagnostics.",
+      "source": "docs/evidence/m4-holdout-integrity-audit/test_m4_holdout_integrity.py"
+    }
+  },
+  "checks": [
+    {
+      "name": "local_static_regression",
+      "command": "PYTHONPATH=src python -m pytest -q tests/test_m4_holdout.py tests/test_m4_holdout_integrity.py tests/test_m4_unknown_boundaries.py tests/test_residual_roles.py",
+      "passed": true,
+      "tests": "58 passed",
+      "modelExecution": false,
+      "fixtureImport": false,
+      "stdout": "local-suite.txt",
+      "sha256": "35c466946b4713c10250528c58a2c8bc6498c5609c840bf45df92a86f4e210a8"
+    },
+    {
+      "name": "fresh_independent_holdout_oracle",
+      "command": "PYTHONPATH=src python scripts/check_m4_holdout.py --project .",
+      "passed": true,
+      "tests": "28/28",
+      "skipped": 0,
+      "composition": {
+        "familyHoldouts": 6,
+        "outputSlotContractsAndCounterexamples": 10,
+        "residualBypassContractsAndCounterexamples": 12
+      },
+      "modelExecution": false,
+      "fixtureImport": false,
+      "pythonIsolation": "-I -S in a copied formal release",
+      "stdout": "independent-holdout-check.txt",
+      "stdoutSha256": "6fecd5afa80c5560c4f88b671297e24db9992d5fc68aca1a8b632dbc2deba07d",
+      "report": "fresh-holdout-report.json",
+      "reportSha256": "d61cdd839407c99f89d3f18a20737edc66da91b6016db35e233ff5418c3956b8",
+      "standaloneCopy": "/tmp/archcanvas-independent-cus3tpk2/release"
+    },
+    {
+      "name": "fresh_complete_holdout_integrity_oracle",
+      "command": "PYTHONPATH=scripts:src python docs/evidence/m4-holdout-integrity-audit/check_m4_holdout_integrity.py --project .",
+      "passed": true,
+      "tests": "22/22",
+      "skipped": 0,
+      "composition": {
+        "completeEntries": 6,
+        "deliberateCorruptionTests": 16
+      },
+      "modelExecution": false,
+      "fixtureImport": false,
+      "pythonIsolation": "-I -S in a copied formal release",
+      "stdout": "independent-integrity-check.txt",
+      "stdoutSha256": "349594bbdf13df9d930390914ee0ac21243f2177d3315071416d4086364a3f3d",
+      "report": "fresh-integrity-report.json",
+      "reportSha256": "280aaf2e604b9de4a81c4915ce97c65660b5548ee52336e769393adadb02058f",
+      "standaloneCopy": "/tmp/archcanvas-independent-myym276k/release"
+    }
+  ],
+  "holdouts": [
+    {
+      "name": "PatchVisionEncoder",
+      "entry": "model:PatchVisionEncoder",
+      "sourceDigest": "03951b20db4cde8abcb520ca00c5f6f3312ef7c0e043c22927e9fb75dbf13de7",
+      "irDigest": "ecfd76ef72e61d43154f4972ed25a35095fad09f34298fc88b1ff81ea82157c8",
+      "nodeCount": 17,
+      "edgeCount": 21,
+      "portCount": 35,
+      "tensorCount": 13,
+      "callCount": 10,
+      "instanceCount": 10,
+      "opaqueNodeCount": 0
+    },
+    {
+      "name": "UnsupportedVision",
+      "entry": "model:UnsupportedVision",
+      "sourceDigest": "03951b20db4cde8abcb520ca00c5f6f3312ef7c0e043c22927e9fb75dbf13de7",
+      "irDigest": "6ee0bbea7aad60c9d0a4dd1b8a00856d2a693707ac3509f6116ab85d0517f605",
+      "nodeCount": 5,
+      "edgeCount": 4,
+      "portCount": 6,
+      "tensorCount": 2,
+      "callCount": 3,
+      "instanceCount": 3,
+      "opaqueNodeCount": 1
+    },
+    {
+      "name": "TemporalForecaster",
+      "entry": "model:TemporalForecaster",
+      "sourceDigest": "3a6976a808974cfbb911cf2bab8c44b7d302c20c0e28046e1a9e7002fe51b667",
+      "irDigest": "0e60a72fa479c1a84b69ca3cffe7d2efba27727c2e0b7f4c6b653066f8c1a189",
+      "nodeCount": 9,
+      "edgeCount": 8,
+      "portCount": 14,
+      "tensorCount": 6,
+      "callCount": 4,
+      "instanceCount": 3,
+      "opaqueNodeCount": 0
+    },
+    {
+      "name": "SkipSegmentation",
+      "entry": "model:SkipSegmentation",
+      "sourceDigest": "3a6976a808974cfbb911cf2bab8c44b7d302c20c0e28046e1a9e7002fe51b667",
+      "irDigest": "ecfdb4422c2e5bc37e53a1fa5e70efdd4c02d3563c400568d78e63c10d236c24",
+      "nodeCount": 16,
+      "edgeCount": 15,
+      "portCount": 26,
+      "tensorCount": 11,
+      "callCount": 12,
+      "instanceCount": 12,
+      "opaqueNodeCount": 1
+    },
+    {
+      "name": "GraphForecast",
+      "entry": "model:GraphForecast",
+      "sourceDigest": "3a6976a808974cfbb911cf2bab8c44b7d302c20c0e28046e1a9e7002fe51b667",
+      "irDigest": "eb67d130131182f5b4f566aef12afa49cb23c729f93203c8054ea1c188acedbb",
+      "nodeCount": 7,
+      "edgeCount": 8,
+      "portCount": 13,
+      "tensorCount": 5,
+      "callCount": 3,
+      "instanceCount": 3,
+      "opaqueNodeCount": 2
+    },
+    {
+      "name": "DynamicStateSpace",
+      "entry": "model:DynamicStateSpace",
+      "sourceDigest": "3a6976a808974cfbb911cf2bab8c44b7d302c20c0e28046e1a9e7002fe51b667",
+      "irDigest": "5ee62adef0ec248c697d2a0fb9f3a15e69344f16590f7aadf6bcf780fe447abe",
+      "nodeCount": 5,
+      "edgeCount": 5,
+      "portCount": 8,
+      "tensorCount": 3,
+      "callCount": 2,
+      "instanceCount": 2,
+      "opaqueNodeCount": 2
+    }
+  ],
+  "sharedRepeatOpaqueAssertions": {
+    "sharedCalls": {
+      "TemporalForecaster": {
+        "callCount": 4,
+        "instanceCount": 3,
+        "expectedOutputPaths": [
+          "forecast[0]",
+          "forecast[1]",
+          "state.hidden",
+          "state.cell"
+        ]
+      },
+      "counterexamples": [
+        "merged shared-instance call identity",
+        "split shared tensor",
+        "merged LSTM output slots"
+      ]
+    },
+    "repeatContracts": {
+      "SkipSegmentation": {
+        "callCount": 12,
+        "instanceCount": 12,
+        "opaqueNodeCount": 1
+      },
+      "counterexamples": [
+        "swapped repeat members",
+        "duplicate containment member",
+        "false repeat sharing"
+      ]
+    },
+    "opaqueBoundaries": {
+      "opaqueNodeCounts": {
+        "UnsupportedVision": 1,
+        "SkipSegmentation": 1,
+        "GraphForecast": 2,
+        "DynamicStateSpace": 2
+      },
+      "counterexamples": [
+        "unknown given registered semantics",
+        "invented opaque internal child",
+        "changed opaque constructor argument",
+        "missing unknown diagnostic"
+      ]
+    }
+  },
+  "artifactDigests": {
+    "currentSourceFacts": "1e4ce04ab5a475ca4e3863c511dfee3974971a81fc4a7efcc8dcb06923a49bbd",
+    "frontend": "ce7f7f733da28cb31ecff80ca029a53094e88f8451bffc3874f8167f80a07d00",
+    "holdoutIntegrityOracle": "d8808f926ace91db4a84216ad5075b704b4345ab4224f4e6f5eb1a31a6ba0152",
+    "holdoutRelationsOracle": "897b8b606cb46be47cc3d1ddfc012f6cf585f6ad5709d8a2a2a81924f6550c26",
+    "holdoutIntegrityChecker": "a7c31f77677e37eddc5ad9f27be572e66d537ed5522ae2d1c088e9fc0d82d562",
+    "holdoutDistributionChecker": "c777b3fe0f21936400f585d504f83d87cbbf82c9197d67b3e661f92f4deb1600",
+    "independenceChecker": "03d6d08ca28cfedcdb0843a17507187b4e3ed22c9ee0ba0fe070ef4c22d96962",
+    "holdoutVitSource": "3c17de145958e1312cbf4c06f1ea669aec7d825db064f51b87478e9db6b83eec",
+    "holdoutFamiliesSource": "689a4e9a0c69ee1b9b440fc808fd98b4b4a8ab2786d21aa09290bb5fcbad3fb2",
+    "localSuite": "35c466946b4713c10250528c58a2c8bc6498c5609c840bf45df92a86f4e210a8",
+    "freshHoldoutReport": "d61cdd839407c99f89d3f18a20737edc66da91b6016db35e233ff5418c3956b8",
+    "freshIntegrityReport": "280aaf2e604b9de4a81c4915ce97c65660b5548ee52336e769393adadb02058f"
+  },
+  "limitations": [
+    "This audit covers exactly the six declared static AST entries; it does not certify arbitrary model families or host integrations.",
+    "No fixture was imported or executed. Concrete shape/dtype, numerical forward/backward equivalence and runtime behavior remain unverified.",
+    "Opaque boundaries are conservatively preserved; Conv1d, ConvTranspose2d, custom GraphAttentionKernel/StateSpaceScan and dynamic control are not given inferred semantics.",
+    "This report does not prove browser rendering/performance, publication-size readability, four-direction route aesthetics, native cancellation, or researcher task acceptance.",
+    "The independent copies and their /tmp provenance paths are retained in the fresh JSON reports; this audit does not rewrite any historical seal."
+  ],
+  "historicalBoundary": "Earlier m4-holdout-report.json and m4-holdout-integrity-audit artifacts remain historical inputs; this report records a fresh run against the current worktree and does not upgrade old browser or human-review evidence."
+}

@@ -1,0 +1,9 @@
+# Transformer level 0 / paper 85 mm source geometry review
+
+Six assigned inputs were bound before structural content review and rehashed unchanged at finish. The SVG, DOM observation and stored snapshot agree on document ID, revision 1, declared source/IR digests, paper width 85 mm, and only the Transformer root expanded. SVG root: 85 × 98.43 mm, viewBox 0 0 696 806. Both full DOM snapshots are byte identical, report saved/rev 1, and contain no dialog token; DOM equality is not screenshot proof.
+
+The public scene contains 12 visible node cards/containers, 12 routes (6 data, 3 mask, 2 residual, 1 memory), and 24 public ports. Each route is an untransformed orthogonal M/L/H/V path. All 24 endpoints match the canonical role-specific public port within 0.051 scene units; the maximum retained rounding difference is 0.030000. Eleven main collapsed/front rectangles have 0 pair overlaps and 0 route segments entering their strict open interiors. The expanded enclosing Transformer is not a leaf obstacle.
+
+The repeat encoder has two decorative stack backplates. The memory route edge:44 traverses their exposed right strips (2 segment/backplate incidences); they are retained separately, not silently treated as clean space. Distinct routes have 8 intersecting pairs, with serialized segment incidences {"point-touch": 22, "collinear-overlap": 10, "strict-perpendicular-crossing": 1}. Collinear mask/mask and mask/residual spans and point contacts at y=209 and y=397 remain explicit in JSON. This is not an all-clear routing finding.
+
+This independent stdlib script imports no product or old audit helper. It certifies source geometry only. It does not certify pixels, arrowheads, tiny text, typography, capture synchronization, live persistence, model execution, runtime fidelity, performance or human acceptance. The parent's actual primer modal mismatch is neither disproved nor explained by the structure checks.

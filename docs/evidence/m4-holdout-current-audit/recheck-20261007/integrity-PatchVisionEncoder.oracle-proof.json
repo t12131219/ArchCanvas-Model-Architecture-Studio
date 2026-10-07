@@ -1,0 +1,445 @@
+{
+  "entry": "model:PatchVisionEncoder",
+  "nodeCount": 17,
+  "edgeCount": 21,
+  "portCount": 35,
+  "tensorCount": 13,
+  "callCount": 10,
+  "instanceCount": 10,
+  "opaqueNodeCount": 0,
+  "nodes": [
+    "attention",
+    "attention_residual",
+    "block",
+    "classifier",
+    "expand",
+    "flatten",
+    "gelu",
+    "image",
+    "mlp",
+    "mlp_residual",
+    "norm",
+    "output",
+    "patch",
+    "pool",
+    "project",
+    "root",
+    "transpose"
+  ],
+  "relations": [
+    [
+      "attention",
+      "output",
+      "attention_residual",
+      "right",
+      "data"
+    ],
+    [
+      "attention_residual",
+      "output",
+      "expand",
+      "input",
+      "data"
+    ],
+    [
+      "attention_residual",
+      "output",
+      "mlp",
+      "input",
+      "data"
+    ],
+    [
+      "attention_residual",
+      "output",
+      "mlp_residual",
+      "left",
+      "residual"
+    ],
+    [
+      "classifier",
+      "output",
+      "output",
+      "value",
+      "data"
+    ],
+    [
+      "expand",
+      "output",
+      "gelu",
+      "input",
+      "data"
+    ],
+    [
+      "flatten",
+      "output",
+      "transpose",
+      "input",
+      "data"
+    ],
+    [
+      "gelu",
+      "output",
+      "project",
+      "input",
+      "data"
+    ],
+    [
+      "image",
+      "image",
+      "patch",
+      "input",
+      "data"
+    ],
+    [
+      "image",
+      "image",
+      "root",
+      "image",
+      "data"
+    ],
+    [
+      "mlp_residual",
+      "output",
+      "pool",
+      "input",
+      "data"
+    ],
+    [
+      "norm",
+      "output",
+      "attention",
+      "key",
+      "data"
+    ],
+    [
+      "norm",
+      "output",
+      "attention",
+      "query",
+      "data"
+    ],
+    [
+      "norm",
+      "output",
+      "attention",
+      "value",
+      "data"
+    ],
+    [
+      "patch",
+      "output",
+      "flatten",
+      "input",
+      "data"
+    ],
+    [
+      "pool",
+      "output",
+      "classifier",
+      "input",
+      "data"
+    ],
+    [
+      "project",
+      "output",
+      "mlp",
+      "result",
+      "data"
+    ],
+    [
+      "project",
+      "output",
+      "mlp_residual",
+      "right",
+      "data"
+    ],
+    [
+      "transpose",
+      "output",
+      "attention_residual",
+      "left",
+      "residual"
+    ],
+    [
+      "transpose",
+      "output",
+      "block",
+      "tokens",
+      "data"
+    ],
+    [
+      "transpose",
+      "output",
+      "norm",
+      "input",
+      "data"
+    ]
+  ],
+  "containment": {
+    "block": [
+      "attention",
+      "attention_residual",
+      "mlp",
+      "mlp_residual",
+      "norm"
+    ],
+    "mlp": [
+      "expand",
+      "gelu",
+      "project"
+    ],
+    "root": [
+      "block",
+      "classifier",
+      "flatten",
+      "image",
+      "output",
+      "patch",
+      "pool",
+      "transpose"
+    ]
+  },
+  "instanceCalls": {
+    "instance:model.PatchVisionEncoder": [
+      "root"
+    ],
+    "instance:model.PatchVisionEncoder.block": [
+      "block"
+    ],
+    "instance:model.PatchVisionEncoder.block.attention": [
+      "attention"
+    ],
+    "instance:model.PatchVisionEncoder.block.mlp": [
+      "mlp"
+    ],
+    "instance:model.PatchVisionEncoder.block.mlp.0": [
+      "expand"
+    ],
+    "instance:model.PatchVisionEncoder.block.mlp.1": [
+      "gelu"
+    ],
+    "instance:model.PatchVisionEncoder.block.mlp.2": [
+      "project"
+    ],
+    "instance:model.PatchVisionEncoder.block.norm": [
+      "norm"
+    ],
+    "instance:model.PatchVisionEncoder.classifier": [
+      "classifier"
+    ],
+    "instance:model.PatchVisionEncoder.patch_projection": [
+      "patch"
+    ]
+  },
+  "tensors": [
+    {
+      "producer": [
+        "attention",
+        "output"
+      ],
+      "consumers": [
+        [
+          "attention_residual",
+          "right",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "expand",
+        "output"
+      ],
+      "consumers": [
+        [
+          "gelu",
+          "input",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "gelu",
+        "output"
+      ],
+      "consumers": [
+        [
+          "project",
+          "input",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "project",
+        "output"
+      ],
+      "consumers": [
+        [
+          "mlp",
+          "result",
+          "data"
+        ],
+        [
+          "mlp_residual",
+          "right",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "norm",
+        "output"
+      ],
+      "consumers": [
+        [
+          "attention",
+          "key",
+          "data"
+        ],
+        [
+          "attention",
+          "query",
+          "data"
+        ],
+        [
+          "attention",
+          "value",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "classifier",
+        "output"
+      ],
+      "consumers": [
+        [
+          "output",
+          "value",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "patch",
+        "output"
+      ],
+      "consumers": [
+        [
+          "flatten",
+          "input",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "image",
+        "image"
+      ],
+      "consumers": [
+        [
+          "patch",
+          "input",
+          "data"
+        ],
+        [
+          "root",
+          "image",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "mlp_residual",
+        "output"
+      ],
+      "consumers": [
+        [
+          "pool",
+          "input",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "attention_residual",
+        "output"
+      ],
+      "consumers": [
+        [
+          "expand",
+          "input",
+          "data"
+        ],
+        [
+          "mlp",
+          "input",
+          "data"
+        ],
+        [
+          "mlp_residual",
+          "left",
+          "residual"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "flatten",
+        "output"
+      ],
+      "consumers": [
+        [
+          "transpose",
+          "input",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "pool",
+        "output"
+      ],
+      "consumers": [
+        [
+          "classifier",
+          "input",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "transpose",
+        "output"
+      ],
+      "consumers": [
+        [
+          "attention_residual",
+          "left",
+          "residual"
+        ],
+        [
+          "block",
+          "tokens",
+          "data"
+        ],
+        [
+          "norm",
+          "input",
+          "data"
+        ]
+      ]
+    }
+  ]
+}

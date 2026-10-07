@@ -1,0 +1,9 @@
+# Fresh research package independent readiness
+
+This independent readback verifies `.archcanvas/m4-research-trial-caption-stability-camera-current`. The auditor imports no product helper and performs no model execution, service startup, assignment or collection. It reuses the earlier auditor structure with the new package paths and dynamically enumerates current implementation and old package inventory.
+
+Readiness: 304/304. The manifest binds 85 formal implementation files; the independently checked final receipt binds 110 source/test/config and three build files (113), plus 11 separate publication inputs. Studio 409/409 and publication 11/11 are separate test denominators, not readiness relations. All 17 new package files stayed exact during audit. Five seats remain unassigned and pristine, with only registration of ports 43611–43615. Actual availability is not tested.
+
+The dynamic old inventory covers 23 packages / 393 files, all exact and with no package/file addition or removal relative to preparation's frozen old inventory. The new package manifest SHA is 9b96574f8fab733824ba0127331631a69ed2fc231f154f2d6a11526d47910e3f. Baseline copies match the formal fixtures; preparation used the formal `.venv`, analyzer origin lies under formal `src`. The stored official verify process exits 0 and independently matches this package manifest.
+
+Human participants/reviewers remain zero, no generated model was executed, and no services were started here. M4 remains partial, M5 not_started. Readiness certifies byte binding and pristine preparation only; it does not certify novice usability, model runtime tensors, fixed hardware/fonts, presented performance, publication size or visual quality. The earlier caption-route auditor is only the source of the adapted read-only evidence tooling, not a runtime fallback.

@@ -1,6 +1,16 @@
 # M4：代理反馈修复与实际交互回归
 
-当前构建 `index-BcFxpKDY.js`，SHA256 `98eae2934004ecaec4036f7b0746fb8304b3412c467b2417b68988dd4e4afe3a`；CSS `index-NmgHfiF5.css`，SHA256 `0026e211728f2ae0aec210a2b2da0df06a46f068f0e26cbef5752ed3137dff2b`。本轮处理三角色代理探索发现的排版、错误定位、空搜索问题，并修复无效原始输入的保存/生成边界。模块库仍为 17 种；Attention、LSTM、组合网络预制和训练尚未支持。
+当前（2026-10-06）为 `index-BV-fWDiR.js` / `index-QPVAzYp6.css`。[模块库可发现性与预制起点](m4-module-library.md)增加“基础模块 17 / 网络起点 3”入口；默认直达 Input、Output、Linear 与激活模块，搜索词会跨两类结果。最终专项48/48、Studio284/284、strict TypeScript/Vite退出0；本轮未执行模型或安装依赖。
+
+实际浏览器复核保留待连接状态、草稿4节点3连线、跨类搜索、未支持 Attention 说明、Identity/MLP/Input 添加后撤销，以及保存重开。入口切换只改列表视图，不改草稿、历史、选择、相机或连接。15组新BV状态/JPEG绑定在 [模块库浏览证据](evidence/m4-module-library-work/browser-attempt-1/manifest.json)；此前CW22组静态检查/四向移动/参数引导保留原范围。
+
+M4仍partial、M5未开始、真人0。AI审查不计真人；复杂图路由、逐模块生成、出版尺寸、呈现性能与真人任务仍未认证。[当前schema16状态](evidence/m4-human-review-handoff-status-followup.json)单独绑定本轮；schema15与CW/BSA旧证据保留各自归档，不继承为BV浏览器认证。
+
+历史au3反馈记录：当前正式构建仍为 `index-au3IB_0Q.js` / `index-B6WbMowt.css`，最新范围见[au3矩阵、四向操作与输入诊断](m4-au3-current-matrix.md)。39例文件已collect，三模型四向/history/save-reopen已独审；像素问题与性能未通过项保留，AI真人0、M4 partial、M5未开始。下方记录保留各自历史构建/时点，不继承为最新浏览器或研究认证。当前au3研究包仍未prepare/verify，旧研究席位不可分配。此前seal与末读原字节见[更新前归档](evidence/before-m4-au3-full-matrix/manifest.json)。
+
+当前（2026-10-05）为 `index-ChS0wIgb.js`（SHA256 `05019f89f0de0c0c622df7a2cc1a13ed58477c456244c97209a0f37db79139c9`）与 `index-CsXMONBp.css`。本轮[显式位置修复与透明网络起点](m4-move-recovery-presets.md)新增预览/应用/取消和17基础模块上的3个可编辑网络起点；最终Studio152/152、strict/build退出0。中间会话与最终build证据分开；最终23组/46图、四向操作及单个pin拒绝范围单列，不宣称新36＋3矩阵；最终独立发行9项通过；磁盘满的前次失败保留。旧Bc矩阵/诊断/五席包不能认证本构建，fresh研究准备待完成、真人0。M4仍partial，未进入M5。
+
+[切换前2894绑定原字节](evidence/before-m4-move-recovery-presets/manifest.json)保留旧Bc seal/status/矩阵/诊断/源码；下方历史记录中的“当前/本轮/最终”仅指其明确旧构建和冻结时点，不计新build浏览器、性能或真人认证。旧raw、seal、manifest和研究包不回写。
 
 ## 产品变化
 

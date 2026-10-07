@@ -1,0 +1,1 @@
+The first supplemental IR attempt exited 1 before any graph checks because relative argparse paths were bound against an absolute project root. The unchanged failing script is preserved here. This adapter failure is not a product graph failure or a passed audit. A fresh directory is required for the corrected attempt.

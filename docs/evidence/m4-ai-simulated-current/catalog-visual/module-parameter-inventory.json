@@ -1,0 +1,527 @@
+{
+  "Input": {
+    "fields": [
+      {
+        "label": "模块显示名称",
+        "type": null,
+        "value": "输入"
+      },
+      {
+        "label": "shape",
+        "type": null,
+        "value": "1, 16"
+      },
+      {
+        "label": "dtype",
+        "options": [
+          "float32",
+          "float64",
+          "int64"
+        ],
+        "type": null,
+        "value": "float32"
+      },
+      {
+        "label": "模块 X 坐标",
+        "type": "number",
+        "value": "290"
+      },
+      {
+        "label": "模块 Y 坐标",
+        "type": "number",
+        "value": "172"
+      }
+    ],
+    "text": "MODEL PROPERTIESInput显示名称输入形状shape按顺序填写各维尺寸，例如 [1, 3, 32, 32] 表示批次 1、通道 3、高和宽各 32。可声明 1–8 维，各维为正整数；这是静态约定，不是运行测量。 填写逗号分隔的数字（如 1, 3），无需输入方括号。元素类型dtypefloat32float64int64卷积、全连接和归一化需要 float32；Embedding 的索引需要 int64。float64 须与后续模块兼容。此处声明类型，不转换实际数据。声明输入张量的形状与类型，再连接后续模块。XY删除模块及相连连线检查当前结构参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。检查模型1 模块 0 连接"
+  },
+  "Output": {
+    "fields": [
+      {
+        "label": "模块显示名称",
+        "type": null,
+        "value": "输出"
+      },
+      {
+        "label": "模块 X 坐标",
+        "type": "number",
+        "value": "290"
+      },
+      {
+        "label": "模块 Y 坐标",
+        "type": "number",
+        "value": "172"
+      }
+    ],
+    "text": "MODEL PROPERTIESOutput显示名称连接模型结果；可以添加多个命名输出。XY删除模块及相连连线检查当前结构参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。检查模型1 模块 0 连接"
+  },
+  "Linear": {
+    "fields": [
+      {
+        "label": "模块显示名称",
+        "type": null,
+        "value": "全连接"
+      },
+      {
+        "label": "in_features",
+        "type": null,
+        "value": "16"
+      },
+      {
+        "label": "out_features",
+        "type": null,
+        "value": "32"
+      },
+      {
+        "checked": true,
+        "label": "bias",
+        "type": "checkbox",
+        "value": "on"
+      },
+      {
+        "label": "模块 X 坐标",
+        "type": "number",
+        "value": "290"
+      },
+      {
+        "label": "模块 Y 坐标",
+        "type": "number",
+        "value": "172"
+      }
+    ],
+    "text": "MODEL PROPERTIESLinear显示名称输入特征数in_features须等于上游张量的最后一维。例如输入 [1, 16] 时填 16；修改此值不会自动改变上游形状。输出特征数out_features输出的最后一维变为此值，其他维度保留。例如 [1, 16] 可变为 [1, 32]；后续模块的输入参数也须匹配。使用偏置bias开启后，每个输出特征都有一个可学习的加法偏置；关闭后只保留权重变换。此选项不改变输出形状。把最后一维从输入宽度变为输出宽度，需要 float32 输入。例如输入形状为 [1, 16] 时，in_features 应为 16；out_features 决定输出最后一维。XY删除模块及相连连线检查当前结构参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。检查模型1 模块 0 连接"
+  },
+  "ReLU": {
+    "fields": [
+      {
+        "label": "模块显示名称",
+        "type": null,
+        "value": "ReLU 激活"
+      },
+      {
+        "label": "模块 X 坐标",
+        "type": "number",
+        "value": "290"
+      },
+      {
+        "label": "模块 Y 坐标",
+        "type": "number",
+        "value": "172"
+      }
+    ],
+    "text": "MODEL PROPERTIESReLU显示名称逐元素把负数置零，保留形状，不修改上游张量。XY删除模块及相连连线检查当前结构参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。检查模型1 模块 0 连接"
+  },
+  "GELU": {
+    "fields": [
+      {
+        "label": "模块显示名称",
+        "type": null,
+        "value": "GELU 激活"
+      },
+      {
+        "label": "approximate",
+        "options": [
+          "none",
+          "tanh"
+        ],
+        "type": null,
+        "value": "none"
+      },
+      {
+        "label": "模块 X 坐标",
+        "type": "number",
+        "value": "290"
+      },
+      {
+        "label": "模块 Y 坐标",
+        "type": "number",
+        "value": "172"
+      }
+    ],
+    "text": "MODEL PROPERTIESGELU显示名称近似方式approximatenonetanhnone 使用 GELU 的原始计算形式，tanh 使用双曲正切近似。两者保留输入形状和浮点类型。对浮点张量逐元素应用 GELU，可选 tanh 近似。XY删除模块及相连连线检查当前结构参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。检查模型1 模块 0 连接"
+  },
+  "SiLU": {
+    "fields": [
+      {
+        "label": "模块显示名称",
+        "type": null,
+        "value": "SiLU 激活"
+      },
+      {
+        "label": "模块 X 坐标",
+        "type": "number",
+        "value": "290"
+      },
+      {
+        "label": "模块 Y 坐标",
+        "type": "number",
+        "value": "172"
+      }
+    ],
+    "text": "MODEL PROPERTIESSiLU显示名称对浮点张量逐元素应用 SiLU，保留形状。XY删除模块及相连连线检查当前结构参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。检查模型1 模块 0 连接"
+  },
+  "Identity": {
+    "fields": [
+      {
+        "label": "模块显示名称",
+        "type": null,
+        "value": "恒等映射"
+      },
+      {
+        "label": "模块 X 坐标",
+        "type": "number",
+        "value": "290"
+      },
+      {
+        "label": "模块 Y 坐标",
+        "type": "number",
+        "value": "172"
+      }
+    ],
+    "text": "MODEL PROPERTIESIdentity显示名称直接传递输入，保留形状和类型。XY删除模块及相连连线检查当前结构参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。检查模型1 模块 0 连接"
+  },
+  "Dropout": {
+    "fields": [
+      {
+        "label": "模块显示名称",
+        "type": null,
+        "value": "随机失活"
+      },
+      {
+        "label": "p",
+        "type": null,
+        "value": "0.1"
+      },
+      {
+        "label": "模块 X 坐标",
+        "type": "number",
+        "value": "290"
+      },
+      {
+        "label": "模块 Y 坐标",
+        "type": "number",
+        "value": "172"
+      }
+    ],
+    "text": "MODEL PROPERTIESDropout显示名称失活概率p取 0–1。训练时以此概率把元素置零；p=0 不丢弃，p=1 全部置零，其他值会缩放保留元素。评估时直接传递输入，形状不变。训练时以概率 p 丢弃元素，评估时直接传递输入。XY删除模块及相连连线检查当前结构参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。检查模型1 模块 0 连接"
+  },
+  "Flatten": {
+    "fields": [
+      {
+        "label": "模块显示名称",
+        "type": null,
+        "value": "展平"
+      },
+      {
+        "label": "start_dim",
+        "type": null,
+        "value": "1"
+      },
+      {
+        "label": "end_dim",
+        "type": null,
+        "value": "-1"
+      },
+      {
+        "label": "模块 X 坐标",
+        "type": "number",
+        "value": "290"
+      },
+      {
+        "label": "模块 Y 坐标",
+        "type": "number",
+        "value": "172"
+      }
+    ],
+    "text": "MODEL PROPERTIESFlatten显示名称展平起始维start_dim从此维开始合并轴，维度从 0 计数，负数从末尾计数。默认 1 保留第 0 维（常用作批次）；一维输入须改为 0。起始维须不晚于结束维，并落在输入维度范围内。展平结束维end_dim合并到此维，包含该维；-1 表示最后一维。例如 [1, 3, 4] 从 1 到 -1 展平为 [1, 12]，元素类型保留。将起止维度之间的轴合并；默认保留批次维度。XY删除模块及相连连线检查当前结构参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。检查模型1 模块 0 连接"
+  },
+  "Conv2d": {
+    "fields": [
+      {
+        "label": "模块显示名称",
+        "type": null,
+        "value": "二维卷积"
+      },
+      {
+        "label": "in_channels",
+        "type": null,
+        "value": "3"
+      },
+      {
+        "label": "out_channels",
+        "type": null,
+        "value": "16"
+      },
+      {
+        "label": "kernel_size",
+        "type": null,
+        "value": "3, 3"
+      },
+      {
+        "label": "stride",
+        "type": null,
+        "value": "1, 1"
+      },
+      {
+        "label": "padding",
+        "type": null,
+        "value": "0, 0"
+      },
+      {
+        "label": "dilation",
+        "type": null,
+        "value": "1, 1"
+      },
+      {
+        "label": "groups",
+        "type": null,
+        "value": "1"
+      },
+      {
+        "checked": true,
+        "label": "bias",
+        "type": "checkbox",
+        "value": "on"
+      },
+      {
+        "label": "模块 X 坐标",
+        "type": "number",
+        "value": "290"
+      },
+      {
+        "label": "模块 Y 坐标",
+        "type": "number",
+        "value": "172"
+      }
+    ],
+    "text": "MODEL PROPERTIESConv2d显示名称输入通道数in_channels须等于 CHW 或 NCHW 输入的通道维；例如 [1, 3, 32, 32] 的通道数是 3。输入类型须为 float32。输出通道数out_channels卷积产生的通道数。输出的通道维变为此值；高和宽由卷积核、步长、填充和膨胀共同决定。卷积核尺寸kernel_size填写 [高, 宽] 两个正整数，例如 [3, 3]。卷积核决定每次采样的空间范围；设置过大可能使输出尺寸无效。 填写逗号分隔的数字（如 1, 3），无需输入方括号。卷积步长stride填写 [高方向步长, 宽方向步长] 两个正整数。每次沿对应方向移动这么多格；增大步长通常会减小输出高和宽。 填写逗号分隔的数字（如 1, 3），无需输入方括号。边缘填充padding填写 [高方向填充, 宽方向填充] 两个非负整数。每个方向的两侧各补对应数量的零；例如 [1, 1] 在四边各补一格。 填写逗号分隔的数字（如 1, 3），无需输入方括号。卷积核采样间距dilation填写 [高方向间距, 宽方向间距] 两个正整数。1 表示连续采样，2 表示相邻采样点之间隔一格；增大会扩大有效卷积核范围。 填写逗号分隔的数字（如 1, 3），无需输入方括号。通道分组数groups1 表示普通卷积；更大的值把输入和输出通道分为独立计算的组。分组数须同时整除输入通道数和输出通道数。使用偏置bias开启后，每个输出通道都有一个可学习的加法偏置；关闭后只保留卷积权重。此选项不改变输出形状。处理 CHW 或 NCHW 的 float32 张量，可设置卷积核、步长、填充和分组。XY删除模块及相连连线检查当前结构参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。检查模型1 模块 0 连接"
+  },
+  "MaxPool2d": {
+    "fields": [
+      {
+        "label": "模块显示名称",
+        "type": null,
+        "value": "二维最大池化"
+      },
+      {
+        "label": "kernel_size",
+        "type": null,
+        "value": "2, 2"
+      },
+      {
+        "label": "stride",
+        "type": null,
+        "value": "2, 2"
+      },
+      {
+        "label": "padding",
+        "type": null,
+        "value": "0, 0"
+      },
+      {
+        "label": "dilation",
+        "type": null,
+        "value": "1, 1"
+      },
+      {
+        "checked": false,
+        "label": "ceil_mode",
+        "type": "checkbox",
+        "value": "on"
+      },
+      {
+        "label": "模块 X 坐标",
+        "type": "number",
+        "value": "290"
+      },
+      {
+        "label": "模块 Y 坐标",
+        "type": "number",
+        "value": "172"
+      }
+    ],
+    "text": "MODEL PROPERTIESMaxPool2d显示名称池化窗口尺寸kernel_size填写 [高, 宽] 两个正整数，例如 [2, 2]。每个窗口只保留最大值；输入须为 CHW 或 NCHW 浮点张量。 填写逗号分隔的数字（如 1, 3），无需输入方括号。池化步长stride填写 [高方向步长, 宽方向步长] 两个正整数。每次沿对应方向移动这么多格；本目录默认 [2, 2]，可独立于窗口尺寸修改。 填写逗号分隔的数字（如 1, 3），无需输入方括号。池化边缘填充padding填写 [高方向填充, 宽方向填充] 两个非负整数，两侧各补对应数量的位置。最大池化按负无穷处理这些位置；各值不得超过对应窗口尺寸的一半（向下取整）。 填写逗号分隔的数字（如 1, 3），无需输入方括号。窗口采样间距dilation填写 [高方向间距, 宽方向间距] 两个正整数。1 表示连续采样，2 表示相邻采样点之间隔一格；增大会扩大有效窗口范围。 填写逗号分隔的数字（如 1, 3），无需输入方括号。向上取整输出尺寸ceil_mode关闭时按向下取整计算输出高和宽；开启时允许末端的部分窗口，并按向上取整计算，再排除起点完全落入末端填充的窗口。缩小 CHW 或 NCHW 的空间尺寸，保留每个窗口的最大值。XY删除模块及相连连线检查当前结构参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。检查模型1 模块 0 连接"
+  },
+  "AdaptiveAvgPool2d": {
+    "fields": [
+      {
+        "label": "模块显示名称",
+        "type": null,
+        "value": "自适应平均池化"
+      },
+      {
+        "label": "output_size",
+        "type": null,
+        "value": "1, 1"
+      },
+      {
+        "label": "模块 X 坐标",
+        "type": "number",
+        "value": "290"
+      },
+      {
+        "label": "模块 Y 坐标",
+        "type": "number",
+        "value": "172"
+      }
+    ],
+    "text": "MODEL PROPERTIESAdaptiveAvgPool2d显示名称目标空间尺寸output_size填写 [输出高, 输出宽] 两个正整数，例如 [1, 1] 将每个通道归并为一个平均值。CHW 或 NCHW 的通道和批次维保留。 填写逗号分隔的数字（如 1, 3），无需输入方括号。将 CHW 或 NCHW 的空间尺寸变为指定大小。XY删除模块及相连连线检查当前结构参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。检查模型1 模块 0 连接"
+  },
+  "BatchNorm2d": {
+    "fields": [
+      {
+        "label": "模块显示名称",
+        "type": null,
+        "value": "二维批归一化"
+      },
+      {
+        "label": "num_features",
+        "type": null,
+        "value": "16"
+      },
+      {
+        "label": "eps",
+        "type": null,
+        "value": "0.00001"
+      },
+      {
+        "label": "momentum",
+        "type": null,
+        "value": "0.1"
+      },
+      {
+        "checked": true,
+        "label": "affine",
+        "type": "checkbox",
+        "value": "on"
+      },
+      {
+        "checked": true,
+        "label": "track_running_stats",
+        "type": "checkbox",
+        "value": "on"
+      },
+      {
+        "label": "模块 X 坐标",
+        "type": "number",
+        "value": "290"
+      },
+      {
+        "label": "模块 Y 坐标",
+        "type": "number",
+        "value": "172"
+      }
+    ],
+    "text": "MODEL PROPERTIESBatchNorm2d显示名称通道数num_features须等于 float32 输入 [批次, 通道, 高, 宽] 的通道数。输入必须为 4 维，且每个通道的批次×高×宽至少为 2，以满足训练兼容检查。数值稳定项eps归一化时加在方差上的小正数，用于避免除数为零。可填 1e-12–1，默认 1e-5；不改变张量形状。统计更新权重momentum取 0–1，控制当前批次统计在运行均值和方差更新中的权重；例如 0.1 表示旧统计占 0.9、新统计占 0.1。仅在跟踪统计时使用，与优化器动量无关。学习通道缩放与偏移affine开启后，每个通道具有可学习的缩放和偏移参数；关闭后只做归一化。输出形状保留。跟踪运行统计track_running_stats开启后，训练时更新运行均值和方差，评估时使用这些统计；关闭后，训练和评估都使用当前批次的统计。按通道归一化 NCHW 的 float32 张量，通道数须匹配。XY删除模块及相连连线检查当前结构参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。检查模型1 模块 0 连接"
+  },
+  "LayerNorm": {
+    "fields": [
+      {
+        "label": "模块显示名称",
+        "type": null,
+        "value": "层归一化"
+      },
+      {
+        "label": "normalized_shape",
+        "type": null,
+        "value": "16"
+      },
+      {
+        "label": "eps",
+        "type": null,
+        "value": "0.00001"
+      },
+      {
+        "checked": true,
+        "label": "elementwise_affine",
+        "type": "checkbox",
+        "value": "on"
+      },
+      {
+        "label": "模块 X 坐标",
+        "type": "number",
+        "value": "290"
+      },
+      {
+        "label": "模块 Y 坐标",
+        "type": "number",
+        "value": "172"
+      }
+    ],
+    "text": "MODEL PROPERTIESLayerNorm显示名称归一化末尾形状normalized_shape须与 float32 输入的末尾若干维完全相同。例如 [2, 3, 16] 可填 [16] 或 [3, 16]；这些维一起归一化，输出形状保留。 填写逗号分隔的数字（如 1, 3），无需输入方括号。数值稳定项eps归一化时加在方差上的小正数，用于避免除数为零。可填 1e-12–1，默认 1e-5；不改变张量形状。学习逐元素缩放与偏移elementwise_affine开启后，归一化形状中的每个位置具有可学习的缩放和偏移参数；关闭后只做归一化。训练和评估均使用当前输入的统计。归一化 float32 张量的末尾若干维，形状须与设置匹配。XY删除模块及相连连线检查当前结构参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。检查模型1 模块 0 连接"
+  },
+  "Embedding": {
+    "fields": [
+      {
+        "label": "模块显示名称",
+        "type": null,
+        "value": "词嵌入"
+      },
+      {
+        "label": "num_embeddings",
+        "type": null,
+        "value": "1000"
+      },
+      {
+        "label": "embedding_dim",
+        "type": null,
+        "value": "16"
+      },
+      {
+        "label": "模块 X 坐标",
+        "type": "number",
+        "value": "290"
+      },
+      {
+        "label": "模块 Y 坐标",
+        "type": "number",
+        "value": "172"
+      }
+    ],
+    "text": "MODEL PROPERTIESEmbedding显示名称词表大小num_embeddings可查找的向量数量；int64 输入的实际索引须在 0 到此值减 1 之间。静态形状检查不能证明实际索引合法。嵌入向量长度embedding_dim每个索引对应的 float32 向量长度。输出在输入形状末尾增加此维，例如 [1, 8] 配合 16 得到 [1, 8, 16]。把 int64 索引变为 float32 向量；最后增加嵌入维度。XY删除模块及相连连线检查当前结构参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。检查模型1 模块 0 连接"
+  },
+  "Add": {
+    "fields": [
+      {
+        "label": "模块显示名称",
+        "type": null,
+        "value": "张量相加"
+      },
+      {
+        "label": "模块 X 坐标",
+        "type": "number",
+        "value": "290"
+      },
+      {
+        "label": "模块 Y 坐标",
+        "type": "number",
+        "value": "152"
+      }
+    ],
+    "text": "MODEL PROPERTIESAdd显示名称相加两路形状与类型完全相同的张量，可用于残差连接。XY删除模块及相连连线检查当前结构参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。检查模型1 模块 0 连接"
+  },
+  "Concat": {
+    "fields": [
+      {
+        "label": "模块显示名称",
+        "type": null,
+        "value": "张量拼接"
+      },
+      {
+        "label": "dim",
+        "type": null,
+        "value": "1"
+      },
+      {
+        "label": "模块 X 坐标",
+        "type": "number",
+        "value": "290"
+      },
+      {
+        "label": "模块 Y 坐标",
+        "type": "number",
+        "value": "152"
+      }
+    ],
+    "text": "MODEL PROPERTIESConcat显示名称拼接维度dim沿此维拼接 a、b 两路输入，当前模块固定为两个输入。维度从 0 计数，-1 表示最后一维；两路的类型、维数和其他轴尺寸须相同，此轴尺寸相加。沿指定轴拼接两路张量，其他维度与类型须相同。XY删除模块及相连连线检查当前结构参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。检查模型1 模块 0 连接"
+  }
+}

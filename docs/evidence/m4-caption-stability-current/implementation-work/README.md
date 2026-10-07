@@ -1,0 +1,11 @@
+# Memory caption implementation record
+
+Accepted product scope is the label-only repair. Unspecified memory captions no longer disappear when a vertical move passes 15 world units. Explicit empty and custom labels retain their behavior. Display sides, canonical ports, model facts and route bytes retain the immediately prior implementation.
+
+`before-regression-corrected-oracle.txt` records 0/5 before, and `after-focused-attempt-3.txt` records 5/5 after. The first two after attempts are preserved: their independent endpoint assertion initially assumed two-decimal serialization, although unchanged preferred paths serialize to tenths. The final assertion allows only the documented maximum rounding error of .05 and requires full canonical coverage and direction.
+
+The original 408-test suite had 14 default-text comparison failures. Five historical suites now use a narrow compatibility helper which first checks exact same-document routes, nodes/ports, canonical bindings, styles and facts against frozen precaption core. It adapts only undefined memory label empty→memory for old oracle checks. Historic gold and oracle files were never changed. Meaningful negative controls reject route, port, binding, nonmemory and explicit-empty corruption. Final formal Studio suite: 409/409; strict TypeScript: exit 0. The new negative-control fixture initially selected the root frame without ports; that failed attempt is preserved and the corrected selection uses an actual public port.
+
+The display-side routing investigation is preserved as rejected experimental work. Three immutable stage snapshots distinguish unrestricted side routing, criterion-only geometry, and the bounded residual preferred-route candidate. The focused tests passed but wider independent peer contact checks found real regressions. `experimental-memory-display-sides-independent.test.ts` now imports its archived candidate and is outside the formal npm test glob. Do not interpret its 6/6 focused replay as whole geometry acceptance.
+
+The old display-side threshold and known complex crossings remain unresolved. All agent testing is simulation, not human participation or physical-size publication approval. Root owns build, actual browser reopening/export, camera changes and research/document integration.

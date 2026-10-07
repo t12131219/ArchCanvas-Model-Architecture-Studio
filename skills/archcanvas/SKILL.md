@@ -7,6 +7,8 @@ description: Create source-grounded, publication-style deep learning model diagr
 
 Turn model source into a readable research figure and a persistent canvas that the user can refine directly or through natural language. Prioritize the first view, spatial continuity, object-level editing, and faithful export. Model facts come from source evidence; presentation comes from the canvas document.
 
+For current M5 Beta.2 packaging (catalog discovery, project-local installation and recoverable lifecycle) and host evidence, read the configured checkout’s [release scope](../../docs/m5-beta-release.md). M4 remains partial; the user explicitly authorized development to continue while human trials and publication review remain open. Do not treat starting M5 or a local bundle as a certified Beta release.
+
 ## Implementation baseline
 
 Build the formal product from scratch around its independent contracts. `ArchCanvas_Model Architecture Studio_Temp` is a failed prototype, not the development runtime or a migration baseline. Do not auto-discover, execute, import, or fall back to it. Its code may be consulted as low-confidence historical evidence; any small candidate reused in the formal runtime needs independent correctness evidence, identified dependencies, and a documented reason. Existing prototype tests or demos alone do not establish that confidence.
@@ -18,6 +20,8 @@ For every workflow, establish the actual runtime contract using [runtime-compati
 - **Build a new model from zero:** When the formal runtime exposes `modelAuthoring`, use Studio’s separate authored draft and actual module catalog. Create typed nodes/connections, validate the complete graph, show the generated source, then open a fresh managed model for figure editing. Draft edits do not structurally rewrite an imported CanvasDocument; declared tensors are not runtime observations.
 - **Create or open a model figure:** Resolve the repository and model entry from available files, use a verified formal runtime to analyze and render, then open the same document in Studio. Read [runtime-compatibility.md](references/runtime-compatibility.md) for discovery and capability checks.
 - **Refine an existing figure:** Read [visual-workflow.md](references/visual-workflow.md). Change the document through supported visual operations; preserve identities, manual arrangement, and history. Reversible styling, labels, legends, routing, and layout changes do not need a source review.
+
+For the supported Studio frontier caches, visual movement uses canvas-world units. An omitted move scope preserves `all-frontiers`; choose `current-frontier` explicitly when only the visible frontier should change. Dragging, alignment, recovery and bounded natural-language movement share the selected scope, and preview/commit use the same scope. Preserve stable source, IR and canonical identities together with pinned and ancestor protections. This bounded stage does not establish presented FPS, global routing quality, publication acceptance or human usability.
 - **Change model parameters or connections:** Read [source-review.md](references/source-review.md). Preview a semantic intent, prepare and verify an isolated source change, show the concrete review, and commit only the approved version.
 - **Package, install, or change harness:** Read [host-adapters.md](references/host-adapters.md). Use the same Skill and Studio across Codex, Claude Code, and the official DeepSeek Harness, adapting only discovery, tools, presentation, and permissions.
 

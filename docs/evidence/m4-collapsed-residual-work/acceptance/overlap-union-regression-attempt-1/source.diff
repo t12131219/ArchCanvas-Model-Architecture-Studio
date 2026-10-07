@@ -1,0 +1,47 @@
+--- old-collapsed-residual-independent.test.ts
++++ studio/tests/collapsed-residual-independent.test.ts
+@@ -9,7 +9,7 @@
+ import { buildScene, buildExportScene, renderSvg } from '../src/core/index.ts';
+ import { createOrthogonalRouter } from '../src/core/orthogonalRouter.ts';
+ import { assertEndpoints, assertRefinement, assertSvg, intrusions, pair, penetrates, points, stats } from '../../docs/evidence/m4-collapsed-residual-work/acceptance/oracle.ts';
+-import { addProtectedRoute, genericDocument, literalNode, literalRoutingCase } from '../../docs/evidence/m4-collapsed-residual-work/acceptance/fixtures.ts';
++import { addProtectedRoute, genericDocument, literalNode, literalPort, literalRoutingCase } from '../../docs/evidence/m4-collapsed-residual-work/acceptance/fixtures.ts';
+ 
+ const root=new URL('../../',import.meta.url), evidence=new URL('../../docs/evidence/m4-collapsed-residual-work/acceptance/baseline/',import.meta.url);
+ type Binding={path:string;bytes:number;sha256:string};
+@@ -183,6 +183,35 @@
+   }
+ });
+ 
++test('retraced protected segments cannot inflate old pair overlap and license a larger same-tensor residual overlap',()=>{
++  const fixture=literalRoutingCase(),edgeId='protected/retraced',sourceId='protected/source',targetId='protected/target';
++  const start={x:-10,y:60},end={x:50,y:80},path='M -10 60 H 55 H 50 H 55 H 50 V 80';
++  const source=literalNode(sourceId,-30,50,20,20,{parentId:'shell'}),target=literalNode(targetId,20,80,30,20,{parentId:'shell'});
++  source.ports=[literalPort(sourceId,sourceId,'out',edgeId,'out',start.x,start.y)];
++  target.ports=[literalPort(targetId,targetId,'in',edgeId,'in',end.x,end.y)];
++  fixture.scene.nodes.push(source,target);
++  const appearance={stroke:'#115588',width:2,dashed:false};
++  const protectedEdge={id:edgeId,sourceId,targetId,source:{nodeId:sourceId,portId:'out'},target:{nodeId:targetId,portId:'in'},
++    canonicalEdgeIds:[edgeId],tensorId:fixture.requests[0].tensorId,role:'data' as const,path,...appearance,label:'',labelX:0,labelY:0};
++  fixture.scene.edges.push(protectedEdge);
++  fixture.requests.push({sourceId,targetId,start,end,preferredPath:path,tensorId:protectedEdge.tensorId,role:'data',appearance,
++    canonicalSource:{...protectedEdge.source},canonicalTarget:{...protectedEdge.target},canonicalEdgeIds:[edgeId],displaySide:'bottom'});
++  // The old horizontal overlap is the union [50,55], despite four traversals.
++  // The tempting straight route overlaps the independent vertical interval
++  // [60,80]. Both share one interior crossing, so only overlap detects harm.
++  const oldPair=pair(fixture.scene.edges[0].path,path);
++  assert.deepEqual(oldPair,{crossings:['50/60'],overlapLength:5});
++  const bad=structuredClone(fixture.scene);bad.edges[0].path='M 50 50 V 100';
++  assert.deepEqual(pair(bad.edges[0].path,path),{crossings:['50/60'],overlapLength:20});
++  assert.deepEqual(intrusions(fixture.scene),[]);assert.deepEqual(intrusions(bad),[]);
++  assert.throws(()=>assertRefinement(fixture.scene,bad),/new protected overlap/);
++  const after=observe(fixture),currentPair=pair(after.edges[0].path,after.edges[1].path);
++  assertRefinement(fixture.scene,after,renderSvg(after));
++  assert.deepEqual(after.edges[1],protectedEdge,'clear protected data route/branch/style must remain unchanged');
++  assert.ok(currentPair.overlapLength<=oldPair.overlapLength,'old retraces cannot conceal a larger physical overlap');
++  assert.ok(currentPair.crossings.length<=oldPair.crossings.length);
++});
++
+ test('effective style overrides retain separate canonical residual branches and never merge them with the same-tensor data lane',()=>{
+   const document=genericDocument('style-split');
+   const extra=structuredClone(document.architecture.edges[1]);extra.id='style-split/alternate';document.architecture.edges.push(extra);

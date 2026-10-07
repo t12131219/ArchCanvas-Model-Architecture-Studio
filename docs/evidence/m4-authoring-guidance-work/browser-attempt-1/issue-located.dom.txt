@@ -1,0 +1,186 @@
+- banner:
+  - generic: ArchCanvas
+  - generic: 模型搭建
+  - textbox "模型草稿名称": M4 · 新手检查与声明形状
+  - generic: 有未保存编辑
+  - button "重开已保存" [disabled]
+  - button "保存草稿":
+    - text: 保存草稿
+  - button "生成模型与论文图"
+  - button "返回制图"
+- complementary:
+  - text: MODULE LIBRARY
+  - heading "常用模块 17" [level=2]:
+    - text: 常用模块
+    - generic: "17"
+  - paragraph:
+    - text: 拖入画布，或点击添加。
+    - text: 输入 → 计算模块 → 输出
+  - textbox "搜索模块":
+    - /placeholder: 搜索模块或网络，如 Linear / CNN
+  - button "新建空白模型"
+  - region "网络起点":
+    - heading "网络起点 3" [level=3]:
+      - text: 网络起点
+      - generic: "3"
+    - paragraph: 添加一个独立网络。所有基础模块与连线都可修改。
+    - button "添加 最小 MLP":
+      - generic: 最小 MLP
+      - generic: 两层全连接与 ReLU · 5 模块
+      - text: 输入 float32 · [1, 16]
+      - text: 输出 [1, 4]
+    - button "添加 小型 CNN":
+      - generic: 小型 CNN
+      - generic: 卷积、池化与分类头 · 8 模块
+      - text: 输入 float32 · [1, 3, 32, 32]
+      - text: 输出 [1, 4]
+    - button "添加 残差 MLP":
+      - generic: 残差 MLP
+      - generic: 两层全连接与输入跳连 · 6 模块
+      - text: 输入 float32 · [1, 16]
+      - text: 输出 [1, 16]
+    - paragraph: 形状是可编辑的声明；生成前会静态检查，模型尚未执行。
+  - heading "输入与输出" [level=3]
+  - button "添加 Input":
+    - generic: Input
+    - generic: 输入
+  - button "添加 Output":
+    - generic: Output
+    - generic: 输出
+  - heading "全连接" [level=3]
+  - button "添加 Linear":
+    - generic: Linear
+    - generic: 全连接
+  - heading "激活函数" [level=3]
+  - button "添加 ReLU":
+    - generic: ReLU
+    - generic: ReLU 激活
+  - button "添加 GELU":
+    - generic: GELU
+    - generic: GELU 激活
+  - button "添加 SiLU":
+    - generic: SiLU
+    - generic: SiLU 激活
+  - heading "基础算子" [level=3]
+  - button "添加 Identity":
+    - generic: Identity
+    - generic: 恒等映射
+  - heading "正则化" [level=3]
+  - button "添加 Dropout":
+    - generic: Dropout
+    - generic: 随机失活
+  - heading "形状变换" [level=3]
+  - button "添加 Flatten":
+    - generic: Flatten
+    - generic: 展平
+  - heading "卷积" [level=3]
+  - button "添加 Conv2d":
+    - generic: Conv2d
+    - generic: 二维卷积
+  - heading "池化" [level=3]
+  - button "添加 MaxPool2d":
+    - generic: MaxPool2d
+    - generic: 二维最大池化
+  - button "添加 AdaptiveAvgPool2d":
+    - generic: AdaptiveAvgPool2d
+    - generic: 自适应平均池化
+  - heading "归一化" [level=3]
+  - button "添加 BatchNorm2d":
+    - generic: BatchNorm2d
+    - generic: 二维批归一化
+  - button "添加 LayerNorm":
+    - generic: LayerNorm
+    - generic: 层归一化
+  - heading "嵌入" [level=3]
+  - button "添加 Embedding":
+    - generic: Embedding
+    - generic: 词嵌入
+  - heading "合并与分支" [level=3]
+  - button "添加 Add":
+    - generic: Add
+    - generic: 张量相加
+  - button "添加 Concat":
+    - generic: Concat
+    - generic: 张量拼接
+  - generic: 常用模型的无环草稿。参数和连线通过静态检查后，生成新模型。
+- main:
+  - button "选择" [pressed]:
+    - text: 选择
+  - button "平移":
+    - text: 平移
+  - button "撤销草稿":
+  - button "重做草稿" [disabled]:
+  - button "按连接排版"
+  - button "检查模型"
+  - button "适合画布":
+    - text: 适合画布
+  - button "草稿缩小": −
+  - button "草稿缩放百分比": 70%
+  - button "草稿放大": +
+  - img "模型搭建画布":
+    - generic: 训练输入
+    - generic: Input
+    - generic "声明 float32 · 1×16": 声明 [1,16]
+    - button "训练输入 output 输出端口":
+      - generic: output
+    - generic: 特征投影
+    - generic: Linear
+    - generic: "!"
+    - button "特征投影 input 输入端口":
+      - generic: input
+    - button "特征投影 output 输出端口":
+      - generic: output
+    - generic: 激活
+    - generic: GELU
+    - button "激活 input 输入端口":
+      - generic: input
+    - button "激活 output 输出端口":
+      - generic: output
+    - generic: 预测输出
+    - generic: Output
+    - button "预测输出 input 输入端口":
+      - generic: input
+  - generic: 拖动模块 · 输出端口 → 输入端口 · 方向键移动 16 · Delete 删除 · Escape 取消 · Ctrl+Z 撤销
+- complementary:
+  - text: MODEL PROPERTIES
+  - heading "Linear" [level=2]
+  - text: 显示名称
+  - textbox "模块显示名称": 特征投影
+  - text: 输入特征数
+  - code: in_features
+  - textbox "in_features": "16"
+  - generic: 须等于上游张量的最后一维。例如输入 [1, 16] 时填 16；修改此值不会自动改变上游形状。
+  - text: 输出特征数
+  - code: out_features
+  - textbox "out_features": "32"
+  - generic: 输出的最后一维变为此值，其他维度保留。例如 [1, 16] 可变为 [1, 32]；后续模块的输入参数也须匹配。
+  - text: 使用偏置
+  - code: bias
+  - checkbox "bias" [checked]
+  - generic: 开启后，每个输出特征都有一个可学习的加法偏置；关闭后只保留权重变换。此选项不改变输出形状。
+  - paragraph: 把最后一维从输入宽度变为输出宽度，需要 float32 输入。
+  - paragraph: 例如输入形状为 [1, 16] 时，in_features 应为 16；out_features 决定输出最后一维。
+  - text: X
+  - spinbutton "模块 X 坐标": "320"
+  - text: "Y"
+  - spinbutton "模块 Y 坐标": "100"
+  - button "删除模块及相连连线"
+  - region "模型静态检查":
+    - heading "4 项待完成" [level=3]
+    - paragraph: 以下形状来自静态声明，模型尚未执行。
+    - text: Linear 的输入端口 input 尚未连接，请连接上游模块。
+    - button "定位 特征投影" [active]
+    - text: GELU 的输入端口 input 尚未连接，请连接上游模块。
+    - button "定位 激活"
+    - text: Output 的输入端口 input 尚未连接，请连接上游模块。
+    - button "定位 预测输出"
+    - text: 这些模块尚未通向命名输出；生成 Python 前请连接到输出，或移除未使用模块。
+    - button "定位 训练输入"
+    - button "定位 特征投影"
+    - button "定位 激活"
+    - button "重新检查"
+  - generic: 4 模块 0 连接
+- alert:
+  - text: Linear 的输入端口 input 尚未连接，请连接上游模块。
+  - button "定位出错模块"
+  - generic "技术详情"

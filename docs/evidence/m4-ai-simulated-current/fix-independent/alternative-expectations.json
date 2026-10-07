@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "createdUtc": "2026-10-06T07:40:18.961960+00:00",
+  "status": "preimplementation alternative accepted in principle",
+  "proposal": "createDocument(architecture,title=architecture.label,displayAliases={}) clones aliases, validates complete document, then materializes actual alias-measured layout. openGeneratedModel collects verified node-binding labels before createDocument rather than mutating aliases after creation.",
+  "independentAssessment": "Smaller root-cause correction than a special chain algorithm. Existing scene.arrange already centers single-node rows using actual sizes; preserving source-label savedx while later changing width creates the observed drift. Measuring display aliases before first materialize avoids that inconsistency and does not require topology inference.",
+  "expectedInvariants": [
+    "Default absent/empty aliases path exact compatible with priorcreateDocument, including identity, layout, source binding and expandedIds.",
+    "Alias object is cloned before internal use; later caller mutations do not mutate document.",
+    "Unknown node id, blank/invalid/nonstring alias failsvalidateDocument prior to layout materialization.",
+    "Architecture/sourceDigest/irDigest/source bytes, canonical edges/ports/tensors remain identical; only display aliases and initial layoutmeasurements differ.",
+    "All node alias widths including Output captions are observed on first layout.",
+    "Root/branch/residual/new graph layouts still use existinggeneral scenealgorithm; not a special chain alignment contract.",
+    "New singlepath centers/one-port anchors coincide; no nonzero horizontal path segments in simple chain.",
+    "Reopen/save/collapse/reexpand preserve newmaterializedpositions, no old frontiercachedpositions.",
+    "OpenGeneratedModel collects aliases from exact generated bindings; unknown/duplicate mappings do not silently invent source nodes.",
+    "Existing imported/saved documents not reconstructed with newaliasesbehindusers; manualgeometry is unchanged."
+  ],
+  "counterexamples": [
+    "Long multiline labels raise size/header changes and container bounds; measure beforelayout avoids overlap due stale sizes.",
+    "Two alias entries map sameboundsource? Existing backend uniqueBindings contract must remain; helper itselfvalidationmust not infer sources.",
+    "Outputalias changes subtitle from long authoredreturnkey to modeloutput, but not canonical outputPath or sourcefacts.",
+    "Branch/residualgraph route differences duecorrectfirstlabelsizingcan be intentional; verify nosemanticmutation and do not claimgloballyoptimalrouting."
+  ],
+  "reviewScope": "No browser action/model execution/product write by independent reviewer. Awaiting implementation snapshot; initial singlechain-specific proposal is superseded, preserved expectations.json remains historical."
+}

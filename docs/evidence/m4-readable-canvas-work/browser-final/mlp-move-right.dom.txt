@@ -1,0 +1,156 @@
+- banner:
+  - generic: ArchCanvas
+  - generic: 模型搭建
+  - textbox "模型草稿名称": 我的模型
+  - generic: 有未保存编辑
+  - button "重开已保存" [disabled]
+  - button "保存草稿":
+    - text: 保存草稿
+  - button "生成模型与论文图"
+  - button "返回制图"
+- complementary:
+  - text: MODULE LIBRARY
+  - heading "常用模块 17" [level=2]:
+    - text: 常用模块
+    - generic: "17"
+  - paragraph:
+    - text: 拖入画布，或点击添加。
+    - text: 输入 → 计算模块 → 输出
+  - group "模块库浏览方式":
+    - button "基础模块 17" [pressed]:
+      - text: 基础模块
+      - generic: "17"
+    - button "网络起点 3":
+      - text: 网络起点
+      - generic: "3"
+  - textbox "搜索模块":
+    - /placeholder: 搜索模块或网络，如 Linear / CNN
+  - button "新建空白模型"
+  - heading "输入与输出" [level=3]
+  - button "添加 Input":
+    - generic: Input
+    - generic: 输入
+  - button "添加 Output":
+    - generic: Output
+    - generic: 输出
+  - heading "全连接" [level=3]
+  - button "添加 Linear":
+    - generic: Linear
+    - generic: 全连接
+  - heading "激活函数" [level=3]
+  - button "添加 ReLU":
+    - generic: ReLU
+    - generic: ReLU 激活
+  - button "添加 GELU":
+    - generic: GELU
+    - generic: GELU 激活
+  - button "添加 SiLU":
+    - generic: SiLU
+    - generic: SiLU 激活
+  - heading "基础算子" [level=3]
+  - button "添加 Identity":
+    - generic: Identity
+    - generic: 恒等映射
+  - heading "正则化" [level=3]
+  - button "添加 Dropout":
+    - generic: Dropout
+    - generic: 随机失活
+  - heading "形状变换" [level=3]
+  - button "添加 Flatten":
+    - generic: Flatten
+    - generic: 展平
+  - heading "卷积" [level=3]
+  - button "添加 Conv2d":
+    - generic: Conv2d
+    - generic: 二维卷积
+  - heading "池化" [level=3]
+  - button "添加 MaxPool2d":
+    - generic: MaxPool2d
+    - generic: 二维最大池化
+  - button "添加 AdaptiveAvgPool2d":
+    - generic: AdaptiveAvgPool2d
+    - generic: 自适应平均池化
+  - heading "归一化" [level=3]
+  - button "添加 BatchNorm2d":
+    - generic: BatchNorm2d
+    - generic: 二维批归一化
+  - button "添加 LayerNorm":
+    - generic: LayerNorm
+    - generic: 层归一化
+  - heading "嵌入" [level=3]
+  - button "添加 Embedding":
+    - generic: Embedding
+    - generic: 词嵌入
+  - heading "合并与分支" [level=3]
+  - button "添加 Add":
+    - generic: Add
+    - generic: 张量相加
+  - button "添加 Concat":
+    - generic: Concat
+    - generic: 张量拼接
+  - generic: 常用模型的无环草稿。参数和连线通过静态检查后，生成新模型。
+- main:
+  - button "选择" [pressed]:
+    - text: 选择
+  - button "平移":
+    - text: 平移
+  - button "撤销草稿":
+  - button "重做草稿" [disabled]:
+  - button "按连接排版"
+  - button "检查模型"
+  - button "适合画布":
+    - text: 适合画布
+  - button "草稿缩小": −
+  - button "草稿缩放百分比": 100%
+  - button "草稿放大": +
+  - img "模型搭建画布":
+    - generic "输入"
+    - generic "Input"
+    - generic "声明 float32 · 1×16": 声明 [1,16]
+    - button "输入 output 输出端口":
+      - generic: output
+    - generic "隐藏层 16 → 32"
+    - generic "Linear"
+    - generic "声明 float32 · 1×32": 声明 [1,32]
+    - button "隐藏层 16 → 32 input 输入端口":
+      - generic: input
+    - button "隐藏层 16 → 32 output 输出端口":
+      - generic: output
+    - generic "ReLU 激活"
+    - generic "ReLU"
+    - generic "声明 float32 · 1×32": 声明 [1,32]
+    - button "ReLU 激活 input 输入端口":
+      - generic: input
+    - button "ReLU 激活 output 输出端口":
+      - generic: output
+    - generic "输出层 32 → 4"
+    - generic "Linear"
+    - generic "声明 float32 · 1×4": 声明 [1,4]
+    - button "输出层 32 → 4 input 输入端口":
+      - generic: input
+    - button "输出层 32 → 4 output 输出端口":
+      - generic: output
+    - generic "输出"
+    - generic "Output"
+    - generic "声明 float32 · 1×4": 声明 [1,4]
+    - button "输出 input 输入端口":
+      - generic: input
+  - generic: 拖动模块 · 输出端口 → 输入端口 · 方向键移动 16 · Delete 删除 · Escape 取消 · Ctrl+Z 撤销
+- complementary:
+  - text: MODEL PROPERTIES
+  - heading "ReLU" [level=2]
+  - text: 显示名称
+  - textbox "模块显示名称": ReLU 激活
+  - paragraph: 逐元素把负数置零，保留形状，不修改上游张量。
+  - text: X
+  - spinbutton "模块 X 坐标": "306"
+  - text: "Y"
+  - spinbutton "模块 Y 坐标": "188"
+  - button "删除模块及相连连线"
+  - region "模型静态检查":
+    - heading "静态检查通过" [level=3]
+    - paragraph: 以下形状来自静态声明，模型尚未执行。
+    - generic: 声明 float32 · 1×32
+    - button "重新检查"
+  - generic: 5 模块 4 连接
+- status: 已取消连线；选择输出端口即可重新连接。

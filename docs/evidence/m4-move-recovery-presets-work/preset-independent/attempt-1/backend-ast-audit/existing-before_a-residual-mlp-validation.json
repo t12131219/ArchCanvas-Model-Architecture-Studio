@@ -1,0 +1,291 @@
+{
+  "draft": {
+    "schemaVersion": 1,
+    "mode": "authored-draft",
+    "id": "draft-existing-a",
+    "title": "手写既有网络",
+    "revision": 17,
+    "nodes": [
+      {
+        "id": "before_a_feature",
+        "kind": "Input",
+        "label": "原输入",
+        "parameters": {
+          "shape": [
+            2,
+            7
+          ],
+          "dtype": "float32"
+        },
+        "position": {
+          "x": 50,
+          "y": 70
+        }
+      },
+      {
+        "id": "before_a_identity",
+        "kind": "Identity",
+        "label": "原恒等",
+        "parameters": {},
+        "position": {
+          "x": 298,
+          "y": 70
+        }
+      },
+      {
+        "id": "before_a_output",
+        "kind": "Output",
+        "label": "原输出",
+        "parameters": {},
+        "position": {
+          "x": 546,
+          "y": 70
+        }
+      },
+      {
+        "id": "n_inserted_0",
+        "kind": "Input",
+        "label": "输入",
+        "parameters": {
+          "shape": [
+            1,
+            16
+          ],
+          "dtype": "float32"
+        },
+        "position": {
+          "x": 50,
+          "y": 198
+        }
+      },
+      {
+        "id": "n_inserted_1",
+        "kind": "Linear",
+        "label": "隐藏层 16 → 32",
+        "parameters": {
+          "in_features": 16,
+          "out_features": 32,
+          "bias": true
+        },
+        "position": {
+          "x": 298,
+          "y": 198
+        }
+      },
+      {
+        "id": "n_inserted_2",
+        "kind": "ReLU",
+        "label": "ReLU 激活",
+        "parameters": {},
+        "position": {
+          "x": 546,
+          "y": 198
+        }
+      },
+      {
+        "id": "n_inserted_3",
+        "kind": "Linear",
+        "label": "投影层 32 → 16",
+        "parameters": {
+          "in_features": 32,
+          "out_features": 16,
+          "bias": true
+        },
+        "position": {
+          "x": 794,
+          "y": 198
+        }
+      },
+      {
+        "id": "n_inserted_4",
+        "kind": "Add",
+        "label": "残差相加",
+        "parameters": {},
+        "position": {
+          "x": 1042,
+          "y": 198
+        }
+      },
+      {
+        "id": "n_inserted_5",
+        "kind": "Output",
+        "label": "输出",
+        "parameters": {},
+        "position": {
+          "x": 1290,
+          "y": 198
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "before_a_edge1",
+        "source": {
+          "nodeId": "before_a_feature",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "before_a_identity",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "before_a_edge2",
+        "source": {
+          "nodeId": "before_a_identity",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "before_a_output",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e_inserted_0",
+        "source": {
+          "nodeId": "n_inserted_0",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_inserted_1",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e_inserted_1",
+        "source": {
+          "nodeId": "n_inserted_1",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_inserted_2",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e_inserted_2",
+        "source": {
+          "nodeId": "n_inserted_2",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_inserted_3",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e_inserted_3",
+        "source": {
+          "nodeId": "n_inserted_3",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_inserted_4",
+          "portId": "left"
+        }
+      },
+      {
+        "id": "e_inserted_4",
+        "source": {
+          "nodeId": "n_inserted_0",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_inserted_4",
+          "portId": "right"
+        }
+      },
+      {
+        "id": "e_inserted_5",
+        "source": {
+          "nodeId": "n_inserted_4",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_inserted_5",
+          "portId": "input"
+        }
+      }
+    ]
+  },
+  "draftDigest": "6d6e30b84ad52db74342efbfc659ae99b163c3ce1d66f98b5acee9773a1fa463",
+  "complete": true,
+  "issues": [],
+  "tensors": {
+    "before_a_feature": {
+      "shape": [
+        2,
+        7
+      ],
+      "dtype": "float32"
+    },
+    "n_inserted_0": {
+      "shape": [
+        1,
+        16
+      ],
+      "dtype": "float32"
+    },
+    "before_a_identity": {
+      "shape": [
+        2,
+        7
+      ],
+      "dtype": "float32"
+    },
+    "n_inserted_1": {
+      "shape": [
+        1,
+        32
+      ],
+      "dtype": "float32"
+    },
+    "before_a_output": {
+      "shape": [
+        2,
+        7
+      ],
+      "dtype": "float32"
+    },
+    "n_inserted_2": {
+      "shape": [
+        1,
+        32
+      ],
+      "dtype": "float32"
+    },
+    "n_inserted_3": {
+      "shape": [
+        1,
+        16
+      ],
+      "dtype": "float32"
+    },
+    "n_inserted_4": {
+      "shape": [
+        1,
+        16
+      ],
+      "dtype": "float32"
+    },
+    "n_inserted_5": {
+      "shape": [
+        1,
+        16
+      ],
+      "dtype": "float32"
+    }
+  },
+  "order": [
+    "before_a_feature",
+    "n_inserted_0",
+    "before_a_identity",
+    "n_inserted_1",
+    "before_a_output",
+    "n_inserted_2",
+    "n_inserted_3",
+    "n_inserted_4",
+    "n_inserted_5"
+  ],
+  "verification": "static-declared-tensors; no model execution"
+}

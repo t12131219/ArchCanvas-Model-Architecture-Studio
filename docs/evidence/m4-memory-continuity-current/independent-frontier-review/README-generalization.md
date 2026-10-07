@@ -1,0 +1,7 @@
+# Supplemental opaque/shared preservation
+
+The separate24-case matrix regenerates GraphForecast, SkipSegmentation and TemporalForecaster using default caption mode, paper/monochrome,85/180mm and whole/root detail. Current and immediately prior formal cores are separately bound. The three current historical source-facts Canvas/architecture/saved-envelope/report associations pass18/18finite relations;48capture inputs are byte-exact before/after generation. Existing source digests/facts are historical, and no new source analysis or model execution is performed.
+
+Independent public-scene audit passes1802/1802relations. Opaque nodes appear in16cases, shared-call facts in8and Repeat in8; all24have multi-consumer port coverage. No memory edge exists in these documents, so zero adoption is expected and no memory routing safety claim follows. This adds bounded opaque/shared preservation evidence to the216-case frontier retention matrix without changing its results or claiming new model accuracy, browser pixels, exports, publication readability, global aesthetics, performance or human tasks.
+
+Supplemental audit uses `audit_generalization.py`. The original hash-bound `audit_matrix.py` remains byte-exact to its first audit input. Summary counts and inventories are separate in `summary-generalization.json` and `audit-attempt-2/report.json`. The original manifest47cb54d0… remains preserved as `manifest.json`; `manifest-with-generalization.json` adds the supplement without rewriting that older manifest.

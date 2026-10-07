@@ -1,0 +1,162 @@
+- banner:
+  - generic: ArchCanvas
+  - generic: 模型搭建
+  - textbox "模型草稿名称": AI simulated CC91 catalog CNN
+  - generic: 有未保存编辑
+  - button "重开已保存"
+  - button "保存草稿":
+    - text: 保存草稿
+  - button "生成模型与论文图"
+  - button "返回制图"
+- complementary:
+  - text: MODULE LIBRARY
+  - heading "常用模块 17" [level=2]:
+    - text: 常用模块
+    - generic: "17"
+  - paragraph:
+    - text: 拖入画布，或点击添加。
+    - text: 输入 → 计算模块 → 输出
+  - group "模块库浏览方式":
+    - button "基础模块 17" [pressed]:
+      - text: 基础模块
+      - generic: "17"
+    - button "网络起点 3":
+      - text: 网络起点
+      - generic: "3"
+  - textbox "搜索模块":
+    - /placeholder: 搜索模块或网络，如 Linear / CNN
+    - text: CNN
+  - button "新建空白模型"
+  - status: 搜索全部：基础模块 0 · 网络起点 1。清空后返回基础模块。
+  - button "清空搜索"
+  - region "网络起点":
+    - heading "网络起点 1" [level=3]:
+      - text: 网络起点
+      - generic: "1"
+    - paragraph: 添加一个独立网络。所有基础模块与连线都可修改。
+    - button "添加 小型 CNN":
+      - generic: 小型 CNN
+      - generic: 卷积、池化与分类头 · 8 模块
+      - text: 输入 float32 · [1, 3, 32, 32]
+      - text: 输出 [1, 4]
+    - paragraph: 形状是可编辑的声明；生成前会静态检查，模型尚未执行。
+  - generic: 常用模型的无环草稿。参数和连线通过静态检查后，生成新模型。
+- main:
+  - button "选择" [pressed]:
+    - text: 选择
+  - button "平移":
+    - text: 平移
+  - button "撤销草稿":
+  - button "重做草稿" [disabled]:
+  - button "按连接排版"
+  - button "检查模型"
+  - button "适合画布":
+    - text: 适合画布
+  - button "草稿缩小": −
+  - button "草稿缩放百分比": 91%
+  - button "草稿放大": +
+  - img "模型搭建画布":
+    - generic "数据流"
+    - generic "数据流"
+    - generic "数据流"
+    - generic "数据流"
+    - generic "数据流"
+    - generic "数据流"
+    - generic "数据流"
+    - generic "图像输入"
+    - generic "Input"
+    - button "图像输入 output 输出端口":
+      - generic: output
+    - generic "卷积"
+    - generic "Conv2d"
+    - button "卷积 input 输入端口":
+      - generic: input
+    - button "卷积 output 输出端口":
+      - generic: output
+    - generic "ReLU 激活"
+    - generic "ReLU"
+    - button "ReLU 激活 input 输入端口":
+      - generic: input
+    - button "ReLU 激活 output 输出端口":
+      - generic: output
+    - generic "最大池化"
+    - generic "MaxPool2d"
+    - button "最大池化 input 输入端口":
+      - generic: input
+    - button "最大池化 output 输出端口":
+      - generic: output
+    - generic "全局平均池化"
+    - generic "AdaptiveAvgPool2d"
+    - button "全局平均池化 input 输入端口":
+      - generic: input
+    - button "全局平均池化 output 输出端口":
+      - generic: output
+    - generic "展平"
+    - generic "Flatten"
+    - button "展平 input 输入端口":
+      - generic: input
+    - button "展平 output 输出端口":
+      - generic: output
+    - generic "分类头"
+    - generic "Linear"
+    - button "分类头 input 输入端口":
+      - generic: input
+    - button "分类头 output 输出端口":
+      - generic: output
+    - generic "输出"
+    - generic "Output"
+    - button "输出 input 输入端口":
+      - generic: input
+  - generic "模型连线图例":
+    - generic: 数据流
+    - generic "跳过中间模块后相加；仅根据当前连接结构识别": 跳连
+  - generic: 拖动模块 · 输出端口 → 输入端口 · 方向键移动 16 · Delete 删除 · Escape 取消 · Ctrl+Z 撤销
+- complementary:
+  - text: MODEL PROPERTIES
+  - heading "Conv2d" [level=2]
+  - text: 显示名称
+  - textbox "模块显示名称": 卷积
+  - text: 输入通道数
+  - code: in_channels
+  - textbox "in_channels" [active]: "3"
+  - generic: 须等于 CHW 或 NCHW 输入的通道维；例如 [1, 3, 32, 32] 的通道数是 3。输入类型须为 float32。
+  - text: 输出通道数
+  - code: out_channels
+  - textbox "out_channels": "11"
+  - generic: 卷积产生的通道数。输出的通道维变为此值；高和宽由卷积核、步长、填充和膨胀共同决定。
+  - text: 卷积核尺寸
+  - code: kernel_size
+  - textbox "kernel_size": 3, 3
+  - generic: 填写 [高, 宽] 两个正整数，例如 [3, 3]。卷积核决定每次采样的空间范围；设置过大可能使输出尺寸无效。 填写逗号分隔的数字（如 1, 3），无需输入方括号。
+  - text: 卷积步长
+  - code: stride
+  - textbox "stride": 1, 1
+  - generic: 填写 [高方向步长, 宽方向步长] 两个正整数。每次沿对应方向移动这么多格；增大步长通常会减小输出高和宽。 填写逗号分隔的数字（如 1, 3），无需输入方括号。
+  - text: 边缘填充
+  - code: padding
+  - textbox "padding": 1, 1
+  - generic: 填写 [高方向填充, 宽方向填充] 两个非负整数。每个方向的两侧各补对应数量的零；例如 [1, 1] 在四边各补一格。 填写逗号分隔的数字（如 1, 3），无需输入方括号。
+  - text: 卷积核采样间距
+  - code: dilation
+  - textbox "dilation": 1, 1
+  - generic: 填写 [高方向间距, 宽方向间距] 两个正整数。1 表示连续采样，2 表示相邻采样点之间隔一格；增大会扩大有效卷积核范围。 填写逗号分隔的数字（如 1, 3），无需输入方括号。
+  - text: 通道分组数
+  - code: groups
+  - textbox "groups": "1"
+  - generic: 1 表示普通卷积；更大的值把输入和输出通道分为独立计算的组。分组数须同时整除输入通道数和输出通道数。
+  - text: 使用偏置
+  - code: bias
+  - checkbox "bias" [checked]
+  - generic: 开启后，每个输出通道都有一个可学习的加法偏置；关闭后只保留卷积权重。此选项不改变输出形状。
+  - paragraph: 处理 CHW 或 NCHW 的 float32 张量，可设置卷积核、步长、填充和分组。
+  - text: X
+  - spinbutton "模块 X 坐标": "298"
+  - text: "Y"
+  - spinbutton "模块 Y 坐标": "70"
+  - button "删除模块及相连连线"
+  - region "模型静态检查":
+    - heading "检查当前结构" [level=3]
+    - paragraph: 参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。
+    - button "检查模型"
+  - generic: 8 模块 7 连接
+- status: 模型草稿已保存；可重开继续搭建。

@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "role": "independent preimplementation review; no product changes",
+  "createdUtc": "2026-10-06T07:39:34.581050+00:00",
+  "status": "awaiting implementation for final review",
+  "baselineBindings": [
+    {
+      "path": "studio/src/App.tsx",
+      "sha256": "1bed2939c70ce76e19c93c0de0559e429e466004c30152ebd28249ffe30ee0bc",
+      "bytes": 71554,
+      "snapshot": "baseline/studio/src/App.tsx"
+    },
+    {
+      "path": "studio/src/cameraProjection.ts",
+      "sha256": "5f18751b0b637af1613cf1d1b7964c160c1e36098ff21e993a5a9c0776272db2",
+      "bytes": 2372,
+      "snapshot": "baseline/studio/src/cameraProjection.ts"
+    },
+    {
+      "path": "studio/src/core/scene.ts",
+      "sha256": "9c8643df86f6574ec92dc1951529fcc80262a072138c7bd481c239b77c3d476b",
+      "bytes": 24997,
+      "snapshot": "baseline/studio/src/core/scene.ts"
+    },
+    {
+      "path": "studio/src/core/document.ts",
+      "sha256": "c3fa2e7a0410a4ab15ea01b97280429558f5309e36e7e88992045f2776d484e1",
+      "bytes": 20013,
+      "snapshot": "baseline/studio/src/core/document.ts"
+    },
+    {
+      "path": "studio/src/core/nodeVisualOutline.ts",
+      "sha256": "9b0b4049865f6bc8b34343f26758998d78d5d6c1d621da14f25c61ac4a00d939",
+      "bytes": 2978,
+      "snapshot": "baseline/studio/src/core/nodeVisualOutline.ts"
+    },
+    {
+      "path": "studio/src/core/types.ts",
+      "sha256": "e57c9b4f05de434207603355c81aee9e8127a16e6b7f906ab02b31dd6708d048",
+      "bytes": 7390,
+      "snapshot": "baseline/studio/src/core/types.ts"
+    },
+    {
+      "path": "studio/src/api.ts",
+      "sha256": "38f4bbe9d8f61d4f1bac798b02acdba2cf29028b7574d8816f9cf7a4deda3a92",
+      "bytes": 11399,
+      "snapshot": "baseline/studio/src/api.ts"
+    },
+    {
+      "path": "src/archcanvas_authoring/draft.py",
+      "sha256": "cce519d8ae9e865fedccb5981b34a9884c51cceca43c951eff59333ba322231d",
+      "bytes": 43984,
+      "snapshot": "baseline/src/archcanvas_authoring/draft.py"
+    },
+    {
+      "path": "studio/tests/camera-projection.test.ts",
+      "sha256": "1c9cc5b84a324a788b12d662a19e3f8121f8f7018d942783590db6c6fc83d9b1",
+      "bytes": 4285,
+      "snapshot": "baseline/studio/tests/camera-projection.test.ts"
+    },
+    {
+      "path": "docs/evidence/m4-ai-simulated-current/novice/10-final-settled-public.json",
+      "sha256": "333d553807263376060865749d7ae50ff46304d6821fa471d3aa33eb1b18264a",
+      "bytes": 33486,
+      "snapshot": "baseline/docs/evidence/m4-ai-simulated-current/novice/10-final-settled-public.json"
+    },
+    {
+      "path": "docs/evidence/m4-ai-simulated-current/novice/report.json",
+      "sha256": "830ad91b2ba6ea27af3275f5ae0b5c340608ae92792a66e9f4c7ebaa3c9b99b2",
+      "bytes": 10319,
+      "snapshot": "baseline/docs/evidence/m4-ai-simulated-current/novice/report.json"
+    }
+  ],
+  "cameraOracle": {
+    "equation": "screen = translation + world * zoom. Preserve world at viewport-local center across any clamped new zoom.",
+    "expectedTranslation": "center - worldCenter * newZoom",
+    "testCases": [
+      {
+        "name": "ordinary-plus",
+        "oldCamera": {
+          "x": 35,
+          "y": 35,
+          "zoom": 0.67
+        },
+        "viewport": {
+          "width": 784,
+          "height": 500
+        },
+        "requestedClampedZoom": 0.804,
+        "worldAtViewportCenter": {
+          "x": 532.8358208955224,
+          "y": 320.8955223880597
+        },
+        "independentExpectedCamera": {
+          "x": -36.400000000000034,
+          "y": -8.0,
+          "zoom": 0.804
+        },
+        "legacyWorldAfterZoomOnly": {
+          "x": 444.0298507462686,
+          "y": 267.41293532338307
+        }
+      },
+      {
+        "name": "reset-pan-negative",
+        "oldCamera": {
+          "x": -313,
+          "y": 157,
+          "zoom": 0.4
+        },
+        "viewport": {
+          "width": 640,
+          "height": 420
+        },
+        "requestedClampedZoom": 1,
+        "worldAtViewportCenter": {
+          "x": 1582.5,
+          "y": 132.5
+        },
+        "independentExpectedCamera": {
+          "x": -1262.5,
+          "y": 77.5,
+          "zoom": 1
+        },
+        "legacyWorldAfterZoomOnly": {
+          "x": 633.0,
+          "y": 53.0
+        }
+      },
+      {
+        "name": "limit-plus",
+        "oldCamera": {
+          "x": 170,
+          "y": -94,
+          "zoom": 3
+        },
+        "viewport": {
+          "width": 800,
+          "height": 500
+        },
+        "requestedClampedZoom": 3,
+        "worldAtViewportCenter": {
+          "x": 76.66666666666667,
+          "y": 114.66666666666667
+        },
+        "independentExpectedCamera": {
+          "x": 170.0,
+          "y": -94.0,
+          "zoom": 3
+        },
+        "legacyWorldAfterZoomOnly": {
+          "x": 76.66666666666667,
+          "y": 114.66666666666667
+        }
+      },
+      {
+        "name": "zoom-out-center",
+        "oldCamera": {
+          "x": -50,
+          "y": -220,
+          "zoom": 1.2
+        },
+        "viewport": {
+          "width": 500,
+          "height": 720
+        },
+        "requestedClampedZoom": 1,
+        "worldAtViewportCenter": {
+          "x": 250.0,
+          "y": 483.33333333333337
+        },
+        "independentExpectedCamera": {
+          "x": 0.0,
+          "y": -123.33333333333337,
+          "zoom": 1
+        },
+        "legacyWorldAfterZoomOnly": {
+          "x": 300.0,
+          "y": 580.0
+        }
+      }
+    ],
+    "counterexamples": [
+      "Do not preserve viewport center using scene bounds-relative world coordinates. A negative scene bounds change should not affect this projection.",
+      "Nonzero viewport client-left/top must not be mixed into local width/height center.",
+      "Zero/negative/nonfinite old zoom or nonfinite/zero dimensions should throw/no-op without emitting invalid camera.",
+      "Clamped unchanged zoom should be exact no-op for translation.",
+      "Repeated +/- should return original center point within numerical tolerance, while100% reset preserves the same center.",
+      "Center anchoring permits off-center selections to move toward/outside viewport as scale increases; it is not selection-centered zoom or visibility guarantee.",
+      "Cancel active pan/drag before zoom; update/ref consistency must not replay stale gesture camera."
+    ],
+    "invariants": [
+      "architecture and document bytes/revision/history unchanged by camera-only operation",
+      "Both+/−and percentage reset wired to same helper",
+      "Pointer wheel retains its observed pointer-centered behavior; center behavior belongs to buttons"
+    ]
+  },
+  "initialSingleChainOracle": {
+    "preconditions": [
+      "Fresh source-bound CanvasDocument only, after alias application; no imported/persisted/manual document or user pins overwritten.",
+      "Generation verification has passed exact-static-dag-and-declared-tensor-compatibility with modelExecution not_run; re-registered architecture agrees with sourceDigest, irDigest and exact mapped nodes/ports/edges.",
+      "Unique nodeBindings covers every authored draft node and exactly the new managed root children; no duplicate IDs, missing source leaves, opaque/repeated/nested child nodes.",
+      "Exactly one Input and one Output. Middle nodes have exactly one declared input and one declared output; all must participate in a single acyclic complete path.",
+      "Compare actual canonical data bindings rather than labels or onlydegree/edge count; tolerate only verified generated Input→root scaffolding edge, no extrasemantic edge.",
+      "Drawn anchors are single visible ports on top/bottom; alias-dependent actual widths are used."
+    ],
+    "expected": [
+      "Use one shared center for all four leaf cards: node.x+width/2 equal within rounding/tolerance.",
+      "Maintain original y order/spacing, source identities/ports/tensorproducers/aliases, no width truncation or overlap/header collision.",
+      "Only initialize local layoutX for eligible chain; parent-local and world coordinates must not be mixed.",
+      "Scene paths in simplechain have start/end samex and no nonzero horizontal segment; export/save/reopen preserve this geometry.",
+      "Collapse/reexpand must not restore prealias misalignment from layoutByFrontier."
+    ],
+    "counterexamples": [
+      "Residualskip/branch, Add/Concat merge, multiple outputs/inputs, sibling independent chains, cycles, disconnected extra nodes, shared/repeated instances, nestedcontainers, opaque or absent bindings must skip whole optimization.",
+      "Onein/oneout topology alone is not sufficient if architecture bindings/tensors differ from draft; mismatched source/ir digest must skip.",
+      "Incomplete/forged verification status should skip.",
+      "Loaded existing manual layout or pins must remain unchanged.",
+      "Longaliases and fractional measured widths still center exactly; no constant width assumption.",
+      "Initial center alignment does not claim global route optimality or stable alignment after future manual moves/alias edits."
+    ]
+  },
+  "observedRegression": {
+    "source": "novice/10-final-settled-public.json",
+    "simpleChainPaths": [
+      "M177216V235H178.6V254",
+      "M178.6316V335H178.6V354",
+      "M178.6416V435H190.4V454"
+    ],
+    "horizontalShiftsWorld": [
+      1.6,
+      0,
+      11.8
+    ],
+    "baselineCause": "createDocument materializessource-label placement beforeApp appliesaliases; scene recalculates aliaswidths while retaining savedx. Detailed cause inferred from source, independently observed effect from browser."
+  }
+}

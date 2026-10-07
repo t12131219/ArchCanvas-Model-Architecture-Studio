@@ -1,0 +1,844 @@
+{
+  "draft": {
+    "schemaVersion": 1,
+    "mode": "authored-draft",
+    "id": "draft-existing-b",
+    "title": "手写既有网络",
+    "revision": 17,
+    "nodes": [
+      {
+        "id": "before_b_feature",
+        "kind": "Input",
+        "label": "原输入",
+        "parameters": {
+          "shape": [
+            2,
+            7
+          ],
+          "dtype": "float32"
+        },
+        "position": {
+          "x": 50,
+          "y": 70
+        }
+      },
+      {
+        "id": "before_b_identity",
+        "kind": "Identity",
+        "label": "原恒等",
+        "parameters": {},
+        "position": {
+          "x": 298,
+          "y": 70
+        }
+      },
+      {
+        "id": "before_b_output",
+        "kind": "Output",
+        "label": "原输出",
+        "parameters": {},
+        "position": {
+          "x": 546,
+          "y": 70
+        }
+      },
+      {
+        "id": "n_inserted_0",
+        "kind": "Input",
+        "label": "输入",
+        "parameters": {
+          "shape": [
+            1,
+            16
+          ],
+          "dtype": "float32"
+        },
+        "position": {
+          "x": 50,
+          "y": 198
+        }
+      },
+      {
+        "id": "n_inserted_1",
+        "kind": "Linear",
+        "label": "隐藏层 16 → 32",
+        "parameters": {
+          "in_features": 16,
+          "out_features": 32,
+          "bias": true
+        },
+        "position": {
+          "x": 298,
+          "y": 198
+        }
+      },
+      {
+        "id": "n_inserted_2",
+        "kind": "ReLU",
+        "label": "ReLU 激活",
+        "parameters": {},
+        "position": {
+          "x": 546,
+          "y": 198
+        }
+      },
+      {
+        "id": "n_inserted_3",
+        "kind": "Linear",
+        "label": "输出层 32 → 4",
+        "parameters": {
+          "in_features": 32,
+          "out_features": 4,
+          "bias": true
+        },
+        "position": {
+          "x": 794,
+          "y": 198
+        }
+      },
+      {
+        "id": "n_inserted_4",
+        "kind": "Output",
+        "label": "输出",
+        "parameters": {},
+        "position": {
+          "x": 1042,
+          "y": 198
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "before_b_edge1",
+        "source": {
+          "nodeId": "before_b_feature",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "before_b_identity",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "before_b_edge2",
+        "source": {
+          "nodeId": "before_b_identity",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "before_b_output",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e_inserted_0",
+        "source": {
+          "nodeId": "n_inserted_0",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_inserted_1",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e_inserted_1",
+        "source": {
+          "nodeId": "n_inserted_1",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_inserted_2",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e_inserted_2",
+        "source": {
+          "nodeId": "n_inserted_2",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_inserted_3",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e_inserted_3",
+        "source": {
+          "nodeId": "n_inserted_3",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_inserted_4",
+          "portId": "input"
+        }
+      }
+    ]
+  },
+  "draftDigest": "b9b7f3590bdcb3027dc10b52b8ad262893639195aec86cf186d32ec1b4b6f347",
+  "entry": "model:AuthoredModel",
+  "source": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\n\nclass AuthoredModel(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.node_9aa23cbf395ed716 = nn.Identity()\n        self.node_e4dfe0034883a298 = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_4ad3192ad58a4d55 = nn.ReLU()\n        self.node_412cfc3fb6ac4abd = nn.Linear(in_features=32, out_features=4, bias=True, dtype=torch.float32)\n\n    def forward(self, node_b9686da49d7e0c34, node_b285b0d8ec308062):\n        node_9aa23cbf395ed716 = self.node_9aa23cbf395ed716(node_b9686da49d7e0c34)\n        node_e4dfe0034883a298 = self.node_e4dfe0034883a298(node_b285b0d8ec308062)\n        node_4ad3192ad58a4d55 = self.node_4ad3192ad58a4d55(node_e4dfe0034883a298)\n        node_412cfc3fb6ac4abd = self.node_412cfc3fb6ac4abd(node_4ad3192ad58a4d55)\n        return {'before_b_output': node_9aa23cbf395ed716, 'n_inserted_4': node_412cfc3fb6ac4abd}\n",
+  "architecture": {
+    "schemaVersion": 1,
+    "id": "architecture:model.AuthoredModel",
+    "label": "AuthoredModel",
+    "sourceDigest": "aab28a00f376de30a6761f2439bdcb52a7f1151e2592754dde09d8c47a3f5a24",
+    "irDigest": "9208615db12766ef473ad6a357ff3cd8cac456c2aa29f4164adb719f6e4af1b7",
+    "entry": "model:AuthoredModel",
+    "nodes": [
+      {
+        "id": "input:model.AuthoredModel:node_b9686da49d7e0c34",
+        "label": "node_b9686da49d7e0c34",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:model.AuthoredModel:node_b9686da49d7e0c34:out:node_b9686da49d7e0c34",
+            "name": "node_b9686da49d7e0c34",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 14,
+          "endLine": 19,
+          "expression": "def forward(self, node_b9686da49d7e0c34, node_b285b0d8ec308062):\n        node_9aa23cbf395ed716 = self.node_9aa23cbf395ed716(node_b9686da49d7e0c34)\n        node_e4dfe0034883a298 = self.node_e4dfe0034883a298(node_b285b0d8ec308062)\n        node_4ad3192ad58a4d55 = self.node_4ad3192ad58a4d55(node_e4dfe0034883a298)\n        node_412cfc3fb6ac4abd = self.node_412cfc3fb6ac4abd(node_4ad3192ad58a4d55)\n        return {'before_b_output': node_9aa23cbf395ed716, 'n_inserted_4': node_412cfc3fb6ac4abd}"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.AuthoredModel"
+      },
+      {
+        "id": "input:model.AuthoredModel:node_b285b0d8ec308062",
+        "label": "node_b285b0d8ec308062",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:model.AuthoredModel:node_b285b0d8ec308062:out:node_b285b0d8ec308062",
+            "name": "node_b285b0d8ec308062",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 14,
+          "endLine": 19,
+          "expression": "def forward(self, node_b9686da49d7e0c34, node_b285b0d8ec308062):\n        node_9aa23cbf395ed716 = self.node_9aa23cbf395ed716(node_b9686da49d7e0c34)\n        node_e4dfe0034883a298 = self.node_e4dfe0034883a298(node_b285b0d8ec308062)\n        node_4ad3192ad58a4d55 = self.node_4ad3192ad58a4d55(node_e4dfe0034883a298)\n        node_412cfc3fb6ac4abd = self.node_412cfc3fb6ac4abd(node_4ad3192ad58a4d55)\n        return {'before_b_output': node_9aa23cbf395ed716, 'n_inserted_4': node_412cfc3fb6ac4abd}"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.AuthoredModel"
+      },
+      {
+        "id": "call:instance:model.AuthoredModel",
+        "label": "AuthoredModel",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "input:model.AuthoredModel:node_b285b0d8ec308062",
+          "input:model.AuthoredModel:node_b9686da49d7e0c34",
+          "call:instance:model.AuthoredModel.node_9aa23cbf395ed716",
+          "call:instance:model.AuthoredModel.node_e4dfe0034883a298",
+          "call:instance:model.AuthoredModel.node_4ad3192ad58a4d55",
+          "call:instance:model.AuthoredModel.node_412cfc3fb6ac4abd",
+          "output:model.AuthoredModel:0",
+          "output:model.AuthoredModel:1"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:model.AuthoredModel:in:node_b9686da49d7e0c34",
+            "name": "node_b9686da49d7e0c34",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.AuthoredModel:in:node_b285b0d8ec308062",
+            "name": "node_b285b0d8ec308062",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 1
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 6,
+          "endLine": 19,
+          "expression": "class AuthoredModel(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.node_9aa23cbf395ed716 = nn.Identity()\n        self.node_e4dfe0034883a298 = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_4ad3192ad58a4d55 = nn.ReLU()\n        self.node_412cfc3fb6ac4abd = nn.Linear(in_features=32, out_features=4, bias=True, dtype=torch.float32)\n\n    def forward(self, node_b9686da49d7e0c34, node_b285b0d8ec308062):\n        node_9aa23cbf395ed716 = self.node_9aa23cbf395ed716(node_b9686da49d7e0c34)\n        node_e4dfe0034883a298 = self.node_e4dfe0034883a298(node_b285b0d8ec308062)\n        node_4ad3192ad58a4d55 = self.node_4ad3192ad58a4d55(node_e4dfe0034883a298)\n        node_412cfc3fb6ac4abd = self.node_412cfc3fb6ac4abd(node_4ad3192ad58a4d55)\n        return {'before_b_output': node_9aa23cbf395ed716, 'n_inserted_4': node_412cfc3fb6ac4abd}"
+        },
+        "evidence": "source",
+        "instanceId": "instance:model.AuthoredModel",
+        "callId": "call:instance:model.AuthoredModel"
+      },
+      {
+        "id": "call:instance:model.AuthoredModel.node_9aa23cbf395ed716",
+        "label": "node 9aa23cbf395ed716",
+        "kind": "Identity",
+        "category": "operator",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.AuthoredModel.node_9aa23cbf395ed716:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.AuthoredModel.node_9aa23cbf395ed716:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 15,
+          "endLine": 15,
+          "expression": "self.node_9aa23cbf395ed716(node_b9686da49d7e0c34)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.AuthoredModel",
+        "instanceId": "instance:model.AuthoredModel.node_9aa23cbf395ed716",
+        "callId": "call:instance:model.AuthoredModel.node_9aa23cbf395ed716"
+      },
+      {
+        "id": "call:instance:model.AuthoredModel.node_e4dfe0034883a298",
+        "label": "node e4dfe0034883a298",
+        "kind": "Linear",
+        "category": "linear",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.AuthoredModel.node_e4dfe0034883a298:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.AuthoredModel.node_e4dfe0034883a298:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "in_features": 16,
+          "out_features": 32,
+          "bias": true,
+          "dtype": {
+            "expression": "torch.float32",
+            "origin": "unknown"
+          }
+        },
+        "source": {
+          "path": "model.py",
+          "line": 16,
+          "endLine": 16,
+          "expression": "self.node_e4dfe0034883a298(node_b285b0d8ec308062)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.AuthoredModel",
+        "instanceId": "instance:model.AuthoredModel.node_e4dfe0034883a298",
+        "callId": "call:instance:model.AuthoredModel.node_e4dfe0034883a298",
+        "parameterOrigins": {
+          "in_features": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 10,
+            "endLine": 10,
+            "expression": "16",
+            "column": 59,
+            "endColumn": 61
+          },
+          "out_features": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 10,
+            "endLine": 10,
+            "expression": "32",
+            "column": 76,
+            "endColumn": 78
+          },
+          "bias": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 10,
+            "endLine": 10,
+            "expression": "True",
+            "column": 85,
+            "endColumn": 89
+          },
+          "dtype": {
+            "kind": "unknown",
+            "path": "model.py",
+            "line": 10,
+            "endLine": 10,
+            "expression": "torch.float32",
+            "column": 97,
+            "endColumn": 110
+          }
+        }
+      },
+      {
+        "id": "call:instance:model.AuthoredModel.node_4ad3192ad58a4d55",
+        "label": "node 4ad3192ad58a4d55",
+        "kind": "ReLU",
+        "category": "activation",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.AuthoredModel.node_4ad3192ad58a4d55:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.AuthoredModel.node_4ad3192ad58a4d55:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 17,
+          "expression": "self.node_4ad3192ad58a4d55(node_e4dfe0034883a298)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.AuthoredModel",
+        "instanceId": "instance:model.AuthoredModel.node_4ad3192ad58a4d55",
+        "callId": "call:instance:model.AuthoredModel.node_4ad3192ad58a4d55"
+      },
+      {
+        "id": "call:instance:model.AuthoredModel.node_412cfc3fb6ac4abd",
+        "label": "node 412cfc3fb6ac4abd",
+        "kind": "Linear",
+        "category": "linear",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:model.AuthoredModel.node_412cfc3fb6ac4abd:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:model.AuthoredModel.node_412cfc3fb6ac4abd:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "in_features": 32,
+          "out_features": 4,
+          "bias": true,
+          "dtype": {
+            "expression": "torch.float32",
+            "origin": "unknown"
+          }
+        },
+        "source": {
+          "path": "model.py",
+          "line": 18,
+          "endLine": 18,
+          "expression": "self.node_412cfc3fb6ac4abd(node_4ad3192ad58a4d55)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:model.AuthoredModel",
+        "instanceId": "instance:model.AuthoredModel.node_412cfc3fb6ac4abd",
+        "callId": "call:instance:model.AuthoredModel.node_412cfc3fb6ac4abd",
+        "parameterOrigins": {
+          "in_features": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 12,
+            "endLine": 12,
+            "expression": "32",
+            "column": 59,
+            "endColumn": 61
+          },
+          "out_features": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 12,
+            "endLine": 12,
+            "expression": "4",
+            "column": 76,
+            "endColumn": 77
+          },
+          "bias": {
+            "kind": "literal",
+            "path": "model.py",
+            "line": 12,
+            "endLine": 12,
+            "expression": "True",
+            "column": 84,
+            "endColumn": 88
+          },
+          "dtype": {
+            "kind": "unknown",
+            "path": "model.py",
+            "line": 12,
+            "endLine": 12,
+            "expression": "torch.float32",
+            "column": 96,
+            "endColumn": 109
+          }
+        }
+      },
+      {
+        "id": "output:model.AuthoredModel:0",
+        "label": "output 1",
+        "kind": "Output",
+        "category": "output",
+        "children": [],
+        "ports": [
+          {
+            "id": "output:model.AuthoredModel:0:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 14,
+          "endLine": 19,
+          "expression": "def forward(self, node_b9686da49d7e0c34, node_b285b0d8ec308062):\n        node_9aa23cbf395ed716 = self.node_9aa23cbf395ed716(node_b9686da49d7e0c34)\n        node_e4dfe0034883a298 = self.node_e4dfe0034883a298(node_b285b0d8ec308062)\n        node_4ad3192ad58a4d55 = self.node_4ad3192ad58a4d55(node_e4dfe0034883a298)\n        node_412cfc3fb6ac4abd = self.node_412cfc3fb6ac4abd(node_4ad3192ad58a4d55)\n        return {'before_b_output': node_9aa23cbf395ed716, 'n_inserted_4': node_412cfc3fb6ac4abd}"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.AuthoredModel",
+        "outputPath": [
+          {
+            "kind": "key",
+            "key": "before_b_output"
+          }
+        ]
+      },
+      {
+        "id": "output:model.AuthoredModel:1",
+        "label": "output 2",
+        "kind": "Output",
+        "category": "output",
+        "children": [],
+        "ports": [
+          {
+            "id": "output:model.AuthoredModel:1:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "model.py",
+          "line": 14,
+          "endLine": 19,
+          "expression": "def forward(self, node_b9686da49d7e0c34, node_b285b0d8ec308062):\n        node_9aa23cbf395ed716 = self.node_9aa23cbf395ed716(node_b9686da49d7e0c34)\n        node_e4dfe0034883a298 = self.node_e4dfe0034883a298(node_b285b0d8ec308062)\n        node_4ad3192ad58a4d55 = self.node_4ad3192ad58a4d55(node_e4dfe0034883a298)\n        node_412cfc3fb6ac4abd = self.node_412cfc3fb6ac4abd(node_4ad3192ad58a4d55)\n        return {'before_b_output': node_9aa23cbf395ed716, 'n_inserted_4': node_412cfc3fb6ac4abd}"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:model.AuthoredModel",
+        "outputPath": [
+          {
+            "kind": "key",
+            "key": "n_inserted_4"
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:0",
+        "source": {
+          "nodeId": "input:model.AuthoredModel:node_b9686da49d7e0c34",
+          "portId": "input:model.AuthoredModel:node_b9686da49d7e0c34:out:node_b9686da49d7e0c34"
+        },
+        "target": {
+          "nodeId": "call:instance:model.AuthoredModel",
+          "portId": "call:instance:model.AuthoredModel:in:node_b9686da49d7e0c34"
+        },
+        "tensorId": "tensor:input:model.AuthoredModel:node_b9686da49d7e0c34:node_b9686da49d7e0c34",
+        "role": "data"
+      },
+      {
+        "id": "edge:1",
+        "source": {
+          "nodeId": "input:model.AuthoredModel:node_b285b0d8ec308062",
+          "portId": "input:model.AuthoredModel:node_b285b0d8ec308062:out:node_b285b0d8ec308062"
+        },
+        "target": {
+          "nodeId": "call:instance:model.AuthoredModel",
+          "portId": "call:instance:model.AuthoredModel:in:node_b285b0d8ec308062"
+        },
+        "tensorId": "tensor:input:model.AuthoredModel:node_b285b0d8ec308062:node_b285b0d8ec308062",
+        "role": "data"
+      },
+      {
+        "id": "edge:2",
+        "source": {
+          "nodeId": "input:model.AuthoredModel:node_b9686da49d7e0c34",
+          "portId": "input:model.AuthoredModel:node_b9686da49d7e0c34:out:node_b9686da49d7e0c34"
+        },
+        "target": {
+          "nodeId": "call:instance:model.AuthoredModel.node_9aa23cbf395ed716",
+          "portId": "call:instance:model.AuthoredModel.node_9aa23cbf395ed716:in:input"
+        },
+        "tensorId": "tensor:input:model.AuthoredModel:node_b9686da49d7e0c34:node_b9686da49d7e0c34",
+        "role": "data"
+      },
+      {
+        "id": "edge:3",
+        "source": {
+          "nodeId": "input:model.AuthoredModel:node_b285b0d8ec308062",
+          "portId": "input:model.AuthoredModel:node_b285b0d8ec308062:out:node_b285b0d8ec308062"
+        },
+        "target": {
+          "nodeId": "call:instance:model.AuthoredModel.node_e4dfe0034883a298",
+          "portId": "call:instance:model.AuthoredModel.node_e4dfe0034883a298:in:input"
+        },
+        "tensorId": "tensor:input:model.AuthoredModel:node_b285b0d8ec308062:node_b285b0d8ec308062",
+        "role": "data"
+      },
+      {
+        "id": "edge:4",
+        "source": {
+          "nodeId": "call:instance:model.AuthoredModel.node_e4dfe0034883a298",
+          "portId": "call:instance:model.AuthoredModel.node_e4dfe0034883a298:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.AuthoredModel.node_4ad3192ad58a4d55",
+          "portId": "call:instance:model.AuthoredModel.node_4ad3192ad58a4d55:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.AuthoredModel.node_e4dfe0034883a298:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:5",
+        "source": {
+          "nodeId": "call:instance:model.AuthoredModel.node_4ad3192ad58a4d55",
+          "portId": "call:instance:model.AuthoredModel.node_4ad3192ad58a4d55:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:model.AuthoredModel.node_412cfc3fb6ac4abd",
+          "portId": "call:instance:model.AuthoredModel.node_412cfc3fb6ac4abd:in:input"
+        },
+        "tensorId": "tensor:call:instance:model.AuthoredModel.node_4ad3192ad58a4d55:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:6",
+        "source": {
+          "nodeId": "call:instance:model.AuthoredModel.node_9aa23cbf395ed716",
+          "portId": "call:instance:model.AuthoredModel.node_9aa23cbf395ed716:out:output"
+        },
+        "target": {
+          "nodeId": "output:model.AuthoredModel:0",
+          "portId": "output:model.AuthoredModel:0:in:value"
+        },
+        "tensorId": "tensor:call:instance:model.AuthoredModel.node_9aa23cbf395ed716:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:7",
+        "source": {
+          "nodeId": "call:instance:model.AuthoredModel.node_412cfc3fb6ac4abd",
+          "portId": "call:instance:model.AuthoredModel.node_412cfc3fb6ac4abd:out:output"
+        },
+        "target": {
+          "nodeId": "output:model.AuthoredModel:1",
+          "portId": "output:model.AuthoredModel:1:in:value"
+        },
+        "tensorId": "tensor:call:instance:model.AuthoredModel.node_412cfc3fb6ac4abd:output",
+        "role": "data"
+      }
+    ],
+    "diagnostics": [
+      {
+        "level": "info",
+        "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+      }
+    ],
+    "sources": [
+      {
+        "path": "model.py",
+        "content": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\n\nclass AuthoredModel(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.node_9aa23cbf395ed716 = nn.Identity()\n        self.node_e4dfe0034883a298 = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_4ad3192ad58a4d55 = nn.ReLU()\n        self.node_412cfc3fb6ac4abd = nn.Linear(in_features=32, out_features=4, bias=True, dtype=torch.float32)\n\n    def forward(self, node_b9686da49d7e0c34, node_b285b0d8ec308062):\n        node_9aa23cbf395ed716 = self.node_9aa23cbf395ed716(node_b9686da49d7e0c34)\n        node_e4dfe0034883a298 = self.node_e4dfe0034883a298(node_b285b0d8ec308062)\n        node_4ad3192ad58a4d55 = self.node_4ad3192ad58a4d55(node_e4dfe0034883a298)\n        node_412cfc3fb6ac4abd = self.node_412cfc3fb6ac4abd(node_4ad3192ad58a4d55)\n        return {'before_b_output': node_9aa23cbf395ed716, 'n_inserted_4': node_412cfc3fb6ac4abd}\n",
+        "digest": "922b9bcc2cb30e22f3a5fbc855975407d143dfd60515ddeb63dc8dc8cbe567ce"
+      }
+    ]
+  },
+  "nodeBindings": {
+    "before_b_feature": "input:model.AuthoredModel:node_b9686da49d7e0c34",
+    "before_b_identity": "call:instance:model.AuthoredModel.node_9aa23cbf395ed716",
+    "before_b_output": "output:model.AuthoredModel:0",
+    "n_inserted_0": "input:model.AuthoredModel:node_b285b0d8ec308062",
+    "n_inserted_1": "call:instance:model.AuthoredModel.node_e4dfe0034883a298",
+    "n_inserted_2": "call:instance:model.AuthoredModel.node_4ad3192ad58a4d55",
+    "n_inserted_3": "call:instance:model.AuthoredModel.node_412cfc3fb6ac4abd",
+    "n_inserted_4": "output:model.AuthoredModel:1"
+  },
+  "portBindings": {
+    "before_b_feature": {
+      "output": "input:model.AuthoredModel:node_b9686da49d7e0c34:out:node_b9686da49d7e0c34"
+    },
+    "before_b_identity": {
+      "input": "call:instance:model.AuthoredModel.node_9aa23cbf395ed716:in:input",
+      "output": "call:instance:model.AuthoredModel.node_9aa23cbf395ed716:out:output"
+    },
+    "before_b_output": {
+      "input": "output:model.AuthoredModel:0:in:value"
+    },
+    "n_inserted_0": {
+      "output": "input:model.AuthoredModel:node_b285b0d8ec308062:out:node_b285b0d8ec308062"
+    },
+    "n_inserted_1": {
+      "input": "call:instance:model.AuthoredModel.node_e4dfe0034883a298:in:input",
+      "output": "call:instance:model.AuthoredModel.node_e4dfe0034883a298:out:output"
+    },
+    "n_inserted_2": {
+      "input": "call:instance:model.AuthoredModel.node_4ad3192ad58a4d55:in:input",
+      "output": "call:instance:model.AuthoredModel.node_4ad3192ad58a4d55:out:output"
+    },
+    "n_inserted_3": {
+      "input": "call:instance:model.AuthoredModel.node_412cfc3fb6ac4abd:in:input",
+      "output": "call:instance:model.AuthoredModel.node_412cfc3fb6ac4abd:out:output"
+    },
+    "n_inserted_4": {
+      "input": "output:model.AuthoredModel:1:in:value"
+    }
+  },
+  "tensors": {
+    "before_b_feature": {
+      "shape": [
+        2,
+        7
+      ],
+      "dtype": "float32"
+    },
+    "n_inserted_0": {
+      "shape": [
+        1,
+        16
+      ],
+      "dtype": "float32"
+    },
+    "before_b_identity": {
+      "shape": [
+        2,
+        7
+      ],
+      "dtype": "float32"
+    },
+    "n_inserted_1": {
+      "shape": [
+        1,
+        32
+      ],
+      "dtype": "float32"
+    },
+    "before_b_output": {
+      "shape": [
+        2,
+        7
+      ],
+      "dtype": "float32"
+    },
+    "n_inserted_2": {
+      "shape": [
+        1,
+        32
+      ],
+      "dtype": "float32"
+    },
+    "n_inserted_3": {
+      "shape": [
+        1,
+        4
+      ],
+      "dtype": "float32"
+    },
+    "n_inserted_4": {
+      "shape": [
+        1,
+        4
+      ],
+      "dtype": "float32"
+    }
+  },
+  "verification": {
+    "status": "passed",
+    "scope": "exact-static-dag-and-declared-tensor-compatibility",
+    "modelExecution": "not_run",
+    "nodes": 8,
+    "edges": 6,
+    "nodeBindings": {
+      "before_b_feature": "input:model.AuthoredModel:node_b9686da49d7e0c34",
+      "before_b_identity": "call:instance:model.AuthoredModel.node_9aa23cbf395ed716",
+      "before_b_output": "output:model.AuthoredModel:0",
+      "n_inserted_0": "input:model.AuthoredModel:node_b285b0d8ec308062",
+      "n_inserted_1": "call:instance:model.AuthoredModel.node_e4dfe0034883a298",
+      "n_inserted_2": "call:instance:model.AuthoredModel.node_4ad3192ad58a4d55",
+      "n_inserted_3": "call:instance:model.AuthoredModel.node_412cfc3fb6ac4abd",
+      "n_inserted_4": "output:model.AuthoredModel:1"
+    },
+    "portBindings": {
+      "before_b_feature": {
+        "output": "input:model.AuthoredModel:node_b9686da49d7e0c34:out:node_b9686da49d7e0c34"
+      },
+      "before_b_identity": {
+        "input": "call:instance:model.AuthoredModel.node_9aa23cbf395ed716:in:input",
+        "output": "call:instance:model.AuthoredModel.node_9aa23cbf395ed716:out:output"
+      },
+      "before_b_output": {
+        "input": "output:model.AuthoredModel:0:in:value"
+      },
+      "n_inserted_0": {
+        "output": "input:model.AuthoredModel:node_b285b0d8ec308062:out:node_b285b0d8ec308062"
+      },
+      "n_inserted_1": {
+        "input": "call:instance:model.AuthoredModel.node_e4dfe0034883a298:in:input",
+        "output": "call:instance:model.AuthoredModel.node_e4dfe0034883a298:out:output"
+      },
+      "n_inserted_2": {
+        "input": "call:instance:model.AuthoredModel.node_4ad3192ad58a4d55:in:input",
+        "output": "call:instance:model.AuthoredModel.node_4ad3192ad58a4d55:out:output"
+      },
+      "n_inserted_3": {
+        "input": "call:instance:model.AuthoredModel.node_412cfc3fb6ac4abd:in:input",
+        "output": "call:instance:model.AuthoredModel.node_412cfc3fb6ac4abd:out:output"
+      },
+      "n_inserted_4": {
+        "input": "output:model.AuthoredModel:1:in:value"
+      }
+    },
+    "scalarNormalizations": {},
+    "limitations": [
+      "Input shapes and dtypes are declarations, not runtime observations.",
+      "Embedding index bounds, memory allocation, numerical behavior and train/eval execution are unverified.",
+      "This is a fresh managed model, not a structural rewrite of imported source."
+    ]
+  }
+}

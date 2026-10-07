@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://archcanvas.local/schemas/m5-beta-release-v1.json",
+  "title": "ArchCanvas M5 beta release scaffold v1",
+  "description": "A conservative release receipt for the M5 beta workstream. Host rows record reviewed contracts and evidence state; they do not imply host end-to-end certification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "releaseId",
+    "releaseVersion",
+    "stage",
+    "status",
+    "generatedAt",
+    "build",
+    "artifacts",
+    "hostMatrix",
+    "knownLimitations",
+    "gates"
+  ],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "releaseId": {"type": "string", "pattern": "^archcanvas-m5-beta-[a-z0-9][a-z0-9.-]*$"},
+    "releaseVersion": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+-beta\\.[0-9]+$"},
+    "stage": {"const": "M5-beta"},
+    "status": {"const": "in_progress"},
+    "generatedAt": {"type": "string", "format": "date"},
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gitCommit", "workingTree", "studioPackageVersion", "runtimeSource"],
+      "properties": {
+        "gitCommit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "workingTree": {"enum": ["clean", "dirty-uncommitted"]},
+        "studioPackageVersion": {"type": "string"},
+        "runtimeSource": {"const": "formal-project"},
+        "prototypeDependency": {"const": "forbidden"}
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256", "role"],
+        "properties": {
+          "path": {"type": "string", "pattern": "^(?!/)(?!.*\\.\\.).+$"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "role": {"enum": ["entrypoint", "javascript", "stylesheet", "schema", "skill"]}
+        }
+      }
+    },
+    "hostMatrix": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["host", "contractStatus", "discovery", "studio", "e2e", "limitations"],
+        "properties": {
+          "host": {"enum": ["codex", "claude-code", "deepseek-harness"]},
+          "contractStatus": {"enum": ["contract-reviewed", "unreviewed"]},
+          "discovery": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+          "studio": {"enum": ["local-url", "embedded-browser", "unavailable"]},
+          "e2e": {"const": "not-tested"},
+          "limitations": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "knownLimitations": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["m4", "m5"],
+      "properties": {
+        "m4": {"const": "partial"},
+        "m5": {"const": "in_progress"}
+      }
+    }
+  }
+}

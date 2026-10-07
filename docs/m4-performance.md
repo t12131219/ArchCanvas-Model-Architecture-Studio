@@ -1,6 +1,34 @@
 # M4 Studio performance probe
 
-当前（2026-10-05）构建为 `index-BcFxpKDY.js`（SHA256 `98eae2934004ecaec4036f7b0746fb8304b3412c467b2417b68988dd4e4afe3a`），本轮产品字节未改。[完整浏览器矩阵与代理问题报告](m4-bcf-browser-matrix.md)记录 **36/36 基线＋3/3 编辑态、39张实际截图与234份工件**，三模型保存重开SVG一致。独立几何/像素复核已完成，Transformer深层交叉、手动移动越界/碰撞与17模块缺组合预制仍待修；材料覆盖不代表出版人审。当前原生输入诊断保留失败/缺失与分母，持续presented FPS/完整INP、活动取消、真实尺寸/字体/硬件和3–5真人任务仍未认证。五席8961–8965未分配、真人0，AI不计真人，M4保持partial，未进入M5。前轮Studio136/136、strict/build和独立发行9项保留Bc范围；Python319/319保留obx测试时绑定及未改Python字节范围，本轮未重复产品全套测试。
+## 当前状态：受限 memory 连线连续性（2026-10-06）
+
+当前 `index-CU5JhnoS.js` / `index--unhoRTb.css` 的[统一收据](evidence/m4-memory-continuity-current/checks-final-attempt-2/receipt.json)为 Studio **436/436**、fail/skip/cancel0，strict TypeScript/Vite exit0、publication **11/11** skip0；115源码/测试/配置＋3dist＝**118**，另11publication输入。36历史core＋1detail夹具单独冻结，115不是完整传递依赖清单。见[阶段](m4-memory-continuity.md)、[门](evidence/m4-current-gate-audit.json)及[source seal](evidence/m4-memory-continuity-current/implementation-work/source-seal-attempt-2/report.json)。
+
+collapsed memory在完整同场景原route batch完成后，才尝试Repeat轮廓感知的侧边/中点路线；完整fixed/chosen peers、nominal body/header/stroke、端口法向和两段6单位lead均保护，unknown/budget不足保留同场景batch。dy14→15例从49→644.3改善为49→50，端点仅1/0位移；非memory路线/端口与canonical事实保持。840production行14623关系、624adopt（y576/gap48）；实际140case18272独审为有限几何，不等于840模型、全域最少交叉或美观通过。窄gap、expanded/retained route、mask拥挤与字体/arrowhead仍开放。
+
+[浏览器/导出独审](evidence/m4-memory-continuity-current/independent-browser-export-review/readback-attempt-2/report.json)2840/2840是17records、16fullpublicXML和2actual工件的数据关系。Encoder上下16、左右24world及四次undo，保存47/storage7与settled重开已记录；12初reopen仍90%默认camera，后续68%。02/04footer滞后、10状态滞后、16stale modal保留；17仅root有限亲看完整figure/legend/footer47无modal，不认证全部rasterfresh/firstpaint。真实whole180SVG/PDF与saved47 full document2/2exact，最低名义文字6.56018pt；初2838/2840两oracle错误保留，不认证85/180mm人审。
+
+[原KAUB性能诊断](evidence/m4-readable-grid-browser-next/README.md)保留四toggle p95520ms、collapsed output y=-28236缺陷及300小字不批准。[continuous读回](evidence/m4-readable-grid-browser-next/continuous-browser/independent-readback-attempt-2/README.md)26/29保留三项真实proxy分歧：独立pan994.9/drag1716.1/wheel45.2ms只是首次DOM变化，非因果input-to-paint。rAF 不是实际呈现 FPS；当前readable300、continuous≤50ms、medium<500ms、固定硬件/字体A/B×3与presented≥50FPS未认证。
+
+M4 `partial`、M5 `not_started`、真人 0。AI 不计真人；历史3AI角色和17基础模块＋3透明起点保持原范围，未逐种生成/执行。[新研究准备](evidence/m4-memory-continuity-current/research-readiness-independent/report.json)313/313仅readiness：87implementation/4baseline，5pristine席位43631–43635；旧25包427文件exact、上一viewport包正式verifyexit1stale。未服务/probe/分配/collect，3–5真人五步≤180秒/≥80%及85/180mm人审开放。13入口第二`##`后历史正文、旧stage/gold/failure/package原字节保留。正式工程从头实现、独立于Temp runtime/fallback，无新认证复用，未执行生成模型；后续字节变化不继承本阶段认证。
+
+后续[连续 DOM proxy 测量修正](m4-continuous-proxy-correction.md)仅改 validator/wrapper 和独立反例，产品 CU5/上述门状态保持。正式组合 **71/71**（原27＋新增44）单列，不加入 Studio436；[历史 raw 重放](evidence/m4-continuous-proxy-correction-current/replay-attempt-1/report.json)33/33、17逐输入exact，纠正 pan/drag/wheel 首proxy为965.4/1015.4/45.2ms，trial p95为994.9/1716.1/45.2ms。旧26/29/no-input失败仍保留；这是同声明ID首次DOM变化，非因果input-to-paint/presented FPS，没有当前浏览器新测或真人认证。研究manifest列明87bindings仅有限字节确认，非协议重跑或新包；旧memory248文档seal对本次三条改动路径通过明确旧快照解析，不直接绑定后续live字节。
+
+本阶段 [frontier-scoped movement](m4-frontier-move.md) 已在新 dist 上完成有限验证：默认 `all-frontiers` 与显式 `current-frontier` 使用画布世界单位，四向命令/撤销、300 层折叠重展开、保存重开均在独立 43441 服务记录。Studio 468/468、strict/build 0、publication 11/11；浏览器公开 SVG 分段读回 12 个完整状态，保存与重开 SVG 字节 exact。截图显示展开 300 层在总览下密集，折叠视图可读；箭头拥挤、全局最少交叉、输入到 paint、presented FPS、物理出版和真人审查仍未认证。详见 [阶段文档](m4-frontier-move.md)、[检查收据](evidence/m4-frontier-move-current/checks-final-attempt-2/receipt.json) 与 [浏览器收据](evidence/m4-frontier-move-current/browser/receipt.json)。
+
+## 历史版本记录
+
+历史 ye（2026-10-06）为 `index-ye7sAyyI.js` / `index-C769d2rm.css`。[端口命中与连线方向](m4-authoring-interaction.md)新增圆点/间隙/文字统一命中区域和Enter/Space连接，按独立网络主轴放置端口，纵向四链现在三条直线；有outputPath且显式别名的Output副标题显示`model output`并保留完整源码事实。最终专项28/28、Studio264/264、strict TypeScript/Vite退出0，计数单列；本轮未执行模型或安装依赖。
+
+当前实际浏览器从空白四链点文字、拖圆点、键盘连接，核四向移动/平移、重复拒绝、history、保存重开、生成新managed并导出；双输入Add/Concat五边有界完成。17基础模块＋3透明起点可点击/拖入，MLP/residual点击和CNN拖入各自观察。合并草稿仍在(614,220)交叉，CNN长回线、多输入fit目标偏小、Escape后pending提示和部分截图时序差异均保留；不认证全局最美排布、逐模块执行或真人新手可用。
+
+M4仍partial、M5未开始、真人0。三个AI独立角色分别核合同/原生工件、像素、实际源码工件，root用CUA操作；AI不计真人。当前Studio A/B、三次矩阵和呈现帧性能未认证。旧[空间连续性阶段](m4-collapse-continuity.md)与单色证据保留原范围；[机器状态](evidence/m4-human-review-handoff-status.json)记录当前边界，[更新前归档](evidence/m4-authoring-interaction-work/before-current-doc-update-attempt-1/manifest.json)保留旧字节。下方旧“当前/本轮/最终”仅指其明示旧版本与冻结时点。
+
+历史版本说明：当前正式构建仍为 `index-au3IB_0Q.js` / `index-B6WbMowt.css`，最新范围见[au3矩阵、四向操作与输入诊断](m4-au3-current-matrix.md)。39例文件已collect，三模型四向/history/save-reopen已独审；像素问题与性能未通过项保留，AI真人0、M4 partial、M5未开始。下方记录保留各自历史构建/时点，不继承为最新浏览器或研究认证。当前au3研究包仍未prepare/verify，旧研究席位不可分配。此前seal与末读原字节见[更新前归档](evidence/before-m4-au3-full-matrix/manifest.json)。
+
+历史 ChS（2026-10-05）为 `index-ChS0wIgb.js`（SHA256 `05019f89f0de0c0c622df7a2cc1a13ed58477c456244c97209a0f37db79139c9`）与 `index-CsXMONBp.css`。本轮[显式位置修复与透明网络起点](m4-move-recovery-presets.md)新增预览/应用/取消和17基础模块上的3个可编辑网络起点；最终Studio152/152、strict/build退出0。中间会话与最终build证据分开；最终23组/46图、四向操作及单个pin拒绝范围单列，不宣称新36＋3矩阵；最终独立发行9项通过；磁盘满的前次失败保留。旧Bc矩阵/诊断/五席包不能认证本构建，fresh研究准备待完成、真人0。M4仍partial，未进入M5。
+
+[切换前2894绑定原字节](evidence/before-m4-move-recovery-presets/manifest.json)保留旧Bc seal/status/矩阵/诊断/源码；下方历史记录中的“当前/本轮/最终”仅指其明确旧构建和冻结时点，不计新build浏览器、性能或真人认证。旧raw、seal、manifest和研究包不回写。
 
 本轮文档更新前的478个封印绑定和旧seal原字节已[逐字节归档](evidence/before-m4-bcf-browser-matrix/manifest.json)；下方历史记录按其明确构建/时点阅读，旧失败和seal不回写。
 
@@ -8,7 +36,7 @@
 
 [边界修正前原字节](evidence/before-m4-boundary-corrections/manifest.json)保留165文件、旧verification原件与3188历史绑定解析；旧seal/manifest/raw和研究包不改。下方历史记录中的“当前/本轮”只指其明确绑定的旧版本和冻结时点，不计新构建覆盖或真人门。
 
-## 当前Bc：真实输入诊断
+## 历史Bc：真实输入诊断
 
 8982隔离测量服务上的四份记录已完成，主代理操作真实UI，子代理只读解析公开SVG、事件、像素及冻结字节。[独立综合报告](evidence/m4-bcf-browser-matrix-work/native-current/independent-audit-summary-1/README.md)与[当前问题报告](m4-bcf-browser-matrix.md)保留原始失败、窗口和分母。
 
@@ -281,7 +309,7 @@ The separate [third simple-page window](evidence/m4-visible-host-control/README.
 
 The [same-document Transformer task](evidence/automation-full-task/README.md) additionally exercises alias/fill, legend, annotation, edge style, page width/preset, pin, drag/undo/redo, Save/reload and actual SVG/PDF generation through ordinary Studio UI. The +32/+20 target move, exact history restoration in canvas coordinates, saved fields and export inputs are audited separately from timing. Four ancestor bodies grew by 32 pixels and three other routes changed; strict geometry invariance was not satisfied. Viewport differences prevent treating this chain as fixed-environment screen continuity. No input observer was attached, and its roughly 20.5-minute automation session includes agent waits. It is neither a performance sample nor a researcher completion-rate result.
 
-## Current pan and annotation evidence limits
+## Historical pan and annotation evidence limits
 
 The [independent UI field report](evidence/m4-pan-annotation-work/ui-field-audit.md) verifies one Transformer pan of +64/+40 at revision18 with identical public SVG and viewport. Annotation move, undo/redo, idempotence, new-note placement and rev23 Save/reopen have exact field and SVG reconstruction checks. The public selection array is empty while status sometimes says one object selected; hidden selection/history is not certified. Reopen changes camera and resets session history. In-progress gesture cancellation has pure helper tests and code evidence, but no native cancelled-drag sample.
 
@@ -290,13 +318,13 @@ The two v2 pan sessions record complete buffers and four same-pointer down/up se
 The actual current SVG was opened; PDF was generated and its local bytes/receipt checked, without a current PDF view. At85mm the full figure has minimum text≈2.896pt. Body-rectangle annotation conflict elimination excludes routes, markers, headers and font shaping. Neither export reconstruction nor successful save establishes publication readability or human success.
 
 
-## 当前 ce7 构建的原生输入诊断（2026-10-05）
+## 历史 ce7 构建的原生输入诊断（2026-10-05）
 
 在隔离 `8907` 测量台使用当前 `index-Cr_xKW9U.js`，DenseStress300 展开至 304 个渲染对象后，真实 CUA 输入记录了 6 个操作：toggle、pan、两次 drag（第一次 no-input、第二次成功）、undo、redo；原始收据与保存/重开 DOM 位于 [native diagnostic work](evidence/m4-boundary-performance-native-work/README.md)。该 work 目录的 validator 只统计带有产品 trialId 的 14 个离散输入，其中 10 个匹配；4 个 interaction 的匹配子集 p95 为 2000 ms。独立 native audit 另统计全部 23 个可信离散输入（含无 trialId 的输入），得到 19 个唯一匹配；两者分母不同，不能合并。上述数值都不是整体 INP 或代表性 p95。观测窗口的 rAF cadence 约 1.98 fps，idle 约 2.01 fps，均为回调/DOM 代理，`presentedPaintCertified=false`，不能称呈现 FPS 或 input-to-paint。
 
 一次拖动因坐标命中 viewport 而非目标，保留为 `no-input`；未改写或补成功。第二次拖动提交后，undo/redo 恢复到对应 DOM revision，保存重开与实际 store 快照另存。当前环境记录 viewport 1280×900、iframe 1280×720、DPR1、visibility 起止 true；UA、解析字体和硬件未知。活动 held-down→Escape/blur 取消、固定环境和真人任务仍未认证。详见 [validator receipt](evidence/m4-boundary-performance-native-work/validator-process.json) 与 [service lifecycle](evidence/m4-boundary-performance-native-work/session-process.json)。
 
-## 当前 DenseStress300 CPU 核心重跑
+## 历史 DenseStress300 CPU 核心重跑
 
 为补齐此前失败的基准输入，本轮先在正式工程的独立副本中重跑了
 `check_m4_stress.py`，再把生成的 source-backed architecture JSON 固定到

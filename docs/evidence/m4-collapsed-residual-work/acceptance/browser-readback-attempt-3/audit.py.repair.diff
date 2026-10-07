@@ -1,0 +1,60 @@
+--- attempt2/audit.py
++++ attempt3/audit.py
+@@ -30,6 +30,7 @@
+ CSS_SHA = '172a09a8c147e53c3bef426cf76b59b8cc4893e891eb6e920aa7b25a0bb024e0'
+ CACHE = {}
+ CHECKS = []
++HEIGHT_ROUNDTRIPS = []
+ 
+ 
+ def sha(raw):
+@@ -268,7 +269,26 @@
+     exact(observation['edges'], [{'id': edge['id'], 'path': edge['path']} for edge in scene['edges']], 'Public path collection binds every core route')
+     raw = observation['svg'].encode()
+     _, metadata = parse_svg(raw)
+-    exact(observation['metadata'], metadata, 'Public observation metadata is read from complete actual SVG')
++    exact(without(observation['metadata'], ('heightMm',)), without(metadata, ('heightMm',)),
++          'Public observation complete metadata is exact except independently checked heightMm roundtrip')
++    assert set(observation['metadata']) == set(metadata), 'No metadata field hidden by height check'
++    public_height, svg_height = observation['metadata']['heightMm'], metadata['heightMm']
++    root_svg, _ = parse_svg(raw)
++    viewbox = [float(item) for item in root_svg.attrib['viewBox'].split()]
++    assert len(viewbox) == 4 and viewbox[2] > 0
++    independently_expected = metadata['widthMm'] * viewbox[3] / viewbox[2]
++    # Explicitly scoped to this JSON number only. Complete raw SVG XML,
++    # all other metadata and actual Scene/Canvas revisions remain exact.
++    assert all(isinstance(value, (int, float)) and math.isfinite(value)
++               for value in (public_height, svg_height, independently_expected))
++    delta = abs(public_height - svg_height)
++    assert delta <= 1e-10 and abs(public_height - independently_expected) <= 1e-10 and abs(svg_height - independently_expected) <= 1e-10
++    if delta:
++        HEIGHT_ROUNDTRIPS.append({'observation': str(path.relative_to(ROOT)),
++                                 'observationHeightMm': public_height, 'actualSvgHeightMm': svg_height,
++                                 'independentViewBoxHeightMm': independently_expected,
++                                 'absoluteDifferenceMm': delta, 'maximumAllowedDifferenceMm': 1e-10,
++                                 'allOtherMetadataExact': True, 'actualSvgXmlModified': False})
+     exact(svg_tree(raw), svg_tree(interactive), 'Actual browser interactive XML matches complete current core interactive XML')
+     assert_scene_svg(scene, raw)
+     dimensions(scene, raw)
+@@ -476,8 +496,11 @@
+                          'Stored envelope snapshot is checked. Post-reload visible complete geometry and actual export are checked; a new post-reload envelope snapshot is not invented.']}
+     try:
+         prepared = load(OUT / 'preexecution-freeze.json')
+-        for row in prepared['helperSources'] + prepared['oldAttempt1Files'] + prepared['oldBrowserInputs']:
++        for row in prepared['helperSources'] + prepared['oldAttempt1Files'] + prepared['oldBrowserInputs'] + prepared['previousFailedAttemptFiles']:
+             verify(row)
++        result['retainedFailedAttempt'] = {'files': prepared['previousFailedAttemptFiles'],
++                                         'failureKeptExact': True,
++                                         'repairScope': 'Observation metadata heightMm JSON roundtrip only, checked independently; no SVG/data revision or baseline normalization.'}
+         result['oldInputsPreserved'] = {'attempt1HelperExecuted': False,
+                                        'attempt1FileCount': len(prepared['oldAttempt1Files']),
+                                        'oldBrowserFileCount': len(prepared['oldBrowserInputs']),
+@@ -557,6 +580,8 @@
+     result['unreadableInputsAtFinalRead'] = unreadable
+     result['completedAt'] = datetime.now(timezone.utc).isoformat()
+     result['checks'] = CHECKS
++    result['heightMmJsonRoundtripExceptions'] = HEIGHT_ROUNDTRIPS
++    result['heightMmJsonRoundtripExceptionScope'] = 'Only observation metadata.heightMm vs its own exact SVG metadata; absolute<=1e-10 and independent SVG viewBox formula. All other metadata and complete actual/current core XML exact.'
+     result['checkCount'] = len(CHECKS)
+     if changed or unreadable:
+         result['verdict'] = 'fail-input-mutation-retained'

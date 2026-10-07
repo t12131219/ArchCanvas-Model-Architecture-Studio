@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>M4 响应式连续输入观测</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff;color:#25364a;font:13px system-ui,sans-serif}iframe{position:fixed;inset:0;width:100vw;height:100vh;border:0}#show{position:fixed;left:8px;bottom:8px;z-index:20;font:12px system-ui;background:#fff;color:#25364a;border:1px solid #789;border-radius:5px;padding:6px 9px}.controls{position:fixed;left:8px;top:76px;width:min(620px,95vw);max-height:calc(100vh - 110px);overflow:auto;z-index:30;background:#f3f8ff;border:1px solid #8fa4b8;border-radius:8px;padding:12px;box-shadow:0 4px 16px #0003}.controls[hidden]{display:none}h1{font-size:17px;margin:0 0 8px}p{font-size:12px;line-height:1.6}button,input,select{font:inherit;padding:5px 7px;margin:3px;border:1px solid #acbac9;border-radius:4px;background:#fff;color:inherit}input{width:260px}label{display:block}textarea{width:100%;height:170px;font:10px monospace}button:disabled{opacity:.5}output{display:block;margin-top:8px}#denominator{font-size:11px}
+</style>
+<iframe id="studio" src="/" title="冻结正式 ArchCanvas Studio：响应式测量"></iframe>
+<button id="show" aria-expanded="true">显示测量控件</button>
+<section class="controls" id="controls">
+<h1>M4 响应式连续输入观测</h1>
+<p>Studio 占满当前窗口。开始和准备后测量面板隐藏；左下按钮位于产品侧栏。操作结束后显示面板，再结束此操作。面板显示会遮挡部分画布，必须单独记录。DOM/rAF 为代理，不认证呈现帧或连续 input-to-paint。</p>
+<label>会话标签<input id="label" aria-label="连续会话标签" value="readable300-native-continuous-next"></label>
+<label>测量模式<select id="mode" aria-label="连续测量模式"><option value="full">完整原生输入观测</option><option value="raf-only">轻量 rAF 对照</option></select></label>
+<button id="start">开始连续会话</button><button id="stop" disabled>结束会话并等待 2 秒交付</button>
+<label>操作<select id="operation" aria-label="连续测量操作"><option value="pan">平移画布</option><option value="drag">拖动节点</option><option value="zoom">滚轮 / 缩放</option><option value="undo">撤销</option><option value="redo">重做</option><option value="toggle">展开 / 收起</option><option value="pin">固定 / 解锁</option></select></label>
+<label>目标 ID<input id="targets" aria-label="连续目标 ID" placeholder="drag/toggle 必填 canonical ID"></label>
+<label>锚点 ID<input id="anchors" aria-label="连续锚点 ID" placeholder="可选，逗号分隔"></label>
+<button id="arm" disabled>准备连续操作并隐藏面板</button><button id="finish" disabled>结束此连续操作</button><button id="hide">隐藏测量面板</button>
+<output id="status" aria-live="polite">等待冻结正式 Studio</output><output id="denominator"></output>
+<label>完整连续输入 JSON<textarea id="receipt" aria-label="完整连续输入 JSON" readonly></textarea></label>
+<a id="download" hidden>下载完整连续收据</a>
+</section>
+<script type="module" src="/__continuous/harness.mjs"></script>
+</html>

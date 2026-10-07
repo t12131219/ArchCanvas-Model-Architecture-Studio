@@ -1,0 +1,62 @@
+# Runtime discovery and capability checks
+
+This Skill is an instruction package. It does not bundle the runtime, Python dependencies, a built Studio, or model adapters. The formal checkout now contains an independently implemented visual Alpha; its verified local entry and limits are described in [formal-alpha.md](formal-alpha.md). Copying the Skill does not install that checkout or establish the runtime's availability in another harness.
+
+The configured formal checkout currently records `index-au3IB_0Q.js` / `index-B6WbMowt.css` in `docs/m4-ancestor-corridors.md`. Exact canonical memory families may use a bounded ancestor-side corridor within the existing caps; generic routing keeps its prior scorer. Current Studio179/179, strict/build and12independent public-data checks do not certify a host's actual runtime, human usability or physical publication. ChS/BG matrices and the repeat-outline research package are stale for au3; no new au3 package was prepared this round and old seats must not be assigned. Current standalone9/9 is exit0 with209source/654dependency files and5symlinks exact in an unmodified formal/installed-dependency copy, not clean installation or model execution. Current bounded browser readback covers one source-bound L3 actualSVG/PDF and one4node/3edge authored Draft port-text click/history/save/reopen→static source review→new managed copy open/generatedCanvas save. Imported Canvas alias refresh and a complete current four-direction matrix were not retested; zero humans, M4partial. Resolve actual assets, tools and package origin before use.
+
+## Resolve a formal runtime
+
+Start with an explicitly configured formal runtime, a documented installation for this product, or its formal project configuration. Resolve the executable, interpreter, package origin, helper target, working directory, and symlinks before use. A matching executable name or an existing configuration entry is insufficient evidence of identity.
+
+`ArchCanvas_Model Architecture Studio_Temp` is a failed prototype. Do not use it as the development runtime, run its helper, copy its command contract, or fall back to it when the formal runtime is missing. This also applies when a configured executable, package, helper, or symlink resolves into that directory. Report the obsolete configuration and continue work that does not require the runtime.
+
+Use the formal runtime's own documentation and available help/capability interface to establish the supported operations. Invoke only interfaces whose existence and side effects have been checked. The local Alpha has static CLI analysis, a document service, current-scene SVG/PDF/PNG, registered probability/configuration edits, ReLU/GELU replacement and bounded input rebinding. `patch prepare|configuration|activation|rebind|review|approve|commit|discard` exists; `runtime` is an explicit isolated CPU observation command. Inspect `supportedIntents`, `semanticScope`, `activationScope`, `rebindScope`, `structuralRebindScope`, `runtimeObservation`, `runtimeProfiles`, `publicationExport`, exact per-action help and actual provenance. The retained same-input unary static path and the new required-execution structural profile are separate contracts.
+
+Use the project's configured environment when available. Do not install dependencies or modify a global environment merely to compensate for a missing implementation. Checking runtime identity and dependencies must not import or execute a user's model.
+
+## Explicit isolated CPU profile
+
+The formal checkout uses its own `.venv-runtime` and exact `requirements-runtime.lock`; publication uses a separate `.venv`. Runtime setup is documented in the formal README: the CPU PyTorch wheel comes from the official PyTorch CPU index, then the remaining exact pins are installed inside the formal venv. Do not substitute a prototype/user interpreter or silently download weights.
+
+`archcanvas_runtime.runtime_capabilities(config)` probes trusted infrastructure and the locked framework only. `config` explicitly names absolute `interpreter` and `dependencyLock` files; optional limits are `timeoutSeconds`, `memoryMb`, `cpuSeconds`. `verify_structural(root, entry, input_spec, config)` is the executing API. The CLI requires `runtime --root --entry --input-spec --interpreter --dependency-lock`, with optional `--output`; exit 0 means passed, exit 2 means failed/unavailable. Source rendering continues to use nonexecuting `analyze`.
+
+InputSpec v1 declares all named tensor inputs, each with bounded shape, float32/float64/int64/bool dtype and normal/zeros/ones fill, plus seed, unique eval/train modes and an empty constructor object. Only source-default model construction is currently supported. Model execution is explicit; capability checks never import the user's source.
+
+Only Linux x86-64 isolation has actual acceptance evidence. Mandatory Bubblewrap namespaces and kernel seccomp deny network sockets and new processes. Frozen source is read-only; scratch is private. The worker sees the formal venv and narrow private read-only Python executable, standard-library and ELF-dependency copies, not the complete host/Conda directory. Receipts bind actual interpreter, installed environment bytes, lock, adapter, source generation and input spec. They record kernel probes and per-process address-space/CPU/file/open-file limits, wall timeout and task restrictions. These limits do not include cgroup aggregate RSS or a total tmpfs quota.
+
+Isolation or environment validation failure yields `unavailable` and disables that execution profile; never substitute an ordinary subprocess or turn skipped G6 into passed. Model exceptions, timeout or cancellation yield failed receipts. A successful receipt contains per-mode module calls, named ports, actual tensor producers, shape/dtype, forward/backward, same-seed fresh-construction replay and parameter/buffer/shared state facts. These are observed samples, not complete path coverage or old/new numerical equivalence. Arbitrary functional operations can retain unresolved producers; semantic writes also require their independent static contract/oracle. Checkpoints, optimizers and training progress are not loaded or migrated.
+
+## Check capabilities for the requested workflow
+
+Treat the following as capability requirements, not implemented commands or a required manifest schema. Record the runtime identity/version, evidence inspected, supported scope, and any unmet requirements before making capability claims.
+
+| Workflow | Evidence to check in the formal runtime |
+| --- | --- |
+| Source analysis | Supported frameworks, model entry/config/input contracts, static versus executing paths, source evidence and unresolved facts. |
+| Open the Studio | Real document loading and a usable local service or app, service lifecycle, session/document identity, and a returned URL or host opening mechanism. |
+| Visual editing | Actual CanvasDocument mutations for layout, aliases, glyphs, styles, legends, groups, hierarchy and routing; undo/redo; save and reopen. |
+| Edited export | The same saved document and scene used by the editor, supported formats, font/style treatment, and visual checks of the exported result. |
+| Semantic proposal | Canonical targets, supported intent registry, unresolved blockers, and source/graph evidence without original-file mutation. |
+| Source transaction | Isolation, independent expected/observed change checks, concrete approval binding, freshness, backup/recovery, commit and post-commit reconciliation. |
+| Optional execution | Explicit environment/input/mode contracts, isolation, timeout, and a receipt distinguishing observed coverage from static evidence. |
+
+Inspect implementation and appropriate independent verification; labels in a manifest, fixtures, interface fields, or inherited prototype tests alone do not demonstrate an end-to-end capability. A rendered SVG does not establish an interactive editor, and a successful save does not establish faithful edited export. Check the full path needed by the user rather than advertising every planned feature.
+
+For a supported Studio service, use the harness's available managed/background process mechanism, retain its actual lifecycle receipt/log, and open its returned local address. Do not claim availability after the host terminates the process. Browser opening and browser automation are distinct host capabilities. Model execution is a separate conditional workflow; never make it the implicit prerequisite for a static figure.
+
+## When a capability is unavailable
+
+Report the specific missing runtime or operation and preserve the available source evidence and visual documents. Source-grounded design, visual specifications, reviewable proposals, and development of the new formal implementation can continue within the authorized task. Do not claim a completed interactive bidirectional framework or a successful writeback based on Skill instructions alone. Follow [source-review.md](source-review.md) for semantic changes.
+
+## Failed-prototype reference policy
+
+The failed prototype may be inspected read-only to identify pitfalls or a narrowly scoped candidate implementation. It is not a support matrix, trusted baseline, expected-result oracle, or acceptance evidence for the formal product. Any candidate code requires a stated reason for reuse, dependency/license review, independent verification of its behavior, and validation in the new design before limited incorporation. Default to a fresh implementation when that confidence is absent.
+
+
+## New authored model drafts
+
+For a request to build a model from zero, the current formal Studio has a separate authored-draft workspace and a 17-module catalog. Check `modelAuthoring` and the actual `/api/authoring/catalog`; create and save a draft rather than inserting fabricated source-bound nodes into a CanvasDocument. Generation statically validates declared tensors and exact generated source facts; it never executes the model. Open the generated source as a new managed project only after showing the concrete source. This is distinct from structural writeback into an existing imported model, which retains its reviewed transaction requirements. Attention/LSTM, automatic training and arbitrary module constructors are not part of this authored subset.
+
+The current local `au3IB_0Q` Studio retains three composite starting graphs: MLP, CNN and residual MLP. Click or drag one from the left library, then edit its ordinary modules, parameters and tensor connections. These are transparent draft graphs built from the 17 catalog kinds, not new module kinds or executed models. A new harness must still establish that its actual Studio provides this UI. See the configured checkout's `docs/m4-move-recovery-presets.md` for the original starting-graph implementation scope; consult `docs/m4-ancestor-corridors.md` for current assets and bounded browser evidence; representative AI trials do not certify human usability or publication quality.
+
+Authoring validation errors may include structured Chinese diagnostics while preserving English technical text. Resolve node/parameter/port targets against actual unique catalog identities; never infer targets from labels. Invalid raw parameter text blocks draft save/generation. Arrangement fits the updated draft and empty search states explain unsupported modules; consult the configured checkout’s `docs/m4-authoring-feedback.md` for source/build-bound UI evidence and open M4 gates.

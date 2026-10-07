@@ -1,0 +1,22 @@
+--- /home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/docs/evidence/m4-caption-stability-current/camera-work/correction-attempt-4/before-fix-source/studio/src/App.tsx	2026-10-06 19:18:44.760767320 +0800
++++ /home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/studio/src/App.tsx	2026-10-06 19:25:03.614991211 +0800
+@@ -218,14 +218,16 @@
+       cameraInitializationFrame.current = requestAnimationFrame(() => {
+         cameraInitializationFrame.current = 0;
+         const active = historyRef.current?.document;
+-        if (active !== document || !active || !canApplyCameraViewTicket(ticket, cameraViewIdentity(active), loadSequence.current, cameraIntent.current)) return;
++        // createHistory clones its input; the load/revision/identity ticket is
++        // the ownership contract, not the raw loader object's reference.
++        if (!active || !canApplyCameraViewTicket(ticket, cameraViewIdentity(active), loadSequence.current, cameraIntent.current)) return;
+         const rect = viewportRef.current?.getBoundingClientRect();
+         if (!rect || rect.width <= 96 || rect.height <= 92) { if (attempt < 3) schedule(attempt + 1); return; }
+         const viewport = { width: rect.width, height: rect.height };
+         const recovered = restore ? readCameraView(cameraSessionStorage(), ticket.identity, viewport) : null;
+-        const view = recovered ?? fitCameraToBounds(buildScene(document).bounds, viewport);
++        const view = recovered ?? fitCameraToBounds(buildScene(active).bounds, viewport);
+         cameraOwner.current = ticket.identity; cameraRef.current = view; setCamera(view);
+-        persistCamera(document, view);
++        persistCamera(active, view);
+       });
+     };
+     schedule(0);

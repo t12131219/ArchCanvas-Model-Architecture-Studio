@@ -1,0 +1,21 @@
+{
+  "schema": "archcanvas-independent-browser-export-oracle-corrections/1",
+  "attempt": "readback-attempt-1",
+  "preservedRelations": {"passed": 2838, "total": 2840, "failed": 2},
+  "scriptSnapshot": "readback-attempt-1/audit-readback.py",
+  "corrections": [
+    {
+      "relation": "pdf-ui-actual-links",
+      "firstOracle": "Two strings, one PDF and one receipt URL",
+      "actualEvidence": "Three href/text objects: view PDF, download same PDF, view receipt",
+      "correction": "Require the exact three public objects and their actual export identity; no input or product change"
+    },
+    {
+      "relation": "pdf-pagebox-independent-mm",
+      "firstOracle": "PDF page height must equal precise metadata208.28571428571428mm converted to points within1e-6pt",
+      "actualEvidence": "SVG normalized root height208.28571mm retains independently validated precise metadata. PDF590.416186pt equals normalized root converted to points within1e-6pt; discrepancy to precise metadata is1.1975253073615022e-5pt",
+      "correction": "Derive PDF point dimensions from independently validated actual SVG physical root; separately bound precise metadata difference by5e-6mm SVG decimal serialization plus1e-6pt PDF serialization. Preserve precise metadata and receipts; no actual export regeneration"
+    }
+  ],
+  "scope": "Independent audit oracle corrections only. Original failing report and original script are preserved; all product, browser, saved document and actual export bytes remain unchanged."
+}

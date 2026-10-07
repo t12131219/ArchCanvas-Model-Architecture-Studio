@@ -1,0 +1,42 @@
+{
+  "protocol": "archcanvas-collapse-continuity-repair-contract/1",
+  "status": "diagnosis-and-contract-only; implementation-awaits-root-notice",
+  "problem": "A directly collapsed ancestor keeps latent descendant expandedIds. Actual displayed frontier matches an earlier cached overview, but the current all-expandedIds cache key misses it and leaves expansion displacement in downstream siblings.",
+  "effectiveFrontier": "An expanded container contributes to the displayed-frontier key only if every containment ancestor is also expanded. A root contributes when itself expanded. All raw expandedIds remain unchanged except the explicit user toggle.",
+  "newCacheSemantics": [
+    "Key new snapshots by effective visible expansions, deterministically sorted using canonical IDs, without schema change.",
+    "Restore only nodes visible in the destination frontier. Keep operated container local anchor and all currently pinned subtrees unchanged.",
+    "Keep hidden descendant positions in live document.layout. Destination overview snapshots must not overwrite hidden local layout/expansion memory.",
+    "Preserve existing direct-user move synchronization into all snapshots. Do not change aliases, styles, annotations, page, canonical architecture, source bytes or source/IR digest.",
+    "Expansion still uses bounded neighbor-growth repair only when no trustworthy matching snapshot exists; collapse does not regenerate an unrelated full layout."
+  ],
+  "legacyCompatibility": {
+    "exactEffectiveKeyFirst": true,
+    "oldKeyReader": "For historical all-expandedIds keys, project their declared IDs through the same canonical ancestor criterion. Validate that every token identifies a real expandable node before treating it as a legacy candidate.",
+    "ambiguousLegacyCandidates": "If several compatible legacy keys disagree on visible positions, retain the current arrangement and report/record the bounded compatibility limit; do not pick a lexical arbitrary layout or silently compact.",
+    "criticalPreSaveCase": "The actual already-bad collapsed rev14 document has rawKey!=effectiveKey and an existing compact effective snapshot. On the next explicit toggle, blindly writing the current stretched layout into that effective key would destroy the only correct prior geometry. Preserve an already-present matching effective snapshot when transitioning a legacy latent state; ordinary user moves already update it. Root must review this rule and its ambiguity limits before implementation.",
+    "saveReopen": "Use unchanged CanvasDocument schema and validated plain JSON. New keys coexist with valid old keys; read/save/reopen preserves latent expansion memory and manual coordinates. No automatic source execution or hidden runtime fallback."
+  },
+  "acceptanceRequirements": [
+    "Actual CNN root→repeat→block0→block1→direct-repeat-collapse restores overview visible coordinates to the previously saved root frontier; pool gap returns from1607 to baseline without clearing child expandedIds.",
+    "Re-expanding repeat restores both expanded child modules and their exact local child arrangements, with operated/root anchors unchanged.",
+    "Repeat ancestor collapse and root ancestor collapse retain hidden expansion/selection memories and restore correct overview frontiers; multiple independent roots are handled by ancestor visibility rather than special CNN labels.",
+    "A deliberate downstream move before or after collapse propagates into frontier snapshots and survives cycles; hidden child local moves survive ancestor collapse/reopen.",
+    "Pinned downstream nodes and pinned descendants remain at their prior global coordinates under all toggles. Any retained collision is explicit rather than moving a protected object.",
+    "Undo/redo restore exact nonrevision document state and history semantics; save/reopen/import JSON preserve effective keys plus hidden expansion/layout memory.",
+    "Legacy raw-key documents with one compatible snapshot restore correctly; conflicting compatible candidates use a deterministic conservative policy and retain evidence rather than arbitrary reflow.",
+    "Independent expected visible geometry/architecture invariants come from pre-change actual snapshots or hand-authored contract fixtures, not the new implementation's own output.",
+    "Actual CUA native direct ancestor collapse, reexpand, manual move, undo/redo, save/reopen and same-revision export require new build-bound evidence; pre-change mono/CNN screenshots are retained as failed continuity evidence."
+  ],
+  "prohibitedWorkarounds": [
+    "Delete hidden descendant expandedIds on ancestor collapse",
+    "Reset document.layout or createDocument to recalculate everything",
+    "Move pinned objects to hide retained overlaps",
+    "Overwrite old browser/raw/seal receipts with new expected coordinates",
+    "Claim display continuity from source-only tests or reuse old browser certification for new build"
+  ],
+  "modelsExecuted": false,
+  "productEdited": false,
+  "humanParticipants": 0,
+  "m4Complete": false
+}

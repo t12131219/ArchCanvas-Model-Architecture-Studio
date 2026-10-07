@@ -1,0 +1,440 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-06T03:51:33.823958+00:00",
+  "reviewer": "AI subagent guidance_acceptance; not human",
+  "stage": "source-and-checks-readback-attempt-3",
+  "scope": "Only final source and current relevant tests/build receipts. Browser behavior/pixels and final document seal are not certified by this source report.",
+  "inputs": [
+    {
+      "path": "studio/src/AuthoringStudio.tsx",
+      "bytes": 45247,
+      "sha256": "764e64471803bf5042102ef40a9ffe003bde6e73cd567e5513c7784fe9a00cf6"
+    },
+    {
+      "path": "studio/src/AuthoringStudio.css",
+      "bytes": 10674,
+      "sha256": "816f2d7bf9d2557badcd3f095e194bb80c1f2c2ee804a20dc201baf2db711c87"
+    },
+    {
+      "path": "studio/src/draftParameterHelp.ts",
+      "bytes": 8551,
+      "sha256": "fd84c1482c527ed940eab235788215258ef798bc82255e4a0e2b15b1d04abe40"
+    },
+    {
+      "path": "studio/src/draftValidation.ts",
+      "bytes": 9525,
+      "sha256": "2a9de5e5f0815051778961775c80ef85d8375b56f6bb660d4034d1ffea738496"
+    },
+    {
+      "path": "studio/src/api.ts",
+      "bytes": 11399,
+      "sha256": "38f4bbe9d8f61d4f1bac798b02acdba2cf29028b7574d8816f9cf7a4deda3a92"
+    },
+    {
+      "path": "studio/src/authoring.ts",
+      "bytes": 13097,
+      "sha256": "47781941259f1f70d69d00ff0276efff6572ac69399a3a6b8d502f44ad2d0571"
+    },
+    {
+      "path": "studio/src/authoringFeedback.ts",
+      "bytes": 3688,
+      "sha256": "d66aed97645a579917130f2d1783fa4f31bca1a926805c0ee12bfbe5d2920f2a"
+    },
+    {
+      "path": "studio/src/draftPortPresentation.ts",
+      "bytes": 1157,
+      "sha256": "bc1663fe66ee91f3b442f7aad74adff88bebdc01e215c6aca00b77da088905e6"
+    },
+    {
+      "path": "studio/tests/draft-validation-independent.test.ts",
+      "bytes": 11528,
+      "sha256": "3b909a9a850b540d0c87c276b7e496de90862caa959ee10d368b0963302d3b1c"
+    },
+    {
+      "path": "studio/package.json",
+      "bytes": 613,
+      "sha256": "882a2cbbb7d28534e88273309127d8a4113cd134d20b0c9b2b8122a763e0bcb7"
+    },
+    {
+      "path": "src/archcanvas_authoring/draft.py",
+      "bytes": 43984,
+      "sha256": "cce519d8ae9e865fedccb5981b34a9884c51cceca43c951eff59333ba322231d"
+    },
+    {
+      "path": "docs/evidence/m4-authoring-guidance-work/before-implementation-attempt-1/manifest.json",
+      "bytes": 4075,
+      "sha256": "8b38636cd7e39b66cff17b94cc10f2046d49cea5ba60cfffa100e1a0fb3e74c1"
+    },
+    {
+      "path": "docs/evidence/m4-authoring-guidance-work/acceptance-attempt-1/contract.json",
+      "bytes": 5163,
+      "sha256": "a241b02d42f079d4de63560bd463b841308bf2f36ce69333a59045d7a2173244"
+    },
+    {
+      "path": "docs/evidence/m4-authoring-guidance-work/acceptance-attempt-1/failed-receipt-readback-attempt-1.json",
+      "bytes": 1743,
+      "sha256": "e81da4133faccbb9d3b95bb2ba2d7c6b0d2b1c0df3e4dcd6add46038ef8502b1"
+    },
+    {
+      "path": "docs/evidence/m4-authoring-guidance-work/acceptance-attempt-1/source-and-checks-report-attempt-2.json",
+      "bytes": 13017,
+      "sha256": "d09f3bde7d23779e712e14fb8e2b54832c66e744219d5fb25b4e8848ae0d9fc1"
+    },
+    {
+      "path": "docs/evidence/m4-authoring-guidance-work/before-connection-notice-fix-attempt-1/manifest.json",
+      "bytes": 1349,
+      "sha256": "f1455140a84b21a8e22b57d71806b480d77984a51fb3a7a19caec1fc75569213"
+    }
+  ],
+  "checks": [
+    {
+      "id": "C1",
+      "verdict": "source-pass; browser-pending",
+      "finding": "check()仅调用api.validateDraft，经readDraftValidation读静态声明。UI node/inspector/tooltip使用声明标记；tooltip无形状时写模型尚未执行，完整检查通过也写模型尚未执行。生成对话框保持静态核对和未执行边界。backend validate已有verification精确静态字符串。"
+    },
+    {
+      "id": "C2",
+      "verdict": "source-and-helper-test-pass; React-deferred-browser-not-tested",
+      "finding": "draftValidationKey含schema/mode/id/node ID+kind+parameters/edge ID+endpoints，忽略layout/display name/title/revision；receiveValidation依次核对result.draft key、snapshot key和currentRef key，失败响应同样key guard；boot还要求初始对象未变，属于更严格而非错绑。响应格式/dtype/rank/order/issues由read校验。"
+    },
+    {
+      "id": "C3",
+      "verdict": "source-and-helper-test-pass; browser-pending",
+      "finding": "complete=false issues保留编辑，没有永久操作锁。issue的单nodeId或nodeIds逐个定位按钮仅使用当前唯一ID，经已有resolveDraftFeedback核对catalog注册parameter/port；没有从label/文本猜目标，双端口portIds不制造单portId。shape error通过reportError定位，参数编辑仍可用。"
+    },
+    {
+      "id": "C4",
+      "verdict": "source-and-helper-test-pass; browser-pending",
+      "finding": "checked按当前semantic key与无invalidFields派生。仅move/alias/title/revision保持；参数/node/kind/edge改变不匹配旧结果而不显示，undo回原semantics可恢复仍适用结果，redo改semantics又隐藏。独立测试期望涵盖四向移动和每类绑定/参数变化，但未执行React handler。"
+    },
+    {
+      "id": "C5",
+      "verdict": "bounded-source-pass; pixel-and-real-hit-pending",
+      "finding": "tooltip在svg transform外以CSS 12px/11px显示，pointer-events:none。hover/focus独立state且hover优先，离开hover仍可回焦点；原portPoint/draftPortPresentation字节不变，hit仍由原函数计算并保留peerSpacing。useLayoutEffect测实际tooltip宽高按viewport上/下避让和clamp；极长内容受maxHeight+overflow:hidden限制，不证明全文可见。"
+    },
+    {
+      "id": "C6",
+      "verdict": "bounded-source-pass; browser-pending",
+      "finding": "独立AST覆盖确认12个有参数模块/34字段，无缺失或额外说明。显示中文label并保留技术name/aria-label，guidance只读、副本返回，不改变parse/commit/schema。数组有通用说明要求数字逗号分隔、无需方括号。连线Escape取消后notice改为已取消连线；参数Escape沿原restore清invalid并恢复有效值，浏览器事实仍待验证。 修复旧error优先遮住连接开始/取消notice：两个输出起点和仅pending的Escape明确clearError；普通无pending error保留。"
+    },
+    {
+      "id": "C7",
+      "verdict": "source-pass; browser-history-pending",
+      "finding": "receiveValidation、check、hint state/layout effect仅更新反馈/视图状态，不调用changeDraft/arrangeDraft；hover/focus/tooltip/取消不写draft或history。authoring/feedback/port/API与before快照精确相同，原视觉history路径保留。定位只改selection/camera，用户节点不移动。"
+    },
+    {
+      "id": "C8",
+      "verdict": "receipt-readback-pass; browser-and-final-doc-seal-pending",
+      "finding": "最终attempt-3 target48/48、suite284/284、build exit0。三个receipt的before/after输入相等，输入/日志/infrastructure及builtFiles逐个独立读回无mismatch。数字来自原始stdout，不依赖receipt自述。没有重跑测试/构建、安装依赖、执行模型或操作浏览器；证据为AI，不能提升真人或presentation性能认证。attempt-1的superseded读取失败单独保留，不称产品失败，不声称旧dist资产当前可读回。 attempt-2报告保持只记录DS2当时源/checks，最终以此attempt-3当前BdHHz6yy构建读回为准。"
+    }
+  ],
+  "parameterCoverage": {
+    "backendModuleCount": 17,
+    "parameterModuleCount": 12,
+    "registeredFieldCount": 34,
+    "helpFieldCount": 34,
+    "missing": {},
+    "extra": {},
+    "mapsExact": true,
+    "backendFields": {
+      "Input": [
+        "shape",
+        "dtype"
+      ],
+      "Output": [],
+      "Linear": [
+        "in_features",
+        "out_features",
+        "bias"
+      ],
+      "ReLU": [],
+      "GELU": [
+        "approximate"
+      ],
+      "SiLU": [],
+      "Identity": [],
+      "Dropout": [
+        "p"
+      ],
+      "Flatten": [
+        "start_dim",
+        "end_dim"
+      ],
+      "Conv2d": [
+        "in_channels",
+        "out_channels",
+        "kernel_size",
+        "stride",
+        "padding",
+        "dilation",
+        "groups",
+        "bias"
+      ],
+      "MaxPool2d": [
+        "kernel_size",
+        "stride",
+        "padding",
+        "dilation",
+        "ceil_mode"
+      ],
+      "AdaptiveAvgPool2d": [
+        "output_size"
+      ],
+      "BatchNorm2d": [
+        "num_features",
+        "eps",
+        "momentum",
+        "affine",
+        "track_running_stats"
+      ],
+      "LayerNorm": [
+        "normalized_shape",
+        "eps",
+        "elementwise_affine"
+      ],
+      "Embedding": [
+        "num_embeddings",
+        "embedding_dim"
+      ],
+      "Add": [],
+      "Concat": [
+        "dim"
+      ]
+    },
+    "helpFields": {
+      "Input": [
+        "shape",
+        "dtype"
+      ],
+      "Linear": [
+        "in_features",
+        "out_features",
+        "bias"
+      ],
+      "GELU": [
+        "approximate"
+      ],
+      "Dropout": [
+        "p"
+      ],
+      "Flatten": [
+        "start_dim",
+        "end_dim"
+      ],
+      "Conv2d": [
+        "in_channels",
+        "out_channels",
+        "kernel_size",
+        "stride",
+        "padding",
+        "dilation",
+        "groups",
+        "bias"
+      ],
+      "MaxPool2d": [
+        "kernel_size",
+        "stride",
+        "padding",
+        "dilation",
+        "ceil_mode"
+      ],
+      "AdaptiveAvgPool2d": [
+        "output_size"
+      ],
+      "BatchNorm2d": [
+        "num_features",
+        "eps",
+        "momentum",
+        "affine",
+        "track_running_stats"
+      ],
+      "LayerNorm": [
+        "normalized_shape",
+        "eps",
+        "elementwise_affine"
+      ],
+      "Embedding": [
+        "num_embeddings",
+        "embedding_dim"
+      ],
+      "Concat": [
+        "dim"
+      ]
+    },
+    "method": "Python AST reads _CATALOG; indentation-scoped TS field declarations. No module/model import."
+  },
+  "unchangedComparedWithBefore": {
+    "studio/src/authoring.ts": true,
+    "studio/src/authoringFeedback.ts": true,
+    "studio/src/draftPortPresentation.ts": true,
+    "studio/src/api.ts": true
+  },
+  "receipts": [
+    {
+      "kind": "target",
+      "receipt": {
+        "path": "docs/evidence/m4-authoring-guidance-work/checks/target-attempt-3/receipt.json",
+        "bytes": 37791,
+        "sha256": "124e0700f7ecf9c4115417186bbfbc2312ea9c464bfe2e87d573304c57d4bd7c"
+      },
+      "exitCode": 0,
+      "sourceBeforeAfterExact": true,
+      "inputsBeforeAfterEqual": true,
+      "bindingCounts": {
+        "inputsBefore": 104,
+        "inputsAfter": 104,
+        "logs": 2,
+        "infrastructure": 3,
+        "builtFiles": 0
+      },
+      "uniqueBindingsChecked": 109,
+      "mismatches": [],
+      "stdoutSummary": {
+        "tests": 48,
+        "pass": 48,
+        "fail": 0,
+        "skipped": 0,
+        "todo": 0,
+        "cancelled": 0
+      },
+      "dependenciesInstalled": false,
+      "modelsExecuted": false,
+      "builtFiles": []
+    },
+    {
+      "kind": "suite",
+      "receipt": {
+        "path": "docs/evidence/m4-authoring-guidance-work/checks/suite-attempt-3/receipt.json",
+        "bytes": 37546,
+        "sha256": "8daf3eed3e3d659b25d7096500d90ca2fe53c9d4eb65f48f19897dad8bc65061"
+      },
+      "exitCode": 0,
+      "sourceBeforeAfterExact": true,
+      "inputsBeforeAfterEqual": true,
+      "bindingCounts": {
+        "inputsBefore": 104,
+        "inputsAfter": 104,
+        "logs": 2,
+        "infrastructure": 3,
+        "builtFiles": 0
+      },
+      "uniqueBindingsChecked": 109,
+      "mismatches": [],
+      "stdoutSummary": {
+        "tests": 284,
+        "pass": 284,
+        "fail": 0,
+        "skipped": 0,
+        "todo": 0,
+        "cancelled": 0
+      },
+      "dependenciesInstalled": false,
+      "modelsExecuted": false,
+      "builtFiles": []
+    },
+    {
+      "kind": "build",
+      "receipt": {
+        "path": "docs/evidence/m4-authoring-guidance-work/checks/build-attempt-3/receipt.json",
+        "bytes": 38080,
+        "sha256": "8aedbec8efc519008954d62076d642ff03f657b0755e9ca903b221a3d56a773f"
+      },
+      "exitCode": 0,
+      "sourceBeforeAfterExact": true,
+      "inputsBeforeAfterEqual": true,
+      "bindingCounts": {
+        "inputsBefore": 104,
+        "inputsAfter": 104,
+        "logs": 2,
+        "infrastructure": 3,
+        "builtFiles": 3
+      },
+      "uniqueBindingsChecked": 112,
+      "mismatches": [],
+      "stdoutSummary": {},
+      "dependenciesInstalled": false,
+      "modelsExecuted": false,
+      "builtFiles": [
+        {
+          "path": "studio/dist/assets/index-BdHHz6yy.js",
+          "bytes": 476896,
+          "sha256": "149d74f6052a4c0ec93f7ebe3b0170a5b5ad95d96b5c14b2b494c69392067c1e"
+        },
+        {
+          "path": "studio/dist/assets/index-DEZFMW6R.css",
+          "bytes": 38804,
+          "sha256": "181f4da56a2ab408396f954dec687656c48897f79a9ea0acaea1173d72289468"
+        },
+        {
+          "path": "studio/dist/index.html",
+          "bytes": 477,
+          "sha256": "ddb8617df88e86b9e41a9b85d7144d9d662967c504a78801ea9ba87d57326ae2"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Validation reader checks digest format, not digest recomputation or independent tensor inference; backend remains authority.",
+    "Nine new helper tests do not directly exercise deferred React response handlers.",
+    "Tooltip maximum height may clip extremely long content; actual raster/hit evidence pending.",
+    "AI participant review is not real human researcher acceptance; no genuine presentation performance proof in this report."
+  ],
+  "verdict": "bounded-source-and-final-attempt-3-checks-pass; notice fix source/pass with browser rerun pending; no product-source correctness blocker observed within scope",
+  "connectionNoticeFix": {
+    "reviewScope": "Exactly three-line diff from archived DS2 source; no product edits by reviewer",
+    "before": {
+      "path": "docs/evidence/m4-authoring-guidance-work/before-connection-notice-fix-attempt-1/files/studio/src/AuthoringStudio.tsx",
+      "bytes": 45201,
+      "sha256": "03b965129267b51174b7eef7c605719de58a5fd98b21c21bb5b6cdc0e6ec3bfb"
+    },
+    "after": {
+      "path": "studio/src/AuthoringStudio.tsx",
+      "bytes": 45247,
+      "sha256": "764e64471803bf5042102ef40a9ffe003bde6e73cd567e5513c7784fe9a00cf6"
+    },
+    "changedLineCount": 3,
+    "changes": [
+      {
+        "line": 226,
+        "before": "      if (event.key === 'Escape') { const pending = !!connection || gesture.current?.type === 'port'; cancel(); setSelection({}); if (pending) setNotice('已取消连线；选择输出端口即可重新连接。'); }",
+        "after": "      if (event.key === 'Escape') { const pending = !!connection || gesture.current?.type === 'port'; cancel(); setSelection({}); if (pending) { clearError(); setNotice('已取消连线；选择输出端口即可重新连接。'); } }"
+      },
+      {
+        "line": 248,
+        "before": "      const p = point(event.clientX, event.clientY); setConnection({ endpoint, ...p });",
+        "after": "      const p = point(event.clientX, event.clientY); clearError(); setConnection({ endpoint, ...p });"
+      },
+      {
+        "line": 340,
+        "before": "                  if (port.direction === 'out') { cancel(); setFocusedPort({ nodeId: node.id, portId: port.id }); setConnection({ endpoint: { nodeId: node.id, portId: port.id }, ...p }); setNotice('连接起点已选中；点击目标输入端口，Escape 取消。'); }",
+        "after": "                  if (port.direction === 'out') { cancel(); clearError(); setFocusedPort({ nodeId: node.id, portId: port.id }); setConnection({ endpoint: { nodeId: node.id, portId: port.id }, ...p }); setNotice('连接起点已选中；点击目标输入端口，Escape 取消。'); }"
+      }
+    ],
+    "diff": "--- docs/evidence/m4-authoring-guidance-work/before-connection-notice-fix-attempt-1/files/studio/src/AuthoringStudio.tsx\n+++ studio/src/AuthoringStudio.tsx\n@@ -223,7 +223,7 @@\n   useEffect(() => {\n     const key = (event: KeyboardEvent) => {\n       if ((event.target as Element)?.closest('input,textarea,select') || busy || generated) return;\n-      if (event.key === 'Escape') { const pending = !!connection || gesture.current?.type === 'port'; cancel(); setSelection({}); if (pending) setNotice('已取消连线；选择输出端口即可重新连接。'); }\n+      if (event.key === 'Escape') { const pending = !!connection || gesture.current?.type === 'port'; cancel(); setSelection({}); if (pending) { clearError(); setNotice('已取消连线；选择输出端口即可重新连接。'); } }\n       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); travel(event.shiftKey ? 'redo' : 'undo'); }\n       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); void save(); }\n       if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); deleteSelection(); }\n@@ -245,7 +245,7 @@\n       if (module?.ports.find(item => item.id === endpoint.portId)?.direction === 'in') {\n         if (connection) connect(connection.endpoint, endpoint); else setNotice('先点击一个输出端口，再选择此输入端口。'); return;\n       }\n-      const p = point(event.clientX, event.clientY); setConnection({ endpoint, ...p });\n+      const p = point(event.clientX, event.clientY); clearError(); setConnection({ endpoint, ...p });\n       gesture.current = { type: 'port', pointer: event.pointerId, clientX: event.clientX, clientY: event.clientY, camera, base, endpoint };\n     } else if (node) {\n       setConnection(null); const nodeId = node.getAttribute('data-draft-node')!; setSelection({ node: nodeId });\n@@ -337,7 +337,7 @@\n                 return <g key={port.id} data-node={node.id} data-draft-port={port.id} data-draft-port-flow={flow} className={`draft-port ${port.direction} ${active ? 'active' : ''} ${feedback?.target?.nodeId === node.id && feedback.target.portId === port.id ? 'has-error' : ''}`} role=\"button\" tabIndex={0} aria-pressed={active} aria-describedby={portHint?.nodeId === node.id && portHint.portId === port.id && tool !== 'pan' ? 'draft-port-tooltip' : undefined} aria-label={`${node.label} ${port.name} ${port.direction === 'in' ? '输入端口' : '输出端口'}`} onPointerEnter={() => setHoveredPort({ nodeId: node.id, portId: port.id })} onPointerLeave={() => setHoveredPort(null)} onFocus={() => setFocusedPort({ nodeId: node.id, portId: port.id })} onBlur={() => setFocusedPort(null)} onKeyDown={event => {\n                   if (event.key !== 'Enter' && event.key !== ' ') return;\n                   event.preventDefault(); event.stopPropagation(); if (busy || tool === 'pan') return;\n-                  if (port.direction === 'out') { cancel(); setFocusedPort({ nodeId: node.id, portId: port.id }); setConnection({ endpoint: { nodeId: node.id, portId: port.id }, ...p }); setNotice('连接起点已选中；点击目标输入端口，Escape 取消。'); }\n+                  if (port.direction === 'out') { cancel(); clearError(); setFocusedPort({ nodeId: node.id, portId: port.id }); setConnection({ endpoint: { nodeId: node.id, portId: port.id }, ...p }); setNotice('连接起点已选中；点击目标输入端口，Escape 取消。'); }\n                   else if (connection) connect(connection.endpoint, { nodeId: node.id, portId: port.id });\n                   else setNotice('先点击一个输出端口，再选择此输入端口。');\n                 }}><rect className=\"draft-port-hit\" x={presentation.hit.x} y={presentation.hit.y} width={presentation.hit.width} height={presentation.hit.height} rx=\"4\" fill=\"transparent\" stroke=\"none\" pointerEvents=\"all\" /><circle className=\"draft-port-dot\" cx={x} cy={y} r=\"5\" /><text x={presentation.labelX} y={presentation.labelY} textAnchor={presentation.textAnchor}>{port.name}</text></g>;\n",
+    "checks": [
+      {
+        "id": "N1",
+        "verdict": "source-pass; final-browser-pending",
+        "finding": "Escape在调用cancel前捕获connection或port gesture的pending，仅pending分支clearError并显示取消notice；无pending时取消选择/手势但保留普通error/feedback。参数输入目标仍由原early return交给字段自己的Escape恢复处理。"
+      },
+      {
+        "id": "N2",
+        "verdict": "source-pass; final-browser-pending",
+        "finding": "pointer选中输出端口和keyboard Enter/Space选输出端口都先clearError，旧error不再抢占footer的连接开始notice。input单击行为不清错，错误的连接结果仍经原reportError展示。"
+      },
+      {
+        "id": "N3",
+        "verdict": "source-pass",
+        "finding": "diff仅3行插入clearError（内部只setError与setFeedback），没有changeDraft、setHistory、端点、routes、hit或参数修改；普通pending取消仍无history项，节点坐标和binding原样保持。"
+      },
+      {
+        "id": "N4",
+        "verdict": "archive-and-current-readback-pass",
+        "finding": "DS2中间源与asset按before-connection-notice-fix manifest完整归档；分别读archive path字节而不要求旧dist仍在current。此存档是修复前证据，不是最终构建认证。"
+      }
+    ],
+    "archiveRecordsChecked": 4,
+    "archiveMismatches": [],
+    "actualBrowserBasis": "Root observed error notice precedence on DS2; this review has not operated browser nor independently certified final pixels."
+  }
+}

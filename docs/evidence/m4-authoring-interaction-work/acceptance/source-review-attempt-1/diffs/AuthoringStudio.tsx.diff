@@ -1,0 +1,64 @@
+--- frozen-before/studio/src/AuthoringStudio.tsx
++++ current/studio/src/AuthoringStudio.tsx
+@@ -3,7 +3,7 @@
+ import type { GeneratedDraft } from './api';
+ import { Icon } from './icons';
+ import { addDraftNode, arrangeDraft, blankDraft, changeDraft, connectDraft, DRAFT_HEIGHT, DRAFT_WIDTH, draftHistory, draftRoutes, nextDraftPosition, parseDraftCache, portPoint, removeDraftNode, travelDraft } from './authoring';
+-import type { AuthoredDraft, DraftCatalog, DraftEndpoint, DraftHistory, DraftModule, DraftParameter, DraftValue } from './authoring';
++import type { AuthoredDraft, DraftCatalog, DraftEndpoint, DraftFlow, DraftHistory, DraftModule, DraftParameter, DraftValue } from './authoring';
+ import './AuthoringStudio.css';
+ import { beginCameraPan, cameraAtPanInput } from './cameraGesture';
+ import type { CameraPan } from './cameraGesture';
+@@ -11,6 +11,7 @@
+ import type { DraftFeedback } from './authoringFeedback';
+ import { draftPresets, draftPresetSize, draftPresetUnavailable, insertDraftPreset } from './authoringPresets';
+ import type { DraftPreset } from './authoringPresets';
++import { draftPortPresentation } from './draftPortPresentation';
+ 
+ const CACHE = 'archcanvas.authored-workspace.v1';
+ type Camera = { x: number; y: number; zoom: number };
+@@ -51,7 +52,7 @@
+   const draft = preview ?? history.draft;
+   const selected = draft.nodes.find(node => node.id === selection.node);
+   const selectedModule = catalog?.modules.find(module => module.kind === selected?.kind);
+-  const geometry = useMemo(() => catalog ? draftRoutes(draft, catalog) : { routes: [], overlaps: [] }, [draft, catalog]);
++  const geometry = useMemo(() => catalog ? draftRoutes(draft, catalog) : { routes: [], overlaps: [], flow: 'horizontal' as const, nodeFlows: {} as Record<string, DraftFlow> }, [draft, catalog]);
+   const dirty = history.draft.revision !== savedRevision;
+ 
+   useEffect(() => {
+@@ -259,7 +260,7 @@
+   const presetMatches = draftPresets.filter(preset => `${preset.id} ${preset.label} ${preset.description}`.toLowerCase().includes(query));
+   const groups = [...new Set(matches.map(module => module.category))];
+   const connectionNode = draft.nodes.find(node => node.id === connection?.endpoint.nodeId), connectionModule = catalog?.modules.find(module => module.kind === connectionNode?.kind);
+-  const start = connection && connectionNode && connectionModule ? portPoint(connectionNode, connectionModule, connection.endpoint.portId) : null;
++  const start = connection && connectionNode && connectionModule ? portPoint(connectionNode, connectionModule, connection.endpoint.portId, geometry.nodeFlows[connectionNode.id] ?? 'horizontal') : null;
+   const blocked = geometry.routes.filter(route => route.blockedBy.length);
+ 
+   return <div className="authoring-studio">
+@@ -269,11 +270,24 @@
+       <main className="authoring-main"><div className="authoring-toolbar"><button aria-pressed={tool === 'select'} onClick={() => { cancel(); setTool('select'); }}><Icon name="arrow" size={16} />选择</button><button aria-pressed={tool === 'pan'} onClick={() => { cancel(); setTool('pan'); }}><Icon name="hand" size={16} />平移</button><button aria-label="撤销草稿" disabled={busy || !history.past.length} onClick={() => travel('undo')}><Icon name="undo" size={16} /></button><button aria-label="重做草稿" disabled={busy || !history.future.length} onClick={() => travel('redo')}><Icon name="redo" size={16} /></button><button disabled={busy || !draft.nodes.length} onClick={arrange}>按连接排版</button><button onClick={() => fit()}><Icon name="fit" size={16} />适合画布</button><div className="authoring-zoom"><button aria-label="草稿缩小" onClick={() => zoom(1 / 1.2)}>−</button><button aria-label="草稿缩放百分比" onClick={() => zoom(1 / camera.zoom)}>{Math.round(camera.zoom * 100)}%</button><button aria-label="草稿放大" onClick={() => zoom(1.2)}>+</button></div></div>
+         {(geometry.overlaps.length > 0 || blocked.length > 0) && <div className="draft-layout-warning" role="status">{geometry.overlaps.length ? `${geometry.overlaps.length} 组模块重叠。` : ''}{blocked.length ? `${blocked.length} 条连线无法避开模块。` : ''}可移动模块或使用“按连接排版”。</div>}
+         <div className="draft-viewport" onDragOver={event => { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; }} onDrop={event => { event.preventDefault(); const preset = draftPresets.find(item => item.id === event.dataTransfer.getData('application/x-archcanvas-preset')); if (preset) { const at = point(event.clientX, event.clientY); addPreset(preset, { x: at.x - DRAFT_WIDTH / 2, y: at.y - 30 }); return; } const module = catalog?.modules.find(item => item.kind === event.dataTransfer.getData('application/x-archcanvas-module')); if (module) { const at = point(event.clientX, event.clientY); add(module, { x: at.x - DRAFT_WIDTH / 2, y: at.y - 30 }); } }}>
+-          <svg ref={svgRef} aria-label="模型搭建画布" className={tool === 'pan' ? 'draft-pan' : ''} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={cancel} onLostPointerCapture={() => { if (gesture.current) cancel(); }}>
++          <svg ref={svgRef} aria-label="模型搭建画布" data-draft-flow={geometry.flow} className={tool === 'pan' ? 'draft-pan' : ''} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={cancel} onLostPointerCapture={() => { if (gesture.current) cancel(); }}>
+             <defs><pattern id="draft-grid" width={20 * camera.zoom} height={20 * camera.zoom} patternUnits="userSpaceOnUse" x={camera.x} y={camera.y}><circle cx="1" cy="1" r=".8" fill="#cedbd2" /></pattern><marker id="draft-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#628572" /></marker></defs><rect width="100%" height="100%" fill="url(#draft-grid)" />
+             <g transform={`translate(${camera.x} ${camera.y}) scale(${camera.zoom})`}>
+               {geometry.routes.map(route => <g key={route.id} data-draft-edge={route.id} className={selection.edge === route.id ? 'draft-edge selected' : 'draft-edge'}><path d={route.path} fill="none" stroke="transparent" strokeWidth="14" /><path d={route.path} fill="none" strokeWidth="1.8" markerEnd="url(#draft-arrow)" /></g>)}
+-              {draft.nodes.map(node => { const module = catalog?.modules.find(item => item.kind === node.kind); if (!module) return null; return <g key={node.id} data-draft-node={node.id} transform={`translate(${node.position.x} ${node.position.y})`} className={`draft-node ${selection.node === node.id ? 'selected' : ''} ${feedback?.target?.nodeId === node.id ? 'has-error' : ''}`} data-draft-error={feedback?.target?.nodeId === node.id ? 'true' : undefined}><rect width={DRAFT_WIDTH} height={DRAFT_HEIGHT} rx="9" /><rect className="draft-node-cap" x="1" y="1" width={DRAFT_WIDTH - 2} height="36" rx="8" /><text x="13" y="23" className="draft-node-title">{node.label.length > 19 ? `${node.label.slice(0, 18)}…` : node.label}</text><text x="13" y="92" className="draft-node-kind">{node.kind}</text>{feedback?.target?.nodeId === node.id && <g className="draft-error-badge"><circle cx="160" cy="21" r="9" /><text x="160" y="25" textAnchor="middle">!</text></g>}{module.ports.map(port => { const p = portPoint(node, module, port.id), x = p.x - node.position.x, y = p.y - node.position.y; return <g key={port.id} data-node={node.id} data-draft-port={port.id} className={`draft-port ${port.direction} ${feedback?.target?.nodeId === node.id && feedback.target.portId === port.id ? 'has-error' : ''}`} role="button" aria-label={`${node.label} ${port.name} ${port.direction === 'in' ? '输入端口' : '输出端口'}`}><circle cx={x} cy={y} r="11" fill="transparent" stroke="none" /><circle cx={x} cy={y} r="5" /><text x={port.direction === 'in' ? x + 12 : x - 12} y={y + 3} textAnchor={port.direction === 'in' ? 'start' : 'end'}>{port.name}</text></g>; })}</g>; })}
++              {draft.nodes.map(node => { const module = catalog?.modules.find(item => item.kind === node.kind); if (!module) return null; return <g key={node.id} data-draft-node={node.id} transform={`translate(${node.position.x} ${node.position.y})`} className={`draft-node ${selection.node === node.id ? 'selected' : ''} ${feedback?.target?.nodeId === node.id ? 'has-error' : ''}`} data-draft-error={feedback?.target?.nodeId === node.id ? 'true' : undefined}><rect width={DRAFT_WIDTH} height={DRAFT_HEIGHT} rx="9" /><rect className="draft-node-cap" x="1" y="1" width={DRAFT_WIDTH - 2} height="36" rx="8" /><text x="13" y="23" className="draft-node-title">{node.label.length > 19 ? `${node.label.slice(0, 18)}…` : node.label}</text><text x="13" y="92" className="draft-node-kind">{node.kind}</text>{feedback?.target?.nodeId === node.id && <g className="draft-error-badge"><circle cx="160" cy="21" r="9" /><text x="160" y="25" textAnchor="middle">!</text></g>}{module.ports.map(port => {
++                const flow = geometry.nodeFlows[node.id] ?? 'horizontal';
++                const p = portPoint(node, module, port.id, flow), x = p.x - node.position.x, y = p.y - node.position.y;
++                const peerCount = module.ports.filter(peer => peer.direction === port.direction).length;
++                const presentation = draftPortPresentation(port, x, y, flow, peerCount > 1 ? (flow === 'horizontal' ? 36 : DRAFT_WIDTH) / (peerCount + 1) : Infinity);
++                const active = connection?.endpoint.nodeId === node.id && connection.endpoint.portId === port.id;
++                return <g key={port.id} data-node={node.id} data-draft-port={port.id} data-draft-port-flow={flow} className={`draft-port ${port.direction} ${active ? 'active' : ''} ${feedback?.target?.nodeId === node.id && feedback.target.portId === port.id ? 'has-error' : ''}`} role="button" tabIndex={0} aria-pressed={active} aria-label={`${node.label} ${port.name} ${port.direction === 'in' ? '输入端口' : '输出端口'}`} onKeyDown={event => {
++                  if (event.key !== 'Enter' && event.key !== ' ') return;
++                  event.preventDefault(); event.stopPropagation(); if (busy || tool === 'pan') return;
++                  if (port.direction === 'out') { cancel(); setConnection({ endpoint: { nodeId: node.id, portId: port.id }, ...p }); setNotice('连接起点已选中；点击目标输入端口，Escape 取消。'); }
++                  else if (connection) connect(connection.endpoint, { nodeId: node.id, portId: port.id });
++                  else setNotice('先点击一个输出端口，再选择此输入端口。');
++                }}><rect className="draft-port-hit" x={presentation.hit.x} y={presentation.hit.y} width={presentation.hit.width} height={presentation.hit.height} rx="4" fill="transparent" stroke="none" pointerEvents="all" /><circle className="draft-port-dot" cx={x} cy={y} r="5" /><text x={presentation.labelX} y={presentation.labelY} textAnchor={presentation.textAnchor}>{port.name}</text></g>;
++              })}</g>; })}
+               {start && connection && <path d={`M ${start.x} ${start.y} L ${connection.x} ${connection.y}`} stroke="#b8864e" strokeWidth="2" strokeDasharray="6 4" fill="none" pointerEvents="none" />}
+             </g>
+           </svg>{!draft.nodes.length && <div className="draft-empty"><span>从零搭建一个模型</span><h2>把第一个 Input 拖到这里</h2><p>再加入 Linear、激活函数与 Output。<br />也可以从左侧“网络起点”加入完整 MLP、CNN 或残差网络。</p><button disabled={!catalog} onClick={() => { const input = catalog?.modules.find(module => module.kind === 'Input'); if (input) add(input, { x: 80, y: 120 }); }}>添加输入</button></div>}

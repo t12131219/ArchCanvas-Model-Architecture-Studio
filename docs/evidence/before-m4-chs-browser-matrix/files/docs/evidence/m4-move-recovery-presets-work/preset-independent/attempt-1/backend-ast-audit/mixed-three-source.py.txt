@@ -1,0 +1,36 @@
+"""Fresh ArchCanvas authored model; static declarations are not runtime verification."""
+import torch
+from torch import nn
+
+
+class AuthoredModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.node_9ffe2f5896ccd006 = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)
+        self.node_e46e5b92dede5147 = nn.Conv2d(in_channels=3, out_channels=8, kernel_size=[3, 3], stride=[1, 1], padding=[1, 1], dilation=[1, 1], groups=1, bias=True, dtype=torch.float32)
+        self.node_5a9200d072ed337f = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)
+        self.node_bfc934632174b0a5 = nn.ReLU()
+        self.node_6d06d9e59bb8a9ff = nn.ReLU()
+        self.node_182c804d0f3daffa = nn.ReLU()
+        self.node_9b1c56629ff23362 = nn.Linear(in_features=32, out_features=4, bias=True, dtype=torch.float32)
+        self.node_410290cb980b5eb8 = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=[0, 0], dilation=[1, 1], ceil_mode=False)
+        self.node_fcc58420595bcda6 = nn.Linear(in_features=32, out_features=16, bias=True, dtype=torch.float32)
+        self.node_6712f7494f30bc28 = nn.AdaptiveAvgPool2d(output_size=[1, 1])
+        self.node_b9643519e5268b6f = nn.Flatten(start_dim=1, end_dim=-1)
+        self.node_850d59b5054d276d = nn.Linear(in_features=8, out_features=4, bias=True, dtype=torch.float32)
+
+    def forward(self, node_591c6010de81b540, node_f3032599fb32f315, node_18f5457509341486):
+        node_9ffe2f5896ccd006 = self.node_9ffe2f5896ccd006(node_591c6010de81b540)
+        node_e46e5b92dede5147 = self.node_e46e5b92dede5147(node_f3032599fb32f315)
+        node_5a9200d072ed337f = self.node_5a9200d072ed337f(node_18f5457509341486)
+        node_bfc934632174b0a5 = self.node_bfc934632174b0a5(node_9ffe2f5896ccd006)
+        node_6d06d9e59bb8a9ff = self.node_6d06d9e59bb8a9ff(node_e46e5b92dede5147)
+        node_182c804d0f3daffa = self.node_182c804d0f3daffa(node_5a9200d072ed337f)
+        node_9b1c56629ff23362 = self.node_9b1c56629ff23362(node_bfc934632174b0a5)
+        node_410290cb980b5eb8 = self.node_410290cb980b5eb8(node_6d06d9e59bb8a9ff)
+        node_fcc58420595bcda6 = self.node_fcc58420595bcda6(node_182c804d0f3daffa)
+        node_6712f7494f30bc28 = self.node_6712f7494f30bc28(node_410290cb980b5eb8)
+        node_d0952558bd816011 = node_fcc58420595bcda6 + node_18f5457509341486
+        node_b9643519e5268b6f = self.node_b9643519e5268b6f(node_6712f7494f30bc28)
+        node_850d59b5054d276d = self.node_850d59b5054d276d(node_b9643519e5268b6f)
+        return {'n_9ff9f840bccc433581043fd7507a9126': node_9b1c56629ff23362, 'n_09e1cd6893b240b495248255ee603ff9': node_850d59b5054d276d, 'n_f360baa72365438a90cacc733593e730': node_d0952558bd816011}

@@ -1,0 +1,26 @@
+--- before/studio/src/core/scene.ts
++++ after/studio/src/core/scene.ts
+@@ -11,10 +11,12 @@
+ 
+ type Box = { x: number; y: number; width: number; height: number };
+ const num = (n: number) => Math.round(n * 10) / 10;
+-function subtitle(n: ArchitectureNode, callCount: number): string {
++function subtitle(n: ArchitectureNode, callCount: number, hasDisplayAlias: boolean): string {
+   if (n.evidence === 'opaque') return 'unresolved · opaque boundary';
+   if (n.repeat) return `${n.repeat.count} × ${n.repeat.sharing === 'shared' ? 'shared instances' : 'independent instances'}`;
+-  if (n.outputPath) return compactOutputPath(n.outputPath);
++  // An explicit visual alias supplies the output caption. The real return path
++  // remains in source facts and SVG titles/metadata; never infer key provenance.
++  if (n.outputPath) return hasDisplayAlias ? 'model output' : compactOutputPath(n.outputPath);
+   if (callCount > 1) return `shared instance · ${callCount} calls`;
+   const p = n.parameters;
+   if (p.in_features !== undefined && p.out_features !== undefined) return `${p.in_features} → ${p.out_features}`;
+@@ -113,7 +115,7 @@
+     const mono = document.pageSpec.preset === 'monochrome';
+     const node: SceneNode = {
+       ...b, x: px + b.x, y: py + b.y, localX: b.x, localY: b.y,
+-      id, parentId: n.parentId, label: document.displayAliases[id] ?? n.label, subtitle: subtitle(n, factsById.get(id)?.callCount ?? 0),
++      id, parentId: n.parentId, label: document.displayAliases[id] ?? n.label, subtitle: subtitle(n, factsById.get(id)?.callCount ?? 0, Object.hasOwn(document.displayAliases, id)),
+       headerHeight: Math.max(TOKENS.header, wrapText(document.displayAliases[id] ?? n.label, b.width - 90).length * 16 + 23),
+       kind: n.kind, category: n.category, fill: mono ? '#ffffff' : style.fill, stroke: mono ? '#56616b' : style.stroke,
+       glyph: style.glyph, expanded: expanded.has(id), expandable: n.children.length > 0,

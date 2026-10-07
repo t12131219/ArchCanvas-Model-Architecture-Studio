@@ -1,0 +1,146 @@
+{
+  "case": "browser-residual",
+  "status": "passed",
+  "draftId": "draft-da510043-966c-45aa-9db3-cb66bbbf5c55",
+  "draftRevision": 1,
+  "storageRevision": 1,
+  "nodes": 6,
+  "edges": 6,
+  "handwrittenDeclaredTensors": {
+    "n_28144f774fe84119ab32b4f2e5eb747a": {
+      "shape": [
+        1,
+        16
+      ],
+      "dtype": "float32"
+    },
+    "n_f9f4c7b6687c48c7b92a7adc89987428": {
+      "shape": [
+        1,
+        32
+      ],
+      "dtype": "float32"
+    },
+    "n_b4460895eca7424d9a2ba0fde594033f": {
+      "shape": [
+        1,
+        32
+      ],
+      "dtype": "float32"
+    },
+    "n_f4be0b5295034999801a3d0fa55aab2c": {
+      "shape": [
+        1,
+        16
+      ],
+      "dtype": "float32"
+    },
+    "n_0ed6c0b5356f4bcc92ef8f6688efbf5d": {
+      "shape": [
+        1,
+        16
+      ],
+      "dtype": "float32"
+    },
+    "n_80e67fd4ff4748fb8c58030c803a21ff": {
+      "shape": [
+        1,
+        16
+      ],
+      "dtype": "float32"
+    }
+  },
+  "ast": {
+    "constructorCount": 3,
+    "forwardAssignmentCount": 4,
+    "inputs": 1,
+    "namedOutputCount": 1,
+    "nodeSymbols": {
+      "n_28144f774fe84119ab32b4f2e5eb747a": "node_cb013717db3463c3",
+      "n_0ed6c0b5356f4bcc92ef8f6688efbf5d": "node_c37a27e889430834",
+      "n_f4be0b5295034999801a3d0fa55aab2c": "node_81e2e05c5fe25011",
+      "n_b4460895eca7424d9a2ba0fde594033f": "node_0eb751eac88dd550",
+      "n_f9f4c7b6687c48c7b92a7adc89987428": "node_e2a3a40259c863a4"
+    },
+    "returnBindings": {
+      "n_80e67fd4ff4748fb8c58030c803a21ff": "node_c37a27e889430834"
+    },
+    "basis": "Handwritten frontend topology, full stdlib AST traversal from actual named return outputs; no generated-name hash oracle."
+  },
+  "staticIR": {
+    "status": "passed",
+    "rootCount": 1,
+    "draftNodes": 6,
+    "draftEdges": 6,
+    "irNodes": 7,
+    "irEdges": 7,
+    "inputRootBindings": 1,
+    "exactPorts": 12,
+    "producerTensors": 5,
+    "nodeBindingsRecoveredFromSourceAndOutputPaths": {
+      "n_28144f774fe84119ab32b4f2e5eb747a": "input:model.AuthoredModel:node_cb013717db3463c3",
+      "n_f9f4c7b6687c48c7b92a7adc89987428": "call:instance:model.AuthoredModel.node_e2a3a40259c863a4",
+      "n_b4460895eca7424d9a2ba0fde594033f": "call:instance:model.AuthoredModel.node_0eb751eac88dd550",
+      "n_f4be0b5295034999801a3d0fa55aab2c": "call:instance:model.AuthoredModel.node_81e2e05c5fe25011",
+      "n_0ed6c0b5356f4bcc92ef8f6688efbf5d": "op:call:instance:model.AuthoredModel:Add:2bac3d0929",
+      "n_80e67fd4ff4748fb8c58030c803a21ff": "output:model.AuthoredModel:0"
+    },
+    "scope": "Source/return-derived node inventory, exact type/params/category/evidence/ports/roles, full edge inventory and tensor fan-out identity; receipt nodeBindings and portBindings were not used."
+  },
+  "sourceVisibleEvidence": {
+    "status": "passed",
+    "basis": "One exact whitespace-normalized AX generic source string; source formatting is separately preserved in the .py.txt artifact."
+  },
+  "publicGeometry": null,
+  "negativeControls": [
+    {
+      "name": "wrong-constructor-kind",
+      "status": "rejected-as-required",
+      "reason": "n_f9f4c7b6687c48c7b92a7adc89987428: exact generated constructor type/parameters differ",
+      "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_e2a3a40259c863a4 = nn.Identity(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_0eb751eac88dd550 = nn.ReLU()\n        self.node_81e2e05c5fe25011 = nn.Linear(in_features=32, out_features=16, bias=True, dtype=torch.float32)\n\n    def forward(self, node_cb013717db3463c3):\n        node_e2a3a40259c863a4 = self.node_e2a3a40259c863a4(node_cb013717db3463c3)\n        node_0eb751eac88dd550 = self.node_0eb751eac88dd550(node_e2a3a40259c863a4)\n        node_81e2e05c5fe25011 = self.node_81e2e05c5fe25011(node_0eb751eac88dd550)\n        node_c37a27e889430834 = node_81e2e05c5fe25011 + node_cb013717db3463c3\n        return {'n_80e67fd4ff4748fb8c58030c803a21ff': node_c37a27e889430834}\n"
+    },
+    {
+      "name": "wrong-constructor-parameter",
+      "status": "rejected-as-required",
+      "reason": "n_f9f4c7b6687c48c7b92a7adc89987428: exact generated constructor type/parameters differ",
+      "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_e2a3a40259c863a4 = nn.Linear(in_features=16, out_features=33, bias=True, dtype=torch.float32)\n        self.node_0eb751eac88dd550 = nn.ReLU()\n        self.node_81e2e05c5fe25011 = nn.Linear(in_features=32, out_features=16, bias=True, dtype=torch.float32)\n\n    def forward(self, node_cb013717db3463c3):\n        node_e2a3a40259c863a4 = self.node_e2a3a40259c863a4(node_cb013717db3463c3)\n        node_0eb751eac88dd550 = self.node_0eb751eac88dd550(node_e2a3a40259c863a4)\n        node_81e2e05c5fe25011 = self.node_81e2e05c5fe25011(node_0eb751eac88dd550)\n        node_c37a27e889430834 = node_81e2e05c5fe25011 + node_cb013717db3463c3\n        return {'n_80e67fd4ff4748fb8c58030c803a21ff': node_c37a27e889430834}\n"
+    },
+    {
+      "name": "wrong-constructor-dtype",
+      "status": "rejected-as-required",
+      "reason": "n_f9f4c7b6687c48c7b92a7adc89987428: exact generated constructor type/parameters differ",
+      "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_e2a3a40259c863a4 = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float64)\n        self.node_0eb751eac88dd550 = nn.ReLU()\n        self.node_81e2e05c5fe25011 = nn.Linear(in_features=32, out_features=16, bias=True, dtype=torch.float32)\n\n    def forward(self, node_cb013717db3463c3):\n        node_e2a3a40259c863a4 = self.node_e2a3a40259c863a4(node_cb013717db3463c3)\n        node_0eb751eac88dd550 = self.node_0eb751eac88dd550(node_e2a3a40259c863a4)\n        node_81e2e05c5fe25011 = self.node_81e2e05c5fe25011(node_0eb751eac88dd550)\n        node_c37a27e889430834 = node_81e2e05c5fe25011 + node_cb013717db3463c3\n        return {'n_80e67fd4ff4748fb8c58030c803a21ff': node_c37a27e889430834}\n"
+    },
+    {
+      "name": "wrong-forward-producer",
+      "status": "rejected-as-required",
+      "reason": "missing assignment for n_f9f4c7b6687c48c7b92a7adc89987428",
+      "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_e2a3a40259c863a4 = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_0eb751eac88dd550 = nn.ReLU()\n        self.node_81e2e05c5fe25011 = nn.Linear(in_features=32, out_features=16, bias=True, dtype=torch.float32)\n\n    def forward(self, node_cb013717db3463c3):\n        node_e2a3a40259c863a4 = self.node_e2a3a40259c863a4(node_cb013717db3463c3)\n        node_0eb751eac88dd550 = self.node_0eb751eac88dd550(node_cb013717db3463c3)\n        node_81e2e05c5fe25011 = self.node_81e2e05c5fe25011(node_0eb751eac88dd550)\n        node_c37a27e889430834 = node_81e2e05c5fe25011 + node_cb013717db3463c3\n        return {'n_80e67fd4ff4748fb8c58030c803a21ff': node_c37a27e889430834}\n"
+    },
+    {
+      "name": "wrong-return-key",
+      "status": "rejected-as-required",
+      "reason": "return dictionary keys differ from draft output node identities",
+      "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_e2a3a40259c863a4 = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_0eb751eac88dd550 = nn.ReLU()\n        self.node_81e2e05c5fe25011 = nn.Linear(in_features=32, out_features=16, bias=True, dtype=torch.float32)\n\n    def forward(self, node_cb013717db3463c3):\n        node_e2a3a40259c863a4 = self.node_e2a3a40259c863a4(node_cb013717db3463c3)\n        node_0eb751eac88dd550 = self.node_0eb751eac88dd550(node_e2a3a40259c863a4)\n        node_81e2e05c5fe25011 = self.node_81e2e05c5fe25011(node_0eb751eac88dd550)\n        node_c37a27e889430834 = node_81e2e05c5fe25011 + node_cb013717db3463c3\n        return {'n_80e67fd4ff4748fb8c58030c803a21ff_wrong_output': node_c37a27e889430834}\n"
+    },
+    {
+      "name": "wrong-return-producer",
+      "status": "rejected-as-required",
+      "reason": "missing assignment for n_0ed6c0b5356f4bcc92ef8f6688efbf5d",
+      "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_e2a3a40259c863a4 = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_0eb751eac88dd550 = nn.ReLU()\n        self.node_81e2e05c5fe25011 = nn.Linear(in_features=32, out_features=16, bias=True, dtype=torch.float32)\n\n    def forward(self, node_cb013717db3463c3):\n        node_e2a3a40259c863a4 = self.node_e2a3a40259c863a4(node_cb013717db3463c3)\n        node_0eb751eac88dd550 = self.node_0eb751eac88dd550(node_e2a3a40259c863a4)\n        node_81e2e05c5fe25011 = self.node_81e2e05c5fe25011(node_0eb751eac88dd550)\n        node_c37a27e889430834 = node_81e2e05c5fe25011 + node_cb013717db3463c3\n        return {'n_80e67fd4ff4748fb8c58030c803a21ff': node_cb013717db3463c3}\n"
+    },
+    {
+      "name": "undeclared-forward-assignment",
+      "status": "rejected-as-required",
+      "reason": "unexpected or unused forward assignments",
+      "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_e2a3a40259c863a4 = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_0eb751eac88dd550 = nn.ReLU()\n        self.node_81e2e05c5fe25011 = nn.Linear(in_features=32, out_features=16, bias=True, dtype=torch.float32)\n\n    def forward(self, node_cb013717db3463c3):\n        node_e2a3a40259c863a4 = self.node_e2a3a40259c863a4(node_cb013717db3463c3)\n        node_0eb751eac88dd550 = self.node_0eb751eac88dd550(node_e2a3a40259c863a4)\n        node_81e2e05c5fe25011 = self.node_81e2e05c5fe25011(node_0eb751eac88dd550)\n        node_c37a27e889430834 = node_81e2e05c5fe25011 + node_cb013717db3463c3\n        undeclared_value = 7\n        return {'n_80e67fd4ff4748fb8c58030c803a21ff': node_c37a27e889430834}\n"
+    },
+    {
+      "name": "swapped-ordered-add-producers",
+      "status": "rejected-as-required",
+      "reason": "missing assignment for n_f4be0b5295034999801a3d0fa55aab2c",
+      "mutantSource": "\"\"\"Fresh ArchCanvas authored model; static declarations are not runtime verification.\"\"\"\nimport torch\nfrom torch import nn\n\nclass AuthoredModel(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.node_e2a3a40259c863a4 = nn.Linear(in_features=16, out_features=32, bias=True, dtype=torch.float32)\n        self.node_0eb751eac88dd550 = nn.ReLU()\n        self.node_81e2e05c5fe25011 = nn.Linear(in_features=32, out_features=16, bias=True, dtype=torch.float32)\n\n    def forward(self, node_cb013717db3463c3):\n        node_e2a3a40259c863a4 = self.node_e2a3a40259c863a4(node_cb013717db3463c3)\n        node_0eb751eac88dd550 = self.node_0eb751eac88dd550(node_e2a3a40259c863a4)\n        node_81e2e05c5fe25011 = self.node_81e2e05c5fe25011(node_0eb751eac88dd550)\n        node_c37a27e889430834 = node_cb013717db3463c3 + node_81e2e05c5fe25011\n        return {'n_80e67fd4ff4748fb8c58030c803a21ff': node_c37a27e889430834}\n"
+    }
+  ],
+  "modelExecution": "not_run"
+}

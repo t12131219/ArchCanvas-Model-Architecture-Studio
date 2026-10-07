@@ -1,0 +1,7 @@
+Preview attempt 1 exit 1 before any current entry mutation.
+The documentation updater generated only previews/README.md, then failed at
+str(preview.relative_to(ROOT)) because --output was supplied as a relative path
+while ROOT was absolute. ValueError: path is not in the subpath of ROOT OR one
+path is relative and the other is absolute.
+The corrected updater resolves its facts/output arguments before validation.
+This was a documentation-tool invocation defect, not a product failure.

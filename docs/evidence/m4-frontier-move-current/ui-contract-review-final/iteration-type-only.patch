@@ -1,0 +1,29 @@
+--- docs/evidence/m4-frontier-move-current/checks-attempt-1/inputs/studio/tests/move-command-independent.test.ts
++++ studio/tests/move-command-independent.test.ts
+@@ -32,13 +32,19 @@
+ });
+ 
+ test('explicit scope prefixes override either default and an omitted prefix uses the selected default', () => {
+-  for (const prefix of ['仅当前视图','只在当前视图','在当前视图','当前视图']) for (const fallback of [all,local]) {
+-    assert.deepEqual(parseMoveCommand(`${prefix}，向下移动 1.5`, ['output'], fallback),
+-      { status:'ready',operation:{type:'move',ids:['output'],dx:0,dy:1.5,scope:local} });
+-  }
+-  for (const prefix of ['所有视图','全部视图','在所有视图']) for (const fallback of [all,local]) {
+-    assert.deepEqual(parseMoveCommand(`${prefix} 向左移动 2.75`, ['output'], fallback),
+-      { status:'ready',operation:{type:'move',ids:['output'],dx:-2.75,dy:0,scope:all} });
++  for (const prefix of ['仅当前视图','只在当前视图','在当前视图','当前视图']) {
++    for (let i = 0; i < 2; i += 1) {
++      const fallback: MoveScope = i === 0 ? all : local;
++      assert.deepEqual(parseMoveCommand(`${prefix}，向下移动 1.5`, ['output'], fallback),
++        { status:'ready',operation:{type:'move',ids:['output'],dx:0,dy:1.5,scope:local} });
++    }
++  }
++  for (const prefix of ['所有视图','全部视图','在所有视图']) {
++    for (let i = 0; i < 2; i += 1) {
++      const fallback: MoveScope = i === 0 ? all : local;
++      assert.deepEqual(parseMoveCommand(`${prefix} 向左移动 2.75`, ['output'], fallback),
++        { status:'ready',operation:{type:'move',ids:['output'],dx:-2.75,dy:0,scope:all} });
++    }
+   }
+   assert.deepEqual(parseMoveCommand('向右移动 4', ['output'], local),
+     {status:'ready',operation:{type:'move',ids:['output'],dx:4,dy:0,scope:local}});

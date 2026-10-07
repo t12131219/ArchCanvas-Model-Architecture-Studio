@@ -1,0 +1,690 @@
+--- before/studio/src/App.tsx
++++ current/studio/src/App.tsx
+@@ -1,4 +1,5 @@
+-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
++import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
++import { flushSync } from 'react-dom';
+ import { buildScene, createDocument, createHistory, reconcileDocument, reduceHistory, renderSvg, validateArchitecture } from './core';
+ import type { Architecture, CanvasDocument, HistoryState, ScenePort, VisualOperation } from './core';
+ import { api } from './api';
+@@ -19,7 +20,9 @@
+ import type { CameraState, CameraPan } from './cameraGesture';
+ import { fitCameraToBounds, focusCameraOnPoint, paperTranslation, viewportToWorld, zoomCameraAtPoint } from './cameraProjection';
+ import { canApplyCameraViewTicket, readCameraView, sameCameraViewDocument, writeCameraView } from './cameraViewState';
+-import type { CameraViewIdentity, CameraViewStorage } from './cameraViewState';
++import type { CameraViewIdentity, CameraViewStorage, CameraViewTicket } from './cameraViewState';
++import { cameraViewportSize, resizeCameraViewport } from './cameraViewport';
++import type { CameraViewport } from './cameraViewport';
+ import { edgeAppearance } from './edgeAppearance';
+ import { edgePatternLabel } from './core/edgePresentation';
+ import { findAnnotationBodyConflicts, suggestAnnotationPosition } from './core/annotationPlacement';
+@@ -107,6 +110,10 @@
+   const cameraOwner = useRef<CameraViewIdentity | null>(null);
+   const cameraIntent = useRef(0);
+   const cameraInitializationFrame = useRef(0);
++  const pendingCameraInitialization = useRef<{ ticket: CameraViewTicket; restore: boolean } | null>(null);
++  // The size against which cameraRef's translation is defined. DOM dimensions
++  // can change before an observer or terminal gesture has coordinated them.
++  const cameraViewport = useRef<CameraViewport | null>(null);
+ 
+   const current = history?.document;
+   const committedScene = useMemo(() => current ? buildScene(current) : null, [current]);
+@@ -137,23 +144,80 @@
+   useEffect(() => { document.querySelector('.inspector-content')?.scrollTo({ top: 0 }); }, [selection.ids[0], panel]);
+   useEffect(() => { setRecoveryPreview(null); }, [selection]);
+ 
++  function readCameraViewport() {
++    return cameraViewportSize(viewportRef.current?.getBoundingClientRect());
++  }
+   function persistCamera(document = historyRef.current?.document, view = cameraRef.current) {
+     if (gesture.current?.type === 'pan') return;
+-    const viewport = viewportRef.current;
++    const viewport = cameraViewport.current;
+     if (!document || !viewport || !sameCameraViewDocument(cameraOwner.current, cameraViewIdentity(document))) return;
+-    const { width, height } = viewport.getBoundingClientRect();
+-    writeCameraView(cameraSessionStorage(), cameraViewIdentity(document), view, { width, height });
++    writeCameraView(cameraSessionStorage(), cameraViewIdentity(document), view, viewport);
+   }
+   function claimCamera(document = historyRef.current?.document) {
++    cancelAnimationFrame(cameraInitializationFrame.current); cameraInitializationFrame.current = 0;
++    pendingCameraInitialization.current = null;
+     cameraIntent.current++;
+     cameraOwner.current = document ? cameraViewIdentity(document) : null;
++  }
++  function claimGestureCamera() {
++    const document = historyRef.current?.document;
++    if (!document || sameCameraViewDocument(cameraOwner.current, cameraViewIdentity(document))) return;
++    // An early spatial gesture adopts the view actually under the pointer.
++    // A delayed load restore must not move that mapping after its commit.
++    claimCamera(document);
++    cameraViewport.current = readCameraViewport();
++    persistCamera(document);
+   }
+   const commitCamera = useCallback((view: Camera, document = historyRef.current?.document) => {
+     if (!document) return;
+     claimCamera(document);
++    cameraViewport.current = readCameraViewport();
+     cameraRef.current = view; setCamera(view);
+     persistCamera(document, view);
+   }, []);
++  function synchronizeCameraViewport() {
++    // Freeze the original pointer mapping until its final sample or rollback.
++    if (gesture.current || portGesture.current) return;
++    const document = historyRef.current?.document, viewport = readCameraViewport();
++    if (!document || !viewport) return;
++    if (!sameCameraViewDocument(cameraOwner.current, cameraViewIdentity(document))) {
++      const pending = pendingCameraInitialization.current;
++      if (pending && !canApplyCameraViewTicket(pending.ticket, cameraViewIdentity(document), loadSequence.current, cameraIntent.current)) {
++        pendingCameraInitialization.current = null;
++      } else if (pending && !cameraInitializationFrame.current && viewport.width > 96 && viewport.height > 92) {
++        // A previously hidden/unmounted viewport can recover when it becomes
++        // usable. Keep retries bounded while preserving the original intent.
++        initializeCamera(document, pending.ticket.loadSequence, pending.restore);
++      }
++      return;
++    }
++    const previous = cameraViewport.current;
++    if (!previous) { cameraViewport.current = viewport; return; }
++    const view = resizeCameraViewport(cameraRef.current, previous, viewport);
++    if (!view || view === cameraRef.current) return;
++    cameraViewport.current = viewport;
++    cameraRef.current = view; setCamera(view);
++    persistCamera(document, view);
++  }
++  useLayoutEffect(() => {
++    const viewport = viewportRef.current;
++    if (!viewport) return;
++    synchronizeCameraViewport();
++    let active = true;
++    const resized = () => {
++      if (!active || viewport !== viewportRef.current) return;
++      // ResizeObserver runs before paint. Commit the matching translation in
++      // this delivery, rather than leaving one frame at the old viewport size.
++      flushSync(() => synchronizeCameraViewport());
++    };
++    if (typeof ResizeObserver !== 'undefined') {
++      const observer = new ResizeObserver(resized);
++      observer.observe(viewport);
++      return () => { active = false; observer.disconnect(); };
++    }
++    window.addEventListener('resize', resized);
++    return () => { active = false; window.removeEventListener('resize', resized); };
++  }, [authoringOpen]);
+   useEffect(() => { persistCamera(); }, [current?.id, current?.revision, current?.sourceBindingDigest, current?.architecture.irDigest]);
+ 
+   const cancelGesture = useCallback(() => {
+@@ -163,7 +227,9 @@
+     gesture.current = null; portGesture.current = null; portRequest.current++;
+     cancelAnimationFrame(frame.current); frame.current = 0;
+     setPreview(null); setRecoveryPreview(null); setBox(null); setPortDraft(null); setIsPanning(false);
+-    if (active?.type === 'pan') { cameraRef.current = active.camera; setCamera(active.camera); persistCamera(undefined, active.camera); }
++    if (active?.type === 'pan') { cameraRef.current = active.camera; setCamera(active.camera); }
++    synchronizeCameraViewport();
++    if (active?.type === 'pan') persistCamera();
+     const viewport = viewportRef.current;
+     if (pointerId !== undefined && viewport?.hasPointerCapture(pointerId)) viewport.releasePointerCapture(pointerId);
+   }, []);
+@@ -214,19 +280,26 @@
+     cancelAnimationFrame(cameraInitializationFrame.current);
+     cameraOwner.current = null;
+     const ticket = { identity: cameraViewIdentity(document), loadSequence: sequence, intentSequence: cameraIntent.current };
++    const request = { ticket, restore }; pendingCameraInitialization.current = request;
+     const schedule = (attempt: number) => {
+       cameraInitializationFrame.current = requestAnimationFrame(() => {
+         cameraInitializationFrame.current = 0;
+         const active = historyRef.current?.document;
+         // createHistory clones its input; the load/revision/identity ticket is
+         // the ownership contract, not the raw loader object's reference.
+-        if (!active || !canApplyCameraViewTicket(ticket, cameraViewIdentity(active), loadSequence.current, cameraIntent.current)) return;
++        if (!active || !canApplyCameraViewTicket(ticket, cameraViewIdentity(active), loadSequence.current, cameraIntent.current)) {
++          if (pendingCameraInitialization.current === request) pendingCameraInitialization.current = null;
++          return;
++        }
++        if (gesture.current || portGesture.current) return;
+         const rect = viewportRef.current?.getBoundingClientRect();
+         if (!rect || rect.width <= 96 || rect.height <= 92) { if (attempt < 3) schedule(attempt + 1); return; }
+         const viewport = { width: rect.width, height: rect.height };
+         const recovered = restore ? readCameraView(cameraSessionStorage(), ticket.identity, viewport) : null;
+         const view = recovered ?? fitCameraToBounds(buildScene(active).bounds, viewport);
+-        cameraOwner.current = ticket.identity; cameraRef.current = view; setCamera(view);
++        pendingCameraInitialization.current = null;
++        cameraOwner.current = ticket.identity; cameraViewport.current = viewport;
++        cameraRef.current = view; setCamera(view);
+         persistCamera(active, view);
+       });
+     };
+@@ -358,6 +431,7 @@
+       if (editingTarget(event.target)) return;
+       event.preventDefault();
+       if (gesture.current || portGesture.current) return;
++      synchronizeCameraViewport();
+       const rect = viewport.getBoundingClientRect();
+       const px = event.clientX - rect.left, py = event.clientY - rect.top;
+       const old = cameraRef.current, zoom = Math.max(0.15, Math.min(3, old.zoom * Math.exp(-event.deltaY * 0.0015)));
+@@ -374,6 +448,7 @@
+   function pointerDown(event: React.PointerEvent<HTMLDivElement>) {
+     if (activeRecovery) { cancelGesture(); return; }
+     if (editingTarget(event.target) || !scene || gesture.current || portGesture.current) return;
++    synchronizeCameraViewport();
+     portRequest.current++;
+     const input = panInput(event);
+     const x = input.clientX - input.viewportX, y = input.clientY - input.viewportY;
+@@ -381,6 +456,7 @@
+     // Navigation takes priority even over expand handles and input ports.
+     if (event.button === 1 || (event.button === 0 && (tool === 'pan' || space.current))) {
+       claimCamera();
++      cameraViewport.current = readCameraViewport();
+       gesture.current = { type: 'pan', pointerId: event.pointerId, x, y, camera: view, pan: beginCameraPan(view, input), ids: [], dx: 0, dy: 0 };
+       setIsPanning(true); event.currentTarget.setPointerCapture(event.pointerId); event.preventDefault(); return;
+     }
+@@ -396,6 +472,7 @@
+       }
+       const sequence = loadSequence.current;
+       const promise = inspectRebind(port.canonicalNodeId, port.canonicalPortId);
++      claimGestureCamera();
+       portGesture.current = { request: portRequest.current, document: current, pointerId: event.pointerId, port, sequence, promise };
+       setPortDraft({ port, x: port.x, y: port.y, options: null });
+       void promise.then(options => { if (portGesture.current?.promise === promise) setPortDraft(draft => draft && ({ ...draft, options })); }).catch(() => {});
+@@ -412,6 +489,7 @@
+       setSelection({ kind: 'node', ids }); setPanel('object');
+       if (!current) return;
+       try {
++        claimGestureCamera();
+         gesture.current = { type: 'move', pointerId: event.pointerId, x, y, camera: view, ids, dx: 0, dy: 0, document: current, preview: prepareMovePreview(current, ids) };
+       } catch (error) { setFailure(String(error)); return; }
+     } else if (edgeId) { setSelection({ kind: 'edge', ids: [edgeId] }); setPanel('object'); return; }
+@@ -419,6 +497,7 @@
+     else if (annotationId) { setSelection({ kind: 'annotation', ids: [annotationId] }); setPanel('object'); return; }
+     else {
+       if (!event.shiftKey) setSelection({ kind: 'node', ids: [] });
++      claimGestureCamera();
+       gesture.current = { type: 'box', pointerId: event.pointerId, x, y, camera: view, ids: event.shiftKey ? selection.ids : [], dx: 0, dy: 0 };
+     }
+     event.currentTarget.setPointerCapture(event.pointerId); event.preventDefault();
+@@ -462,6 +541,7 @@
+         const candidate = options.candidates.find(c => c.binding.nodeId === producer?.canonicalNodeId && c.binding.portId === producer?.canonicalPortId) ?? null;
+         setConnectionProposal({ nodeId: connecting.port.canonicalNodeId, portId: connecting.port.canonicalPortId, candidate, blockers: candidate ? [] : options.blockers.length ? options.blockers : ['拖线终点不是已证明可用的来源输出端口；原连接保持不变。'] });
+       }).catch(error => { if (connecting.sequence === loadSequence.current && connecting.request === portRequest.current && connecting.document === historyRef.current?.document) setConnectionProposal({ nodeId: connecting.port.canonicalNodeId, portId: connecting.port.canonicalPortId, candidate: null, blockers: [String(error)] }); });
++      synchronizeCameraViewport();
+       return;
+     }
+     const active = gesture.current; if (!active || active.pointerId !== event.pointerId) return;
+@@ -471,7 +551,11 @@
+     gesture.current = null; setPreview(null); setBox(null); setIsPanning(false);
+     if (active.pan) {
+       const finalCamera = cameraAtPanInput(active.pan, input);
+-      if (finalCamera) commitCamera(finalCamera);
++      if (finalCamera) {
++        cameraRef.current = finalCamera; setCamera(finalCamera);
++        synchronizeCameraViewport();
++        commitCamera(cameraRef.current);
++      }
+     }
+     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+     if (active.type === 'move' && historyRef.current?.document === active.document && Math.hypot(active.dx, active.dy) > 3) apply([{ type: 'move', ids: active.ids, dx: Math.round(active.dx / active.camera.zoom / 4) * 4, dy: Math.round(active.dy / active.camera.zoom / 4) * 4 }], '位置已调整；一次拖动对应一次撤销');
+@@ -481,6 +565,7 @@
+       const ids = scene.nodes.filter(n => n.x >= x && n.y >= y && n.x + n.width <= right && n.y + n.height <= bottom).map(n => n.id);
+       setSelection({ kind: 'node', ids: [...new Set([...active.ids, ...ids])] });
+     }
++    synchronizeCameraViewport();
+   }
+   function pointerCancelled(event: React.PointerEvent<HTMLDivElement>) {
+     if (gesture.current?.pointerId === event.pointerId || portGesture.current?.pointerId === event.pointerId) cancelGesture();
+--- before/studio/src/cameraViewport.ts
++++ current/studio/src/cameraViewport.ts
+@@ -0,0 +1,20 @@
++import type { CameraState } from './cameraGesture.ts';
++
++export type CameraViewport = Readonly<{ width: number; height: number }>;
++
++/** A hidden/collapsed element cannot establish a usable camera coordinate frame. */
++export function cameraViewportSize(value: CameraViewport | null | undefined): CameraViewport | null {
++  if (!value || !Number.isFinite(value.width) || !Number.isFinite(value.height) ||
++      value.width <= 0 || value.height <= 0 || value.width > 100_000 || value.height > 100_000) return null;
++  return { width: value.width, height: value.height };
++}
++
++/** Keep the same world point at the centre; a resize never changes zoom. */
++export function resizeCameraViewport(camera: CameraState, previous: CameraViewport, next: CameraViewport): CameraState | null {
++  if (!cameraViewportSize(previous) || !cameraViewportSize(next) ||
++      !Number.isFinite(camera.x) || !Number.isFinite(camera.y) || !Number.isFinite(camera.zoom) || camera.zoom <= 0) return null;
++  if (previous.width === next.width && previous.height === next.height) return camera;
++  const view = { x: camera.x + (next.width - previous.width) / 2,
++    y: camera.y + (next.height - previous.height) / 2, zoom: camera.zoom };
++  return Number.isFinite(view.x) && Number.isFinite(view.y) ? view : null;
++}
+--- before/studio/tests/camera-view-state-independent.test.ts
++++ current/studio/tests/camera-view-state-independent.test.ts
+@@ -4,6 +4,8 @@
+ import ts from 'typescript';
+ import { cameraAtPanInput, beginCameraPan } from '../src/cameraGesture.ts';
+ import { fitCameraToBounds } from '../src/cameraProjection.ts';
++import { cameraViewportSize } from '../src/cameraViewport.ts';
++import type { CameraViewport } from '../src/cameraViewport.ts';
+ import { createDocument, createHistory, reduceHistory } from '../src/core/index.ts';
+ import { canApplyCameraViewTicket, cameraViewStorageKey, captureCameraView, readCameraView,
+   restoreCameraView, sameCameraViewDocument, writeCameraView } from '../src/cameraViewState.ts';
+@@ -168,7 +170,7 @@
+   const ast = ts.createSourceFile('App.tsx', appSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+   const app = ast.statements.find(statement => ts.isFunctionDeclaration(statement) && statement.name?.text === 'App');
+   assert.ok(app && ts.isFunctionDeclaration(app) && app.body, 'real App function must exist');
+-  const names = ['persistCamera', 'claimCamera', 'commitCamera', 'initializeCamera'];
++  const names = ['readCameraViewport', 'persistCamera', 'claimCamera', 'commitCamera', 'initializeCamera'];
+   const callbackSnippets = names.map(name => {
+     const statement = app.body!.statements.find(item => ts.isFunctionDeclaration(item) ? item.name?.text === name :
+       ts.isVariableStatement(item) && item.declarationList.declarations.some(declaration => ts.isIdentifier(declaration.name) && declaration.name.text === name));
+@@ -190,14 +192,16 @@
+   assert.notEqual(historyRef.current.document, document, 'formal createHistory clones the supplied document');
+   const cameraOwner = { current: null as CameraViewIdentity | null }, cameraIntent = { current: 0 };
+   const loadSequence = { current: 4 }, cameraInitializationFrame = { current: 0 };
++  const pendingCameraInitialization = { current: null };
+   const gesture = { current: null as { type: 'pan' | 'move' | 'box' } | null };
++  const cameraViewport = { current: null as CameraViewport | null }, portGesture = { current: null };
+   let dimensions = { ...viewport }, nextFrame = 0;
+   const pending = new Map<number, FrameRequestCallback>(), rendered: typeof camera[] = [], sceneInputs: CanvasDocument[] = [];
+-  const environment = { historyRef, cameraRef, cameraOwner, cameraIntent, loadSequence, cameraInitializationFrame, gesture,
++  const environment = { historyRef, cameraRef, cameraOwner, cameraIntent, loadSequence, cameraInitializationFrame, pendingCameraInitialization, gesture, cameraViewport, portGesture,
+     viewportRef: { current: { getBoundingClientRect: () => dimensions } },
+     useCallback: <T>(callback: T) => callback, setCamera: (value: typeof camera) => { rendered.push(value); },
+     cameraSessionStorage: () => store,
+-    canApplyCameraViewTicket, sameCameraViewDocument, readCameraView, writeCameraView,
++    canApplyCameraViewTicket, sameCameraViewDocument, readCameraView, writeCameraView, cameraViewportSize,
+     requestAnimationFrame: (callback: FrameRequestCallback) => { const id = ++nextFrame; pending.set(id, callback); return id; },
+     cancelAnimationFrame: (id: number) => { pending.delete(id); },
+     buildScene: (doc: CanvasDocument) => { sceneInputs.push(doc); return { bounds: { x: 0, y: 0, width: 400, height: 200 } }; }, fitCameraToBounds };
+--- before/studio/tests/camera-viewport-resize-independent.test.ts
++++ current/studio/tests/camera-viewport-resize-independent.test.ts
+@@ -0,0 +1,393 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { readFileSync } from 'node:fs';
++import ts from 'typescript';
++import type { PointerEvent } from 'react';
++import { cameraViewportSize, resizeCameraViewport } from '../src/cameraViewport.ts';
++import type { CameraViewport } from '../src/cameraViewport.ts';
++import { beginCameraPan, cameraAtPanInput } from '../src/cameraGesture.ts';
++import type { CameraPan, CameraState } from '../src/cameraGesture.ts';
++import { fitCameraToBounds, viewportToWorld } from '../src/cameraProjection.ts';
++import { canApplyCameraViewTicket, readCameraView, sameCameraViewDocument, writeCameraView } from '../src/cameraViewState.ts';
++import type { CameraViewIdentity, CameraViewStorage } from '../src/cameraViewState.ts';
++import type { CameraViewTicket } from '../src/cameraViewState.ts';
++import { buildScene, createDocument, createHistory, reduceHistory } from '../src/core/index.ts';
++import { prepareMovePreview } from '../src/core/movePreview.ts';
++import type { CanvasDocument, HistoryState, VisualOperation } from '../src/core/types.ts';
++
++const small = { width: 672, height: 711 }, large = { width: 883, height: 786 };
++const baseline = { x: -14, y: -49.5, zoom: 1 };
++function center(view: CameraState, size: CameraViewport) {
++  // Independent equation: no product projection/resize helper supplies oracle.
++  return { x: (size.width / 2 - view.x) / view.zoom, y: (size.height / 2 - view.y) / view.zoom };
++}
++function close(actual: number, expected: number) { assert.ok(Math.abs(actual - expected) < 1e-8, `${actual} != ${expected}`); }
++
++test('the observed large-to-small live resize keeps world centre 350,405 in its first coordinated result', () => {
++  const next = resizeCameraViewport({ x: 91.5, y: -12, zoom: 1 }, large, small)!;
++  assert.deepEqual(next, baseline);
++  assert.deepEqual(center(next, small), { x: 350, y: 405 });
++  assert.deepEqual(resizeCameraViewport(next, small, large), { x: 91.5, y: -12, zoom: 1 });
++});
++
++test('fractional, negative and small-fit cameras preserve centre and zoom across anisotropic size chains', () => {
++  for (const view of [baseline, { x: -1204.25, y: 380.75, zoom: .017 }, { x: .125, y: -.375, zoom: 3 }]) {
++    const sizes = [small, { width: 4096.5, height: 160.25 }, { width: 80, height: 70 }, large, small];
++    const expected = center(view, small);
++    let current = view;
++    for (let index = 1; index < sizes.length; index++) {
++      current = resizeCameraViewport(current, sizes[index - 1], sizes[index])!;
++      const observed = center(current, sizes[index]);
++      close(observed.x, expected.x); close(observed.y, expected.y);
++      assert.equal(current.zoom, view.zoom);
++    }
++    close(current.x, view.x); close(current.y, view.y);
++  }
++});
++
++test('same-size deliveries are no-ops and invalid or hidden dimensions cannot establish a frame', () => {
++  assert.equal(resizeCameraViewport(baseline, small, { ...small }), baseline);
++  for (const size of [null, undefined, { width: 0, height: 711 }, { width: 672, height: -1 },
++    { width: NaN, height: 711 }, { width: 672, height: Infinity }, { width: 100001, height: 711 }]) {
++    assert.equal(cameraViewportSize(size), null);
++    if (size) {
++      assert.equal(resizeCameraViewport(baseline, small, size), null);
++      assert.equal(resizeCameraViewport(baseline, size, small), null);
++    }
++  }
++  for (const view of [{ ...baseline, x: Infinity }, { ...baseline, y: NaN }, { ...baseline, zoom: 0 },
++    { ...baseline, zoom: -1 }, { ...baseline, zoom: Infinity }]) assert.equal(resizeCameraViewport(view, small, large), null);
++  const before = JSON.stringify({ baseline, small, large });
++  resizeCameraViewport(baseline, small, large);
++  assert.equal(JSON.stringify({ baseline, small, large }), before);
++});
++
++type Gesture = { type: 'pan' | 'move' | 'box'; pointerId: number; x: number; y: number; camera: CameraState;
++  pan?: CameraPan; ids: string[]; dx: number; dy: number; document?: CanvasDocument; preview?: ReturnType<typeof prepareMovePreview> };
++type Pointer = PointerEvent<HTMLDivElement>;
++
++// Execute real App callbacks and its real observer effect, rather than a copied
++// implementation. This harness does not mount React or certify browser paint.
++function appHarness(tool: 'pan' | 'select' = 'pan', observerAvailable = true) {
++  const source = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
++  const ast = ts.createSourceFile('App.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
++  const app = ast.statements.find(item => ts.isFunctionDeclaration(item) && item.name?.text === 'App');
++  assert.ok(app && ts.isFunctionDeclaration(app) && app.body);
++  const names = ['readCameraViewport', 'persistCamera', 'claimCamera', 'claimGestureCamera', 'commitCamera', 'synchronizeCameraViewport',
++    'cancelGesture', 'initializeCamera', 'apply', 'panInput', 'pointerDown', 'pointerMove', 'pointerUp'];
++  const snippets = names.map(name => {
++    const statement = app.body!.statements.find(item => ts.isFunctionDeclaration(item) ? item.name?.text === name :
++      ts.isVariableStatement(item) && item.declarationList.declarations.some(d => ts.isIdentifier(d.name) && d.name.text === name));
++    assert.ok(statement, `actual App callback ${name}`); return statement.getText(ast);
++  });
++  const identityHelper = ast.statements.find(item => ts.isFunctionDeclaration(item) && item.name?.text === 'cameraViewIdentity');
++  assert.ok(identityHelper);
++  const effect = app.body.statements.find(item => ts.isExpressionStatement(item) && ts.isCallExpression(item.expression) &&
++    ts.isIdentifier(item.expression.expression) && item.expression.expression.text === 'useLayoutEffect');
++  assert.ok(effect, 'actual viewport useLayoutEffect');
++  const document = createDocument({ schemaVersion: 1, id: 'resize-source', label: 'Resize source', entry: 'Model',
++    sourceDigest: 'a'.repeat(64), irDigest: 'b'.repeat(64), sources: [], diagnostics: [], edges: [],
++    nodes: [{ id: 'leaf', label: 'Linear', kind: 'Linear', category: 'linear', children: [], ports: [], parameters: {}, evidence: 'source' }] });
++  const historyRef = { current: createHistory(document) }, cameraRef = { current: { ...baseline } };
++  const owner: CameraViewIdentity = { documentId: document.id, sourceBindingDigest: document.sourceBindingDigest,
++    irDigest: document.architecture.irDigest, visualRevision: document.revision };
++  const cameraOwner = { current: owner as CameraViewIdentity | null }, cameraViewport = { current: { ...small } as CameraViewport | null };
++  const gesture = { current: null as Gesture | null }, portGesture = { current: null as { pointerId: number } | null };
++  const cameraIntent = { current: 10 }, loadSequence = { current: 4 }, cameraInitializationFrame = { current: 0 }, frame = { current: 0 };
++  const pendingCameraInitialization = { current: null as { ticket: CameraViewTicket; restore: boolean } | null };
++  const values = new Map<string, string>(), accesses: string[] = [], rendered: CameraState[] = [], selected: { kind: string; ids: string[] }[] = [];
++  const storage: CameraViewStorage = { getItem: key => { accesses.push('read'); return values.get(key) ?? null; },
++    setItem: (key, value) => { accesses.push('write'); values.set(key, value); } };
++  let dimensions: CameraViewport = { ...small }, nextFrame = 0;
++  const pending = new Map<number, FrameRequestCallback>(), captured = new Set<number>();
++  const element = { getBoundingClientRect: () => ({ ...dimensions, left: 20, top: 40 }),
++    hasPointerCapture: (id: number) => captured.has(id), setPointerCapture: (id: number) => { captured.add(id); },
++    releasePointerCapture: (id: number) => { captured.delete(id); } };
++  const viewportRef = { current: element as typeof element | null };
++  const observers: { callback: () => void; target: unknown; disconnected: boolean }[] = [];
++  const fallback = new Map<string, () => void>(), operations: VisualOperation[][] = [];
++  const cleanups: (() => void)[] = [], flushes: string[] = [];
++  class Observer {
++    record: typeof observers[number];
++    constructor(callback: () => void) { this.record = { callback, target: null, disconnected: false }; observers.push(this.record); }
++    observe(target: unknown) { this.record.target = target; }
++    disconnect() { this.record.disconnected = true; }
++  }
++  const scene = buildScene(historyRef.current.document);
++  const environment = { historyRef, cameraRef, cameraOwner, cameraViewport, cameraIntent, loadSequence, cameraInitializationFrame, pendingCameraInitialization, frame,
++    gesture, portGesture, portRequest: { current: 0 }, viewportRef, scene, current: historyRef.current.document, tool,
++    activeRecovery: null, space: { current: false }, busy: false, inputSpec: null, selection: { kind: 'node', ids: [] },
++    editingTarget: () => false, setPreview: () => {}, setRecoveryPreview: () => {}, setBox: () => {}, setPortDraft: () => {},
++    setIsPanning: () => {}, setPanel: () => {}, setFailure: () => {}, setNotice: () => {},
++    setCamera: (view: CameraState) => { rendered.push({ ...view }); },
++    setHistory: (value: HistoryState) => { assert.equal(value, historyRef.current); },
++    setSelection: (value: { kind: string; ids: string[] }) => { selected.push(value); },
++    useCallback: <T>(callback: T) => callback,
++    useLayoutEffect: (callback: () => (() => void) | undefined) => { const cleanup = callback(); if (cleanup) cleanups.push(cleanup); },
++    flushSync: (callback: () => void) => { flushes.push('enter'); callback(); flushes.push('exit'); },
++    ResizeObserver: observerAvailable ? Observer : undefined,
++    window: { addEventListener: (name: string, callback: () => void) => { fallback.set(name, callback); },
++      removeEventListener: (name: string, callback: () => void) => { if (fallback.get(name) === callback) fallback.delete(name); } },
++    authoringOpen: false, cameraSessionStorage: () => storage,
++    canApplyCameraViewTicket, readCameraView, writeCameraView, sameCameraViewDocument, cameraViewportSize, resizeCameraViewport,
++    beginCameraPan, cameraAtPanInput, fitCameraToBounds, viewportToWorld, buildScene, prepareMovePreview,
++    reduceHistory: (prior: HistoryState, action: Parameters<typeof reduceHistory>[1]) => {
++      if (action.type === 'apply') operations.push(action.operations); return reduceHistory(prior, action);
++    },
++    studioTelemetry: { beginInteraction: () => 1, endInteraction: () => {} },
++    requestAnimationFrame: (callback: FrameRequestCallback) => { const id = ++nextFrame; pending.set(id, callback); return id; },
++    cancelAnimationFrame: (id: number) => { pending.delete(id); },
++  };
++  const executable = ts.transpileModule(`${identityHelper.getText(ast)}\n${snippets.join('\n')}\nfunction installObserver() { ${effect.getText(ast)} }`,
++    { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
++  const callbacks = new Function(...Object.keys(environment), `${executable}\nreturn { ${names.join(',')}, installObserver };`)(...Object.values(environment)) as {
++    persistCamera: () => void; claimCamera: () => void; commitCamera: (view: CameraState) => void;
++    synchronizeCameraViewport: () => void; cancelGesture: () => void; initializeCamera: (doc: CanvasDocument, sequence: number) => void;
++    pointerDown: (event: Pointer) => void; pointerMove: (event: Pointer) => void; pointerUp: (event: Pointer) => void;
++    installObserver: () => void;
++  };
++  const event = (x: number, y: number, nodeId?: string) => ({ pointerId: 7, clientX: x + 20, clientY: y + 40,
++    button: 0, shiftKey: false, currentTarget: element, preventDefault() {}, target: { closest: (selector: string) =>
++      selector === '[data-node-id]' && nodeId ? { getAttribute: () => nodeId } : null } }) as unknown as Pointer;
++  return { ...callbacks, owner, document, historyRef, cameraRef, cameraOwner, cameraViewport, cameraIntent, loadSequence,
++    gesture, portGesture, cameraInitializationFrame, pendingCameraInitialization, frame, values, accesses, storage, rendered, selected, observers, cleanups,
++    viewportRef, element, pending, operations, captured, flushes, fallback, event,
++    resize: (size: CameraViewport) => { dimensions = { ...size }; },
++    runFrames: () => { const work = [...pending]; pending.clear(); for (const [, callback] of work) callback(0); } };
++}
++
++test('actual App idle resize commits the latest centre synchronously without a new intent or history entry', () => {
++  const h = appHarness(), original = JSON.stringify(h.historyRef.current), intent = h.cameraIntent.current;
++  h.resize(large); h.synchronizeCameraViewport();
++  assert.deepEqual(h.cameraRef.current, { x: 91.5, y: -12, zoom: 1 });
++  assert.deepEqual(h.cameraViewport.current, large);
++  assert.deepEqual(readCameraView(h.storage, h.owner, small), baseline);
++  assert.equal(h.pending.size, 0); assert.equal(h.cameraIntent.current, intent);
++  h.resize(small); h.synchronizeCameraViewport();
++  assert.deepEqual(h.cameraRef.current, baseline); assert.equal(h.rendered.length, 2);
++  h.synchronizeCameraViewport(); assert.equal(h.rendered.length, 2);
++  assert.equal(JSON.stringify(h.historyRef.current), original);
++});
++
++test('actual persistence before observer delivery uses the camera anchor instead of a newly resized DOM', () => {
++  const h = appHarness(); h.resize(large); h.persistCamera();
++  const state = JSON.parse([...h.values.values()][0]);
++  assert.deepEqual(state.worldCenter, { x: 350, y: 405 }); assert.deepEqual(state.capturedViewport, small);
++  h.synchronizeCameraViewport();
++  const updated = JSON.parse([...h.values.values()][0]);
++  assert.deepEqual(updated.worldCenter, state.worldCenter); assert.deepEqual(updated.capturedViewport, large);
++});
++
++test('actual pan, move, box and port ownership defer resize until their mapping is released', () => {
++  for (const type of ['pan', 'move', 'box', 'port'] as const) {
++    const h = appHarness();
++    if (type === 'port') h.portGesture.current = { pointerId: 7 };
++    else h.gesture.current = { type, pointerId: 7, x: 200, y: 180, camera: baseline, ids: [], dx: 0, dy: 0 };
++    h.resize(large); h.synchronizeCameraViewport();
++    assert.deepEqual(h.cameraRef.current, baseline); assert.deepEqual(h.cameraViewport.current, small);
++    assert.equal(h.rendered.length, 0); assert.equal(h.values.size, 0);
++    h.cancelGesture();
++    assert.deepEqual(h.cameraRef.current, { x: 91.5, y: -12, zoom: 1 });
++    assert.deepEqual(h.cameraViewport.current, large);
++  }
++});
++
++test('actual terminal pan includes the unsampled pointerup delta then applies the queued resize exactly once', () => {
++  const h = appHarness(); h.pointerDown(h.event(200, 180));
++  h.pointerMove(h.event(216, 188)); assert.equal(h.pending.size, 1);
++  h.resize(large); h.synchronizeCameraViewport();
++  h.pointerUp(h.event(232, 196));
++  assert.deepEqual(h.cameraRef.current, { x: 123.5, y: 4, zoom: 1 });
++  assert.deepEqual(center(h.cameraRef.current, large), { x: 318, y: 389 });
++  assert.deepEqual(readCameraView(h.storage, h.owner, small), { x: 18, y: -33.5, zoom: 1 });
++  assert.equal(h.pending.size, 0); assert.equal(h.gesture.current, null); assert.equal(h.captured.size, 0);
++  h.runFrames(); h.synchronizeCameraViewport();
++  assert.deepEqual(h.cameraRef.current, { x: 123.5, y: 4, zoom: 1 });
++  assert.equal(h.historyRef.current.past.length, 0); assert.deepEqual(h.operations, []);
++});
++
++test('actual cancel after a resized pan preview restores the original world centre and never retains that preview', () => {
++  const h = appHarness(); h.pointerDown(h.event(200, 180)); h.pointerMove(h.event(240, 204)); h.runFrames();
++  assert.deepEqual(h.cameraRef.current, { x: 26, y: -25.5, zoom: 1 });
++  h.resize(large); h.synchronizeCameraViewport(); h.cancelGesture();
++  assert.deepEqual(h.cameraRef.current, { x: 91.5, y: -12, zoom: 1 });
++  assert.deepEqual(center(h.cameraRef.current, large), { x: 350, y: 405 });
++  assert.deepEqual(readCameraView(h.storage, h.owner, small), baseline);
++  assert.equal(h.pending.size, 0); assert.equal(h.captured.size, 0);
++});
++
++test('actual resized object drag keeps its typed delta and one undo entry independent of transient camera coordination', () => {
++  const h = appHarness('select'), before = buildScene(h.historyRef.current.document).nodes.find(node => node.id === 'leaf')!;
++  h.pointerDown(h.event(200, 180, 'leaf')); h.pointerMove(h.event(216, 188));
++  h.resize(large); h.synchronizeCameraViewport(); h.pointerUp(h.event(232, 196));
++  assert.deepEqual(h.operations, [[{ type: 'move', ids: ['leaf'], dx: 32, dy: 16 }]]);
++  const after = buildScene(h.historyRef.current.document).nodes.find(node => node.id === 'leaf')!;
++  assert.equal(after.x - before.x, 32); assert.equal(after.y - before.y, 16);
++  assert.equal(h.historyRef.current.past.length, 1); assert.equal(h.pending.size, 0);
++  assert.deepEqual(center(h.cameraRef.current, large), { x: 350, y: 405 });
++  const undone = reduceHistory(h.historyRef.current, { type: 'undo' });
++  assert.deepEqual(undone.document.layout, h.document.layout);
++  assert.ok(!Object.hasOwn(h.historyRef.current.document, 'camera') && !Object.hasOwn(h.historyRef.current.document, 'worldCenter'));
++});
++
++test('actual box terminal selection uses the old frozen camera before viewport coordination', () => {
++  const h = appHarness('select'); h.pointerDown(h.event(0, 0));
++  h.resize(large); h.synchronizeCameraViewport(); h.pointerUp(h.event(650, 700));
++  assert.deepEqual(h.selected.at(-1), { kind: 'node', ids: ['leaf'] });
++  assert.deepEqual(center(h.cameraRef.current, large), { x: 350, y: 405 });
++  assert.equal(h.historyRef.current.past.length, 0);
++});
++
++test('an explicit current-size camera commit wins without a second old-size correction', () => {
++  const h = appHarness(); h.resize(large);
++  const explicit = { x: 160, y: -70, zoom: .75 };
++  h.commitCamera(explicit); h.synchronizeCameraViewport();
++  assert.deepEqual(h.cameraRef.current, explicit); assert.deepEqual(h.cameraViewport.current, large);
++  assert.equal(h.rendered.length, 1); assert.equal(h.cameraIntent.current, 11);
++  h.resize(small); h.synchronizeCameraViewport();
++  assert.deepEqual(h.cameraRef.current, { x: 54.5, y: -107.5, zoom: .75 });
++  assert.deepEqual(center(h.cameraRef.current, small), center(explicit, large));
++});
++
++test('initialization ignores unowned resize and restores at its latest viewport; active drag defers it', () => {
++  const h = appHarness(); writeCameraView(h.storage, h.owner, baseline, small);
++  h.initializeCamera(h.document, 4); h.resize(large); h.synchronizeCameraViewport();
++  assert.deepEqual(h.cameraRef.current, baseline);
++  h.gesture.current = { type: 'move', pointerId: 7, x: 200, y: 180, camera: baseline, ids: [], dx: 0, dy: 0 };
++  h.runFrames(); assert.equal(h.cameraOwner.current, null); assert.equal(h.pending.size, 0);
++  assert.ok(h.pendingCameraInitialization.current);
++  h.gesture.current = null; h.synchronizeCameraViewport(); h.runFrames();
++  assert.deepEqual(h.cameraRef.current, { x: 91.5, y: -12, zoom: 1 });
++  assert.deepEqual(h.cameraViewport.current, large); assert.equal(h.pending.size, 0);
++});
++
++test('an early actual spatial gesture owns its displayed mapping and invalidates a delayed restore even after document commit', () => {
++  for (const nodeId of ['leaf', undefined]) {
++    const h = appHarness('select');
++    writeCameraView(h.storage, h.owner, { x: 300, y: 400, zoom: .5 }, small);
++    h.initializeCamera(h.document, 4);
++    h.pointerDown(h.event(200, 180, nodeId));
++    assert.deepEqual(h.cameraOwner.current, h.owner); assert.equal(h.cameraIntent.current, 11);
++    assert.deepEqual(h.cameraViewport.current, small);
++    h.resize(large); h.runFrames();
++    assert.deepEqual(h.cameraRef.current, baseline, 'old initialization cannot overwrite the active pointer view');
++    h.pointerUp(h.event(232, 196)); h.runFrames();
++    assert.deepEqual(h.cameraRef.current, { x: 91.5, y: -12, zoom: 1 });
++    assert.deepEqual(center(h.cameraRef.current, large), { x: 350, y: 405 });
++    const identity = { ...h.owner, visualRevision: h.historyRef.current.document.revision };
++    h.persistCamera(); assert.deepEqual(readCameraView(h.storage, identity, small), baseline);
++    assert.equal(h.cameraInitializationFrame.current, 0); assert.equal(h.pending.size, 0);
++  }
++});
++
++test('an early actual pan establishes its own viewport anchor before a resized terminal sample', () => {
++  const h = appHarness(); h.initializeCamera(h.document, 4); h.cameraViewport.current = null;
++  h.pointerDown(h.event(200, 180));
++  assert.deepEqual(h.cameraViewport.current, small);
++  h.resize(large); h.runFrames(); h.pointerUp(h.event(232, 196));
++  assert.deepEqual(h.cameraRef.current, { x: 123.5, y: 4, zoom: 1 });
++  assert.deepEqual(center(h.cameraRef.current, large), { x: 318, y: 389 });
++  assert.equal(h.pending.size, 0); assert.equal(h.cameraIntent.current, 12);
++});
++
++test('a later document, revision, load or explicit intent rejects pending initialization and old ownership', () => {
++  for (const invalidate of [
++    (h: ReturnType<typeof appHarness>) => { h.loadSequence.current++; h.cameraOwner.current = null; },
++    (h: ReturnType<typeof appHarness>) => { h.historyRef.current = createHistory({ ...h.document, id: 'other' }); },
++    (h: ReturnType<typeof appHarness>) => { h.historyRef.current = createHistory({ ...h.document, revision: 1 }); },
++    (h: ReturnType<typeof appHarness>) => { h.historyRef.current = createHistory({ ...h.document, sourceBindingDigest: 'c'.repeat(64),
++      architecture: { ...h.document.architecture, sourceDigest: 'c'.repeat(64) } }); },
++  ]) {
++    const h = appHarness(); h.initializeCamera(h.document, 4); invalidate(h); h.resize(large);
++    h.synchronizeCameraViewport(); h.runFrames();
++    assert.deepEqual(h.cameraRef.current, baseline); assert.equal(h.values.size, 0); assert.equal(h.pending.size, 0);
++  }
++  const h = appHarness(); h.initializeCamera(h.document, 4); h.resize(large);
++  h.commitCamera({ x: 55, y: 60, zoom: .5 }); h.runFrames(); h.synchronizeCameraViewport();
++  assert.deepEqual(h.cameraRef.current, { x: 55, y: 60, zoom: .5 });
++  assert.deepEqual(h.cameraViewport.current, large);
++});
++
++test('the actual observer effect commits in its delivery and rejects disconnected or replaced elements', () => {
++  const h = appHarness(); h.installObserver(); assert.equal(h.observers.length, 1);
++  const observer = h.observers[0]; assert.equal(observer.target, h.element);
++  h.resize(large); observer.callback();
++  assert.deepEqual(h.cameraRef.current, { x: 91.5, y: -12, zoom: 1 });
++  assert.deepEqual(h.flushes, ['enter', 'exit']); assert.equal(h.pending.size, 0);
++  h.viewportRef.current = { ...h.element }; h.resize(small); observer.callback();
++  assert.deepEqual(h.cameraRef.current, { x: 91.5, y: -12, zoom: 1 });
++  assert.equal(h.flushes.length, 2);
++  h.viewportRef.current = h.element; h.cleanups[0](); observer.callback();
++  assert.equal(observer.disconnected, true); assert.equal(h.flushes.length, 2);
++  h.installObserver();
++  assert.deepEqual(h.cameraRef.current, baseline); assert.equal(h.observers.length, 2);
++});
++
++test('the real window fallback follows the same mapping and unregisters after cleanup', () => {
++  const h = appHarness('pan', false); h.installObserver();
++  assert.equal(h.observers.length, 0); assert.equal(h.fallback.size, 1);
++  h.resize(large); h.fallback.get('resize')!();
++  assert.deepEqual(h.cameraRef.current, { x: 91.5, y: -12, zoom: 1 });
++  h.cleanups[0](); assert.equal(h.fallback.size, 0);
++});
++
++test('the actual observer remount resumes a bounded exhausted hidden initialization at the now-visible dimensions', () => {
++  const h = appHarness(); writeCameraView(h.storage, h.owner, baseline, small);
++  h.viewportRef.current = null; h.initializeCamera(h.document, 4); h.installObserver();
++  for (let index = 0; index < 4; index++) h.runFrames();
++  assert.equal(h.pending.size, 0); assert.equal(h.cameraOwner.current, null);
++  assert.ok(h.pendingCameraInitialization.current); assert.equal(h.observers.length, 0);
++  h.runFrames(); assert.equal(h.pending.size, 0, 'hidden viewport is not retried indefinitely');
++  h.viewportRef.current = h.element; h.resize(large); h.installObserver();
++  assert.equal(h.observers.length, 1); assert.equal(h.pending.size, 1);
++  h.observers[0].callback(); assert.equal(h.pending.size, 1, 'initial observer delivery does not queue a duplicate');
++  h.runFrames();
++  assert.deepEqual(h.cameraRef.current, { x: 91.5, y: -12, zoom: 1 });
++  assert.deepEqual(h.cameraViewport.current, large); assert.equal(h.pendingCameraInitialization.current, null);
++  assert.deepEqual(readCameraView(h.storage, h.owner, small), baseline);
++});
++
++test('the actual observer revives an exhausted tiny viewport only when dimensions become usable', () => {
++  const h = appHarness(); writeCameraView(h.storage, h.owner, baseline, small);
++  h.resize({ width: 80, height: 70 }); h.installObserver(); h.initializeCamera(h.document, 4);
++  for (let index = 0; index < 4; index++) h.runFrames();
++  assert.equal(h.pending.size, 0); assert.equal(h.cameraOwner.current, null);
++  h.observers[0].callback(); assert.equal(h.pending.size, 0);
++  h.resize(large); h.observers[0].callback(); assert.equal(h.pending.size, 1);
++  h.runFrames(); assert.deepEqual(h.cameraRef.current, { x: 91.5, y: -12, zoom: 1 });
++  assert.equal(h.pendingCameraInitialization.current, null);
++});
++
++test('a stale load/intent/revision cannot revive after hidden exhaustion, and an owned remount keeps explicit intent', () => {
++  for (const invalidate of [
++    (h: ReturnType<typeof appHarness>) => { h.cameraIntent.current++; },
++    (h: ReturnType<typeof appHarness>) => { h.loadSequence.current++; },
++    (h: ReturnType<typeof appHarness>) => { h.historyRef.current = createHistory({ ...h.document, revision: 1 }); },
++  ]) {
++    const h = appHarness(); h.viewportRef.current = null; h.initializeCamera(h.document, 4);
++    for (let index = 0; index < 4; index++) h.runFrames();
++    invalidate(h); h.viewportRef.current = h.element; h.resize(large); h.installObserver(); h.runFrames();
++    assert.equal(h.pending.size, 0); assert.equal(h.pendingCameraInitialization.current, null);
++    assert.deepEqual(h.cameraRef.current, baseline); assert.equal(h.values.size, 0);
++  }
++  const h = appHarness(); h.viewportRef.current = null; h.initializeCamera(h.document, 4);
++  for (let index = 0; index < 4; index++) h.runFrames();
++  h.viewportRef.current = h.element; h.resize(large);
++  h.commitCamera({ x: 120, y: 60, zoom: .8 });
++  assert.equal(h.pendingCameraInitialization.current, null);
++  h.installObserver(); h.runFrames();
++  assert.deepEqual(h.cameraRef.current, { x: 120, y: 60, zoom: .8 });
++  assert.equal(h.pending.size, 0); assert.equal(h.cameraIntent.current, 11);
++});
++
++test('hidden dimensions are ignored; a tiny visible viewport can return without contaminating stored centre', () => {
++  const h = appHarness(); h.persistCamera();
++  const original = [...h.values.values()][0];
++  h.resize({ width: 0, height: 0 }); h.synchronizeCameraViewport();
++  assert.deepEqual(h.cameraRef.current, baseline); assert.deepEqual(h.cameraViewport.current, small);
++  h.resize({ width: 80, height: 70 }); h.synchronizeCameraViewport();
++  assert.deepEqual(center(h.cameraRef.current, { width: 80, height: 70 }), { x: 350, y: 405 });
++  assert.equal([...h.values.values()][0], original, 'session storage refuses undersized captures');
++  h.resize(small); h.synchronizeCameraViewport();
++  assert.deepEqual(h.cameraRef.current, baseline); assert.deepEqual(readCameraView(h.storage, h.owner, small), baseline);
++});

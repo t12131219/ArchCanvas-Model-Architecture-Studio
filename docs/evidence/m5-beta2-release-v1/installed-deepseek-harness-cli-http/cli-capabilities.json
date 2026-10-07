@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "runtimeVersion": "0.1.0",
+  "sourceAnalysis": true,
+  "modelAuthoring": {
+    "mode": "authored-draft",
+    "catalog": "/api/authoring/catalog",
+    "generation": "new-managed-copy",
+    "runtimeVerified": false
+  },
+  "documentPersistence": true,
+  "semanticWriteback": true,
+  "supportedIntents": [
+    "set_dropout_probability",
+    "update_configuration",
+    "replace_activation",
+    "rebind_input"
+  ],
+  "semanticScope": {
+    "operators": {
+      "Dropout": [
+        "p"
+      ],
+      "MultiheadAttention": [
+        "dropout"
+      ]
+    },
+    "origins": [
+      "explicit-float-literal",
+      "unique-module-top-level-float-all-probability-readers"
+    ],
+    "httpCommit": "managed-workspace-copy-only",
+    "runtimeVerified": false
+  },
+  "activationScope": {
+    "operators": [
+      "ReLU",
+      "GELU"
+    ],
+    "constructors": "direct-no-argument",
+    "structuralProfile": "root-straight-line-floating-input",
+    "runtimeRequiredInStudio": true
+  },
+  "rebindScope": {
+    "operators": [
+      "Identity",
+      "Dropout",
+      "ReLU",
+      "GELU"
+    ],
+    "control": "entry-forward-straight-line",
+    "compatibility": "same-input-symbolic-shape-and-dtype",
+    "runtimeVerified": false
+  },
+  "structuralRebindScope": {
+    "operators": [
+      "Identity",
+      "Dropout",
+      "ReLU",
+      "GELU",
+      "MultiheadAttention"
+    ],
+    "ports": [
+      "input",
+      "query",
+      "key",
+      "value",
+      "attn_mask",
+      "key_padding_mask"
+    ],
+    "sourceArguments": [
+      "positional-name",
+      "keyword-name"
+    ],
+    "control": "entry-forward-straight-line",
+    "profile": "structural-verified",
+    "inputs": "explicit-named-shape-dtype-seed-modes",
+    "device": "cpu",
+    "constructor": "source-default-only",
+    "coverage": "frozen-samples-only",
+    "runtimeRequired": true
+  },
+  "publicationExport": {
+    "svg": true,
+    "pdf": true,
+    "png": true,
+    "moduleOrigin": "/tmp/archcanvas-beta2-final-kjpx83qc/deepseek-harness/.dsh/skills/archcanvas/runtime/release/src/archcanvas_publication/exporter.py",
+    "pythonExecutable": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/.venv/bin/python",
+    "fontEmbeddingGuaranteed": false,
+    "resourcePolicy": "self-contained-publication-svg; no external URLs, images, CSS, DTD or executable content",
+    "converter": "CairoSVG",
+    "converterVersion": "2.8.2",
+    "converterOrigin": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/.venv/lib/python3.11/site-packages/cairosvg/__init__.py",
+    "cairoVersion": "1.16.0"
+  },
+  "runtimeObservation": false,
+  "runtimeProfiles": {
+    "available": false,
+    "structuralVerified": false,
+    "status": "unavailable",
+    "unavailableReason": "interpreter must name an existing absolute file."
+  },
+  "frontend": "stdlib-ast-subset",
+  "packageProvenance": {
+    "projectRoot": "/tmp/archcanvas-beta2-final-kjpx83qc/deepseek-harness/.dsh/skills/archcanvas/runtime/release",
+    "modules": {
+      "archcanvas_cli": "/tmp/archcanvas-beta2-final-kjpx83qc/deepseek-harness/.dsh/skills/archcanvas/runtime/release/src/archcanvas_cli/__init__.py",
+      "archcanvas_python": "/tmp/archcanvas-beta2-final-kjpx83qc/deepseek-harness/.dsh/skills/archcanvas/runtime/release/src/archcanvas_python/__init__.py",
+      "archcanvas_transactions": "/tmp/archcanvas-beta2-final-kjpx83qc/deepseek-harness/.dsh/skills/archcanvas/runtime/release/src/archcanvas_transactions/__init__.py",
+      "archcanvas_publication": "/tmp/archcanvas-beta2-final-kjpx83qc/deepseek-harness/.dsh/skills/archcanvas/runtime/release/src/archcanvas_publication/__init__.py",
+      "archcanvas_runtime": "/tmp/archcanvas-beta2-final-kjpx83qc/deepseek-harness/.dsh/skills/archcanvas/runtime/release/src/archcanvas_runtime/__init__.py",
+      "archcanvas_authoring": "/tmp/archcanvas-beta2-final-kjpx83qc/deepseek-harness/.dsh/skills/archcanvas/runtime/release/src/archcanvas_authoring/__init__.py"
+    },
+    "independent": true
+  },
+  "supported": [
+    "local-module-imports",
+    "literal-module-construction",
+    "named-attention-ports",
+    "tuple-outputs",
+    "residual-dataflow",
+    "bounded-module-list",
+    "shared-instance-identity"
+  ],
+  "limitations": [
+    "Source analysis never executes models; structural execution requires an explicit frozen CPU profile and mandatory kernel isolation",
+    "Sample runtime observations do not establish full-program coverage or old/new numerical equivalence",
+    "HTTP source edits affect registered managed copies only",
+    "Only directly authored forward methods",
+    "Unsupported dynamic control, state, factories and reflection remain opaque",
+    "80 source files, 2 MB corpus, 1200 nodes, 16 repeat iterations",
+    "One service process per data directory; document CAS is process-local"
+  ]
+}

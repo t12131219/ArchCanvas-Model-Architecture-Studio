@@ -1,0 +1,7 @@
+# Whole-polyline overlap union repair, attempt 1
+
+Only orthogonalRouter.ts pairConflict changed. With wholePolyline=true it collects overlap intervals by first-route axis/coordinate and unions intersecting or touching intervals before deriving overlapLength/overlapPairs. This measures occupied geometry once even when either route retraces an interval. Existing generic and family calls retain segment-pair accumulation; crossing logic, tolerances, all routing budgets, endpoints, canonical identities and candidate generation are unchanged.
+
+The frozen pre-repair synthetic probe is rerun unchanged. The router now retains the original residual route, so the independent oracle reports overlap 5→5 and crossing count 1→1. Exit code is 0 and all probe inputs remain byte exact during execution. boundary-probe.receipt.json binds the runtime, product inputs, probe/helper inputs and stdout/stderr. Earlier failure data remains in ../final-source-review-attempt-1/ and is copied by before-repair.json.
+
+Current router: 46,552 bytes, SHA256 45dcc36189cfc2be0264a566b3349f15a8cff598de5e7156362c496558d35eb2. scene.ts remains 24,038 bytes, SHA256 46ef39a60cdc5778e49536007d3a0c7807d3e6cb26a5fadaa2a07d37a40be75a. source.diff is against this attempt's exact frozen prior router, rather than repository HEAD. No independent tests/oracle or prior evidence were edited. No suite, TypeScript/build, browser or model execution was performed here. Independent regression tests and required checks are delegated to root/acceptance; this development probe is not a replacement for them.

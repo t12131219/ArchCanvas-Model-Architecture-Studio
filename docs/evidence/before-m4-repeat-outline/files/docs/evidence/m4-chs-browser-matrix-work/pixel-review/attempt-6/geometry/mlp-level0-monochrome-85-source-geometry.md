@@ -1,0 +1,7 @@
+# mlp-level0-monochrome-85 source geometry review
+
+9 assigned structural inputs were bound and rehashed unchanged at finish. SVG/meta/CanvasDocument/DOM observation agree on revision 4; top-level envelope revision is separately 3, with semantics not independently established here. Other bindings, monochrome width 85 mm and the root MLP expanded ID agree. SVG: 85mm × 78.57mm, viewBox 0 0 595 550. Final before/after DOM is byte identical and contains no dialog. Export-complete contains a modal; post-close is nonmodal. Declared observed href matches the actual DOM View SVG link and actualExport field. SourceScene is None. DOM equality is not raster state proof.
+
+All 2 routes / 4 role-specific endpoints match within the 0.051 scene-unit serialization rounding tolerance (max 0.000000). 3 main front card rectangles have 0 pair overlaps and 0 segment/card penetrations. 1 expanded enclosing rectangles are containers, not leaf obstacles. 2 decorative backplates have 2 route penetration incidences. 0 distinct route pairs retain segment incidence types {}. Every route and rectangle is tested; endpoint agreement does not imply clean or distinguishable routing.
+
+Nominal min emitted font size is 4.0495 pt; node-name 13 scene units is 5.2643 pt. Fit scene shape does not prove readability at physical size. This is source geometry only, no image review, glyph or arrowhead certification, raster synchronization, live-store acquisition proof, runtime/performance or human acceptance. L0/L1 reports are retained unchanged; excluded raw captures are not matrix coverage.

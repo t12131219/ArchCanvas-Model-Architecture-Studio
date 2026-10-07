@@ -1,0 +1,311 @@
+{
+  "draft": {
+    "schemaVersion": 1,
+    "mode": "authored-draft",
+    "id": "draft-d495657a-fb6e-4c97-b899-98638ba67c0d",
+    "title": "我的模型",
+    "revision": 1,
+    "nodes": [
+      {
+        "id": "n_86e6a37b2b4d4907b5bfd6ef51816f38",
+        "kind": "Input",
+        "label": "图像输入",
+        "parameters": {
+          "shape": [
+            1,
+            3,
+            32,
+            32
+          ],
+          "dtype": "float32"
+        },
+        "position": {
+          "x": -135,
+          "y": 155
+        }
+      },
+      {
+        "id": "n_ca9166b8cbc74b2b963afdc2f83e7282",
+        "kind": "Conv2d",
+        "label": "卷积 3 → 8",
+        "parameters": {
+          "in_channels": 3,
+          "out_channels": 8,
+          "kernel_size": [
+            3,
+            3
+          ],
+          "stride": [
+            1,
+            1
+          ],
+          "padding": [
+            1,
+            1
+          ],
+          "dilation": [
+            1,
+            1
+          ],
+          "groups": 1,
+          "bias": true
+        },
+        "position": {
+          "x": 89,
+          "y": 155
+        }
+      },
+      {
+        "id": "n_52a248385d6d4b60883693ce5168c247",
+        "kind": "ReLU",
+        "label": "ReLU 激活",
+        "parameters": {},
+        "position": {
+          "x": 313,
+          "y": 155
+        }
+      },
+      {
+        "id": "n_d335848e946b42ef896ba223938c5e19",
+        "kind": "MaxPool2d",
+        "label": "最大池化 2 × 2",
+        "parameters": {
+          "kernel_size": [
+            2,
+            2
+          ],
+          "stride": [
+            2,
+            2
+          ],
+          "padding": [
+            0,
+            0
+          ],
+          "dilation": [
+            1,
+            1
+          ],
+          "ceil_mode": false
+        },
+        "position": {
+          "x": 537,
+          "y": 155
+        }
+      },
+      {
+        "id": "n_aceab80ea98c4a68846575552ba50828",
+        "kind": "AdaptiveAvgPool2d",
+        "label": "平均池化 1 × 1",
+        "parameters": {
+          "output_size": [
+            1,
+            1
+          ]
+        },
+        "position": {
+          "x": -135,
+          "y": 335
+        }
+      },
+      {
+        "id": "n_1835ba71319f4492a142b4f015e9a8b2",
+        "kind": "Flatten",
+        "label": "展平",
+        "parameters": {
+          "start_dim": 1,
+          "end_dim": -1
+        },
+        "position": {
+          "x": 89,
+          "y": 335
+        }
+      },
+      {
+        "id": "n_5517a30617864770a49f2001e77b714d",
+        "kind": "Linear",
+        "label": "分类头 8 → 4",
+        "parameters": {
+          "in_features": 8,
+          "out_features": 4,
+          "bias": true
+        },
+        "position": {
+          "x": 313,
+          "y": 335
+        }
+      },
+      {
+        "id": "n_5b9e981aefed4f0f85ea974f8f0a3d4e",
+        "kind": "Output",
+        "label": "输出",
+        "parameters": {},
+        "position": {
+          "x": 537,
+          "y": 335
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_06d048c096a54f71aeb85d7f4ff1b5bc",
+        "source": {
+          "nodeId": "n_86e6a37b2b4d4907b5bfd6ef51816f38",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_ca9166b8cbc74b2b963afdc2f83e7282",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e_94d8f08c5a5e4b19badf9c923b575f14",
+        "source": {
+          "nodeId": "n_ca9166b8cbc74b2b963afdc2f83e7282",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_52a248385d6d4b60883693ce5168c247",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e_6fc66f24fba9460b9ba27f61724116d9",
+        "source": {
+          "nodeId": "n_52a248385d6d4b60883693ce5168c247",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_d335848e946b42ef896ba223938c5e19",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e_b743e13dd9724d1b8aac79964e800bfc",
+        "source": {
+          "nodeId": "n_d335848e946b42ef896ba223938c5e19",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_aceab80ea98c4a68846575552ba50828",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e_62b36a52e8b348a28f58d8fb5874754b",
+        "source": {
+          "nodeId": "n_aceab80ea98c4a68846575552ba50828",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_1835ba71319f4492a142b4f015e9a8b2",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e_cde5974a6cac426dace6c3901fba3b34",
+        "source": {
+          "nodeId": "n_1835ba71319f4492a142b4f015e9a8b2",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_5517a30617864770a49f2001e77b714d",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e_3e20275682bb4b778895fc0f59522db6",
+        "source": {
+          "nodeId": "n_5517a30617864770a49f2001e77b714d",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_5b9e981aefed4f0f85ea974f8f0a3d4e",
+          "portId": "input"
+        }
+      }
+    ]
+  },
+  "draftDigest": "631cdb4f3565167b1352aec988d2f9d8faf13b247351a9f5c5dea49b94fa036d",
+  "complete": true,
+  "issues": [],
+  "tensors": {
+    "n_86e6a37b2b4d4907b5bfd6ef51816f38": {
+      "shape": [
+        1,
+        3,
+        32,
+        32
+      ],
+      "dtype": "float32"
+    },
+    "n_ca9166b8cbc74b2b963afdc2f83e7282": {
+      "shape": [
+        1,
+        8,
+        32,
+        32
+      ],
+      "dtype": "float32"
+    },
+    "n_52a248385d6d4b60883693ce5168c247": {
+      "shape": [
+        1,
+        8,
+        32,
+        32
+      ],
+      "dtype": "float32"
+    },
+    "n_d335848e946b42ef896ba223938c5e19": {
+      "shape": [
+        1,
+        8,
+        16,
+        16
+      ],
+      "dtype": "float32"
+    },
+    "n_aceab80ea98c4a68846575552ba50828": {
+      "shape": [
+        1,
+        8,
+        1,
+        1
+      ],
+      "dtype": "float32"
+    },
+    "n_1835ba71319f4492a142b4f015e9a8b2": {
+      "shape": [
+        1,
+        8
+      ],
+      "dtype": "float32"
+    },
+    "n_5517a30617864770a49f2001e77b714d": {
+      "shape": [
+        1,
+        4
+      ],
+      "dtype": "float32"
+    },
+    "n_5b9e981aefed4f0f85ea974f8f0a3d4e": {
+      "shape": [
+        1,
+        4
+      ],
+      "dtype": "float32"
+    }
+  },
+  "order": [
+    "n_86e6a37b2b4d4907b5bfd6ef51816f38",
+    "n_ca9166b8cbc74b2b963afdc2f83e7282",
+    "n_52a248385d6d4b60883693ce5168c247",
+    "n_d335848e946b42ef896ba223938c5e19",
+    "n_aceab80ea98c4a68846575552ba50828",
+    "n_1835ba71319f4492a142b4f015e9a8b2",
+    "n_5517a30617864770a49f2001e77b714d",
+    "n_5b9e981aefed4f0f85ea974f8f0a3d4e"
+  ],
+  "verification": "static-declared-tensors; no model execution"
+}

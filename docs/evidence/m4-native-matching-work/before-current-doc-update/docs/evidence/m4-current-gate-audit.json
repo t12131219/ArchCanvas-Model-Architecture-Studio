@@ -1,0 +1,97 @@
+{
+  "schema": "archcanvas-m4-current-gate-audit/1",
+  "updated": "2026-10-06",
+  "formalProject": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio",
+  "overall": "partial",
+  "m5": "not_started",
+  "humanParticipants": 0,
+  "requirements": [
+    {
+      "id": "semantic-holdout",
+      "requirement": "No-template holdout: recover supported facts accurately and keep unknown regions opaque.",
+      "status": "bounded_pass",
+      "evidence": [
+        "docs/evidence/m4-holdout-current-audit/report.json",
+        "docs/evidence/m4-holdout-report.json",
+        "docs/evidence/m4-holdout-tests.txt",
+        "docs/evidence/source-facts/report.json"
+      ],
+      "scope": "Six formal ViT/temporal/U-Net-style/GNN/SSM entries; static AST/source facts and handwritten counterexamples. No execution or arbitrary-family claim."
+    },
+    {
+      "id": "shared-repeat-opaque",
+      "requirement": "Shared instances, repeat identity/order, output slots and opaque boundaries remain faithful through scene edits and reopen.",
+      "status": "bounded_pass",
+      "evidence": [
+        "docs/evidence/m4-holdout-current-audit/report.json",
+        "docs/evidence/source-facts/report.json",
+        "studio/tests/source-facts.test.ts",
+        "docs/m4-source-facts.md"
+      ],
+      "scope": "TemporalForecaster, SkipSegmentation and GraphForecast source-backed fixtures plus independent identity counterexamples; not full dynamic Python or numerical equivalence."
+    },
+    {
+      "id": "visual-authoring",
+      "requirement": "Formal Studio supports readable authoring and bounded visual operations.",
+      "status": "bounded_pass",
+      "evidence": [
+        "docs/evidence/m4-readable-canvas-work/checks-final/receipt.json",
+        "docs/evidence/m4-readable-canvas-final-readback-attempt-1/report.json",
+        "docs/evidence/m4-readable-canvas-work/browser-final/manifest.json"
+      ],
+      "scope": "300/300 and 22-frame AI browser sample; does not certify all modules, global route aesthetics or publication-size review."
+    },
+    {
+      "id": "browser-performance",
+      "requirement": "Real browser input-to-paint, sustained frame and expansion performance meet the M4 target.",
+      "status": "failed_or_unverified",
+      "evidence": [
+        "docs/evidence/m4-current-performance-diagnostic/manifest.json",
+        "docs/evidence/m4-studio-performance-validation.json",
+        "docs/evidence/m4-studio-performance.json",
+        "docs/m4-performance.md"
+      ],
+      "observed": {
+        "viewport": "1102x905 DPR1",
+        "idleFps": 1.0065,
+        "interactionFps": 1.6815,
+        "expandPaintProxyP95Ms": 996.4,
+        "collapsePaintProxyP95Ms": 998.6,
+        "p95FrameMs": 983.4,
+        "maxLongTaskMs": 0,
+        "visibilityChanges": 0
+      },
+      "scope": "A visible/focused in-app browser session with an approximately one-second cadence. It is valid failure evidence, not a product pass; cause is not yet isolated from browser scheduling.",
+      "observedCurrentDiagnostic": {
+        "expandPaintProxyP95Ms": 989.9999999284773,
+        "collapsePaintProxyP95Ms": 989.9000000000015,
+        "rAFfps": 1.6735281319945452,
+        "p95FrameMs": 1000
+      }
+    },
+    {
+      "id": "research-task",
+      "requirement": "3–5 real research users complete the five-step task within 180 seconds with screenshots and export review.",
+      "status": "not_done",
+      "evidence": [
+        "docs/evidence/m4-research-handoff-audit-attempt-1/report.json",
+        "docs/m4-research-protocol.md",
+        "docs/evidence/research-trial/current-zoom-build/preparation-verification.json",
+        "docs/evidence/m4-human-review-handoff-status-followup.json"
+      ],
+      "scope": "Old packages are stale for the current build; both retain five pristine slots and zero assignment/collection/humans. A fresh current package must be prepared and verified before assignment."
+    },
+    {
+      "id": "publication-review",
+      "requirement": "Human review of real-size 85/180 mm output and routing/typography aesthetics.",
+      "status": "not_done",
+      "evidence": [
+        "docs/m4-research-protocol.md",
+        "docs/m4-exit-audit.md",
+        "docs/evidence/m4-readable-canvas-work/browser-final/manifest.json"
+      ],
+      "scope": "AI pixel inspection and geometry checks are retained as preparation only; physical/publication review remains open."
+    }
+  ],
+  "decision": "Keep M4 active. Do not mark complete while browser performance, real-user task evidence or human publication review is missing."
+}

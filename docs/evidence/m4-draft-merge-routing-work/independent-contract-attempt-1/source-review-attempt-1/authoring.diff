@@ -1,0 +1,19 @@
+--- frozen-old/studio/src/authoring.ts
++++ current/studio/src/authoring.ts
+@@ -1,5 +1,6 @@
+ import { createOrthogonalRouter } from './core/orthogonalRouter.ts';
+ import type { SceneNode } from './core/types.ts';
++import { refineDraftRoutes } from './draftRouting.ts';
+ 
+ export type DraftValue = number | boolean | string | number[];
+ export type DraftPort = { id: string; name: string; direction: 'in' | 'out'; type: 'tensor' };
+@@ -147,7 +148,8 @@
+     return [{ id: edge.id, sourceId: source.id, targetId: target.id, tensorId: JSON.stringify([source.id, edge.source.portId]),
+       start, end, preferredPath }];
+   });
+-  const routed = router.batch(requests), routes = requests.map((request, index) => ({ ...routed[index], id: request.id }));
++  const routed = refineDraftRoutes(nodes, requests, router.batch(requests));
++  const routes = requests.map((request, index) => ({ ...routed[index], id: request.id }));
+   return { routes, overlaps: router.overlaps, flow, nodeFlows };
+ }
+ /** Only explicit user layout requests move objects; rank order is deterministic. */

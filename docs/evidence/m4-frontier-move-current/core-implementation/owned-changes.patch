@@ -1,0 +1,208 @@
+--- before/studio/src/core/types.ts
++++ studio/src/core/types.ts
+@@ -81,11 +81,12 @@
+   layoutByFrontier: Record<string, Record<string, Position>>;
+   pinnedObjects: string[];
+ }
++export type MoveScope = 'all-frontiers' | 'current-frontier';
+ export type VisualOperation =
+   | { type: 'alias'; id: string; label: string }
+   | { type: 'nodeStyle'; id: string; style: NodeStyle }
+   | { type: 'edgeStyle'; id: string; style: EdgeStyle }
+-  | { type: 'move'; ids: string[]; dx: number; dy: number }
++  | { type: 'move'; ids: string[]; dx: number; dy: number; scope?: MoveScope }
+   | { type: 'expand'; id: string; expanded: boolean }
+   | { type: 'legend'; items: LegendItem[] }
+   | { type: 'annotation'; annotation: Annotation }
+--- before/studio/src/core/document.ts
++++ studio/src/core/document.ts
+@@ -1,4 +1,4 @@
+-import type { Architecture, CanvasDocument, HistoryAction, HistoryState, Position, VisualOperation } from './types.ts';
++import type { Architecture, CanvasDocument, HistoryAction, HistoryState, MoveScope, Position, VisualOperation } from './types.ts';
+ import { CATEGORY_STYLES, TOKENS } from './tokens.ts';
+ import { buildScene } from './scene.ts';
+ import { fields, finite, object, textValue, validateArchitecture, validateDocument, ValidationError } from './validate.ts';
+@@ -8,7 +8,7 @@
+ type Frontier = { key: string; expandedIds: string[]; visibleIds: Set<string> };
+ 
+ /** Hidden expansion flags remember detail, but do not describe the displayed frontier. */
+-function frontier(document: CanvasDocument, expandedIds = document.expandedIds): Frontier {
++export function effectiveVisibleFrontier(document: CanvasDocument, expandedIds = document.expandedIds): Frontier {
+   const byId = new Map(document.architecture.nodes.map(node => [node.id, node]));
+   const expanded = new Set(expandedIds), visibleIds = new Set<string>(), effective: string[] = [];
+   const visit = (id: string) => {
+@@ -23,6 +23,13 @@
+   effective.sort();
+   // A JSON array distinguishes identities containing the old '|' separator.
+   return { key: `${FRONTIER_PREFIX}${JSON.stringify(effective)}`, expandedIds: effective, visibleIds };
++}
++
++/** An omitted scope preserves the established global-delta contract. */
++export function resolveMoveScope(value: unknown): MoveScope {
++  const scope = value === undefined ? 'all-frontiers' : value;
++  if (scope !== 'all-frontiers' && scope !== 'current-frontier') throw new ValidationError('move.scope: expected all-frontiers or current-frontier');
++  return scope;
+ }
+ 
+ function cachedExpansionIds(document: CanvasDocument, key: string): string[] | undefined {
+@@ -78,11 +85,11 @@
+   const direct = document.layoutByFrontier[target.key];
+   if (direct) return direct;
+   const legacyKey = target.expandedIds.join('|'), legacyIds = cachedExpansionIds(document, legacyKey);
+-  const exactLegacy = legacyIds && frontier(document, legacyIds).key === target.key ? document.layoutByFrontier[legacyKey] : undefined;
++  const exactLegacy = legacyIds && effectiveVisibleFrontier(document, legacyIds).key === target.key ? document.layoutByFrontier[legacyKey] : undefined;
+   if (exactLegacy) return exactLegacy;
+   const compatible = Object.entries(document.layoutByFrontier).filter(([key]) => {
+     const ids = cachedExpansionIds(document, key);
+-    return ids && frontier(document, ids).key === target.key;
++    return ids && effectiveVisibleFrontier(document, ids).key === target.key;
+   }).map(([, positions]) => positions);
+   if (!compatible.length) return undefined;
+   const signature = (positions: Record<string, Position>) => JSON.stringify([...target.visibleIds].sort().map(id => {
+@@ -175,7 +182,7 @@
+   const canonical = document.architecture.nodes.find(n => n.id === id)!;
+   if (!canonical.children.length) throw new ValidationError(`${id}: no recovered children to expand`);
+   const before = buildScene(document), operated = before.nodes.find(n => n.id === id);
+-  const previousFrontier = frontier(document), previousSaved = snapshotFor(document, previousFrontier);
++  const previousFrontier = effectiveVisibleFrontier(document), previousSaved = snapshotFor(document, previousFrontier);
+   const hasHiddenExpansionMemory = previousFrontier.expandedIds.length !== document.expandedIds.length;
+   // An older document may already be collapsed with stretched neighbors. Its
+   // correct overview cache must survive the first toggle after reopening.
+@@ -185,11 +192,11 @@
+   const ids = new Set(document.expandedIds);
+   if (expanded) ids.add(id); else ids.delete(id);
+   document.expandedIds = [...ids];
+-  const nextFrontier = frontier(document);
++  const nextFrontier = effectiveVisibleFrontier(document);
+   // Toggling a hidden descendant changes memory only, not visible placement.
+   if (nextFrontier.key === previousFrontier.key) return;
+-  // Restore frontier geometry, including neighbor displacement. A direct user move updates
+-  // every stored frontier below, so a subsequent toggle cannot undo deliberate placement.
++  // Restore frontier geometry, including neighbor displacement. An all-frontiers
++  // move updates every stored view below; current-frontier moves retain each view's arrangement.
+   const saved = snapshotFor(document, nextFrontier);
+   const anchored = new Set([id]);
+   let parent = canonical.parentId;
+@@ -246,8 +253,13 @@
+       case 'nodeStyle': { fields(op, ['type', 'id', 'style'], 'operation'); const id = target(op.id); next.nodeStyleOverrides[id] = { ...next.nodeStyleOverrides[id], ...object(op.style, 'nodeStyle') }; break; }
+       case 'edgeStyle': { fields(op, ['type', 'id', 'style'], 'operation'); const id = target(op.id, edgeIds); next.edgeStyleOverrides[id] = { ...next.edgeStyleOverrides[id], ...object(op.style, 'edgeStyle') }; break; }
+       case 'move': {
+-        fields(op, ['type', 'ids', 'dx', 'dy'], 'operation'); if (!Array.isArray(op.ids)) throw new ValidationError('move.ids: expected array');
++        fields(op, ['type', 'ids', 'dx', 'dy', 'scope'], 'operation'); if (!Array.isArray(op.ids)) throw new ValidationError('move.ids: expected array');
++        const scope = resolveMoveScope(op.scope);
+         const dx = finite(op.dx, 'move.dx'), dy = finite(op.dy, 'move.dy'), moving = new Set(op.ids.map(id => target(id)));
++        const currentFrontier = scope === 'current-frontier' ? effectiveVisibleFrontier(next) : undefined;
++        if (currentFrontier) for (const id of moving) {
++          if (!currentFrontier.visibleIds.has(id)) throw new ValidationError(`move: ${id} is hidden in the current frontier`);
++        }
+         materialize(next);
+         for (const id of moving) {
+           if (subtreePinned(next, id)) continue;
+@@ -256,9 +268,12 @@
+           while (parent) { if (moving.has(parent)) covered = true; parent = next.architecture.nodes.find(n => n.id === parent)?.parentId; }
+           if (!covered) {
+             const p = next.layout[id]; if (!p) throw new ValidationError(`move: ${id} is hidden and has no established layout`); p.x += dx; p.y += dy;
+-            for (const snapshot of Object.values(next.layoutByFrontier)) if (snapshot[id]) { snapshot[id].x += dx; snapshot[id].y += dy; }
++            if (scope === 'all-frontiers') for (const snapshot of Object.values(next.layoutByFrontier)) if (snapshot[id]) { snapshot[id].x += dx; snapshot[id].y += dy; }
+           }
+         }
++        // A local arrangement establishes its canonical visible snapshot without
++        // translating any other saved view or guessing at legacy cache keys.
++        if (currentFrontier) next.layoutByFrontier[currentFrontier.key] = visibleSnapshot(next, currentFrontier.visibleIds);
+         break;
+       }
+       case 'expand': fields(op, ['type', 'id', 'expanded'], 'operation'); if (typeof op.expanded !== 'boolean') throw new ValidationError('expand.expanded: expected boolean'); expand(next, target(op.id), op.expanded); break;
+--- before/studio/src/core/movePreview.ts
++++ studio/src/core/movePreview.ts
+@@ -1,4 +1,5 @@
+-import type { CanvasDocument, Scene } from './types.ts';
++import type { CanvasDocument, MoveScope, Scene } from './types.ts';
++import { effectiveVisibleFrontier, resolveMoveScope } from './document.ts';
+ import { buildScene } from './scene.ts';
+ import { finite, textValue, validateDocument, ValidationError } from './validate.ts';
+ 
+@@ -7,6 +8,7 @@
+   readonly documentId: string;
+   readonly baseRevision: number;
+   readonly selectedIds: readonly string[];
++  readonly scope: MoveScope;
+ }
+ type PreparedMove = { document: CanvasDocument; movingIds: string[] };
+ const prepared = new WeakMap<MovePreviewSession, PreparedMove>();
+@@ -17,8 +19,9 @@
+ }
+ 
+ /** Validate and snapshot once, rather than cloning source text every pointer frame. */
+-export function prepareMovePreview(document: CanvasDocument, ids: readonly string[]): MovePreviewSession {
++export function prepareMovePreview(document: CanvasDocument, ids: readonly string[], scope?: MoveScope): MovePreviewSession {
+   validateDocument(document);
++  const moveScope = resolveMoveScope(scope);
+   if (!Array.isArray(ids)) throw new ValidationError('move.ids: expected array');
+   const byId = new Map(document.architecture.nodes.map(node => [node.id, node]));
+   const selectedIds = ids.map(id => {
+@@ -26,6 +29,10 @@
+     if (!byId.has(key)) throw new ValidationError(`operation: unknown object ${key}`);
+     return key;
+   });
++  if (moveScope === 'current-frontier') {
++    const visibleIds = effectiveVisibleFrontier(document).visibleIds;
++    for (const id of selectedIds) if (!visibleIds.has(id)) throw new ValidationError(`move: ${id} is hidden in the current frontier`);
++  }
+   const moving = new Set(selectedIds), pinnedSubtrees = new Set<string>();
+   for (const pin of document.pinnedObjects) {
+     let node = byId.get(pin);
+@@ -43,7 +50,7 @@
+     if (!snapshot.layout[id]) throw new ValidationError(`move: ${id} is hidden and has no established layout`);
+     movingIds.push(id);
+   }
+-  const session = Object.freeze({ documentId: document.id, baseRevision: document.revision, selectedIds: Object.freeze(selectedIds) });
++  const session = Object.freeze({ documentId: document.id, baseRevision: document.revision, selectedIds: Object.freeze(selectedIds), scope: moveScope });
+   freezeSnapshot(snapshot);
+   prepared.set(session, { document: snapshot, movingIds });
+   return session;
+@@ -60,6 +67,6 @@
+     layout[id] = { ...position, x: finite(position.x + dx, 'move.x'), y: finite(position.y + dy, 'move.y') };
+   }
+   // Stored frontier positions matter on a later expand/collapse, not this scene.
+-  // The real commit still updates them through the fully guarded move operation.
++  // The real commit applies the session's scope through the guarded move operation.
+   return buildScene({ ...base, layout, revision: base.revision + 1 });
+ }
+--- before/studio/src/core/layoutRecovery.ts
++++ studio/src/core/layoutRecovery.ts
+@@ -1,4 +1,5 @@
+-import type { CanvasDocument, Scene, SceneDiagnostic, VisualOperation } from './types.ts';
++import type { CanvasDocument, MoveScope, Scene, SceneDiagnostic, VisualOperation } from './types.ts';
++import { resolveMoveScope } from './document.ts';
+ import { buildScene } from './scene.ts';
+ import { prepareMovePreview, previewMoveScene } from './movePreview.ts';
+ import { TOKENS } from './tokens.ts';
+@@ -62,8 +63,9 @@
+ }
+ 
+ /** An explicit proposal, never an implicit clamp or a change to source facts. */
+-export function planLayoutRecovery(document: CanvasDocument, id: string): LayoutRecoveryPlan {
++export function planLayoutRecovery(document: CanvasDocument, id: string, scope?: MoveScope): LayoutRecoveryPlan {
+   validateDocument(document);
++  const moveScope = resolveMoveScope(scope);
+   const original = buildScene(document), selected = original.nodes.find(node => node.id === id);
+   if (!selected) return { status: 'unavailable', reason: '请先选择一个当前可见的对象。' };
+   const moving = descendants(document, id);
+@@ -104,7 +106,7 @@
+   const candidates = [...positions.values()].sort((a, b) =>
+     Math.abs(a.x - selected.x) + Math.abs(a.y - selected.y) - Math.abs(b.x - selected.x) - Math.abs(b.y - selected.y) || a.y - b.y || a.x - b.x).slice(0, LAYOUT_RECOVERY_CANDIDATE_LIMIT);
+   const existing = new Map(original.diagnostics.filter(diagnostic => diagnostic.code).map(diagnostic => [signature(diagnostic), severity(original, diagnostic)]));
+-  const session = prepareMovePreview(document, [id]);
++  const session = prepareMovePreview(document, [id], moveScope);
+   let candidateCount = 0;
+   for (const position of candidates) {
+     candidateCount++;
+@@ -115,7 +117,7 @@
+     // Other anchors, including pins, stay put. Containing frames may resize.
+     if (original.nodes.some(node => !moving.has(node.id) && !ancestors.has(node.id) &&
+         (() => { const after = scene.nodes.find(item => item.id === node.id); return !after || after.x !== node.x || after.y !== node.y || after.width !== node.width || after.height !== node.height; })())) continue;
+-    return { status: 'ready', id, operation: { type: 'move', ids: [id], dx, dy }, scene, candidateCount };
++    return { status: 'ready', id, operation: { type: 'move', ids: [id], dx, dy, ...(scope === undefined ? {} : { scope: moveScope }) }, scene, candidateCount };
+   }
+   return { status: 'unavailable', reason: '暂未找到保持其他对象位置且连线畅通的修复位置。可手动增大间距，或撤销这次移动。' };
+ }

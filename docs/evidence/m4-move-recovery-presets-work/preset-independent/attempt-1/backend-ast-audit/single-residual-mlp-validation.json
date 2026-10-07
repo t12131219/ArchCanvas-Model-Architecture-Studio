@@ -1,0 +1,209 @@
+{
+  "draft": {
+    "schemaVersion": 1,
+    "mode": "authored-draft",
+    "id": "draft-single-residual-mlp",
+    "title": "我的模型",
+    "revision": 0,
+    "nodes": [
+      {
+        "id": "n_d5e3205af777406e9c7565ee27e3b525",
+        "kind": "Input",
+        "label": "输入",
+        "parameters": {
+          "shape": [
+            1,
+            16
+          ],
+          "dtype": "float32"
+        },
+        "position": {
+          "x": 50,
+          "y": 70
+        }
+      },
+      {
+        "id": "n_c9f79995e29242e5ba85deb659f7d3b5",
+        "kind": "Linear",
+        "label": "隐藏层 16 → 32",
+        "parameters": {
+          "in_features": 16,
+          "out_features": 32,
+          "bias": true
+        },
+        "position": {
+          "x": 298,
+          "y": 70
+        }
+      },
+      {
+        "id": "n_70e736d3fec64700bebae7f1c10d3ba6",
+        "kind": "ReLU",
+        "label": "ReLU 激活",
+        "parameters": {},
+        "position": {
+          "x": 546,
+          "y": 70
+        }
+      },
+      {
+        "id": "n_d973447ce06744c8bfce6ba29b560363",
+        "kind": "Linear",
+        "label": "投影层 32 → 16",
+        "parameters": {
+          "in_features": 32,
+          "out_features": 16,
+          "bias": true
+        },
+        "position": {
+          "x": 794,
+          "y": 70
+        }
+      },
+      {
+        "id": "n_1f27daf5d1f546eab71dd04f89a0808f",
+        "kind": "Add",
+        "label": "残差相加",
+        "parameters": {},
+        "position": {
+          "x": 1042,
+          "y": 70
+        }
+      },
+      {
+        "id": "n_c2e51fbdbf4943c48df9096ccbc06f3f",
+        "kind": "Output",
+        "label": "输出",
+        "parameters": {},
+        "position": {
+          "x": 1290,
+          "y": 70
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_4226b8ab1888424fa2fce472d56c1c56",
+        "source": {
+          "nodeId": "n_d5e3205af777406e9c7565ee27e3b525",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_c9f79995e29242e5ba85deb659f7d3b5",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e_cde987afc5994396850ccb6db27505ce",
+        "source": {
+          "nodeId": "n_c9f79995e29242e5ba85deb659f7d3b5",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_70e736d3fec64700bebae7f1c10d3ba6",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e_f309a8cfd2924d8f901ca25f33b581aa",
+        "source": {
+          "nodeId": "n_70e736d3fec64700bebae7f1c10d3ba6",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_d973447ce06744c8bfce6ba29b560363",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "e_d8d7dd3328ba4e0195793ec798d0011b",
+        "source": {
+          "nodeId": "n_d973447ce06744c8bfce6ba29b560363",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_1f27daf5d1f546eab71dd04f89a0808f",
+          "portId": "left"
+        }
+      },
+      {
+        "id": "e_91304a666f0b4c5f8cb577956f50ee67",
+        "source": {
+          "nodeId": "n_d5e3205af777406e9c7565ee27e3b525",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_1f27daf5d1f546eab71dd04f89a0808f",
+          "portId": "right"
+        }
+      },
+      {
+        "id": "e_0719e2540cce413ea1dcaa36bc29be1f",
+        "source": {
+          "nodeId": "n_1f27daf5d1f546eab71dd04f89a0808f",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "n_c2e51fbdbf4943c48df9096ccbc06f3f",
+          "portId": "input"
+        }
+      }
+    ]
+  },
+  "draftDigest": "065af0ddbec9428dd1f4f5fbf12e054a056c56fe1fd39eae35768f511c9ac182",
+  "complete": true,
+  "issues": [],
+  "tensors": {
+    "n_d5e3205af777406e9c7565ee27e3b525": {
+      "shape": [
+        1,
+        16
+      ],
+      "dtype": "float32"
+    },
+    "n_c9f79995e29242e5ba85deb659f7d3b5": {
+      "shape": [
+        1,
+        32
+      ],
+      "dtype": "float32"
+    },
+    "n_70e736d3fec64700bebae7f1c10d3ba6": {
+      "shape": [
+        1,
+        32
+      ],
+      "dtype": "float32"
+    },
+    "n_d973447ce06744c8bfce6ba29b560363": {
+      "shape": [
+        1,
+        16
+      ],
+      "dtype": "float32"
+    },
+    "n_1f27daf5d1f546eab71dd04f89a0808f": {
+      "shape": [
+        1,
+        16
+      ],
+      "dtype": "float32"
+    },
+    "n_c2e51fbdbf4943c48df9096ccbc06f3f": {
+      "shape": [
+        1,
+        16
+      ],
+      "dtype": "float32"
+    }
+  },
+  "order": [
+    "n_d5e3205af777406e9c7565ee27e3b525",
+    "n_c9f79995e29242e5ba85deb659f7d3b5",
+    "n_70e736d3fec64700bebae7f1c10d3ba6",
+    "n_d973447ce06744c8bfce6ba29b560363",
+    "n_1f27daf5d1f546eab71dd04f89a0808f",
+    "n_c2e51fbdbf4943c48df9096ccbc06f3f"
+  ],
+  "verification": "static-declared-tensors; no model execution"
+}

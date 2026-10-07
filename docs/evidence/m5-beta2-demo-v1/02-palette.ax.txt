@@ -1,0 +1,178 @@
+Browser tab: 8, Title: "ArchCanvas · Model Architecture Studio", URL: "http://127.0.0.1:36343/".
+0 AXWebArea ArchCanvas · Model Architecture Studio, URL: 127.0.0.1:36343/
+	1 container root
+		2 container
+			3 text ArchCanvas 模型搭建
+			4 text field (settable) Description: 模型草稿名称, Value: 我的模型
+			5 text 有未保存编辑
+			6 button (disabled) 重开已保存
+			7 button 保存草稿
+			8 button (disabled) 生成模型与论文图
+			9 button 返回制图
+		10 container
+			11 text MODULE LIBRARY
+			12 heading 常用模块 17, Value: 2
+				13 text 常用模块
+				14 text 17
+			15 text 拖入画布，或点击添加。
+			16 text 输入 → 计算模块 → 输出
+			17 container 模块库浏览方式
+				18 checkbox 基础模块 17, Value: 1
+				19 checkbox 网络起点 3, Value: 0
+			20 text field (settable) 搜索模块
+			21 text 模块分类
+			22 pop up button (collapsed, settable) Description: 筛选模块分类, Value: 全部分类 · 17, Secondary Actions: Expand
+				23 menu
+					24 (disabled) 全部分类 · 17
+					25 (disabled) 输入与输出 · 2
+					26 (disabled) 全连接 · 1
+					27 (disabled) 激活函数 · 3
+					28 (disabled) 基础算子 · 1
+					29 (disabled) 正则化 · 1
+					30 (disabled) 形状变换 · 1
+					31 (disabled) 卷积 · 1
+					32 (disabled) 池化 · 2
+					33 (disabled) 归一化 · 2
+					34 (disabled) 嵌入 · 1
+					35 (disabled) 合并与分支 · 2
+			36 text 可按类别、英文别名或参数搜索；网络起点也按组成模块匹配。
+			37 button 新建空白模型
+			38 container
+				39 heading 输入与输出, Value: 3
+					40 text 输入与输出
+				41 button Description: 添加 Input, Help: 声明输入张量的形状与类型，再连接后续模块。
+					42 text Input
+					43 text 输入
+				44 button Description: 添加 Output, Help: 连接模型结果；可以添加多个命名输出。
+					45 text Output
+					46 text 输出
+			47 container
+				48 heading 全连接, Value: 3
+					49 text 全连接
+				50 button Description: 添加 Linear, Help: 把最后一维从输入宽度变为输出宽度，需要 float32 输入。
+					51 text Linear
+					52 text 全连接
+			53 container
+				54 heading 激活函数, Value: 3
+					55 text 激活函数
+				56 button Description: 添加 ReLU, Help: 逐元素把负数置零，保留形状，不修改上游张量。
+					57 text ReLU
+					58 text ReLU 激活
+				59 button Description: 添加 GELU, Help: 对浮点张量逐元素应用 GELU，可选 tanh 近似。
+					60 text GELU
+					61 text GELU 激活
+				62 button Description: 添加 SiLU, Help: 对浮点张量逐元素应用 SiLU，保留形状。
+					63 text SiLU
+					64 text SiLU 激活
+			65 container
+				66 heading 基础算子, Value: 3
+					67 text 基础算子
+				68 button Description: 添加 Identity, Help: 直接传递输入，保留形状和类型。
+					69 text Identity
+					70 text 恒等映射
+			71 container
+				72 heading 正则化, Value: 3
+					73 text 正则化
+				74 button Description: 添加 Dropout, Help: 训练时以概率 p 丢弃元素，评估时直接传递输入。
+					75 text Dropout
+					76 text 随机失活
+			77 container
+				78 heading 形状变换, Value: 3
+					79 text 形状变换
+				80 button Description: 添加 Flatten, Help: 将起止维度之间的轴合并；默认保留批次维度。
+					81 text Flatten
+					82 text 展平
+			83 container
+				84 heading 卷积, Value: 3
+					85 text 卷积
+				86 button Description: 添加 Conv2d, Help: 处理 CHW 或 NCHW 的 float32 张量，可设置卷积核、步长、填充和分组。
+					87 text Conv2d
+					88 text 二维卷积
+			89 container
+				90 heading 池化, Value: 3
+					91 text 池化
+				92 button Description: 添加 MaxPool2d, Help: 缩小 CHW 或 NCHW 的空间尺寸，保留每个窗口的最大值。
+					93 text MaxPool2d
+					94 text 二维最大池化
+				95 button Description: 添加 AdaptiveAvgPool2d, Help: 将 CHW 或 NCHW 的空间尺寸变为指定大小。
+					96 text AdaptiveAvgPool2d
+					97 text 自适应平均池化
+			98 container
+				99 heading 归一化, Value: 3
+					100 text 归一化
+				101 button Description: 添加 BatchNorm2d, Help: 按通道归一化 NCHW 的 float32 张量，通道数须匹配。
+					102 text BatchNorm2d
+					103 text 二维批归一化
+				104 button Description: 添加 LayerNorm, Help: 归一化 float32 张量的末尾若干维，形状须与设置匹配。
+					105 text LayerNorm
+					106 text 层归一化
+			107 container
+				108 heading 嵌入, Value: 3
+					109 text 嵌入
+				110 button Description: 添加 Embedding, Help: 把 int64 索引变为 float32 向量；最后增加嵌入维度。
+					111 text Embedding
+					112 text 词嵌入
+			113 container
+				114 heading 合并与分支, Value: 3
+					115 text 合并与分支
+				116 button Description: 添加 Add, Help: 相加两路形状与类型完全相同的张量，可用于残差连接。
+					117 text Add
+					118 text 张量相加
+				119 button Description: 添加 Concat, Help: 沿指定轴拼接两路张量，其他维度与类型须相同。
+					120 text Concat
+					121 text 张量拼接
+			122 text 常用模型的无环草稿。参数和连线通过静态检查后，生成新模型。
+		123 container
+			124 checkbox 选择, Value: 1
+			125 checkbox 平移, Value: 0
+			126 button (disabled) 撤销草稿
+			127 button (disabled) 重做草稿
+			128 button (disabled) 按连接排版
+			129 button 检查模型
+			130 button 适合画布
+			131 button 草稿缩小
+			132 button 草稿缩放百分比
+				133 text 100
+				134 text %
+			135 button 草稿放大
+			136 image 模型搭建画布
+			137 container
+				138 text 从零搭建一个模型
+				139 heading 把第一个 Input 拖到这里, Value: 2
+					140 text 把第一个 Input 拖到这里
+				141 text 再加入 Linear、激活函数与 Output。
+				142 text 也可以从左侧“网络起点”加入完整 MLP、CNN 或残差网络。
+				143 button 添加输入
+			144 container 模型连线图例
+				145 text 数据流
+				146 text 跳连
+			147 text 拖动模块 · 输出端口 → 输入端口 · 方向键移动 16 · Delete 删除 · Escape 取消 · Ctrl+Z 撤销
+		148 container
+			149 text MODEL PROPERTIES
+			150 heading 每一步都在图上完成, Value: 2
+				151 text 每一步都在图上完成
+			152 content list
+				153 container
+					154 AXListMarker 1. 
+					155 text 拖入 Input，设置输入形状。
+				156 container
+					157 AXListMarker 2. 
+					158 text 拖入常用模块，编辑参数。
+				159 container
+					160 AXListMarker 3. 
+					161 text 连接端口，加入 Output。
+				162 container
+					163 AXListMarker 4. 
+					164 text 保存草稿，生成模型与论文图。
+			165 text 随时点击“检查模型”，查看缺少的连接与声明形状；完成后再生成。当前是静态建模，模型尚未执行。
+			166 container 模型静态检查
+				167 heading 2 项待完成, Value: 3
+					168 text 2 项待完成
+				169 text 以下形状来自静态声明，模型尚未执行。
+				170 text 请至少添加一个输入模块。
+				171 text 请至少添加一个输出模块。
+				172 button 重新检查
+			173 text 0  模块  0  连接
+		174 text 从左侧拖入输入、模块和输出；点击输出端口，再点击输入端口连接。
+
+The focused UI element is 0 AXWebArea ArchCanvas · Model Architecture Studio, URL: 127.0.0.1:36343/

@@ -1,0 +1,469 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-06T03:57:43.258029+00:00",
+  "reviewer": "AI guidance_acceptance; not human",
+  "stage": "source-and-checks-readback-attempt-4",
+  "scope": "Current final source+checks; final browser DOM/state/pixel evidence pending root. Prior reports retain historical role only.",
+  "inputs": [
+    {
+      "path": "studio/src/AuthoringStudio.tsx",
+      "bytes": 45659,
+      "sha256": "6e340667548caff6a33b60d3249afd824fe8f4ffcf9ed27696366057829e3426"
+    },
+    {
+      "path": "studio/src/AuthoringStudio.css",
+      "bytes": 10674,
+      "sha256": "816f2d7bf9d2557badcd3f095e194bb80c1f2c2ee804a20dc201baf2db711c87"
+    },
+    {
+      "path": "studio/src/draftParameterHelp.ts",
+      "bytes": 8551,
+      "sha256": "fd84c1482c527ed940eab235788215258ef798bc82255e4a0e2b15b1d04abe40"
+    },
+    {
+      "path": "studio/src/draftValidation.ts",
+      "bytes": 9525,
+      "sha256": "2a9de5e5f0815051778961775c80ef85d8375b56f6bb660d4034d1ffea738496"
+    },
+    {
+      "path": "studio/src/api.ts",
+      "bytes": 11399,
+      "sha256": "38f4bbe9d8f61d4f1bac798b02acdba2cf29028b7574d8816f9cf7a4deda3a92"
+    },
+    {
+      "path": "studio/src/authoring.ts",
+      "bytes": 13097,
+      "sha256": "47781941259f1f70d69d00ff0276efff6572ac69399a3a6b8d502f44ad2d0571"
+    },
+    {
+      "path": "studio/src/authoringFeedback.ts",
+      "bytes": 3688,
+      "sha256": "d66aed97645a579917130f2d1783fa4f31bca1a926805c0ee12bfbe5d2920f2a"
+    },
+    {
+      "path": "studio/src/draftPortPresentation.ts",
+      "bytes": 1157,
+      "sha256": "bc1663fe66ee91f3b442f7aad74adff88bebdc01e215c6aca00b77da088905e6"
+    },
+    {
+      "path": "studio/tests/draft-validation-independent.test.ts",
+      "bytes": 11528,
+      "sha256": "3b909a9a850b540d0c87c276b7e496de90862caa959ee10d368b0963302d3b1c"
+    },
+    {
+      "path": "studio/package.json",
+      "bytes": 613,
+      "sha256": "882a2cbbb7d28534e88273309127d8a4113cd134d20b0c9b2b8122a763e0bcb7"
+    },
+    {
+      "path": "src/archcanvas_authoring/draft.py",
+      "bytes": 43984,
+      "sha256": "cce519d8ae9e865fedccb5981b34a9884c51cceca43c951eff59333ba322231d"
+    }
+  ],
+  "contract": {
+    "path": "docs/evidence/m4-authoring-guidance-work/acceptance-attempt-1/contract.json",
+    "bytes": 5163,
+    "sha256": "a241b02d42f079d4de63560bd463b841308bf2f36ce69333a59045d7a2173244"
+  },
+  "previousHistoricalReport": {
+    "binding": {
+      "path": "docs/evidence/m4-authoring-guidance-work/acceptance-attempt-1/source-and-checks-report-attempt-3.json",
+      "bytes": 21539,
+      "sha256": "11f1ac1275c921144feca808dfd28c9fd9e8bd239edf89528579c7bd8d229fea"
+    },
+    "role": "BdH intermediate review. All current source and build conclusions use attempt4 bindings; earlier nested current-path hashes are not reasserted here."
+  },
+  "checks": [
+    {
+      "id": "C1",
+      "verdict": "source-pass; browser-pending",
+      "finding": "check()仅调用api.validateDraft，经readDraftValidation读静态声明。UI node/inspector/tooltip使用声明标记；tooltip无形状时写模型尚未执行，完整检查通过也写模型尚未执行。生成对话框保持静态核对和未执行边界。backend validate已有verification精确静态字符串。"
+    },
+    {
+      "id": "C2",
+      "verdict": "source-and-helper-test-pass; React-deferred-browser-not-tested",
+      "finding": "draftValidationKey含schema/mode/id/node ID+kind+parameters/edge ID+endpoints，忽略layout/display name/title/revision；receiveValidation依次核对result.draft key、snapshot key和currentRef key，失败响应同样key guard；boot还要求初始对象未变，属于更严格而非错绑。响应格式/dtype/rank/order/issues由read校验。"
+    },
+    {
+      "id": "C3",
+      "verdict": "source-and-helper-test-pass; browser-pending",
+      "finding": "complete=false issues保留编辑，没有永久操作锁。issue的单nodeId或nodeIds逐个定位按钮仅使用当前唯一ID，经已有resolveDraftFeedback核对catalog注册parameter/port；没有从label/文本猜目标，双端口portIds不制造单portId。shape error通过reportError定位，参数编辑仍可用。"
+    },
+    {
+      "id": "C4",
+      "verdict": "source-and-helper-test-pass; browser-pending",
+      "finding": "checked按当前semantic key与无invalidFields派生。仅move/alias/title/revision保持；参数/node/kind/edge改变不匹配旧结果而不显示，undo回原semantics可恢复仍适用结果，redo改semantics又隐藏。独立测试期望涵盖四向移动和每类绑定/参数变化，但未执行React handler。 最终页脚检查notice也绑定typed checkNoticeKey；key失配或checked不存在时不展示旧pass/issue-count，而提示重新检查；不是字符串猜测。"
+    },
+    {
+      "id": "C5",
+      "verdict": "bounded-source-pass; pixel-and-real-hit-pending",
+      "finding": "tooltip在svg transform外以CSS 12px/11px显示，pointer-events:none。hover/focus独立state且hover优先，离开hover仍可回焦点；原portPoint/draftPortPresentation字节不变，hit仍由原函数计算并保留peerSpacing。useLayoutEffect测实际tooltip宽高按viewport上/下避让和clamp；极长内容受maxHeight+overflow:hidden限制，不证明全文可见。"
+    },
+    {
+      "id": "C6",
+      "verdict": "bounded-source-pass; browser-pending",
+      "finding": "独立AST覆盖确认12个有参数模块/34字段，无缺失或额外说明。显示中文label并保留技术name/aria-label，guidance只读、副本返回，不改变parse/commit/schema。数组有通用说明要求数字逗号分隔、无需方括号。连线Escape取消后notice改为已取消连线；参数Escape沿原restore清invalid并恢复有效值，浏览器事实仍待验证。 修复旧error优先遮住连接开始/取消notice：两个输出起点和仅pending的Escape明确clearError；普通无pending error保留。"
+    },
+    {
+      "id": "C7",
+      "verdict": "source-pass; browser-history-pending",
+      "finding": "receiveValidation、check、hint state/layout effect仅更新反馈/视图状态，不调用changeDraft/arrangeDraft；hover/focus/tooltip/取消不写draft或history。authoring/feedback/port/API与before快照精确相同，原视觉history路径保留。定位只改selection/camera，用户节点不移动。"
+    },
+    {
+      "id": "C8",
+      "verdict": "receipt-readback-pass; browser-and-final-doc-seal-pending",
+      "finding": "最终attempt-4 target48/48、suite284/284、build exit0。三个receipt inputsBefore/After相等，input/log/infrastructure/builtFiles逐个独立读回0mismatch。数字来自实际stdout。旧attempt2/3是对应中间构建记录，本报告仅绑定当前CWqdzert和源文件。旧raw24记录未改但目录发生48追加，不能叫browser1目录整体冻结；browser2为空失败记录。没有执行模型、安装依赖或操作浏览器。AI不提升真人或presentation认证。"
+    }
+  ],
+  "staleCheckNoticeFix": {
+    "beforeArchive": {
+      "path": "docs/evidence/m4-authoring-guidance-work/before-stale-check-notice-fix-attempt-1/files/studio/src/AuthoringStudio.tsx",
+      "bytes": 45247,
+      "sha256": "764e64471803bf5042102ef40a9ffe003bde6e73cd567e5513c7784fe9a00cf6"
+    },
+    "currentSource": {
+      "path": "studio/src/AuthoringStudio.tsx",
+      "bytes": 45659,
+      "sha256": "6e340667548caff6a33b60d3249afd824fe8f4ffcf9ed27696366057829e3426"
+    },
+    "diff": "--- docs/evidence/m4-authoring-guidance-work/before-stale-check-notice-fix-attempt-1/files/studio/src/AuthoringStudio.tsx\n+++ studio/src/AuthoringStudio.tsx\n@@ -41,8 +41,9 @@\n   const [tool, setTool] = useState<'select' | 'pan'>('select');\n   const [search, setSearch] = useState('');\n   const [busy, setBusy] = useState(false);\n-  const [notice, setNotice] = useState('从左侧拖入输入、模块和输出；点击输出端口，再点击输入端口连接。');\n+  const [notice, storeNotice] = useState('从左侧拖入输入、模块和输出；点击输出端口，再点击输入端口连接。');\n   const [error, setError] = useState('');\n+  const [checkNoticeKey, setCheckNoticeKey] = useState<string | null>(null);\n   const [feedback, setFeedback] = useState<DraftFeedback | null>(null);\n   const [invalidFields, setInvalidFields] = useState<string[]>([]);\n   const [generated, setGenerated] = useState<GeneratedDraft | null>(null);\n@@ -65,6 +66,7 @@\n   const dirty = history.draft.revision !== savedRevision;\n   const validationKey = useMemo(() => draftValidationKey(history.draft), [history.draft]);\n   const checked = validation?.key === validationKey && !invalidFields.length ? validation.result : null;\n+  const currentNotice = checkNoticeKey && (checkNoticeKey !== validationKey || !checked) ? '草稿结构已改变；请重新检查声明形状与连接，模型尚未执行。' : notice;\n \n   useEffect(() => {\n     let alive = true;\n@@ -89,6 +91,7 @@\n     if (active?.type === 'pan') setCamera(active.camera);\n     if (active && svgRef.current?.hasPointerCapture(active.pointer)) svgRef.current.releasePointerCapture(active.pointer);\n   }\n+  function setNotice(value: string) { storeNotice(value); setCheckNoticeKey(null); }\n   function clearError() { setError(''); setFeedback(null); }\n   function discardInvalidInput() {\n     const message = '未提交的无效输入已放弃；草稿仍保留上次有效参数。';\n@@ -175,7 +178,7 @@\n     const snapshot = currentRef.current.draft;\n     try {\n       const result = readDraftValidation(await api.validateDraft(snapshot));\n-      if (receiveValidation(snapshot, result)) setNotice(result.complete ? '静态检查通过；声明形状与连接相容，模型尚未执行。' : `还有 ${result.issues.length} 项需要完成；可在右侧定位并继续搭建。`);\n+      if (receiveValidation(snapshot, result)) { setNotice(result.complete ? '静态检查通过；声明形状与连接相容，模型尚未执行。' : `还有 ${result.issues.length} 项需要完成；可在右侧定位并继续搭建。`); setCheckNoticeKey(draftValidationKey(snapshot)); }\n     } catch (reason) {\n       if (draftValidationKey(snapshot) === draftValidationKey(currentRef.current.draft)) { setValidation(null); reportError(reason, '检查未通过：'); }\n     } finally { setBusy(false); }\n@@ -348,7 +351,7 @@\n         </div><div className=\"draft-help\">拖动模块 · 输出端口 → 输入端口 · 方向键移动 16 · Delete 删除 · Escape 取消 · Ctrl+Z 撤销</div>\n       </main>\n       <aside className=\"draft-inspector\"><span className=\"eyebrow\">MODEL PROPERTIES</span>{selected && selectedModule ? <><h2>{selected.kind}</h2><label className=\"draft-field\">显示名称<input aria-label=\"模块显示名称\" value={selected.label} disabled={busy} onChange={event => apply(value => { value.nodes.find(node => node.id === selected.id)!.label = event.target.value; })} /></label><div className=\"draft-param-fields\">{selectedModule.parameters.map(parameter => <DraftField key={`${selected.id}:${parameter.name}`} kind={selected.kind} parameter={parameter} value={selected.parameters[parameter.name]} disabled={busy} error={feedback?.target?.nodeId === selected.id && feedback.target.parameter === parameter.name ? feedback.message : undefined} onValidity={invalid => fieldValidity(selected.id, parameter.name, invalid)} onDiscardInvalid={discardInvalidInput} onCommit={value => apply(next => { next.nodes.find(node => node.id === selected.id)!.parameters[parameter.name] = value; })} />)}</div><p className=\"draft-description\">{selectedModule.description}</p>{selected.kind === 'Linear' && <p className=\"draft-parameter-help\">例如输入形状为 [1, 16] 时，in_features 应为 16；out_features 决定输出最后一维。</p>}<div className=\"draft-coordinate\">{(['x', 'y'] as const).map(axis => <label key={axis}>{axis.toUpperCase()}<input aria-label={`模块 ${axis.toUpperCase()} 坐标`} type=\"number\" value={selected.position[axis]} disabled={busy} onChange={event => { if (event.target.value && Number.isFinite(Number(event.target.value))) apply(value => { value.nodes.find(node => node.id === selected.id)!.position[axis] = Number(event.target.value); }); }} /></label>)}</div><button disabled={busy} onClick={deleteSelection}>删除模块及相连连线</button></> : selection.edge ? <><h2>张量连线</h2><p>此连线定义模块的输入来源。</p><button disabled={busy} onClick={deleteSelection}>删除连线</button></> : <><h2>每一步都在图上完成</h2><ol><li>拖入 Input，设置输入形状。</li><li>拖入常用模块，编辑参数。</li><li>连接端口，加入 Output。</li><li>保存草稿，生成模型与论文图。</li></ol><p>随时点击“检查模型”，查看缺少的连接与声明形状；完成后再生成。当前是静态建模，模型尚未执行。</p></>}<section className=\"draft-check\" aria-label=\"模型静态检查\"><h3>{checked ? checked.complete ? '静态检查通过' : `${checked.issues.length} 项待完成` : '检查当前结构'}</h3><p>{checked ? '以下形状来自静态声明，模型尚未执行。' : '参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。'}</p>{selected && checked?.tensors[selected.id] && <div className=\"draft-checked-tensor\">{draftTensorLabel(checked.tensors[selected.id])}</div>}{checked?.issues.map((issue, index) => { const targets = (issue.nodeId ? [issue.nodeId] : issue.nodeIds ?? []).filter(id => draft.nodes.filter(node => node.id === id).length === 1); return <div className=\"draft-check-issue\" key={`${issue.code}:${index}`}><span>{issue.message}</span>{targets.map(id => <button key={id} onClick={() => { reportError(new ApiError(issue.technical ?? issue.message, 400, [{ ...issue, nodeId: id }])); }}>{`定位 ${draft.nodes.find(node => node.id === id)!.label}`}</button>)}</div>; })}<button disabled={busy || !catalog || !!invalidFields.length} onClick={() => void check()}>{checked ? '重新检查' : '检查模型'}</button></section><div className=\"draft-summary\"><b>{draft.nodes.length}</b> 模块 <b>{draft.edges.length}</b> 连接</div></aside>\n-    </div><footer className={`authoring-status ${error ? 'error' : ''}`} role={error || invalidFields.length ? 'alert' : 'status'}>{busy ? '正在检查模型…' : invalidFields.length ? '参数输入尚未有效：请修正标记字段，或按 Escape 恢复上次有效值，再保存或生成。' : error || notice}{!busy && error && feedback?.target && <button onClick={() => focusDraftNode(feedback.target!.nodeId)}>定位出错模块</button>}{!busy && error && feedback?.technical && <details><summary>技术详情</summary><span>{feedback.technical}</span></details>}</footer>\n+    </div><footer className={`authoring-status ${error ? 'error' : ''}`} role={error || invalidFields.length ? 'alert' : 'status'}>{busy ? '正在检查模型…' : invalidFields.length ? '参数输入尚未有效：请修正标记字段，或按 Escape 恢复上次有效值，再保存或生成。' : error || currentNotice}{!busy && error && feedback?.target && <button onClick={() => focusDraftNode(feedback.target!.nodeId)}>定位出错模块</button>}{!busy && error && feedback?.technical && <details><summary>技术详情</summary><span>{feedback.technical}</span></details>}</footer>\n     {generated && <div className=\"modal-backdrop\"><section className=\"authoring-review\" role=\"dialog\" aria-modal=\"true\" aria-label=\"生成的新模型\"><div className=\"modal-heading\"><div><span className=\"eyebrow\">NEW MODEL</span><h2>模型已生成并静态核对</h2></div><button onClick={() => setGenerated(null)} disabled={busy}><Icon name=\"close\" /></button></div><p>节点、端口、参数和连接已与新源码的分析结果核对。接下来可打开论文图、编辑样式并导出；模型尚未执行。</p><pre>{generated.source}</pre><div className=\"modal-actions\"><button disabled={busy} onClick={() => setGenerated(null)}>继续搭建</button><button className=\"primary\" disabled={busy} onClick={async () => { setBusy(true); try { await onOpen(generated); } catch (reason) { reportError(reason); setBusy(false); } }}>创建新工作副本并打开论文图</button></div></section></div>}\n   </div>;\n }\n",
+    "checks": [
+      {
+        "id": "S1",
+        "verdict": "source-pass; final-browser-pending",
+        "finding": "checkNoticeKey类型string|null；通过receiveValidation的显式check才写snapshot key，currentNotice以key与validationKey一致且checked存在共同决定。节点参数/结构失效时旧静态pass或issues count不会继续展示。"
+      },
+      {
+        "id": "S2",
+        "verdict": "source-pass; final-browser-pending",
+        "finding": "setNotice函数统一storeNotice并清除checkNoticeKey，覆盖add/preset/connect/arrange/save/reopen/connection start/cancel/discard-invalid等普通操作。普通notice不伪装检查绑定；move/alias没有新notice且semantic key不变，仍保留适用检查提示。"
+      },
+      {
+        "id": "S3",
+        "verdict": "source-pass",
+        "finding": "footer严格按busy、invalidFields、error||currentNotice渲染；普通真实错误优先于notice，没有用文字匹配判定检查是否过时。先前仅pending Escape清错与两个输出起点清错逻辑仍保持。"
+      },
+      {
+        "id": "S4",
+        "verdict": "source-pass",
+        "finding": "diff只新增/调整notice storage及derived displayed notice；没有draft/history/canonical endpoint/layout/routing/hit变动。检查结果仍由先前semantic key guard约束；状态反馈与shape同步失效。"
+      },
+      {
+        "id": "S5",
+        "verdict": "archive-readback-pass",
+        "finding": "修复前BdH源/index/js/css共4项通过archive paths逐字节读回；历史原path有明确标签，不宣称旧asset仍在current dist。"
+      }
+    ],
+    "archiveManifest": {
+      "path": "docs/evidence/m4-authoring-guidance-work/before-stale-check-notice-fix-attempt-1/manifest.json",
+      "bytes": 1332,
+      "sha256": "2cfba9d5f8b22911c39bc043befd0eb0fa57a760b2302c96cbc8975a0d1c5566"
+    },
+    "archiveChecks": [
+      {
+        "originalPathHistorical": "studio/src/AuthoringStudio.tsx",
+        "archivePath": "docs/evidence/m4-authoring-guidance-work/before-stale-check-notice-fix-attempt-1/files/studio/src/AuthoringStudio.tsx",
+        "bytes": 45247,
+        "sha256": "764e64471803bf5042102ef40a9ffe003bde6e73cd567e5513c7784fe9a00cf6",
+        "exact": true
+      },
+      {
+        "originalPathHistorical": "studio/dist/index.html",
+        "archivePath": "docs/evidence/m4-authoring-guidance-work/before-stale-check-notice-fix-attempt-1/files/studio/dist/index.html",
+        "bytes": 477,
+        "sha256": "ddb8617df88e86b9e41a9b85d7144d9d662967c504a78801ea9ba87d57326ae2",
+        "exact": true
+      },
+      {
+        "originalPathHistorical": "studio/dist/assets/index-BdHHz6yy.js",
+        "archivePath": "docs/evidence/m4-authoring-guidance-work/before-stale-check-notice-fix-attempt-1/files/studio/dist/assets/index-BdHHz6yy.js",
+        "bytes": 476896,
+        "sha256": "149d74f6052a4c0ec93f7ebe3b0170a5b5ad95d96b5c14b2b494c69392067c1e",
+        "exact": true
+      },
+      {
+        "originalPathHistorical": "studio/dist/assets/index-DEZFMW6R.css",
+        "archivePath": "docs/evidence/m4-authoring-guidance-work/before-stale-check-notice-fix-attempt-1/files/studio/dist/assets/index-DEZFMW6R.css",
+        "bytes": 38804,
+        "sha256": "181f4da56a2ab408396f954dec687656c48897f79a9ea0acaea1173d72289468",
+        "exact": true
+      }
+    ]
+  },
+  "parameterCoverage": {
+    "backendModuleCount": 17,
+    "parameterModuleCount": 12,
+    "registeredFieldCount": 34,
+    "helpFieldCount": 34,
+    "missing": {},
+    "extra": {},
+    "mapsExact": true,
+    "backendFields": {
+      "Input": [
+        "shape",
+        "dtype"
+      ],
+      "Output": [],
+      "Linear": [
+        "in_features",
+        "out_features",
+        "bias"
+      ],
+      "ReLU": [],
+      "GELU": [
+        "approximate"
+      ],
+      "SiLU": [],
+      "Identity": [],
+      "Dropout": [
+        "p"
+      ],
+      "Flatten": [
+        "start_dim",
+        "end_dim"
+      ],
+      "Conv2d": [
+        "in_channels",
+        "out_channels",
+        "kernel_size",
+        "stride",
+        "padding",
+        "dilation",
+        "groups",
+        "bias"
+      ],
+      "MaxPool2d": [
+        "kernel_size",
+        "stride",
+        "padding",
+        "dilation",
+        "ceil_mode"
+      ],
+      "AdaptiveAvgPool2d": [
+        "output_size"
+      ],
+      "BatchNorm2d": [
+        "num_features",
+        "eps",
+        "momentum",
+        "affine",
+        "track_running_stats"
+      ],
+      "LayerNorm": [
+        "normalized_shape",
+        "eps",
+        "elementwise_affine"
+      ],
+      "Embedding": [
+        "num_embeddings",
+        "embedding_dim"
+      ],
+      "Add": [],
+      "Concat": [
+        "dim"
+      ]
+    },
+    "helpFields": {
+      "Input": [
+        "shape",
+        "dtype"
+      ],
+      "Linear": [
+        "in_features",
+        "out_features",
+        "bias"
+      ],
+      "GELU": [
+        "approximate"
+      ],
+      "Dropout": [
+        "p"
+      ],
+      "Flatten": [
+        "start_dim",
+        "end_dim"
+      ],
+      "Conv2d": [
+        "in_channels",
+        "out_channels",
+        "kernel_size",
+        "stride",
+        "padding",
+        "dilation",
+        "groups",
+        "bias"
+      ],
+      "MaxPool2d": [
+        "kernel_size",
+        "stride",
+        "padding",
+        "dilation",
+        "ceil_mode"
+      ],
+      "AdaptiveAvgPool2d": [
+        "output_size"
+      ],
+      "BatchNorm2d": [
+        "num_features",
+        "eps",
+        "momentum",
+        "affine",
+        "track_running_stats"
+      ],
+      "LayerNorm": [
+        "normalized_shape",
+        "eps",
+        "elementwise_affine"
+      ],
+      "Embedding": [
+        "num_embeddings",
+        "embedding_dim"
+      ],
+      "Concat": [
+        "dim"
+      ]
+    },
+    "method": "Python AST reads _CATALOG; indentation-scoped TS field declarations. No module/model import."
+  },
+  "parameterCoverageBasis": "Helper and backend byte hashes unchanged from independently AST-reviewed prior reports; this final readback rechecks both current files.",
+  "receipts": [
+    {
+      "kind": "target",
+      "receipt": {
+        "path": "docs/evidence/m4-authoring-guidance-work/checks/target-attempt-4/receipt.json",
+        "bytes": 37791,
+        "sha256": "2a60dbb3d3aecffe98096bfa2844ded9690b395a810e5df002bd96b4ec46f238"
+      },
+      "exitCode": 0,
+      "sourceBeforeAfterExact": true,
+      "inputsBeforeAfterEqual": true,
+      "bindingCounts": {
+        "inputsBefore": 104,
+        "inputsAfter": 104,
+        "logs": 2,
+        "infrastructure": 3,
+        "builtFiles": 0
+      },
+      "uniqueBindingsChecked": 109,
+      "mismatches": [],
+      "stdoutSummary": {
+        "tests": 48,
+        "pass": 48,
+        "fail": 0,
+        "skipped": 0,
+        "todo": 0,
+        "cancelled": 0
+      },
+      "dependenciesInstalled": false,
+      "modelsExecuted": false,
+      "builtFiles": []
+    },
+    {
+      "kind": "suite",
+      "receipt": {
+        "path": "docs/evidence/m4-authoring-guidance-work/checks/suite-attempt-4/receipt.json",
+        "bytes": 37546,
+        "sha256": "cc99f5aae3d2083cd0939be3e3922923186e5b97dad5618ceda6dfc19b6034ca"
+      },
+      "exitCode": 0,
+      "sourceBeforeAfterExact": true,
+      "inputsBeforeAfterEqual": true,
+      "bindingCounts": {
+        "inputsBefore": 104,
+        "inputsAfter": 104,
+        "logs": 2,
+        "infrastructure": 3,
+        "builtFiles": 0
+      },
+      "uniqueBindingsChecked": 109,
+      "mismatches": [],
+      "stdoutSummary": {
+        "tests": 284,
+        "pass": 284,
+        "fail": 0,
+        "skipped": 0,
+        "todo": 0,
+        "cancelled": 0
+      },
+      "dependenciesInstalled": false,
+      "modelsExecuted": false,
+      "builtFiles": []
+    },
+    {
+      "kind": "build",
+      "receipt": {
+        "path": "docs/evidence/m4-authoring-guidance-work/checks/build-attempt-4/receipt.json",
+        "bytes": 38080,
+        "sha256": "9fd58160f6be926c5f29acd018c0db0d5e27cdef7d6bbb44ed905558052017e0"
+      },
+      "exitCode": 0,
+      "sourceBeforeAfterExact": true,
+      "inputsBeforeAfterEqual": true,
+      "bindingCounts": {
+        "inputsBefore": 104,
+        "inputsAfter": 104,
+        "logs": 2,
+        "infrastructure": 3,
+        "builtFiles": 3
+      },
+      "uniqueBindingsChecked": 112,
+      "mismatches": [],
+      "stdoutSummary": {},
+      "dependenciesInstalled": false,
+      "modelsExecuted": false,
+      "builtFiles": [
+        {
+          "path": "studio/dist/assets/index-CWqdzert.js",
+          "bytes": 477093,
+          "sha256": "eafc9085c8177e7b2a15ce8a2632df5270ec6a545e548c268bfcadb63a140285"
+        },
+        {
+          "path": "studio/dist/assets/index-DEZFMW6R.css",
+          "bytes": 38804,
+          "sha256": "181f4da56a2ab408396f954dec687656c48897f79a9ea0acaea1173d72289468"
+        },
+        {
+          "path": "studio/dist/index.html",
+          "bytes": 477,
+          "sha256": "97b5c8ffc33c564c9f4e5c122c8e617d4e986778d010c430d63a60550ed6e7ac"
+        }
+      ]
+    }
+  ],
+  "historicalBrowserDirectoryAudit": [
+    {
+      "manifest": {
+        "path": "docs/evidence/m4-authoring-guidance-work/browser-attempt-1/manifest.json",
+        "bytes": 5383,
+        "sha256": "16c3d24ce220f212f810785523d0a85be9839c36266610c2f82cbe47344a1836"
+      },
+      "manifestRecordCount": 24,
+      "actualNonManifestFileCountAtRead": 72,
+      "listedRecordsExact": true,
+      "unlistedCount": 48,
+      "scope": "Historical/intermediate evidence only. No final-build browser certification.",
+      "failure": "Directory appended after 24-record manifest; original24 exact, not whole-dir frozen."
+    },
+    {
+      "manifest": {
+        "path": "docs/evidence/m4-authoring-guidance-work/browser-attempt-2/manifest.json",
+        "bytes": 193,
+        "sha256": "785b16c53ba14333438e72d3f3e1d523d8b8e2007e83dffbceeecf251c0eba1f"
+      },
+      "manifestRecordCount": 0,
+      "actualNonManifestFileCountAtRead": 0,
+      "listedRecordsExact": true,
+      "unlistedCount": 0,
+      "scope": "Historical/intermediate evidence only. No final-build browser certification.",
+      "failure": "Empty0-record manifest contains no actual browser evidence."
+    }
+  ],
+  "limitations": [
+    "Validation response reader verifies structure/digest format, not independent tensor inference or digest recomputation.",
+    "Nine new helper tests do not directly execute React asynchronous or checkNoticeKey handlers; browser gate remains pending.",
+    "Extreme-length tooltip content may be clipped by max-height/overflow.",
+    "AI is not human research acceptance and no presentation performance is certified."
+  ],
+  "verdict": "bounded-final-attempt4-source-and-checks-pass; final-build browser evidence pending; no source blocker observed within scoped C1–C8/S1–S5"
+}

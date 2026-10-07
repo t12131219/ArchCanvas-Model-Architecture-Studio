@@ -1,0 +1,1107 @@
+{
+  "version": "1.0",
+  "documentId": "canvas-architecture-model.TemporalForecaster-3a6976a80897-0e60a72f",
+  "revision": 1,
+  "title": "TemporalForecaster",
+  "bounds": {
+    "x": 0,
+    "y": 0,
+    "width": 1421,
+    "height": 706
+  },
+  "nodes": [
+    {
+      "x": 50,
+      "y": 92,
+      "width": 1316,
+      "height": 463,
+      "localX": 50,
+      "localY": 92,
+      "id": "call:instance:model.TemporalForecaster",
+      "label": "TemporalForecaster",
+      "subtitle": "Module",
+      "headerHeight": 46,
+      "kind": "Module",
+      "category": "container",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "module",
+      "expanded": true,
+      "expandable": true,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "call:instance:model.TemporalForecaster",
+        "sourceLabel": "TemporalForecaster",
+        "kind": "Module",
+        "category": "container",
+        "evidence": "source",
+        "instanceId": "instance:model.TemporalForecaster",
+        "callCount": 1,
+        "callId": "call:instance:model.TemporalForecaster",
+        "source": {
+          "path": "model.py",
+          "line": 12,
+          "endLine": 23,
+          "expression": "class TemporalForecaster(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.recurrent = nn.LSTM(6, 8, num_layers=2, batch_first=True)\n        self.projection = nn.Linear(8, 3)\n        self.shared_projection = self.projection\n\n    def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+        }
+      },
+      "ports": []
+    },
+    {
+      "x": 434,
+      "y": 163,
+      "width": 194,
+      "height": 62,
+      "localX": 384,
+      "localY": 71,
+      "id": "input:model.TemporalForecaster:series",
+      "parentId": "call:instance:model.TemporalForecaster",
+      "label": "series",
+      "subtitle": "Input",
+      "headerHeight": 46,
+      "kind": "Input",
+      "category": "input",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "tensor",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "input:model.TemporalForecaster:series",
+        "sourceLabel": "series",
+        "kind": "Input",
+        "category": "input",
+        "evidence": "source",
+        "source": {
+          "path": "model.py",
+          "line": 19,
+          "endLine": 23,
+          "expression": "def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+        }
+      },
+      "ports": [
+        {
+          "id": "input:model.TemporalForecaster:series:input:model.TemporalForecaster:series:out:series:data",
+          "canonicalNodeId": "input:model.TemporalForecaster:series",
+          "canonicalPortId": "input:model.TemporalForecaster:series:out:series",
+          "canonicalBindings": [
+            {
+              "nodeId": "input:model.TemporalForecaster:series",
+              "portId": "input:model.TemporalForecaster:series:out:series"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:1"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "series",
+          "x": 531,
+          "y": 225,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 434,
+      "y": 263,
+      "width": 194,
+      "height": 62,
+      "localX": 384,
+      "localY": 171,
+      "id": "call:instance:model.TemporalForecaster.recurrent",
+      "parentId": "call:instance:model.TemporalForecaster",
+      "label": "recurrent",
+      "subtitle": "LSTM",
+      "headerHeight": 46,
+      "kind": "LSTM",
+      "category": "recurrent",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "module",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.TemporalForecaster.recurrent",
+        "sourceLabel": "recurrent",
+        "kind": "LSTM",
+        "category": "recurrent",
+        "evidence": "contract",
+        "instanceId": "instance:model.TemporalForecaster.recurrent",
+        "callCount": 1,
+        "callId": "call:instance:model.TemporalForecaster.recurrent",
+        "source": {
+          "path": "model.py",
+          "line": 20,
+          "endLine": 20,
+          "expression": "self.recurrent(series)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.TemporalForecaster.recurrent:call:instance:model.TemporalForecaster.recurrent:in:input:data",
+          "canonicalNodeId": "call:instance:model.TemporalForecaster.recurrent",
+          "canonicalPortId": "call:instance:model.TemporalForecaster.recurrent:in:input",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.TemporalForecaster.recurrent",
+              "portId": "call:instance:model.TemporalForecaster.recurrent:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:1"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "input",
+          "x": 531,
+          "y": 263,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.TemporalForecaster.recurrent:call:instance:model.TemporalForecaster.recurrent:out:output:data",
+          "canonicalNodeId": "call:instance:model.TemporalForecaster.recurrent",
+          "canonicalPortId": "call:instance:model.TemporalForecaster.recurrent:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.TemporalForecaster.recurrent",
+              "portId": "call:instance:model.TemporalForecaster.recurrent:out:output"
+            },
+            {
+              "nodeId": "call:instance:model.TemporalForecaster.recurrent",
+              "portId": "call:instance:model.TemporalForecaster.recurrent:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:2",
+            "edge:3"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 482.5,
+          "y": 325,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.TemporalForecaster.recurrent:call:instance:model.TemporalForecaster.recurrent:out:h_n:data",
+          "canonicalNodeId": "call:instance:model.TemporalForecaster.recurrent",
+          "canonicalPortId": "call:instance:model.TemporalForecaster.recurrent:out:h_n",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.TemporalForecaster.recurrent",
+              "portId": "call:instance:model.TemporalForecaster.recurrent:out:h_n"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:6"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "h_n",
+          "x": 531,
+          "y": 325,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.TemporalForecaster.recurrent:call:instance:model.TemporalForecaster.recurrent:out:c_n:data",
+          "canonicalNodeId": "call:instance:model.TemporalForecaster.recurrent",
+          "canonicalPortId": "call:instance:model.TemporalForecaster.recurrent:out:c_n",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.TemporalForecaster.recurrent",
+              "portId": "call:instance:model.TemporalForecaster.recurrent:out:c_n"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:7"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "c_n",
+          "x": 579.5,
+          "y": 325,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 434,
+      "y": 363,
+      "width": 218.8,
+      "height": 62,
+      "localX": 384,
+      "localY": 271,
+      "id": "call:instance:model.TemporalForecaster.projection",
+      "parentId": "call:instance:model.TemporalForecaster",
+      "label": "Reviewed source object",
+      "subtitle": "shared instance · 2 calls",
+      "headerHeight": 55,
+      "kind": "Linear",
+      "category": "linear",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "operator",
+      "expanded": false,
+      "expandable": false,
+      "pinned": true,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.TemporalForecaster.projection",
+        "sourceLabel": "projection",
+        "kind": "Linear",
+        "category": "linear",
+        "evidence": "contract",
+        "instanceId": "instance:model.TemporalForecaster.projection",
+        "callCount": 2,
+        "callId": "call:instance:model.TemporalForecaster.projection",
+        "source": {
+          "path": "model.py",
+          "line": 21,
+          "endLine": 21,
+          "expression": "self.projection(sequence)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.TemporalForecaster.projection:call:instance:model.TemporalForecaster.projection:in:input:data",
+          "canonicalNodeId": "call:instance:model.TemporalForecaster.projection",
+          "canonicalPortId": "call:instance:model.TemporalForecaster.projection:in:input",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.TemporalForecaster.projection",
+              "portId": "call:instance:model.TemporalForecaster.projection:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:2"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "input",
+          "x": 543.4,
+          "y": 363,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.TemporalForecaster.projection:call:instance:model.TemporalForecaster.projection:out:output:data",
+          "canonicalNodeId": "call:instance:model.TemporalForecaster.projection",
+          "canonicalPortId": "call:instance:model.TemporalForecaster.projection:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.TemporalForecaster.projection",
+              "portId": "call:instance:model.TemporalForecaster.projection:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:4"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 543.4,
+          "y": 425,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 670,
+      "y": 363,
+      "width": 194,
+      "height": 62,
+      "localX": 620,
+      "localY": 271,
+      "id": "call:instance:model.TemporalForecaster.projection@2",
+      "parentId": "call:instance:model.TemporalForecaster",
+      "label": "projection",
+      "subtitle": "shared instance · 2 calls",
+      "headerHeight": 46,
+      "kind": "Linear",
+      "category": "linear",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "operator",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.TemporalForecaster.projection@2",
+        "sourceLabel": "projection",
+        "kind": "Linear",
+        "category": "linear",
+        "evidence": "contract",
+        "instanceId": "instance:model.TemporalForecaster.projection",
+        "callCount": 2,
+        "callId": "call:instance:model.TemporalForecaster.projection@2",
+        "source": {
+          "path": "model.py",
+          "line": 22,
+          "endLine": 22,
+          "expression": "self.shared_projection(sequence)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.TemporalForecaster.projection@2:call:instance:model.TemporalForecaster.projection@2:in:input:data",
+          "canonicalNodeId": "call:instance:model.TemporalForecaster.projection@2",
+          "canonicalPortId": "call:instance:model.TemporalForecaster.projection@2:in:input",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.TemporalForecaster.projection@2",
+              "portId": "call:instance:model.TemporalForecaster.projection@2:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:3"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "input",
+          "x": 767,
+          "y": 363,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.TemporalForecaster.projection@2:call:instance:model.TemporalForecaster.projection@2:out:output:data",
+          "canonicalNodeId": "call:instance:model.TemporalForecaster.projection@2",
+          "canonicalPortId": "call:instance:model.TemporalForecaster.projection@2:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.TemporalForecaster.projection@2",
+              "portId": "call:instance:model.TemporalForecaster.projection@2:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:5"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 767,
+          "y": 425,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 434,
+      "y": 463,
+      "width": 194,
+      "height": 62,
+      "localX": 384,
+      "localY": 371,
+      "id": "output:model.TemporalForecaster:0",
+      "parentId": "call:instance:model.TemporalForecaster",
+      "label": "output 1",
+      "subtitle": "return.forecast[0]",
+      "headerHeight": 46,
+      "kind": "Output",
+      "category": "output",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "tensor",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "output:model.TemporalForecaster:0",
+        "sourceLabel": "output 1",
+        "kind": "Output",
+        "category": "output",
+        "evidence": "source",
+        "outputPath": [
+          {
+            "kind": "key",
+            "key": "forecast"
+          },
+          {
+            "kind": "index",
+            "index": 0
+          }
+        ],
+        "source": {
+          "path": "model.py",
+          "line": 19,
+          "endLine": 23,
+          "expression": "def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+        }
+      },
+      "ports": [
+        {
+          "id": "output:model.TemporalForecaster:0:output:model.TemporalForecaster:0:in:value:data",
+          "canonicalNodeId": "output:model.TemporalForecaster:0",
+          "canonicalPortId": "output:model.TemporalForecaster:0:in:value",
+          "canonicalBindings": [
+            {
+              "nodeId": "output:model.TemporalForecaster:0",
+              "portId": "output:model.TemporalForecaster:0:in:value"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:4"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "value",
+          "x": 531,
+          "y": 463,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 670,
+      "y": 463,
+      "width": 194,
+      "height": 62,
+      "localX": 620,
+      "localY": 371,
+      "id": "output:model.TemporalForecaster:1",
+      "parentId": "call:instance:model.TemporalForecaster",
+      "label": "output 2",
+      "subtitle": "return.forecast[1]",
+      "headerHeight": 46,
+      "kind": "Output",
+      "category": "output",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "tensor",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "output:model.TemporalForecaster:1",
+        "sourceLabel": "output 2",
+        "kind": "Output",
+        "category": "output",
+        "evidence": "source",
+        "outputPath": [
+          {
+            "kind": "key",
+            "key": "forecast"
+          },
+          {
+            "kind": "index",
+            "index": 1
+          }
+        ],
+        "source": {
+          "path": "model.py",
+          "line": 19,
+          "endLine": 23,
+          "expression": "def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+        }
+      },
+      "ports": [
+        {
+          "id": "output:model.TemporalForecaster:1:output:model.TemporalForecaster:1:in:value:data",
+          "canonicalNodeId": "output:model.TemporalForecaster:1",
+          "canonicalPortId": "output:model.TemporalForecaster:1:in:value",
+          "canonicalBindings": [
+            {
+              "nodeId": "output:model.TemporalForecaster:1",
+              "portId": "output:model.TemporalForecaster:1:in:value"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:5"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "value",
+          "x": 767,
+          "y": 463,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 906,
+      "y": 363,
+      "width": 194,
+      "height": 62,
+      "localX": 856,
+      "localY": 271,
+      "id": "output:model.TemporalForecaster:2",
+      "parentId": "call:instance:model.TemporalForecaster",
+      "label": "output 3",
+      "subtitle": "return.state.hidden",
+      "headerHeight": 46,
+      "kind": "Output",
+      "category": "output",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "tensor",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "output:model.TemporalForecaster:2",
+        "sourceLabel": "output 3",
+        "kind": "Output",
+        "category": "output",
+        "evidence": "source",
+        "outputPath": [
+          {
+            "kind": "key",
+            "key": "state"
+          },
+          {
+            "kind": "key",
+            "key": "hidden"
+          }
+        ],
+        "source": {
+          "path": "model.py",
+          "line": 19,
+          "endLine": 23,
+          "expression": "def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+        }
+      },
+      "ports": [
+        {
+          "id": "output:model.TemporalForecaster:2:output:model.TemporalForecaster:2:in:value:data",
+          "canonicalNodeId": "output:model.TemporalForecaster:2",
+          "canonicalPortId": "output:model.TemporalForecaster:2:in:value",
+          "canonicalBindings": [
+            {
+              "nodeId": "output:model.TemporalForecaster:2",
+              "portId": "output:model.TemporalForecaster:2:in:value"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:6"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "value",
+          "x": 1003,
+          "y": 363,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 1142,
+      "y": 363,
+      "width": 194,
+      "height": 62,
+      "localX": 1092,
+      "localY": 271,
+      "id": "output:model.TemporalForecaster:3",
+      "parentId": "call:instance:model.TemporalForecaster",
+      "label": "output 4",
+      "subtitle": "return.state.cell",
+      "headerHeight": 46,
+      "kind": "Output",
+      "category": "output",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "tensor",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "output:model.TemporalForecaster:3",
+        "sourceLabel": "output 4",
+        "kind": "Output",
+        "category": "output",
+        "evidence": "source",
+        "outputPath": [
+          {
+            "kind": "key",
+            "key": "state"
+          },
+          {
+            "kind": "key",
+            "key": "cell"
+          }
+        ],
+        "source": {
+          "path": "model.py",
+          "line": 19,
+          "endLine": 23,
+          "expression": "def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+        }
+      },
+      "ports": [
+        {
+          "id": "output:model.TemporalForecaster:3:output:model.TemporalForecaster:3:in:value:data",
+          "canonicalNodeId": "output:model.TemporalForecaster:3",
+          "canonicalPortId": "output:model.TemporalForecaster:3:in:value",
+          "canonicalBindings": [
+            {
+              "nodeId": "output:model.TemporalForecaster:3",
+              "portId": "output:model.TemporalForecaster:3:in:value"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:7"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "value",
+          "x": 1239,
+          "y": 363,
+          "proxy": false
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge:1",
+      "sourceId": "input:model.TemporalForecaster:series",
+      "targetId": "call:instance:model.TemporalForecaster.recurrent",
+      "source": {
+        "nodeId": "input:model.TemporalForecaster:series",
+        "portId": "input:model.TemporalForecaster:series:out:series"
+      },
+      "target": {
+        "nodeId": "call:instance:model.TemporalForecaster.recurrent",
+        "portId": "call:instance:model.TemporalForecaster.recurrent:in:input"
+      },
+      "canonicalEdgeIds": [
+        "edge:1"
+      ],
+      "tensorId": "tensor:input:model.TemporalForecaster:series:series",
+      "role": "data",
+      "path": "M 531 225 V 244 H 531 V 263",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": false,
+      "dashPattern": [],
+      "label": "",
+      "labelX": 539,
+      "labelY": 237
+    },
+    {
+      "id": "edge:2",
+      "sourceId": "call:instance:model.TemporalForecaster.recurrent",
+      "targetId": "call:instance:model.TemporalForecaster.projection",
+      "source": {
+        "nodeId": "call:instance:model.TemporalForecaster.recurrent",
+        "portId": "call:instance:model.TemporalForecaster.recurrent:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.TemporalForecaster.projection",
+        "portId": "call:instance:model.TemporalForecaster.projection:in:input"
+      },
+      "canonicalEdgeIds": [
+        "edge:2"
+      ],
+      "tensorId": "tensor:call:instance:model.TemporalForecaster.recurrent:output",
+      "role": "data",
+      "path": "M 482.5 325 V 357 H 543.4 V 363",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": false,
+      "dashPattern": [],
+      "label": "",
+      "labelX": 519.95,
+      "labelY": 350
+    },
+    {
+      "id": "edge:3",
+      "sourceId": "call:instance:model.TemporalForecaster.recurrent",
+      "targetId": "call:instance:model.TemporalForecaster.projection@2",
+      "source": {
+        "nodeId": "call:instance:model.TemporalForecaster.recurrent",
+        "portId": "call:instance:model.TemporalForecaster.recurrent:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.TemporalForecaster.projection@2",
+        "portId": "call:instance:model.TemporalForecaster.projection@2:in:input"
+      },
+      "canonicalEdgeIds": [
+        "edge:3"
+      ],
+      "tensorId": "tensor:call:instance:model.TemporalForecaster.recurrent:output",
+      "role": "data",
+      "path": "M 482.5 325 V 357 H 767 V 363",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": false,
+      "dashPattern": [],
+      "label": "",
+      "labelX": 631.75,
+      "labelY": 350
+    },
+    {
+      "id": "edge:4",
+      "sourceId": "call:instance:model.TemporalForecaster.projection",
+      "targetId": "output:model.TemporalForecaster:0",
+      "source": {
+        "nodeId": "call:instance:model.TemporalForecaster.projection",
+        "portId": "call:instance:model.TemporalForecaster.projection:out:output"
+      },
+      "target": {
+        "nodeId": "output:model.TemporalForecaster:0",
+        "portId": "output:model.TemporalForecaster:0:in:value"
+      },
+      "canonicalEdgeIds": [
+        "edge:4"
+      ],
+      "tensorId": "tensor:call:instance:model.TemporalForecaster.projection:output",
+      "role": "data",
+      "path": "M 543.4 425 V 444 H 531 V 463",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": false,
+      "dashPattern": [],
+      "label": "",
+      "labelX": 545.2,
+      "labelY": 437
+    },
+    {
+      "id": "edge:5",
+      "sourceId": "call:instance:model.TemporalForecaster.projection@2",
+      "targetId": "output:model.TemporalForecaster:1",
+      "source": {
+        "nodeId": "call:instance:model.TemporalForecaster.projection@2",
+        "portId": "call:instance:model.TemporalForecaster.projection@2:out:output"
+      },
+      "target": {
+        "nodeId": "output:model.TemporalForecaster:1",
+        "portId": "output:model.TemporalForecaster:1:in:value"
+      },
+      "canonicalEdgeIds": [
+        "edge:5"
+      ],
+      "tensorId": "tensor:call:instance:model.TemporalForecaster.projection@2:output",
+      "role": "data",
+      "path": "M 767 425 V 444 H 767 V 463",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": false,
+      "dashPattern": [],
+      "label": "",
+      "labelX": 775,
+      "labelY": 437
+    },
+    {
+      "id": "edge:6",
+      "sourceId": "call:instance:model.TemporalForecaster.recurrent",
+      "targetId": "output:model.TemporalForecaster:2",
+      "source": {
+        "nodeId": "call:instance:model.TemporalForecaster.recurrent",
+        "portId": "call:instance:model.TemporalForecaster.recurrent:out:h_n"
+      },
+      "target": {
+        "nodeId": "output:model.TemporalForecaster:2",
+        "portId": "output:model.TemporalForecaster:2:in:value"
+      },
+      "canonicalEdgeIds": [
+        "edge:6"
+      ],
+      "tensorId": "tensor:call:instance:model.TemporalForecaster.recurrent:h_n",
+      "role": "data",
+      "path": "M 531 325 V 344 H 1003 V 363",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": false,
+      "dashPattern": [],
+      "label": "",
+      "labelX": 775,
+      "labelY": 337
+    },
+    {
+      "id": "edge:7",
+      "sourceId": "call:instance:model.TemporalForecaster.recurrent",
+      "targetId": "output:model.TemporalForecaster:3",
+      "source": {
+        "nodeId": "call:instance:model.TemporalForecaster.recurrent",
+        "portId": "call:instance:model.TemporalForecaster.recurrent:out:c_n"
+      },
+      "target": {
+        "nodeId": "output:model.TemporalForecaster:3",
+        "portId": "output:model.TemporalForecaster:3:in:value"
+      },
+      "canonicalEdgeIds": [
+        "edge:7"
+      ],
+      "tensorId": "tensor:call:instance:model.TemporalForecaster.recurrent:c_n",
+      "role": "data",
+      "path": "M 579.5 325 V 331 H 1239 V 363",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": false,
+      "dashPattern": [],
+      "label": "",
+      "labelX": 916.25,
+      "labelY": 324
+    }
+  ],
+  "hiddenEdges": [
+    "edge:0"
+  ],
+  "legend": [
+    {
+      "id": "legend:input",
+      "label": "Input",
+      "color": "#ffffff",
+      "glyph": "tensor",
+      "x": 50,
+      "y": 607
+    },
+    {
+      "id": "legend:container",
+      "label": "Container",
+      "color": "#ffffff",
+      "glyph": "module",
+      "x": 235,
+      "y": 607
+    },
+    {
+      "id": "legend:linear",
+      "label": "Linear",
+      "color": "#ffffff",
+      "glyph": "operator",
+      "x": 420,
+      "y": 607
+    },
+    {
+      "id": "legend:output",
+      "label": "Output",
+      "color": "#ffffff",
+      "glyph": "tensor",
+      "x": 50,
+      "y": 634
+    }
+  ],
+  "annotations": [],
+  "edgeLegend": [
+    {
+      "id": "edge-role-legend:data:1",
+      "role": "data",
+      "label": "Data / 数据流",
+      "stroke": "#56616b",
+      "lineWidth": 1.5,
+      "dashed": false,
+      "dashPattern": [],
+      "sampleLength": 40,
+      "sceneEdgeIds": [
+        "edge:1",
+        "edge:2",
+        "edge:3",
+        "edge:4",
+        "edge:5",
+        "edge:6",
+        "edge:7"
+      ],
+      "canonicalEdgeIds": [
+        "edge:1",
+        "edge:2",
+        "edge:3",
+        "edge:4",
+        "edge:5",
+        "edge:6",
+        "edge:7"
+      ],
+      "x": 50,
+      "y": 666,
+      "width": 121.22500000000001,
+      "height": 20
+    }
+  ],
+  "edgeLegendLayout": {
+    "x": 50,
+    "y": 666,
+    "availableWidth": 1351
+  },
+  "pageSpec": {
+    "widthMm": 180,
+    "background": "#ffffff",
+    "preset": "monochrome"
+  },
+  "sourceDigest": "3a6976a808974cfbb911cf2bab8c44b7d302c20c0e28046e1a9e7002fe51b667",
+  "irDigest": "0e60a72fa479c1a84b69ca3cffe7d2efba27727c2e0b7f4c6b653066f8c1a189",
+  "sourceFacts": [
+    {
+      "id": "input:model.TemporalForecaster:series",
+      "sourceLabel": "series",
+      "kind": "Input",
+      "category": "input",
+      "evidence": "source",
+      "source": {
+        "path": "model.py",
+        "line": 19,
+        "endLine": 23,
+        "expression": "def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+      }
+    },
+    {
+      "id": "call:instance:model.TemporalForecaster",
+      "sourceLabel": "TemporalForecaster",
+      "kind": "Module",
+      "category": "container",
+      "evidence": "source",
+      "instanceId": "instance:model.TemporalForecaster",
+      "callCount": 1,
+      "callId": "call:instance:model.TemporalForecaster",
+      "source": {
+        "path": "model.py",
+        "line": 12,
+        "endLine": 23,
+        "expression": "class TemporalForecaster(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.recurrent = nn.LSTM(6, 8, num_layers=2, batch_first=True)\n        self.projection = nn.Linear(8, 3)\n        self.shared_projection = self.projection\n\n    def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+      }
+    },
+    {
+      "id": "call:instance:model.TemporalForecaster.recurrent",
+      "sourceLabel": "recurrent",
+      "kind": "LSTM",
+      "category": "recurrent",
+      "evidence": "contract",
+      "instanceId": "instance:model.TemporalForecaster.recurrent",
+      "callCount": 1,
+      "callId": "call:instance:model.TemporalForecaster.recurrent",
+      "source": {
+        "path": "model.py",
+        "line": 20,
+        "endLine": 20,
+        "expression": "self.recurrent(series)"
+      }
+    },
+    {
+      "id": "call:instance:model.TemporalForecaster.projection",
+      "sourceLabel": "projection",
+      "kind": "Linear",
+      "category": "linear",
+      "evidence": "contract",
+      "instanceId": "instance:model.TemporalForecaster.projection",
+      "callCount": 2,
+      "callId": "call:instance:model.TemporalForecaster.projection",
+      "source": {
+        "path": "model.py",
+        "line": 21,
+        "endLine": 21,
+        "expression": "self.projection(sequence)"
+      }
+    },
+    {
+      "id": "call:instance:model.TemporalForecaster.projection@2",
+      "sourceLabel": "projection",
+      "kind": "Linear",
+      "category": "linear",
+      "evidence": "contract",
+      "instanceId": "instance:model.TemporalForecaster.projection",
+      "callCount": 2,
+      "callId": "call:instance:model.TemporalForecaster.projection@2",
+      "source": {
+        "path": "model.py",
+        "line": 22,
+        "endLine": 22,
+        "expression": "self.shared_projection(sequence)"
+      }
+    },
+    {
+      "id": "output:model.TemporalForecaster:0",
+      "sourceLabel": "output 1",
+      "kind": "Output",
+      "category": "output",
+      "evidence": "source",
+      "outputPath": [
+        {
+          "kind": "key",
+          "key": "forecast"
+        },
+        {
+          "kind": "index",
+          "index": 0
+        }
+      ],
+      "source": {
+        "path": "model.py",
+        "line": 19,
+        "endLine": 23,
+        "expression": "def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+      }
+    },
+    {
+      "id": "output:model.TemporalForecaster:1",
+      "sourceLabel": "output 2",
+      "kind": "Output",
+      "category": "output",
+      "evidence": "source",
+      "outputPath": [
+        {
+          "kind": "key",
+          "key": "forecast"
+        },
+        {
+          "kind": "index",
+          "index": 1
+        }
+      ],
+      "source": {
+        "path": "model.py",
+        "line": 19,
+        "endLine": 23,
+        "expression": "def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+      }
+    },
+    {
+      "id": "output:model.TemporalForecaster:2",
+      "sourceLabel": "output 3",
+      "kind": "Output",
+      "category": "output",
+      "evidence": "source",
+      "outputPath": [
+        {
+          "kind": "key",
+          "key": "state"
+        },
+        {
+          "kind": "key",
+          "key": "hidden"
+        }
+      ],
+      "source": {
+        "path": "model.py",
+        "line": 19,
+        "endLine": 23,
+        "expression": "def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+      }
+    },
+    {
+      "id": "output:model.TemporalForecaster:3",
+      "sourceLabel": "output 4",
+      "kind": "Output",
+      "category": "output",
+      "evidence": "source",
+      "outputPath": [
+        {
+          "kind": "key",
+          "key": "state"
+        },
+        {
+          "kind": "key",
+          "key": "cell"
+        }
+      ],
+      "source": {
+        "path": "model.py",
+        "line": 19,
+        "endLine": 23,
+        "expression": "def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+      }
+    }
+  ],
+  "diagnostics": [
+    {
+      "level": "info",
+      "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+    }
+  ]
+}

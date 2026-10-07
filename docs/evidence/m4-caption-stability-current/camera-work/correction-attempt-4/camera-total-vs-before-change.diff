@@ -1,0 +1,281 @@
+--- docs/evidence/m4-caption-stability-current/before-change/inputs/studio/src/App.tsx	2026-10-06 18:56:40.733498549 +0800
++++ studio/src/App.tsx	2026-10-06 19:25:03.614991211 +0800
+@@ -18,6 +18,8 @@
+ import { beginCameraPan, cameraAtPanInput } from './cameraGesture';
+ import type { CameraState, CameraPan } from './cameraGesture';
+ import { fitCameraToBounds, focusCameraOnPoint, paperTranslation, viewportToWorld, zoomCameraAtPoint } from './cameraProjection';
++import { canApplyCameraViewTicket, readCameraView, sameCameraViewDocument, writeCameraView } from './cameraViewState';
++import type { CameraViewIdentity, CameraViewStorage } from './cameraViewState';
+ import { edgeAppearance } from './edgeAppearance';
+ import { edgePatternLabel } from './core/edgePresentation';
+ import { findAnnotationBodyConflicts, suggestAnnotationPosition } from './core/annotationPlacement';
+@@ -37,6 +39,14 @@
+ const ACTIVE = 'archcanvas.active-canvas.v2';
+ const REVIEW = 'archcanvas.source-review.v1';
+ 
++function cameraViewIdentity(document: CanvasDocument): CameraViewIdentity {
++  return { documentId: document.id, sourceBindingDigest: document.sourceBindingDigest,
++    irDigest: document.architecture.irDigest, visualRevision: document.revision };
++}
++function cameraSessionStorage(): CameraViewStorage | null {
++  try { return sessionStorage; } catch { return null; }
++}
++
+ function download(name: string, content: string, type: string) {
+   const url = URL.createObjectURL(new Blob([content], { type }));
+   const anchor = document.createElement('a'); anchor.href = url; anchor.download = name; anchor.click();
+@@ -94,6 +104,9 @@
+   const loadSequence = useRef(0);
+   const saving = useRef(false);
+   const frame = useRef(0);
++  const cameraOwner = useRef<CameraViewIdentity | null>(null);
++  const cameraIntent = useRef(0);
++  const cameraInitializationFrame = useRef(0);
+ 
+   const current = history?.document;
+   const committedScene = useMemo(() => current ? buildScene(current) : null, [current]);
+@@ -124,6 +137,25 @@
+   useEffect(() => { document.querySelector('.inspector-content')?.scrollTo({ top: 0 }); }, [selection.ids[0], panel]);
+   useEffect(() => { setRecoveryPreview(null); }, [selection]);
+ 
++  function persistCamera(document = historyRef.current?.document, view = cameraRef.current) {
++    if (gesture.current?.type === 'pan') return;
++    const viewport = viewportRef.current;
++    if (!document || !viewport || !sameCameraViewDocument(cameraOwner.current, cameraViewIdentity(document))) return;
++    const { width, height } = viewport.getBoundingClientRect();
++    writeCameraView(cameraSessionStorage(), cameraViewIdentity(document), view, { width, height });
++  }
++  function claimCamera(document = historyRef.current?.document) {
++    cameraIntent.current++;
++    cameraOwner.current = document ? cameraViewIdentity(document) : null;
++  }
++  const commitCamera = useCallback((view: Camera, document = historyRef.current?.document) => {
++    if (!document) return;
++    claimCamera(document);
++    cameraRef.current = view; setCamera(view);
++    persistCamera(document, view);
++  }, []);
++  useEffect(() => { persistCamera(); }, [current?.id, current?.revision, current?.sourceBindingDigest, current?.architecture.irDigest]);
++
+   const cancelGesture = useCallback(() => {
+     const active = gesture.current;
+     const pointerId = active?.pointerId ?? portGesture.current?.pointerId;
+@@ -131,7 +163,7 @@
+     gesture.current = null; portGesture.current = null; portRequest.current++;
+     cancelAnimationFrame(frame.current); frame.current = 0;
+     setPreview(null); setRecoveryPreview(null); setBox(null); setPortDraft(null); setIsPanning(false);
+-    if (active?.type === 'pan') { cameraRef.current = active.camera; setCamera(active.camera); }
++    if (active?.type === 'pan') { cameraRef.current = active.camera; setCamera(active.camera); persistCamera(undefined, active.camera); }
+     const viewport = viewportRef.current;
+     if (pointerId !== undefined && viewport?.hasPointerCapture(pointerId)) viewport.releasePointerCapture(pointerId);
+   }, []);
+@@ -139,7 +171,7 @@
+   useEffect(() => {
+     const blur = () => { space.current = false; cancelGesture(); };
+     window.addEventListener('blur', blur);
+-    return () => { window.removeEventListener('blur', blur); cancelAnimationFrame(frame.current); };
++    return () => { window.removeEventListener('blur', blur); cancelAnimationFrame(frame.current); cancelAnimationFrame(cameraInitializationFrame.current); };
+   }, [cancelGesture]);
+   useEffect(() => { if (review || exportDocument || importOpen || connectionProposal || runtimeOpen) cancelGesture(); }, [review, exportDocument, importOpen, connectionProposal, runtimeOpen, cancelGesture]);
+ 
+@@ -178,20 +210,46 @@
+     apply([value.plan.operation], '位置修复已应用；Ctrl+Z 可一次撤销。');
+   }
+ 
++  const initializeCamera = useCallback((document: CanvasDocument, sequence: number, restore = true) => {
++    cancelAnimationFrame(cameraInitializationFrame.current);
++    cameraOwner.current = null;
++    const ticket = { identity: cameraViewIdentity(document), loadSequence: sequence, intentSequence: cameraIntent.current };
++    const schedule = (attempt: number) => {
++      cameraInitializationFrame.current = requestAnimationFrame(() => {
++        cameraInitializationFrame.current = 0;
++        const active = historyRef.current?.document;
++        // createHistory clones its input; the load/revision/identity ticket is
++        // the ownership contract, not the raw loader object's reference.
++        if (!active || !canApplyCameraViewTicket(ticket, cameraViewIdentity(active), loadSequence.current, cameraIntent.current)) return;
++        const rect = viewportRef.current?.getBoundingClientRect();
++        if (!rect || rect.width <= 96 || rect.height <= 92) { if (attempt < 3) schedule(attempt + 1); return; }
++        const viewport = { width: rect.width, height: rect.height };
++        const recovered = restore ? readCameraView(cameraSessionStorage(), ticket.identity, viewport) : null;
++        const view = recovered ?? fitCameraToBounds(buildScene(active).bounds, viewport);
++        cameraOwner.current = ticket.identity; cameraRef.current = view; setCamera(view);
++        persistCamera(active, view);
++      });
++    };
++    schedule(0);
++  }, []);
++
+   const fit = useCallback((documentToFit?: CanvasDocument) => {
+     cancelGesture();
+     const doc = documentToFit ?? historyRef.current?.document;
+     if (!doc || !viewportRef.current) return;
+     const interaction = studioTelemetry.beginInteraction('fit-canvas');
+-    const { bounds } = buildScene(doc);
+-    const { width, height } = viewportRef.current.getBoundingClientRect();
+-    setCamera(fitCameraToBounds(bounds, { width, height }));
+-    studioTelemetry.endInteraction(interaction);
+-  }, [cancelGesture]);
++    try {
++      const { bounds } = buildScene(doc);
++      const { width, height } = viewportRef.current.getBoundingClientRect();
++      if (width <= 96 || height <= 92) return;
++      commitCamera(fitCameraToBounds(bounds, { width, height }), doc);
++    } finally { studioTelemetry.endInteraction(interaction); }
++  }, [cancelGesture, commitCamera]);
+ 
+-  const openArchitecture = useCallback(async (arch: Architecture, restore = true, requestSequence?: number) => {
++  const openArchitecture = useCallback(async (arch: Architecture, restore = true, requestSequence?: number, initializeView = true) => {
+     const sequence = requestSequence ?? ++loadSequence.current;
+     if (sequence !== loadSequence.current) return;
++    cameraOwner.current = null; cameraIntent.current++;
+     let document = createDocument(arch);
+     let saved = -1; let version = 0;
+     if (restore) {
+@@ -203,16 +261,17 @@
+       } catch { /* A new source has no saved document yet. */ }
+     }
+     if (sequence !== loadSequence.current) return;
+-    setHistory(createHistory(document)); setStorageRevision(version); setSavedVisualRevision(saved);
++    historyRef.current = createHistory(document); setHistory(historyRef.current); setStorageRevision(version); setSavedVisualRevision(saved);
+     setProjectId(null); setReview(null); localStorage.removeItem(REVIEW);
+     setSelection({ kind: 'node', ids: [] }); setPreview(null); setSourceOpen(false);
+     setNotice(saved >= 0 ? '已重开保存的画布' : '静态源码已导入；模型未被执行'); setFailure('');
+-    requestAnimationFrame(() => fit(document));
+-  }, [fit]);
++    if (initializeView) initializeCamera(document, sequence, restore);
++  }, [initializeCamera]);
+ 
+   const loadExample = useCallback(async (id: string) => {
+     cancelGesture();
+     const sequence = ++loadSequence.current;
++    cameraOwner.current = null; cameraIntent.current++;
+     setBusy(true); setFailure('');
+     try { const arch = await api.example(id); if (sequence !== loadSequence.current) return; setExampleId(id); await openArchitecture(arch, true, sequence); }
+     catch (error) { if (sequence === loadSequence.current) setFailure(String(error)); }
+@@ -221,9 +280,11 @@
+ 
+   useEffect(() => {
+     let alive = true;
++    const sequence = ++loadSequence.current;
++    cameraOwner.current = null; cameraIntent.current++;
+     api.capabilities().then(result => { if (alive) setCapabilities(result); }).catch(() => {});
+     api.examples().then(async items => {
+-      if (!alive) return;
++      if (!alive || sequence !== loadSequence.current) return;
+       setExamples(items);
+       try {
+         const active = JSON.parse(localStorage.getItem(ACTIVE) ?? 'null') as { documentId: string; projectId: string | null } | null;
+@@ -236,9 +297,9 @@
+               doc = reconcileDocument(doc, project.architecture).document; version = 0; saved = -1;
+             }
+           }
+-          if (!alive) return;
++          if (!alive || sequence !== loadSequence.current) return;
+           historyRef.current = createHistory(doc); setHistory(historyRef.current); setStorageRevision(version); setSavedVisualRevision(saved); setProjectId(active.projectId);
+-          setNotice(active.projectId ? '已重开工作副本及保存的画布' : '已重开保存的画布'); requestAnimationFrame(() => fit(doc));
++          setNotice(active.projectId ? '已重开工作副本及保存的画布' : '已重开保存的画布'); initializeCamera(doc, sequence);
+           const pending = JSON.parse(localStorage.getItem(REVIEW) ?? 'null') as { projectId: string; id: string } | null;
+           if (pending && pending.projectId === active.projectId) {
+             const transaction = await api.transaction(pending.projectId, pending.id);
+@@ -247,11 +308,12 @@
+           return;
+         }
+       } catch { /* A missing stored snapshot falls back to an analyzed example. */ }
++      if (!alive || sequence !== loadSequence.current) return;
+       const prior = localStorage.getItem(KEY);
+       void loadExample(items.find(x => x.id === prior)?.id ?? items[0]?.id ?? 'transformer');
+     }).catch(error => { if (alive) { setFailure(`Runtime 未连接：${String(error)}`); setNotice('请按 README 启动正式服务'); } });
+     return () => { alive = false; };
+-  }, [loadExample, fit]);
++  }, [loadExample, initializeCamera]);
+   useEffect(() => { if (exampleId) localStorage.setItem(KEY, exampleId); }, [exampleId]);
+   useEffect(() => { if (current) localStorage.setItem(ACTIVE, JSON.stringify({ documentId: current.id, projectId })); }, [current?.id, projectId]);
+ 
+@@ -298,11 +360,12 @@
+       if (gesture.current || portGesture.current) return;
+       const rect = viewport.getBoundingClientRect();
+       const px = event.clientX - rect.left, py = event.clientY - rect.top;
+-      setCamera(old => { const zoom = Math.max(0.15, Math.min(3, old.zoom * Math.exp(-event.deltaY * 0.0015))); return { x: px - (px - old.x) * zoom / old.zoom, y: py - (py - old.y) * zoom / old.zoom, zoom }; });
++      const old = cameraRef.current, zoom = Math.max(0.15, Math.min(3, old.zoom * Math.exp(-event.deltaY * 0.0015)));
++      commitCamera({ x: px - (px - old.x) * zoom / old.zoom, y: py - (py - old.y) * zoom / old.zoom, zoom });
+     };
+     viewport.addEventListener('wheel', wheel, { passive: false });
+     return () => viewport.removeEventListener('wheel', wheel);
+-  }, [authoringOpen]);
++  }, [authoringOpen, commitCamera]);
+ 
+   function panInput(event: React.PointerEvent<HTMLDivElement>) {
+     const rect = event.currentTarget.getBoundingClientRect();
+@@ -317,6 +380,7 @@
+     const view = cameraRef.current;
+     // Navigation takes priority even over expand handles and input ports.
+     if (event.button === 1 || (event.button === 0 && (tool === 'pan' || space.current))) {
++      claimCamera();
+       gesture.current = { type: 'pan', pointerId: event.pointerId, x, y, camera: view, pan: beginCameraPan(view, input), ids: [], dx: 0, dy: 0 };
+       setIsPanning(true); event.currentTarget.setPointerCapture(event.pointerId); event.preventDefault(); return;
+     }
+@@ -407,7 +471,7 @@
+     gesture.current = null; setPreview(null); setBox(null); setIsPanning(false);
+     if (active.pan) {
+       const finalCamera = cameraAtPanInput(active.pan, input);
+-      if (finalCamera) { cameraRef.current = finalCamera; setCamera(finalCamera); }
++      if (finalCamera) commitCamera(finalCamera);
+     }
+     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+     if (active.type === 'move' && historyRef.current?.document === active.document && Math.hypot(active.dx, active.dy) > 3) apply([{ type: 'move', ids: active.ids, dx: Math.round(active.dx / active.camera.zoom / 4) * 4, dy: Math.round(active.dy / active.camera.zoom / 4) * 4 }], '位置已调整；一次拖动对应一次撤销');
+@@ -513,6 +577,7 @@
+       const next = createHistory(reconciled.document);
+       if (inputSpec) localStorage.setItem(`archcanvas.runtime-profile:${next.document.id}`, JSON.stringify(inputSpec));
+       historyRef.current = next; setHistory(next); setStorageRevision(0); setSavedVisualRevision(-1);
++      claimCamera(next.document); persistCamera(next.document);
+       setNotice(`工作副本已提交；保留 ${reconciled.preservedNodeIds.length} 个对象的视觉编辑。源码变更不属于画布撤销。`);
+       setExampleId(''); localStorage.removeItem(REVIEW);
+       try {
+@@ -566,7 +631,7 @@
+     const node = scene?.nodes.find(n => n.id === id);
+     if (!node || !viewportRef.current || !scene) return;
+     const { width, height } = viewportRef.current.getBoundingClientRect();
+-    setCamera(old => focusCameraOnPoint(old, { x: node.x + node.width / 2, y: node.y + node.height / 2 }, { width, height }));
++    commitCamera(focusCameraOnPoint(cameraRef.current, { x: node.x + node.width / 2, y: node.y + node.height / 2 }, { width, height }));
+   }
+ 
+   function focusAnnotation(id: string) {
+@@ -576,7 +641,7 @@
+     const updated = buildScene(document), annotation = updated.annotations.find(item => item.id === id);
+     if (!annotation) return;
+     const { width, height } = viewport.getBoundingClientRect();
+-    setCamera(old => focusCameraOnPoint(old, { x: annotation.x + annotation.width / 2, y: annotation.y + annotation.height / 2 }, { width, height }));
++    commitCamera(focusCameraOnPoint(cameraRef.current, { x: annotation.x + annotation.width / 2, y: annotation.y + annotation.height / 2 }, { width, height }));
+   }
+   function addAnnotation() {
+     if (!scene) return;
+@@ -594,12 +659,18 @@
+     cancelGesture();
+     const rect = viewportRef.current?.getBoundingClientRect();
+     if (!rect) return;
+-    setCamera(old => zoomCameraAtPoint(old, factor === 'reset' ? 1 : Math.max(0.15, Math.min(3, old.zoom * factor)), { x: rect.width / 2, y: rect.height / 2 }));
++    const old = cameraRef.current;
++    commitCamera(zoomCameraAtPoint(old, factor === 'reset' ? 1 : Math.max(0.15, Math.min(3, old.zoom * factor)), { x: rect.width / 2, y: rect.height / 2 }));
+   }
+ 
+   async function openGeneratedModel(generated: GeneratedDraft) {
++    cancelGesture();
++    const sequence = ++loadSequence.current;
++    cameraOwner.current = null; cameraIntent.current++;
+     const project = await api.register(generated.architecture);
+-    await openArchitecture(project.architecture, false);
++    if (sequence !== loadSequence.current) return;
++    await openArchitecture(project.architecture, false, sequence, false);
++    if (sequence !== loadSequence.current) return;
+     const aliases: Record<string, string> = {};
+     for (const node of generated.draft.nodes) {
+       const id = generated.nodeBindings[node.id];
+@@ -608,7 +679,7 @@
+     const document = createDocument(project.architecture, generated.draft.title, aliases);
+     historyRef.current = createHistory(document); setHistory(historyRef.current);
+     setProjectId(project.id); setExampleId(''); setAuthoringOpen(false);
+-    requestAnimationFrame(() => fit(document));
++    initializeCamera(document, sequence, false);
+     setNotice('已打开草稿生成的新模型工作副本；可编辑论文图并导出。模型未执行。');
+   }
+   if (authoringOpen) return <AuthoringStudio onClose={() => setAuthoringOpen(false)} onOpen={openGeneratedModel} />;

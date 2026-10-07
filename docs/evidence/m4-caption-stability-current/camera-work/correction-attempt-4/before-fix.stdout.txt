@@ -1,0 +1,81 @@
+✔ pointerup endpoint is available without an intervening move or RAF (1.242922ms)
+✔ terminal endpoint includes movement beyond the last sampled preview (0.126982ms)
+✔ pan displacement is measured in CSS pixels and never divided by zoom (0.147677ms)
+✔ returning to start restores exact initial camera without cumulative drift (0.22795ms)
+✔ viewport-origin shift alone does not masquerade as a pointer delta (0.109707ms)
+✔ a second pointer cannot update or finish the original pan (0.105018ms)
+✔ initial camera snapshot and caller input remain untouched (0.109882ms)
+✔ invalid start coordinates, zoom and pointer identity are rejected (0.2538ms)
+✔ world camera keeps the sealed Transformer scene continuous across negative bounds (58.475576ms)
+✔ fit, focus, pointer-centered zoom and pan use world coordinates (0.327256ms)
+✔ same-viewport reload preserves exact camera and independently calculated world centre (0.44046ms)
+✔ a resized reopened viewport preserves world centre and zoom through new pixel translation (0.099515ms)
+✔ source/IR/document identities and visual revisions prevent stale or cross-model reuse (0.100505ms)
+✔ per-document source/IR keys isolate values without adding revision to the key (0.129796ms)
+✔ invalid stored versions, centres, scales, viewport and identity are refused rather than coerced (0.165141ms)
+✔ fit scales below .15 remain valid while unsafe captures are rejected (0.128011ms)
+✔ malformed, absent, oversized, disabled and quota-failed storage leave a graceful fallback (0.180834ms)
+✔ delayed restore cannot supersede explicit fit, zoom, focus, pan or a newer document load (0.103552ms)
+✔ terminal pan is saved and cancellation can restore the prior camera without retaining the preview (0.116903ms)
+✔ capture/restore/tickets mutate no input and store revisions without touching Canvas/history (0.547607ms)
+✔ a deliberately adopted reconciled identity can retain view while old source state remains isolated (0.134277ms)
+✖ actual App initialization callbacks read the owned saved view before any initial write (56.922681ms)
+✔ actual App persistence callback refuses previews then writes terminal camera and rollback (19.982003ms)
+✖ actual App delayed callback rejects later intent/load/revision and handles deferred viewport (51.338454ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 22
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 411.713544
+
+✖ failing tests:
+
+test at tests/camera-view-state-independent.test.ts:216:1
+✖ actual App initialization callbacks read the owned saved view before any initial write (56.922681ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   'read',
+  -   'write'
+  - ]
+  
+      at TestContext.<anonymous> (file:///home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/studio/tests/camera-view-state-independent.test.ts:223:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/camera-view-state-independent.test.ts:242:1
+✖ actual App delayed callback rejects later intent/load/revision and handles deferred viewport (51.338454ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/studio/tests/camera-view-state-independent.test.ts:252:44)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

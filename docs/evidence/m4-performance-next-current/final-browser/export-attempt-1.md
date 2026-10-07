@@ -1,0 +1,1 @@
+The first generate action used the UI default PDF and produced export 9af8d06c4f5849a3879bdf2a5e8cc659. The observer incorrectly awaited an automatic download; the product instead exposes download links, so the tool timed out and reset its REPL. The generated export and failure are retained; no product error is inferred.

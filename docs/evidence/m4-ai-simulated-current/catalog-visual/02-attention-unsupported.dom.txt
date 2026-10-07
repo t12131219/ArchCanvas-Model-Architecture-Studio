@@ -1,0 +1,75 @@
+- banner:
+  - generic: ArchCanvas
+  - generic: 模型搭建
+  - textbox "模型草稿名称": 我的模型
+  - generic: 有未保存编辑
+  - button "重开已保存" [disabled]
+  - button "保存草稿":
+    - text: 保存草稿
+  - button "生成模型与论文图" [disabled]
+  - button "返回制图"
+- complementary:
+  - text: MODULE LIBRARY
+  - heading "常用模块 17" [level=2]:
+    - text: 常用模块
+    - generic: "17"
+  - paragraph:
+    - text: 拖入画布，或点击添加。
+    - text: 输入 → 计算模块 → 输出
+  - group "模块库浏览方式":
+    - button "基础模块 17" [pressed]:
+      - text: 基础模块
+      - generic: "17"
+    - button "网络起点 3":
+      - text: 网络起点
+      - generic: "3"
+  - textbox "搜索模块" [active]:
+    - /placeholder: 搜索模块或网络，如 Linear / CNN
+    - text: Attention
+  - button "新建空白模型"
+  - status: 搜索全部：基础模块 0 · 网络起点 0。清空后返回基础模块。
+  - button "清空搜索"
+  - status:
+    - text: 没有找到匹配的模块或网络
+    - paragraph: 尝试中文名称或英文类型，如“卷积”、Linear 或 MLP。当前模块库尚不支持 Attention 和 LSTM。
+  - generic: 常用模型的无环草稿。参数和连线通过静态检查后，生成新模型。
+- main:
+  - button "选择" [pressed]:
+    - text: 选择
+  - button "平移":
+    - text: 平移
+  - button "撤销草稿" [disabled]:
+  - button "重做草稿" [disabled]:
+  - button "按连接排版" [disabled]
+  - button "检查模型"
+  - button "适合画布":
+    - text: 适合画布
+  - button "草稿缩小": −
+  - button "草稿缩放百分比": 100%
+  - button "草稿放大": +
+  - img "模型搭建画布"
+  - text: 从零搭建一个模型
+  - heading "把第一个 Input 拖到这里" [level=2]
+  - paragraph:
+    - text: 再加入 Linear、激活函数与 Output。
+    - text: 也可以从左侧“网络起点”加入完整 MLP、CNN 或残差网络。
+  - button "添加输入"
+  - generic "模型连线图例":
+    - generic: 数据流
+    - generic "跳过中间模块后相加；仅根据当前连接结构识别": 跳连
+  - generic: 拖动模块 · 输出端口 → 输入端口 · 方向键移动 16 · Delete 删除 · Escape 取消 · Ctrl+Z 撤销
+- complementary:
+  - text: MODEL PROPERTIES
+  - heading "每一步都在图上完成" [level=2]
+  - list:
+    - listitem: 拖入 Input，设置输入形状。
+    - listitem: 拖入常用模块，编辑参数。
+    - listitem: 连接端口，加入 Output。
+    - listitem: 保存草稿，生成模型与论文图。
+  - paragraph: 随时点击“检查模型”，查看缺少的连接与声明形状；完成后再生成。当前是静态建模，模型尚未执行。
+  - region "模型静态检查":
+    - heading "检查当前结构" [level=3]
+    - paragraph: 参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。
+    - button "检查模型"
+  - generic: 0 模块 0 连接
+- status: 从左侧拖入输入、模块和输出；点击输出端口，再点击输入端口连接。

@@ -1,0 +1,272 @@
+{
+  "schemaVersion": 1,
+  "id": "architecture:model.UnsupportedVision",
+  "label": "UnsupportedVision",
+  "sourceDigest": "03951b20db4cde8abcb520ca00c5f6f3312ef7c0e043c22927e9fb75dbf13de7",
+  "irDigest": "6ee0bbea7aad60c9d0a4dd1b8a00856d2a693707ac3509f6116ab85d0517f605",
+  "entry": "model:UnsupportedVision",
+  "nodes": [
+    {
+      "id": "input:model.UnsupportedVision:tokens",
+      "label": "tokens",
+      "kind": "Input",
+      "category": "input",
+      "children": [],
+      "ports": [
+        {
+          "id": "input:model.UnsupportedVision:tokens:out:tokens",
+          "name": "tokens",
+          "direction": "out",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {},
+      "source": {
+        "path": "model.py",
+        "line": 64,
+        "endLine": 65,
+        "expression": "def forward(self, tokens):\n        return self.mixer(tokens)"
+      },
+      "evidence": "source",
+      "parentId": "call:instance:model.UnsupportedVision"
+    },
+    {
+      "id": "call:instance:model.UnsupportedVision",
+      "label": "UnsupportedVision",
+      "kind": "Module",
+      "category": "container",
+      "children": [
+        "input:model.UnsupportedVision:tokens",
+        "call:instance:model.UnsupportedVision.mixer",
+        "output:model.UnsupportedVision:0"
+      ],
+      "ports": [
+        {
+          "id": "call:instance:model.UnsupportedVision:in:tokens",
+          "name": "tokens",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {
+        "channels": 16
+      },
+      "source": {
+        "path": "model.py",
+        "line": 57,
+        "endLine": 65,
+        "expression": "class UnsupportedVision(nn.Module):\n    \"\"\"A holdout whose unknown Conv1d operation must remain opaque.\"\"\"\n\n    def __init__(self, channels=16):\n        super().__init__()\n        self.mixer = OpaqueTokenMixer(channels)\n\n    def forward(self, tokens):\n        return self.mixer(tokens)"
+      },
+      "evidence": "source",
+      "instanceId": "instance:model.UnsupportedVision",
+      "callId": "call:instance:model.UnsupportedVision"
+    },
+    {
+      "id": "call:instance:model.UnsupportedVision.mixer",
+      "label": "mixer",
+      "kind": "Module",
+      "category": "container",
+      "children": [
+        "call:instance:model.UnsupportedVision.mixer.mixer"
+      ],
+      "ports": [
+        {
+          "id": "call:instance:model.UnsupportedVision.mixer:in:tokens",
+          "name": "tokens",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {
+        "channels": 16
+      },
+      "source": {
+        "path": "model.py",
+        "line": 65,
+        "endLine": 65,
+        "expression": "self.mixer(tokens)"
+      },
+      "evidence": "source",
+      "parentId": "call:instance:model.UnsupportedVision",
+      "instanceId": "instance:model.UnsupportedVision.mixer",
+      "callId": "call:instance:model.UnsupportedVision.mixer"
+    },
+    {
+      "id": "call:instance:model.UnsupportedVision.mixer.mixer",
+      "label": "mixer",
+      "kind": "Conv1d",
+      "category": "opaque",
+      "children": [],
+      "ports": [
+        {
+          "id": "call:instance:model.UnsupportedVision.mixer.mixer:in:arg0",
+          "name": "arg0",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        },
+        {
+          "id": "call:instance:model.UnsupportedVision.mixer.mixer:out:output",
+          "name": "output",
+          "direction": "out",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {
+        "arg0": 16,
+        "arg1": 16,
+        "arg2": 3,
+        "padding": 1
+      },
+      "source": {
+        "path": "model.py",
+        "line": 54,
+        "endLine": 54,
+        "expression": "self.mixer(tokens)"
+      },
+      "evidence": "opaque",
+      "parentId": "call:instance:model.UnsupportedVision.mixer",
+      "instanceId": "instance:model.UnsupportedVision.mixer.mixer",
+      "callId": "call:instance:model.UnsupportedVision.mixer.mixer",
+      "parameterOrigins": {
+        "arg0": {
+          "kind": "constructor_argument",
+          "path": "model.py",
+          "line": 51,
+          "endLine": 51,
+          "expression": "channels",
+          "column": 31,
+          "endColumn": 39
+        },
+        "arg1": {
+          "kind": "constructor_argument",
+          "path": "model.py",
+          "line": 51,
+          "endLine": 51,
+          "expression": "channels",
+          "column": 41,
+          "endColumn": 49
+        },
+        "arg2": {
+          "kind": "literal",
+          "path": "model.py",
+          "line": 51,
+          "endLine": 51,
+          "expression": "3",
+          "column": 51,
+          "endColumn": 52
+        },
+        "padding": {
+          "kind": "literal",
+          "path": "model.py",
+          "line": 51,
+          "endLine": 51,
+          "expression": "1",
+          "column": 62,
+          "endColumn": 63
+        }
+      }
+    },
+    {
+      "id": "output:model.UnsupportedVision:0",
+      "label": "output",
+      "kind": "Output",
+      "category": "output",
+      "children": [],
+      "ports": [
+        {
+          "id": "output:model.UnsupportedVision:0:in:value",
+          "name": "value",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {},
+      "source": {
+        "path": "model.py",
+        "line": 64,
+        "endLine": 65,
+        "expression": "def forward(self, tokens):\n        return self.mixer(tokens)"
+      },
+      "evidence": "source",
+      "parentId": "call:instance:model.UnsupportedVision",
+      "outputPath": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge:0",
+      "source": {
+        "nodeId": "input:model.UnsupportedVision:tokens",
+        "portId": "input:model.UnsupportedVision:tokens:out:tokens"
+      },
+      "target": {
+        "nodeId": "call:instance:model.UnsupportedVision",
+        "portId": "call:instance:model.UnsupportedVision:in:tokens"
+      },
+      "tensorId": "tensor:input:model.UnsupportedVision:tokens:tokens",
+      "role": "data"
+    },
+    {
+      "id": "edge:1",
+      "source": {
+        "nodeId": "input:model.UnsupportedVision:tokens",
+        "portId": "input:model.UnsupportedVision:tokens:out:tokens"
+      },
+      "target": {
+        "nodeId": "call:instance:model.UnsupportedVision.mixer",
+        "portId": "call:instance:model.UnsupportedVision.mixer:in:tokens"
+      },
+      "tensorId": "tensor:input:model.UnsupportedVision:tokens:tokens",
+      "role": "data"
+    },
+    {
+      "id": "edge:2",
+      "source": {
+        "nodeId": "input:model.UnsupportedVision:tokens",
+        "portId": "input:model.UnsupportedVision:tokens:out:tokens"
+      },
+      "target": {
+        "nodeId": "call:instance:model.UnsupportedVision.mixer.mixer",
+        "portId": "call:instance:model.UnsupportedVision.mixer.mixer:in:arg0"
+      },
+      "tensorId": "tensor:input:model.UnsupportedVision:tokens:tokens",
+      "role": "data"
+    },
+    {
+      "id": "edge:3",
+      "source": {
+        "nodeId": "call:instance:model.UnsupportedVision.mixer.mixer",
+        "portId": "call:instance:model.UnsupportedVision.mixer.mixer:out:output"
+      },
+      "target": {
+        "nodeId": "output:model.UnsupportedVision:0",
+        "portId": "output:model.UnsupportedVision:0:in:value"
+      },
+      "tensorId": "tensor:call:instance:model.UnsupportedVision.mixer.mixer:output",
+      "role": "data"
+    }
+  ],
+  "diagnostics": [
+    {
+      "level": "info",
+      "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+    },
+    {
+      "level": "warning",
+      "message": "Unknown constructor torch.nn.Conv1d at model.py:51; no type semantics inferred from its name."
+    }
+  ],
+  "sources": [
+    {
+      "path": "model.py",
+      "content": "\"\"\"Hand-authored vision holdout used for M4 generalization checks.\n\nThis is intentionally independent of the existing transformer/CNN fixtures:\npatch projection, token attention and a residual MLP are composed directly in\nsource, while the unsupported companion class records an opaque boundary.\n\"\"\"\n\nfrom torch import nn\n\n\nclass TokenBlock(nn.Module):\n    def __init__(self, dim=16, heads=4):\n        super().__init__()\n        self.norm = nn.LayerNorm(dim)\n        self.attention = nn.MultiheadAttention(dim, heads, batch_first=True)\n        self.mlp = nn.Sequential(\n            nn.Linear(dim, dim * 2),\n            nn.GELU(),\n            nn.Linear(dim * 2, dim),\n        )\n\n    def forward(self, tokens):\n        normalized = self.norm(tokens)\n        attended, weights = self.attention(normalized, normalized, normalized, need_weights=False)\n        tokens = tokens + attended\n        return tokens + self.mlp(tokens)\n\n\nclass PatchVisionEncoder(nn.Module):\n    \"\"\"A compact ViT-style encoder with no template-specific graph facts.\"\"\"\n\n    def __init__(self, dim=16, heads=4, classes=10):\n        super().__init__()\n        self.patch_projection = nn.Conv2d(3, dim, 4, stride=4)\n        self.block = TokenBlock(dim, heads)\n        self.classifier = nn.Linear(dim, classes)\n\n    def forward(self, image):\n        tokens = self.patch_projection(image)\n        tokens = tokens.flatten(2).transpose(1, 2)\n        tokens = self.block(tokens)\n        pooled = tokens.mean(dim=1)\n        return self.classifier(pooled)\n\n\nclass OpaqueTokenMixer(nn.Module):\n    \"\"\"Conv1d is deliberately outside the first public constructor registry.\"\"\"\n\n    def __init__(self, channels=16):\n        super().__init__()\n        self.mixer = nn.Conv1d(channels, channels, 3, padding=1)\n\n    def forward(self, tokens):\n        return self.mixer(tokens)\n\n\nclass UnsupportedVision(nn.Module):\n    \"\"\"A holdout whose unknown Conv1d operation must remain opaque.\"\"\"\n\n    def __init__(self, channels=16):\n        super().__init__()\n        self.mixer = OpaqueTokenMixer(channels)\n\n    def forward(self, tokens):\n        return self.mixer(tokens)\n",
+      "digest": "3c17de145958e1312cbf4c06f1ea669aec7d825db064f51b87478e9db6b83eec"
+    }
+  ]
+}

@@ -1,0 +1,491 @@
+{
+  "protocol": "archcanvas-guidance-independent-final-readback/1",
+  "createdAt": "2026-10-06T04:23:33.835302+00:00",
+  "reviewer": "/root/guidance_acceptance",
+  "reviewerType": "AI; not human",
+  "verdict": "failed-original-nested-ledgers-with-explicit-corrections-retained",
+  "scope": "Read-only file binding, current entry/stage local links and bounded claim audit. Earlier independent source/check/DOM/save work is reused. No browser/test/build/model execution.",
+  "initialObservation": "Before correction, seal1 333/333 top-level records independently read exact. Following correction, the same original 333 records resolve via two explicitly archived pre-correction files.",
+  "failures": [
+    {
+      "id": "F1",
+      "kind": "internally-invalid-preview-self-record",
+      "finding": "Original preview manifest declares its own bytes=0 and empty-file SHA, contrary to its actual bytes. Identity of this manifest in seal1 does not validate its nested self-record.",
+      "evidence": [
+        {
+          "declaredPath": "docs/evidence/m4-authoring-guidance-work/preview-handoff-attempt-1/manifest.json",
+          "resolvedPath": "docs/evidence/m4-authoring-guidance-work/preview-handoff-attempt-1/manifest.json",
+          "expected": {
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "actual": {
+            "path": "docs/evidence/m4-authoring-guidance-work/preview-handoff-attempt-1/manifest.json",
+            "bytes": 1367,
+            "sha256": "9312e122abbcdcf9e08f372f3255a18e75027350892fae0ab821009fc4427b92"
+          }
+        }
+      ],
+      "resolution": "Original preserved; corrected attempt2 excludes itself and contains three exact copies, with no new browser actions."
+    },
+    {
+      "id": "F2",
+      "kind": "stale-prior-status-current-exact-resolution",
+      "finding": "Prior receipt attempt1 still resolves old schema14 status as current-exact after schema15 replaced it. Its original 431 records match BSA seal, but one resolvedPath is now stale.",
+      "evidence": [
+        {
+          "declaredPath": "docs/evidence/m4-human-review-handoff-status-followup.json",
+          "resolvedPath": "docs/evidence/m4-human-review-handoff-status-followup.json",
+          "expected": {
+            "bytes": 10892,
+            "sha256": "bd440426b62d33e4976ee89865af461e5f72c7cac140dc2e999d8b2dc395759a"
+          },
+          "actual": {
+            "path": "docs/evidence/m4-human-review-handoff-status-followup.json",
+            "bytes": 14969,
+            "sha256": "9ffdf3fc2e184658ffbdd65722fcce24a52ca2c7d5801d61dde4c34e6e378f43"
+          }
+        }
+      ],
+      "resolution": "Original preserved; subsequent independent narrow audit must inspect corrected prior receipt attempt2 with five explicit archives."
+    }
+  ],
+  "checks": {
+    "initialSealResolved": {
+      "count": 333,
+      "exact": 333,
+      "mismatches": []
+    },
+    "initialSealExplicitArchivePaths": {
+      "docs/m4-authoring-guidance.md": "docs/evidence/m4-authoring-guidance-work/handoff-manifest-correction-attempt-1/before/docs/m4-authoring-guidance.md",
+      "docs/evidence/m4-human-review-handoff-status-followup.json": "docs/evidence/m4-authoring-guidance-work/handoff-manifest-correction-attempt-1/before/docs/evidence/m4-human-review-handoff-status-followup.json"
+    },
+    "priorReceiptOriginal431RecordsMatchSeal": true,
+    "priorReceiptOriginal431Readback": {
+      "count": 431,
+      "exact": 430,
+      "mismatches": [
+        {
+          "declaredPath": "docs/evidence/m4-human-review-handoff-status-followup.json",
+          "resolvedPath": "docs/evidence/m4-human-review-handoff-status-followup.json",
+          "expected": {
+            "bytes": 10892,
+            "sha256": "bd440426b62d33e4976ee89865af461e5f72c7cac140dc2e999d8b2dc395759a"
+          },
+          "actual": {
+            "path": "docs/evidence/m4-human-review-handoff-status-followup.json",
+            "bytes": 14969,
+            "sha256": "9ffdf3fc2e184658ffbdd65722fcce24a52ca2c7d5801d61dde4c34e6e378f43"
+          }
+        }
+      ]
+    },
+    "previewAttempt1InternalBindings": {
+      "count": 4,
+      "exact": 3,
+      "mismatches": [
+        {
+          "declaredPath": "docs/evidence/m4-authoring-guidance-work/preview-handoff-attempt-1/manifest.json",
+          "resolvedPath": "docs/evidence/m4-authoring-guidance-work/preview-handoff-attempt-1/manifest.json",
+          "expected": {
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "actual": {
+            "path": "docs/evidence/m4-authoring-guidance-work/preview-handoff-attempt-1/manifest.json",
+            "bytes": 1367,
+            "sha256": "9312e122abbcdcf9e08f372f3255a18e75027350892fae0ab821009fc4427b92"
+          }
+        }
+      ]
+    },
+    "correctionArchiveBindings": {
+      "count": 2,
+      "exact": 2,
+      "mismatches": []
+    },
+    "beforeCurrentDocArchiveBindings": {
+      "count": 11,
+      "exact": 11,
+      "mismatches": []
+    },
+    "correctedPreviewBindings": {
+      "count": 3,
+      "exact": 3,
+      "mismatches": []
+    },
+    "correctedPreviewExactOriginalCopies": {
+      "count": 3,
+      "exact": 3,
+      "mismatches": []
+    },
+    "currentStatusRefBindings": {
+      "count": 33,
+      "exact": 33,
+      "mismatches": []
+    },
+    "currentStatusAssertions": {
+      "assertionCount": 60,
+      "mismatches": []
+    },
+    "localLinks": {
+      "files": [
+        {
+          "path": "README.md",
+          "bytes": 26861,
+          "sha256": "24d80ab97a833c090c11e61cfe5f3bca3b303cdf5e9f9d45d0892677e5b019d6",
+          "localFileDestinations": 47,
+          "externalDestinationsNotFetched": 1,
+          "sameDocumentFragmentsNotChecked": 0
+        },
+        {
+          "path": "docs/acceptance.md",
+          "bytes": 25802,
+          "sha256": "353a54be1639d13db72b4e2a6111f3f76697e8901e429cb9bc89fa0f257c383a",
+          "localFileDestinations": 28,
+          "externalDestinationsNotFetched": 0,
+          "sameDocumentFragmentsNotChecked": 0
+        },
+        {
+          "path": "docs/capability-matrix.md",
+          "bytes": 18999,
+          "sha256": "e7cc7dcbdde172be9c2bd508e6b1e714159e931370207e92f3bb72022ded246a",
+          "localFileDestinations": 31,
+          "externalDestinationsNotFetched": 0,
+          "sameDocumentFragmentsNotChecked": 0
+        },
+        {
+          "path": "docs/m4-ai-usability-audit.md",
+          "bytes": 10439,
+          "sha256": "e09dabbe5ba98c48824d49e1ae3ec4725710759de80e26f397c374e42afc1237",
+          "localFileDestinations": 18,
+          "externalDestinationsNotFetched": 0,
+          "sameDocumentFragmentsNotChecked": 0
+        },
+        {
+          "path": "docs/m4-authoring-feedback.md",
+          "bytes": 9527,
+          "sha256": "5d5581b41d1593d904dfede7f99fd76c927e12268eb24a97ff3c0c70e0a627a9",
+          "localFileDestinations": 10,
+          "externalDestinationsNotFetched": 1,
+          "sameDocumentFragmentsNotChecked": 0
+        },
+        {
+          "path": "docs/m4-authoring-guidance.md",
+          "bytes": 6345,
+          "sha256": "94072244a2ea05f1d22ead1845ce1264210f7948162027d08baa72b58cf9c6c2",
+          "localFileDestinations": 15,
+          "externalDestinationsNotFetched": 1,
+          "sameDocumentFragmentsNotChecked": 0
+        },
+        {
+          "path": "docs/m4-authoring.md",
+          "bytes": 14571,
+          "sha256": "04588d4f908d170adf2284ef8b001d0ac14ef556c02171c2b4ef89214fc4aa4d",
+          "localFileDestinations": 11,
+          "externalDestinationsNotFetched": 0,
+          "sameDocumentFragmentsNotChecked": 0
+        },
+        {
+          "path": "docs/m4-completion.md",
+          "bytes": 31592,
+          "sha256": "8bb8c2210e3ccfcadb2d3986746206aff5cdfc2ce3c7bf34fcc4f325dffa4e30",
+          "localFileDestinations": 71,
+          "externalDestinationsNotFetched": 0,
+          "sameDocumentFragmentsNotChecked": 0
+        },
+        {
+          "path": "docs/m4-exit-audit.md",
+          "bytes": 43382,
+          "sha256": "8e47cd5d1e89103fc9c639331972924b49e867f586155e53aa12aa00a801f017",
+          "localFileDestinations": 83,
+          "externalDestinationsNotFetched": 0,
+          "sameDocumentFragmentsNotChecked": 0
+        },
+        {
+          "path": "skills/archcanvas/references/formal-alpha.md",
+          "bytes": 27597,
+          "sha256": "ae0151485abcc6496acb79168ea9a5a94543961e0a3d87e9e1fc55f484ad43be",
+          "localFileDestinations": 1,
+          "externalDestinationsNotFetched": 0,
+          "sameDocumentFragmentsNotChecked": 0
+        },
+        {
+          "path": "skills/archcanvas/references/runtime-compatibility.md",
+          "bytes": 15292,
+          "sha256": "525f05b518aa9d8b0e0c64ff07e9acf6891f7e7654646737c52907c15df43786",
+          "localFileDestinations": 2,
+          "externalDestinationsNotFetched": 0,
+          "sameDocumentFragmentsNotChecked": 0
+        }
+      ],
+      "fileCount": 11,
+      "localFileDestinations": 317,
+      "missingLocalDestinations": [],
+      "scope": "File existence, not Markdown anchor or external URL certification."
+    },
+    "currentEntryLeadErrors": [
+      {
+        "path": "skills/archcanvas/references/formal-alpha.md",
+        "missingCurrentLeadToken": "index-CWqdzert.js"
+      },
+      {
+        "path": "skills/archcanvas/references/formal-alpha.md",
+        "missingCurrentLeadToken": "index-DEZFMW6R.css"
+      },
+      {
+        "path": "skills/archcanvas/references/runtime-compatibility.md",
+        "missingCurrentLeadToken": "index-CWqdzert.js"
+      },
+      {
+        "path": "skills/archcanvas/references/runtime-compatibility.md",
+        "missingCurrentLeadToken": "index-DEZFMW6R.css"
+      }
+    ],
+    "sourceReportBoundCounts": {
+      "target": {
+        "tests": 48,
+        "pass": 48,
+        "fail": 0,
+        "skipped": 0,
+        "todo": 0,
+        "cancelled": 0
+      },
+      "suite": {
+        "tests": 284,
+        "pass": 284,
+        "fail": 0,
+        "skipped": 0,
+        "todo": 0,
+        "cancelled": 0
+      },
+      "build": {}
+    },
+    "sourceParameterCoverage": {
+      "backendModuleCount": 17,
+      "parameterModuleCount": 12,
+      "registeredFieldCount": 34,
+      "helpFieldCount": 34,
+      "missing": {},
+      "extra": {},
+      "mapsExact": true,
+      "backendFields": {
+        "Input": [
+          "shape",
+          "dtype"
+        ],
+        "Output": [],
+        "Linear": [
+          "in_features",
+          "out_features",
+          "bias"
+        ],
+        "ReLU": [],
+        "GELU": [
+          "approximate"
+        ],
+        "SiLU": [],
+        "Identity": [],
+        "Dropout": [
+          "p"
+        ],
+        "Flatten": [
+          "start_dim",
+          "end_dim"
+        ],
+        "Conv2d": [
+          "in_channels",
+          "out_channels",
+          "kernel_size",
+          "stride",
+          "padding",
+          "dilation",
+          "groups",
+          "bias"
+        ],
+        "MaxPool2d": [
+          "kernel_size",
+          "stride",
+          "padding",
+          "dilation",
+          "ceil_mode"
+        ],
+        "AdaptiveAvgPool2d": [
+          "output_size"
+        ],
+        "BatchNorm2d": [
+          "num_features",
+          "eps",
+          "momentum",
+          "affine",
+          "track_running_stats"
+        ],
+        "LayerNorm": [
+          "normalized_shape",
+          "eps",
+          "elementwise_affine"
+        ],
+        "Embedding": [
+          "num_embeddings",
+          "embedding_dim"
+        ],
+        "Add": [],
+        "Concat": [
+          "dim"
+        ]
+      },
+      "helpFields": {
+        "Input": [
+          "shape",
+          "dtype"
+        ],
+        "Linear": [
+          "in_features",
+          "out_features",
+          "bias"
+        ],
+        "GELU": [
+          "approximate"
+        ],
+        "Dropout": [
+          "p"
+        ],
+        "Flatten": [
+          "start_dim",
+          "end_dim"
+        ],
+        "Conv2d": [
+          "in_channels",
+          "out_channels",
+          "kernel_size",
+          "stride",
+          "padding",
+          "dilation",
+          "groups",
+          "bias"
+        ],
+        "MaxPool2d": [
+          "kernel_size",
+          "stride",
+          "padding",
+          "dilation",
+          "ceil_mode"
+        ],
+        "AdaptiveAvgPool2d": [
+          "output_size"
+        ],
+        "BatchNorm2d": [
+          "num_features",
+          "eps",
+          "momentum",
+          "affine",
+          "track_running_stats"
+        ],
+        "LayerNorm": [
+          "normalized_shape",
+          "eps",
+          "elementwise_affine"
+        ],
+        "Embedding": [
+          "num_embeddings",
+          "embedding_dim"
+        ],
+        "Concat": [
+          "dim"
+        ]
+      },
+      "method": "Python AST reads _CATALOG; indentation-scoped TS field declarations. No module/model import."
+    },
+    "browserRawBindings": {
+      "count": 88,
+      "exact": 88,
+      "mismatches": []
+    },
+    "browserAssets": {
+      "count": 3,
+      "exact": 3,
+      "mismatches": []
+    }
+  },
+  "inputs": [
+    {
+      "path": "docs/evidence/m4-authoring-guidance-verification-sealed-attempt-1.json",
+      "bytes": 75827,
+      "sha256": "7bed1bbf908be49c4f34e29b3b0506cdb3ad3d2809a2bf09c4359398ef64f982"
+    },
+    {
+      "path": "docs/evidence/m4-authoring-guidance-work/prior-bsa-seal-readback-attempt-1.json",
+      "bytes": 171746,
+      "sha256": "e0ea5d18f7a7e3500c4b01452d08a2894cd8bd3052ae7bb8446530fcf7c08255"
+    },
+    {
+      "path": "docs/evidence/m4-draft-merge-routing-verification-sealed-attempt-2.json",
+      "bytes": 107131,
+      "sha256": "45ce5cbff406d115035469ea7df4b27962b894ae612d5dc168743f39473a867b"
+    },
+    {
+      "path": "docs/evidence/m4-authoring-guidance-work/handoff-manifest-correction-attempt-1/before-manifest.json",
+      "bytes": 746,
+      "sha256": "0f5075299198c8c88149c1933ca595e5fc24aeb3f0b07d30170ff6565b3a8bea"
+    },
+    {
+      "path": "docs/evidence/m4-authoring-guidance-work/before-current-doc-update-attempt-1/manifest.json",
+      "bytes": 3374,
+      "sha256": "45f400840632c6fe9abbcd5fc08f9e697f37d3e56340222b1b01a78ab80778ba"
+    },
+    {
+      "path": "docs/evidence/m4-authoring-guidance-work/preview-handoff-attempt-1/manifest.json",
+      "bytes": 1367,
+      "sha256": "9312e122abbcdcf9e08f372f3255a18e75027350892fae0ab821009fc4427b92"
+    },
+    {
+      "path": "docs/evidence/m4-authoring-guidance-work/preview-handoff-attempt-2/manifest.json",
+      "bytes": 1604,
+      "sha256": "7e78a69df9c1dfb0c31add3676637cc2b1cda3cc3d7a5e19a96283b21547b4ba"
+    },
+    {
+      "path": "docs/evidence/m4-human-review-handoff-status-followup.json",
+      "bytes": 14969,
+      "sha256": "9ffdf3fc2e184658ffbdd65722fcce24a52ca2c7d5801d61dde4c34e6e378f43"
+    },
+    {
+      "path": "docs/evidence/m4-authoring-guidance-work/acceptance-attempt-1/source-and-checks-report-attempt-4.json",
+      "bytes": 27207,
+      "sha256": "ded5c664ca72752d2601e03dbfb2b5043e0565dd1fec43cef7d475c670afe877"
+    },
+    {
+      "path": "docs/evidence/m4-authoring-guidance-work/browser-attempt-3/manifest.json",
+      "bytes": 23882,
+      "sha256": "85eaebec8aa18362367b929c123b65e7957b2eaecbdb1a23a1324b5e6e8c50fe"
+    },
+    {
+      "path": "docs/evidence/m4-authoring-guidance-work/acceptance-attempt-1/browser-and-save-report-attempt-1.json",
+      "bytes": 65046,
+      "sha256": "0d9d9261644ffe7cbf9977192b7b3ee2635819a5b073302766762b90a3a7e7d4"
+    },
+    {
+      "path": "docs/evidence/m4-authoring-guidance-work/pixel-review-attempt-1/report.json",
+      "bytes": 46778,
+      "sha256": "56357ff02aa50b1136168480dd508b5770d47b790843cfb0ab3c8f16796a3cb3"
+    },
+    {
+      "path": "docs/evidence/m4-authoring-guidance-work/root-pixel-review-attempt-1.json",
+      "bytes": 3631,
+      "sha256": "8bc46e93e9fc5422b0574f6bc663d714f03189d0fefc5cebc49a41b20ece70b4"
+    }
+  ],
+  "boundaries": [
+    "M4 partial; M5 not started; real human participants zero.",
+    "48 focused cases are a subset of284; nine helper cases are included,34 AST field checks are not extra test cases.",
+    "22 final frame groups/88raw are restored/edited final-CW chain evidence; intermediate DS from-zero construction retains historical scope.",
+    "61 endpoint checks certify sampled anchor consistency; pixels are attributed to the separate22-image AI reviewer and11-image root subset, never added together.",
+    "Handoff preview three files are separate from22validation frames; service exit143 reason remains unknown and restored session63768 is a point observation.",
+    "No all-module beginner, generation, physical publication, arbitrary routing, presented FPS, out-of-order response browser or full reopened-parameter UI certification.",
+    "Historical nested pixel input hashes retain original-time roles; top-level identity is not complete recursive narrative certification."
+  ],
+  "auditSource": {
+    "path": "docs/evidence/m4-authoring-guidance-final-readback-attempt-1/audit.py",
+    "bytes": 15980,
+    "sha256": "3febdc46ca3fad7aab747355187d81f0b7f80ac745022844db339d708564440a"
+  }
+}

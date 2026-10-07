@@ -1,0 +1,1271 @@
+{
+  "schema": "archcanvas-authoring-catalog-reference-audit/1",
+  "createdAtUTC": "2026-10-05T10:32:00.438364+00:00",
+  "scope": "Read-only formal catalog function + local reference source declarations/UX comparison; no browser/model execution or product edits",
+  "inputBindings": [
+    {
+      "path": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/src/archcanvas_authoring/draft.py",
+      "bytes": 43984,
+      "sha256": "cce519d8ae9e865fedccb5981b34a9884c51cceca43c951eff59333ba322231d"
+    },
+    {
+      "path": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/studio/src/AuthoringStudio.tsx",
+      "bytes": 32474,
+      "sha256": "762ee90921f93be10cd744a4b4f3894162b61c78de4f6d5d3f158cfb02683edc"
+    },
+    {
+      "path": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/docs/m4-authoring.md",
+      "bytes": 11732,
+      "sha256": "a4019ce7834c247ca8c47c821ac74ade89af05b6024d81c3cfb1767f091d2f9e"
+    },
+    {
+      "path": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/skills/archcanvas/references/runtime-compatibility.md",
+      "bytes": 9636,
+      "sha256": "3715ab9700494f4e889410d7387f4988a5252c5c79f4ab789c2b6d675ef7c14c"
+    },
+    {
+      "path": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_双向模型可视化与编辑框架_技术计划书.md",
+      "bytes": 126755,
+      "sha256": "75ba91817eb9a39c70678b185326283fcb4ff5b6fe905e3c2fefb6d15f1a70fb"
+    },
+    {
+      "path": "/home/fzg/PycharmProjects/ArchCanvas/Source_Code_Project/DL-Playground/frontend/src/nodes/registry.ts",
+      "bytes": 9450,
+      "sha256": "bb0a393327c6b5b661f031e22487f629bae5714e996be726173ae485e33c82ec"
+    },
+    {
+      "path": "/home/fzg/PycharmProjects/ArchCanvas/Source_Code_Project/DL-Playground/frontend/src/features/editor/components/EditorSidebar.tsx",
+      "bytes": 23073,
+      "sha256": "e845f7e0e991151af73bac52f5c9d9e6388a77e8ff35e6f948438f133529506b"
+    },
+    {
+      "path": "/home/fzg/PycharmProjects/ArchCanvas/Source_Code_Project/DL-Playground/frontend/src/features/editor/hooks/useSidebarSystem.ts",
+      "bytes": 3467,
+      "sha256": "ebf7fdcc8b6408901c06b6d0a3449b6094de2f4cc3a25a8226005885d152173f"
+    }
+  ],
+  "formal": {
+    "catalog": {
+      "schemaVersion": 1,
+      "mode": "authored-draft",
+      "modules": [
+        {
+          "kind": "Input",
+          "label": "输入",
+          "category": "io",
+          "description": "声明输入张量的形状与类型，再连接后续模块。",
+          "defaults": {
+            "shape": [
+              1,
+              16
+            ],
+            "dtype": "float32"
+          },
+          "parameters": [
+            {
+              "name": "shape",
+              "type": "integer-array",
+              "default": [
+                1,
+                16
+              ],
+              "min": 1,
+              "max": 1000000,
+              "minLength": 1,
+              "maxLength": 8
+            },
+            {
+              "name": "dtype",
+              "type": "choice",
+              "default": "float32",
+              "options": [
+                "float32",
+                "float64",
+                "int64"
+              ]
+            }
+          ],
+          "ports": [
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Output",
+          "label": "输出",
+          "category": "io",
+          "description": "连接模型结果；可以添加多个命名输出。",
+          "defaults": {},
+          "parameters": [],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Linear",
+          "label": "全连接",
+          "category": "dense",
+          "description": "把最后一维从输入宽度变为输出宽度，需要 float32 输入。",
+          "defaults": {
+            "in_features": 16,
+            "out_features": 32,
+            "bias": true
+          },
+          "parameters": [
+            {
+              "name": "in_features",
+              "type": "integer",
+              "default": 16,
+              "min": 1,
+              "max": 1000000
+            },
+            {
+              "name": "out_features",
+              "type": "integer",
+              "default": 32,
+              "min": 1,
+              "max": 1000000
+            },
+            {
+              "name": "bias",
+              "type": "boolean",
+              "default": true
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "ReLU",
+          "label": "ReLU 激活",
+          "category": "activation",
+          "description": "逐元素把负数置零，保留形状，不修改上游张量。",
+          "defaults": {},
+          "parameters": [],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "GELU",
+          "label": "GELU 激活",
+          "category": "activation",
+          "description": "对浮点张量逐元素应用 GELU，可选 tanh 近似。",
+          "defaults": {
+            "approximate": "none"
+          },
+          "parameters": [
+            {
+              "name": "approximate",
+              "type": "choice",
+              "default": "none",
+              "options": [
+                "none",
+                "tanh"
+              ]
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "SiLU",
+          "label": "SiLU 激活",
+          "category": "activation",
+          "description": "对浮点张量逐元素应用 SiLU，保留形状。",
+          "defaults": {},
+          "parameters": [],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Identity",
+          "label": "恒等映射",
+          "category": "operator",
+          "description": "直接传递输入，保留形状和类型。",
+          "defaults": {},
+          "parameters": [],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Dropout",
+          "label": "随机失活",
+          "category": "regularization",
+          "description": "训练时以概率 p 丢弃元素，评估时直接传递输入。",
+          "defaults": {
+            "p": 0.1
+          },
+          "parameters": [
+            {
+              "name": "p",
+              "type": "number",
+              "default": 0.1,
+              "min": 0,
+              "max": 1
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Flatten",
+          "label": "展平",
+          "category": "reshape",
+          "description": "将起止维度之间的轴合并；默认保留批次维度。",
+          "defaults": {
+            "start_dim": 1,
+            "end_dim": -1
+          },
+          "parameters": [
+            {
+              "name": "start_dim",
+              "type": "integer",
+              "default": 1,
+              "min": -8,
+              "max": 7
+            },
+            {
+              "name": "end_dim",
+              "type": "integer",
+              "default": -1,
+              "min": -8,
+              "max": 7
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Conv2d",
+          "label": "二维卷积",
+          "category": "convolution",
+          "description": "处理 CHW 或 NCHW 的 float32 张量，可设置卷积核、步长、填充和分组。",
+          "defaults": {
+            "in_channels": 3,
+            "out_channels": 16,
+            "kernel_size": [
+              3,
+              3
+            ],
+            "stride": [
+              1,
+              1
+            ],
+            "padding": [
+              0,
+              0
+            ],
+            "dilation": [
+              1,
+              1
+            ],
+            "groups": 1,
+            "bias": true
+          },
+          "parameters": [
+            {
+              "name": "in_channels",
+              "type": "integer",
+              "default": 3,
+              "min": 1,
+              "max": 1000000
+            },
+            {
+              "name": "out_channels",
+              "type": "integer",
+              "default": 16,
+              "min": 1,
+              "max": 1000000
+            },
+            {
+              "name": "kernel_size",
+              "type": "integer-array",
+              "default": [
+                3,
+                3
+              ],
+              "min": 1,
+              "max": 10000,
+              "length": 2
+            },
+            {
+              "name": "stride",
+              "type": "integer-array",
+              "default": [
+                1,
+                1
+              ],
+              "min": 1,
+              "max": 10000,
+              "length": 2
+            },
+            {
+              "name": "padding",
+              "type": "integer-array",
+              "default": [
+                0,
+                0
+              ],
+              "min": 0,
+              "max": 10000,
+              "length": 2
+            },
+            {
+              "name": "dilation",
+              "type": "integer-array",
+              "default": [
+                1,
+                1
+              ],
+              "min": 1,
+              "max": 10000,
+              "length": 2
+            },
+            {
+              "name": "groups",
+              "type": "integer",
+              "default": 1,
+              "min": 1,
+              "max": 1000000
+            },
+            {
+              "name": "bias",
+              "type": "boolean",
+              "default": true
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "MaxPool2d",
+          "label": "二维最大池化",
+          "category": "pooling",
+          "description": "缩小 CHW 或 NCHW 的空间尺寸，保留每个窗口的最大值。",
+          "defaults": {
+            "kernel_size": [
+              2,
+              2
+            ],
+            "stride": [
+              2,
+              2
+            ],
+            "padding": [
+              0,
+              0
+            ],
+            "dilation": [
+              1,
+              1
+            ],
+            "ceil_mode": false
+          },
+          "parameters": [
+            {
+              "name": "kernel_size",
+              "type": "integer-array",
+              "default": [
+                2,
+                2
+              ],
+              "min": 1,
+              "max": 10000,
+              "length": 2
+            },
+            {
+              "name": "stride",
+              "type": "integer-array",
+              "default": [
+                2,
+                2
+              ],
+              "min": 1,
+              "max": 10000,
+              "length": 2
+            },
+            {
+              "name": "padding",
+              "type": "integer-array",
+              "default": [
+                0,
+                0
+              ],
+              "min": 0,
+              "max": 10000,
+              "length": 2
+            },
+            {
+              "name": "dilation",
+              "type": "integer-array",
+              "default": [
+                1,
+                1
+              ],
+              "min": 1,
+              "max": 10000,
+              "length": 2
+            },
+            {
+              "name": "ceil_mode",
+              "type": "boolean",
+              "default": false
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "AdaptiveAvgPool2d",
+          "label": "自适应平均池化",
+          "category": "pooling",
+          "description": "将 CHW 或 NCHW 的空间尺寸变为指定大小。",
+          "defaults": {
+            "output_size": [
+              1,
+              1
+            ]
+          },
+          "parameters": [
+            {
+              "name": "output_size",
+              "type": "integer-array",
+              "default": [
+                1,
+                1
+              ],
+              "min": 1,
+              "max": 10000,
+              "length": 2
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "BatchNorm2d",
+          "label": "二维批归一化",
+          "category": "normalization",
+          "description": "按通道归一化 NCHW 的 float32 张量，通道数须匹配。",
+          "defaults": {
+            "num_features": 16,
+            "eps": 1e-05,
+            "momentum": 0.1,
+            "affine": true,
+            "track_running_stats": true
+          },
+          "parameters": [
+            {
+              "name": "num_features",
+              "type": "integer",
+              "default": 16,
+              "min": 1,
+              "max": 1000000
+            },
+            {
+              "name": "eps",
+              "type": "number",
+              "default": 1e-05,
+              "min": 1e-12,
+              "max": 1
+            },
+            {
+              "name": "momentum",
+              "type": "number",
+              "default": 0.1,
+              "min": 0,
+              "max": 1
+            },
+            {
+              "name": "affine",
+              "type": "boolean",
+              "default": true
+            },
+            {
+              "name": "track_running_stats",
+              "type": "boolean",
+              "default": true
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "LayerNorm",
+          "label": "层归一化",
+          "category": "normalization",
+          "description": "归一化 float32 张量的末尾若干维，形状须与设置匹配。",
+          "defaults": {
+            "normalized_shape": [
+              16
+            ],
+            "eps": 1e-05,
+            "elementwise_affine": true
+          },
+          "parameters": [
+            {
+              "name": "normalized_shape",
+              "type": "integer-array",
+              "default": [
+                16
+              ],
+              "min": 1,
+              "max": 1000000,
+              "minLength": 1,
+              "maxLength": 8
+            },
+            {
+              "name": "eps",
+              "type": "number",
+              "default": 1e-05,
+              "min": 1e-12,
+              "max": 1
+            },
+            {
+              "name": "elementwise_affine",
+              "type": "boolean",
+              "default": true
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Embedding",
+          "label": "词嵌入",
+          "category": "embedding",
+          "description": "把 int64 索引变为 float32 向量；最后增加嵌入维度。",
+          "defaults": {
+            "num_embeddings": 1000,
+            "embedding_dim": 16
+          },
+          "parameters": [
+            {
+              "name": "num_embeddings",
+              "type": "integer",
+              "default": 1000,
+              "min": 1,
+              "max": 1000000
+            },
+            {
+              "name": "embedding_dim",
+              "type": "integer",
+              "default": 16,
+              "min": 1,
+              "max": 1000000
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Add",
+          "label": "张量相加",
+          "category": "merge",
+          "description": "相加两路形状与类型完全相同的张量，可用于残差连接。",
+          "defaults": {},
+          "parameters": [],
+          "ports": [
+            {
+              "id": "left",
+              "name": "left",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "right",
+              "name": "right",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Concat",
+          "label": "张量拼接",
+          "category": "merge",
+          "description": "沿指定轴拼接两路张量，其他维度与类型须相同。",
+          "defaults": {
+            "dim": 1
+          },
+          "parameters": [
+            {
+              "name": "dim",
+              "type": "integer",
+              "default": 1,
+              "min": -8,
+              "max": 7
+            }
+          ],
+          "ports": [
+            {
+              "id": "a",
+              "name": "a",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "b",
+              "name": "b",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        }
+      ],
+      "unsupported": [
+        "Sigmoid",
+        "Tanh",
+        "Conv1d",
+        "AvgPool2d",
+        "BatchNorm1d",
+        "MultiheadAttention",
+        "LSTM"
+      ],
+      "limits": {
+        "nodes": 128,
+        "edges": 384
+      },
+      "verification": "static-declared-tensors; no model import or execution"
+    },
+    "entries": 17,
+    "computationalEntriesExcludingInputOutput": 15,
+    "categories": {
+      "io": 2,
+      "dense": 1,
+      "activation": 3,
+      "operator": 1,
+      "regularization": 1,
+      "reshape": 1,
+      "convolution": 1,
+      "pooling": 2,
+      "normalization": 2,
+      "embedding": 1,
+      "merge": 2
+    },
+    "leftPaletteCodeSupports": [
+      "search-Chinese-English",
+      "grouped-categories",
+      "click-add",
+      "HTML5-drag-drop"
+    ],
+    "compositePresetsImplemented": false
+  },
+  "reference": {
+    "source": "Local DL-Playground, behavior/design only",
+    "groups": [
+      {
+        "key": "inputs",
+        "label": "Inputs",
+        "entries": [
+          {
+            "key": "input_layer",
+            "declaredClass": "InputNode"
+          }
+        ]
+      },
+      {
+        "key": "torch_ops",
+        "label": "Torch Ops",
+        "entries": [
+          {
+            "key": "add_layer",
+            "declaredClass": "AddNode"
+          },
+          {
+            "key": "concat_layer",
+            "declaredClass": "ConcatNode"
+          },
+          {
+            "key": "sub_layer",
+            "declaredClass": "SubNode"
+          },
+          {
+            "key": "mul_layer",
+            "declaredClass": "MulNode"
+          },
+          {
+            "key": "div_layer",
+            "declaredClass": "DivNode"
+          },
+          {
+            "key": "exp_layer",
+            "declaredClass": "ExpNode"
+          },
+          {
+            "key": "log_layer",
+            "declaredClass": "LogNode"
+          },
+          {
+            "key": "sqrt_layer",
+            "declaredClass": "SqrtNode"
+          },
+          {
+            "key": "pow_layer",
+            "declaredClass": "PowNode"
+          },
+          {
+            "key": "clip_layer",
+            "declaredClass": "ClipNode"
+          },
+          {
+            "key": "matmul_layer",
+            "declaredClass": "MatMulNode"
+          },
+          {
+            "key": "sum_layer",
+            "declaredClass": "SumNode"
+          },
+          {
+            "key": "mean_layer",
+            "declaredClass": "MeanNode"
+          },
+          {
+            "key": "prod_layer",
+            "declaredClass": "ProdNode"
+          },
+          {
+            "key": "max_layer",
+            "declaredClass": "MaxNode"
+          },
+          {
+            "key": "min_layer",
+            "declaredClass": "MinNode"
+          },
+          {
+            "key": "argmax_layer",
+            "declaredClass": "ArgMaxNode"
+          },
+          {
+            "key": "argmin_layer",
+            "declaredClass": "ArgMinNode"
+          },
+          {
+            "key": "repeat_layer",
+            "declaredClass": "RepeatNode"
+          }
+        ]
+      },
+      {
+        "key": "tensor_shape",
+        "label": "Tensor Shape",
+        "entries": [
+          {
+            "key": "reshape_layer",
+            "declaredClass": "ReshapeNode"
+          },
+          {
+            "key": "transpose_layer",
+            "declaredClass": "TransposeNode"
+          },
+          {
+            "key": "flatten_layer",
+            "declaredClass": "FlattenNode"
+          },
+          {
+            "key": "pass_layer",
+            "declaredClass": "PassLayerNode"
+          }
+        ]
+      },
+      {
+        "key": "tensor_create",
+        "label": "Tensor Creation",
+        "entries": [
+          {
+            "key": "zeros_layer",
+            "declaredClass": "ZerosNode"
+          },
+          {
+            "key": "ones_layer",
+            "declaredClass": "OnesNode"
+          },
+          {
+            "key": "rand_layer",
+            "declaredClass": "RandNode"
+          }
+        ]
+      },
+      {
+        "key": "activations",
+        "label": "Activations",
+        "entries": [
+          {
+            "key": "relu_layer",
+            "declaredClass": "ReLUNode"
+          },
+          {
+            "key": "leakyrelu_layer",
+            "declaredClass": "LeakyReLUNode"
+          },
+          {
+            "key": "gelu_layer",
+            "declaredClass": "GELUNode"
+          },
+          {
+            "key": "elu_layer",
+            "declaredClass": "ELUNode"
+          },
+          {
+            "key": "selu_layer",
+            "declaredClass": "SELUNode"
+          },
+          {
+            "key": "tanh_layer",
+            "declaredClass": "TanhNode"
+          },
+          {
+            "key": "sigmoid_layer",
+            "declaredClass": "SigmoidNode"
+          },
+          {
+            "key": "softplus_layer",
+            "declaredClass": "SoftplusNode"
+          },
+          {
+            "key": "softsign_layer",
+            "declaredClass": "SoftsignNode"
+          },
+          {
+            "key": "hardswish_layer",
+            "declaredClass": "HardSwishNode"
+          },
+          {
+            "key": "hardsigmoid_layer",
+            "declaredClass": "HardSigmoidNode"
+          },
+          {
+            "key": "softmax_layer",
+            "declaredClass": "SoftmaxNode"
+          },
+          {
+            "key": "logsoftmax_layer",
+            "declaredClass": "LogSoftmaxNode"
+          }
+        ]
+      },
+      {
+        "key": "normalization",
+        "label": "Normalization",
+        "entries": [
+          {
+            "key": "batchnorm2d_layer",
+            "declaredClass": "BatchNorm2dNode"
+          },
+          {
+            "key": "instancenorm2d_layer",
+            "declaredClass": "InstanceNorm2dNode"
+          },
+          {
+            "key": "groupnorm_layer",
+            "declaredClass": "GroupNormNode"
+          },
+          {
+            "key": "layernorm_layer",
+            "declaredClass": "LayerNormNode"
+          },
+          {
+            "key": "rmsnorm_layer",
+            "declaredClass": "RMSNormNode"
+          }
+        ]
+      },
+      {
+        "key": "regularization",
+        "label": "Regularization",
+        "entries": [
+          {
+            "key": "dropout_layer",
+            "declaredClass": "DropoutNode"
+          },
+          {
+            "key": "spatialdropout2d_layer",
+            "declaredClass": "SpatialDropout2dNode"
+          },
+          {
+            "key": "alphadropout_layer",
+            "declaredClass": "AlphaDropoutNode"
+          },
+          {
+            "key": "stochasticdepth_layer",
+            "declaredClass": "StochasticDepthNode"
+          }
+        ]
+      },
+      {
+        "key": "dense",
+        "label": "Linear / Dense",
+        "entries": [
+          {
+            "key": "linear_layer",
+            "declaredClass": "LinearLayerNode"
+          }
+        ]
+      },
+      {
+        "key": "vision_conv",
+        "label": "Vision - Convolution",
+        "entries": [
+          {
+            "key": "conv1d_layer",
+            "declaredClass": "Conv1dNode"
+          },
+          {
+            "key": "conv2d_layer",
+            "declaredClass": "Conv2dNode"
+          },
+          {
+            "key": "conv3d_layer",
+            "declaredClass": "Conv3dNode"
+          },
+          {
+            "key": "depthwiseconv2d_layer",
+            "declaredClass": "DepthwiseConv2dNode"
+          },
+          {
+            "key": "pointwiseconv2d_layer",
+            "declaredClass": "PointwiseConv2dNode"
+          },
+          {
+            "key": "convtranspose2d_layer",
+            "declaredClass": "ConvTranspose2dNode"
+          },
+          {
+            "key": "upsample_layer",
+            "declaredClass": "UpsampleNode"
+          },
+          {
+            "key": "residual_block",
+            "declaredClass": "ResidualBlockNode"
+          }
+        ]
+      },
+      {
+        "key": "vision_pool",
+        "label": "Vision - Pooling",
+        "entries": [
+          {
+            "key": "maxpool1d_layer",
+            "declaredClass": "MaxPool1dNode"
+          },
+          {
+            "key": "maxpool2d_layer",
+            "declaredClass": "MaxPool2dNode"
+          },
+          {
+            "key": "maxpool3d_layer",
+            "declaredClass": "MaxPool3dNode"
+          },
+          {
+            "key": "avgpool1d_layer",
+            "declaredClass": "AvgPool1dNode"
+          },
+          {
+            "key": "avgpool2d_layer",
+            "declaredClass": "AvgPool2dNode"
+          },
+          {
+            "key": "avgpool3d_layer",
+            "declaredClass": "AvgPool3dNode"
+          },
+          {
+            "key": "adaptiveavgpool2d_layer",
+            "declaredClass": "AdaptiveAvgPool2dNode"
+          },
+          {
+            "key": "adaptivemaxpool2d_layer",
+            "declaredClass": "AdaptiveMaxPool2dNode"
+          },
+          {
+            "key": "globalavgpool2d_layer",
+            "declaredClass": "GlobalAvgPool2dNode"
+          },
+          {
+            "key": "globalmaxpool2d_layer",
+            "declaredClass": "GlobalMaxPool2dNode"
+          }
+        ]
+      },
+      {
+        "key": "sequence",
+        "label": "Sequence / Attention",
+        "entries": [
+          {
+            "key": "embedding_layer",
+            "declaredClass": "EmbeddingNode"
+          },
+          {
+            "key": "rnn_layer",
+            "declaredClass": "RNNNode"
+          },
+          {
+            "key": "lstm_layer",
+            "declaredClass": "LSTMNode"
+          },
+          {
+            "key": "gru_layer",
+            "declaredClass": "GRUNode"
+          },
+          {
+            "key": "multihead_attention_layer",
+            "declaredClass": "MultiheadAttentionNode"
+          },
+          {
+            "key": "positional_encoding_layer",
+            "declaredClass": "PositionalEncodingNode"
+          }
+        ]
+      },
+      {
+        "key": "losses",
+        "label": "Losses",
+        "entries": [
+          {
+            "key": "mse_loss",
+            "declaredClass": "MSELossNode"
+          },
+          {
+            "key": "cross_entropy_loss",
+            "declaredClass": "CrossEntropyLossNode"
+          },
+          {
+            "key": "bce_loss",
+            "declaredClass": "BCELossNode"
+          }
+        ]
+      },
+      {
+        "key": "metrics",
+        "label": "Metrics",
+        "entries": [
+          {
+            "key": "accuracy_metric",
+            "declaredClass": "AccuracyNode"
+          }
+        ]
+      },
+      {
+        "key": "control",
+        "label": "Control Flow",
+        "entries": [
+          {
+            "key": "repeat_layer",
+            "declaredClass": "RepeatLayerNode"
+          },
+          {
+            "key": "module_list",
+            "declaredClass": "ModuleListNode"
+          }
+        ]
+      }
+    ],
+    "groupCount": 14,
+    "declaredGroupEntries": 80,
+    "distinctGroupKeys": 79,
+    "duplicateGroupKeys": [
+      "repeat_layer"
+    ],
+    "extraSpecialRegistration": "module_ref",
+    "executedReferenceRegistry": false,
+    "semanticCorrectnessCertified": false,
+    "notCoveragePercentageDenominator": true,
+    "licenseConfirmed": false
+  },
+  "nextProductSteps": {
+    "status": "proposed-not-implemented",
+    "priority1": "Validated transparent composite presets made only of current supported nodes: MLP, small CNN, residual MLP",
+    "requirements": [
+      "new stable IDs and typed edges",
+      "explicit input tensor declaration",
+      "one undoable draft insertion",
+      "manual editing of every expanded node",
+      "independent hand-computed shapes + generated AST/IR",
+      "save/reopen and real novice task"
+    ],
+    "priority2": "Independent contract batches for common activation, shape and pooling modules",
+    "priority3": "Multi-input/output attention/sequence only after independent bounded contracts"
+  },
+  "oldPrototypeUsed": false,
+  "dependenciesInstalled": 0,
+  "userModelsExecuted": 0,
+  "browserActions": 0,
+  "humanParticipantsAdded": 0,
+  "aestheticCertified": false
+}

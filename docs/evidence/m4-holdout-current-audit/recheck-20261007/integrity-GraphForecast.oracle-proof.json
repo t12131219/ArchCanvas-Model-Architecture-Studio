@@ -1,0 +1,180 @@
+{
+  "entry": "model:GraphForecast",
+  "nodeCount": 7,
+  "edgeCount": 8,
+  "portCount": 13,
+  "tensorCount": 5,
+  "callCount": 3,
+  "instanceCount": 3,
+  "opaqueNodeCount": 2,
+  "nodes": [
+    "ConditionalRegion",
+    "input.edge_index",
+    "input.nodes",
+    "message",
+    "output0",
+    "project",
+    "root"
+  ],
+  "relations": [
+    [
+      "ConditionalRegion",
+      "output",
+      "output0",
+      "value",
+      "data"
+    ],
+    [
+      "input.edge_index",
+      "edge_index",
+      "message",
+      "arg1",
+      "data"
+    ],
+    [
+      "input.edge_index",
+      "edge_index",
+      "root",
+      "edge_index",
+      "data"
+    ],
+    [
+      "input.nodes",
+      "nodes",
+      "project",
+      "input",
+      "data"
+    ],
+    [
+      "input.nodes",
+      "nodes",
+      "root",
+      "nodes",
+      "data"
+    ],
+    [
+      "message",
+      "output",
+      "ConditionalRegion",
+      "messages",
+      "data"
+    ],
+    [
+      "project",
+      "output",
+      "ConditionalRegion",
+      "features",
+      "data"
+    ],
+    [
+      "project",
+      "output",
+      "message",
+      "arg0",
+      "data"
+    ]
+  ],
+  "containment": {
+    "root": [
+      "ConditionalRegion",
+      "input.edge_index",
+      "input.nodes",
+      "message",
+      "output0",
+      "project"
+    ]
+  },
+  "instanceCalls": {
+    "instance:model.GraphForecast": [
+      "root"
+    ],
+    "instance:model.GraphForecast.message": [
+      "message"
+    ],
+    "instance:model.GraphForecast.project": [
+      "project"
+    ]
+  },
+  "tensors": [
+    {
+      "producer": [
+        "message",
+        "output"
+      ],
+      "consumers": [
+        [
+          "ConditionalRegion",
+          "messages",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "project",
+        "output"
+      ],
+      "consumers": [
+        [
+          "ConditionalRegion",
+          "features",
+          "data"
+        ],
+        [
+          "message",
+          "arg0",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "input.edge_index",
+        "edge_index"
+      ],
+      "consumers": [
+        [
+          "message",
+          "arg1",
+          "data"
+        ],
+        [
+          "root",
+          "edge_index",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "input.nodes",
+        "nodes"
+      ],
+      "consumers": [
+        [
+          "project",
+          "input",
+          "data"
+        ],
+        [
+          "root",
+          "nodes",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "ConditionalRegion",
+        "output"
+      ],
+      "consumers": [
+        [
+          "output0",
+          "value",
+          "data"
+        ]
+      ]
+    }
+  ]
+}

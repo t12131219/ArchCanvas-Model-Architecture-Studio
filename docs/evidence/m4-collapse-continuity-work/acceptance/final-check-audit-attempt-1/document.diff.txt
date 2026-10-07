@@ -1,0 +1,112 @@
+--- docs/evidence/m4-collapse-continuity-work/before-implementation-attempt-1/files/studio/src/core/document.ts
++++ docs/evidence/m4-collapse-continuity-work/acceptance/final-check-audit-attempt-1/inputs/studio/src/core/document.ts
+@@ -4,7 +4,66 @@
+ import { fields, finite, object, textValue, validateArchitecture, validateDocument, ValidationError } from './validate.ts';
+ 
+ const clone = <T>(v: T): T => structuredClone(v);
+-const frontierKey = (d: CanvasDocument) => [...d.expandedIds].sort().join('|');
++const FRONTIER_PREFIX = 'visible-frontier/1:';
++type Frontier = { key: string; expandedIds: string[]; visibleIds: Set<string> };
++
++/** Hidden expansion flags remember detail, but do not describe the displayed frontier. */
++function frontier(document: CanvasDocument, expandedIds = document.expandedIds): Frontier {
++  const byId = new Map(document.architecture.nodes.map(node => [node.id, node]));
++  const expanded = new Set(expandedIds), visibleIds = new Set<string>(), effective: string[] = [];
++  const visit = (id: string) => {
++    const node = byId.get(id)!;
++    visibleIds.add(id);
++    if (expanded.has(id) && node.children.length) {
++      effective.push(id);
++      node.children.forEach(visit);
++    }
++  };
++  document.architecture.nodes.filter(node => !node.parentId).forEach(node => visit(node.id));
++  effective.sort();
++  // A JSON array distinguishes identities containing the old '|' separator.
++  return { key: `${FRONTIER_PREFIX}${JSON.stringify(effective)}`, expandedIds: effective, visibleIds };
++}
++
++function cachedExpansionIds(document: CanvasDocument, key: string): string[] | undefined {
++  const byId = new Map(document.architecture.nodes.map(node => [node.id, node]));
++  const valid = (ids: unknown): ids is string[] => Array.isArray(ids) && ids.every(id => typeof id === 'string' && !!byId.get(id)?.children.length) && new Set(ids).size === ids.length;
++  if (key.startsWith(FRONTIER_PREFIX)) {
++    try { const ids: unknown = JSON.parse(key.slice(FRONTIER_PREFIX.length)); if (valid(ids)) return ids; }
++    catch { /* Legacy arbitrary IDs can start with this prefix; inspect them below. */ }
++  }
++  const ids = key ? key.split('|') : [];
++  // An old key can be ambiguous between one literal identity and several IDs.
++  // Preserve its bytes but do not use that ambiguity to choose another layout.
++  const separatedValid = valid(ids), literal = byId.get(key)?.children.length ? [key] : undefined;
++  if (literal && separatedValid && (ids.length !== 1 || ids[0] !== key)) return undefined;
++  return separatedValid ? ids : literal;
++}
++
++function snapshotFor(document: CanvasDocument, target: Frontier): Record<string, Position> | undefined {
++  const direct = document.layoutByFrontier[target.key];
++  if (direct) return direct;
++  const legacyKey = target.expandedIds.join('|'), legacyIds = cachedExpansionIds(document, legacyKey);
++  const exactLegacy = legacyIds && frontier(document, legacyIds).key === target.key ? document.layoutByFrontier[legacyKey] : undefined;
++  if (exactLegacy) return exactLegacy;
++  const compatible = Object.entries(document.layoutByFrontier).filter(([key]) => {
++    const ids = cachedExpansionIds(document, key);
++    return ids && frontier(document, ids).key === target.key;
++  }).map(([, positions]) => positions);
++  if (!compatible.length) return undefined;
++  const signature = (positions: Record<string, Position>) => JSON.stringify([...target.visibleIds].sort().map(id => {
++    const position = positions[id];
++    return position ? [id, position.x, position.y, position.width ?? null, position.height ?? null] : [id, null];
++  }));
++  const expected = signature(compatible[0]);
++  // Several old hidden-state keys can project to one display. Conflicting
++  // placements carry no ordering evidence, so retain the current arrangement.
++  return compatible.every(positions => signature(positions) === expected) ? compatible[0] : undefined;
++}
++
++function visibleSnapshot(document: CanvasDocument, visibleIds: Set<string>, positions = document.layout): Record<string, Position> {
++  return clone(Object.fromEntries(Object.entries(positions).filter(([id]) => visibleIds.has(id))));
++}
+ 
+ export class RevisionConflict extends Error {
+   expected: number;
+@@ -59,7 +118,8 @@
+   document.pinnedObjects = previous.pinnedObjects.filter(id => nodes.has(id));
+   document.layoutByFrontier = {};
+   for (const [key, positions] of Object.entries(previous.layoutByFrontier)) {
+-    if (!key || key.split('|').every(id => nodes.has(id))) document.layoutByFrontier[key] = clone(filter(positions, nodes));
++    const expanded = cachedExpansionIds(previous, key);
++    if (expanded && expanded.every(id => nodes.has(id))) document.layoutByFrontier[key] = clone(filter(positions, nodes));
+   }
+   document.legendItems = clone(previous.legendItems); document.annotations = clone(previous.annotations); document.pageSpec = clone(previous.pageSpec);
+   document.revision = previous.revision + 1;
+@@ -78,14 +138,28 @@
+   const canonical = document.architecture.nodes.find(n => n.id === id)!;
+   if (!canonical.children.length) throw new ValidationError(`${id}: no recovered children to expand`);
+   const before = buildScene(document), operated = before.nodes.find(n => n.id === id);
+-  document.layoutByFrontier[frontierKey(document)] = clone(document.layout);
++  const previousFrontier = frontier(document), previousSaved = snapshotFor(document, previousFrontier);
++  const hasHiddenExpansionMemory = previousFrontier.expandedIds.length !== document.expandedIds.length;
++  // An older document may already be collapsed with stretched neighbors. Its
++  // correct overview cache must survive the first toggle after reopening.
++  // Ordinary moves update every saved frontier, including this prior geometry.
++  document.layoutByFrontier[previousFrontier.key] = visibleSnapshot(document, previousFrontier.visibleIds,
++    hasHiddenExpansionMemory && previousSaved ? previousSaved : document.layout);
+   const ids = new Set(document.expandedIds);
+   if (expanded) ids.add(id); else ids.delete(id);
+   document.expandedIds = [...ids];
++  const nextFrontier = frontier(document);
++  // Toggling a hidden descendant changes memory only, not visible placement.
++  if (nextFrontier.key === previousFrontier.key) return;
+   // Restore frontier geometry, including neighbor displacement. A direct user move updates
+   // every stored frontier below, so a subsequent toggle cannot undo deliberate placement.
+-  const saved = document.layoutByFrontier[frontierKey(document)];
+-  if (saved) for (const [key, position] of Object.entries(saved)) if (key !== id && !subtreePinned(document, key)) document.layout[key] = clone(position);
++  const saved = snapshotFor(document, nextFrontier);
++  const anchored = new Set([id]);
++  let parent = canonical.parentId;
++  while (parent) { anchored.add(parent); parent = document.architecture.nodes.find(node => node.id === parent)?.parentId; }
++  if (saved) for (const [key, position] of Object.entries(saved)) {
++    if (nextFrontier.visibleIds.has(key) && !anchored.has(key) && !subtreePinned(document, key)) document.layout[key] = clone(position);
++  }
+   materialize(document);
+   if (!operated || !expanded || saved) return;
+   const grownIds = new Set([id]);

@@ -1,0 +1,622 @@
+{
+  "schema": "archcanvas-ai-novice-frontend-contract-audit/1",
+  "reviewerKind": "AI-simulation",
+  "humanParticipantsAdded": 0,
+  "modelsExecuted": false,
+  "sharedBrowserOperated": false,
+  "productFilesWritten": false,
+  "checks": [
+    {
+      "id": "34-registered-field-help",
+      "passed": true,
+      "fields": [
+        {
+          "kind": "Input",
+          "field": "shape",
+          "help": {
+            "label": "输入形状",
+            "description": "按顺序填写各维尺寸，例如 [1, 3, 32, 32] 表示批次 1、通道 3、高和宽各 32。可声明 1–8 维，各维为正整数；这是静态约定，不是运行测量。"
+          }
+        },
+        {
+          "kind": "Input",
+          "field": "dtype",
+          "help": {
+            "label": "元素类型",
+            "description": "卷积、全连接和归一化需要 float32；Embedding 的索引需要 int64。float64 须与后续模块兼容。此处声明类型，不转换实际数据。"
+          }
+        },
+        {
+          "kind": "Linear",
+          "field": "in_features",
+          "help": {
+            "label": "输入特征数",
+            "description": "须等于上游张量的最后一维。例如输入 [1, 16] 时填 16；修改此值不会自动改变上游形状。"
+          }
+        },
+        {
+          "kind": "Linear",
+          "field": "out_features",
+          "help": {
+            "label": "输出特征数",
+            "description": "输出的最后一维变为此值，其他维度保留。例如 [1, 16] 可变为 [1, 32]；后续模块的输入参数也须匹配。"
+          }
+        },
+        {
+          "kind": "Linear",
+          "field": "bias",
+          "help": {
+            "label": "使用偏置",
+            "description": "开启后，每个输出特征都有一个可学习的加法偏置；关闭后只保留权重变换。此选项不改变输出形状。"
+          }
+        },
+        {
+          "kind": "GELU",
+          "field": "approximate",
+          "help": {
+            "label": "近似方式",
+            "description": "none 使用 GELU 的原始计算形式，tanh 使用双曲正切近似。两者保留输入形状和浮点类型。"
+          }
+        },
+        {
+          "kind": "Dropout",
+          "field": "p",
+          "help": {
+            "label": "失活概率",
+            "description": "取 0–1。训练时以此概率把元素置零；p=0 不丢弃，p=1 全部置零，其他值会缩放保留元素。评估时直接传递输入，形状不变。"
+          }
+        },
+        {
+          "kind": "Flatten",
+          "field": "start_dim",
+          "help": {
+            "label": "展平起始维",
+            "description": "从此维开始合并轴，维度从 0 计数，负数从末尾计数。默认 1 保留第 0 维（常用作批次）；一维输入须改为 0。起始维须不晚于结束维，并落在输入维度范围内。"
+          }
+        },
+        {
+          "kind": "Flatten",
+          "field": "end_dim",
+          "help": {
+            "label": "展平结束维",
+            "description": "合并到此维，包含该维；-1 表示最后一维。例如 [1, 3, 4] 从 1 到 -1 展平为 [1, 12]，元素类型保留。"
+          }
+        },
+        {
+          "kind": "Conv2d",
+          "field": "in_channels",
+          "help": {
+            "label": "输入通道数",
+            "description": "须等于 CHW 或 NCHW 输入的通道维；例如 [1, 3, 32, 32] 的通道数是 3。输入类型须为 float32。"
+          }
+        },
+        {
+          "kind": "Conv2d",
+          "field": "out_channels",
+          "help": {
+            "label": "输出通道数",
+            "description": "卷积产生的通道数。输出的通道维变为此值；高和宽由卷积核、步长、填充和膨胀共同决定。"
+          }
+        },
+        {
+          "kind": "Conv2d",
+          "field": "kernel_size",
+          "help": {
+            "label": "卷积核尺寸",
+            "description": "填写 [高, 宽] 两个正整数，例如 [3, 3]。卷积核决定每次采样的空间范围；设置过大可能使输出尺寸无效。"
+          }
+        },
+        {
+          "kind": "Conv2d",
+          "field": "stride",
+          "help": {
+            "label": "卷积步长",
+            "description": "填写 [高方向步长, 宽方向步长] 两个正整数。每次沿对应方向移动这么多格；增大步长通常会减小输出高和宽。"
+          }
+        },
+        {
+          "kind": "Conv2d",
+          "field": "padding",
+          "help": {
+            "label": "边缘填充",
+            "description": "填写 [高方向填充, 宽方向填充] 两个非负整数。每个方向的两侧各补对应数量的零；例如 [1, 1] 在四边各补一格。"
+          }
+        },
+        {
+          "kind": "Conv2d",
+          "field": "dilation",
+          "help": {
+            "label": "卷积核采样间距",
+            "description": "填写 [高方向间距, 宽方向间距] 两个正整数。1 表示连续采样，2 表示相邻采样点之间隔一格；增大会扩大有效卷积核范围。"
+          }
+        },
+        {
+          "kind": "Conv2d",
+          "field": "groups",
+          "help": {
+            "label": "通道分组数",
+            "description": "1 表示普通卷积；更大的值把输入和输出通道分为独立计算的组。分组数须同时整除输入通道数和输出通道数。"
+          }
+        },
+        {
+          "kind": "Conv2d",
+          "field": "bias",
+          "help": {
+            "label": "使用偏置",
+            "description": "开启后，每个输出通道都有一个可学习的加法偏置；关闭后只保留卷积权重。此选项不改变输出形状。"
+          }
+        },
+        {
+          "kind": "MaxPool2d",
+          "field": "kernel_size",
+          "help": {
+            "label": "池化窗口尺寸",
+            "description": "填写 [高, 宽] 两个正整数，例如 [2, 2]。每个窗口只保留最大值；输入须为 CHW 或 NCHW 浮点张量。"
+          }
+        },
+        {
+          "kind": "MaxPool2d",
+          "field": "stride",
+          "help": {
+            "label": "池化步长",
+            "description": "填写 [高方向步长, 宽方向步长] 两个正整数。每次沿对应方向移动这么多格；本目录默认 [2, 2]，可独立于窗口尺寸修改。"
+          }
+        },
+        {
+          "kind": "MaxPool2d",
+          "field": "padding",
+          "help": {
+            "label": "池化边缘填充",
+            "description": "填写 [高方向填充, 宽方向填充] 两个非负整数，两侧各补对应数量的位置。最大池化按负无穷处理这些位置；各值不得超过对应窗口尺寸的一半（向下取整）。"
+          }
+        },
+        {
+          "kind": "MaxPool2d",
+          "field": "dilation",
+          "help": {
+            "label": "窗口采样间距",
+            "description": "填写 [高方向间距, 宽方向间距] 两个正整数。1 表示连续采样，2 表示相邻采样点之间隔一格；增大会扩大有效窗口范围。"
+          }
+        },
+        {
+          "kind": "MaxPool2d",
+          "field": "ceil_mode",
+          "help": {
+            "label": "向上取整输出尺寸",
+            "description": "关闭时按向下取整计算输出高和宽；开启时允许末端的部分窗口，并按向上取整计算，再排除起点完全落入末端填充的窗口。"
+          }
+        },
+        {
+          "kind": "AdaptiveAvgPool2d",
+          "field": "output_size",
+          "help": {
+            "label": "目标空间尺寸",
+            "description": "填写 [输出高, 输出宽] 两个正整数，例如 [1, 1] 将每个通道归并为一个平均值。CHW 或 NCHW 的通道和批次维保留。"
+          }
+        },
+        {
+          "kind": "BatchNorm2d",
+          "field": "num_features",
+          "help": {
+            "label": "通道数",
+            "description": "须等于 float32 输入 [批次, 通道, 高, 宽] 的通道数。输入必须为 4 维，且每个通道的批次×高×宽至少为 2，以满足训练兼容检查。"
+          }
+        },
+        {
+          "kind": "BatchNorm2d",
+          "field": "eps",
+          "help": {
+            "label": "数值稳定项",
+            "description": "归一化时加在方差上的小正数，用于避免除数为零。可填 1e-12–1，默认 1e-5；不改变张量形状。"
+          }
+        },
+        {
+          "kind": "BatchNorm2d",
+          "field": "momentum",
+          "help": {
+            "label": "统计更新权重",
+            "description": "取 0–1，控制当前批次统计在运行均值和方差更新中的权重；例如 0.1 表示旧统计占 0.9、新统计占 0.1。仅在跟踪统计时使用，与优化器动量无关。"
+          }
+        },
+        {
+          "kind": "BatchNorm2d",
+          "field": "affine",
+          "help": {
+            "label": "学习通道缩放与偏移",
+            "description": "开启后，每个通道具有可学习的缩放和偏移参数；关闭后只做归一化。输出形状保留。"
+          }
+        },
+        {
+          "kind": "BatchNorm2d",
+          "field": "track_running_stats",
+          "help": {
+            "label": "跟踪运行统计",
+            "description": "开启后，训练时更新运行均值和方差，评估时使用这些统计；关闭后，训练和评估都使用当前批次的统计。"
+          }
+        },
+        {
+          "kind": "LayerNorm",
+          "field": "normalized_shape",
+          "help": {
+            "label": "归一化末尾形状",
+            "description": "须与 float32 输入的末尾若干维完全相同。例如 [2, 3, 16] 可填 [16] 或 [3, 16]；这些维一起归一化，输出形状保留。"
+          }
+        },
+        {
+          "kind": "LayerNorm",
+          "field": "eps",
+          "help": {
+            "label": "数值稳定项",
+            "description": "归一化时加在方差上的小正数，用于避免除数为零。可填 1e-12–1，默认 1e-5；不改变张量形状。"
+          }
+        },
+        {
+          "kind": "LayerNorm",
+          "field": "elementwise_affine",
+          "help": {
+            "label": "学习逐元素缩放与偏移",
+            "description": "开启后，归一化形状中的每个位置具有可学习的缩放和偏移参数；关闭后只做归一化。训练和评估均使用当前输入的统计。"
+          }
+        },
+        {
+          "kind": "Embedding",
+          "field": "num_embeddings",
+          "help": {
+            "label": "词表大小",
+            "description": "可查找的向量数量；int64 输入的实际索引须在 0 到此值减 1 之间。静态形状检查不能证明实际索引合法。"
+          }
+        },
+        {
+          "kind": "Embedding",
+          "field": "embedding_dim",
+          "help": {
+            "label": "嵌入向量长度",
+            "description": "每个索引对应的 float32 向量长度。输出在输入形状末尾增加此维，例如 [1, 8] 配合 16 得到 [1, 8, 16]。"
+          }
+        },
+        {
+          "kind": "Concat",
+          "field": "dim",
+          "help": {
+            "label": "拼接维度",
+            "description": "沿此维拼接 a、b 两路输入，当前模块固定为两个输入。维度从 0 计数，-1 表示最后一维；两路的类型、维数和其他轴尺寸须相同，此轴尺寸相加。"
+          }
+        }
+      ]
+    },
+    {
+      "id": "transparent-preset-insertion",
+      "passed": true,
+      "presets": [
+        {
+          "id": "mlp",
+          "expectedNodes": 5,
+          "expectedEdges": 4,
+          "oneHistoryStep": true
+        },
+        {
+          "id": "cnn",
+          "expectedNodes": 8,
+          "expectedEdges": 7,
+          "oneHistoryStep": true
+        },
+        {
+          "id": "residual-mlp",
+          "expectedNodes": 6,
+          "expectedEdges": 6,
+          "oneHistoryStep": true
+        }
+      ]
+    },
+    {
+      "id": "actual-palette-search-and-view-expression",
+      "passed": true,
+      "searchResults": [
+        {
+          "query": "",
+          "moduleKinds": [
+            "Input",
+            "Output",
+            "Linear",
+            "ReLU",
+            "GELU",
+            "SiLU",
+            "Identity",
+            "Dropout",
+            "Flatten",
+            "Conv2d",
+            "MaxPool2d",
+            "AdaptiveAvgPool2d",
+            "BatchNorm2d",
+            "LayerNorm",
+            "Embedding",
+            "Add",
+            "Concat"
+          ],
+          "presetIds": [],
+          "currentEmptyMessage": null
+        },
+        {
+          "query": "linear",
+          "moduleKinds": [
+            "Linear"
+          ],
+          "presetIds": [],
+          "currentEmptyMessage": null
+        },
+        {
+          "query": "cnn",
+          "moduleKinds": [],
+          "presetIds": [
+            "cnn"
+          ],
+          "currentEmptyMessage": null
+        },
+        {
+          "query": "mlp",
+          "moduleKinds": [],
+          "presetIds": [
+            "mlp",
+            "residual-mlp"
+          ],
+          "currentEmptyMessage": null
+        },
+        {
+          "query": "卷积",
+          "moduleKinds": [
+            "Conv2d"
+          ],
+          "presetIds": [
+            "cnn"
+          ],
+          "currentEmptyMessage": null
+        },
+        {
+          "query": "激活",
+          "moduleKinds": [
+            "ReLU",
+            "GELU",
+            "SiLU"
+          ],
+          "presetIds": [],
+          "currentEmptyMessage": null
+        },
+        {
+          "query": "激活函数",
+          "moduleKinds": [],
+          "presetIds": [],
+          "currentEmptyMessage": "没有找到匹配的模块或网络；当前模块库尚不支持 Attention 和 LSTM。"
+        },
+        {
+          "query": "attention",
+          "moduleKinds": [],
+          "presetIds": [],
+          "currentEmptyMessage": "没有找到匹配的模块或网络；当前模块库尚不支持 Attention 和 LSTM。"
+        },
+        {
+          "query": "注意力",
+          "moduleKinds": [],
+          "presetIds": [],
+          "currentEmptyMessage": "没有找到匹配的模块或网络；当前模块库尚不支持 Attention 和 LSTM。"
+        },
+        {
+          "query": "sigmoid",
+          "moduleKinds": [],
+          "presetIds": [],
+          "currentEmptyMessage": "没有找到匹配的模块或网络；当前模块库尚不支持 Attention 和 LSTM。"
+        },
+        {
+          "query": "softmax",
+          "moduleKinds": [],
+          "presetIds": [],
+          "currentEmptyMessage": "没有找到匹配的模块或网络；当前模块库尚不支持 Attention 和 LSTM。"
+        },
+        {
+          "query": "lstm",
+          "moduleKinds": [],
+          "presetIds": [],
+          "currentEmptyMessage": "没有找到匹配的模块或网络；当前模块库尚不支持 Attention 和 LSTM。"
+        }
+      ],
+      "clearSearchOnPresetView": {
+        "modules": 0,
+        "presets": 3
+      },
+      "limitations": "Actual source expressions evaluated in isolation; not native input events."
+    },
+    {
+      "id": "editable-state-cache-counterexamples",
+      "passed": true,
+      "counterexamples": [
+        {
+          "state": "129 individual module additions",
+          "nodeCount": 129,
+          "cacheRejected": true,
+          "UIAvailable": "module-card disabled depends on busy only; addDraftNode does not enforce max nodes",
+          "priority": "P1"
+        },
+        {
+          "state": "clear draft name to empty",
+          "cacheRejected": true,
+          "UIAvailable": "header title onChange directly commits event.target.value",
+          "priority": "P1"
+        },
+        {
+          "state": "clear module display name to empty",
+          "cacheRejected": true,
+          "UIAvailable": "inspector label onChange directly commits event.target.value",
+          "priority": "P1"
+        }
+      ]
+    },
+    {
+      "id": "actual-new-blank-guard",
+      "passed": true,
+      "observedNotice": "当前草稿有未保存编辑，请先保存或重开后再新建空白模型。",
+      "oldDraftPreserved": true,
+      "newDraftCreated": false,
+      "limitation": "Exact current function body under controlled unsaved state; not a native click."
+    }
+  ],
+  "reference": {
+    "path": "/home/fzg/PycharmProjects/ArchCanvas/Source_Code_Project/DL-Playground/frontend/src/nodes/registry.ts",
+    "bytes": 9450,
+    "sha256": "bb0a393327c6b5b661f031e22487f629bae5714e996be726173ae485e33c82ec",
+    "groups": [
+      {
+        "group": "inputs",
+        "entries": [
+          "input_layer"
+        ]
+      },
+      {
+        "group": "torch_ops",
+        "entries": [
+          "add_layer",
+          "concat_layer",
+          "sub_layer",
+          "mul_layer",
+          "div_layer",
+          "exp_layer",
+          "log_layer",
+          "sqrt_layer",
+          "pow_layer",
+          "clip_layer",
+          "matmul_layer",
+          "sum_layer",
+          "mean_layer",
+          "prod_layer",
+          "max_layer",
+          "min_layer",
+          "argmax_layer",
+          "argmin_layer",
+          "repeat_layer"
+        ]
+      },
+      {
+        "group": "tensor_shape",
+        "entries": [
+          "reshape_layer",
+          "transpose_layer",
+          "flatten_layer",
+          "pass_layer"
+        ]
+      },
+      {
+        "group": "tensor_create",
+        "entries": [
+          "zeros_layer",
+          "ones_layer",
+          "rand_layer"
+        ]
+      },
+      {
+        "group": "activations",
+        "entries": [
+          "relu_layer",
+          "leakyrelu_layer",
+          "gelu_layer",
+          "elu_layer",
+          "selu_layer",
+          "tanh_layer",
+          "sigmoid_layer",
+          "softplus_layer",
+          "softsign_layer",
+          "hardswish_layer",
+          "hardsigmoid_layer",
+          "softmax_layer",
+          "logsoftmax_layer"
+        ]
+      },
+      {
+        "group": "normalization",
+        "entries": [
+          "batchnorm2d_layer",
+          "instancenorm2d_layer",
+          "groupnorm_layer",
+          "layernorm_layer",
+          "rmsnorm_layer"
+        ]
+      },
+      {
+        "group": "regularization",
+        "entries": [
+          "dropout_layer",
+          "spatialdropout2d_layer",
+          "alphadropout_layer",
+          "stochasticdepth_layer"
+        ]
+      },
+      {
+        "group": "dense",
+        "entries": [
+          "linear_layer"
+        ]
+      },
+      {
+        "group": "vision_conv",
+        "entries": [
+          "conv1d_layer",
+          "conv2d_layer",
+          "conv3d_layer",
+          "depthwiseconv2d_layer",
+          "pointwiseconv2d_layer",
+          "convtranspose2d_layer",
+          "upsample_layer",
+          "residual_block"
+        ]
+      },
+      {
+        "group": "vision_pool",
+        "entries": [
+          "maxpool1d_layer",
+          "maxpool2d_layer",
+          "maxpool3d_layer",
+          "avgpool1d_layer",
+          "avgpool2d_layer",
+          "avgpool3d_layer",
+          "adaptiveavgpool2d_layer",
+          "adaptivemaxpool2d_layer",
+          "globalavgpool2d_layer",
+          "globalmaxpool2d_layer"
+        ]
+      },
+      {
+        "group": "sequence",
+        "entries": [
+          "embedding_layer",
+          "rnn_layer",
+          "lstm_layer",
+          "gru_layer",
+          "multihead_attention_layer",
+          "positional_encoding_layer"
+        ]
+      },
+      {
+        "group": "losses",
+        "entries": [
+          "mse_loss",
+          "cross_entropy_loss",
+          "bce_loss"
+        ]
+      },
+      {
+        "group": "metrics",
+        "entries": [
+          "accuracy_metric"
+        ]
+      },
+      {
+        "group": "control",
+        "entries": [
+          "repeat_layer",
+          "module_list"
+        ]
+      }
+    ],
+    "declaredGroupEntries": 80,
+    "uniqueDeclaredNodeKeys": 79,
+    "duplicateKey": "repeat_layer (torch_ops + control)",
+    "caveat": "Read-only inventory / UX reference. Reference application not run, imported, copied or independently certified."
+  }
+}

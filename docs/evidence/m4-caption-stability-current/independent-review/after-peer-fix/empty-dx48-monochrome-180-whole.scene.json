@@ -1,0 +1,2434 @@
+{
+  "version": "1.0",
+  "documentId": "canvas-architecture-model.Transformer-01ac6cd61f05-b0bd5bf0",
+  "revision": 21,
+  "title": "Transformer",
+  "bounds": {
+    "x": 0,
+    "y": 0,
+    "width": 696,
+    "height": 885
+  },
+  "nodes": [
+    {
+      "x": 50,
+      "y": 92,
+      "width": 534,
+      "height": 610,
+      "localX": 50,
+      "localY": 92,
+      "id": "call:instance:model.Transformer",
+      "label": "Transformer",
+      "subtitle": "Module",
+      "headerHeight": 46,
+      "kind": "Module",
+      "category": "container",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "module",
+      "expanded": true,
+      "expandable": true,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "call:instance:model.Transformer",
+        "sourceLabel": "Transformer",
+        "kind": "Module",
+        "category": "container",
+        "evidence": "source",
+        "instanceId": "instance:model.Transformer",
+        "callCount": 1,
+        "callId": "call:instance:model.Transformer",
+        "source": {
+          "path": "model.py",
+          "line": 7,
+          "endLine": 22,
+          "expression": "class Transformer(nn.Module):\n    def __init__(self, vocab_size=128, d_model=32, n_heads=4, n_layers=2):\n        super().__init__()\n        self.source_embedding = nn.Embedding(vocab_size, d_model)\n        self.target_embedding = nn.Embedding(vocab_size, d_model)\n        self.encoder = nn.ModuleList([EncoderLayer(d_model, n_heads) for _ in range(n_layers)])\n        self.decoder = DecoderLayer(d_model, n_heads)\n        self.output_projection = nn.Linear(d_model, vocab_size)\n\n    def forward(self, source_tokens, target_tokens, source_mask=None, target_mask=None, memory_mask=None):\n        memory = self.source_embedding(source_tokens)\n        for layer in self.encoder:\n            memory = layer(memory, mask=source_mask)\n        target = self.target_embedding(target_tokens)\n        hidden = self.decoder(target, memory, target_mask=target_mask, memory_mask=memory_mask)\n        return self.output_projection(hidden)"
+        }
+      },
+      "ports": []
+    },
+    {
+      "x": 80,
+      "y": 154,
+      "width": 150,
+      "height": 42,
+      "localX": 30,
+      "localY": 62,
+      "id": "input:model.Transformer:memory_mask",
+      "parentId": "call:instance:model.Transformer",
+      "label": "memory_mask",
+      "subtitle": "Input",
+      "headerHeight": 55,
+      "kind": "Input",
+      "category": "input",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "tensor",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "input:model.Transformer:memory_mask",
+        "sourceLabel": "memory_mask",
+        "kind": "Input",
+        "category": "input",
+        "evidence": "source",
+        "source": {
+          "path": "model.py",
+          "line": 16,
+          "endLine": 22,
+          "expression": "def forward(self, source_tokens, target_tokens, source_mask=None, target_mask=None, memory_mask=None):\n        memory = self.source_embedding(source_tokens)\n        for layer in self.encoder:\n            memory = layer(memory, mask=source_mask)\n        target = self.target_embedding(target_tokens)\n        hidden = self.decoder(target, memory, target_mask=target_mask, memory_mask=memory_mask)\n        return self.output_projection(hidden)"
+        }
+      },
+      "ports": [
+        {
+          "id": "input:model.Transformer:memory_mask:input:model.Transformer:memory_mask:out:memory_mask:mask",
+          "canonicalNodeId": "input:model.Transformer:memory_mask",
+          "canonicalPortId": "input:model.Transformer:memory_mask:out:memory_mask",
+          "canonicalBindings": [
+            {
+              "nodeId": "input:model.Transformer:memory_mask",
+              "portId": "input:model.Transformer:memory_mask:out:memory_mask"
+            },
+            {
+              "nodeId": "input:model.Transformer:memory_mask",
+              "portId": "input:model.Transformer:memory_mask:out:memory_mask"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:46",
+            "edge:57"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "memory_mask",
+          "x": 155,
+          "y": 196,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 242,
+      "y": 154,
+      "width": 150,
+      "height": 42,
+      "localX": 192,
+      "localY": 62,
+      "id": "input:model.Transformer:target_mask",
+      "parentId": "call:instance:model.Transformer",
+      "label": "target_mask",
+      "subtitle": "Input",
+      "headerHeight": 55,
+      "kind": "Input",
+      "category": "input",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "tensor",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "input:model.Transformer:target_mask",
+        "sourceLabel": "target_mask",
+        "kind": "Input",
+        "category": "input",
+        "evidence": "source",
+        "source": {
+          "path": "model.py",
+          "line": 16,
+          "endLine": 22,
+          "expression": "def forward(self, source_tokens, target_tokens, source_mask=None, target_mask=None, memory_mask=None):\n        memory = self.source_embedding(source_tokens)\n        for layer in self.encoder:\n            memory = layer(memory, mask=source_mask)\n        target = self.target_embedding(target_tokens)\n        hidden = self.decoder(target, memory, target_mask=target_mask, memory_mask=memory_mask)\n        return self.output_projection(hidden)"
+        }
+      },
+      "ports": [
+        {
+          "id": "input:model.Transformer:target_mask:input:model.Transformer:target_mask:out:target_mask:mask",
+          "canonicalNodeId": "input:model.Transformer:target_mask",
+          "canonicalPortId": "input:model.Transformer:target_mask:out:target_mask",
+          "canonicalBindings": [
+            {
+              "nodeId": "input:model.Transformer:target_mask",
+              "portId": "input:model.Transformer:target_mask:out:target_mask"
+            },
+            {
+              "nodeId": "input:model.Transformer:target_mask",
+              "portId": "input:model.Transformer:target_mask:out:target_mask"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:45",
+            "edge:50"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "target_mask",
+          "x": 317,
+          "y": 196,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 404,
+      "y": 154,
+      "width": 150,
+      "height": 42,
+      "localX": 354,
+      "localY": 62,
+      "id": "input:model.Transformer:source_mask",
+      "parentId": "call:instance:model.Transformer",
+      "label": "source_mask",
+      "subtitle": "Input",
+      "headerHeight": 55,
+      "kind": "Input",
+      "category": "input",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "tensor",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "input:model.Transformer:source_mask",
+        "sourceLabel": "source_mask",
+        "kind": "Input",
+        "category": "input",
+        "evidence": "source",
+        "source": {
+          "path": "model.py",
+          "line": 16,
+          "endLine": 22,
+          "expression": "def forward(self, source_tokens, target_tokens, source_mask=None, target_mask=None, memory_mask=None):\n        memory = self.source_embedding(source_tokens)\n        for layer in self.encoder:\n            memory = layer(memory, mask=source_mask)\n        target = self.target_embedding(target_tokens)\n        hidden = self.decoder(target, memory, target_mask=target_mask, memory_mask=memory_mask)\n        return self.output_projection(hidden)"
+        }
+      },
+      "ports": [
+        {
+          "id": "input:model.Transformer:source_mask:input:model.Transformer:source_mask:out:source_mask:mask",
+          "canonicalNodeId": "input:model.Transformer:source_mask",
+          "canonicalPortId": "input:model.Transformer:source_mask:out:source_mask",
+          "canonicalBindings": [
+            {
+              "nodeId": "input:model.Transformer:source_mask",
+              "portId": "input:model.Transformer:source_mask:out:source_mask"
+            },
+            {
+              "nodeId": "input:model.Transformer:source_mask",
+              "portId": "input:model.Transformer:source_mask:out:source_mask"
+            },
+            {
+              "nodeId": "input:model.Transformer:source_mask",
+              "portId": "input:model.Transformer:source_mask:out:source_mask"
+            },
+            {
+              "nodeId": "input:model.Transformer:source_mask",
+              "portId": "input:model.Transformer:source_mask:out:source_mask"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:7",
+            "edge:11",
+            "edge:25",
+            "edge:29"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "source_mask",
+          "x": 479,
+          "y": 196,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 316,
+      "y": 210,
+      "width": 194,
+      "height": 62,
+      "localX": 266,
+      "localY": 118,
+      "id": "input:model.Transformer:target_tokens",
+      "parentId": "call:instance:model.Transformer",
+      "label": "target_tokens",
+      "subtitle": "Input",
+      "headerHeight": 46,
+      "kind": "Input",
+      "category": "input",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "tensor",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "input:model.Transformer:target_tokens",
+        "sourceLabel": "target_tokens",
+        "kind": "Input",
+        "category": "input",
+        "evidence": "source",
+        "source": {
+          "path": "model.py",
+          "line": 16,
+          "endLine": 22,
+          "expression": "def forward(self, source_tokens, target_tokens, source_mask=None, target_mask=None, memory_mask=None):\n        memory = self.source_embedding(source_tokens)\n        for layer in self.encoder:\n            memory = layer(memory, mask=source_mask)\n        target = self.target_embedding(target_tokens)\n        hidden = self.decoder(target, memory, target_mask=target_mask, memory_mask=memory_mask)\n        return self.output_projection(hidden)"
+        }
+      },
+      "ports": [
+        {
+          "id": "input:model.Transformer:target_tokens:input:model.Transformer:target_tokens:out:target_tokens:data",
+          "canonicalNodeId": "input:model.Transformer:target_tokens",
+          "canonicalPortId": "input:model.Transformer:target_tokens:out:target_tokens",
+          "canonicalBindings": [
+            {
+              "nodeId": "input:model.Transformer:target_tokens",
+              "portId": "input:model.Transformer:target_tokens:out:target_tokens"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:42"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "target_tokens",
+          "x": 413,
+          "y": 272,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 80,
+      "y": 210,
+      "width": 194,
+      "height": 62,
+      "localX": 30,
+      "localY": 118,
+      "id": "input:model.Transformer:source_tokens",
+      "parentId": "call:instance:model.Transformer",
+      "label": "source_tokens",
+      "subtitle": "Input",
+      "headerHeight": 46,
+      "kind": "Input",
+      "category": "input",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "tensor",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "input:model.Transformer:source_tokens",
+        "sourceLabel": "source_tokens",
+        "kind": "Input",
+        "category": "input",
+        "evidence": "source",
+        "source": {
+          "path": "model.py",
+          "line": 16,
+          "endLine": 22,
+          "expression": "def forward(self, source_tokens, target_tokens, source_mask=None, target_mask=None, memory_mask=None):\n        memory = self.source_embedding(source_tokens)\n        for layer in self.encoder:\n            memory = layer(memory, mask=source_mask)\n        target = self.target_embedding(target_tokens)\n        hidden = self.decoder(target, memory, target_mask=target_mask, memory_mask=memory_mask)\n        return self.output_projection(hidden)"
+        }
+      },
+      "ports": [
+        {
+          "id": "input:model.Transformer:source_tokens:input:model.Transformer:source_tokens:out:source_tokens:data",
+          "canonicalNodeId": "input:model.Transformer:source_tokens",
+          "canonicalPortId": "input:model.Transformer:source_tokens:out:source_tokens",
+          "canonicalBindings": [
+            {
+              "nodeId": "input:model.Transformer:source_tokens",
+              "portId": "input:model.Transformer:source_tokens:out:source_tokens"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:5"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "source_tokens",
+          "x": 177,
+          "y": 272,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 80,
+      "y": 310,
+      "width": 194,
+      "height": 62,
+      "localX": 30,
+      "localY": 218,
+      "id": "call:instance:model.Transformer.source_embedding",
+      "parentId": "call:instance:model.Transformer",
+      "label": "source embedding",
+      "subtitle": "Embedding",
+      "headerHeight": 55,
+      "kind": "Embedding",
+      "category": "embedding",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "module",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.Transformer.source_embedding",
+        "sourceLabel": "source embedding",
+        "kind": "Embedding",
+        "category": "embedding",
+        "evidence": "contract",
+        "instanceId": "instance:model.Transformer.source_embedding",
+        "callCount": 1,
+        "callId": "call:instance:model.Transformer.source_embedding",
+        "source": {
+          "path": "model.py",
+          "line": 17,
+          "endLine": 17,
+          "expression": "self.source_embedding(source_tokens)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.Transformer.source_embedding:call:instance:model.Transformer.source_embedding:in:input:data",
+          "canonicalNodeId": "call:instance:model.Transformer.source_embedding",
+          "canonicalPortId": "call:instance:model.Transformer.source_embedding:in:input",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.Transformer.source_embedding",
+              "portId": "call:instance:model.Transformer.source_embedding:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:5"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "input",
+          "x": 177,
+          "y": 310,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.Transformer.source_embedding:call:instance:model.Transformer.source_embedding:out:output:data",
+          "canonicalNodeId": "call:instance:model.Transformer.source_embedding",
+          "canonicalPortId": "call:instance:model.Transformer.source_embedding:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.Transformer.source_embedding",
+              "portId": "call:instance:model.Transformer.source_embedding:out:output"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.source_embedding",
+              "portId": "call:instance:model.Transformer.source_embedding:out:output"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.source_embedding",
+              "portId": "call:instance:model.Transformer.source_embedding:out:output"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.source_embedding",
+              "portId": "call:instance:model.Transformer.source_embedding:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:6",
+            "edge:8",
+            "edge:9",
+            "edge:10"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 144.66666666666669,
+          "y": 372,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.Transformer.source_embedding:call:instance:model.Transformer.source_embedding:out:output:residual",
+          "canonicalNodeId": "call:instance:model.Transformer.source_embedding",
+          "canonicalPortId": "call:instance:model.Transformer.source_embedding:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.Transformer.source_embedding",
+              "portId": "call:instance:model.Transformer.source_embedding:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:13"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 209.33333333333334,
+          "y": 372,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 128,
+      "y": 410,
+      "width": 194,
+      "height": 62,
+      "localX": 78,
+      "localY": 318,
+      "id": "repeat:instance:model.Transformer.encoder",
+      "parentId": "call:instance:model.Transformer",
+      "label": "encoder",
+      "subtitle": "2 × independent instances",
+      "headerHeight": 46,
+      "kind": "Repeat",
+      "category": "container",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "module",
+      "expanded": false,
+      "expandable": true,
+      "pinned": false,
+      "evidence": "source",
+      "repeat": {
+        "count": 2,
+        "sharing": "independent"
+      },
+      "sourceFact": {
+        "id": "repeat:instance:model.Transformer.encoder",
+        "sourceLabel": "encoder",
+        "kind": "Repeat",
+        "category": "container",
+        "evidence": "source",
+        "repeat": {
+          "count": 2,
+          "sharing": "independent"
+        },
+        "source": {
+          "path": "model.py",
+          "line": 18,
+          "endLine": 19,
+          "expression": "for layer in self.encoder:\n            memory = layer(memory, mask=source_mask)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.Transformer.encoder.0:call:instance:model.Transformer.encoder.0:in:x:data",
+          "canonicalNodeId": "call:instance:model.Transformer.encoder.0",
+          "canonicalPortId": "call:instance:model.Transformer.encoder.0:in:x",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.Transformer.encoder.0",
+              "portId": "call:instance:model.Transformer.encoder.0:in:x"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.encoder.0.self_attention",
+              "portId": "call:instance:model.Transformer.encoder.0.self_attention:in:query"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.encoder.0.self_attention",
+              "portId": "call:instance:model.Transformer.encoder.0.self_attention:in:key"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.encoder.0.self_attention",
+              "portId": "call:instance:model.Transformer.encoder.0.self_attention:in:value"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:6",
+            "edge:8",
+            "edge:9",
+            "edge:10"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "x",
+          "x": 176.5,
+          "y": 410,
+          "proxy": true
+        },
+        {
+          "id": "call:instance:model.Transformer.encoder.0:call:instance:model.Transformer.encoder.0:in:mask:mask",
+          "canonicalNodeId": "call:instance:model.Transformer.encoder.0",
+          "canonicalPortId": "call:instance:model.Transformer.encoder.0:in:mask",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.Transformer.encoder.0",
+              "portId": "call:instance:model.Transformer.encoder.0:in:mask"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.encoder.0.self_attention",
+              "portId": "call:instance:model.Transformer.encoder.0.self_attention:in:attn_mask"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.encoder.1",
+              "portId": "call:instance:model.Transformer.encoder.1:in:mask"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.encoder.1.self_attention",
+              "portId": "call:instance:model.Transformer.encoder.1.self_attention:in:attn_mask"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:7",
+            "edge:11",
+            "edge:25",
+            "edge:29"
+          ],
+          "direction": "in",
+          "role": "mask",
+          "name": "mask",
+          "x": 225,
+          "y": 410,
+          "proxy": true
+        },
+        {
+          "id": "op:call:instance:model.Transformer.encoder.0:Add:2fc8574cd9:op:call:instance:model.Transformer.encoder.0:Add:2fc8574cd9:in:left:residual",
+          "canonicalNodeId": "op:call:instance:model.Transformer.encoder.0:Add:2fc8574cd9",
+          "canonicalPortId": "op:call:instance:model.Transformer.encoder.0:Add:2fc8574cd9:in:left",
+          "canonicalBindings": [
+            {
+              "nodeId": "op:call:instance:model.Transformer.encoder.0:Add:2fc8574cd9",
+              "portId": "op:call:instance:model.Transformer.encoder.0:Add:2fc8574cd9:in:left"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:13"
+          ],
+          "direction": "in",
+          "role": "residual",
+          "name": "left",
+          "x": 273.5,
+          "y": 410,
+          "proxy": true
+        },
+        {
+          "id": "call:instance:model.Transformer.encoder.1.feedforward_norm:call:instance:model.Transformer.encoder.1.feedforward_norm:out:output:memory",
+          "canonicalNodeId": "call:instance:model.Transformer.encoder.1.feedforward_norm",
+          "canonicalPortId": "call:instance:model.Transformer.encoder.1.feedforward_norm:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.Transformer.encoder.1.feedforward_norm",
+              "portId": "call:instance:model.Transformer.encoder.1.feedforward_norm:out:output"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.encoder.1.feedforward_norm",
+              "portId": "call:instance:model.Transformer.encoder.1.feedforward_norm:out:output"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.encoder.1.feedforward_norm",
+              "portId": "call:instance:model.Transformer.encoder.1.feedforward_norm:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:44",
+            "edge:55",
+            "edge:56"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 225,
+          "y": 479,
+          "proxy": true
+        }
+      ]
+    },
+    {
+      "x": 316,
+      "y": 310,
+      "width": 194,
+      "height": 62,
+      "localX": 266,
+      "localY": 218,
+      "id": "call:instance:model.Transformer.target_embedding",
+      "parentId": "call:instance:model.Transformer",
+      "label": "target embedding",
+      "subtitle": "Embedding",
+      "headerHeight": 55,
+      "kind": "Embedding",
+      "category": "embedding",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "module",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.Transformer.target_embedding",
+        "sourceLabel": "target embedding",
+        "kind": "Embedding",
+        "category": "embedding",
+        "evidence": "contract",
+        "instanceId": "instance:model.Transformer.target_embedding",
+        "callCount": 1,
+        "callId": "call:instance:model.Transformer.target_embedding",
+        "source": {
+          "path": "model.py",
+          "line": 20,
+          "endLine": 20,
+          "expression": "self.target_embedding(target_tokens)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.Transformer.target_embedding:call:instance:model.Transformer.target_embedding:in:input:data",
+          "canonicalNodeId": "call:instance:model.Transformer.target_embedding",
+          "canonicalPortId": "call:instance:model.Transformer.target_embedding:in:input",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.Transformer.target_embedding",
+              "portId": "call:instance:model.Transformer.target_embedding:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:42"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "input",
+          "x": 413,
+          "y": 310,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.Transformer.target_embedding:call:instance:model.Transformer.target_embedding:out:output:data",
+          "canonicalNodeId": "call:instance:model.Transformer.target_embedding",
+          "canonicalPortId": "call:instance:model.Transformer.target_embedding:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.Transformer.target_embedding",
+              "portId": "call:instance:model.Transformer.target_embedding:out:output"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.target_embedding",
+              "portId": "call:instance:model.Transformer.target_embedding:out:output"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.target_embedding",
+              "portId": "call:instance:model.Transformer.target_embedding:out:output"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.target_embedding",
+              "portId": "call:instance:model.Transformer.target_embedding:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:43",
+            "edge:47",
+            "edge:48",
+            "edge:49"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 380.6666666666667,
+          "y": 372,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.Transformer.target_embedding:call:instance:model.Transformer.target_embedding:out:output:residual",
+          "canonicalNodeId": "call:instance:model.Transformer.target_embedding",
+          "canonicalPortId": "call:instance:model.Transformer.target_embedding:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.Transformer.target_embedding",
+              "portId": "call:instance:model.Transformer.target_embedding:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:51"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 445.33333333333337,
+          "y": 372,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 316,
+      "y": 410,
+      "width": 194,
+      "height": 62,
+      "localX": 266,
+      "localY": 318,
+      "id": "call:instance:model.Transformer.decoder",
+      "parentId": "call:instance:model.Transformer",
+      "label": "decoder",
+      "subtitle": "Module",
+      "headerHeight": 46,
+      "kind": "Module",
+      "category": "container",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "module",
+      "expanded": false,
+      "expandable": true,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "call:instance:model.Transformer.decoder",
+        "sourceLabel": "decoder",
+        "kind": "Module",
+        "category": "container",
+        "evidence": "source",
+        "instanceId": "instance:model.Transformer.decoder",
+        "callCount": 1,
+        "callId": "call:instance:model.Transformer.decoder",
+        "source": {
+          "path": "model.py",
+          "line": 21,
+          "endLine": 21,
+          "expression": "self.decoder(target, memory, target_mask=target_mask, memory_mask=memory_mask)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.Transformer.decoder:call:instance:model.Transformer.decoder:in:x:data",
+          "canonicalNodeId": "call:instance:model.Transformer.decoder",
+          "canonicalPortId": "call:instance:model.Transformer.decoder:in:x",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.Transformer.decoder",
+              "portId": "call:instance:model.Transformer.decoder:in:x"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.decoder.self_attention",
+              "portId": "call:instance:model.Transformer.decoder.self_attention:in:query"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.decoder.self_attention",
+              "portId": "call:instance:model.Transformer.decoder.self_attention:in:key"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.decoder.self_attention",
+              "portId": "call:instance:model.Transformer.decoder.self_attention:in:value"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:43",
+            "edge:47",
+            "edge:48",
+            "edge:49"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "x",
+          "x": 348.3333333333333,
+          "y": 410,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.Transformer.decoder:call:instance:model.Transformer.decoder:in:memory:memory",
+          "canonicalNodeId": "call:instance:model.Transformer.decoder",
+          "canonicalPortId": "call:instance:model.Transformer.decoder:in:memory",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.Transformer.decoder",
+              "portId": "call:instance:model.Transformer.decoder:in:memory"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.decoder.cross_attention",
+              "portId": "call:instance:model.Transformer.decoder.cross_attention:in:key"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.decoder.cross_attention",
+              "portId": "call:instance:model.Transformer.decoder.cross_attention:in:value"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:44",
+            "edge:55",
+            "edge:56"
+          ],
+          "direction": "in",
+          "role": "memory",
+          "name": "memory",
+          "x": 380.6666666666667,
+          "y": 410,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.Transformer.decoder:call:instance:model.Transformer.decoder:in:target_mask:mask",
+          "canonicalNodeId": "call:instance:model.Transformer.decoder",
+          "canonicalPortId": "call:instance:model.Transformer.decoder:in:target_mask",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.Transformer.decoder",
+              "portId": "call:instance:model.Transformer.decoder:in:target_mask"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.decoder.self_attention",
+              "portId": "call:instance:model.Transformer.decoder.self_attention:in:attn_mask"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:45",
+            "edge:50"
+          ],
+          "direction": "in",
+          "role": "mask",
+          "name": "target_mask",
+          "x": 413,
+          "y": 410,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.Transformer.decoder:call:instance:model.Transformer.decoder:in:memory_mask:mask",
+          "canonicalNodeId": "call:instance:model.Transformer.decoder",
+          "canonicalPortId": "call:instance:model.Transformer.decoder:in:memory_mask",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.Transformer.decoder",
+              "portId": "call:instance:model.Transformer.decoder:in:memory_mask"
+            },
+            {
+              "nodeId": "call:instance:model.Transformer.decoder.cross_attention",
+              "portId": "call:instance:model.Transformer.decoder.cross_attention:in:attn_mask"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:46",
+            "edge:57"
+          ],
+          "direction": "in",
+          "role": "mask",
+          "name": "memory_mask",
+          "x": 445.33333333333337,
+          "y": 410,
+          "proxy": false
+        },
+        {
+          "id": "op:call:instance:model.Transformer.decoder:Add:5e52cf2b46:op:call:instance:model.Transformer.decoder:Add:5e52cf2b46:in:left:residual",
+          "canonicalNodeId": "op:call:instance:model.Transformer.decoder:Add:5e52cf2b46",
+          "canonicalPortId": "op:call:instance:model.Transformer.decoder:Add:5e52cf2b46:in:left",
+          "canonicalBindings": [
+            {
+              "nodeId": "op:call:instance:model.Transformer.decoder:Add:5e52cf2b46",
+              "portId": "op:call:instance:model.Transformer.decoder:Add:5e52cf2b46:in:left"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:51"
+          ],
+          "direction": "in",
+          "role": "residual",
+          "name": "left",
+          "x": 477.66666666666663,
+          "y": 410,
+          "proxy": true
+        },
+        {
+          "id": "call:instance:model.Transformer.decoder.feedforward_norm:call:instance:model.Transformer.decoder.feedforward_norm:out:output:data",
+          "canonicalNodeId": "call:instance:model.Transformer.decoder.feedforward_norm",
+          "canonicalPortId": "call:instance:model.Transformer.decoder.feedforward_norm:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.Transformer.decoder.feedforward_norm",
+              "portId": "call:instance:model.Transformer.decoder.feedforward_norm:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:69"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 413,
+          "y": 472,
+          "proxy": true
+        }
+      ]
+    },
+    {
+      "x": 316,
+      "y": 510,
+      "width": 194,
+      "height": 62,
+      "localX": 266,
+      "localY": 418,
+      "id": "call:instance:model.Transformer.output_projection",
+      "parentId": "call:instance:model.Transformer",
+      "label": "output projection",
+      "subtitle": "32 → 128",
+      "headerHeight": 55,
+      "kind": "Linear",
+      "category": "linear",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "operator",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.Transformer.output_projection",
+        "sourceLabel": "output projection",
+        "kind": "Linear",
+        "category": "linear",
+        "evidence": "contract",
+        "instanceId": "instance:model.Transformer.output_projection",
+        "callCount": 1,
+        "callId": "call:instance:model.Transformer.output_projection",
+        "source": {
+          "path": "model.py",
+          "line": 22,
+          "endLine": 22,
+          "expression": "self.output_projection(hidden)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.Transformer.output_projection:call:instance:model.Transformer.output_projection:in:input:data",
+          "canonicalNodeId": "call:instance:model.Transformer.output_projection",
+          "canonicalPortId": "call:instance:model.Transformer.output_projection:in:input",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.Transformer.output_projection",
+              "portId": "call:instance:model.Transformer.output_projection:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:69"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "input",
+          "x": 413,
+          "y": 510,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.Transformer.output_projection:call:instance:model.Transformer.output_projection:out:output:data",
+          "canonicalNodeId": "call:instance:model.Transformer.output_projection",
+          "canonicalPortId": "call:instance:model.Transformer.output_projection:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.Transformer.output_projection",
+              "portId": "call:instance:model.Transformer.output_projection:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:70"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 413,
+          "y": 572,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 316,
+      "y": 610,
+      "width": 194,
+      "height": 62,
+      "localX": 266,
+      "localY": 518,
+      "id": "output:model.Transformer:0",
+      "parentId": "call:instance:model.Transformer",
+      "label": "output",
+      "subtitle": "return",
+      "headerHeight": 46,
+      "kind": "Output",
+      "category": "output",
+      "fill": "#ffffff",
+      "stroke": "#56616b",
+      "glyph": "tensor",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "output:model.Transformer:0",
+        "sourceLabel": "output",
+        "kind": "Output",
+        "category": "output",
+        "evidence": "source",
+        "outputPath": [],
+        "source": {
+          "path": "model.py",
+          "line": 16,
+          "endLine": 22,
+          "expression": "def forward(self, source_tokens, target_tokens, source_mask=None, target_mask=None, memory_mask=None):\n        memory = self.source_embedding(source_tokens)\n        for layer in self.encoder:\n            memory = layer(memory, mask=source_mask)\n        target = self.target_embedding(target_tokens)\n        hidden = self.decoder(target, memory, target_mask=target_mask, memory_mask=memory_mask)\n        return self.output_projection(hidden)"
+        }
+      },
+      "ports": [
+        {
+          "id": "output:model.Transformer:0:output:model.Transformer:0:in:value:data",
+          "canonicalNodeId": "output:model.Transformer:0",
+          "canonicalPortId": "output:model.Transformer:0:in:value",
+          "canonicalBindings": [
+            {
+              "nodeId": "output:model.Transformer:0",
+              "portId": "output:model.Transformer:0:in:value"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:70"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "value",
+          "x": 413,
+          "y": 610,
+          "proxy": false
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge:5",
+      "sourceId": "input:model.Transformer:source_tokens",
+      "targetId": "call:instance:model.Transformer.source_embedding",
+      "source": {
+        "nodeId": "input:model.Transformer:source_tokens",
+        "portId": "input:model.Transformer:source_tokens:out:source_tokens"
+      },
+      "target": {
+        "nodeId": "call:instance:model.Transformer.source_embedding",
+        "portId": "call:instance:model.Transformer.source_embedding:in:input"
+      },
+      "canonicalEdgeIds": [
+        "edge:5"
+      ],
+      "tensorId": "tensor:input:model.Transformer:source_tokens:source_tokens",
+      "role": "data",
+      "path": "M 177 272 V 291 H 177 V 310",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": false,
+      "dashPattern": [],
+      "label": "",
+      "labelX": 185,
+      "labelY": 284
+    },
+    {
+      "id": "edge:6",
+      "sourceId": "call:instance:model.Transformer.source_embedding",
+      "targetId": "repeat:instance:model.Transformer.encoder",
+      "source": {
+        "nodeId": "call:instance:model.Transformer.source_embedding",
+        "portId": "call:instance:model.Transformer.source_embedding:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.Transformer.encoder.0",
+        "portId": "call:instance:model.Transformer.encoder.0:in:x"
+      },
+      "canonicalEdgeIds": [
+        "edge:6",
+        "edge:8",
+        "edge:9",
+        "edge:10"
+      ],
+      "tensorId": "tensor:call:instance:model.Transformer.source_embedding:output",
+      "role": "data",
+      "path": "M 144.7 372 V 391 H 176.5 V 410",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": false,
+      "dashPattern": [],
+      "label": "",
+      "labelX": 168.58333333333334,
+      "labelY": 384
+    },
+    {
+      "id": "edge:7",
+      "sourceId": "input:model.Transformer:source_mask",
+      "targetId": "repeat:instance:model.Transformer.encoder",
+      "source": {
+        "nodeId": "input:model.Transformer:source_mask",
+        "portId": "input:model.Transformer:source_mask:out:source_mask"
+      },
+      "target": {
+        "nodeId": "call:instance:model.Transformer.encoder.0",
+        "portId": "call:instance:model.Transformer.encoder.0:in:mask"
+      },
+      "canonicalEdgeIds": [
+        "edge:7",
+        "edge:11",
+        "edge:25",
+        "edge:29"
+      ],
+      "tensorId": "tensor:input:model.Transformer:source_mask:source_mask",
+      "role": "mask",
+      "path": "M 479 196 V 209 H 599 V 397 H 225 V 410",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": true,
+      "dashPattern": [
+        3,
+        3
+      ],
+      "label": "",
+      "labelX": 606,
+      "labelY": 303
+    },
+    {
+      "id": "edge:13",
+      "sourceId": "call:instance:model.Transformer.source_embedding",
+      "targetId": "repeat:instance:model.Transformer.encoder",
+      "source": {
+        "nodeId": "call:instance:model.Transformer.source_embedding",
+        "portId": "call:instance:model.Transformer.source_embedding:out:output"
+      },
+      "target": {
+        "nodeId": "op:call:instance:model.Transformer.encoder.0:Add:2fc8574cd9",
+        "portId": "op:call:instance:model.Transformer.encoder.0:Add:2fc8574cd9:in:left"
+      },
+      "canonicalEdgeIds": [
+        "edge:13"
+      ],
+      "tensorId": "tensor:call:instance:model.Transformer.source_embedding:output",
+      "role": "residual",
+      "path": "M 209.3 372 V 378 H 273.5 V 410",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": true,
+      "dashPattern": [
+        9,
+        4
+      ],
+      "label": "",
+      "labelX": 249.41666666666669,
+      "labelY": 371
+    },
+    {
+      "id": "edge:42",
+      "sourceId": "input:model.Transformer:target_tokens",
+      "targetId": "call:instance:model.Transformer.target_embedding",
+      "source": {
+        "nodeId": "input:model.Transformer:target_tokens",
+        "portId": "input:model.Transformer:target_tokens:out:target_tokens"
+      },
+      "target": {
+        "nodeId": "call:instance:model.Transformer.target_embedding",
+        "portId": "call:instance:model.Transformer.target_embedding:in:input"
+      },
+      "canonicalEdgeIds": [
+        "edge:42"
+      ],
+      "tensorId": "tensor:input:model.Transformer:target_tokens:target_tokens",
+      "role": "data",
+      "path": "M 413 272 V 291 H 413 V 310",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": false,
+      "dashPattern": [],
+      "label": "",
+      "labelX": 421,
+      "labelY": 284
+    },
+    {
+      "id": "edge:43",
+      "sourceId": "call:instance:model.Transformer.target_embedding",
+      "targetId": "call:instance:model.Transformer.decoder",
+      "source": {
+        "nodeId": "call:instance:model.Transformer.target_embedding",
+        "portId": "call:instance:model.Transformer.target_embedding:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.Transformer.decoder",
+        "portId": "call:instance:model.Transformer.decoder:in:x"
+      },
+      "canonicalEdgeIds": [
+        "edge:43",
+        "edge:47",
+        "edge:48",
+        "edge:49"
+      ],
+      "tensorId": "tensor:call:instance:model.Transformer.target_embedding:output",
+      "role": "data",
+      "path": "M 380.7 372 V 391 H 348.3 V 410",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": false,
+      "dashPattern": [],
+      "label": "",
+      "labelX": 372.5,
+      "labelY": 384
+    },
+    {
+      "id": "edge:44",
+      "sourceId": "repeat:instance:model.Transformer.encoder",
+      "targetId": "call:instance:model.Transformer.decoder",
+      "source": {
+        "nodeId": "call:instance:model.Transformer.encoder.1.feedforward_norm",
+        "portId": "call:instance:model.Transformer.encoder.1.feedforward_norm:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.Transformer.decoder",
+        "portId": "call:instance:model.Transformer.decoder:in:memory"
+      },
+      "canonicalEdgeIds": [
+        "edge:44",
+        "edge:55",
+        "edge:56"
+      ],
+      "tensorId": "tensor:call:instance:model.Transformer.encoder.1.feedforward_norm:output",
+      "role": "memory",
+      "path": "M 225 479 V 492 H 533 V 397 H 380.7 V 410",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": true,
+      "dashPattern": [
+        9,
+        3,
+        1,
+        3
+      ],
+      "label": "",
+      "labelX": 540,
+      "labelY": 444.5
+    },
+    {
+      "id": "edge:45",
+      "sourceId": "input:model.Transformer:target_mask",
+      "targetId": "call:instance:model.Transformer.decoder",
+      "source": {
+        "nodeId": "input:model.Transformer:target_mask",
+        "portId": "input:model.Transformer:target_mask:out:target_mask"
+      },
+      "target": {
+        "nodeId": "call:instance:model.Transformer.decoder",
+        "portId": "call:instance:model.Transformer.decoder:in:target_mask"
+      },
+      "canonicalEdgeIds": [
+        "edge:45",
+        "edge:50"
+      ],
+      "tensorId": "tensor:input:model.Transformer:target_mask:target_mask",
+      "role": "mask",
+      "path": "M 317 196 V 209 H 544 V 397 H 413 V 410",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": true,
+      "dashPattern": [
+        3,
+        3
+      ],
+      "label": "",
+      "labelX": 551,
+      "labelY": 303
+    },
+    {
+      "id": "edge:46",
+      "sourceId": "input:model.Transformer:memory_mask",
+      "targetId": "call:instance:model.Transformer.decoder",
+      "source": {
+        "nodeId": "input:model.Transformer:memory_mask",
+        "portId": "input:model.Transformer:memory_mask:out:memory_mask"
+      },
+      "target": {
+        "nodeId": "call:instance:model.Transformer.decoder",
+        "portId": "call:instance:model.Transformer.decoder:in:memory_mask"
+      },
+      "canonicalEdgeIds": [
+        "edge:46",
+        "edge:57"
+      ],
+      "tensorId": "tensor:input:model.Transformer:memory_mask:memory_mask",
+      "role": "mask",
+      "path": "M 155 196 V 209 H 555 V 397 H 445.3 V 410",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": true,
+      "dashPattern": [
+        3,
+        3
+      ],
+      "label": "",
+      "labelX": 562,
+      "labelY": 303
+    },
+    {
+      "id": "edge:51",
+      "sourceId": "call:instance:model.Transformer.target_embedding",
+      "targetId": "call:instance:model.Transformer.decoder",
+      "source": {
+        "nodeId": "call:instance:model.Transformer.target_embedding",
+        "portId": "call:instance:model.Transformer.target_embedding:out:output"
+      },
+      "target": {
+        "nodeId": "op:call:instance:model.Transformer.decoder:Add:5e52cf2b46",
+        "portId": "op:call:instance:model.Transformer.decoder:Add:5e52cf2b46:in:left"
+      },
+      "canonicalEdgeIds": [
+        "edge:51"
+      ],
+      "tensorId": "tensor:call:instance:model.Transformer.target_embedding:output",
+      "role": "residual",
+      "path": "M 445.3 372 V 378 H 477.7 V 410",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": true,
+      "dashPattern": [
+        9,
+        4
+      ],
+      "label": "",
+      "labelX": 469.5,
+      "labelY": 371
+    },
+    {
+      "id": "edge:69",
+      "sourceId": "call:instance:model.Transformer.decoder",
+      "targetId": "call:instance:model.Transformer.output_projection",
+      "source": {
+        "nodeId": "call:instance:model.Transformer.decoder.feedforward_norm",
+        "portId": "call:instance:model.Transformer.decoder.feedforward_norm:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.Transformer.output_projection",
+        "portId": "call:instance:model.Transformer.output_projection:in:input"
+      },
+      "canonicalEdgeIds": [
+        "edge:69"
+      ],
+      "tensorId": "tensor:call:instance:model.Transformer.decoder.feedforward_norm:output",
+      "role": "data",
+      "path": "M 413 472 V 491 H 413 V 510",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": false,
+      "dashPattern": [],
+      "label": "",
+      "labelX": 421,
+      "labelY": 484
+    },
+    {
+      "id": "edge:70",
+      "sourceId": "call:instance:model.Transformer.output_projection",
+      "targetId": "output:model.Transformer:0",
+      "source": {
+        "nodeId": "call:instance:model.Transformer.output_projection",
+        "portId": "call:instance:model.Transformer.output_projection:out:output"
+      },
+      "target": {
+        "nodeId": "output:model.Transformer:0",
+        "portId": "output:model.Transformer:0:in:value"
+      },
+      "canonicalEdgeIds": [
+        "edge:70"
+      ],
+      "tensorId": "tensor:call:instance:model.Transformer.output_projection:output",
+      "role": "data",
+      "path": "M 413 572 V 591 H 413 V 610",
+      "stroke": "#56616b",
+      "width": 1.5,
+      "dashed": false,
+      "dashPattern": [],
+      "label": "",
+      "labelX": 421,
+      "labelY": 584
+    }
+  ],
+  "hiddenEdges": [
+    "edge:0",
+    "edge:1",
+    "edge:2",
+    "edge:3",
+    "edge:4",
+    "edge:12",
+    "edge:14",
+    "edge:15",
+    "edge:16",
+    "edge:17",
+    "edge:18",
+    "edge:19",
+    "edge:20",
+    "edge:21",
+    "edge:22",
+    "edge:23",
+    "edge:24",
+    "edge:26",
+    "edge:27",
+    "edge:28",
+    "edge:30",
+    "edge:31",
+    "edge:32",
+    "edge:33",
+    "edge:34",
+    "edge:35",
+    "edge:36",
+    "edge:37",
+    "edge:38",
+    "edge:39",
+    "edge:40",
+    "edge:41",
+    "edge:52",
+    "edge:53",
+    "edge:54",
+    "edge:58",
+    "edge:59",
+    "edge:60",
+    "edge:61",
+    "edge:62",
+    "edge:63",
+    "edge:64",
+    "edge:65",
+    "edge:66",
+    "edge:67",
+    "edge:68"
+  ],
+  "legend": [
+    {
+      "id": "legend:input",
+      "label": "Input",
+      "color": "#ffffff",
+      "glyph": "tensor",
+      "x": 50,
+      "y": 754
+    },
+    {
+      "id": "legend:container",
+      "label": "Container",
+      "color": "#ffffff",
+      "glyph": "module",
+      "x": 235,
+      "y": 754
+    },
+    {
+      "id": "legend:attention",
+      "label": "Attention",
+      "color": "#ffffff",
+      "glyph": "attention",
+      "x": 420,
+      "y": 754
+    },
+    {
+      "id": "legend:residual",
+      "label": "Residual",
+      "color": "#ffffff",
+      "glyph": "add",
+      "x": 50,
+      "y": 781
+    },
+    {
+      "id": "legend:norm",
+      "label": "Norm",
+      "color": "#ffffff",
+      "glyph": "norm",
+      "x": 235,
+      "y": 781
+    },
+    {
+      "id": "legend:linear",
+      "label": "Linear",
+      "color": "#ffffff",
+      "glyph": "operator",
+      "x": 420,
+      "y": 781
+    }
+  ],
+  "annotations": [],
+  "edgeLegend": [
+    {
+      "id": "edge-role-legend:data:1",
+      "role": "data",
+      "label": "Data / 数据流",
+      "stroke": "#56616b",
+      "lineWidth": 1.5,
+      "dashed": false,
+      "dashPattern": [],
+      "sampleLength": 40,
+      "sceneEdgeIds": [
+        "edge:5",
+        "edge:6",
+        "edge:42",
+        "edge:43",
+        "edge:69",
+        "edge:70"
+      ],
+      "canonicalEdgeIds": [
+        "edge:5",
+        "edge:6",
+        "edge:8",
+        "edge:9",
+        "edge:10",
+        "edge:42",
+        "edge:43",
+        "edge:47",
+        "edge:48",
+        "edge:49",
+        "edge:69",
+        "edge:70"
+      ],
+      "x": 50,
+      "y": 813,
+      "width": 121.22500000000001,
+      "height": 20
+    },
+    {
+      "id": "edge-role-legend:residual:1",
+      "role": "residual",
+      "label": "Residual / 残差连接",
+      "stroke": "#56616b",
+      "lineWidth": 1.5,
+      "dashed": true,
+      "dashPattern": [
+        9,
+        4
+      ],
+      "sampleLength": 40,
+      "sceneEdgeIds": [
+        "edge:13",
+        "edge:51"
+      ],
+      "canonicalEdgeIds": [
+        "edge:13",
+        "edge:51"
+      ],
+      "x": 195.22500000000002,
+      "y": 813,
+      "width": 148.82500000000002,
+      "height": 20
+    },
+    {
+      "id": "edge-role-legend:memory:1",
+      "role": "memory",
+      "label": "Memory / Memory 连接",
+      "stroke": "#56616b",
+      "lineWidth": 1.5,
+      "dashed": true,
+      "dashPattern": [
+        9,
+        3,
+        1,
+        3
+      ],
+      "sampleLength": 40,
+      "sceneEdgeIds": [
+        "edge:44"
+      ],
+      "canonicalEdgeIds": [
+        "edge:44",
+        "edge:55",
+        "edge:56"
+      ],
+      "x": 368.05000000000007,
+      "y": 813,
+      "width": 159.22500000000002,
+      "height": 20
+    },
+    {
+      "id": "edge-role-legend:mask:1",
+      "role": "mask",
+      "label": "Mask / Mask 连接",
+      "stroke": "#56616b",
+      "lineWidth": 1.5,
+      "dashed": true,
+      "dashPattern": [
+        3,
+        3
+      ],
+      "sampleLength": 40,
+      "sceneEdgeIds": [
+        "edge:7",
+        "edge:45",
+        "edge:46"
+      ],
+      "canonicalEdgeIds": [
+        "edge:7",
+        "edge:11",
+        "edge:25",
+        "edge:29",
+        "edge:45",
+        "edge:50",
+        "edge:46",
+        "edge:57"
+      ],
+      "x": 50,
+      "y": 845,
+      "width": 136.82500000000002,
+      "height": 20
+    }
+  ],
+  "edgeLegendLayout": {
+    "x": 50,
+    "y": 813,
+    "availableWidth": 626
+  },
+  "pageSpec": {
+    "widthMm": 180,
+    "background": "#ffffff",
+    "preset": "monochrome"
+  },
+  "sourceDigest": "01ac6cd61f058e9de5230b0c371527a1fa2b4f73842019e0e5785d5f0deb0916",
+  "irDigest": "b0bd5bf01fa364bf415f6aba9707f5d74d9b7bb058534c0dac54fc48fd3729e6",
+  "sourceFacts": [
+    {
+      "id": "input:model.Transformer:source_tokens",
+      "sourceLabel": "source_tokens",
+      "kind": "Input",
+      "category": "input",
+      "evidence": "source",
+      "source": {
+        "path": "model.py",
+        "line": 16,
+        "endLine": 22,
+        "expression": "def forward(self, source_tokens, target_tokens, source_mask=None, target_mask=None, memory_mask=None):\n        memory = self.source_embedding(source_tokens)\n        for layer in self.encoder:\n            memory = layer(memory, mask=source_mask)\n        target = self.target_embedding(target_tokens)\n        hidden = self.decoder(target, memory, target_mask=target_mask, memory_mask=memory_mask)\n        return self.output_projection(hidden)"
+      }
+    },
+    {
+      "id": "input:model.Transformer:target_tokens",
+      "sourceLabel": "target_tokens",
+      "kind": "Input",
+      "category": "input",
+      "evidence": "source",
+      "source": {
+        "path": "model.py",
+        "line": 16,
+        "endLine": 22,
+        "expression": "def forward(self, source_tokens, target_tokens, source_mask=None, target_mask=None, memory_mask=None):\n        memory = self.source_embedding(source_tokens)\n        for layer in self.encoder:\n            memory = layer(memory, mask=source_mask)\n        target = self.target_embedding(target_tokens)\n        hidden = self.decoder(target, memory, target_mask=target_mask, memory_mask=memory_mask)\n        return self.output_projection(hidden)"
+      }
+    },
+    {
+      "id": "input:model.Transformer:source_mask",
+      "sourceLabel": "source_mask",
+      "kind": "Input",
+      "category": "input",
+      "evidence": "source",
+      "source": {
+        "path": "model.py",
+        "line": 16,
+        "endLine": 22,
+        "expression": "def forward(self, source_tokens, target_tokens, source_mask=None, target_mask=None, memory_mask=None):\n        memory = self.source_embedding(source_tokens)\n        for layer in self.encoder:\n            memory = layer(memory, mask=source_mask)\n        target = self.target_embedding(target_tokens)\n        hidden = self.decoder(target, memory, target_mask=target_mask, memory_mask=memory_mask)\n        return self.output_projection(hidden)"
+      }
+    },
+    {
+      "id": "input:model.Transformer:target_mask",
+      "sourceLabel": "target_mask",
+      "kind": "Input",
+      "category": "input",
+      "evidence": "source",
+      "source": {
+        "path": "model.py",
+        "line": 16,
+        "endLine": 22,
+        "expression": "def forward(self, source_tokens, target_tokens, source_mask=None, target_mask=None, memory_mask=None):\n        memory = self.source_embedding(source_tokens)\n        for layer in self.encoder:\n            memory = layer(memory, mask=source_mask)\n        target = self.target_embedding(target_tokens)\n        hidden = self.decoder(target, memory, target_mask=target_mask, memory_mask=memory_mask)\n        return self.output_projection(hidden)"
+      }
+    },
+    {
+      "id": "input:model.Transformer:memory_mask",
+      "sourceLabel": "memory_mask",
+      "kind": "Input",
+      "category": "input",
+      "evidence": "source",
+      "source": {
+        "path": "model.py",
+        "line": 16,
+        "endLine": 22,
+        "expression": "def forward(self, source_tokens, target_tokens, source_mask=None, target_mask=None, memory_mask=None):\n        memory = self.source_embedding(source_tokens)\n        for layer in self.encoder:\n            memory = layer(memory, mask=source_mask)\n        target = self.target_embedding(target_tokens)\n        hidden = self.decoder(target, memory, target_mask=target_mask, memory_mask=memory_mask)\n        return self.output_projection(hidden)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer",
+      "sourceLabel": "Transformer",
+      "kind": "Module",
+      "category": "container",
+      "evidence": "source",
+      "instanceId": "instance:model.Transformer",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer",
+      "source": {
+        "path": "model.py",
+        "line": 7,
+        "endLine": 22,
+        "expression": "class Transformer(nn.Module):\n    def __init__(self, vocab_size=128, d_model=32, n_heads=4, n_layers=2):\n        super().__init__()\n        self.source_embedding = nn.Embedding(vocab_size, d_model)\n        self.target_embedding = nn.Embedding(vocab_size, d_model)\n        self.encoder = nn.ModuleList([EncoderLayer(d_model, n_heads) for _ in range(n_layers)])\n        self.decoder = DecoderLayer(d_model, n_heads)\n        self.output_projection = nn.Linear(d_model, vocab_size)\n\n    def forward(self, source_tokens, target_tokens, source_mask=None, target_mask=None, memory_mask=None):\n        memory = self.source_embedding(source_tokens)\n        for layer in self.encoder:\n            memory = layer(memory, mask=source_mask)\n        target = self.target_embedding(target_tokens)\n        hidden = self.decoder(target, memory, target_mask=target_mask, memory_mask=memory_mask)\n        return self.output_projection(hidden)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.source_embedding",
+      "sourceLabel": "source embedding",
+      "kind": "Embedding",
+      "category": "embedding",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.source_embedding",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.source_embedding",
+      "source": {
+        "path": "model.py",
+        "line": 17,
+        "endLine": 17,
+        "expression": "self.source_embedding(source_tokens)"
+      }
+    },
+    {
+      "id": "repeat:instance:model.Transformer.encoder",
+      "sourceLabel": "encoder",
+      "kind": "Repeat",
+      "category": "container",
+      "evidence": "source",
+      "repeat": {
+        "count": 2,
+        "sharing": "independent"
+      },
+      "source": {
+        "path": "model.py",
+        "line": 18,
+        "endLine": 19,
+        "expression": "for layer in self.encoder:\n            memory = layer(memory, mask=source_mask)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.0",
+      "sourceLabel": "EncoderLayer 1",
+      "kind": "Module",
+      "category": "container",
+      "evidence": "source",
+      "instanceId": "instance:model.Transformer.encoder.0",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.0",
+      "source": {
+        "path": "model.py",
+        "line": 19,
+        "endLine": 19,
+        "expression": "layer(memory, mask=source_mask)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.0.self_attention",
+      "sourceLabel": "self attention",
+      "kind": "MultiheadAttention",
+      "category": "attention",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.encoder.0.self_attention",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.0.self_attention",
+      "source": {
+        "path": "blocks.py",
+        "line": 28,
+        "endLine": 28,
+        "expression": "self.self_attention(query=x, key=x, value=x, attn_mask=mask, need_weights=False)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.0.attention_dropout",
+      "sourceLabel": "attention dropout",
+      "kind": "Dropout",
+      "category": "regularization",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.encoder.0.attention_dropout",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.0.attention_dropout",
+      "source": {
+        "path": "blocks.py",
+        "line": 29,
+        "endLine": 29,
+        "expression": "self.attention_dropout(attended)"
+      }
+    },
+    {
+      "id": "op:call:instance:model.Transformer.encoder.0:Add:2fc8574cd9",
+      "sourceLabel": "Add",
+      "kind": "Add",
+      "category": "residual",
+      "evidence": "source",
+      "source": {
+        "path": "blocks.py",
+        "line": 29,
+        "endLine": 29,
+        "expression": "x + self.attention_dropout(attended)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.0.attention_norm",
+      "sourceLabel": "attention norm",
+      "kind": "LayerNorm",
+      "category": "norm",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.encoder.0.attention_norm",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.0.attention_norm",
+      "source": {
+        "path": "blocks.py",
+        "line": 29,
+        "endLine": 29,
+        "expression": "self.attention_norm(x + self.attention_dropout(attended))"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.0.feedforward",
+      "sourceLabel": "feedforward",
+      "kind": "Module",
+      "category": "container",
+      "evidence": "source",
+      "instanceId": "instance:model.Transformer.encoder.0.feedforward",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.0.feedforward",
+      "source": {
+        "path": "blocks.py",
+        "line": 30,
+        "endLine": 30,
+        "expression": "self.feedforward(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.0.feedforward.expand",
+      "sourceLabel": "expand",
+      "kind": "Linear",
+      "category": "linear",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.encoder.0.feedforward.expand",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.0.feedforward.expand",
+      "source": {
+        "path": "blocks.py",
+        "line": 15,
+        "endLine": 15,
+        "expression": "self.expand(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.0.feedforward.activation",
+      "sourceLabel": "activation",
+      "kind": "GELU",
+      "category": "activation",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.encoder.0.feedforward.activation",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.0.feedforward.activation",
+      "source": {
+        "path": "blocks.py",
+        "line": 15,
+        "endLine": 15,
+        "expression": "self.activation(self.expand(x))"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.0.feedforward.dropout",
+      "sourceLabel": "dropout",
+      "kind": "Dropout",
+      "category": "regularization",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.encoder.0.feedforward.dropout",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.0.feedforward.dropout",
+      "source": {
+        "path": "blocks.py",
+        "line": 15,
+        "endLine": 15,
+        "expression": "self.dropout(self.activation(self.expand(x)))"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.0.feedforward.project",
+      "sourceLabel": "project",
+      "kind": "Linear",
+      "category": "linear",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.encoder.0.feedforward.project",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.0.feedforward.project",
+      "source": {
+        "path": "blocks.py",
+        "line": 15,
+        "endLine": 15,
+        "expression": "self.project(self.dropout(self.activation(self.expand(x))))"
+      }
+    },
+    {
+      "id": "op:call:instance:model.Transformer.encoder.0:Add:7d8cbbfd96",
+      "sourceLabel": "Add",
+      "kind": "Add",
+      "category": "residual",
+      "evidence": "source",
+      "source": {
+        "path": "blocks.py",
+        "line": 30,
+        "endLine": 30,
+        "expression": "x + self.feedforward(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.0.feedforward_norm",
+      "sourceLabel": "feedforward norm",
+      "kind": "LayerNorm",
+      "category": "norm",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.encoder.0.feedforward_norm",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.0.feedforward_norm",
+      "source": {
+        "path": "blocks.py",
+        "line": 30,
+        "endLine": 30,
+        "expression": "self.feedforward_norm(x + self.feedforward(x))"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.1",
+      "sourceLabel": "EncoderLayer 2",
+      "kind": "Module",
+      "category": "container",
+      "evidence": "source",
+      "instanceId": "instance:model.Transformer.encoder.1",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.1",
+      "source": {
+        "path": "model.py",
+        "line": 19,
+        "endLine": 19,
+        "expression": "layer(memory, mask=source_mask)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.1.self_attention",
+      "sourceLabel": "self attention",
+      "kind": "MultiheadAttention",
+      "category": "attention",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.encoder.1.self_attention",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.1.self_attention",
+      "source": {
+        "path": "blocks.py",
+        "line": 28,
+        "endLine": 28,
+        "expression": "self.self_attention(query=x, key=x, value=x, attn_mask=mask, need_weights=False)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.1.attention_dropout",
+      "sourceLabel": "attention dropout",
+      "kind": "Dropout",
+      "category": "regularization",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.encoder.1.attention_dropout",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.1.attention_dropout",
+      "source": {
+        "path": "blocks.py",
+        "line": 29,
+        "endLine": 29,
+        "expression": "self.attention_dropout(attended)"
+      }
+    },
+    {
+      "id": "op:call:instance:model.Transformer.encoder.1:Add:2fc8574cd9",
+      "sourceLabel": "Add",
+      "kind": "Add",
+      "category": "residual",
+      "evidence": "source",
+      "source": {
+        "path": "blocks.py",
+        "line": 29,
+        "endLine": 29,
+        "expression": "x + self.attention_dropout(attended)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.1.attention_norm",
+      "sourceLabel": "attention norm",
+      "kind": "LayerNorm",
+      "category": "norm",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.encoder.1.attention_norm",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.1.attention_norm",
+      "source": {
+        "path": "blocks.py",
+        "line": 29,
+        "endLine": 29,
+        "expression": "self.attention_norm(x + self.attention_dropout(attended))"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.1.feedforward",
+      "sourceLabel": "feedforward",
+      "kind": "Module",
+      "category": "container",
+      "evidence": "source",
+      "instanceId": "instance:model.Transformer.encoder.1.feedforward",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.1.feedforward",
+      "source": {
+        "path": "blocks.py",
+        "line": 30,
+        "endLine": 30,
+        "expression": "self.feedforward(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.1.feedforward.expand",
+      "sourceLabel": "expand",
+      "kind": "Linear",
+      "category": "linear",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.encoder.1.feedforward.expand",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.1.feedforward.expand",
+      "source": {
+        "path": "blocks.py",
+        "line": 15,
+        "endLine": 15,
+        "expression": "self.expand(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.1.feedforward.activation",
+      "sourceLabel": "activation",
+      "kind": "GELU",
+      "category": "activation",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.encoder.1.feedforward.activation",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.1.feedforward.activation",
+      "source": {
+        "path": "blocks.py",
+        "line": 15,
+        "endLine": 15,
+        "expression": "self.activation(self.expand(x))"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.1.feedforward.dropout",
+      "sourceLabel": "dropout",
+      "kind": "Dropout",
+      "category": "regularization",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.encoder.1.feedforward.dropout",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.1.feedforward.dropout",
+      "source": {
+        "path": "blocks.py",
+        "line": 15,
+        "endLine": 15,
+        "expression": "self.dropout(self.activation(self.expand(x)))"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.1.feedforward.project",
+      "sourceLabel": "project",
+      "kind": "Linear",
+      "category": "linear",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.encoder.1.feedforward.project",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.1.feedforward.project",
+      "source": {
+        "path": "blocks.py",
+        "line": 15,
+        "endLine": 15,
+        "expression": "self.project(self.dropout(self.activation(self.expand(x))))"
+      }
+    },
+    {
+      "id": "op:call:instance:model.Transformer.encoder.1:Add:7d8cbbfd96",
+      "sourceLabel": "Add",
+      "kind": "Add",
+      "category": "residual",
+      "evidence": "source",
+      "source": {
+        "path": "blocks.py",
+        "line": 30,
+        "endLine": 30,
+        "expression": "x + self.feedforward(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.encoder.1.feedforward_norm",
+      "sourceLabel": "feedforward norm",
+      "kind": "LayerNorm",
+      "category": "norm",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.encoder.1.feedforward_norm",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.encoder.1.feedforward_norm",
+      "source": {
+        "path": "blocks.py",
+        "line": 30,
+        "endLine": 30,
+        "expression": "self.feedforward_norm(x + self.feedforward(x))"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.target_embedding",
+      "sourceLabel": "target embedding",
+      "kind": "Embedding",
+      "category": "embedding",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.target_embedding",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.target_embedding",
+      "source": {
+        "path": "model.py",
+        "line": 20,
+        "endLine": 20,
+        "expression": "self.target_embedding(target_tokens)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.decoder",
+      "sourceLabel": "decoder",
+      "kind": "Module",
+      "category": "container",
+      "evidence": "source",
+      "instanceId": "instance:model.Transformer.decoder",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.decoder",
+      "source": {
+        "path": "model.py",
+        "line": 21,
+        "endLine": 21,
+        "expression": "self.decoder(target, memory, target_mask=target_mask, memory_mask=memory_mask)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.decoder.self_attention",
+      "sourceLabel": "self attention",
+      "kind": "MultiheadAttention",
+      "category": "attention",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.decoder.self_attention",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.decoder.self_attention",
+      "source": {
+        "path": "blocks.py",
+        "line": 44,
+        "endLine": 44,
+        "expression": "self.self_attention(query=x, key=x, value=x, attn_mask=target_mask, need_weights=False)"
+      }
+    },
+    {
+      "id": "op:call:instance:model.Transformer.decoder:Add:5e52cf2b46",
+      "sourceLabel": "Add",
+      "kind": "Add",
+      "category": "residual",
+      "evidence": "source",
+      "source": {
+        "path": "blocks.py",
+        "line": 45,
+        "endLine": 45,
+        "expression": "x + attended"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.decoder.self_norm",
+      "sourceLabel": "self norm",
+      "kind": "LayerNorm",
+      "category": "norm",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.decoder.self_norm",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.decoder.self_norm",
+      "source": {
+        "path": "blocks.py",
+        "line": 45,
+        "endLine": 45,
+        "expression": "self.self_norm(x + attended)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.decoder.cross_attention",
+      "sourceLabel": "cross attention",
+      "kind": "MultiheadAttention",
+      "category": "attention",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.decoder.cross_attention",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.decoder.cross_attention",
+      "source": {
+        "path": "blocks.py",
+        "line": 46,
+        "endLine": 46,
+        "expression": "self.cross_attention(query=x, key=memory, value=memory, attn_mask=memory_mask, need_weights=False)"
+      }
+    },
+    {
+      "id": "op:call:instance:model.Transformer.decoder:Add:5e52cf2b46@2",
+      "sourceLabel": "Add",
+      "kind": "Add",
+      "category": "residual",
+      "evidence": "source",
+      "source": {
+        "path": "blocks.py",
+        "line": 47,
+        "endLine": 47,
+        "expression": "x + attended"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.decoder.cross_norm",
+      "sourceLabel": "cross norm",
+      "kind": "LayerNorm",
+      "category": "norm",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.decoder.cross_norm",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.decoder.cross_norm",
+      "source": {
+        "path": "blocks.py",
+        "line": 47,
+        "endLine": 47,
+        "expression": "self.cross_norm(x + attended)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.decoder.feedforward",
+      "sourceLabel": "feedforward",
+      "kind": "Module",
+      "category": "container",
+      "evidence": "source",
+      "instanceId": "instance:model.Transformer.decoder.feedforward",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.decoder.feedforward",
+      "source": {
+        "path": "blocks.py",
+        "line": 48,
+        "endLine": 48,
+        "expression": "self.feedforward(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.decoder.feedforward.expand",
+      "sourceLabel": "expand",
+      "kind": "Linear",
+      "category": "linear",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.decoder.feedforward.expand",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.decoder.feedforward.expand",
+      "source": {
+        "path": "blocks.py",
+        "line": 15,
+        "endLine": 15,
+        "expression": "self.expand(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.decoder.feedforward.activation",
+      "sourceLabel": "activation",
+      "kind": "GELU",
+      "category": "activation",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.decoder.feedforward.activation",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.decoder.feedforward.activation",
+      "source": {
+        "path": "blocks.py",
+        "line": 15,
+        "endLine": 15,
+        "expression": "self.activation(self.expand(x))"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.decoder.feedforward.dropout",
+      "sourceLabel": "dropout",
+      "kind": "Dropout",
+      "category": "regularization",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.decoder.feedforward.dropout",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.decoder.feedforward.dropout",
+      "source": {
+        "path": "blocks.py",
+        "line": 15,
+        "endLine": 15,
+        "expression": "self.dropout(self.activation(self.expand(x)))"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.decoder.feedforward.project",
+      "sourceLabel": "project",
+      "kind": "Linear",
+      "category": "linear",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.decoder.feedforward.project",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.decoder.feedforward.project",
+      "source": {
+        "path": "blocks.py",
+        "line": 15,
+        "endLine": 15,
+        "expression": "self.project(self.dropout(self.activation(self.expand(x))))"
+      }
+    },
+    {
+      "id": "op:call:instance:model.Transformer.decoder:Add:7d8cbbfd96",
+      "sourceLabel": "Add",
+      "kind": "Add",
+      "category": "residual",
+      "evidence": "source",
+      "source": {
+        "path": "blocks.py",
+        "line": 48,
+        "endLine": 48,
+        "expression": "x + self.feedforward(x)"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.decoder.feedforward_norm",
+      "sourceLabel": "feedforward norm",
+      "kind": "LayerNorm",
+      "category": "norm",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.decoder.feedforward_norm",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.decoder.feedforward_norm",
+      "source": {
+        "path": "blocks.py",
+        "line": 48,
+        "endLine": 48,
+        "expression": "self.feedforward_norm(x + self.feedforward(x))"
+      }
+    },
+    {
+      "id": "call:instance:model.Transformer.output_projection",
+      "sourceLabel": "output projection",
+      "kind": "Linear",
+      "category": "linear",
+      "evidence": "contract",
+      "instanceId": "instance:model.Transformer.output_projection",
+      "callCount": 1,
+      "callId": "call:instance:model.Transformer.output_projection",
+      "source": {
+        "path": "model.py",
+        "line": 22,
+        "endLine": 22,
+        "expression": "self.output_projection(hidden)"
+      }
+    },
+    {
+      "id": "output:model.Transformer:0",
+      "sourceLabel": "output",
+      "kind": "Output",
+      "category": "output",
+      "evidence": "source",
+      "outputPath": [],
+      "source": {
+        "path": "model.py",
+        "line": 16,
+        "endLine": 22,
+        "expression": "def forward(self, source_tokens, target_tokens, source_mask=None, target_mask=None, memory_mask=None):\n        memory = self.source_embedding(source_tokens)\n        for layer in self.encoder:\n            memory = layer(memory, mask=source_mask)\n        target = self.target_embedding(target_tokens)\n        hidden = self.decoder(target, memory, target_mask=target_mask, memory_mask=memory_mask)\n        return self.output_projection(hidden)"
+      }
+    }
+  ],
+  "diagnostics": [
+    {
+      "level": "info",
+      "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+    },
+    {
+      "level": "warning",
+      "code": "layout-overlap",
+      "objectIds": [
+        "repeat:instance:model.Transformer.encoder",
+        "call:instance:model.Transformer.decoder"
+      ],
+      "message": "Objects \"repeat:instance:model.Transformer.encoder\" and \"call:instance:model.Transformer.decoder\" overlap. Their manual anchors are preserved; move the objects or increase spacing to resolve this layout conflict."
+    }
+  ]
+}

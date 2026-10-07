@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "scope": "actual new four-node linear/GELU authored graph, its frozen saved store and managed source/document/public SVG artifacts",
+  "prohibited": [
+    "model import or execution",
+    "dependency installation",
+    "browser operation",
+    "product changes",
+    "human certification",
+    "all 17 catalog modules certification"
+  ],
+  "handwrittenSemantics": {
+    "orderedKinds": [
+      "Input",
+      "Linear",
+      "GELU",
+      "Output"
+    ],
+    "orderedLabels": [
+      "输入",
+      "全连接",
+      "GELU 激活",
+      "输出"
+    ],
+    "draftNodes": 4,
+    "draftEdges": 3,
+    "tensorShapes": [
+      [
+        1,
+        16
+      ],
+      [
+        1,
+        8
+      ],
+      [
+        1,
+        8
+      ],
+      [
+        1,
+        8
+      ]
+    ],
+    "dtype": "float32",
+    "linearParameters": {
+      "in_features": 16,
+      "out_features": 8,
+      "bias": true
+    },
+    "geluParameters": {
+      "approximate": "none"
+    },
+    "canonicalNodesIncludingContainer": 5,
+    "canonicalEdgesIncludingContainerAdapter": 4,
+    "renderedDataBindings": 3,
+    "outputVisibleAlias": "输出",
+    "outputVisibleSubtitle": "model output"
+  },
+  "evidenceRules": [
+    "Visible generated Python bytes equal actual managed model.py and architecture.sources content. Hash those exact bytes independently.",
+    "Parse AST using Python stdlib, check nn.Module, only expected constructors/forward producers/exact return dict key, input/output binding and parameter literal spans. Do not evaluate source.",
+    "Draft node/port edges match a single typed Input→Linear→GELU→Output chain, unique IDs and complete known parameters. Shape formulas are handwritten declarations, not runtime observations.",
+    "Cross-bind project architecture, saved CanvasDocument, public SVG sourceFacts/renderedBindings with canonical endpoints and unchanged source/IR digest. Recompute declared digest normalization with stdlib only, separately from semantic AST expectations.",
+    "Parse actual browser SVG XML, retain output full source key in title/metadata while visible main label is 输出 and small subtitle model output. Distinguish new versus older managed-reopened raw; do not borrow prior model evidence.",
+    "Use exclusive result attempts and exact input byte copies, record reviewer failures, originals unchanged and lack of human/runtime/publication claims."
+  ],
+  "oracleOrigins": {
+    "semantics": "handwritten basic Linear and elementwise GELU contracts",
+    "expectedTensorShapes": "[1,16] last axis replaced by out_features 8, elementwise GELU retains [1,8]",
+    "digestNormalization": "formal frontend declared serialization definition inspected read-only; independent hashlib/json computation is consistency evidence, not semantic proof"
+  }
+}

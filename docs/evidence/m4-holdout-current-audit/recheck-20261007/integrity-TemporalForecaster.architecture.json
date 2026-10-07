@@ -1,0 +1,534 @@
+{
+  "schemaVersion": 1,
+  "id": "architecture:model.TemporalForecaster",
+  "label": "TemporalForecaster",
+  "sourceDigest": "3a6976a808974cfbb911cf2bab8c44b7d302c20c0e28046e1a9e7002fe51b667",
+  "irDigest": "0e60a72fa479c1a84b69ca3cffe7d2efba27727c2e0b7f4c6b653066f8c1a189",
+  "entry": "model:TemporalForecaster",
+  "nodes": [
+    {
+      "id": "input:model.TemporalForecaster:series",
+      "label": "series",
+      "kind": "Input",
+      "category": "input",
+      "children": [],
+      "ports": [
+        {
+          "id": "input:model.TemporalForecaster:series:out:series",
+          "name": "series",
+          "direction": "out",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {},
+      "source": {
+        "path": "model.py",
+        "line": 19,
+        "endLine": 23,
+        "expression": "def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+      },
+      "evidence": "source",
+      "parentId": "call:instance:model.TemporalForecaster"
+    },
+    {
+      "id": "call:instance:model.TemporalForecaster",
+      "label": "TemporalForecaster",
+      "kind": "Module",
+      "category": "container",
+      "children": [
+        "input:model.TemporalForecaster:series",
+        "call:instance:model.TemporalForecaster.recurrent",
+        "call:instance:model.TemporalForecaster.projection",
+        "call:instance:model.TemporalForecaster.projection@2",
+        "output:model.TemporalForecaster:0",
+        "output:model.TemporalForecaster:1",
+        "output:model.TemporalForecaster:2",
+        "output:model.TemporalForecaster:3"
+      ],
+      "ports": [
+        {
+          "id": "call:instance:model.TemporalForecaster:in:series",
+          "name": "series",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {},
+      "source": {
+        "path": "model.py",
+        "line": 12,
+        "endLine": 23,
+        "expression": "class TemporalForecaster(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.recurrent = nn.LSTM(6, 8, num_layers=2, batch_first=True)\n        self.projection = nn.Linear(8, 3)\n        self.shared_projection = self.projection\n\n    def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+      },
+      "evidence": "source",
+      "instanceId": "instance:model.TemporalForecaster",
+      "callId": "call:instance:model.TemporalForecaster"
+    },
+    {
+      "id": "call:instance:model.TemporalForecaster.recurrent",
+      "label": "recurrent",
+      "kind": "LSTM",
+      "category": "recurrent",
+      "children": [],
+      "ports": [
+        {
+          "id": "call:instance:model.TemporalForecaster.recurrent:in:input",
+          "name": "input",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        },
+        {
+          "id": "call:instance:model.TemporalForecaster.recurrent:out:output",
+          "name": "output",
+          "direction": "out",
+          "role": "data",
+          "ordinal": 0
+        },
+        {
+          "id": "call:instance:model.TemporalForecaster.recurrent:out:h_n",
+          "name": "h_n",
+          "direction": "out",
+          "role": "data",
+          "ordinal": 1
+        },
+        {
+          "id": "call:instance:model.TemporalForecaster.recurrent:out:c_n",
+          "name": "c_n",
+          "direction": "out",
+          "role": "data",
+          "ordinal": 2
+        }
+      ],
+      "parameters": {
+        "input_size": 6,
+        "hidden_size": 8,
+        "num_layers": 2,
+        "batch_first": true
+      },
+      "source": {
+        "path": "model.py",
+        "line": 20,
+        "endLine": 20,
+        "expression": "self.recurrent(series)"
+      },
+      "evidence": "contract",
+      "parentId": "call:instance:model.TemporalForecaster",
+      "instanceId": "instance:model.TemporalForecaster.recurrent",
+      "callId": "call:instance:model.TemporalForecaster.recurrent",
+      "parameterOrigins": {
+        "input_size": {
+          "kind": "literal",
+          "path": "model.py",
+          "line": 15,
+          "endLine": 15,
+          "expression": "6",
+          "column": 33,
+          "endColumn": 34
+        },
+        "hidden_size": {
+          "kind": "literal",
+          "path": "model.py",
+          "line": 15,
+          "endLine": 15,
+          "expression": "8",
+          "column": 36,
+          "endColumn": 37
+        },
+        "num_layers": {
+          "kind": "literal",
+          "path": "model.py",
+          "line": 15,
+          "endLine": 15,
+          "expression": "2",
+          "column": 50,
+          "endColumn": 51
+        },
+        "batch_first": {
+          "kind": "literal",
+          "path": "model.py",
+          "line": 15,
+          "endLine": 15,
+          "expression": "True",
+          "column": 65,
+          "endColumn": 69
+        }
+      }
+    },
+    {
+      "id": "call:instance:model.TemporalForecaster.projection",
+      "label": "projection",
+      "kind": "Linear",
+      "category": "linear",
+      "children": [],
+      "ports": [
+        {
+          "id": "call:instance:model.TemporalForecaster.projection:in:input",
+          "name": "input",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        },
+        {
+          "id": "call:instance:model.TemporalForecaster.projection:out:output",
+          "name": "output",
+          "direction": "out",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {
+        "in_features": 8,
+        "out_features": 3
+      },
+      "source": {
+        "path": "model.py",
+        "line": 21,
+        "endLine": 21,
+        "expression": "self.projection(sequence)"
+      },
+      "evidence": "contract",
+      "parentId": "call:instance:model.TemporalForecaster",
+      "instanceId": "instance:model.TemporalForecaster.projection",
+      "callId": "call:instance:model.TemporalForecaster.projection",
+      "parameterOrigins": {
+        "in_features": {
+          "kind": "literal",
+          "path": "model.py",
+          "line": 16,
+          "endLine": 16,
+          "expression": "8",
+          "column": 36,
+          "endColumn": 37
+        },
+        "out_features": {
+          "kind": "literal",
+          "path": "model.py",
+          "line": 16,
+          "endLine": 16,
+          "expression": "3",
+          "column": 39,
+          "endColumn": 40
+        }
+      }
+    },
+    {
+      "id": "call:instance:model.TemporalForecaster.projection@2",
+      "label": "projection",
+      "kind": "Linear",
+      "category": "linear",
+      "children": [],
+      "ports": [
+        {
+          "id": "call:instance:model.TemporalForecaster.projection@2:in:input",
+          "name": "input",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        },
+        {
+          "id": "call:instance:model.TemporalForecaster.projection@2:out:output",
+          "name": "output",
+          "direction": "out",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {
+        "in_features": 8,
+        "out_features": 3
+      },
+      "source": {
+        "path": "model.py",
+        "line": 22,
+        "endLine": 22,
+        "expression": "self.shared_projection(sequence)"
+      },
+      "evidence": "contract",
+      "parentId": "call:instance:model.TemporalForecaster",
+      "instanceId": "instance:model.TemporalForecaster.projection",
+      "callId": "call:instance:model.TemporalForecaster.projection@2",
+      "parameterOrigins": {
+        "in_features": {
+          "kind": "literal",
+          "path": "model.py",
+          "line": 16,
+          "endLine": 16,
+          "expression": "8",
+          "column": 36,
+          "endColumn": 37
+        },
+        "out_features": {
+          "kind": "literal",
+          "path": "model.py",
+          "line": 16,
+          "endLine": 16,
+          "expression": "3",
+          "column": 39,
+          "endColumn": 40
+        }
+      }
+    },
+    {
+      "id": "output:model.TemporalForecaster:0",
+      "label": "output 1",
+      "kind": "Output",
+      "category": "output",
+      "children": [],
+      "ports": [
+        {
+          "id": "output:model.TemporalForecaster:0:in:value",
+          "name": "value",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {},
+      "source": {
+        "path": "model.py",
+        "line": 19,
+        "endLine": 23,
+        "expression": "def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+      },
+      "evidence": "source",
+      "parentId": "call:instance:model.TemporalForecaster",
+      "outputPath": [
+        {
+          "kind": "key",
+          "key": "forecast"
+        },
+        {
+          "kind": "index",
+          "index": 0
+        }
+      ]
+    },
+    {
+      "id": "output:model.TemporalForecaster:1",
+      "label": "output 2",
+      "kind": "Output",
+      "category": "output",
+      "children": [],
+      "ports": [
+        {
+          "id": "output:model.TemporalForecaster:1:in:value",
+          "name": "value",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {},
+      "source": {
+        "path": "model.py",
+        "line": 19,
+        "endLine": 23,
+        "expression": "def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+      },
+      "evidence": "source",
+      "parentId": "call:instance:model.TemporalForecaster",
+      "outputPath": [
+        {
+          "kind": "key",
+          "key": "forecast"
+        },
+        {
+          "kind": "index",
+          "index": 1
+        }
+      ]
+    },
+    {
+      "id": "output:model.TemporalForecaster:2",
+      "label": "output 3",
+      "kind": "Output",
+      "category": "output",
+      "children": [],
+      "ports": [
+        {
+          "id": "output:model.TemporalForecaster:2:in:value",
+          "name": "value",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {},
+      "source": {
+        "path": "model.py",
+        "line": 19,
+        "endLine": 23,
+        "expression": "def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+      },
+      "evidence": "source",
+      "parentId": "call:instance:model.TemporalForecaster",
+      "outputPath": [
+        {
+          "kind": "key",
+          "key": "state"
+        },
+        {
+          "kind": "key",
+          "key": "hidden"
+        }
+      ]
+    },
+    {
+      "id": "output:model.TemporalForecaster:3",
+      "label": "output 4",
+      "kind": "Output",
+      "category": "output",
+      "children": [],
+      "ports": [
+        {
+          "id": "output:model.TemporalForecaster:3:in:value",
+          "name": "value",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {},
+      "source": {
+        "path": "model.py",
+        "line": 19,
+        "endLine": 23,
+        "expression": "def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}"
+      },
+      "evidence": "source",
+      "parentId": "call:instance:model.TemporalForecaster",
+      "outputPath": [
+        {
+          "kind": "key",
+          "key": "state"
+        },
+        {
+          "kind": "key",
+          "key": "cell"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge:0",
+      "source": {
+        "nodeId": "input:model.TemporalForecaster:series",
+        "portId": "input:model.TemporalForecaster:series:out:series"
+      },
+      "target": {
+        "nodeId": "call:instance:model.TemporalForecaster",
+        "portId": "call:instance:model.TemporalForecaster:in:series"
+      },
+      "tensorId": "tensor:input:model.TemporalForecaster:series:series",
+      "role": "data"
+    },
+    {
+      "id": "edge:1",
+      "source": {
+        "nodeId": "input:model.TemporalForecaster:series",
+        "portId": "input:model.TemporalForecaster:series:out:series"
+      },
+      "target": {
+        "nodeId": "call:instance:model.TemporalForecaster.recurrent",
+        "portId": "call:instance:model.TemporalForecaster.recurrent:in:input"
+      },
+      "tensorId": "tensor:input:model.TemporalForecaster:series:series",
+      "role": "data"
+    },
+    {
+      "id": "edge:2",
+      "source": {
+        "nodeId": "call:instance:model.TemporalForecaster.recurrent",
+        "portId": "call:instance:model.TemporalForecaster.recurrent:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.TemporalForecaster.projection",
+        "portId": "call:instance:model.TemporalForecaster.projection:in:input"
+      },
+      "tensorId": "tensor:call:instance:model.TemporalForecaster.recurrent:output",
+      "role": "data"
+    },
+    {
+      "id": "edge:3",
+      "source": {
+        "nodeId": "call:instance:model.TemporalForecaster.recurrent",
+        "portId": "call:instance:model.TemporalForecaster.recurrent:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.TemporalForecaster.projection@2",
+        "portId": "call:instance:model.TemporalForecaster.projection@2:in:input"
+      },
+      "tensorId": "tensor:call:instance:model.TemporalForecaster.recurrent:output",
+      "role": "data"
+    },
+    {
+      "id": "edge:4",
+      "source": {
+        "nodeId": "call:instance:model.TemporalForecaster.projection",
+        "portId": "call:instance:model.TemporalForecaster.projection:out:output"
+      },
+      "target": {
+        "nodeId": "output:model.TemporalForecaster:0",
+        "portId": "output:model.TemporalForecaster:0:in:value"
+      },
+      "tensorId": "tensor:call:instance:model.TemporalForecaster.projection:output",
+      "role": "data"
+    },
+    {
+      "id": "edge:5",
+      "source": {
+        "nodeId": "call:instance:model.TemporalForecaster.projection@2",
+        "portId": "call:instance:model.TemporalForecaster.projection@2:out:output"
+      },
+      "target": {
+        "nodeId": "output:model.TemporalForecaster:1",
+        "portId": "output:model.TemporalForecaster:1:in:value"
+      },
+      "tensorId": "tensor:call:instance:model.TemporalForecaster.projection@2:output",
+      "role": "data"
+    },
+    {
+      "id": "edge:6",
+      "source": {
+        "nodeId": "call:instance:model.TemporalForecaster.recurrent",
+        "portId": "call:instance:model.TemporalForecaster.recurrent:out:h_n"
+      },
+      "target": {
+        "nodeId": "output:model.TemporalForecaster:2",
+        "portId": "output:model.TemporalForecaster:2:in:value"
+      },
+      "tensorId": "tensor:call:instance:model.TemporalForecaster.recurrent:h_n",
+      "role": "data"
+    },
+    {
+      "id": "edge:7",
+      "source": {
+        "nodeId": "call:instance:model.TemporalForecaster.recurrent",
+        "portId": "call:instance:model.TemporalForecaster.recurrent:out:c_n"
+      },
+      "target": {
+        "nodeId": "output:model.TemporalForecaster:3",
+        "portId": "output:model.TemporalForecaster:3:in:value"
+      },
+      "tensorId": "tensor:call:instance:model.TemporalForecaster.recurrent:c_n",
+      "role": "data"
+    }
+  ],
+  "diagnostics": [
+    {
+      "level": "info",
+      "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+    }
+  ],
+  "sources": [
+    {
+      "path": "model.py",
+      "content": "\"\"\"Independent M4 temporal, skip-network and unknown/dynamic holdouts.\n\nThese are hand-authored source inputs, not graph templates. The unresolved\nsemantic kernels below deliberately have callable Python names without a\nregistered framework contract; static analysis must keep their calls opaque.\n\"\"\"\n\nimport torch\nfrom torch import nn\n\n\nclass TemporalForecaster(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.recurrent = nn.LSTM(6, 8, num_layers=2, batch_first=True)\n        self.projection = nn.Linear(8, 3)\n        self.shared_projection = self.projection\n\n    def forward(self, series):\n        sequence, (hidden, cell) = self.recurrent(series)\n        primary = self.projection(sequence)\n        secondary = self.shared_projection(sequence)\n        return {\"forecast\": (primary, secondary), \"state\": {\"hidden\": hidden, \"cell\": cell}}\n\n\nclass ConvRefinement(nn.Module):\n    def __init__(self, channels=8):\n        super().__init__()\n        self.conv = nn.Conv2d(channels, channels, 3, padding=1)\n        self.activation = nn.ReLU()\n\n    def forward(self, image):\n        return self.activation(self.conv(image))\n\n\nclass SkipSegmentation(nn.Module):\n    \"\"\"A U-Net-style skip/concat source; transposed convolution is opaque.\"\"\"\n\n    def __init__(self):\n        super().__init__()\n        self.stem = nn.Conv2d(3, 8, 3, padding=1)\n        self.refinement = nn.ModuleList([ConvRefinement(8) for _ in range(2)])\n        self.downsample = nn.MaxPool2d(2)\n        self.bottleneck = nn.Conv2d(8, 16, 3, padding=1)\n        self.upsample = nn.ConvTranspose2d(16, 8, 2, stride=2)\n        self.head = nn.Conv2d(16, 2, 1)\n\n    def forward(self, image):\n        skip = self.stem(image)\n        for block in self.refinement:\n            skip = block(skip)\n        coarse = self.bottleneck(self.downsample(skip))\n        restored = self.upsample(coarse)\n        merged = torch.cat((skip, restored), dim=1)\n        return self.head(merged)\n\n\nclass GraphAttentionKernel:\n    \"\"\"This callable has no registered PyTorch contract despite its name.\"\"\"\n\n    def __call__(self, nodes, edge_index):\n        return nodes\n\n\nclass StateSpaceScan:\n    \"\"\"This callable has no registered recurrent/state-space contract.\"\"\"\n\n    def __call__(self, sequence):\n        return sequence\n\n\nclass GraphForecast(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.project = nn.Linear(4, 4)\n        self.message = GraphAttentionKernel()\n        self.activation = nn.ReLU()\n\n    def forward(self, nodes, edge_index):\n        features = self.project(nodes)\n        messages = self.message(features, edge_index)\n        if features.sum() > 0:\n            messages = self.activation(messages)\n        return messages\n\n\nclass DynamicStateSpace(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.scan = StateSpaceScan()\n        self.projection = nn.Linear(4, 4)\n\n    def forward(self, sequence):\n        state = self.scan(sequence)\n        for index in range(sequence.shape[1]):\n            state = self.projection(state)\n        return state\n",
+      "digest": "689a4e9a0c69ee1b9b440fc808fd98b4b4a8ab2786d21aa09290bb5fcbad3fb2"
+    }
+  ]
+}

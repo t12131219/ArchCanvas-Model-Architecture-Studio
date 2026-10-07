@@ -1,6 +1,16 @@
 # M4：从空白画布搭建模型
 
-当前 Bc 构建的排版自动适配、结构化中文定位、空搜索与无效输入边界及新浏览器回归见 [m4-authoring-feedback](m4-authoring-feedback.md)。下面搭建能力合同仍为17种有界模块；“本轮113/300”和25份浏览器记录是历史CIVB，CVO只新增共享路由，均不当作Bc整套浏览器矩阵。
+当前（2026-10-06）为 `index-BV-fWDiR.js` / `index-QPVAzYp6.css`。[模块库可发现性与预制起点](m4-module-library.md)增加“基础模块 17 / 网络起点 3”入口；默认直达 Input、Output、Linear 与激活模块，搜索词会跨两类结果。最终专项48/48、Studio284/284、strict TypeScript/Vite退出0；本轮未执行模型或安装依赖。
+
+实际浏览器复核保留待连接状态、草稿4节点3连线、跨类搜索、未支持 Attention 说明、Identity/MLP/Input 添加后撤销，以及保存重开。入口切换只改列表视图，不改草稿、历史、选择、相机或连接。15组新BV状态/JPEG绑定在 [模块库浏览证据](evidence/m4-module-library-work/browser-attempt-1/manifest.json)；此前CW22组静态检查/四向移动/参数引导保留原范围。
+
+M4仍partial、M5未开始、真人0。AI审查不计真人；复杂图路由、逐模块生成、出版尺寸、呈现性能与真人任务仍未认证。[当前schema16状态](evidence/m4-human-review-handoff-status-followup.json)单独绑定本轮；schema15与CW/BSA旧证据保留各自归档，不继承为BV浏览器认证。
+
+历史版本说明：当前正式构建仍为 `index-au3IB_0Q.js` / `index-B6WbMowt.css`，最新范围见[au3矩阵、四向操作与输入诊断](m4-au3-current-matrix.md)。39例文件已collect，三模型四向/history/save-reopen已独审；像素问题与性能未通过项保留，AI真人0、M4 partial、M5未开始。下方记录保留各自历史构建/时点，不继承为最新浏览器或研究认证。当前au3研究包仍未prepare/verify，旧研究席位不可分配。此前seal与末读原字节见[更新前归档](evidence/before-m4-au3-full-matrix/manifest.json)。
+
+当前（2026-10-05）为 `index-ChS0wIgb.js`（SHA256 `05019f89f0de0c0c622df7a2cc1a13ed58477c456244c97209a0f37db79139c9`）与 `index-CsXMONBp.css`。本轮[显式位置修复与透明网络起点](m4-move-recovery-presets.md)新增预览/应用/取消和17基础模块上的3个可编辑网络起点；最终Studio152/152、strict/build退出0。中间会话与最终build证据分开；最终23组/46图、四向操作及单个pin拒绝范围单列，不宣称新36＋3矩阵；最终独立发行9项通过；磁盘满的前次失败保留。旧Bc矩阵/诊断/五席包不能认证本构建，fresh研究准备待完成、真人0。M4仍partial，未进入M5。
+
+[切换前2894绑定原字节](evidence/before-m4-move-recovery-presets/manifest.json)保留旧Bc seal/status/矩阵/诊断/源码；下方历史记录中的“当前/本轮/最终”仅指其明确旧构建和冻结时点，不计新build浏览器、性能或真人认证。旧raw、seal、manifest和研究包不回写。
 
 本轮已实现独立的“模型搭建”工作区。点击 Studio 顶部的“搭建模型”，即可从左侧常用模块库拖入或点击添加模块，在右侧修改参数，连接端口并生成新的 Python 模型。该能力用于创建新模型；已有源代码导入后的制图文档继续保留原有语义保护。
 
@@ -41,7 +51,7 @@
 
 卷积、池化的空间参数使用长度为 2 的整数数组。构造带权重的 Linear、Conv2d、BatchNorm2d、LayerNorm 和 Embedding 时，生成源码显式指定 `dtype=torch.float32`。负数 Concat 轴按照已声明的输入秩转成等价非负轴，草稿仍保留原值，核对结果记录 `scalarNormalizations`。
 
-`Sigmoid`、`Tanh`、`Conv1d`、`AvgPool2d`、`BatchNorm1d`、`MultiheadAttention` 和 `LSTM` 尚未进入搭建库。现有静态分析器能识别某些模块，不代表搭建工作区已经支持其构造与完整核对。当前也不提供任意 Python、自定义代码节点、循环、共享权重实例、动态形状、自动广播、三路以上拼接或复合预制网络。
+`Sigmoid`、`Tanh`、`Conv1d`、`AvgPool2d`、`BatchNorm1d`、`MultiheadAttention` 和 `LSTM` 尚未进入搭建库。现有静态分析器能识别某些模块，不代表搭建工作区已经支持其构造与完整核对。当前也不提供任意 Python、自定义代码节点、循环、共享权重实例、动态形状、自动广播或三路以上拼接。左侧已有最小MLP、小型CNN、残差MLP三个透明网络起点；插入后仍是上述普通节点，可独立编辑，不新增模块类型。
 
 ## 草稿、校验与新源码
 

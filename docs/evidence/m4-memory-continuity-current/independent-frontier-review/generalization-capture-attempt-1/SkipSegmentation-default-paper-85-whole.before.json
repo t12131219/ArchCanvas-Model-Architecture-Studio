@@ -1,0 +1,1829 @@
+{
+  "version": "1.0",
+  "documentId": "canvas-architecture-model.SkipSegmentation-3a6976a80897-ecfdb442",
+  "revision": 1,
+  "title": "SkipSegmentation",
+  "bounds": {
+    "x": 0,
+    "y": 0,
+    "width": 595,
+    "height": 1753
+  },
+  "nodes": [
+    {
+      "x": 50,
+      "y": 92,
+      "width": 374,
+      "height": 1557,
+      "localX": 50,
+      "localY": 92,
+      "id": "call:instance:model.SkipSegmentation",
+      "label": "SkipSegmentation",
+      "subtitle": "Module",
+      "headerHeight": 46,
+      "kind": "Module",
+      "category": "container",
+      "fill": "#f5f8fc",
+      "stroke": "#94a6ba",
+      "glyph": "module",
+      "expanded": true,
+      "expandable": true,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "call:instance:model.SkipSegmentation",
+        "sourceLabel": "SkipSegmentation",
+        "kind": "Module",
+        "category": "container",
+        "evidence": "source",
+        "instanceId": "instance:model.SkipSegmentation",
+        "callCount": 1,
+        "callId": "call:instance:model.SkipSegmentation",
+        "source": {
+          "path": "model.py",
+          "line": 36,
+          "endLine": 55,
+          "expression": "class SkipSegmentation(nn.Module):\n    \"\"\"A U-Net-style skip/concat source; transposed convolution is opaque.\"\"\"\n\n    def __init__(self):\n        super().__init__()\n        self.stem = nn.Conv2d(3, 8, 3, padding=1)\n        self.refinement = nn.ModuleList([ConvRefinement(8) for _ in range(2)])\n        self.downsample = nn.MaxPool2d(2)\n        self.bottleneck = nn.Conv2d(8, 16, 3, padding=1)\n        self.upsample = nn.ConvTranspose2d(16, 8, 2, stride=2)\n        self.head = nn.Conv2d(16, 2, 1)\n\n    def forward(self, image):\n        skip = self.stem(image)\n        for block in self.refinement:\n            skip = block(skip)\n        coarse = self.bottleneck(self.downsample(skip))\n        restored = self.upsample(coarse)\n        merged = torch.cat((skip, restored), dim=1)\n        return self.head(merged)"
+        }
+      },
+      "ports": []
+    },
+    {
+      "x": 80,
+      "y": 163,
+      "width": 194,
+      "height": 62,
+      "localX": 30,
+      "localY": 71,
+      "id": "input:model.SkipSegmentation:image",
+      "parentId": "call:instance:model.SkipSegmentation",
+      "label": "image",
+      "subtitle": "Input",
+      "headerHeight": 46,
+      "kind": "Input",
+      "category": "input",
+      "fill": "#eef2f5",
+      "stroke": "#98a6b1",
+      "glyph": "tensor",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "input:model.SkipSegmentation:image",
+        "sourceLabel": "image",
+        "kind": "Input",
+        "category": "input",
+        "evidence": "source",
+        "source": {
+          "path": "model.py",
+          "line": 48,
+          "endLine": 55,
+          "expression": "def forward(self, image):\n        skip = self.stem(image)\n        for block in self.refinement:\n            skip = block(skip)\n        coarse = self.bottleneck(self.downsample(skip))\n        restored = self.upsample(coarse)\n        merged = torch.cat((skip, restored), dim=1)\n        return self.head(merged)"
+        }
+      },
+      "ports": [
+        {
+          "id": "input:model.SkipSegmentation:image:input:model.SkipSegmentation:image:out:image:data",
+          "canonicalNodeId": "input:model.SkipSegmentation:image",
+          "canonicalPortId": "input:model.SkipSegmentation:image:out:image",
+          "canonicalBindings": [
+            {
+              "nodeId": "input:model.SkipSegmentation:image",
+              "portId": "input:model.SkipSegmentation:image:out:image"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:1"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "image",
+          "x": 177,
+          "y": 225,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 80,
+      "y": 263,
+      "width": 194,
+      "height": 62,
+      "localX": 30,
+      "localY": 171,
+      "id": "call:instance:model.SkipSegmentation.stem",
+      "parentId": "call:instance:model.SkipSegmentation",
+      "label": "stem",
+      "subtitle": "Conv2d",
+      "headerHeight": 46,
+      "kind": "Conv2d",
+      "category": "convolution",
+      "fill": "#edf2fa",
+      "stroke": "#7e95b5",
+      "glyph": "module",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.SkipSegmentation.stem",
+        "sourceLabel": "stem",
+        "kind": "Conv2d",
+        "category": "convolution",
+        "evidence": "contract",
+        "instanceId": "instance:model.SkipSegmentation.stem",
+        "callCount": 1,
+        "callId": "call:instance:model.SkipSegmentation.stem",
+        "source": {
+          "path": "model.py",
+          "line": 49,
+          "endLine": 49,
+          "expression": "self.stem(image)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.SkipSegmentation.stem:call:instance:model.SkipSegmentation.stem:in:input:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.stem",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.stem:in:input",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.stem",
+              "portId": "call:instance:model.SkipSegmentation.stem:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:1"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "input",
+          "x": 177,
+          "y": 263,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.SkipSegmentation.stem:call:instance:model.SkipSegmentation.stem:out:output:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.stem",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.stem:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.stem",
+              "portId": "call:instance:model.SkipSegmentation.stem:out:output"
+            },
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.stem",
+              "portId": "call:instance:model.SkipSegmentation.stem:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:2",
+            "edge:3"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 177,
+          "y": 325,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 80,
+      "y": 363,
+      "width": 314,
+      "height": 656,
+      "localX": 30,
+      "localY": 271,
+      "id": "repeat:instance:model.SkipSegmentation.refinement",
+      "parentId": "call:instance:model.SkipSegmentation",
+      "label": "refinement",
+      "subtitle": "2 × independent instances",
+      "headerHeight": 46,
+      "kind": "Repeat",
+      "category": "container",
+      "fill": "#f5f8fc",
+      "stroke": "#94a6ba",
+      "glyph": "module",
+      "expanded": true,
+      "expandable": true,
+      "pinned": false,
+      "evidence": "source",
+      "repeat": {
+        "count": 2,
+        "sharing": "independent"
+      },
+      "sourceFact": {
+        "id": "repeat:instance:model.SkipSegmentation.refinement",
+        "sourceLabel": "refinement",
+        "kind": "Repeat",
+        "category": "container",
+        "evidence": "source",
+        "repeat": {
+          "count": 2,
+          "sharing": "independent"
+        },
+        "source": {
+          "path": "model.py",
+          "line": 50,
+          "endLine": 51,
+          "expression": "for block in self.refinement:\n            skip = block(skip)"
+        }
+      },
+      "ports": []
+    },
+    {
+      "x": 110,
+      "y": 425,
+      "width": 254,
+      "height": 263,
+      "localX": 30,
+      "localY": 62,
+      "id": "call:instance:model.SkipSegmentation.refinement.0",
+      "parentId": "repeat:instance:model.SkipSegmentation.refinement",
+      "label": "ConvRefinement 1",
+      "subtitle": "Module",
+      "headerHeight": 46,
+      "kind": "Module",
+      "category": "container",
+      "fill": "#f5f8fc",
+      "stroke": "#94a6ba",
+      "glyph": "module",
+      "expanded": true,
+      "expandable": true,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "call:instance:model.SkipSegmentation.refinement.0",
+        "sourceLabel": "ConvRefinement 1",
+        "kind": "Module",
+        "category": "container",
+        "evidence": "source",
+        "instanceId": "instance:model.SkipSegmentation.refinement.0",
+        "callCount": 1,
+        "callId": "call:instance:model.SkipSegmentation.refinement.0",
+        "source": {
+          "path": "model.py",
+          "line": 51,
+          "endLine": 51,
+          "expression": "block(skip)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.SkipSegmentation.refinement.0:call:instance:model.SkipSegmentation.refinement.0:in:image:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.refinement.0",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.refinement.0:in:image",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.refinement.0",
+              "portId": "call:instance:model.SkipSegmentation.refinement.0:in:image"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:2"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "image",
+          "x": 237,
+          "y": 425,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 140,
+      "y": 496,
+      "width": 194,
+      "height": 62,
+      "localX": 30,
+      "localY": 71,
+      "id": "call:instance:model.SkipSegmentation.refinement.0.conv",
+      "parentId": "call:instance:model.SkipSegmentation.refinement.0",
+      "label": "conv",
+      "subtitle": "Conv2d",
+      "headerHeight": 46,
+      "kind": "Conv2d",
+      "category": "convolution",
+      "fill": "#edf2fa",
+      "stroke": "#7e95b5",
+      "glyph": "module",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.SkipSegmentation.refinement.0.conv",
+        "sourceLabel": "conv",
+        "kind": "Conv2d",
+        "category": "convolution",
+        "evidence": "contract",
+        "instanceId": "instance:model.SkipSegmentation.refinement.0.conv",
+        "callCount": 1,
+        "callId": "call:instance:model.SkipSegmentation.refinement.0.conv",
+        "source": {
+          "path": "model.py",
+          "line": 33,
+          "endLine": 33,
+          "expression": "self.conv(image)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.SkipSegmentation.refinement.0.conv:call:instance:model.SkipSegmentation.refinement.0.conv:in:input:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.refinement.0.conv",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.refinement.0.conv:in:input",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.refinement.0.conv",
+              "portId": "call:instance:model.SkipSegmentation.refinement.0.conv:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:3"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "input",
+          "x": 237,
+          "y": 496,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.SkipSegmentation.refinement.0.conv:call:instance:model.SkipSegmentation.refinement.0.conv:out:output:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.refinement.0.conv",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.refinement.0.conv:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.refinement.0.conv",
+              "portId": "call:instance:model.SkipSegmentation.refinement.0.conv:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:4"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 237,
+          "y": 558,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 140,
+      "y": 596,
+      "width": 194,
+      "height": 62,
+      "localX": 30,
+      "localY": 171,
+      "id": "call:instance:model.SkipSegmentation.refinement.0.activation",
+      "parentId": "call:instance:model.SkipSegmentation.refinement.0",
+      "label": "activation",
+      "subtitle": "ReLU",
+      "headerHeight": 46,
+      "kind": "ReLU",
+      "category": "activation",
+      "fill": "#f9eddc",
+      "stroke": "#c9a272",
+      "glyph": "operator",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.SkipSegmentation.refinement.0.activation",
+        "sourceLabel": "activation",
+        "kind": "ReLU",
+        "category": "activation",
+        "evidence": "contract",
+        "instanceId": "instance:model.SkipSegmentation.refinement.0.activation",
+        "callCount": 1,
+        "callId": "call:instance:model.SkipSegmentation.refinement.0.activation",
+        "source": {
+          "path": "model.py",
+          "line": 33,
+          "endLine": 33,
+          "expression": "self.activation(self.conv(image))"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.SkipSegmentation.refinement.0.activation:call:instance:model.SkipSegmentation.refinement.0.activation:in:input:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.refinement.0.activation",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.refinement.0.activation:in:input",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.refinement.0.activation",
+              "portId": "call:instance:model.SkipSegmentation.refinement.0.activation:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:4"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "input",
+          "x": 237,
+          "y": 596,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.SkipSegmentation.refinement.0.activation:call:instance:model.SkipSegmentation.refinement.0.activation:out:output:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.refinement.0.activation",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.refinement.0.activation:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.refinement.0.activation",
+              "portId": "call:instance:model.SkipSegmentation.refinement.0.activation:out:output"
+            },
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.refinement.0.activation",
+              "portId": "call:instance:model.SkipSegmentation.refinement.0.activation:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:5",
+            "edge:6"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 237,
+          "y": 658,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 110,
+      "y": 726,
+      "width": 254,
+      "height": 263,
+      "localX": 30,
+      "localY": 363,
+      "id": "call:instance:model.SkipSegmentation.refinement.1",
+      "parentId": "repeat:instance:model.SkipSegmentation.refinement",
+      "label": "ConvRefinement 2",
+      "subtitle": "Module",
+      "headerHeight": 46,
+      "kind": "Module",
+      "category": "container",
+      "fill": "#f5f8fc",
+      "stroke": "#94a6ba",
+      "glyph": "module",
+      "expanded": true,
+      "expandable": true,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "call:instance:model.SkipSegmentation.refinement.1",
+        "sourceLabel": "ConvRefinement 2",
+        "kind": "Module",
+        "category": "container",
+        "evidence": "source",
+        "instanceId": "instance:model.SkipSegmentation.refinement.1",
+        "callCount": 1,
+        "callId": "call:instance:model.SkipSegmentation.refinement.1",
+        "source": {
+          "path": "model.py",
+          "line": 51,
+          "endLine": 51,
+          "expression": "block(skip)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.SkipSegmentation.refinement.1:call:instance:model.SkipSegmentation.refinement.1:in:image:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.refinement.1",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.refinement.1:in:image",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.refinement.1",
+              "portId": "call:instance:model.SkipSegmentation.refinement.1:in:image"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:5"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "image",
+          "x": 237,
+          "y": 726,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 140,
+      "y": 797,
+      "width": 194,
+      "height": 62,
+      "localX": 30,
+      "localY": 71,
+      "id": "call:instance:model.SkipSegmentation.refinement.1.conv",
+      "parentId": "call:instance:model.SkipSegmentation.refinement.1",
+      "label": "conv",
+      "subtitle": "Conv2d",
+      "headerHeight": 46,
+      "kind": "Conv2d",
+      "category": "convolution",
+      "fill": "#edf2fa",
+      "stroke": "#7e95b5",
+      "glyph": "module",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.SkipSegmentation.refinement.1.conv",
+        "sourceLabel": "conv",
+        "kind": "Conv2d",
+        "category": "convolution",
+        "evidence": "contract",
+        "instanceId": "instance:model.SkipSegmentation.refinement.1.conv",
+        "callCount": 1,
+        "callId": "call:instance:model.SkipSegmentation.refinement.1.conv",
+        "source": {
+          "path": "model.py",
+          "line": 33,
+          "endLine": 33,
+          "expression": "self.conv(image)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.SkipSegmentation.refinement.1.conv:call:instance:model.SkipSegmentation.refinement.1.conv:in:input:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.refinement.1.conv",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.refinement.1.conv:in:input",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.refinement.1.conv",
+              "portId": "call:instance:model.SkipSegmentation.refinement.1.conv:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:6"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "input",
+          "x": 237,
+          "y": 797,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.SkipSegmentation.refinement.1.conv:call:instance:model.SkipSegmentation.refinement.1.conv:out:output:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.refinement.1.conv",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.refinement.1.conv:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.refinement.1.conv",
+              "portId": "call:instance:model.SkipSegmentation.refinement.1.conv:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:7"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 237,
+          "y": 859,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 140,
+      "y": 897,
+      "width": 194,
+      "height": 62,
+      "localX": 30,
+      "localY": 171,
+      "id": "call:instance:model.SkipSegmentation.refinement.1.activation",
+      "parentId": "call:instance:model.SkipSegmentation.refinement.1",
+      "label": "activation",
+      "subtitle": "ReLU",
+      "headerHeight": 46,
+      "kind": "ReLU",
+      "category": "activation",
+      "fill": "#f9eddc",
+      "stroke": "#c9a272",
+      "glyph": "operator",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.SkipSegmentation.refinement.1.activation",
+        "sourceLabel": "activation",
+        "kind": "ReLU",
+        "category": "activation",
+        "evidence": "contract",
+        "instanceId": "instance:model.SkipSegmentation.refinement.1.activation",
+        "callCount": 1,
+        "callId": "call:instance:model.SkipSegmentation.refinement.1.activation",
+        "source": {
+          "path": "model.py",
+          "line": 33,
+          "endLine": 33,
+          "expression": "self.activation(self.conv(image))"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.SkipSegmentation.refinement.1.activation:call:instance:model.SkipSegmentation.refinement.1.activation:in:input:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.refinement.1.activation",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.refinement.1.activation:in:input",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.refinement.1.activation",
+              "portId": "call:instance:model.SkipSegmentation.refinement.1.activation:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:7"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "input",
+          "x": 237,
+          "y": 897,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.SkipSegmentation.refinement.1.activation:call:instance:model.SkipSegmentation.refinement.1.activation:out:output:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.refinement.1.activation",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.refinement.1.activation:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.refinement.1.activation",
+              "portId": "call:instance:model.SkipSegmentation.refinement.1.activation:out:output"
+            },
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.refinement.1.activation",
+              "portId": "call:instance:model.SkipSegmentation.refinement.1.activation:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:8",
+            "edge:11"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 237,
+          "y": 959,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 80,
+      "y": 1057,
+      "width": 194,
+      "height": 62,
+      "localX": 30,
+      "localY": 965,
+      "id": "call:instance:model.SkipSegmentation.downsample",
+      "parentId": "call:instance:model.SkipSegmentation",
+      "label": "downsample",
+      "subtitle": "MaxPool2d",
+      "headerHeight": 46,
+      "kind": "MaxPool2d",
+      "category": "pooling",
+      "fill": "#edf2fa",
+      "stroke": "#7e95b5",
+      "glyph": "module",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.SkipSegmentation.downsample",
+        "sourceLabel": "downsample",
+        "kind": "MaxPool2d",
+        "category": "pooling",
+        "evidence": "contract",
+        "instanceId": "instance:model.SkipSegmentation.downsample",
+        "callCount": 1,
+        "callId": "call:instance:model.SkipSegmentation.downsample",
+        "source": {
+          "path": "model.py",
+          "line": 52,
+          "endLine": 52,
+          "expression": "self.downsample(skip)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.SkipSegmentation.downsample:call:instance:model.SkipSegmentation.downsample:in:input:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.downsample",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.downsample:in:input",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.downsample",
+              "portId": "call:instance:model.SkipSegmentation.downsample:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:8"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "input",
+          "x": 177,
+          "y": 1057,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.SkipSegmentation.downsample:call:instance:model.SkipSegmentation.downsample:out:output:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.downsample",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.downsample:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.downsample",
+              "portId": "call:instance:model.SkipSegmentation.downsample:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:9"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 177,
+          "y": 1119,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 80,
+      "y": 1157,
+      "width": 194,
+      "height": 62,
+      "localX": 30,
+      "localY": 1065,
+      "id": "call:instance:model.SkipSegmentation.bottleneck",
+      "parentId": "call:instance:model.SkipSegmentation",
+      "label": "bottleneck",
+      "subtitle": "Conv2d",
+      "headerHeight": 46,
+      "kind": "Conv2d",
+      "category": "convolution",
+      "fill": "#edf2fa",
+      "stroke": "#7e95b5",
+      "glyph": "module",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.SkipSegmentation.bottleneck",
+        "sourceLabel": "bottleneck",
+        "kind": "Conv2d",
+        "category": "convolution",
+        "evidence": "contract",
+        "instanceId": "instance:model.SkipSegmentation.bottleneck",
+        "callCount": 1,
+        "callId": "call:instance:model.SkipSegmentation.bottleneck",
+        "source": {
+          "path": "model.py",
+          "line": 52,
+          "endLine": 52,
+          "expression": "self.bottleneck(self.downsample(skip))"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.SkipSegmentation.bottleneck:call:instance:model.SkipSegmentation.bottleneck:in:input:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.bottleneck",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.bottleneck:in:input",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.bottleneck",
+              "portId": "call:instance:model.SkipSegmentation.bottleneck:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:9"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "input",
+          "x": 177,
+          "y": 1157,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.SkipSegmentation.bottleneck:call:instance:model.SkipSegmentation.bottleneck:out:output:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.bottleneck",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.bottleneck:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.bottleneck",
+              "portId": "call:instance:model.SkipSegmentation.bottleneck:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:10"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 177,
+          "y": 1219,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 80,
+      "y": 1257,
+      "width": 218.8,
+      "height": 62,
+      "localX": 30,
+      "localY": 1165,
+      "id": "call:instance:model.SkipSegmentation.upsample",
+      "parentId": "call:instance:model.SkipSegmentation",
+      "label": "Reviewed source object",
+      "subtitle": "unresolved · opaque boundary",
+      "headerHeight": 55,
+      "kind": "ConvTranspose2d",
+      "category": "opaque",
+      "fill": "#cddfda",
+      "stroke": "#a6a09a",
+      "glyph": "opaque",
+      "expanded": false,
+      "expandable": false,
+      "pinned": true,
+      "evidence": "opaque",
+      "sourceFact": {
+        "id": "call:instance:model.SkipSegmentation.upsample",
+        "sourceLabel": "upsample",
+        "kind": "ConvTranspose2d",
+        "category": "opaque",
+        "evidence": "opaque",
+        "instanceId": "instance:model.SkipSegmentation.upsample",
+        "callCount": 1,
+        "callId": "call:instance:model.SkipSegmentation.upsample",
+        "source": {
+          "path": "model.py",
+          "line": 53,
+          "endLine": 53,
+          "expression": "self.upsample(coarse)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.SkipSegmentation.upsample:call:instance:model.SkipSegmentation.upsample:in:arg0:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.upsample",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.upsample:in:arg0",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.upsample",
+              "portId": "call:instance:model.SkipSegmentation.upsample:in:arg0"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:10"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "arg0",
+          "x": 189.4,
+          "y": 1257,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.SkipSegmentation.upsample:call:instance:model.SkipSegmentation.upsample:out:output:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.upsample",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.upsample:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.upsample",
+              "portId": "call:instance:model.SkipSegmentation.upsample:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:12"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 189.4,
+          "y": 1319,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 80,
+      "y": 1357,
+      "width": 194,
+      "height": 62,
+      "localX": 30,
+      "localY": 1265,
+      "id": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662",
+      "parentId": "call:instance:model.SkipSegmentation",
+      "label": "Concat",
+      "subtitle": "Concat",
+      "headerHeight": 46,
+      "kind": "Concat",
+      "category": "operator",
+      "fill": "#edf2fa",
+      "stroke": "#7e95b5",
+      "glyph": "module",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662",
+        "sourceLabel": "Concat",
+        "kind": "Concat",
+        "category": "operator",
+        "evidence": "contract",
+        "source": {
+          "path": "model.py",
+          "line": 54,
+          "endLine": 54,
+          "expression": "torch.cat((skip, restored), dim=1)"
+        }
+      },
+      "ports": [
+        {
+          "id": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662:op:call:instance:model.SkipSegmentation:Concat:81baa7a662:in:arg0:data",
+          "canonicalNodeId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662",
+          "canonicalPortId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662:in:arg0",
+          "canonicalBindings": [
+            {
+              "nodeId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662",
+              "portId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662:in:arg0"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:11"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "arg0",
+          "x": 144.66666666666669,
+          "y": 1357,
+          "proxy": false
+        },
+        {
+          "id": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662:op:call:instance:model.SkipSegmentation:Concat:81baa7a662:in:arg0.1:data",
+          "canonicalNodeId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662",
+          "canonicalPortId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662:in:arg0.1",
+          "canonicalBindings": [
+            {
+              "nodeId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662",
+              "portId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662:in:arg0.1"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:12"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "arg0.1",
+          "x": 209.33333333333334,
+          "y": 1357,
+          "proxy": false
+        },
+        {
+          "id": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662:op:call:instance:model.SkipSegmentation:Concat:81baa7a662:out:output:data",
+          "canonicalNodeId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662",
+          "canonicalPortId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662",
+              "portId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:13"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 177,
+          "y": 1419,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 80,
+      "y": 1457,
+      "width": 194,
+      "height": 62,
+      "localX": 30,
+      "localY": 1365,
+      "id": "call:instance:model.SkipSegmentation.head",
+      "parentId": "call:instance:model.SkipSegmentation",
+      "label": "head",
+      "subtitle": "Conv2d",
+      "headerHeight": 46,
+      "kind": "Conv2d",
+      "category": "convolution",
+      "fill": "#edf2fa",
+      "stroke": "#7e95b5",
+      "glyph": "module",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "contract",
+      "sourceFact": {
+        "id": "call:instance:model.SkipSegmentation.head",
+        "sourceLabel": "head",
+        "kind": "Conv2d",
+        "category": "convolution",
+        "evidence": "contract",
+        "instanceId": "instance:model.SkipSegmentation.head",
+        "callCount": 1,
+        "callId": "call:instance:model.SkipSegmentation.head",
+        "source": {
+          "path": "model.py",
+          "line": 55,
+          "endLine": 55,
+          "expression": "self.head(merged)"
+        }
+      },
+      "ports": [
+        {
+          "id": "call:instance:model.SkipSegmentation.head:call:instance:model.SkipSegmentation.head:in:input:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.head",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.head:in:input",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.head",
+              "portId": "call:instance:model.SkipSegmentation.head:in:input"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:13"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "input",
+          "x": 177,
+          "y": 1457,
+          "proxy": false
+        },
+        {
+          "id": "call:instance:model.SkipSegmentation.head:call:instance:model.SkipSegmentation.head:out:output:data",
+          "canonicalNodeId": "call:instance:model.SkipSegmentation.head",
+          "canonicalPortId": "call:instance:model.SkipSegmentation.head:out:output",
+          "canonicalBindings": [
+            {
+              "nodeId": "call:instance:model.SkipSegmentation.head",
+              "portId": "call:instance:model.SkipSegmentation.head:out:output"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:14"
+          ],
+          "direction": "out",
+          "role": "data",
+          "name": "output",
+          "x": 177,
+          "y": 1519,
+          "proxy": false
+        }
+      ]
+    },
+    {
+      "x": 80,
+      "y": 1557,
+      "width": 194,
+      "height": 62,
+      "localX": 30,
+      "localY": 1465,
+      "id": "output:model.SkipSegmentation:0",
+      "parentId": "call:instance:model.SkipSegmentation",
+      "label": "output",
+      "subtitle": "return",
+      "headerHeight": 46,
+      "kind": "Output",
+      "category": "output",
+      "fill": "#eef2f5",
+      "stroke": "#98a6b1",
+      "glyph": "tensor",
+      "expanded": false,
+      "expandable": false,
+      "pinned": false,
+      "evidence": "source",
+      "sourceFact": {
+        "id": "output:model.SkipSegmentation:0",
+        "sourceLabel": "output",
+        "kind": "Output",
+        "category": "output",
+        "evidence": "source",
+        "outputPath": [],
+        "source": {
+          "path": "model.py",
+          "line": 48,
+          "endLine": 55,
+          "expression": "def forward(self, image):\n        skip = self.stem(image)\n        for block in self.refinement:\n            skip = block(skip)\n        coarse = self.bottleneck(self.downsample(skip))\n        restored = self.upsample(coarse)\n        merged = torch.cat((skip, restored), dim=1)\n        return self.head(merged)"
+        }
+      },
+      "ports": [
+        {
+          "id": "output:model.SkipSegmentation:0:output:model.SkipSegmentation:0:in:value:data",
+          "canonicalNodeId": "output:model.SkipSegmentation:0",
+          "canonicalPortId": "output:model.SkipSegmentation:0:in:value",
+          "canonicalBindings": [
+            {
+              "nodeId": "output:model.SkipSegmentation:0",
+              "portId": "output:model.SkipSegmentation:0:in:value"
+            }
+          ],
+          "canonicalEdgeIds": [
+            "edge:14"
+          ],
+          "direction": "in",
+          "role": "data",
+          "name": "value",
+          "x": 177,
+          "y": 1557,
+          "proxy": false
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge:1",
+      "sourceId": "input:model.SkipSegmentation:image",
+      "targetId": "call:instance:model.SkipSegmentation.stem",
+      "source": {
+        "nodeId": "input:model.SkipSegmentation:image",
+        "portId": "input:model.SkipSegmentation:image:out:image"
+      },
+      "target": {
+        "nodeId": "call:instance:model.SkipSegmentation.stem",
+        "portId": "call:instance:model.SkipSegmentation.stem:in:input"
+      },
+      "canonicalEdgeIds": [
+        "edge:1"
+      ],
+      "tensorId": "tensor:input:model.SkipSegmentation:image:image",
+      "role": "data",
+      "path": "M 177 225 V 244 H 177 V 263",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 185,
+      "labelY": 237
+    },
+    {
+      "id": "edge:2",
+      "sourceId": "call:instance:model.SkipSegmentation.stem",
+      "targetId": "call:instance:model.SkipSegmentation.refinement.0",
+      "source": {
+        "nodeId": "call:instance:model.SkipSegmentation.stem",
+        "portId": "call:instance:model.SkipSegmentation.stem:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.SkipSegmentation.refinement.0",
+        "portId": "call:instance:model.SkipSegmentation.refinement.0:in:image"
+      },
+      "canonicalEdgeIds": [
+        "edge:2"
+      ],
+      "tensorId": "tensor:call:instance:model.SkipSegmentation.stem:output",
+      "role": "data",
+      "path": "M 177 325 V 331 H 74 V 419 H 237 V 425",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 162.5,
+      "labelY": 412
+    },
+    {
+      "id": "edge:3",
+      "sourceId": "call:instance:model.SkipSegmentation.stem",
+      "targetId": "call:instance:model.SkipSegmentation.refinement.0.conv",
+      "source": {
+        "nodeId": "call:instance:model.SkipSegmentation.stem",
+        "portId": "call:instance:model.SkipSegmentation.stem:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.SkipSegmentation.refinement.0.conv",
+        "portId": "call:instance:model.SkipSegmentation.refinement.0.conv:in:input"
+      },
+      "canonicalEdgeIds": [
+        "edge:3"
+      ],
+      "tensorId": "tensor:call:instance:model.SkipSegmentation.stem:output",
+      "role": "data",
+      "path": "M 177 325 V 331 H 74 V 490 H 237 V 496",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 162.5,
+      "labelY": 483
+    },
+    {
+      "id": "edge:4",
+      "sourceId": "call:instance:model.SkipSegmentation.refinement.0.conv",
+      "targetId": "call:instance:model.SkipSegmentation.refinement.0.activation",
+      "source": {
+        "nodeId": "call:instance:model.SkipSegmentation.refinement.0.conv",
+        "portId": "call:instance:model.SkipSegmentation.refinement.0.conv:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.SkipSegmentation.refinement.0.activation",
+        "portId": "call:instance:model.SkipSegmentation.refinement.0.activation:in:input"
+      },
+      "canonicalEdgeIds": [
+        "edge:4"
+      ],
+      "tensorId": "tensor:call:instance:model.SkipSegmentation.refinement.0.conv:output",
+      "role": "data",
+      "path": "M 237 558 V 577 H 237 V 596",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 245,
+      "labelY": 570
+    },
+    {
+      "id": "edge:5",
+      "sourceId": "call:instance:model.SkipSegmentation.refinement.0.activation",
+      "targetId": "call:instance:model.SkipSegmentation.refinement.1",
+      "source": {
+        "nodeId": "call:instance:model.SkipSegmentation.refinement.0.activation",
+        "portId": "call:instance:model.SkipSegmentation.refinement.0.activation:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.SkipSegmentation.refinement.1",
+        "portId": "call:instance:model.SkipSegmentation.refinement.1:in:image"
+      },
+      "canonicalEdgeIds": [
+        "edge:5"
+      ],
+      "tensorId": "tensor:call:instance:model.SkipSegmentation.refinement.0.activation:output",
+      "role": "data",
+      "path": "M 237 658 V 692 H 237 V 726",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 245,
+      "labelY": 685
+    },
+    {
+      "id": "edge:6",
+      "sourceId": "call:instance:model.SkipSegmentation.refinement.0.activation",
+      "targetId": "call:instance:model.SkipSegmentation.refinement.1.conv",
+      "source": {
+        "nodeId": "call:instance:model.SkipSegmentation.refinement.0.activation",
+        "portId": "call:instance:model.SkipSegmentation.refinement.0.activation:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.SkipSegmentation.refinement.1.conv",
+        "portId": "call:instance:model.SkipSegmentation.refinement.1.conv:in:input"
+      },
+      "canonicalEdgeIds": [
+        "edge:6"
+      ],
+      "tensorId": "tensor:call:instance:model.SkipSegmentation.refinement.0.activation:output",
+      "role": "data",
+      "path": "M 237 658 V 664 H 104 V 791 H 237 V 797",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 177.5,
+      "labelY": 657
+    },
+    {
+      "id": "edge:7",
+      "sourceId": "call:instance:model.SkipSegmentation.refinement.1.conv",
+      "targetId": "call:instance:model.SkipSegmentation.refinement.1.activation",
+      "source": {
+        "nodeId": "call:instance:model.SkipSegmentation.refinement.1.conv",
+        "portId": "call:instance:model.SkipSegmentation.refinement.1.conv:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.SkipSegmentation.refinement.1.activation",
+        "portId": "call:instance:model.SkipSegmentation.refinement.1.activation:in:input"
+      },
+      "canonicalEdgeIds": [
+        "edge:7"
+      ],
+      "tensorId": "tensor:call:instance:model.SkipSegmentation.refinement.1.conv:output",
+      "role": "data",
+      "path": "M 237 859 V 878 H 237 V 897",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 245,
+      "labelY": 871
+    },
+    {
+      "id": "edge:8",
+      "sourceId": "call:instance:model.SkipSegmentation.refinement.1.activation",
+      "targetId": "call:instance:model.SkipSegmentation.downsample",
+      "source": {
+        "nodeId": "call:instance:model.SkipSegmentation.refinement.1.activation",
+        "portId": "call:instance:model.SkipSegmentation.refinement.1.activation:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.SkipSegmentation.downsample",
+        "portId": "call:instance:model.SkipSegmentation.downsample:in:input"
+      },
+      "canonicalEdgeIds": [
+        "edge:8"
+      ],
+      "tensorId": "tensor:call:instance:model.SkipSegmentation.refinement.1.activation:output",
+      "role": "data",
+      "path": "M 237 959 V 1008 H 177 V 1057",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 215,
+      "labelY": 1001
+    },
+    {
+      "id": "edge:9",
+      "sourceId": "call:instance:model.SkipSegmentation.downsample",
+      "targetId": "call:instance:model.SkipSegmentation.bottleneck",
+      "source": {
+        "nodeId": "call:instance:model.SkipSegmentation.downsample",
+        "portId": "call:instance:model.SkipSegmentation.downsample:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.SkipSegmentation.bottleneck",
+        "portId": "call:instance:model.SkipSegmentation.bottleneck:in:input"
+      },
+      "canonicalEdgeIds": [
+        "edge:9"
+      ],
+      "tensorId": "tensor:call:instance:model.SkipSegmentation.downsample:output",
+      "role": "data",
+      "path": "M 177 1119 V 1138 H 177 V 1157",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 185,
+      "labelY": 1131
+    },
+    {
+      "id": "edge:10",
+      "sourceId": "call:instance:model.SkipSegmentation.bottleneck",
+      "targetId": "call:instance:model.SkipSegmentation.upsample",
+      "source": {
+        "nodeId": "call:instance:model.SkipSegmentation.bottleneck",
+        "portId": "call:instance:model.SkipSegmentation.bottleneck:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.SkipSegmentation.upsample",
+        "portId": "call:instance:model.SkipSegmentation.upsample:in:arg0"
+      },
+      "canonicalEdgeIds": [
+        "edge:10"
+      ],
+      "tensorId": "tensor:call:instance:model.SkipSegmentation.bottleneck:output",
+      "role": "data",
+      "path": "M 177 1219 V 1238 H 189.4 V 1257",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 191.2,
+      "labelY": 1231
+    },
+    {
+      "id": "edge:11",
+      "sourceId": "call:instance:model.SkipSegmentation.refinement.1.activation",
+      "targetId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662",
+      "source": {
+        "nodeId": "call:instance:model.SkipSegmentation.refinement.1.activation",
+        "portId": "call:instance:model.SkipSegmentation.refinement.1.activation:out:output"
+      },
+      "target": {
+        "nodeId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662",
+        "portId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662:in:arg0"
+      },
+      "canonicalEdgeIds": [
+        "edge:11"
+      ],
+      "tensorId": "tensor:call:instance:model.SkipSegmentation.refinement.1.activation:output",
+      "role": "data",
+      "path": "M 237 959 V 965 H 304.8 V 1351 H 144.67 V 1357",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 311.8,
+      "labelY": 1151
+    },
+    {
+      "id": "edge:12",
+      "sourceId": "call:instance:model.SkipSegmentation.upsample",
+      "targetId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662",
+      "source": {
+        "nodeId": "call:instance:model.SkipSegmentation.upsample",
+        "portId": "call:instance:model.SkipSegmentation.upsample:out:output"
+      },
+      "target": {
+        "nodeId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662",
+        "portId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662:in:arg0.1"
+      },
+      "canonicalEdgeIds": [
+        "edge:12"
+      ],
+      "tensorId": "tensor:call:instance:model.SkipSegmentation.upsample:output",
+      "role": "data",
+      "path": "M 189.4 1319 V 1338 H 209.3 V 1357",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 207.36666666666667,
+      "labelY": 1331
+    },
+    {
+      "id": "edge:13",
+      "sourceId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662",
+      "targetId": "call:instance:model.SkipSegmentation.head",
+      "source": {
+        "nodeId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662",
+        "portId": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662:out:output"
+      },
+      "target": {
+        "nodeId": "call:instance:model.SkipSegmentation.head",
+        "portId": "call:instance:model.SkipSegmentation.head:in:input"
+      },
+      "canonicalEdgeIds": [
+        "edge:13"
+      ],
+      "tensorId": "tensor:op:call:instance:model.SkipSegmentation:Concat:81baa7a662:output",
+      "role": "data",
+      "path": "M 177 1419 V 1438 H 177 V 1457",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 185,
+      "labelY": 1431
+    },
+    {
+      "id": "edge:14",
+      "sourceId": "call:instance:model.SkipSegmentation.head",
+      "targetId": "output:model.SkipSegmentation:0",
+      "source": {
+        "nodeId": "call:instance:model.SkipSegmentation.head",
+        "portId": "call:instance:model.SkipSegmentation.head:out:output"
+      },
+      "target": {
+        "nodeId": "output:model.SkipSegmentation:0",
+        "portId": "output:model.SkipSegmentation:0:in:value"
+      },
+      "canonicalEdgeIds": [
+        "edge:14"
+      ],
+      "tensorId": "tensor:call:instance:model.SkipSegmentation.head:output",
+      "role": "data",
+      "path": "M 177 1519 V 1538 H 177 V 1557",
+      "stroke": "#718495",
+      "width": 1.5,
+      "dashed": false,
+      "label": "",
+      "labelX": 185,
+      "labelY": 1531
+    }
+  ],
+  "hiddenEdges": [
+    "edge:0"
+  ],
+  "legend": [
+    {
+      "id": "legend:input",
+      "label": "Input",
+      "color": "#eef2f5",
+      "glyph": "tensor",
+      "x": 50,
+      "y": 1701
+    },
+    {
+      "id": "legend:container",
+      "label": "Container",
+      "color": "#f5f8fc",
+      "glyph": "module",
+      "x": 235,
+      "y": 1701
+    },
+    {
+      "id": "legend:activation",
+      "label": "Activation",
+      "color": "#f9eddc",
+      "glyph": "operator",
+      "x": 420,
+      "y": 1701
+    },
+    {
+      "id": "legend:opaque",
+      "label": "Opaque",
+      "color": "#f5f3f1",
+      "glyph": "opaque",
+      "x": 50,
+      "y": 1728
+    },
+    {
+      "id": "legend:output",
+      "label": "Output",
+      "color": "#eef2f5",
+      "glyph": "tensor",
+      "x": 235,
+      "y": 1728
+    }
+  ],
+  "annotations": [],
+  "pageSpec": {
+    "widthMm": 85,
+    "background": "#ffffff",
+    "preset": "paper"
+  },
+  "sourceDigest": "3a6976a808974cfbb911cf2bab8c44b7d302c20c0e28046e1a9e7002fe51b667",
+  "irDigest": "ecfdb4422c2e5bc37e53a1fa5e70efdd4c02d3563c400568d78e63c10d236c24",
+  "sourceFacts": [
+    {
+      "id": "input:model.SkipSegmentation:image",
+      "sourceLabel": "image",
+      "kind": "Input",
+      "category": "input",
+      "evidence": "source",
+      "source": {
+        "path": "model.py",
+        "line": 48,
+        "endLine": 55,
+        "expression": "def forward(self, image):\n        skip = self.stem(image)\n        for block in self.refinement:\n            skip = block(skip)\n        coarse = self.bottleneck(self.downsample(skip))\n        restored = self.upsample(coarse)\n        merged = torch.cat((skip, restored), dim=1)\n        return self.head(merged)"
+      }
+    },
+    {
+      "id": "call:instance:model.SkipSegmentation",
+      "sourceLabel": "SkipSegmentation",
+      "kind": "Module",
+      "category": "container",
+      "evidence": "source",
+      "instanceId": "instance:model.SkipSegmentation",
+      "callCount": 1,
+      "callId": "call:instance:model.SkipSegmentation",
+      "source": {
+        "path": "model.py",
+        "line": 36,
+        "endLine": 55,
+        "expression": "class SkipSegmentation(nn.Module):\n    \"\"\"A U-Net-style skip/concat source; transposed convolution is opaque.\"\"\"\n\n    def __init__(self):\n        super().__init__()\n        self.stem = nn.Conv2d(3, 8, 3, padding=1)\n        self.refinement = nn.ModuleList([ConvRefinement(8) for _ in range(2)])\n        self.downsample = nn.MaxPool2d(2)\n        self.bottleneck = nn.Conv2d(8, 16, 3, padding=1)\n        self.upsample = nn.ConvTranspose2d(16, 8, 2, stride=2)\n        self.head = nn.Conv2d(16, 2, 1)\n\n    def forward(self, image):\n        skip = self.stem(image)\n        for block in self.refinement:\n            skip = block(skip)\n        coarse = self.bottleneck(self.downsample(skip))\n        restored = self.upsample(coarse)\n        merged = torch.cat((skip, restored), dim=1)\n        return self.head(merged)"
+      }
+    },
+    {
+      "id": "call:instance:model.SkipSegmentation.stem",
+      "sourceLabel": "stem",
+      "kind": "Conv2d",
+      "category": "convolution",
+      "evidence": "contract",
+      "instanceId": "instance:model.SkipSegmentation.stem",
+      "callCount": 1,
+      "callId": "call:instance:model.SkipSegmentation.stem",
+      "source": {
+        "path": "model.py",
+        "line": 49,
+        "endLine": 49,
+        "expression": "self.stem(image)"
+      }
+    },
+    {
+      "id": "repeat:instance:model.SkipSegmentation.refinement",
+      "sourceLabel": "refinement",
+      "kind": "Repeat",
+      "category": "container",
+      "evidence": "source",
+      "repeat": {
+        "count": 2,
+        "sharing": "independent"
+      },
+      "source": {
+        "path": "model.py",
+        "line": 50,
+        "endLine": 51,
+        "expression": "for block in self.refinement:\n            skip = block(skip)"
+      }
+    },
+    {
+      "id": "call:instance:model.SkipSegmentation.refinement.0",
+      "sourceLabel": "ConvRefinement 1",
+      "kind": "Module",
+      "category": "container",
+      "evidence": "source",
+      "instanceId": "instance:model.SkipSegmentation.refinement.0",
+      "callCount": 1,
+      "callId": "call:instance:model.SkipSegmentation.refinement.0",
+      "source": {
+        "path": "model.py",
+        "line": 51,
+        "endLine": 51,
+        "expression": "block(skip)"
+      }
+    },
+    {
+      "id": "call:instance:model.SkipSegmentation.refinement.0.conv",
+      "sourceLabel": "conv",
+      "kind": "Conv2d",
+      "category": "convolution",
+      "evidence": "contract",
+      "instanceId": "instance:model.SkipSegmentation.refinement.0.conv",
+      "callCount": 1,
+      "callId": "call:instance:model.SkipSegmentation.refinement.0.conv",
+      "source": {
+        "path": "model.py",
+        "line": 33,
+        "endLine": 33,
+        "expression": "self.conv(image)"
+      }
+    },
+    {
+      "id": "call:instance:model.SkipSegmentation.refinement.0.activation",
+      "sourceLabel": "activation",
+      "kind": "ReLU",
+      "category": "activation",
+      "evidence": "contract",
+      "instanceId": "instance:model.SkipSegmentation.refinement.0.activation",
+      "callCount": 1,
+      "callId": "call:instance:model.SkipSegmentation.refinement.0.activation",
+      "source": {
+        "path": "model.py",
+        "line": 33,
+        "endLine": 33,
+        "expression": "self.activation(self.conv(image))"
+      }
+    },
+    {
+      "id": "call:instance:model.SkipSegmentation.refinement.1",
+      "sourceLabel": "ConvRefinement 2",
+      "kind": "Module",
+      "category": "container",
+      "evidence": "source",
+      "instanceId": "instance:model.SkipSegmentation.refinement.1",
+      "callCount": 1,
+      "callId": "call:instance:model.SkipSegmentation.refinement.1",
+      "source": {
+        "path": "model.py",
+        "line": 51,
+        "endLine": 51,
+        "expression": "block(skip)"
+      }
+    },
+    {
+      "id": "call:instance:model.SkipSegmentation.refinement.1.conv",
+      "sourceLabel": "conv",
+      "kind": "Conv2d",
+      "category": "convolution",
+      "evidence": "contract",
+      "instanceId": "instance:model.SkipSegmentation.refinement.1.conv",
+      "callCount": 1,
+      "callId": "call:instance:model.SkipSegmentation.refinement.1.conv",
+      "source": {
+        "path": "model.py",
+        "line": 33,
+        "endLine": 33,
+        "expression": "self.conv(image)"
+      }
+    },
+    {
+      "id": "call:instance:model.SkipSegmentation.refinement.1.activation",
+      "sourceLabel": "activation",
+      "kind": "ReLU",
+      "category": "activation",
+      "evidence": "contract",
+      "instanceId": "instance:model.SkipSegmentation.refinement.1.activation",
+      "callCount": 1,
+      "callId": "call:instance:model.SkipSegmentation.refinement.1.activation",
+      "source": {
+        "path": "model.py",
+        "line": 33,
+        "endLine": 33,
+        "expression": "self.activation(self.conv(image))"
+      }
+    },
+    {
+      "id": "call:instance:model.SkipSegmentation.downsample",
+      "sourceLabel": "downsample",
+      "kind": "MaxPool2d",
+      "category": "pooling",
+      "evidence": "contract",
+      "instanceId": "instance:model.SkipSegmentation.downsample",
+      "callCount": 1,
+      "callId": "call:instance:model.SkipSegmentation.downsample",
+      "source": {
+        "path": "model.py",
+        "line": 52,
+        "endLine": 52,
+        "expression": "self.downsample(skip)"
+      }
+    },
+    {
+      "id": "call:instance:model.SkipSegmentation.bottleneck",
+      "sourceLabel": "bottleneck",
+      "kind": "Conv2d",
+      "category": "convolution",
+      "evidence": "contract",
+      "instanceId": "instance:model.SkipSegmentation.bottleneck",
+      "callCount": 1,
+      "callId": "call:instance:model.SkipSegmentation.bottleneck",
+      "source": {
+        "path": "model.py",
+        "line": 52,
+        "endLine": 52,
+        "expression": "self.bottleneck(self.downsample(skip))"
+      }
+    },
+    {
+      "id": "call:instance:model.SkipSegmentation.upsample",
+      "sourceLabel": "upsample",
+      "kind": "ConvTranspose2d",
+      "category": "opaque",
+      "evidence": "opaque",
+      "instanceId": "instance:model.SkipSegmentation.upsample",
+      "callCount": 1,
+      "callId": "call:instance:model.SkipSegmentation.upsample",
+      "source": {
+        "path": "model.py",
+        "line": 53,
+        "endLine": 53,
+        "expression": "self.upsample(coarse)"
+      }
+    },
+    {
+      "id": "op:call:instance:model.SkipSegmentation:Concat:81baa7a662",
+      "sourceLabel": "Concat",
+      "kind": "Concat",
+      "category": "operator",
+      "evidence": "contract",
+      "source": {
+        "path": "model.py",
+        "line": 54,
+        "endLine": 54,
+        "expression": "torch.cat((skip, restored), dim=1)"
+      }
+    },
+    {
+      "id": "call:instance:model.SkipSegmentation.head",
+      "sourceLabel": "head",
+      "kind": "Conv2d",
+      "category": "convolution",
+      "evidence": "contract",
+      "instanceId": "instance:model.SkipSegmentation.head",
+      "callCount": 1,
+      "callId": "call:instance:model.SkipSegmentation.head",
+      "source": {
+        "path": "model.py",
+        "line": 55,
+        "endLine": 55,
+        "expression": "self.head(merged)"
+      }
+    },
+    {
+      "id": "output:model.SkipSegmentation:0",
+      "sourceLabel": "output",
+      "kind": "Output",
+      "category": "output",
+      "evidence": "source",
+      "outputPath": [],
+      "source": {
+        "path": "model.py",
+        "line": 48,
+        "endLine": 55,
+        "expression": "def forward(self, image):\n        skip = self.stem(image)\n        for block in self.refinement:\n            skip = block(skip)\n        coarse = self.bottleneck(self.downsample(skip))\n        restored = self.upsample(coarse)\n        merged = torch.cat((skip, restored), dim=1)\n        return self.head(merged)"
+      }
+    }
+  ],
+  "diagnostics": [
+    {
+      "level": "info",
+      "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+    },
+    {
+      "level": "warning",
+      "message": "Unknown constructor torch.nn.ConvTranspose2d at model.py:45; no type semantics inferred from its name."
+    }
+  ]
+}

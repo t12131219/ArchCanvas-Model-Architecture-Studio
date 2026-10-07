@@ -1,0 +1,669 @@
+--- before/studio/src/core/exportScene.ts
++++ current/studio/src/core/exportScene.ts
+@@ -1,4 +1,4 @@
+-import { buildScene } from './scene.ts';
++import { buildScene, buildSceneRouteBaseline } from './scene.ts';
+ import { renderSvg } from './svg.ts';
+ import { validateDocument, ValidationError } from './validate.ts';
+ import { CATEGORY_STYLES } from './tokens.ts';
+@@ -8,6 +8,7 @@
+ import { createOrthogonalRouter, orthogonalPathPoints } from './orthogonalRouter.ts';
+ import { nodeVisualOutline, projectVisualPort, visualPortSide } from './nodeVisualOutline.ts';
+ import { edgeLabelBounds, placeEdgeLabels } from './edgeLabelPlacement.ts';
++import { projectMemoryContinuity } from './memoryContinuity.ts';
+ import type { ArchitectureEdge, CanvasDocument, DetailExportScope, ExportSceneOptions, Scene, SceneNode, ScenePort } from './types.ts';
+ 
+ function pathPoints(path: string): { x: number; y: number }[] {
+@@ -30,7 +31,9 @@
+   if (Object.keys(options).some(key => !['nodeId', 'widthMm'].includes(key))) throw new ValidationError('Unknown export scene option');
+   const widthMm = options.widthMm ?? document.pageSpec.widthMm;
+   if (typeof widthMm !== 'number' || !Number.isFinite(widthMm) || widthMm < 25 || widthMm > 1000) throw new ValidationError('Export width must be within 25–1000 mm');
+-  const scene = buildScene(document);
++  // A detail has its own full routed peer batch. Changing whole-scene memory
++  // inputs before that batch could move unrelated detail paths.
++  const scene = options.nodeId === undefined ? buildScene(document) : buildSceneRouteBaseline(document);
+   scene.pageSpec = { ...scene.pageSpec, widthMm };
+   if (options.nodeId === undefined) return scene;
+   const selected = scene.nodes.find(node => node.id === options.nodeId);
+@@ -121,9 +124,10 @@
+   // boundary row must be an obstacle for earlier incoming/outgoing stubs too.
+   const route = createOrthogonalRouter(nodes), routeDiagnostics: Scene['diagnostics'] = [];
+   const canonicalEdgeById = new Map(architecture.edges.map(edge => [edge.id, edge]));
++  const canonicalEdgeOrder = new Map(architecture.edges.map((edge, index) => [edge.id, index]));
+   for (const overlap of route.overlaps) routeDiagnostics.push({ level: 'warning', code: 'layout-overlap', objectIds: [overlap.first, overlap.second], message: `Detail objects "${overlap.first}" and "${overlap.second}" overlap. Their manual anchors are preserved; move the objects or increase spacing to resolve this layout conflict.` });
+   for (const overlap of route.headerOverlaps) routeDiagnostics.push({ level: 'warning', code: 'layout-header-overlap', objectIds: [overlap.node, overlap.ancestor], message: `Detail object "${overlap.node}" overlaps the header of its expanded ancestor "${overlap.ancestor}". Its manual anchor is preserved; move the object below the header to resolve this layout conflict.` });
+-  const routedEdges = route.batch(edges.map(edge => {
++  const routeRequests = edges.map(edge => {
+     const original = orthogonalPathPoints(edge.path);
+     const sourceNode = nodes.find(node => node.id === edge.sourceId);
+     const sourceSide = sourceNode ? visualPortSide(sourceNode, original[0]) : undefined;
+@@ -141,7 +145,44 @@
+       appearance, canonicalSource: resolved ? { ...exactSource } : undefined, canonicalEdgeIds: edge.canonicalEdgeIds,
+       displaySide: sourceSide,
+       start: original[0], end: original.at(-1)!, preferredPath: edge.path };
+-  }));
++  });
++  const routedEdges = route.batch(routeRequests);
++  const memoryProjections = projectMemoryContinuity(nodes, routeRequests, routedEdges);
++  if (memoryProjections.size) {
++    const movedIds = new Set([...memoryProjections.keys()].flatMap(index => edges[index].canonicalEdgeIds));
++    for (const node of nodes) {
++      for (const port of node.ports) {
++        if (!port.canonicalEdgeIds.some(id => movedIds.has(id))) continue;
++        const retained = port.canonicalEdgeIds.filter(id => !movedIds.has(id));
++        port.canonicalEdgeIds = retained;
++        port.canonicalBindings = [...retained].sort((a, b) => canonicalEdgeOrder.get(a)! - canonicalEdgeOrder.get(b)!).map(id => canonicalEdgeById.get(id)!)
++          .map(edge => port.direction === 'out' ? edge.source : edge.target);
++      }
++      node.ports = node.ports.filter(port => port.canonicalEdgeIds.length);
++    }
++    for (const [index, projection] of memoryProjections) {
++      const edge = edges[index];
++      for (const direction of ['out', 'in'] as const) {
++        const node = visible.get(direction === 'out' ? edge.sourceId : edge.targetId) ?? nodes.find(n => n.id === (direction === 'out' ? edge.sourceId : edge.targetId))!;
++        const endpoint = direction === 'out' ? edge.source : edge.target;
++        const side = direction === 'out' ? 'right' : 'left';
++        const id = `${endpoint.nodeId}:${endpoint.portId}:${edge.role}:${side}`;
++        let port = node.ports.find(p => p.id === id);
++        const point = projectVisualPort(node, { x: direction === 'out' ? node.x + node.width : node.x, y: node.y + node.height * .55 }, side);
++        if (!port) {
++          const canonicalPort = canonical.get(endpoint.nodeId)!.ports.find(p => p.id === endpoint.portId)!;
++          port = { id, canonicalNodeId: endpoint.nodeId, canonicalPortId: endpoint.portId,
++            canonicalBindings: [], canonicalEdgeIds: [], direction, role: canonicalPort.role, name: canonicalPort.name,
++            ...point, proxy: endpoint.nodeId !== node.id };
++          node.ports.push(port);
++        }
++        for (const id of edge.canonicalEdgeIds) if (!port.canonicalEdgeIds.includes(id)) port.canonicalEdgeIds.push(id);
++        port.canonicalBindings = [...port.canonicalEdgeIds].sort((a, b) => canonicalEdgeOrder.get(a)! - canonicalEdgeOrder.get(b)!).map(id => canonicalEdgeById.get(id)!)
++          .map(item => direction === 'out' ? item.source : item.target);
++      }
++      routedEdges[index] = { path: projection.path, points: projection.points, changed: true, blockedBy: [] };
++    }
++  }
+   edges.forEach((edge, index) => {
+     const routed = routedEdges[index];
+     edge.path = routed.path;
+--- before/studio/src/core/scene.ts
++++ current/studio/src/core/scene.ts
+@@ -6,6 +6,7 @@
+ import { compactOutputPath, sourceNodeFacts } from './nodeFacts.ts';
+ import { createOrthogonalRouter, orthogonalPathPoints } from './orthogonalRouter.ts';
+ import type { RoutePoint, RouteRequest } from './orthogonalRouter.ts';
++import { projectMemoryContinuity } from './memoryContinuity.ts';
+ import { nodeVisualOutline, projectVisualPort } from './nodeVisualOutline.ts';
+ import type { VisualSide } from './nodeVisualOutline.ts';
+ import { edgeLabelBounds, placeEdgeLabels } from './edgeLabelPlacement.ts';
+@@ -29,6 +30,16 @@
+ 
+ /** One deterministic projection used by both interactive display and publication export. */
+ export function buildScene(document: CanvasDocument): Scene {
++  return buildSceneProjection(document, true);
++}
++
++/** Internal same-scene original-policy batch used to compose detail routing
++ * before its own late projection. It is the current formal algorithm. */
++export function buildSceneRouteBaseline(document: CanvasDocument): Scene {
++  return buildSceneProjection(document, false);
++}
++
++function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolean): Scene {
+   const architecture = document.architecture, byId = new Map(architecture.nodes.map(n => [n.id, n]));
+   const sourceFacts = sourceNodeFacts(architecture), factsById = new Map(sourceFacts.map(fact => [fact.id, fact]));
+   const expanded = new Set(document.expandedIds), visible = new Set<string>(), boxes = new Map<string, Box>();
+@@ -273,6 +284,62 @@
+   // Display sides own distinct immutable port projections; every request and
+   // its final public circle use the same endpoint throughout batch routing.
+   const routedEdges = route.batch(routeRequests);
++  // The original complete formal batch remains fixed. A late memory display
++  // projection must be safe against these already routed peers; changing the
++  // input policy and rerunning the batch can perturb unrelated mask/residuals.
++  const memoryProjections = memoryContinuity ? projectMemoryContinuity(nodes, routeRequests, routedEdges) : new Map();
++  if (memoryProjections.size) {
++    for (const [index, projection] of memoryProjections) {
++      displaySides[index] = { source: 'right', target: 'left' };
++      routedEdges[index] = { path: projection.path, points: projection.points, changed: true, blockedBy: [] };
++    }
++    // Coverage belongs to the chosen projected consumers, not merely to a
++    // canonical binding. Retained bottom/side consumers keep their own port.
++    const memoryCoverage = new Map<string, Map<string, Set<string>>>();
++    const memoryDirections = new Map<string, Map<string, 'out' | 'in'>>();
++    for (const [index, item] of projected.entries()) {
++      if (item.e.role !== 'memory') continue;
++      for (const direction of ['out', 'in'] as const) {
++        const owner = direction === 'out' ? item.s : item.t;
++        const binding = direction === 'out' ? item.e.source : item.e.target;
++        const side = direction === 'out' ? displaySides[index].source : displaySides[index].target;
++        const key = JSON.stringify([binding.nodeId, binding.portId, item.e.role, side]);
++        const coverage = memoryCoverage.get(owner) ?? new Map<string, Set<string>>();
++        const ids = coverage.get(key) ?? new Set<string>();
++        for (const id of item.e._canonicalEdgeIds ?? [item.e.id]) ids.add(id);
++        coverage.set(key, ids); memoryCoverage.set(owner, coverage);
++        const directions = memoryDirections.get(owner) ?? new Map<string, 'out' | 'in'>();
++        directions.set(key, direction); memoryDirections.set(owner, directions);
++      }
++    }
++    for (const node of nodes) {
++      const entries = existingPorts.get(node.id);
++      for (const [key, old] of entries ?? []) {
++        if ((JSON.parse(key) as string[])[2] !== 'memory') continue;
++        const ids = memoryCoverage.get(node.id)?.get(key);
++        if (!ids) { node.ports = node.ports.filter(p => p !== old); entries!.delete(key); }
++        else {
++          old.canonicalEdgeIds = [...ids];
++          old.canonicalBindings = [...ids].map(id => canonicalEdges.get(id)!).sort((a, b) => a.index - b.index)
++            .map(({ edge }) => old.direction === 'out' ? edge.source : edge.target);
++        }
++      }
++      for (const [direction, registry] of [['in', incoming], ['out', outgoing]] as const) {
++        const group = registry.get(node.id);
++        if (!group) continue;
++        for (const key of group.canonicalIds.keys()) if ((JSON.parse(key) as string[])[2] === 'memory') group.canonicalIds.delete(key);
++        for (const [key, ids] of memoryCoverage.get(node.id) ?? [])
++          if (memoryDirections.get(node.id)?.get(key) === direction) group.canonicalIds.set(key, ids);
++      }
++    }
++    for (const index of memoryProjections.keys()) {
++      const { e, s, t } = projected[index];
++      port(s, e.source.nodeId, e.source.portId, 'out', e.role, 'right');
++      port(t, e.target.nodeId, e.target.portId, 'in', e.role, 'left');
++      // Existing consumers may still own this side port's exact coordinates.
++      // SVG applies the same two-decimal rounding to circles and route points.
++    }
++  }
+   edges.forEach((edge, index) => {
+     const routed = routedEdges[index]; routePoints.push(...routed.points); edge.path = routed.path;
+     if (routed.changed) {
+--- before/studio/tests/historical-memory-caption-compat.ts
++++ current/studio/tests/historical-memory-caption-compat.ts
+@@ -1,12 +1,14 @@
+ import assert from 'node:assert/strict';
+ import type { CanvasDocument, Scene } from '../src/core/types.ts';
+ import * as preCaption from '../../docs/evidence/m4-caption-stability-current/before-change/inputs/studio/src/core/index.ts';
++import { normalizeMemoryContinuityGeometry } from './historical-memory-continuity-compat.ts';
+ 
+ /** Adapt only the newly visible default memory text for an older oracle.
+  * The observation must first retain the exact immediately prior routes,
+  * nodes/ports, identities, styles and facts for this same actual document.
+  * Historical gold/oracle bytes and actual Scene/SVG remain untouched. */
+ export function normalizeDefaultMemoryLabels(document: CanvasDocument, current: Scene, historical: Scene): Scene {
++  current = normalizeMemoryContinuityGeometry(document, current);
+   const scope = current.exportScope ? { nodeId: current.exportScope.selectedNodeId, widthMm: current.pageSpec.widthMm } : {};
+   const before = preCaption.buildExportScene(document, scope);
+   const serial = <T>(input: T): T => input === undefined ? input : JSON.parse(JSON.stringify(input));
+--- before/studio/tests/memory-caption-stability-independent.test.ts
++++ current/studio/tests/memory-caption-stability-independent.test.ts
+@@ -4,6 +4,7 @@
+ import { applyVisualBatch, buildExportScene, buildScene, createDocument, createHistory, reduceHistory, renderSvg } from '../src/core/index.ts';
+ import * as before from '../../docs/evidence/m4-caption-stability-current/before-change/inputs/studio/src/core/index.ts';
+ import type { Architecture, CanvasDocument, EdgeRole, Scene, SceneEdge } from '../src/core/types.ts';
++import { normalizeMemoryContinuityGeometry } from './historical-memory-continuity-compat.ts';
+ 
+ const fixture = new URL('../../docs/evidence/m4-caption-route-current/browser/pre-ui/saved-transformer-final-envelope.json', import.meta.url);
+ const encoder = 'repeat:instance:model.Transformer.encoder', root = 'call:instance:model.Transformer';
+@@ -61,8 +62,9 @@
+   }
+ }
+ function bindings(scene: Scene) { return scene.edges.map(({ label: _l, labelX: _x, labelY: _y, ...edge }) => edge); }
+-function protectedScene(old: Scene, scene: Scene) {
+-  assert.deepEqual(scene.nodes, old.nodes); assert.deepEqual(bindings(scene), bindings(old));
++function protectedScene(old: Scene, scene: Scene, document: CanvasDocument) {
++  const compatible = normalizeMemoryContinuityGeometry(document, scene);
++  assert.deepEqual(compatible.nodes, old.nodes); assert.deepEqual(bindings(compatible), bindings(old));
+   assert.deepEqual(scene.sourceFacts, old.sourceFacts); assert.deepEqual(scene.hiddenEdges, old.hiddenEdges);
+   assert.equal(scene.sourceDigest, old.sourceDigest); assert.equal(scene.irDigest, old.irDigest);
+   for (const edge of scene.edges) {
+@@ -84,7 +86,7 @@
+       const old = before.buildExportScene(doc, scope), scene = buildExportScene(doc, scope);
+       const memory = scene.edges.find(e => e.id === 'edge:44')!;
+       assert.equal(memory.label, 'memory', `preset=${preset} dx=${dx} dy=${dy} scope=${JSON.stringify(scope)}`);
+-      protectedScene(old, scene); verifyCaptions(scene); assert.deepEqual(scene, buildExportScene(copy(doc), scope));
++      protectedScene(old, scene, doc); verifyCaptions(scene); assert.deepEqual(scene, buildExportScene(copy(doc), scope));
+     }
+     assert.equal(JSON.stringify(doc), unchanged); assert.deepEqual(doc.architecture, base.architecture);
+   }
+@@ -95,8 +97,9 @@
+   const base = sourceDocument(); let history = createHistory(base);
+   history = reduceHistory(history, { type: 'apply', operations: [{ type: 'move', ids: [encoder], dx: 0, dy: 24 }] });
+   const edited = copy(history.document), scene = buildScene(edited), memory = scene.edges.find(e => e.id === 'edge:44')!;
+-  assert.equal(memory.path, 'M 177 503 V 509 H 281 V 404 H 380.67 V 410', 'this label-only change cannot reroute the independently captured actual gesture');
+-  assert.equal(memory.label, 'memory'); verifyCaptions(scene); protectedScene(before.buildScene(edited), scene);
++  assert.equal(before.buildScene(edited).edges.find(e => e.id === 'edge:44')!.path, 'M 177 503 V 509 H 281 V 404 H 380.67 V 410', 'retain the historical actual gesture route as evidence');
++  assert.equal(memory.path, 'M 281 468.1 H 298.5 V 444.1 H 316', 'late memory projection shortens the same actual gesture without rerouting peers');
++  assert.equal(memory.label, 'memory'); verifyCaptions(scene); protectedScene(before.buildScene(edited), scene, edited);
+   history = reduceHistory(history, { type: 'undo' }); assert.deepEqual({ ...history.document, revision: base.revision }, base);
+   history = reduceHistory(history, { type: 'redo' }); assert.deepEqual({ ...history.document, revision: edited.revision }, edited);
+   assert.deepEqual(buildScene(copy(history.document)), buildScene(history.document));
+@@ -113,7 +116,7 @@
+     for (const scope of [{}, { nodeId: root }]) {
+       const scene = buildExportScene(doc, scope); assert.ok(scene.edges.some(e => e.role === 'memory'));
+       for (const e of scene.edges.filter(e => e.role === 'memory')) assert.equal(e.label, 'memory');
+-      protectedScene(before.buildExportScene(doc, scope), scene); verifyCaptions(scene);
++      protectedScene(before.buildExportScene(doc, scope), scene, doc); verifyCaptions(scene);
+     }
+     assert.equal(JSON.stringify(doc), bytes); assert.deepEqual(doc.architecture, base.architecture);
+   }
+@@ -134,7 +137,7 @@
+   for (const role of ['data', 'residual', 'mask', 'memory'] as const) for (const label of [undefined, '', '研究者指定说明']) {
+     const doc = generic(role, label), bytes = JSON.stringify(doc), expected = label ?? (role === 'memory' ? 'memory' : '');
+     for (const scope of [{}, { nodeId: 'owner' }]) {
+-      const scene = buildExportScene(doc, scope); assert.equal(scene.edges[0].label, expected); protectedScene(before.buildExportScene(doc, scope), scene); verifyCaptions(scene);
++      const scene = buildExportScene(doc, scope); assert.equal(scene.edges[0].label, expected); protectedScene(before.buildExportScene(doc, scope), scene, doc); verifyCaptions(scene);
+       if (label === '') assert.ok(!(scene.captionGuides ?? []).some(g => g.sceneEdgeId === 'literal-edge'));
+     }
+     assert.equal(JSON.stringify(doc), bytes);
+@@ -147,5 +150,5 @@
+   const bytes = JSON.stringify(doc), scene = buildScene(doc), memory = scene.edges.find(e => e.id === 'edge:44')!;
+   assert.equal(memory.label, 'memory'); assert.ok(scene.diagnostics.some(d => d.edgeId === memory.id && ['layout-edge-label-blocked', 'layout-edge-label-association'].includes(d.code ?? '')));
+   assert.ok(!(scene.captionGuides ?? []).some(g => g.sceneEdgeId === memory.id)); assert.ok(renderSvg(scene).includes('>memory</text>'));
+-  assert.equal(JSON.stringify(doc), bytes); protectedScene(before.buildScene(doc), scene);
++  assert.equal(JSON.stringify(doc), bytes); protectedScene(before.buildScene(doc), scene, doc);
+ });
+--- before/studio/src/core/memoryContinuity.ts
++++ current/studio/src/core/memoryContinuity.ts
+@@ -0,0 +1,182 @@
++import type { SceneNode } from './types.ts';
++import type { RoutePoint, RouteRequest, RouteResult } from './orthogonalRouter.ts';
++import { nodeVisualOutline, projectVisualPort, visualPortSide } from './nodeVisualOutline.ts';
++import { edgeDashPattern } from './edgePresentation.ts';
++
++/** Work bounds apply only to the late memory projection, after the complete
++ * formal batch. Unknown/exhausted checks keep that scene's baseline route. */
++export const MEMORY_CONTINUITY_BUDGET = Object.freeze({ maxNodes: 1_024, maxRoutes: 512,
++  maxRoutePoints: 4_096, maxPairChecks: 32_768, maxSegmentChecks: 250_000,
++  maxObstacleChecks: 100_000, maxCandidates: 128 });
++export type MemoryContinuityBudget = { readonly [K in keyof typeof MEMORY_CONTINUITY_BUDGET]: number };
++export interface MemoryProjection { start: RoutePoint; end: RoutePoint; points: RoutePoint[]; path: string }
++type Rect = { left: number; top: number; right: number; bottom: number };
++type Geometry = { contacts: RoutePoint[]; spans: Map<string, [number, number][]> };
++const EPS = 1e-7, LEAD = 6;
++const rounded = (value: number) => Math.round(value * 100) / 100;
++const same = (a: RoutePoint, b: RoutePoint) => Math.abs(a.x - b.x) <= EPS && Math.abs(a.y - b.y) <= EPS;
++function validPoints(points: readonly RoutePoint[]) {
++  return points.length >= 2 && points.every((p, i) => Number.isFinite(p.x) && Number.isFinite(p.y) &&
++    (!i || !same(p, points[i - 1]) && (p.x === points[i - 1].x || p.y === points[i - 1].y)));
++}
++function length(points: readonly RoutePoint[]) {
++  let result = 0;
++  for (let i = 1; i < points.length; i++) result += Math.abs(points[i].x - points[i - 1].x) + Math.abs(points[i].y - points[i - 1].y);
++  return result;
++}
++function simplified(points: readonly RoutePoint[]) {
++  const result: RoutePoint[] = [];
++  for (const point of points) {
++    if (result.length && same(point, result.at(-1)!)) continue;
++    while (result.length > 1) {
++      const a = result.at(-2)!, b = result.at(-1)!;
++      if (!(a.x === b.x && b.x === point.x && (b.y - a.y) * (point.y - b.y) >= 0) &&
++          !(a.y === b.y && b.y === point.y && (b.x - a.x) * (point.x - b.x) >= 0)) break;
++      result.pop();
++    }
++    result.push({ ...point });
++  }
++  return result;
++}
++function path(points: readonly RoutePoint[]) {
++  return points.map((p, i) => i === 0 ? `M ${p.x} ${p.y}` : p.x === points[i - 1].x ? `V ${p.y}` : `H ${p.x}`).join(' ');
++}
++function enters(a: RoutePoint, b: RoutePoint, r: Rect) {
++  return a.x === b.x
++    ? a.x > r.left + EPS && a.x < r.right - EPS && Math.max(Math.min(a.y, b.y), r.top) < Math.min(Math.max(a.y, b.y), r.bottom) - EPS
++    : a.y > r.top + EPS && a.y < r.bottom - EPS && Math.max(Math.min(a.x, b.x), r.left) < Math.min(Math.max(a.x, b.x), r.right) - EPS;
++}
++function segmentDistance(a: RoutePoint, b: RoutePoint, c: RoutePoint, d: RoutePoint) {
++  const x = Math.max(Math.min(a.x, b.x) - Math.max(c.x, d.x), Math.min(c.x, d.x) - Math.max(a.x, b.x), 0);
++  const y = Math.max(Math.min(a.y, b.y) - Math.max(c.y, d.y), Math.min(c.y, d.y) - Math.max(a.y, b.y), 0);
++  return Math.hypot(x, y);
++}
++
++/** Replace only eligible memory display routes. Every other final batch path
++ * is fixed, including same-tensor peers. No generic router pass runs afterward. */
++export function projectMemoryContinuity(nodes: readonly SceneNode[], requests: readonly RouteRequest[],
++  baseline: readonly RouteResult[], limits: MemoryContinuityBudget = MEMORY_CONTINUITY_BUDGET): Map<number, MemoryProjection> {
++  const accepted = new Map<number, MemoryProjection>();
++  const budgetKeys = Object.keys(MEMORY_CONTINUITY_BUDGET) as (keyof MemoryContinuityBudget)[];
++  if (!limits || Object.keys(limits).length !== budgetKeys.length || budgetKeys.some(key =>
++    !Object.hasOwn(limits, key) || !Number.isSafeInteger(limits[key]) || limits[key] < 0) || nodes.length > limits.maxNodes ||
++      requests.length !== baseline.length || requests.length > limits.maxRoutes ||
++      baseline.reduce((sum, r) => sum + r.points.length, 0) > limits.maxRoutePoints ||
++      nodes.some(n =>
++        ![n.x, n.y, n.width, n.height, n.headerHeight].every(Number.isFinite) || n.width <= 0 || n.height <= 0)) return accepted;
++  const fixedGeometry = baseline.map(result => simplified(result.points));
++  if (fixedGeometry.some(points => !validPoints(points))) return accepted;
++  const byId = new Map(nodes.map(node => [node.id, node]));
++  const rectangles = new Map(nodes.map(node => [node.id, nodeVisualOutline(node).rectangles.map(r =>
++    ({ left: r.x, top: r.y, right: r.x + r.width, bottom: r.y + r.height }))]));
++  const ancestors = (node: SceneNode): Set<string> | null => {
++    const result = new Set<string>(); let id = node.parentId;
++    while (id) {
++      if (result.has(id) || !byId.has(id)) return null;
++      result.add(id); id = byId.get(id)!.parentId;
++    }
++    return result;
++  };
++  const work = { pairs: 0, segments: 0, obstacles: 0, candidates: 0 };
++  const geometry = (first: readonly RoutePoint[], second: readonly RoutePoint[], strokeGap?: number, self = false): Geometry | null => {
++    if (++work.pairs > limits.maxPairChecks) return null;
++    const contacts: RoutePoint[] = [], spans = new Map<string, [number, number][]>();
++    const add = (p: RoutePoint) => { if (!contacts.some(q => same(p, q))) contacts.push(p); };
++    for (let i = 1; i < first.length; i++) for (let j = self ? i + 2 : 1; j < second.length; j++) {
++      if (++work.segments > limits.maxSegmentChecks) return null;
++      const a = first[i - 1], b = first[i], c = second[j - 1], d = second[j];
++      if (strokeGap !== undefined && segmentDistance(a, b, c, d) <= strokeGap + EPS) return null;
++      const vertical = a.x === b.x, otherVertical = c.x === d.x;
++      if (vertical !== otherVertical) {
++        const [v, w, h, k] = vertical ? [a, b, c, d] : [c, d, a, b];
++        if (v.x >= Math.min(h.x, k.x) - EPS && v.x <= Math.max(h.x, k.x) + EPS &&
++            h.y >= Math.min(v.y, w.y) - EPS && h.y <= Math.max(v.y, w.y) + EPS) add({ x: v.x, y: h.y });
++      } else if (Math.abs((vertical ? a.x : a.y) - (vertical ? c.x : c.y)) <= EPS) {
++        const low = Math.max(vertical ? Math.min(a.y, b.y) : Math.min(a.x, b.x), vertical ? Math.min(c.y, d.y) : Math.min(c.x, d.x));
++        const high = Math.min(vertical ? Math.max(a.y, b.y) : Math.max(a.x, b.x), vertical ? Math.max(c.y, d.y) : Math.max(c.x, d.x));
++        if (high < low - EPS) continue;
++        if (high <= low + EPS) add(vertical ? { x: a.x, y: low } : { x: low, y: a.y });
++        else { const key = `${vertical ? 'v' : 'h'}:${vertical ? a.x : a.y}`;
++          const list = spans.get(key) ?? []; list.push([low, high]); spans.set(key, list); }
++      }
++    }
++    for (const [key, intervals] of spans) {
++      intervals.sort((a, b) => a[0] - b[0]); const merged: [number, number][] = [];
++      for (const interval of intervals) { const previous = merged.at(-1);
++        if (previous && interval[0] <= previous[1] + EPS) previous[1] = Math.max(previous[1], interval[1]);
++        else merged.push([...interval]); }
++      spans.set(key, merged);
++    }
++    return { contacts, spans };
++  };
++  const subset = (after: Geometry, before: Geometry) => after.contacts.every(p => before.contacts.some(q => same(p, q))) &&
++    [...after.spans].every(([key, intervals]) => intervals.every(([low, high]) =>
++      before.spans.get(key)?.some(([a, b]) => a <= low + EPS && b >= high - EPS)));
++  const appearanceWidth = (request: RouteRequest): number | null => {
++    const appearance = request.appearance;
++    if (!appearance || !Number.isFinite(appearance.width) || appearance.width <= 0 || !appearance.stroke || typeof appearance.dashed !== 'boolean') return null;
++    try { edgeDashPattern(appearance); return appearance.width; } catch { return null; }
++  };
++  const widths = requests.map(appearanceWidth);
++  for (let index = 0; index < requests.length; index++) {
++    const request = requests[index], original = fixedGeometry[index], width = widths[index];
++    if (request.role !== 'memory' || width === null || baseline[index].blockedBy.length) continue;
++    if (++work.candidates > limits.maxCandidates) break;
++    const source = byId.get(request.sourceId), target = byId.get(request.targetId);
++    if (!source || !target || source.expanded || target.expanded) continue;
++    const sourceAncestors = ancestors(source), targetAncestors = ancestors(target);
++    if (!sourceAncestors || !targetAncestors) continue;
++    const owners = new Set([...sourceAncestors, ...targetAncestors]);
++    const sourceBounds = nodeVisualOutline(source).bounds, targetBounds = nodeVisualOutline(target).bounds;
++    if (Math.min(sourceBounds.y + sourceBounds.height, targetBounds.y + targetBounds.height) - Math.max(sourceBounds.y, targetBounds.y) <= EPS) continue;
++    const a = projectVisualPort(source, { x: source.x + source.width, y: source.y + source.height * .55 }, 'right');
++    const b = projectVisualPort(target, { x: target.x, y: target.y + target.height * .55 }, 'left');
++    const start = { x: rounded(a.x), y: rounded(a.y) }, end = { x: rounded(b.x), y: rounded(b.y) };
++    const lane = rounded((start.x + end.x) / 2);
++    if (![start.x, start.y, end.x, end.y, lane].every(Number.isFinite) || lane - start.x < LEAD - EPS || end.x - lane < LEAD - EPS) continue;
++    const points = simplified([start, { x: lane, y: start.y }, { x: lane, y: end.y }, end]);
++    if (!validPoints(points) || length(points) > length(original) + EPS) continue;
++    if (path(points) === baseline[index].path) continue;
++    // One necessary extra bend may repair an old arrival perpendicular to
++    // its actual side port. Otherwise a projection cannot add route bends.
++    const last = original.at(-1)!, previous = original.at(-2)!;
++    const oldTargetSide = visualPortSide(target, last);
++    const oldNormalCorrect = oldTargetSide === 'left' ? previous.x < last.x && previous.y === last.y :
++      oldTargetSide === 'right' ? previous.x > last.x && previous.y === last.y :
++        oldTargetSide === 'top' ? previous.y < last.y && previous.x === last.x : previous.y > last.y && previous.x === last.x;
++    if (points.length > original.length && oldNormalCorrect) continue;
++    const self = geometry(points, points, undefined, true);
++    if (!self || self.contacts.length || self.spans.size) continue;
++    let clear = true;
++    for (const node of nodes) {
++      const own = node.id === source.id || node.id === target.id;
++      const boxes = owners.has(node.id)
++        ? node.expanded ? [{ left: node.x, top: node.y, right: node.x + node.width, bottom: node.y + node.headerHeight }] : []
++        : rectangles.get(node.id)!;
++      for (let segment = 1; segment < points.length && clear; segment++) for (const box of boxes) {
++        if (++work.obstacles > limits.maxObstacleChecks) { clear = false; break; }
++        // First/last normal leads meet their own exposed body boundary;
++        // padded middles and unrelated bodies/headers retain visible clearance.
++        const terminal = node.id === source.id && segment === 1 || node.id === target.id && segment === points.length - 1;
++        const padding = terminal ? 0 : Math.max(LEAD, width / 2 + (node.expanded ? .65 : .75));
++        if (enters(points[segment - 1], points[segment], { left: box.left - padding, right: box.right + padding,
++          top: box.top - padding, bottom: box.bottom + padding })) { clear = false; break; }
++      }
++      if (!clear) break;
++    }
++    if (!clear) continue;
++    for (let peer = 0; peer < requests.length && clear; peer++) {
++      if (peer === index) continue;
++      if (widths[peer] === null) { clear = false; break; }
++      const fixed = fixedGeometry[peer], chosen = accepted.get(peer)?.points;
++      const before = geometry(original, fixed), after = geometry(points, fixed, (width + widths[peer]!) / 2);
++      if (!before || !after || !subset(after, before)) { clear = false; break; }
++      if (chosen) {
++        const chosenBefore = geometry(original, chosen), chosenAfter = geometry(points, chosen, (width + widths[peer]!) / 2);
++        if (!chosenBefore || !chosenAfter || !subset(chosenAfter, chosenBefore)) clear = false;
++      }
++    }
++    if (clear) accepted.set(index, { start, end, points, path: path(points) });
++  }
++  return accepted;
++}
+--- before/studio/tests/historical-memory-continuity-compat.ts
++++ current/studio/tests/historical-memory-continuity-compat.ts
+@@ -0,0 +1,94 @@
++import assert from 'node:assert/strict';
++import type { CanvasDocument, Scene, SceneNode, ScenePort } from '../src/core/types.ts';
++import * as prior from '../../docs/evidence/m4-memory-continuity-current/before-change/inputs/studio/src/core/index.ts';
++
++const serial = <T>(value: T): T => value === undefined ? value : JSON.parse(JSON.stringify(value));
++const round = (v: number) => Math.round(v * 100) / 100;
++function points(path: string) {
++  const tokens = path.match(/[MHV]|[-+]?(?:\d*\.\d+|\d+\.?\d*)/g)!; const result: { x: number; y: number }[] = [];
++  for (let i = 0; i < tokens.length;) { const c = tokens[i++];
++    result.push(c === 'M' ? { x: +tokens[i++], y: +tokens[i++] } : c === 'H'
++      ? { x: +tokens[i++], y: result.at(-1)!.y } : { x: result.at(-1)!.x, y: +tokens[i++] }); }
++  return result;
++}
++function sidePoint(node: SceneNode, side: 'right' | 'left') {
++  const y = node.y + node.height * .55;
++  const shifts = node.repeat && !node.expanded ? [0, 3.5, 7] : [0];
++  const atRay = shifts.filter(shift => y >= node.y + shift && y <= node.y + shift + node.height);
++  return { x: side === 'right' ? Math.max(...atRay.map(shift => node.x + shift + node.width))
++    : Math.min(...atRay.map(shift => node.x + shift)), y };
++}
++
++/** Version adapter for historical tests only. It independently derives the
++ * narrow side/midpoint geometry and chosen-consumer port coverage. It does not
++ * certify adoption safety: dedicated peer/body tests and independent audit do.
++ * No gold/oracle or actual scene is mutated; arbitrary memory paths fail. */
++export function normalizeMemoryContinuityGeometry(document: CanvasDocument, current: Scene): Scene {
++  const scope = current.exportScope ? { nodeId: current.exportScope.selectedNodeId, widthMm: current.pageSpec.widthMm } : {};
++  const before = prior.buildExportScene(document, scope);
++  const canonical = new Map(document.architecture.edges.map((e, index) => [e.id, { edge: e, index }]));
++  assert.equal(current.nodes.length, before.nodes.length);
++  assert.equal(current.edges.length, before.edges.length);
++  for (const key of ['documentId', 'revision', 'sourceDigest', 'irDigest', 'sourceFacts', 'hiddenEdges', 'pageSpec', 'annotations', 'legend', 'exportScope'] as const)
++    assert.deepEqual(serial(current[key]), serial(before[key]), `memory projection altered protected ${key}`);
++  const expectedMemory = new Map<string, Map<string, ScenePort>>();
++  const memoryPort = (p: ScenePort) => p.canonicalEdgeIds.length > 0 && p.canonicalEdgeIds.every(id => canonical.get(id)?.edge.role === 'memory');
++  for (let i = 0; i < before.edges.length; i++) {
++    const old = before.edges[i], actual = current.edges[i];
++    const { path: _op, labelX: _ox, labelY: _oy, ...oldFixed } = old;
++    const { path: _ap, labelX: _ax, labelY: _ay, ...actualFixed } = actual;
++    assert.deepEqual(serial(actualFixed), serial(oldFixed), 'memory projection cannot alter canonical identities, styles or labels');
++    if (old.role !== 'memory') { assert.equal(actual.path, old.path, 'every nonmemory path must remain exact'); continue; }
++    const original = points(old.path), source = before.nodes.find(n => n.id === old.sourceId)!, target = before.nodes.find(n => n.id === old.targetId)!;
++    const a = sidePoint(source, 'right'), b = sidePoint(target, 'left'), lane = round((round(a.x) + round(b.x)) / 2);
++    const proposed = round(a.y) === round(b.y) ? `M ${round(a.x)} ${round(a.y)} H ${round(b.x)}`
++      : `M ${round(a.x)} ${round(a.y)} H ${lane} V ${round(b.y)} H ${round(b.x)}`;
++    const changed = actual.path !== old.path;
++    if (changed) {
++      assert.equal(source.expanded, false); assert.equal(target.expanded, false);
++      const bottom = (n: SceneNode) => n.y + n.height + (n.repeat && !n.expanded ? 7 : 0);
++      assert.ok(Math.min(bottom(source), bottom(target)) > Math.max(source.y, target.y));
++      assert.ok(lane - round(a.x) >= 6 - 1e-7 && round(b.x) - lane >= 6 - 1e-7);
++      assert.equal(actual.path, proposed, 'only the independently derived side midpoint path can be adapted');
++    }
++    for (const direction of ['out', 'in'] as const) {
++      const owner = direction === 'out' ? source : target;
++      const endpoint = direction === 'out' ? original[0] : original.at(-1)!;
++      const template = owner.ports.find(p => p.direction === direction && old.canonicalEdgeIds.every(id => p.canonicalEdgeIds.includes(id)) &&
++        Math.abs(p.x - endpoint.x) <= .051 && Math.abs(p.y - endpoint.y) <= .051);
++      assert.ok(template, 'frozen public port coverage is required');
++      const side = direction === 'out' ? 'right' : 'left';
++      const id = changed ? `${template.canonicalNodeId}:${template.canonicalPortId}:memory:${side}` : template.id;
++      const group = expectedMemory.get(owner.id) ?? new Map<string, ScenePort>();
++      let port = group.get(id);
++      if (!port) {
++        port = { ...structuredClone(template), id, canonicalEdgeIds: [], canonicalBindings: [], ...(changed ? direction === 'out' ? a : b : {}) };
++        group.set(id, port); expectedMemory.set(owner.id, group);
++      }
++      for (const id of old.canonicalEdgeIds) if (!port.canonicalEdgeIds.includes(id)) port.canonicalEdgeIds.push(id);
++      port.canonicalBindings = id === template.id && JSON.stringify(port.canonicalEdgeIds) === JSON.stringify(template.canonicalEdgeIds)
++        ? structuredClone(template.canonicalBindings)
++        : port.canonicalEdgeIds.map(id => canonical.get(id)!).sort((a, b) => a.index - b.index)
++          .map(({ edge }) => direction === 'out' ? edge.source : edge.target);
++    }
++  }
++  for (let index = 0; index < before.nodes.length; index++) {
++    const old = before.nodes[index], actual = current.nodes[index];
++    const { ports: _o, ...oldBody } = old, { ports: _a, ...actualBody } = actual;
++    assert.deepEqual(serial(actualBody), serial(oldBody), 'node bodies/facts/anchors must remain exact');
++    assert.deepEqual(serial(actual.ports.filter(p => !memoryPort(p))), serial(old.ports.filter(p => !memoryPort(p))), 'nonmemory ports must remain exact');
++    const memory = actual.ports.filter(memoryPort), expected = [...(expectedMemory.get(old.id)?.values() ?? [])];
++    assert.equal(memory.length, expected.length, 'no memory ports may be dropped or invented');
++    for (const p of memory) assert.deepEqual(serial(p), serial(expected.find(e => e.id === p.id)), 'chosen memory consumer coverage and port geometry must be exact');
++  }
++  const copy = structuredClone(current);
++  copy.nodes = before.nodes.map((old, index) => {
++    const node = structuredClone(old);
++    // Preserve whether this test supplied a raw or JSON-serialized Scene.
++    for (const key of Object.keys(node) as (keyof SceneNode)[])
++      if (node[key] === undefined && !Object.hasOwn(current.nodes[index], key)) delete node[key];
++    return node;
++  });
++  for (let i = 0; i < copy.edges.length; i++) if (copy.edges[i].role === 'memory') copy.edges[i].path = before.edges[i].path;
++  return copy;
++}
+--- before/studio/tests/memory-continuity-independent.test.ts
++++ current/studio/tests/memory-continuity-independent.test.ts
+@@ -0,0 +1,124 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { readFileSync } from 'node:fs';
++import { applyVisualBatch, buildExportScene, createHistory, reduceHistory } from '../src/core/index.ts';
++import * as prior from '../../docs/evidence/m4-memory-continuity-current/before-change/inputs/studio/src/core/index.ts';
++import type { CanvasDocument, SceneNode } from '../src/core/types.ts';
++import type { RouteRequest, RouteResult } from '../src/core/orthogonalRouter.ts';
++import { MEMORY_CONTINUITY_BUDGET, projectMemoryContinuity } from '../src/core/memoryContinuity.ts';
++import { normalizeMemoryContinuityGeometry } from './historical-memory-continuity-compat.ts';
++
++const source = JSON.parse(readFileSync(new URL('../../docs/evidence/m4-caption-stability-current/independent-review/source-envelope.json', import.meta.url), 'utf8')).document as CanvasDocument;
++const encoder = 'repeat:instance:model.Transformer.encoder', decoder = 'call:instance:model.Transformer.decoder';
++function parse(path: string) {
++  const tokens = path.match(/[MHV]|[-+]?(?:\d*\.\d+|\d+\.?\d*)/g)!; const result: [number, number][] = [];
++  for (let i = 0; i < tokens.length;) { const c = tokens[i++]; result.push(c === 'M' ? [+tokens[i++], +tokens[i++]]
++    : c === 'H' ? [+tokens[i++], result.at(-1)![1]] : [result.at(-1)![0], +tokens[i++]]); }
++  return result;
++}
++function routeLength(path: string) { const p = parse(path); return p.slice(1).reduce((sum, b, i) => sum + Math.abs(b[0] - p[i][0]) + Math.abs(b[1] - p[i][1]), 0); }
++const serial = <T>(x: T): T => JSON.parse(JSON.stringify(x));
++
++test('source and target signed14/15 thresholds retain endpoint continuity and exact peers across caption preset size and detail combinations', () => {
++  const input = JSON.stringify(source);
++  for (const owner of [encoder, decoder]) for (const mode of ['default', 'empty', 'custom'])
++    for (const preset of ['paper', 'monochrome'] as const) for (const widthMm of [85, 180]) for (const scope of [{}, { nodeId: source.expandedIds[0] }]) {
++      const base = structuredClone(source);
++      if (mode !== 'default') for (const e of base.architecture.edges.filter(e => e.role === 'memory')) e.label = mode === 'empty' ? '' : 'memory context';
++      const observations = new Map<number, { path: string; ports: [number, number][] }>();
++      for (const dy of [-24, -16, -15.001, -15, -14.999, -14, 0, 14, 14.999, 15, 15.001, 16, 24]) {
++        const doc = applyVisualBatch(base, [{ type: 'page', page: { preset, widthMm } }, { type: 'move', ids: [owner], dx: 0, dy }]), bytes = JSON.stringify(doc);
++        const scene = buildExportScene(doc, { ...scope, widthMm }), before = prior.buildExportScene(doc, { ...scope, widthMm });
++        const normalized = normalizeMemoryContinuityGeometry(doc, scene), memory = scene.edges.find(e => e.id === 'edge:44')!;
++        assert.deepEqual(serial(normalized.nodes), serial(before.nodes));
++        assert.deepEqual(serial(scene.edges.filter(e => e.role !== 'memory').map(({ labelX: _x, labelY: _y, ...e }) => e)),
++          serial(before.edges.filter(e => e.role !== 'memory').map(({ labelX: _x, labelY: _y, ...e }) => e)));
++        assert.equal(memory.label, mode === 'default' ? 'memory' : mode === 'empty' ? '' : 'memory context');
++        assert.deepEqual(scene.sourceFacts, before.sourceFacts); assert.equal(scene.irDigest, before.irDigest);
++        assert.deepEqual(scene, buildExportScene(structuredClone(doc), { ...scope, widthMm })); assert.equal(JSON.stringify(doc), bytes);
++        const p = parse(memory.path); observations.set(dy, { path: memory.path, ports: [p[0], p.at(-1)!] });
++      }
++      for (const [a, b] of [[14, 15], [-14, -15]]) {
++        const previous = observations.get(a)!, next = observations.get(b)!;
++        assert.ok(Math.abs(routeLength(next.path) - routeLength(previous.path) - 1) < 1e-6);
++        const fixed = owner === encoder ? 1 : 0, moving = owner === encoder ? 0 : 1;
++        assert.deepEqual(previous.ports[fixed], next.ports[fixed]);
++        assert.equal(previous.ports[moving][0], next.ports[moving][0]);
++        assert.ok(Math.abs(Math.abs(next.ports[moving][1] - previous.ports[moving][1]) - 1) < 1e-6);
++      }
++    }
++  assert.equal(JSON.stringify(source), input);
++});
++
++test('horizontal gap guards retain complete baseline when two six-unit leads are unavailable', () => {
++  for (const dx of [22.9, 23, 23.1, 34, 35, 36, 41, 42, 43]) {
++    const doc = applyVisualBatch(source, [{ type: 'move', ids: [encoder], dx, dy: 15 }]), before = prior.buildExportScene(doc), scene = buildExportScene(doc);
++    assert.deepEqual(scene.edges.filter(e => e.role !== 'memory').map(e => e.path), before.edges.filter(e => e.role !== 'memory').map(e => e.path));
++    const memory = scene.edges.find(e => e.role === 'memory')!, old = before.edges.find(e => e.id === memory.id)!;
++    if (dx > 23) assert.equal(memory.path, old.path);
++    normalizeMemoryContinuityGeometry(doc, scene);
++  }
++});
++
++test('continuity is detached and one typed move survives undo redo and JSON reopen', () => {
++  const initial = createHistory(source), before = JSON.stringify(initial);
++  const moved = reduceHistory(initial, { type: 'apply', operations: [{ type: 'move', ids: [encoder], dx: 0, dy: 24 }] });
++  const undone = reduceHistory(moved, { type: 'undo' }), redone = reduceHistory(undone, { type: 'redo' });
++  assert.equal(JSON.stringify(initial), before); assert.deepEqual({ ...undone.document, revision: source.revision }, source);
++  assert.deepEqual(buildExportScene(redone.document), buildExportScene(serial(redone.document)));
++  assert.deepEqual(moved.document.architecture, source.architecture); assert.equal(moved.past.length, 1);
++});
++
++function literal() {
++  const node = (id: string, x: number, y: number): SceneNode => ({ id, x, y, width: 100, height: 100, localX: x, localY: y, label: id, subtitle: '',
++    headerHeight: 20, kind: 'Block', category: 'container', fill: '#fff', stroke: '#444', glyph: 'module', expanded: false, expandable: true, pinned: false, evidence: 'source', ports: [] });
++  const nodes = [node('a', 0, 0), node('b', 160, 10)];
++  const request: RouteRequest = { sourceId: 'a', targetId: 'b', role: 'memory', tensorId: 'one', appearance: { stroke: '#333', width: 2, dashed: false },
++    start: { x: 50, y: 100 }, end: { x: 210, y: 10 }, preferredPath: 'M 50 100 V 140 H 240 V 0 H 210 V 10' };
++  const baseline: RouteResult = { path: request.preferredPath, points: parse(request.preferredPath).map(([x, y]) => ({ x, y })), changed: false, blockedBy: [] };
++  return { nodes, requests: [request], baseline: [baseline] };
++}
++test('literal guards reject joint and same-tensor peers close strokes invalid widths gap bodies and exhausted checks', () => {
++  const initial = literal(); assert.equal(projectMemoryContinuity(initial.nodes, initial.requests, initial.baseline).get(0)?.path, 'M 100 55 H 130 V 65 H 160');
++  for (const path of ['M 130 30 V 55 H 145', 'M 105 56.9 H 125', 'M 100 55 H 160']) {
++    const input = literal(); input.requests.push({ ...input.requests[0], role: 'data', preferredPath: path });
++    input.baseline.push({ path, points: parse(path).map(([x, y]) => ({ x, y })), changed: false, blockedBy: [] });
++    const bytes = JSON.stringify(input); assert.equal(projectMemoryContinuity(input.nodes, input.requests, input.baseline).size, 0); assert.equal(JSON.stringify(input), bytes);
++  }
++  for (const width of [0, NaN, Infinity]) { const input = literal(); input.requests[0].appearance!.width = width; assert.equal(projectMemoryContinuity(input.nodes, input.requests, input.baseline).size, 0); }
++  for (const key of ['maxPairChecks', 'maxSegmentChecks', 'maxObstacleChecks', 'maxCandidates'] as const) {
++    const input = literal(); assert.equal(projectMemoryContinuity(input.nodes, input.requests, input.baseline, { ...MEMORY_CONTINUITY_BUDGET, [key]: 0 }).size, 0);
++  }
++  for (const key of Object.keys(MEMORY_CONTINUITY_BUDGET) as (keyof typeof MEMORY_CONTINUITY_BUDGET)[]) {
++    const input = literal(), incomplete = { ...MEMORY_CONTINUITY_BUDGET } as Partial<typeof MEMORY_CONTINUITY_BUDGET>;
++    delete incomplete[key];
++    assert.equal(projectMemoryContinuity(input.nodes, input.requests, input.baseline, incomplete as typeof MEMORY_CONTINUITY_BUDGET).size, 0);
++  }
++  const input = literal(); input.nodes.push({ ...input.nodes[0], id: 'obstacle', x: 120, y: 50, width: 20, height: 30 });
++  assert.equal(projectMemoryContinuity(input.nodes, input.requests, input.baseline).size, 0);
++});
++
++test('version adapter rejects coherent geometry canonical nonmemory and consumer-coverage corruptions', () => {
++  const doc = applyVisualBatch(source, [{ type: 'move', ids: [encoder], dx: 0, dy: 15 }]), scene = buildExportScene(doc);
++  normalizeMemoryContinuityGeometry(doc, scene);
++  const reject = (mutate: (s: typeof scene) => void) => { const forged = structuredClone(scene); mutate(forged); assert.throws(() => normalizeMemoryContinuityGeometry(doc, forged)); };
++  reject(s => { s.edges.find(e => e.role === 'memory')!.path = 'M 281 459.1 H 300 V 444.1 H 316'; });
++  reject(s => { s.edges.find(e => e.role !== 'memory')!.path = 'M 1 1 H 2'; });
++  reject(s => { s.nodes.flatMap(n => n.ports).find(p => p.canonicalEdgeIds.includes('edge:44'))!.x += .01; });
++  reject(s => { s.nodes.flatMap(n => n.ports).find(p => p.canonicalEdgeIds.includes('edge:44'))!.canonicalEdgeIds = ['edge:44']; });
++  reject(s => { s.edges.find(e => e.role === 'memory')!.source.portId = 'wrong'; });
++});
++
++test('detail mixed consumers keep retained port coverage and architecture-order bindings after memory projection', () => {
++  const document = JSON.parse(readFileSync(new URL('../../docs/evidence/m4-memory-continuity-current/implementation-work/detail-consumer-literal.json', import.meta.url), 'utf8')) as CanvasDocument;
++  const before = prior.buildExportScene(document, { nodeId: 'owner' }), current = buildExportScene(document, { nodeId: 'owner' });
++  const expectedBindings = (ids: string[], direction: 'in' | 'out') => document.architecture.edges.filter(e => ids.includes(e.id))
++    .map(e => direction === 'out' ? e.source : e.target);
++  for (const node of current.nodes) for (const port of node.ports) assert.deepEqual(port.canonicalBindings, expectedBindings(port.canonicalEdgeIds, port.direction));
++  const bottom = current.nodes.find(n => n.id === 'a')!.ports.find(p => p.direction === 'out' && p.id.endsWith(':memory'))!;
++  const old = before.nodes.find(n => n.id === 'a')!.ports.find(p => p.id === bottom.id)!;
++  assert.deepEqual([bottom.x, bottom.y], [old.x, old.y]);
++  assert.deepEqual(bottom.canonicalBindings, expectedBindings(bottom.canonicalEdgeIds, 'out'));
++  assert.deepEqual(current.edges.filter(e => e.role !== 'memory').map(e => e.path), before.edges.filter(e => e.role !== 'memory').map(e => e.path));
++  normalizeMemoryContinuityGeometry(document, current);
++});

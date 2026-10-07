@@ -1,5 +1,8 @@
 import { createOrthogonalRouter } from './core/orthogonalRouter.ts';
 import type { SceneNode } from './core/types.ts';
+import { refineDraftRoutes } from './draftRouting.ts';
+import { draftModuleSize, draftNodeBounds, draftNodeSize, draftPortPoint } from './draftNodeGeometry.ts';
+export { DRAFT_WIDTH, DRAFT_HEIGHT, DRAFT_PORT_PITCH, draftModuleSize, draftNodeBounds, draftNodeSize, draftPortSpacing } from './draftNodeGeometry.ts';
 
 export type DraftValue = number | boolean | string | number[];
 export type DraftPort = { id: string; name: string; direction: 'in' | 'out'; type: 'tensor' };
@@ -11,8 +14,47 @@ export type DraftEndpoint = { nodeId: string; portId: string };
 export type DraftEdge = { id: string; source: DraftEndpoint; target: DraftEndpoint };
 export type AuthoredDraft = { schemaVersion: 1; mode: 'authored-draft'; id: string; title: string; revision: number; nodes: DraftNode[]; edges: DraftEdge[] };
 export type DraftHistory = { draft: AuthoredDraft; past: AuthoredDraft[]; future: AuthoredDraft[] };
-export const DRAFT_WIDTH = 176;
-export const DRAFT_HEIGHT = 100;
+export type DraftFlow = 'horizontal' | 'vertical';
+const MAX_DRAFT_NODES = 128;
+const MAX_DRAFT_EDGES = 384;
+
+/** Project ports along the connected graph's main axis without moving cards. */
+export function draftFlow(draft: AuthoredDraft): DraftFlow {
+  const nodes = new Map(draft.nodes.map(node => [node.id, node]));
+  let horizontal = 0, vertical = 0;
+  for (const edge of draft.edges) {
+    const source = nodes.get(edge.source.nodeId), target = nodes.get(edge.target.nodeId);
+    if (!source || !target) continue;
+    horizontal += Math.abs(target.position.x - source.position.x);
+    vertical += Math.abs(target.position.y - source.position.y);
+  }
+  return vertical > horizontal ? 'vertical' : 'horizontal';
+}
+
+/** Adding another independent network must not turn existing port projections. */
+export function draftNodeFlows(draft: AuthoredDraft): Record<string, DraftFlow> {
+  const nodes = new Map(draft.nodes.map(node => [node.id, node]));
+  const adjacent = new Map(draft.nodes.map(node => [node.id, new Set<string>()]));
+  for (const edge of draft.edges) {
+    if (!nodes.has(edge.source.nodeId) || !nodes.has(edge.target.nodeId)) continue;
+    adjacent.get(edge.source.nodeId)!.add(edge.target.nodeId);
+    adjacent.get(edge.target.nodeId)!.add(edge.source.nodeId);
+  }
+  const flows: Record<string, DraftFlow> = {}, visited = new Set<string>();
+  for (const node of draft.nodes) {
+    if (visited.has(node.id)) continue;
+    const component = new Set<string>(), waiting = [node.id];
+    while (waiting.length) {
+      const id = waiting.pop()!;
+      if (visited.has(id)) continue;
+      visited.add(id); component.add(id); waiting.push(...adjacent.get(id)!);
+    }
+    const flow = draftFlow({ ...draft, nodes: draft.nodes.filter(item => component.has(item.id)),
+      edges: draft.edges.filter(edge => component.has(edge.source.nodeId) && component.has(edge.target.nodeId)) });
+    for (const id of component) flows[id] = flow;
+  }
+  return flows;
+}
 
 export function parseDraftCache(value: unknown): { draft: AuthoredDraft; storageRevision: number; savedRevision: number } | null {
   if (!value || typeof value !== 'object') return null;
@@ -21,7 +63,7 @@ export function parseDraftCache(value: unknown): { draft: AuthoredDraft; storage
   const text = (label: unknown) => typeof label === 'string' && label.length > 0 && label.length <= 120 && !/[\x00-\x1f]/.test(label);
   const safeNumber = (n: unknown) => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= 1_000_000;
   const parameter = (p: unknown) => typeof p === 'boolean' || typeof p === 'string' || (typeof p === 'number' && Number.isFinite(p)) || (Array.isArray(p) && p.every(n => typeof n === 'number' && Number.isFinite(n)));
-  if (!draft || draft.mode !== 'authored-draft' || draft.schemaVersion !== 1 || !identity(draft.id) || !draft.id.startsWith('draft-') || !text(draft.title) || !Number.isSafeInteger(draft.revision) || draft.revision < 0 || !Array.isArray(draft.nodes) || draft.nodes.length > 128 || !Array.isArray(draft.edges) || draft.edges.length > 384) return null;
+  if (!draft || draft.mode !== 'authored-draft' || draft.schemaVersion !== 1 || !identity(draft.id) || !draft.id.startsWith('draft-') || !text(draft.title) || !Number.isSafeInteger(draft.revision) || draft.revision < 0 || !Array.isArray(draft.nodes) || draft.nodes.length > MAX_DRAFT_NODES || !Array.isArray(draft.edges) || draft.edges.length > MAX_DRAFT_EDGES) return null;
   const ids = new Set<string>(), edgeIds = new Set<string>();
   for (const node of draft.nodes) {
     if (!node || !identity(node.id) || ids.has(node.id) || !text(node.kind) || !text(node.label) || !node.position || !safeNumber(node.position.x) || !safeNumber(node.position.y) || !node.parameters || Array.isArray(node.parameters) || typeof node.parameters !== 'object' || !Object.values(node.parameters).every(parameter)) return null;
@@ -35,12 +77,17 @@ export function parseDraftCache(value: unknown): { draft: AuthoredDraft; storage
   return { draft: structuredClone(draft), storageRevision: cache.storageRevision as number, savedRevision: cache.savedRevision as number };
 }
 
-export function nextDraftPosition(draft: AuthoredDraft, preferred: { x: number; y: number }) {
+export function nextDraftPosition(draft: AuthoredDraft, preferred: { x: number; y: number }, module: DraftModule, catalog: DraftCatalog) {
+  const size = draftModuleSize(module);
+  let position = { x: Math.round(preferred.x), y: Math.round(preferred.y) };
   for (let step = 0; step <= draft.nodes.length; step++) {
-    const position = { x: Math.round(preferred.x), y: Math.round(preferred.y + step * (DRAFT_HEIGHT + 28)) };
-    if (!draft.nodes.some(node => Math.abs(node.position.x - position.x) < DRAFT_WIDTH + 20 && Math.abs(node.position.y - position.y) < DRAFT_HEIGHT + 20)) return position;
+    const overlaps = draft.nodes.map(node => draftNodeBounds(node, catalog)).filter(box =>
+      box.x < position.x + size.width + 20 && box.x + box.width + 20 > position.x &&
+      box.y < position.y + size.height + 20 && box.y + box.height + 20 > position.y);
+    if (!overlaps.length) return position;
+    position = { x: position.x, y: Math.max(...overlaps.map(box => box.y + box.height + 28)) };
   }
-  return { x: Math.round(preferred.x), y: Math.round(preferred.y + (draft.nodes.length + 1) * (DRAFT_HEIGHT + 28)) };
+  return position;
 }
 
 export function blankDraft(id: string): AuthoredDraft {
@@ -61,6 +108,7 @@ export function travelDraft(history: DraftHistory, action: 'undo' | 'redo'): Dra
     : { draft, past: [...history.past, history.draft], future: stack.slice(0, -1) };
 }
 export function addDraftNode(draft: AuthoredDraft, module: DraftModule, id: string, position: { x: number; y: number }) {
+  if (draft.nodes.length >= MAX_DRAFT_NODES) throw new Error('草稿最多允许 128 个模块；请删除一个模块后重试。');
   draft.nodes.push({ id, kind: module.kind, label: module.label, parameters: structuredClone(module.defaults), position });
 }
 export function removeDraftNode(draft: AuthoredDraft, id: string) {
@@ -69,6 +117,7 @@ export function removeDraftNode(draft: AuthoredDraft, id: string) {
 }
 /** A draft binding has one producer and preserves fan-out; cycles are rejected before mutation. */
 export function connectDraft(draft: AuthoredDraft, catalog: DraftCatalog, source: DraftEndpoint, target: DraftEndpoint, id: string) {
+  if (draft.edges.length >= MAX_DRAFT_EDGES) throw new Error('草稿最多允许 384 条连接；请删除一条连接后重试。');
   const port = (end: DraftEndpoint) => catalog.modules.find(module => module.kind === draft.nodes.find(node => node.id === end.nodeId)?.kind)?.ports.find(item => item.id === end.portId);
   if (port(source)?.direction !== 'out' || port(target)?.direction !== 'in') throw new Error('请从输出端口连接到输入端口。');
   if (source.nodeId === target.nodeId) throw new Error('模块不能连接到自身。');
@@ -82,14 +131,12 @@ export function connectDraft(draft: AuthoredDraft, catalog: DraftCatalog, source
   }
   draft.edges.push({ id, source: { ...source }, target: { ...target } });
 }
-export function portPoint(node: DraftNode, module: DraftModule, portId: string) {
-  const port = module.ports.find(item => item.id === portId);
-  if (!port) throw new Error('未知端口');
-  const peers = module.ports.filter(item => item.direction === port.direction), index = peers.indexOf(port);
-  return { x: node.position.x + (port.direction === 'in' ? 0 : DRAFT_WIDTH), y: node.position.y + 48 + (index + 1) * 36 / (peers.length + 1) };
+export function portPoint(node: DraftNode, module: DraftModule, portId: string, flow: DraftFlow = 'horizontal') {
+  return draftPortPoint(node, module, portId, flow);
 }
 export function draftRoutes(draft: AuthoredDraft, catalog: DraftCatalog) {
-  const nodes: SceneNode[] = draft.nodes.map(node => ({ id: node.id, x: node.position.x, y: node.position.y, width: DRAFT_WIDTH, height: DRAFT_HEIGHT,
+  const flow = draftFlow(draft), nodeFlows = draftNodeFlows(draft);
+  const nodes: SceneNode[] = draft.nodes.map(node => ({ id: node.id, ...draftNodeBounds(node, catalog),
     localX: node.position.x, localY: node.position.y, label: node.label, subtitle: '', headerHeight: 0, kind: node.kind, category: 'operator',
     fill: '#ffffff', stroke: '#355247', glyph: 'operator', expanded: false, expandable: false, pinned: false, evidence: 'contract', ports: [] }));
   const router = createOrthogonalRouter(nodes), byId = new Map(draft.nodes.map(node => [node.id, node]));
@@ -97,16 +144,21 @@ export function draftRoutes(draft: AuthoredDraft, catalog: DraftCatalog) {
     const source = byId.get(edge.source.nodeId), target = byId.get(edge.target.nodeId);
     const sourceModule = catalog.modules.find(module => module.kind === source?.kind), targetModule = catalog.modules.find(module => module.kind === target?.kind);
     if (!source || !target || !sourceModule || !targetModule || !sourceModule.ports.some(port => port.id === edge.source.portId) || !targetModule.ports.some(port => port.id === edge.target.portId)) return [];
-    const start = portPoint(source, sourceModule, edge.source.portId), end = portPoint(target, targetModule, edge.target.portId);
-    const middle = (start.x + end.x) / 2;
+    const componentFlow = nodeFlows[source.id];
+    const start = portPoint(source, sourceModule, edge.source.portId, componentFlow), end = portPoint(target, targetModule, edge.target.portId, componentFlow);
+    const middle = componentFlow === 'horizontal' ? (start.x + end.x) / 2 : (start.y + end.y) / 2;
+    const preferredPath = componentFlow === 'horizontal'
+      ? start.y === end.y ? `M ${start.x} ${start.y} H ${end.x}` : `M ${start.x} ${start.y} H ${middle} V ${end.y} H ${end.x}`
+      : start.x === end.x ? `M ${start.x} ${start.y} V ${end.y}` : `M ${start.x} ${start.y} V ${middle} H ${end.x} V ${end.y}`;
     return [{ id: edge.id, sourceId: source.id, targetId: target.id, tensorId: JSON.stringify([source.id, edge.source.portId]),
-      start, end, preferredPath: `M ${start.x} ${start.y} H ${middle} V ${end.y} H ${end.x}` }];
+      start, end, preferredPath }];
   });
-  const routed = router.batch(requests), routes = requests.map((request, index) => ({ ...routed[index], id: request.id }));
-  return { routes, overlaps: router.overlaps };
+  const routed = refineDraftRoutes(nodes, requests, router.batch(requests));
+  const routes = requests.map((request, index) => ({ ...routed[index], id: request.id }));
+  return { routes, overlaps: router.overlaps, flow, nodeFlows };
 }
 /** Only explicit user layout requests move objects; rank order is deterministic. */
-export function arrangeDraft(draft: AuthoredDraft) {
+export function arrangeDraft(draft: AuthoredDraft, catalog: DraftCatalog, viewport?: { width: number; height: number }) {
   const rank = new Map<string, number>(), waiting = new Set(draft.nodes.map(node => node.id));
   while (waiting.size) {
     let changed = false;
@@ -118,9 +170,32 @@ export function arrangeDraft(draft: AuthoredDraft) {
     }
     if (!changed) throw new Error('循环图不能自动排版。');
   }
-  const counts = new Map<number, number>();
+  // Fold a complete unary chain to the current viewport instead of making a
+  // long, unreadable strip. Branch/merge graphs keep their topological lanes.
+  const unaryChain = draft.nodes.length >= 7 && draft.edges.length === draft.nodes.length - 1 &&
+    new Set(rank.values()).size === draft.nodes.length && draft.nodes.every(node => {
+      const module = catalog.modules.find(item => item.kind === node.kind);
+      return module && module.ports.filter(port => port.direction === 'in').length <= 1 && module.ports.filter(port => port.direction === 'out').length <= 1 &&
+        draft.edges.filter(edge => edge.target.nodeId === node.id).length <= 1 && draft.edges.filter(edge => edge.source.nodeId === node.id).length <= 1;
+    });
+  if (unaryChain && viewport && Number.isFinite(viewport.width) && Number.isFinite(viewport.height) && viewport.width > 0 && viewport.height > 0) {
+    const rowPitch = Math.max(...draft.nodes.map(node => draftNodeSize(node, catalog).height)) + 80;
+    let columns = draft.nodes.length, bestZoom = 0;
+    for (let candidate = 2; candidate <= draft.nodes.length; candidate++) {
+      const width = (candidate - 1) * 248 + 176 + 144, height = (Math.ceil(draft.nodes.length / candidate) - 1) * rowPitch + rowPitch - 80 + 64;
+      const zoom = Math.min(1, Math.max(1, viewport.width - 30) / width, Math.max(1, viewport.height - 30) / height);
+      if (zoom > bestZoom) { bestZoom = zoom; columns = candidate; }
+    }
+    for (const node of draft.nodes) {
+      const index = rank.get(node.id)!;
+      node.position = { x: 50 + index % columns * 248, y: 70 + Math.floor(index / columns) * rowPitch };
+    }
+    return;
+  }
+  const nextY = new Map<number, number>();
   for (const node of draft.nodes) {
-    const column = rank.get(node.id)!, row = counts.get(column) ?? 0; counts.set(column, row + 1);
-    node.position = { x: 50 + column * 248, y: 70 + row * 154 };
+    const column = rank.get(node.id)!, y = nextY.get(column) ?? 70;
+    node.position = { x: 50 + column * 248, y };
+    nextY.set(column, y + draftNodeSize(node, catalog).height + 54);
   }
 }

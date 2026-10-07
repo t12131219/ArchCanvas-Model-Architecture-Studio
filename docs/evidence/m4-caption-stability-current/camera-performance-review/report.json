@@ -1,0 +1,508 @@
+{
+  "schema": "archcanvas-camera-performance-next-step-review/1",
+  "createdUtc": "2026-10-06T10:59:53.350701+00:00",
+  "camera": {
+    "allCurrentCameraUses": [
+      {
+        "line": 54,
+        "text": "const [camera, setCamera] = useState<Camera>({ x: 35, y: 35, zoom: 0.9 });"
+      },
+      {
+        "line": 134,
+        "text": "if (active?.type === 'pan') { cameraRef.current = active.camera; setCamera(active.camera); }"
+      },
+      {
+        "line": 188,
+        "text": "setCamera(fitCameraToBounds(bounds, { width, height }));"
+      },
+      {
+        "line": 210,
+        "text": "requestAnimationFrame(() => fit(document));"
+      },
+      {
+        "line": 241,
+        "text": "setNotice(active.projectId ? '已重开工作副本及保存的画布' : '已重开保存的画布'); requestAnimationFrame(() => fit(doc));"
+      },
+      {
+        "line": 256,
+        "text": "useEffect(() => { if (current) localStorage.setItem(ACTIVE, JSON.stringify({ documentId: current.id, projectId })); }, [current?.id, projectId]);"
+      },
+      {
+        "line": 301,
+        "text": "setCamera(old => { const zoom = Math.max(0.15, Math.min(3, old.zoom * Math.exp(-event.deltaY * 0.0015))); return { x: px - (px - old.x) * zoom / old.zoom, y: py - (py - old.y) * zoom / old.zoom, zoom }; });"
+      },
+      {
+        "line": 377,
+        "text": "if (panCamera) { cameraRef.current = panCamera; setCamera(panCamera); }"
+      },
+      {
+        "line": 410,
+        "text": "if (finalCamera) { cameraRef.current = finalCamera; setCamera(finalCamera); }"
+      },
+      {
+        "line": 569,
+        "text": "setCamera(old => focusCameraOnPoint(old, { x: node.x + node.width / 2, y: node.y + node.height / 2 }, { width, height }));"
+      },
+      {
+        "line": 579,
+        "text": "setCamera(old => focusCameraOnPoint(old, { x: annotation.x + annotation.width / 2, y: annotation.y + annotation.height / 2 }, { width, height }));"
+      },
+      {
+        "line": 597,
+        "text": "setCamera(old => zoomCameraAtPoint(old, factor === 'reset' ? 1 : Math.max(0.15, Math.min(3, old.zoom * factor)), { x: rect.width / 2, y: rect.height / 2 }));"
+      },
+      {
+        "line": 611,
+        "text": "requestAnimationFrame(() => fit(document));"
+      }
+    ],
+    "initialState": {
+      "x": 35,
+      "y": 35,
+      "zoom": 0.9
+    },
+    "architectureAndReloadScheduleUnconditionalFit": true,
+    "generatedModelSchedulesFitAgain": true,
+    "cameraStorageImplemented": false,
+    "resizeObserverImplemented": false,
+    "resizeEventImplemented": false,
+    "scheduledLoadFitRechecksLoadGeneration": false,
+    "scheduledLoadFitRisk": "Source shows rAF callback captures doc without a fresh loadSequence/history identity check. A cross-load/manual-fit overwrite is a source-level risk, not a new reproduced browser failure.",
+    "resetMeaning": "100% is zoom=1 around viewport centre world point; explicitFit recomputes bounds. They are separate public actions.",
+    "actualPriorReopen": {
+      "captures": [
+        "24-saved-restored",
+        "25-reopened"
+      ],
+      "revision": 18,
+      "wholeSceneEqual": true,
+      "metadataEqual": true,
+      "cameraBefore": {
+        "width": 696.0,
+        "height": 806.0,
+        "x": -12.0,
+        "y": -82.5,
+        "scale": 1.0
+      },
+      "cameraAfter": {
+        "width": 696.0,
+        "height": 806.0,
+        "x": 98.9628,
+        "y": 46.0,
+        "scale": 0.681141
+      },
+      "cameraPreserved": false
+    },
+    "viewStateProposal": {
+      "status": "recommendation_only_not_implemented",
+      "separateFromDocumentHistory": true,
+      "schema": {
+        "schemaVersion": 1,
+        "documentId": "exact",
+        "sourceBindingDigest": "exact",
+        "irDigest": "exact",
+        "zoom": "finite positive validated range",
+        "worldCenter": {
+          "x": "finite",
+          "y": "finite"
+        },
+        "viewportAtCapture": {
+          "width": "finite positive",
+          "height": "finite positive"
+        },
+        "mode": "manual|fit",
+        "savedVisualRevision": "readback bound; reject view newer than restored document"
+      },
+      "scopeChoice": "Session storage is minimal reload preservation without cross-tab clobber. Full close/reopen across tabs requires a separately chosen origin/service namespace and last-view local preference policy; do not silently share transient camera ownership.",
+      "restoreFormula": "x=newViewport.width/2-worldCenter.x*zoom; y=newViewport.height/2-worldCenter.y*zoom",
+      "manualResize": "Preserve world centre and scale by reprojection, not old pixel translation",
+      "fitResize": "Recompute fit to current committed bounds if mode remains fit",
+      "precedence": "Explicit fit/reset/focus/pan/zoom increments camera intent generation. A delayed initial restore/fit cannot supersede it; recheck document/source/IR/loadSequence and viewport readiness before applying.",
+      "writePolicy": "Persist committed camera only after pan release/zoom/fit/focus; do not persist active pan intermediates or cancelled gesture. Storage parse/quota failure keeps current view; writes never change visual revision/source/history.",
+      "initialLoadPolicy": "No matching valid state uses fit once after positive viewport. Do not record stale prior document camera under next document key. Reconcile to new source/IR invalidates old state unless explicit mapping is independently reviewed.",
+      "necessaryProof": [
+        "new document/source/IR rejection",
+        "malformed/nonfinite/tiny viewport handling",
+        "same viewport exact restore",
+        "different viewport same world centre",
+        "manual resize versus fit resize",
+        "explicit fit wins over delayed restore",
+        "switch document before pending callback",
+        "cancelled active pan rollback does not persist intermediate camera",
+        "native pan/zoom save/reload and untouched Canvas/history/export"
+      ]
+    }
+  },
+  "stressVisibility": {
+    "frozenBuild": "index-BTw7OHsD.js",
+    "renderedBodies": 304,
+    "ordinaryLayerBodies": 300,
+    "canvasViewport": {
+      "height": 641,
+      "width": 672,
+      "x": 200,
+      "y": 115
+    },
+    "bodyIntersections": 6,
+    "fullyContained": 4,
+    "intersectingIds": [
+      "call:instance:model.DenseStress300",
+      "call:instance:model.DenseStress300.network",
+      "input:model.DenseStress300:features",
+      "call:instance:model.DenseStress300.network.0",
+      "call:instance:model.DenseStress300.network.1",
+      "call:instance:model.DenseStress300.network.2"
+    ],
+    "fullyContainedIds": [
+      "input:model.DenseStress300:features",
+      "call:instance:model.DenseStress300.network.0",
+      "call:instance:model.DenseStress300.network.1",
+      "call:instance:model.DenseStress300.network.2"
+    ],
+    "bodyExtentCssPx": {
+      "width": 303.97308349609375,
+      "height": 29376.96875
+    },
+    "ordinaryBodyCssPx": {
+      "height": 60.020172119140625,
+      "width": 187.8050842285156,
+      "x": 354.4873962402344,
+      "y": 475.1907653808594
+    },
+    "benchmarkPanel": {
+      "height": 305,
+      "width": 340,
+      "x": 244,
+      "y": 498
+    },
+    "occludedIntersectingBodies": [
+      "call:instance:model.DenseStress300",
+      "call:instance:model.DenseStress300.network",
+      "call:instance:model.DenseStress300.network.0",
+      "call:instance:model.DenseStress300.network.1",
+      "call:instance:model.DenseStress300.network.2"
+    ],
+    "reason": "Source has one 300-layer Sequential; expanded default vertical chain extends far outside viewport. DOM frontier is not viewport visibility.",
+    "bodyExtentFitHypothesis": {
+      "relativeScale": 0.018688109201191835,
+      "projectedLeafBody": {
+        "widthPx": 3.50972192260153,
+        "heightPx": 1.1216635308368297
+      },
+      "notReadableOrActualFitProof": true
+    },
+    "compactLayoutHypotheses": [
+      {
+        "columns": 12,
+        "rows": 25,
+        "objects": 300,
+        "zoom": 0.15,
+        "bodyWorld": [
+          194,
+          62
+        ],
+        "gapsWorld": [
+          32,
+          24
+        ],
+        "extentCssPx": [
+          402.0,
+          318.9
+        ],
+        "bodyCssPx": [
+          29.099999999999998,
+          9.299999999999999
+        ],
+        "nominal13UnitTitlePx": 1.95,
+        "scope": "Arithmetic compact-layout hypothesis, not an existing source-backed/interactive demo or viewport/hardware proof"
+      },
+      {
+        "columns": 20,
+        "rows": 15,
+        "objects": 300,
+        "zoom": 0.15,
+        "bodyWorld": [
+          194,
+          62
+        ],
+        "gapsWorld": [
+          32,
+          24
+        ],
+        "extentCssPx": [
+          673.1999999999999,
+          189.9
+        ],
+        "bodyCssPx": [
+          29.099999999999998,
+          9.299999999999999
+        ],
+        "nominal13UnitTitlePx": 1.95,
+        "scope": "Arithmetic compact-layout hypothesis, not an existing source-backed/interactive demo or viewport/hardware proof"
+      },
+      {
+        "columns": 20,
+        "rows": 15,
+        "objects": 300,
+        "zoom": 0.85,
+        "bodyWorld": [
+          194,
+          62
+        ],
+        "gapsWorld": [
+          32,
+          24
+        ],
+        "extentCssPx": [
+          3814.7999999999997,
+          1076.1
+        ],
+        "bodyCssPx": [
+          164.9,
+          52.699999999999996
+        ],
+        "nominal13UnitTitlePx": 11.049999999999999,
+        "scope": "Arithmetic compact-layout hypothesis, not an existing source-backed/interactive demo or viewport/hardware proof"
+      }
+    ],
+    "nextDemoRequirements": [
+      "A genuine source-backed graph with300 distinct visible bodies, nonoverlap and actual uncovered viewport coverage",
+      "record actual effective viewport and zoom plus minimum painted object/text size",
+      "keep camera unchanged across timed samples",
+      "do not count offscreen bodies, collapsed canonical IDs,1px cards or occluded control overlay as readable300-object experience",
+      "use ordinary typed layout operations/new isolated document; no canonical mutation or overlapping-body count trick"
+    ]
+  },
+  "performance": {
+    "targets": {
+      "visibleObjects": 300,
+      "nativeInputToPaintP95Ms": 50,
+      "presentedFps": 50,
+      "mediumIncrementalP95MsExclusive": 500,
+      "screenAnchorMaxPx": 8,
+      "unrelatedPinCanvasMaxPx": 0
+    },
+    "currentlyAvailableEngineeringSignals": [
+      "trusted discrete toggle EventTiming duration with both-sideunique matching",
+      "rAF cadence intervals",
+      "longtasks",
+      "public DOM body coverage/anchors/pins",
+      "2rAF geometry boundary"
+    ],
+    "missingAcceptanceSignals": [
+      "continuous input and complete denominator",
+      "same surface presentation feedback joined to input",
+      "fixed browser/hardware/fontbytes/DPR/power",
+      "genuine readable300visible workload",
+      "same conditionsA/Bx3 alternatingorder",
+      "mediumincremental processing denominator and visibleunrelatedpins"
+    ],
+    "existingTraceCapabilityBoundary": {
+      "measurement": "actual compositor presentation feedback joined to input response for current Studio surface",
+      "reason": "No enabled purpose-built profiling/CDP/trace MCP tool or documented browser capability can collect it. Native desktop UI control is disabled; a separate Chrome/browser trace provider is not installed or connected in available evidence.",
+      "notAProductPerformancePass": "2Hz rAF cadence and1008ms Event Timing remain engineering diagnostics; no further callback sampling can fill the missing presentation stream."
+    },
+    "existingOperatorTraceRoute": {
+      "action": "Have an actual operator use the installed Codex native Start Performance Trace → perform one short known Studio encoder toggle on the current D60 build → Stop Performance Trace and preserve the local .pftrace without upload.",
+      "requiredPreparation": [
+        "record fixed viewport/DPR/UA and external font/hardware facts; keep the selected Studio surface foreground and unobstructed",
+        "bind source/document/IR IDs, local D60 asset hashes, target canonical ID and action UTC/monotonic timestamps",
+        "preserve whole trace and all attempt outcomes"
+      ],
+      "validationBeforeBroaderRun": [
+        "verify trace carries surface/frame-sequence presentation feedback and input-latency flow linking this exact visual response; renderer Paint/rAF/composite submission alone are insufficient",
+        "if genuine presented evidence exists and parser access is available, use this path for prescribed A/B×3; otherwise retain trace as unavailable/incomplete rather than pass"
+      ],
+      "presentedEvidenceObtainedInThisAudit": false,
+      "operatorRequirementIsCapabilityLimitationNotUserApprovalLoop": true
+    },
+    "noUnsupportedApiRetries": true,
+    "safeAvailableWork": [
+      "prepare independent compact/source workload and nominal visibility/readability report",
+      "instrument/measure observer readScene overhead and fullinputlog in a separate bounded stage",
+      "fresh samebuild discreet trusted sample with explicit warmup/settle/drain and no pins-zero promotion",
+      "bind available actual hardware/font files rather than merelydocument.fonts.status",
+      "reuse retained host trace route; do not try undisclosedCDP/IPC/DevTools methods"
+    ],
+    "claimBoundary": "More callback/DOM sampling cannot certify actual presentedFPS or compositorinput response; keep gate failed_or_unverified until exact surface feedback evidence exists."
+  },
+  "stageRecommendation": {
+    "camera": "Technically useful independent followup, but not prerequisite to fixing the current memorylabel threshold. Root chooses stage scope; camera needs its own async/resize/storage/browser proofs and freshbuild/research freeze.",
+    "performance": "Prepare real300visibility/readability workload before another300 claim; native matching can advance engineering evidence but host presentedstream remains unavailable to documented tools.",
+    "notRootDecision": true
+  },
+  "boundaries": {
+    "productChanged": false,
+    "currentDocsChanged": false,
+    "browserOperated": false,
+    "servicesOperated": false,
+    "modelExecuted": false,
+    "humanParticipants": 0,
+    "cameraStateImplemented": false,
+    "presentedPerformanceCertified": false
+  },
+  "inputs": [
+    {
+      "path": "AGENTS.md",
+      "bytes": 2022,
+      "sha256": "4356c80e92e8f1443caf14cc9c3c8cd2a5d7a2da6f73e044902a3227fd91c112",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/AGENTS.md",
+      "snapshotExact": true
+    },
+    {
+      "path": "skills/archcanvas/SKILL.md",
+      "bytes": 6395,
+      "sha256": "099f47ea174e19ce9e658a944ba3805b5c66e7febf7ab8d90498da36b713df2d",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/skills/archcanvas/SKILL.md",
+      "snapshotExact": true
+    },
+    {
+      "path": "studio/src/App.tsx",
+      "bytes": 71726,
+      "sha256": "abac3f4e80825c635d6a1005219623357459a3b1210e9b11f59822c3d8a64004",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/studio/src/App.tsx",
+      "snapshotExact": true
+    },
+    {
+      "path": "studio/src/cameraGesture.ts",
+      "bytes": 1976,
+      "sha256": "cca65e1fe47496954933ae1fc93aa75342b1a5d1594fb8d8096c789a0f5411f4",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/studio/src/cameraGesture.ts",
+      "snapshotExact": true
+    },
+    {
+      "path": "studio/src/cameraProjection.ts",
+      "bytes": 2809,
+      "sha256": "b0d3cee0da0e7cc1d256849e1f90e1caf926d9373b9c2b774d380c2bc8135cda",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/studio/src/cameraProjection.ts",
+      "snapshotExact": true
+    },
+    {
+      "path": "studio/src/core/types.ts",
+      "bytes": 7724,
+      "sha256": "e0529a47b2a39198d723e043484dd27dc01cc7788d453e2ebd4a88b748b298d2",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/studio/src/core/types.ts",
+      "snapshotExact": true
+    },
+    {
+      "path": "studio/src/core/document.ts",
+      "bytes": 20263,
+      "sha256": "ceb6a83a00517ed23591938457a76f53beb8ccac75557d6f17fb287dc338b3f1",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/studio/src/core/document.ts",
+      "snapshotExact": true
+    },
+    {
+      "path": "studio/src/nativePerformance.ts",
+      "bytes": 11245,
+      "sha256": "291c85482cbad512ebb46c2894d370eee4bb836dec3d6c5d95d527c3a35b533c",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/studio/src/nativePerformance.ts",
+      "snapshotExact": true
+    },
+    {
+      "path": "studio/src/perf.ts",
+      "bytes": 11332,
+      "sha256": "866e8356c37ca78b2bbedc2e0f390c32432a348a380959aed46eedb4612a5cef",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/studio/src/perf.ts",
+      "snapshotExact": true
+    },
+    {
+      "path": "studio/src/PerfBenchmarkPanel.tsx",
+      "bytes": 3970,
+      "sha256": "3b48d1b60ced3ea66b74196702aba5736d1c161344344564fa745768c6b8fa4d",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/studio/src/PerfBenchmarkPanel.tsx",
+      "snapshotExact": true
+    },
+    {
+      "path": "studio/src/perfBenchmark.ts",
+      "bytes": 9276,
+      "sha256": "717d31cc065e8e4a41cb5cdbb1a80d92314eb35a203a54afa514e57d741cd382",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/studio/src/perfBenchmark.ts",
+      "snapshotExact": true
+    },
+    {
+      "path": "fixtures/stress_300/model.py",
+      "bytes": 13830,
+      "sha256": "3e7395e153d16454b6543c0d8f028660309443a64b15e32e33b0e2c482e8afb4",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/fixtures/stress_300/model.py",
+      "snapshotExact": true
+    },
+    {
+      "path": "scripts/check_m4_stress.py",
+      "bytes": 5738,
+      "sha256": "149e981e1d38e599d1b2107de27c3e21ae3b5e30cb2960a39281c82892bfc58a",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/scripts/check_m4_stress.py",
+      "snapshotExact": true
+    },
+    {
+      "path": "studio/tests/camera-projection.test.ts",
+      "bytes": 4285,
+      "sha256": "1c9cc5b84a324a788b12d662a19e3f8121f8f7018d942783590db6c6fc83d9b1",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/studio/tests/camera-projection.test.ts",
+      "snapshotExact": true
+    },
+    {
+      "path": "studio/tests/camera-gesture.test.ts",
+      "bytes": 3755,
+      "sha256": "e6a4895492d46cb0538becbe65f8fa4700063fcb094a199e3b94357acf5c4cb0",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/studio/tests/camera-gesture.test.ts",
+      "snapshotExact": true
+    },
+    {
+      "path": "studio/tests/stress-fixture.test.ts",
+      "bytes": 2589,
+      "sha256": "60c0f0c621c5665d4180167b601d7803a99e67ed7a7c40be70cd953aed768dde",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/studio/tests/stress-fixture.test.ts",
+      "snapshotExact": true
+    },
+    {
+      "path": "scripts/validate_native_performance.mjs",
+      "bytes": 7239,
+      "sha256": "2d6e64042d3a925fbb22e48bf9dbe2a63bf4cedfd24e8b8c849851943cf56046",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/scripts/validate_native_performance.mjs",
+      "snapshotExact": true
+    },
+    {
+      "path": "docs/evidence/m4-presented-performance-capability-audit/report.json",
+      "bytes": 7976,
+      "sha256": "e4e33a75918f66f8dbfa40103a43c3d35240c4b90a0bf4316b6893ea04e9941b",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/docs/evidence/m4-presented-performance-capability-audit/report.json",
+      "snapshotExact": true
+    },
+    {
+      "path": "docs/evidence/m4-current-performance-condition-review/README.md",
+      "bytes": 6616,
+      "sha256": "726550090a5558db17a916114ecbab57ce578f0bc1cfcff4124c5ac34e4ccc37",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/docs/evidence/m4-current-performance-condition-review/README.md",
+      "snapshotExact": true
+    },
+    {
+      "path": "docs/evidence/m4-performance-next-current/final-native-browser/receipt.json",
+      "bytes": 2572,
+      "sha256": "ae8faddc40e248319654e733aa1bb92699b6094dc76b48e226eb4f8e9539d929",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/docs/evidence/m4-performance-next-current/final-native-browser/receipt.json",
+      "snapshotExact": true
+    },
+    {
+      "path": "docs/evidence/m4-performance-next-current/final-native-browser/expanded-body-coverage.json",
+      "bytes": 69465,
+      "sha256": "3e845f68c2aa5e162dd0b569f72f2083e507b434bae9403a41afb6c1ea4da7ab",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/docs/evidence/m4-performance-next-current/final-native-browser/expanded-body-coverage.json",
+      "snapshotExact": true
+    },
+    {
+      "path": "docs/evidence/m4-caption-route-current/final-browser/receipt.json",
+      "bytes": 4235,
+      "sha256": "8ae74ce4c1ec25839e85097a206c0133b02072c73320351aad7815de61d2fc4f",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/docs/evidence/m4-caption-route-current/final-browser/receipt.json",
+      "snapshotExact": true
+    },
+    {
+      "path": "docs/evidence/m4-caption-route-current/browser-gesture-final/report.json",
+      "bytes": 109209,
+      "sha256": "e07c31c5a79f23a78adb148385a90bbd7429af4b42057028cd366898b5a22707",
+      "snapshot": "docs/evidence/m4-caption-stability-current/camera-performance-review/inputs/docs/evidence/m4-caption-route-current/browser-gesture-final/report.json",
+      "snapshotExact": true
+    }
+  ],
+  "inputBytesStillExact": true
+}

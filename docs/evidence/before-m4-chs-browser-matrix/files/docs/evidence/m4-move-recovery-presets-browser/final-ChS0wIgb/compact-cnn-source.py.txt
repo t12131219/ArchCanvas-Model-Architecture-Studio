@@ -1,0 +1,23 @@
+"""Fresh ArchCanvas authored model; static declarations are not runtime verification."""
+import torch
+from torch import nn
+
+
+class AuthoredModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.node_6c5855c5d8c7f565 = nn.Conv2d(in_channels=3, out_channels=8, kernel_size=[3, 3], stride=[1, 1], padding=[1, 1], dilation=[1, 1], groups=1, bias=True, dtype=torch.float32)
+        self.node_f780a1c71623e152 = nn.ReLU()
+        self.node_bfb0a14e292c94bc = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=[0, 0], dilation=[1, 1], ceil_mode=False)
+        self.node_2d49e11c05cacef4 = nn.AdaptiveAvgPool2d(output_size=[1, 1])
+        self.node_ffa42151fa8615fd = nn.Flatten(start_dim=1, end_dim=-1)
+        self.node_e4e53a5359433fd4 = nn.Linear(in_features=8, out_features=4, bias=True, dtype=torch.float32)
+
+    def forward(self, node_f43659a921315505):
+        node_6c5855c5d8c7f565 = self.node_6c5855c5d8c7f565(node_f43659a921315505)
+        node_f780a1c71623e152 = self.node_f780a1c71623e152(node_6c5855c5d8c7f565)
+        node_bfb0a14e292c94bc = self.node_bfb0a14e292c94bc(node_f780a1c71623e152)
+        node_2d49e11c05cacef4 = self.node_2d49e11c05cacef4(node_bfb0a14e292c94bc)
+        node_ffa42151fa8615fd = self.node_ffa42151fa8615fd(node_2d49e11c05cacef4)
+        node_e4e53a5359433fd4 = self.node_e4e53a5359433fd4(node_ffa42151fa8615fd)
+        return {'n_5b9e981aefed4f0f85ea974f8f0a3d4e': node_e4e53a5359433fd4}

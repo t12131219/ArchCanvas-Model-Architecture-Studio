@@ -1,0 +1,121 @@
+{
+  "entry": "model:DynamicStateSpace",
+  "nodeCount": 5,
+  "edgeCount": 5,
+  "portCount": 8,
+  "tensorCount": 3,
+  "callCount": 2,
+  "instanceCount": 2,
+  "opaqueNodeCount": 2,
+  "nodes": [
+    "DynamicLoop",
+    "input.sequence",
+    "output0",
+    "root",
+    "scan"
+  ],
+  "relations": [
+    [
+      "DynamicLoop",
+      "output",
+      "output0",
+      "value",
+      "data"
+    ],
+    [
+      "input.sequence",
+      "sequence",
+      "DynamicLoop",
+      "sequence",
+      "data"
+    ],
+    [
+      "input.sequence",
+      "sequence",
+      "root",
+      "sequence",
+      "data"
+    ],
+    [
+      "input.sequence",
+      "sequence",
+      "scan",
+      "arg0",
+      "data"
+    ],
+    [
+      "scan",
+      "output",
+      "DynamicLoop",
+      "state",
+      "data"
+    ]
+  ],
+  "containment": {
+    "root": [
+      "DynamicLoop",
+      "input.sequence",
+      "output0",
+      "scan"
+    ]
+  },
+  "instanceCalls": {
+    "instance:model.DynamicStateSpace": [
+      "root"
+    ],
+    "instance:model.DynamicStateSpace.scan": [
+      "scan"
+    ]
+  },
+  "tensors": [
+    {
+      "producer": [
+        "scan",
+        "output"
+      ],
+      "consumers": [
+        [
+          "DynamicLoop",
+          "state",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "input.sequence",
+        "sequence"
+      ],
+      "consumers": [
+        [
+          "DynamicLoop",
+          "sequence",
+          "data"
+        ],
+        [
+          "root",
+          "sequence",
+          "data"
+        ],
+        [
+          "scan",
+          "arg0",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "DynamicLoop",
+        "output"
+      ],
+      "consumers": [
+        [
+          "output0",
+          "value",
+          "data"
+        ]
+      ]
+    }
+  ]
+}

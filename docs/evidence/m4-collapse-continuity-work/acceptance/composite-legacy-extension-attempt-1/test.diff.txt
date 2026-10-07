@@ -1,0 +1,33 @@
+--- v2/test.ts
++++ v3/test.ts
+@@ -207,6 +207,30 @@
+   assert.equal(buildScene(twoBranches).nodes.some(n => n.id === 'bChild'), true);
+ });
+ 
++test('existing composite legacy cache ambiguous between a delimiter identity and two parallel branches cannot inject tall geometry', () => {
++  // This hand-authored witness predates the composite reader repair. Its old
++  // key can mean either ['a|b', 'root'] or ['a', 'b', 'root']; both sets contain
++  // real containers. The expected output is authored independently as 262.
++  const input = new URL('final-check-audit-attempt-1/legacy-composite-ambiguity.input.json', import.meta.url);
++  const raw = readFileSync(input), before = validateDocument(JSON.parse(raw.toString()));
++  assert.equal(digest(raw), '90ac63010cf32c1f37e08d9453e18826d30ffe9ff3c1e8954f064f0dcb2893f7', 'wrong frozen ambiguity witness');
++  assert.deepEqual(before.expandedIds, ['root']);
++  assert.deepEqual(before.layout.output, { x: 30, y: 262 });
++  assert.deepEqual(before.layoutByFrontier?.['a|b|root']?.output, { x: 30, y: 700 });
++  const parallel = toggle(toggle(before, 'a', true), 'b', true);
++  assert.deepEqual(new Set(parallel.expandedIds), new Set(['root', 'a', 'b']));
++  assert.deepEqual(parallel.layout.output, { x: 30, y: 262 });
++  sourceStable(before, parallel);
++  const observedIds = buildScene(parallel).nodes.map(n => n.id).sort();
++  assert.deepEqual(observedIds, ['root', 'a|b', 'a', 'b', 'output', 'aChild', 'bChild'].sort());
++  const loaded = validateDocument(JSON.parse(JSON.stringify(parallel)));
++  const compact = toggle(toggle(loaded, 'b', false), 'a', false);
++  assert.deepEqual(compact.layout.output, { x: 30, y: 262 });
++  assert.deepEqual(compact.expandedIds, ['root']);
++  sourceStable(before, compact);
++  assert.equal(digest(readFileSync(input)), digest(raw), 'frozen witness input was modified');
++});
++
+ const cnnRaw = readFileSync(new URL('before/actual-cnn-deep-rev12.json', import.meta.url));
+ const cnnId = (suffix: string) => `call:instance:model.ResidualCNN${suffix}`;
+ const CNN_COMPACT: Record<string, Position> = {

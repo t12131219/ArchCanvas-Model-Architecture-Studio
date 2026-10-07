@@ -1,0 +1,193 @@
+{
+  "entry": "model:TemporalForecaster",
+  "nodeCount": 9,
+  "edgeCount": 8,
+  "portCount": 14,
+  "tensorCount": 6,
+  "callCount": 4,
+  "instanceCount": 3,
+  "opaqueNodeCount": 0,
+  "nodes": [
+    "input.series",
+    "output0",
+    "output1",
+    "output2",
+    "output3",
+    "projection",
+    "projection@2",
+    "recurrent",
+    "root"
+  ],
+  "relations": [
+    [
+      "input.series",
+      "series",
+      "recurrent",
+      "input",
+      "data"
+    ],
+    [
+      "input.series",
+      "series",
+      "root",
+      "series",
+      "data"
+    ],
+    [
+      "projection",
+      "output",
+      "output0",
+      "value",
+      "data"
+    ],
+    [
+      "projection@2",
+      "output",
+      "output1",
+      "value",
+      "data"
+    ],
+    [
+      "recurrent",
+      "c_n",
+      "output3",
+      "value",
+      "data"
+    ],
+    [
+      "recurrent",
+      "h_n",
+      "output2",
+      "value",
+      "data"
+    ],
+    [
+      "recurrent",
+      "output",
+      "projection",
+      "input",
+      "data"
+    ],
+    [
+      "recurrent",
+      "output",
+      "projection@2",
+      "input",
+      "data"
+    ]
+  ],
+  "containment": {
+    "root": [
+      "input.series",
+      "output0",
+      "output1",
+      "output2",
+      "output3",
+      "projection",
+      "projection@2",
+      "recurrent"
+    ]
+  },
+  "instanceCalls": {
+    "instance:model.TemporalForecaster": [
+      "root"
+    ],
+    "instance:model.TemporalForecaster.projection": [
+      "projection",
+      "projection@2"
+    ],
+    "instance:model.TemporalForecaster.recurrent": [
+      "recurrent"
+    ]
+  },
+  "tensors": [
+    {
+      "producer": [
+        "projection",
+        "output"
+      ],
+      "consumers": [
+        [
+          "output0",
+          "value",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "projection@2",
+        "output"
+      ],
+      "consumers": [
+        [
+          "output1",
+          "value",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "recurrent",
+        "c_n"
+      ],
+      "consumers": [
+        [
+          "output3",
+          "value",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "recurrent",
+        "h_n"
+      ],
+      "consumers": [
+        [
+          "output2",
+          "value",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "recurrent",
+        "output"
+      ],
+      "consumers": [
+        [
+          "projection",
+          "input",
+          "data"
+        ],
+        [
+          "projection@2",
+          "input",
+          "data"
+        ]
+      ]
+    },
+    {
+      "producer": [
+        "input.series",
+        "series"
+      ],
+      "consumers": [
+        [
+          "recurrent",
+          "input",
+          "data"
+        ],
+        [
+          "root",
+          "series",
+          "data"
+        ]
+      ]
+    }
+  ]
+}

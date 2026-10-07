@@ -1,44 +1,79 @@
 # M4 研究者任务记录与复核
 
-当前（2026-10-05）`index-Cr_xKW9U.js`（SHA256 `1f4f51f9818e523916dacea184a7005fa7459bd3f2c4c8bfe6bfc83006e5be29`）与最终ce7 frontend 的[新版浏览器矩阵](m4-boundary-final-matrix.md)已完成真实UI采集：36 baseline＋三模型各一 edited-after，共39例/234工件、9 frontier；完整Scene/export重建与独立核对通过，artifactCoverage=complete，humanAcceptanceCertified=false。39张实际截图已有AI逐张观察，三组提交后的undo/redo/保存重开链另有完整SVG核对；这些不认证物理出版或真人。Studio88/88、Python62/62及额外21/21属于此前边界修正轮，本矩阵轮未重跑、未改产品源码/build。当前五席研究包61实施绑定、0真人；presented性能、活动取消、固定字体/硬件、人审与3–5真实任务仍未认证，M4保持partial、未进入M5。旧oI5矩阵/诊断/研究包仍属历史；[矩阵前归档](evidence/before-boundary-final-matrix/manifest.json)保留更新前文档和完整3644绑定解析，旧seal不改。
+## 当前状态：受限 memory 连线连续性（2026-10-06）
+
+当前 `index-CU5JhnoS.js` / `index--unhoRTb.css` 的[统一收据](evidence/m4-memory-continuity-current/checks-final-attempt-2/receipt.json)为 Studio **436/436**、fail/skip/cancel0，strict TypeScript/Vite exit0、publication **11/11** skip0；115源码/测试/配置＋3dist＝**118**，另11publication输入。36历史core＋1detail夹具单独冻结，115不是完整传递依赖清单。见[阶段](m4-memory-continuity.md)、[门](evidence/m4-current-gate-audit.json)及[source seal](evidence/m4-memory-continuity-current/implementation-work/source-seal-attempt-2/report.json)。
+
+collapsed memory在完整同场景原route batch完成后，才尝试Repeat轮廓感知的侧边/中点路线；完整fixed/chosen peers、nominal body/header/stroke、端口法向和两段6单位lead均保护，unknown/budget不足保留同场景batch。dy14→15例从49→644.3改善为49→50，端点仅1/0位移；非memory路线/端口与canonical事实保持。840production行14623关系、624adopt（y576/gap48）；实际140case18272独审为有限几何，不等于840模型、全域最少交叉或美观通过。窄gap、expanded/retained route、mask拥挤与字体/arrowhead仍开放。
+
+[浏览器/导出独审](evidence/m4-memory-continuity-current/independent-browser-export-review/readback-attempt-2/report.json)2840/2840是17records、16fullpublicXML和2actual工件的数据关系。Encoder上下16、左右24world及四次undo，保存47/storage7与settled重开已记录；12初reopen仍90%默认camera，后续68%。02/04footer滞后、10状态滞后、16stale modal保留；17仅root有限亲看完整figure/legend/footer47无modal，不认证全部rasterfresh/firstpaint。真实whole180SVG/PDF与saved47 full document2/2exact，最低名义文字6.56018pt；初2838/2840两oracle错误保留，不认证85/180mm人审。
+
+[原KAUB性能诊断](evidence/m4-readable-grid-browser-next/README.md)保留四toggle p95520ms、collapsed output y=-28236缺陷及300小字不批准。[continuous读回](evidence/m4-readable-grid-browser-next/continuous-browser/independent-readback-attempt-2/README.md)26/29保留三项真实proxy分歧：独立pan994.9/drag1716.1/wheel45.2ms只是首次DOM变化，非因果input-to-paint。rAF 不是实际呈现 FPS；当前readable300、continuous≤50ms、medium<500ms、固定硬件/字体A/B×3与presented≥50FPS未认证。
+
+M4 `partial`、M5 `not_started`、真人 0。AI 不计真人；历史3AI角色和17基础模块＋3透明起点保持原范围，未逐种生成/执行。[新研究准备](evidence/m4-memory-continuity-current/research-readiness-independent/report.json)313/313仅readiness：87implementation/4baseline，5pristine席位43631–43635；旧25包427文件exact、上一viewport包正式verifyexit1stale。未服务/probe/分配/collect，3–5真人五步≤180秒/≥80%及85/180mm人审开放。13入口第二`##`后历史正文、旧stage/gold/failure/package原字节保留。正式工程从头实现、独立于Temp runtime/fallback，无新认证复用，未执行生成模型；后续字节变化不继承本阶段认证。
+
+### 当前包的只读开场前 preflight
+
+当前可分配包的冻结校验和端口占用属于两个不同问题。使用
+`scripts/research_trial_readiness.py` 进行只读检查：它先运行正式
+`research_trial.py verify`，再逐席检查 assignment/collected/incoming、
+workspace 和 baseline envelope 是否仍为 pristine，并在实际机器上尝试
+绑定并立即释放 manifest 登记的 `127.0.0.1` 端口。输出中的
+`packageReadyForOperatorLaunch=true` 只表示包可供主持人开场；
+`serviceStatus=not-started` 仍表示没有服务进程，不能把空闲端口当作服务可用。
+受限运行环境无法创建 AF_INET socket 时，结果必须是
+`probe-blocked`/`humanResearchStatus=not-ready`，而不是推断端口空闲。
+
+当前 routing-user-simulation-v2 包的可复核收据见
+[`m4-research-readiness-current/attempt-2/receipt.json`](evidence/m4-research-readiness-current/attempt-2/receipt.json)，
+其 manifest SHA256 为 `7ccb839dee6e1ec34492b35bc8928730d317838a6f2bed6d29b2bceb55d1160c`。
+该次只读检查确认 5/5 席位 pristine、43911–43915 当时均可绑定、包库存前后
+不变；服务、assignment、collect、真人任务和出版人工审看仍未开始。
+
+## 历史 D60 研究协议与冻结参数
+
+旧 au3、ancestor-corridors 和更早研究包的准备状态仅按各自冻结时点读取，不能用于 D60 新参与者。旧 seal、失败与研究包原字节继续保留；本轮入口更新前的精确字节见 [归档 manifest](evidence/m4-native-matching-work/before-current-doc-update/manifest.json)。
 
 使用正式 Studio 的 `?study=1` 页面和下述隔离试用包，用匿名代号开始计时。记录器只保存在当前浏览器 sessionStorage，不上传参与者资料；刷新后继续同一记录。`?benchmark=1` 是另一种工程测量，不与任务耗时混算。空白席位和自动化反例都不能算作真实参与者。
 
-## 准备同一基线与独立席位
+## 历史 D60：冻结基线与隔离席位（不可用于 DuFX 开场）
 
-正式工程运行以下命令；不要使用旧目录、旧解释器或全局 entry。旧hierarchy-final五席包对Cr_xKW9U源码/build stale，不能分配新人。当前新包已prepare/verify：`.archcanvas/m4-research-trial-boundary-final`，61实施绑定、4baseline、五席8901–8905、0分配/收集/真人。应先verify当前包，不重新prepare覆盖；以下prepare命令仅示范未来再次修改源码/build时的新目录：
+以下命令和“当前包”措辞只记录 D60 的冻结时点。该包现被 verify 拒绝为 stale；不要按本节对后续构建执行 assign/serve/collect，也不要覆盖旧包。旧 DuFX 入口冻结时尚未新准备；此后 DuFX/CC91/B_XH 包先后准备并因实现变化失效，现行 BTw7 准备见上方，真人仍为 0。
+
+当前包已经完成 prepare 与 verify，两个进程均退出 0；[实际准备日志](evidence/research-trial/native-matching-current/process.json)保存准确参数与运行范围。不要再次 prepare、build 或覆盖这个包。开场前执行下面的 verify，并核查实际端口可用性与固定浏览器环境：
 
 ```bash
 cd /home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio
-npm --prefix studio run build
-.venv/bin/python scripts/research_trial.py prepare --output .archcanvas/m4-research-trial-NEW-BUILD --slots 5
+.venv/bin/python scripts/research_trial.py verify --package .archcanvas/m4-research-trial-native-matching-current
 ```
+
+包 manifest SHA256 为 `321c1c2c83126f57b2cb96f1debafd07849c946afce60a95e5db73b6778dd13c`；[独立审计](evidence/m4-research-native-matching-independent/README.md)确认 5/5 pristine、0 assignment/collected/researchers。准备时使用 `--slots 5 --first-port 43151`，五席登记为 43151–43155，尚未启动席位服务或检测端口可用性。今后产品字节变化时，保留本包并在一个不存在的新路径另行 prepare；不能编辑旧 manifest 的哈希来延续一轮研究。
 
 `prepare` 拒绝覆盖已有包，生成 `manifest.json`、`baseline/source`、独立分析的 `architecture.json`、正式 core 生成的未编辑 `canvas.json` 和 S01–S05。每个席位的 `participantCode=null`，初始统计为 0 researchers / `not_run`。各席位相同的 Canvas 字节和独立的 `workspace/documents` 都有 SHA256；`workspace/exports`、`incoming` 和空白复核模板各自隔离。服务的 `--data-dir` 指向 **documents 目录**，导出写入其父级 workspace，这也是不共享父目录的原因。
 
 准备 manifest 还冻结正式 Python/Studio 源码、导出/汇总工具和真实 `studio/dist` 的文件哈希。每次开场和收集前检查：
 
 ```bash
-.venv/bin/python scripts/research_trial.py verify --package .archcanvas/m4-research-trial-boundary-final
+.venv/bin/python scripts/research_trial.py verify --package .archcanvas/m4-research-trial-native-matching-current
 ```
 
 源码、Studio 构建或基线有变即停止该包并为新一轮准备新路径；不要编辑哈希以继续。`verify` 只核冻结内容，不评价研究门。若同一研究过程中必须修 bug，保留已运行记录，分别标注版本，不把不同实现混成同一轮结果。
 
 `preparationRuntime` 保存实际 Python/Node 路径、版本、平台与 analyzer 来源，避免把错误安装当正式工程。主持人另填 `environment-template.json` 的实际浏览器/version、硬件、viewport/DPR 和字体解析证据，保存为 `environment.json`；准备运行时不能替代浏览器与字体锁定清单。选择一套固定环境完成本轮，发生变化即记录对应席位。
 
-每位实际使用者分配一个此前未使用的席位和一个唯一匿名代号，例如 R01→S01。代号在参与者实际开场前由主持人分配，席位不是虚构参与者。开启服务；S02–S05 使用新 manifest 中相应的独立目录和8902–8905端口：
+每位实际使用者分配一个此前未使用的席位和一个唯一匿名代号，例如 R01→S01。代号在参与者实际开场前由主持人分配，席位不是虚构参与者。开启服务前从新manifest读取各席位的 `port` 与独立 `dataDir`，另查实际端口可用性。本包 S01 的实录端口为 **43151**，下例只对应 S01；S02–S05 使用 manifest 中各自的 43152–43155 与独立 dataDir。端口可用性仍须实际检查：
 
 ```bash
 .venv/bin/python scripts/research_trial.py assign \
-  --package .archcanvas/m4-research-trial-boundary-final --slot S01 --participant-code R01 --kind researcher
+  --package .archcanvas/m4-research-trial-native-matching-current --slot S01 --participant-code R01 --kind researcher
 PYTHONPATH=src .venv/bin/python -m archcanvas_cli serve \
-  --port 8901 --data-dir .archcanvas/m4-research-trial-boundary-final/slots/S01/workspace/documents \
+  --port 43151 --data-dir .archcanvas/m4-research-trial-native-matching-current/slots/S01/workspace/documents \
   --studio-dir studio/dist
 ```
 
-只在实际使用者开场时调用 `assign`；自动化选择 `--kind automation`。此步先核对当前席位仍是原始 baseline envelope 且没有旧导出/项目/事务，再独占写入 `assignment.json` 的 code→slot→baseline 哈希绑定。它不开始计时、不证明真实身份；已分配席位和重复代号拒绝再次分配。收集要求 task 的 code/type 与该 assignment 相同，防止任务结束后才给已编辑数据补填一个“初始基线”。
+本五席包只在真实使用者实际开场时调用 `assign --kind researcher`；AI 工程检查使用独立的隔离数据或自动化包并明确 `--kind automation`，不消耗此包的未分配研究席位。此步先核对当前席位仍是原始 baseline envelope 且没有旧导出/项目/事务，再独占写入 `assignment.json` 的 code→slot→baseline 哈希绑定。它不开始计时、不证明真实身份；已分配席位和重复代号拒绝再次分配。收集要求 task 的 code/type 与该 assignment 相同，防止任务结束后才给已编辑数据补填一个“初始基线”。
 
-打开 `http://127.0.0.1:8901/?study=1`，使用单独浏览器 session，加载 Transformer 总览，核对初始 revision=0、没有别名/样式覆盖或 pin。先保存实际开场截图，再开始计时。8901–8905来自当前manifest；以下8901是S01端口，以新包manifest和实际端口可用性为准。每目录只运行一个服务进程；下一位换新席位、端口和浏览器 session。**“开始下一份记录”只清 sessionStorage，不清服务端文档，不能用它复用同一席位。** 停止服务也不会重置基线；包不提供覆盖/清除旧参与者数据的自动操作。
+打开对应S01实录端口的 `http://127.0.0.1:43151/?study=1`，使用单独浏览器 session，加载 Transformer 总览，核对初始 revision=0、没有别名/样式覆盖或 pin。先保存实际开场截图，再开始计时。端口登记不证明可用或服务已经在线；以新包manifest和实际启动结果为准。每目录只运行一个服务进程；下一位换新席位、端口和浏览器 session。**“开始下一份记录”只清 sessionStorage，不清服务端文档，不能用它复用同一席位。** 停止服务也不会重置基线；包不提供覆盖/清除旧参与者数据的自动操作。
 
 ## 任务与评判
 
@@ -64,16 +99,16 @@ SVG/PDF 实际目录是 `slots/S01/workspace/exports/<artifactId>`。导出面�
 
 ```bash
 .venv/bin/python scripts/research_trial.py collect \
-  --package .archcanvas/m4-research-trial-boundary-final --slot S01 --participant-code R01 \
-  --study .archcanvas/m4-research-trial-boundary-final/slots/S01/incoming/m4-study-R01.json \
+  --package .archcanvas/m4-research-trial-native-matching-current --slot S01 --participant-code R01 \
+  --study .archcanvas/m4-research-trial-native-matching-current/slots/S01/incoming/m4-study-R01.json \
   --export-id ACTUAL_32_HEX_ARTIFACT_ID \
-  --screenshot start=.archcanvas/m4-research-trial-boundary-final/slots/S01/incoming/start.png \
-  --screenshot final=.archcanvas/m4-research-trial-boundary-final/slots/S01/incoming/final.png \
-  --screenshot undo-before=.archcanvas/m4-research-trial-boundary-final/slots/S01/incoming/undo-before.png \
-  --screenshot undo-after=.archcanvas/m4-research-trial-boundary-final/slots/S01/incoming/undo-after.png \
-  --screenshot redo-after=.archcanvas/m4-research-trial-boundary-final/slots/S01/incoming/redo-after.png \
-  --screenshot reloaded=.archcanvas/m4-research-trial-boundary-final/slots/S01/incoming/reloaded.png \
-  --screenshot export-open=.archcanvas/m4-research-trial-boundary-final/slots/S01/incoming/export-open.png
+  --screenshot start=.archcanvas/m4-research-trial-native-matching-current/slots/S01/incoming/start.png \
+  --screenshot final=.archcanvas/m4-research-trial-native-matching-current/slots/S01/incoming/final.png \
+  --screenshot undo-before=.archcanvas/m4-research-trial-native-matching-current/slots/S01/incoming/undo-before.png \
+  --screenshot undo-after=.archcanvas/m4-research-trial-native-matching-current/slots/S01/incoming/undo-after.png \
+  --screenshot redo-after=.archcanvas/m4-research-trial-native-matching-current/slots/S01/incoming/redo-after.png \
+  --screenshot reloaded=.archcanvas/m4-research-trial-native-matching-current/slots/S01/incoming/reloaded.png \
+  --screenshot export-open=.archcanvas/m4-research-trial-native-matching-current/slots/S01/incoming/export-open.png
 ```
 
 可重复 `--export-id` 绑定 SVG/PDF；可增加 `--screenshot step1=...` 至 step5。成功收集的 `slots/S01/collected/manifest.json` 绑定匿名代码、开场 assignment、task JSON、基线/最终 Canvas、服务 storage envelope、实际导出输入/文件/receipt 和截图的字节 SHA256。它核对所有 checkpoint 的 document/source/IR，末步 revision、slot 内路径、导出文件 digest/size，以及正式 `buildExportScene`/`renderSvg` 从最终文档重算的 Scene digest。代码重复、已收集席位、同 revision 的另一份 Canvas、旧/错 source/IR、错文件摘要、缺 start/final 图和已完成但无 SVG/PDF 都会拒绝，失败不会留下半份 collected 包。
@@ -90,12 +125,18 @@ SVG/PDF 实际目录是 `slots/S01/workspace/exports/<artifactId>`。导出面�
 
 ```bash
 .venv/bin/python scripts/summarize_research_tasks.py \
-  .archcanvas/m4-research-trial-boundary-final/slots/S01/collected/task.json \
-  .archcanvas/m4-research-trial-boundary-final/slots/S02/collected/task.json \
-  .archcanvas/m4-research-trial-boundary-final/slots/S03/collected/task.json --output study-summary.json
+  .archcanvas/m4-research-trial-native-matching-current/slots/S01/collected/task.json \
+  .archcanvas/m4-research-trial-native-matching-current/slots/S02/collected/task.json \
+  .archcanvas/m4-research-trial-native-matching-current/slots/S03/collected/task.json --output study-summary.json
 ```
 
 脚本规范代号并去重，拒绝错误对象、未结束记录、伪摘要、负数/非有限时间、源码绑定变化和错误 checkpoint/时区顺序；研究使用者的放弃/超时计入分母，automation 排除。输出 `selfReportedCompletionRate` 与样本数，不自动把自报提升为通过，`researchGate` 始终等待独立工件复核。
+
+## 当前搭建与位置修复探索
+
+原五步绑定同一 Transformer document/source/IR。17 基础模块＋3 透明起点的草稿搭建会生成另一份 source/document；位置修复的 preview/cancel/apply 也不能从原五步结果推导。先结束并收集原五步，再使用另一个独立草稿/画布探索从零搭建、模块库搜索/点击/拖入、节点及相机上下左右移动、撤销重做、保存重开和箭头交叉/弯折。计时、工件与卡点单列，不改变原 180 秒分母。
+
+[AI 体验覆盖核对](evidence/m4-ai-usability-current-review/README.md)保留已核对历史证据与缺口；[新手与视图任务卡](evidence/m4-research-handoff-audit-attempt-1/novice-and-view-task-card.md)及[八项空白探索表](evidence/m4-research-handoff-audit-attempt-1/exploration-template.json)用于逐项记录实际完成、失败或未运行。D60 新增工程检查以 [本轮阶段记录](m4-native-matching.md)为准。AI 角色始终标 automation/AI，不计 researcher 或出版人审；真实参与者尚未开场。
 
 ## 历史缩放构建与工程冒烟范围
 
@@ -103,9 +144,9 @@ SVG/PDF 实际目录是 `slots/S01/workspace/exports/<artifactId>`。导出面�
 
 历史工程冒烟 [`m4-study-automation.json`](evidence/m4-study-automation.json)：已定位 attention、编辑 Encoder 别名/填充、验证保存刷新、生成 85 mm 详情 SVG；其他步骤未执行，记录为 abandoned。汇总 [`m4-study-summary.json`](evidence/m4-study-summary.json) 正确排除此记录，研究者人数为 0，任务验收为 `not_run`。
 
-历史缩放build当时的空白正式包位于 `.archcanvas/m4-research-trial-zoom-final`：S01–S05、8871–8875，已prepare/verify，没有 assignment、collected 或参与者结果，各席位exports/projects/transactions为空。使用此包时，将上文命令的 `.archcanvas/m4-research-trial` 替换为 `.archcanvas/m4-research-trial-zoom-final`，先执行 verify，无需再次 prepare。可审阅[当前准备 manifest](evidence/research-trial/current-zoom-build/prepared-manifest.json)与[准备核对收据](evidence/research-trial/current-zoom-build/preparation-verification.json)；它们只证明基线/工具/build冻结、五个空白席位和研究者数0，包manifest SHA256为`daeaec0137a0950ca93ca904574987e298f68eb45e6990fd3326d9be37f365b0`。旧current、ready、ready-final、intrusion-final四包完整保留，但[当前实际verify失败](evidence/research-trial/current-zoom-build/stale-packages.json)，不用于新研究。历史公开收据保留其原范围，不替代当前准备或真人任务验收。
+历史缩放build当时的空白正式包位于 `.archcanvas/m4-research-trial-zoom-final`：S01–S05、8871–8875，已prepare/verify，没有 assignment、collected 或参与者结果，各席位exports/projects/transactions为空。该旧包不用于 D60 新人；当时的准备与核验结果仅保留历史范围。可审阅[历史准备 manifest](evidence/research-trial/current-zoom-build/prepared-manifest.json)与[准备核对收据](evidence/research-trial/current-zoom-build/preparation-verification.json)；它们只证明基线/工具/build冻结、五个空白席位和研究者数0，包manifest SHA256为`daeaec0137a0950ca93ca904574987e298f68eb45e6990fd3326d9be37f365b0`。旧current、ready、ready-final、intrusion-final四包完整保留，但[当前实际verify失败](evidence/research-trial/current-zoom-build/stale-packages.json)，不用于新研究。历史公开收据保留其原范围，不替代当前准备或真人任务验收。
 
-同一历史缩放build的[最终浏览器矩阵](evidence/browser-visual-matrix-zoom-full/manifest.json)已封存36基础组合＋三模型各一编辑后，共39项、artifactCoverage=complete；humanAcceptanceCertified=false、visualAcceptance=pending-human-review。这是独立自动化工件覆盖，未新增参与者，不能填入本协议的真实研究者样本、任务完成率或出版人工结论。试用包仍verify unchanged，研究者为0。
+同一历史缩放build的[最终浏览器矩阵](evidence/browser-visual-matrix-zoom-full/manifest.json)已封存36基础组合＋三模型各一编辑后，共39项、artifactCoverage=complete；humanAcceptanceCertified=false、visualAcceptance=pending-human-review。这是独立自动化工件覆盖，未新增参与者，不能填入本协议的真实研究者样本、任务完成率或出版人工结论。该旧试用包在当时 verify unchanged，研究者为0；这不证明它可用于当前构建。
 
 汇总是本地原始审看报告，包含备注原文与工件绝对路径；分享前需另行选择可公开内容。`m4-research-tests.txt` 保存9项独立反例/分母检查，测试输入不作为真实参与者工件。
 

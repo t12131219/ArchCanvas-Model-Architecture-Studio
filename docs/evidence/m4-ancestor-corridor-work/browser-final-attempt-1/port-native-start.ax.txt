@@ -1,0 +1,183 @@
+Browser tab: 54, Title: "ArchCanvas · Model Architecture Studio", URL: "http://127.0.0.1:8987/".
+0 AXWebArea ArchCanvas · Model Architecture Studio, URL: 127.0.0.1:8987/
+	1 container root
+		2 container
+			3 text ArchCanvas 模型搭建
+			4 text field (settable) Description: 模型草稿名称, Value: 我的模型
+			5 text 有未保存编辑
+			6 button (disabled) 重开已保存
+			7 button 保存草稿
+			8 button 生成模型与论文图
+			9 button 返回制图
+		10 container
+			11 text MODULE LIBRARY
+			12 heading 常用模块 17, Value: 2
+				13 text 常用模块
+				14 text 17
+			15 text 拖入画布，或点击添加。
+			16 text 输入 → 计算模块 → 输出
+			17 text field (settable) 搜索模块
+			18 button 新建空白模型
+			19 container 网络起点
+				20 heading 网络起点 3, Value: 3
+					21 text 网络起点
+				22 container
+					23 text 添加一个独立网络。 所有基础模块与连线都可修改。
+				24 button Description: 添加 最小 MLP, Help: 两层全连接与 ReLU；输入 float32 · [1, 16]，输出 [1, 4]
+					25 text 最小 MLP
+					26 text 两层全连接与 ReLU
+					27 text  · 
+					28 text 5
+					29 text  模块
+					30 container
+						31 text 输入  float32 · [1, 16]
+						32 text 输出  [1, 4]
+				33 button Description: 添加 小型 CNN, Help: 卷积、池化与分类头；输入 float32 · [1, 3, 32, 32]，输出 [1, 4]
+					34 text 小型 CNN
+					35 text 卷积、池化与分类头
+					36 text  · 
+					37 text 8
+					38 text  模块
+					39 container
+						40 text 输入  float32 · [1, 3, 32, 32]
+						41 text 输出  [1, 4]
+				42 button Description: 添加 残差 MLP, Help: 两层全连接与输入跳连；输入 float32 · [1, 16]，输出 [1, 16]
+					43 text 残差 MLP
+					44 text 两层全连接与输入跳连
+					45 text  · 
+					46 text 6
+					47 text  模块
+					48 container
+						49 text 输入  float32 · [1, 16]
+						50 text 输出  [1, 16]
+				51 text 形状是可编辑的声明；生成前会静态检查，模型尚未执行。
+			52 container
+				53 heading 输入与输出, Value: 3
+					54 text 输入与输出
+				55 button Description: 添加 Input, Help: 声明输入张量的形状与类型，再连接后续模块。
+					56 text Input
+					57 text 输入
+				58 button Description: 添加 Output, Help: 连接模型结果；可以添加多个命名输出。
+					59 text Output
+					60 text 输出
+			61 container
+				62 heading 全连接, Value: 3
+					63 text 全连接
+				64 button Description: 添加 Linear, Help: 把最后一维从输入宽度变为输出宽度，需要 float32 输入。
+					65 text Linear
+					66 text 全连接
+			67 container
+				68 heading 激活函数, Value: 3
+					69 text 激活函数
+				70 button Description: 添加 ReLU, Help: 逐元素把负数置零，保留形状，不修改上游张量。
+					71 text ReLU
+					72 text ReLU 激活
+				73 button Description: 添加 GELU, Help: 对浮点张量逐元素应用 GELU，可选 tanh 近似。
+					74 text GELU
+					75 text GELU 激活
+				76 button Description: 添加 SiLU, Help: 对浮点张量逐元素应用 SiLU，保留形状。
+					77 text SiLU
+					78 text SiLU 激活
+			79 container
+				80 heading 基础算子, Value: 3
+					81 text 基础算子
+				82 button Description: 添加 Identity, Help: 直接传递输入，保留形状和类型。
+					83 text Identity
+					84 text 恒等映射
+			85 container
+				86 heading 正则化, Value: 3
+					87 text 正则化
+				88 button Description: 添加 Dropout, Help: 训练时以概率 p 丢弃元素，评估时直接传递输入。
+					89 text Dropout
+					90 text 随机失活
+			91 container
+				92 heading 形状变换, Value: 3
+					93 text 形状变换
+				94 button Description: 添加 Flatten, Help: 将起止维度之间的轴合并；默认保留批次维度。
+					95 text Flatten
+					96 text 展平
+			97 container
+				98 heading 卷积, Value: 3
+					99 text 卷积
+				100 button Description: 添加 Conv2d, Help: 处理 CHW 或 NCHW 的 float32 张量，可设置卷积核、步长、填充和分组。
+					101 text Conv2d
+					102 text 二维卷积
+			103 container
+				104 heading 池化, Value: 3
+					105 text 池化
+				106 button Description: 添加 MaxPool2d, Help: 缩小 CHW 或 NCHW 的空间尺寸，保留每个窗口的最大值。
+					107 text MaxPool2d
+					108 text 二维最大池化
+				109 button Description: 添加 AdaptiveAvgPool2d, Help: 将 CHW 或 NCHW 的空间尺寸变为指定大小。
+					110 text AdaptiveAvgPool2d
+					111 text 自适应平均池化
+			112 container
+				113 heading 归一化, Value: 3
+					114 text 归一化
+				115 button Description: 添加 BatchNorm2d, Help: 按通道归一化 NCHW 的 float32 张量，通道数须匹配。
+					116 text BatchNorm2d
+					117 text 二维批归一化
+				118 button Description: 添加 LayerNorm, Help: 归一化 float32 张量的末尾若干维，形状须与设置匹配。
+					119 text LayerNorm
+					120 text 层归一化
+			121 container
+				122 heading 嵌入, Value: 3
+					123 text 嵌入
+				124 button Description: 添加 Embedding, Help: 把 int64 索引变为 float32 向量；最后增加嵌入维度。
+					125 text Embedding
+					126 text 词嵌入
+			127 container
+				128 heading 合并与分支, Value: 3
+					129 text 合并与分支
+				130 button Description: 添加 Add, Help: 相加两路形状与类型完全相同的张量，可用于残差连接。
+					131 text Add
+					132 text 张量相加
+				133 button Description: 添加 Concat, Help: 沿指定轴拼接两路张量，其他维度与类型须相同。
+					134 text Concat
+					135 text 张量拼接
+			136 text 常用模型的无环草稿。参数和连线通过静态检查后，生成新模型。
+		137 container
+			138 checkbox 选择, Value: 1
+			139 checkbox 平移, Value: 0
+			140 button 撤销草稿
+			141 button 重做草稿
+			142 button 按连接排版
+			143 button 适合画布
+			144 button 草稿缩小
+			145 button 草稿缩放百分比
+				146 text 100
+				147 text %
+			148 button 草稿放大
+			149 image 模型搭建画布
+				150 text 输入
+				151 text Input
+				152 button 输入 output 输出端口
+					153 text output
+				154 text 全连接
+				155 text Linear
+				156 button 全连接 input 输入端口
+					157 text input
+				158 button 全连接 output 输出端口
+					159 text output
+			160 text 拖动模块 · 输出端口 → 输入端口 · 方向键移动 16 · Delete 删除 · Escape 取消 · Ctrl+Z 撤销
+		161 container
+			162 text MODEL PROPERTIES
+			163 heading Linear, Value: 2
+				164 text Linear
+			165 text 显示名称
+			166 text field (settable) Description: 模块显示名称, Value: 全连接
+			167 text in_features
+			168 text field (settable) Description: in_features, Value: 16
+			169 text out_features
+			170 text field (settable) Description: out_features, Value: 32
+			171 text bias
+			172 checkbox (settable, integer) Description: bias, Value: 1
+			173 text 把最后一维从输入宽度变为输出宽度，需要 float32 输入。 例如输入形状为 [1, 16] 时，in_features 应为 16；out_features 决定输出最后一维。 X
+			174 stepper (settable, integer) Description: 模块 X 坐标, Value: 290
+			175 text Y
+			176 stepper (settable, integer) Description: 模块 Y 坐标, Value: 316
+			177 button 删除模块及相连连线
+			178 text 2  模块  0  连接
+		179 text 连接起点已选中；点击目标输入端口，Escape 取消。
+
+The focused UI element is 140 button 撤销草稿

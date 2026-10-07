@@ -1,0 +1,517 @@
+[
+  {
+    "id": "mlp",
+    "expectedNodes": 5,
+    "expectedEdges": 4,
+    "draft": {
+      "schemaVersion": 1,
+      "mode": "authored-draft",
+      "id": "draft-ab456",
+      "title": "我的模型",
+      "revision": 1,
+      "nodes": [
+        {
+          "id": "n1",
+          "kind": "Input",
+          "label": "输入",
+          "parameters": {
+            "shape": [
+              1,
+              16
+            ],
+            "dtype": "float32"
+          },
+          "position": {
+            "x": 60,
+            "y": 90
+          }
+        },
+        {
+          "id": "n2",
+          "kind": "Linear",
+          "label": "隐藏层",
+          "parameters": {
+            "in_features": 16,
+            "out_features": 32,
+            "bias": true
+          },
+          "position": {
+            "x": 308,
+            "y": 90
+          }
+        },
+        {
+          "id": "n3",
+          "kind": "ReLU",
+          "label": "ReLU 激活",
+          "parameters": {},
+          "position": {
+            "x": 556,
+            "y": 90
+          }
+        },
+        {
+          "id": "n4",
+          "kind": "Linear",
+          "label": "输出层",
+          "parameters": {
+            "in_features": 32,
+            "out_features": 4,
+            "bias": true
+          },
+          "position": {
+            "x": 804,
+            "y": 90
+          }
+        },
+        {
+          "id": "n5",
+          "kind": "Output",
+          "label": "输出",
+          "parameters": {},
+          "position": {
+            "x": 1052,
+            "y": 90
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e6",
+          "source": {
+            "nodeId": "n1",
+            "portId": "output"
+          },
+          "target": {
+            "nodeId": "n2",
+            "portId": "input"
+          }
+        },
+        {
+          "id": "e7",
+          "source": {
+            "nodeId": "n2",
+            "portId": "output"
+          },
+          "target": {
+            "nodeId": "n3",
+            "portId": "input"
+          }
+        },
+        {
+          "id": "e8",
+          "source": {
+            "nodeId": "n3",
+            "portId": "output"
+          },
+          "target": {
+            "nodeId": "n4",
+            "portId": "input"
+          }
+        },
+        {
+          "id": "e9",
+          "source": {
+            "nodeId": "n4",
+            "portId": "output"
+          },
+          "target": {
+            "nodeId": "n5",
+            "portId": "input"
+          }
+        }
+      ]
+    },
+    "oneHistoryStep": true
+  },
+  {
+    "id": "cnn",
+    "expectedNodes": 8,
+    "expectedEdges": 7,
+    "draft": {
+      "schemaVersion": 1,
+      "mode": "authored-draft",
+      "id": "draft-ab456",
+      "title": "我的模型",
+      "revision": 1,
+      "nodes": [
+        {
+          "id": "n1",
+          "kind": "Input",
+          "label": "图像输入",
+          "parameters": {
+            "shape": [
+              1,
+              3,
+              32,
+              32
+            ],
+            "dtype": "float32"
+          },
+          "position": {
+            "x": 60,
+            "y": 90
+          }
+        },
+        {
+          "id": "n2",
+          "kind": "Conv2d",
+          "label": "卷积",
+          "parameters": {
+            "in_channels": 3,
+            "out_channels": 8,
+            "kernel_size": [
+              3,
+              3
+            ],
+            "stride": [
+              1,
+              1
+            ],
+            "padding": [
+              1,
+              1
+            ],
+            "dilation": [
+              1,
+              1
+            ],
+            "groups": 1,
+            "bias": true
+          },
+          "position": {
+            "x": 284,
+            "y": 90
+          }
+        },
+        {
+          "id": "n3",
+          "kind": "ReLU",
+          "label": "ReLU 激活",
+          "parameters": {},
+          "position": {
+            "x": 508,
+            "y": 90
+          }
+        },
+        {
+          "id": "n4",
+          "kind": "MaxPool2d",
+          "label": "最大池化",
+          "parameters": {
+            "kernel_size": [
+              2,
+              2
+            ],
+            "stride": [
+              2,
+              2
+            ],
+            "padding": [
+              0,
+              0
+            ],
+            "dilation": [
+              1,
+              1
+            ],
+            "ceil_mode": false
+          },
+          "position": {
+            "x": 732,
+            "y": 90
+          }
+        },
+        {
+          "id": "n5",
+          "kind": "AdaptiveAvgPool2d",
+          "label": "自适应平均池化",
+          "parameters": {
+            "output_size": [
+              1,
+              1
+            ]
+          },
+          "position": {
+            "x": 60,
+            "y": 270
+          }
+        },
+        {
+          "id": "n6",
+          "kind": "Flatten",
+          "label": "展平",
+          "parameters": {
+            "start_dim": 1,
+            "end_dim": -1
+          },
+          "position": {
+            "x": 284,
+            "y": 270
+          }
+        },
+        {
+          "id": "n7",
+          "kind": "Linear",
+          "label": "分类头",
+          "parameters": {
+            "in_features": 8,
+            "out_features": 4,
+            "bias": true
+          },
+          "position": {
+            "x": 508,
+            "y": 270
+          }
+        },
+        {
+          "id": "n8",
+          "kind": "Output",
+          "label": "输出",
+          "parameters": {},
+          "position": {
+            "x": 732,
+            "y": 270
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e9",
+          "source": {
+            "nodeId": "n1",
+            "portId": "output"
+          },
+          "target": {
+            "nodeId": "n2",
+            "portId": "input"
+          }
+        },
+        {
+          "id": "e10",
+          "source": {
+            "nodeId": "n2",
+            "portId": "output"
+          },
+          "target": {
+            "nodeId": "n3",
+            "portId": "input"
+          }
+        },
+        {
+          "id": "e11",
+          "source": {
+            "nodeId": "n3",
+            "portId": "output"
+          },
+          "target": {
+            "nodeId": "n4",
+            "portId": "input"
+          }
+        },
+        {
+          "id": "e12",
+          "source": {
+            "nodeId": "n4",
+            "portId": "output"
+          },
+          "target": {
+            "nodeId": "n5",
+            "portId": "input"
+          }
+        },
+        {
+          "id": "e13",
+          "source": {
+            "nodeId": "n5",
+            "portId": "output"
+          },
+          "target": {
+            "nodeId": "n6",
+            "portId": "input"
+          }
+        },
+        {
+          "id": "e14",
+          "source": {
+            "nodeId": "n6",
+            "portId": "output"
+          },
+          "target": {
+            "nodeId": "n7",
+            "portId": "input"
+          }
+        },
+        {
+          "id": "e15",
+          "source": {
+            "nodeId": "n7",
+            "portId": "output"
+          },
+          "target": {
+            "nodeId": "n8",
+            "portId": "input"
+          }
+        }
+      ]
+    },
+    "oneHistoryStep": true
+  },
+  {
+    "id": "residual-mlp",
+    "expectedNodes": 6,
+    "expectedEdges": 6,
+    "draft": {
+      "schemaVersion": 1,
+      "mode": "authored-draft",
+      "id": "draft-ab456",
+      "title": "我的模型",
+      "revision": 1,
+      "nodes": [
+        {
+          "id": "n1",
+          "kind": "Input",
+          "label": "输入",
+          "parameters": {
+            "shape": [
+              1,
+              16
+            ],
+            "dtype": "float32"
+          },
+          "position": {
+            "x": 60,
+            "y": 90
+          }
+        },
+        {
+          "id": "n2",
+          "kind": "Linear",
+          "label": "隐藏层",
+          "parameters": {
+            "in_features": 16,
+            "out_features": 32,
+            "bias": true
+          },
+          "position": {
+            "x": 308,
+            "y": 90
+          }
+        },
+        {
+          "id": "n3",
+          "kind": "ReLU",
+          "label": "ReLU 激活",
+          "parameters": {},
+          "position": {
+            "x": 556,
+            "y": 90
+          }
+        },
+        {
+          "id": "n4",
+          "kind": "Linear",
+          "label": "投影层",
+          "parameters": {
+            "in_features": 32,
+            "out_features": 16,
+            "bias": true
+          },
+          "position": {
+            "x": 804,
+            "y": 90
+          }
+        },
+        {
+          "id": "n5",
+          "kind": "Add",
+          "label": "残差相加",
+          "parameters": {},
+          "position": {
+            "x": 1052,
+            "y": 90
+          }
+        },
+        {
+          "id": "n6",
+          "kind": "Output",
+          "label": "输出",
+          "parameters": {},
+          "position": {
+            "x": 1300,
+            "y": 90
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e7",
+          "source": {
+            "nodeId": "n1",
+            "portId": "output"
+          },
+          "target": {
+            "nodeId": "n2",
+            "portId": "input"
+          }
+        },
+        {
+          "id": "e8",
+          "source": {
+            "nodeId": "n2",
+            "portId": "output"
+          },
+          "target": {
+            "nodeId": "n3",
+            "portId": "input"
+          }
+        },
+        {
+          "id": "e9",
+          "source": {
+            "nodeId": "n3",
+            "portId": "output"
+          },
+          "target": {
+            "nodeId": "n4",
+            "portId": "input"
+          }
+        },
+        {
+          "id": "e10",
+          "source": {
+            "nodeId": "n4",
+            "portId": "output"
+          },
+          "target": {
+            "nodeId": "n5",
+            "portId": "left"
+          }
+        },
+        {
+          "id": "e11",
+          "source": {
+            "nodeId": "n1",
+            "portId": "output"
+          },
+          "target": {
+            "nodeId": "n5",
+            "portId": "right"
+          }
+        },
+        {
+          "id": "e12",
+          "source": {
+            "nodeId": "n5",
+            "portId": "output"
+          },
+          "target": {
+            "nodeId": "n6",
+            "portId": "input"
+          }
+        }
+      ]
+    },
+    "oneHistoryStep": true
+  }
+]

@@ -1,0 +1,236 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "scope": "M4 no-template ViT, temporal, U-Net-style, GNN/SSM static holdouts with explicit opaque boundaries",
+  "formalProject": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio",
+  "standaloneCopy": "/tmp/archcanvas-independent-cus3tpk2/release",
+  "independenceReport": "/tmp/archcanvas-independent-cus3tpk2/independence-report.json",
+  "pythonIsolation": "-I -S with only standalone src added",
+  "checks": [
+    {
+      "name": "independent-m4-holdout-oracle-suite",
+      "passed": true,
+      "tests": "28/28",
+      "composition": {
+        "familyHoldouts": 6,
+        "outputSlotContractsAndCounterexamples": 10,
+        "residualBypassContractsAndCounterexamples": 12
+      },
+      "source": "/tmp/archcanvas-independent-cus3tpk2/release/tests/test_m4_holdout.py",
+      "oracle": "/tmp/archcanvas-independent-cus3tpk2/release/tests/m4_holdout_oracle.py",
+      "stdout": "/tmp/archcanvas-independent-cus3tpk2/m4-holdout-artifacts/independent-suite.txt"
+    },
+    {
+      "name": "independent-studio-output-path-contract-and-import-rejection-suite",
+      "passed": true,
+      "tests": "3/3",
+      "source": "/tmp/archcanvas-independent-cus3tpk2/release/studio/tests/output-paths.test.ts",
+      "stdout": "/tmp/archcanvas-independent-cus3tpk2/m4-holdout-artifacts/studio-output-path-suite.txt"
+    },
+    {
+      "name": "vit-static-contracts-and-residual-bindings",
+      "passed": true,
+      "entry": "model:PatchVisionEncoder",
+      "sourceDigest": "03951b20db4cde8abcb520ca00c5f6f3312ef7c0e043c22927e9fb75dbf13de7",
+      "irDigest": "ecfd76ef72e61d43154f4972ed25a35095fad09f34298fc88b1ff81ea82157c8",
+      "nodeCount": 17,
+      "edgeCount": 21,
+      "opaqueNodeCount": 0,
+      "architecture": "/tmp/archcanvas-independent-cus3tpk2/m4-holdout-artifacts/vit.json"
+    },
+    {
+      "name": "unknown-constructor-remains-opaque",
+      "passed": true,
+      "entry": "model:UnsupportedVision",
+      "sourceDigest": "03951b20db4cde8abcb520ca00c5f6f3312ef7c0e043c22927e9fb75dbf13de7",
+      "irDigest": "6ee0bbea7aad60c9d0a4dd1b8a00856d2a693707ac3509f6116ab85d0517f605",
+      "nodeCount": 5,
+      "edgeCount": 4,
+      "opaqueNodeCount": 1,
+      "diagnostics": [
+        {
+          "level": "info",
+          "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+        },
+        {
+          "level": "warning",
+          "message": "Unknown constructor torch.nn.Conv1d at model.py:51; no type semantics inferred from its name."
+        }
+      ],
+      "architecture": "/tmp/archcanvas-independent-cus3tpk2/m4-holdout-artifacts/opaque.json"
+    },
+    {
+      "name": "temporal-complete-node-port-relation-oracle",
+      "passed": true,
+      "entry": "model:TemporalForecaster",
+      "sourceDigest": "3a6976a808974cfbb911cf2bab8c44b7d302c20c0e28046e1a9e7002fe51b667",
+      "irDigest": "0e60a72fa479c1a84b69ca3cffe7d2efba27727c2e0b7f4c6b653066f8c1a189",
+      "nodeCount": 9,
+      "edgeCount": 8,
+      "opaqueNodeCount": 0,
+      "outputSlots": [
+        {
+          "nodeId": "output:model.TemporalForecaster:0",
+          "path": [
+            {
+              "kind": "key",
+              "key": "forecast"
+            },
+            {
+              "kind": "index",
+              "index": 0
+            }
+          ]
+        },
+        {
+          "nodeId": "output:model.TemporalForecaster:1",
+          "path": [
+            {
+              "kind": "key",
+              "key": "forecast"
+            },
+            {
+              "kind": "index",
+              "index": 1
+            }
+          ]
+        },
+        {
+          "nodeId": "output:model.TemporalForecaster:2",
+          "path": [
+            {
+              "kind": "key",
+              "key": "state"
+            },
+            {
+              "kind": "key",
+              "key": "hidden"
+            }
+          ]
+        },
+        {
+          "nodeId": "output:model.TemporalForecaster:3",
+          "path": [
+            {
+              "kind": "key",
+              "key": "state"
+            },
+            {
+              "kind": "key",
+              "key": "cell"
+            }
+          ]
+        }
+      ],
+      "diagnostics": [
+        {
+          "level": "info",
+          "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+        }
+      ],
+      "architecture": "/tmp/archcanvas-independent-cus3tpk2/m4-holdout-artifacts/temporal.json"
+    },
+    {
+      "name": "unet-complete-node-port-relation-oracle",
+      "passed": true,
+      "entry": "model:SkipSegmentation",
+      "sourceDigest": "3a6976a808974cfbb911cf2bab8c44b7d302c20c0e28046e1a9e7002fe51b667",
+      "irDigest": "ecfdb4422c2e5bc37e53a1fa5e70efdd4c02d3563c400568d78e63c10d236c24",
+      "nodeCount": 16,
+      "edgeCount": 15,
+      "opaqueNodeCount": 1,
+      "outputSlots": [
+        {
+          "nodeId": "output:model.SkipSegmentation:0",
+          "path": []
+        }
+      ],
+      "diagnostics": [
+        {
+          "level": "info",
+          "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+        },
+        {
+          "level": "warning",
+          "message": "Unknown constructor torch.nn.ConvTranspose2d at model.py:45; no type semantics inferred from its name."
+        }
+      ],
+      "architecture": "/tmp/archcanvas-independent-cus3tpk2/m4-holdout-artifacts/unet.json"
+    },
+    {
+      "name": "gnn-complete-node-port-relation-oracle",
+      "passed": true,
+      "entry": "model:GraphForecast",
+      "sourceDigest": "3a6976a808974cfbb911cf2bab8c44b7d302c20c0e28046e1a9e7002fe51b667",
+      "irDigest": "eb67d130131182f5b4f566aef12afa49cb23c729f93203c8054ea1c188acedbb",
+      "nodeCount": 7,
+      "edgeCount": 8,
+      "opaqueNodeCount": 2,
+      "outputSlots": [
+        {
+          "nodeId": "output:model.GraphForecast:0",
+          "path": []
+        }
+      ],
+      "diagnostics": [
+        {
+          "level": "info",
+          "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+        },
+        {
+          "level": "warning",
+          "message": "Unknown constructor model.GraphAttentionKernel at model.py:76; no type semantics inferred from its name."
+        },
+        {
+          "level": "warning",
+          "message": "Unsupported control/state region ConditionalRegion at model.py:82; affected values are opaque."
+        }
+      ],
+      "architecture": "/tmp/archcanvas-independent-cus3tpk2/m4-holdout-artifacts/gnn.json"
+    },
+    {
+      "name": "ssm-complete-node-port-relation-oracle",
+      "passed": true,
+      "entry": "model:DynamicStateSpace",
+      "sourceDigest": "3a6976a808974cfbb911cf2bab8c44b7d302c20c0e28046e1a9e7002fe51b667",
+      "irDigest": "5ee62adef0ec248c697d2a0fb9f3a15e69344f16590f7aadf6bcf780fe447abe",
+      "nodeCount": 5,
+      "edgeCount": 5,
+      "opaqueNodeCount": 2,
+      "outputSlots": [
+        {
+          "nodeId": "output:model.DynamicStateSpace:0",
+          "path": []
+        }
+      ],
+      "diagnostics": [
+        {
+          "level": "info",
+          "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+        },
+        {
+          "level": "warning",
+          "message": "Unknown constructor model.StateSpaceScan at model.py:90; no type semantics inferred from its name."
+        },
+        {
+          "level": "warning",
+          "message": "Unsupported control/state region DynamicLoop at model.py:95; affected values are opaque."
+        }
+      ],
+      "architecture": "/tmp/archcanvas-independent-cus3tpk2/m4-holdout-artifacts/ssm.json"
+    }
+  ],
+  "limitations": [
+    "Static AST facts only; these holdouts do not claim concrete tensor shapes or execution equivalence.",
+    "Conv1d, ConvTranspose2d, custom GraphAttentionKernel/StateSpaceScan and dynamic control remain opaque.",
+    "The independent copy is local and does not certify arbitrary model families or host integrations."
+  ],
+  "artifactDigests": {
+    "vitArchitecture": "90d3e64e21af7e0d346460caca61c667105658304d520e44f47dbb63d5e4c260",
+    "opaqueArchitecture": "08cf0b8bdfed8cf1d5a5b1391cbd2a14f88100b9fee2c0e3337cdd814e9014fa",
+    "temporalArchitecture": "3a5b846261bf5b19fcb79fd7dc5c3e754fe220b06833daa14f2d36d95794c25c",
+    "unetArchitecture": "52750ab90764810fbb06bbf5e5e92e4ffa4f1617ec0fb64a8af22cfc17ea1b9e",
+    "gnnArchitecture": "5daa62215449e070fb2babd7d0fad775f8a94a25bcfb0f3855a5c907bcf47a9d",
+    "ssmArchitecture": "01ce6d310777722bbdace7fd464193f606ae65870cfc10766e20eafd721cb4f0"
+  }
+}

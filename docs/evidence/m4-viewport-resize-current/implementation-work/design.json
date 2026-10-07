@@ -1,0 +1,21 @@
+{
+  "schema": "archcanvas.viewport-resize-design.v1",
+  "status": "pre-implementation",
+  "trigger": "Caption-stability browser capture 38 resized to 883x786, capture 39 restored 672x711 but retained the previous translation; capture 40 recovered only after a stable reload.",
+  "invariants": [
+    "Camera remains transient UI/session state, outside CanvasDocument, undo history, architecture and publication export.",
+    "Idle viewport size changes preserve world centre and zoom by translating half the CSS size delta.",
+    "Camera persistence uses its established viewport anchor, never an uncoordinated live DOM size.",
+    "Active pan, move, box and port gestures retain their original coordinate mapping; resize coordination resumes after their terminal sample or cancellation.",
+    "Explicit fit, zoom, focus and document initialization establish a fresh viewport anchor.",
+    "Observer callbacks verify the current viewport element and document owner before applying; initialization retains load, intent, identity and revision tickets."
+  ],
+  "implementation": "Independent cameraViewport helper; useLayoutEffect initializes the real element subscription and ResizeObserver uses flushSync so resize camera updates are committed before the observer delivery reaches paint. Window resize is a limited fallback when ResizeObserver is unavailable.",
+  "risksAndValidation": [
+    "First observer delivery must not reinterpret an unowned or newly loading camera; frozen and live ownership checks must reject it.",
+    "A resize before pointerup with pending animation-frame preview must preserve the actual terminal pan/move result; focused actual-App callback tests will exercise this ordering.",
+    "A document switch, revision change or explicit camera intent must not allow stale initialization or observer work to overwrite the active view.",
+    "Callback harnesses do not mount React or prove browser paint ordering. Root will perform actual CUA resize, remount and gesture QA.",
+    "No model execution, publication aesthetics, human usability or presented performance gate is claimed."
+  ]
+}

@@ -274,6 +274,32 @@ class Model(nn.Module):
         self.assertFalse(nodes(graph, "Linear"))
         self.assertTrue(any("ModuleList" in item["message"] for item in graph["diagnostics"]))
 
+    def test_unresolved_registered_name_stays_opaque_with_shared_call_identity(self):
+        """A missing plugin named like a registered operator cannot gain its contract."""
+        source = '''from torch import nn
+from plugin import Linear
+class Model(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.layer = Linear(4, 4)
+        self.alias = self.layer
+    def forward(self, x):
+        return self.layer(x), self.alias(x)
+'''
+        graph = analyze_source(source, "Model")
+        calls = [item for item in nodes(graph)
+                 if item.get("instanceId") == "instance:model.Model.layer"]
+        self.assertEqual(len(calls), 2)
+        self.assertEqual({item["kind"] for item in calls}, {"Linear"})
+        self.assertEqual({item["category"] for item in calls}, {"opaque"})
+        self.assertEqual({item["evidence"] for item in calls}, {"opaque"})
+        self.assertEqual(len({item["callId"] for item in calls}), 2)
+        self.assertTrue(all(item["children"] == [] for item in calls))
+        self.assertFalse(any(item["kind"] == "Linear" and item["evidence"] == "contract"
+                             for item in nodes(graph)))
+        self.assertTrue(any("Unknown constructor plugin.Linear" in item["message"]
+                            for item in graph["diagnostics"]))
+
     def test_chunk_without_shape_does_not_claim_fixed_output_count(self):
         source = '''from torch import nn
 class Model(nn.Module):

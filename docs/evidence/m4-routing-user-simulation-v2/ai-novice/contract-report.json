@@ -1,0 +1,1438 @@
+{
+  "schema": "archcanvas-ai-novice-static-contract-audit/1",
+  "reviewer": "/root/novice_authoring_review",
+  "reviewerKind": "AI-simulation",
+  "humanParticipantsAdded": 0,
+  "modelsExecuted": false,
+  "sharedBrowserOperated": false,
+  "productFilesWritten": false,
+  "inventory": {
+    "count": 17,
+    "parameterCount": 34,
+    "categories": [
+      "activation",
+      "convolution",
+      "dense",
+      "embedding",
+      "io",
+      "merge",
+      "normalization",
+      "operator",
+      "pooling",
+      "regularization",
+      "reshape"
+    ],
+    "catalog": {
+      "schemaVersion": 1,
+      "mode": "authored-draft",
+      "modules": [
+        {
+          "kind": "Input",
+          "label": "输入",
+          "category": "io",
+          "description": "声明输入张量的形状与类型，再连接后续模块。",
+          "defaults": {
+            "shape": [
+              1,
+              16
+            ],
+            "dtype": "float32"
+          },
+          "parameters": [
+            {
+              "name": "shape",
+              "type": "integer-array",
+              "default": [
+                1,
+                16
+              ],
+              "min": 1,
+              "max": 1000000,
+              "minLength": 1,
+              "maxLength": 8
+            },
+            {
+              "name": "dtype",
+              "type": "choice",
+              "default": "float32",
+              "options": [
+                "float32",
+                "float64",
+                "int64"
+              ]
+            }
+          ],
+          "ports": [
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Output",
+          "label": "输出",
+          "category": "io",
+          "description": "连接模型结果；可以添加多个命名输出。",
+          "defaults": {},
+          "parameters": [],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Linear",
+          "label": "全连接",
+          "category": "dense",
+          "description": "把最后一维从输入宽度变为输出宽度，需要 float32 输入。",
+          "defaults": {
+            "in_features": 16,
+            "out_features": 32,
+            "bias": true
+          },
+          "parameters": [
+            {
+              "name": "in_features",
+              "type": "integer",
+              "default": 16,
+              "min": 1,
+              "max": 1000000
+            },
+            {
+              "name": "out_features",
+              "type": "integer",
+              "default": 32,
+              "min": 1,
+              "max": 1000000
+            },
+            {
+              "name": "bias",
+              "type": "boolean",
+              "default": true
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "ReLU",
+          "label": "ReLU 激活",
+          "category": "activation",
+          "description": "逐元素把负数置零，保留形状，不修改上游张量。",
+          "defaults": {},
+          "parameters": [],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "GELU",
+          "label": "GELU 激活",
+          "category": "activation",
+          "description": "对浮点张量逐元素应用 GELU，可选 tanh 近似。",
+          "defaults": {
+            "approximate": "none"
+          },
+          "parameters": [
+            {
+              "name": "approximate",
+              "type": "choice",
+              "default": "none",
+              "options": [
+                "none",
+                "tanh"
+              ]
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "SiLU",
+          "label": "SiLU 激活",
+          "category": "activation",
+          "description": "对浮点张量逐元素应用 SiLU，保留形状。",
+          "defaults": {},
+          "parameters": [],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Identity",
+          "label": "恒等映射",
+          "category": "operator",
+          "description": "直接传递输入，保留形状和类型。",
+          "defaults": {},
+          "parameters": [],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Dropout",
+          "label": "随机失活",
+          "category": "regularization",
+          "description": "训练时以概率 p 丢弃元素，评估时直接传递输入。",
+          "defaults": {
+            "p": 0.1
+          },
+          "parameters": [
+            {
+              "name": "p",
+              "type": "number",
+              "default": 0.1,
+              "min": 0,
+              "max": 1
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Flatten",
+          "label": "展平",
+          "category": "reshape",
+          "description": "将起止维度之间的轴合并；默认保留批次维度。",
+          "defaults": {
+            "start_dim": 1,
+            "end_dim": -1
+          },
+          "parameters": [
+            {
+              "name": "start_dim",
+              "type": "integer",
+              "default": 1,
+              "min": -8,
+              "max": 7
+            },
+            {
+              "name": "end_dim",
+              "type": "integer",
+              "default": -1,
+              "min": -8,
+              "max": 7
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Conv2d",
+          "label": "二维卷积",
+          "category": "convolution",
+          "description": "处理 CHW 或 NCHW 的 float32 张量，可设置卷积核、步长、填充和分组。",
+          "defaults": {
+            "in_channels": 3,
+            "out_channels": 16,
+            "kernel_size": [
+              3,
+              3
+            ],
+            "stride": [
+              1,
+              1
+            ],
+            "padding": [
+              0,
+              0
+            ],
+            "dilation": [
+              1,
+              1
+            ],
+            "groups": 1,
+            "bias": true
+          },
+          "parameters": [
+            {
+              "name": "in_channels",
+              "type": "integer",
+              "default": 3,
+              "min": 1,
+              "max": 1000000
+            },
+            {
+              "name": "out_channels",
+              "type": "integer",
+              "default": 16,
+              "min": 1,
+              "max": 1000000
+            },
+            {
+              "name": "kernel_size",
+              "type": "integer-array",
+              "default": [
+                3,
+                3
+              ],
+              "min": 1,
+              "max": 10000,
+              "length": 2
+            },
+            {
+              "name": "stride",
+              "type": "integer-array",
+              "default": [
+                1,
+                1
+              ],
+              "min": 1,
+              "max": 10000,
+              "length": 2
+            },
+            {
+              "name": "padding",
+              "type": "integer-array",
+              "default": [
+                0,
+                0
+              ],
+              "min": 0,
+              "max": 10000,
+              "length": 2
+            },
+            {
+              "name": "dilation",
+              "type": "integer-array",
+              "default": [
+                1,
+                1
+              ],
+              "min": 1,
+              "max": 10000,
+              "length": 2
+            },
+            {
+              "name": "groups",
+              "type": "integer",
+              "default": 1,
+              "min": 1,
+              "max": 1000000
+            },
+            {
+              "name": "bias",
+              "type": "boolean",
+              "default": true
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "MaxPool2d",
+          "label": "二维最大池化",
+          "category": "pooling",
+          "description": "缩小 CHW 或 NCHW 的空间尺寸，保留每个窗口的最大值。",
+          "defaults": {
+            "kernel_size": [
+              2,
+              2
+            ],
+            "stride": [
+              2,
+              2
+            ],
+            "padding": [
+              0,
+              0
+            ],
+            "dilation": [
+              1,
+              1
+            ],
+            "ceil_mode": false
+          },
+          "parameters": [
+            {
+              "name": "kernel_size",
+              "type": "integer-array",
+              "default": [
+                2,
+                2
+              ],
+              "min": 1,
+              "max": 10000,
+              "length": 2
+            },
+            {
+              "name": "stride",
+              "type": "integer-array",
+              "default": [
+                2,
+                2
+              ],
+              "min": 1,
+              "max": 10000,
+              "length": 2
+            },
+            {
+              "name": "padding",
+              "type": "integer-array",
+              "default": [
+                0,
+                0
+              ],
+              "min": 0,
+              "max": 10000,
+              "length": 2
+            },
+            {
+              "name": "dilation",
+              "type": "integer-array",
+              "default": [
+                1,
+                1
+              ],
+              "min": 1,
+              "max": 10000,
+              "length": 2
+            },
+            {
+              "name": "ceil_mode",
+              "type": "boolean",
+              "default": false
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "AdaptiveAvgPool2d",
+          "label": "自适应平均池化",
+          "category": "pooling",
+          "description": "将 CHW 或 NCHW 的空间尺寸变为指定大小。",
+          "defaults": {
+            "output_size": [
+              1,
+              1
+            ]
+          },
+          "parameters": [
+            {
+              "name": "output_size",
+              "type": "integer-array",
+              "default": [
+                1,
+                1
+              ],
+              "min": 1,
+              "max": 10000,
+              "length": 2
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "BatchNorm2d",
+          "label": "二维批归一化",
+          "category": "normalization",
+          "description": "按通道归一化 NCHW 的 float32 张量，通道数须匹配。",
+          "defaults": {
+            "num_features": 16,
+            "eps": 1e-05,
+            "momentum": 0.1,
+            "affine": true,
+            "track_running_stats": true
+          },
+          "parameters": [
+            {
+              "name": "num_features",
+              "type": "integer",
+              "default": 16,
+              "min": 1,
+              "max": 1000000
+            },
+            {
+              "name": "eps",
+              "type": "number",
+              "default": 1e-05,
+              "min": 1e-12,
+              "max": 1
+            },
+            {
+              "name": "momentum",
+              "type": "number",
+              "default": 0.1,
+              "min": 0,
+              "max": 1
+            },
+            {
+              "name": "affine",
+              "type": "boolean",
+              "default": true
+            },
+            {
+              "name": "track_running_stats",
+              "type": "boolean",
+              "default": true
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "LayerNorm",
+          "label": "层归一化",
+          "category": "normalization",
+          "description": "归一化 float32 张量的末尾若干维，形状须与设置匹配。",
+          "defaults": {
+            "normalized_shape": [
+              16
+            ],
+            "eps": 1e-05,
+            "elementwise_affine": true
+          },
+          "parameters": [
+            {
+              "name": "normalized_shape",
+              "type": "integer-array",
+              "default": [
+                16
+              ],
+              "min": 1,
+              "max": 1000000,
+              "minLength": 1,
+              "maxLength": 8
+            },
+            {
+              "name": "eps",
+              "type": "number",
+              "default": 1e-05,
+              "min": 1e-12,
+              "max": 1
+            },
+            {
+              "name": "elementwise_affine",
+              "type": "boolean",
+              "default": true
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Embedding",
+          "label": "词嵌入",
+          "category": "embedding",
+          "description": "把 int64 索引变为 float32 向量；最后增加嵌入维度。",
+          "defaults": {
+            "num_embeddings": 1000,
+            "embedding_dim": 16
+          },
+          "parameters": [
+            {
+              "name": "num_embeddings",
+              "type": "integer",
+              "default": 1000,
+              "min": 1,
+              "max": 1000000
+            },
+            {
+              "name": "embedding_dim",
+              "type": "integer",
+              "default": 16,
+              "min": 1,
+              "max": 1000000
+            }
+          ],
+          "ports": [
+            {
+              "id": "input",
+              "name": "input",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Add",
+          "label": "张量相加",
+          "category": "merge",
+          "description": "相加两路形状与类型完全相同的张量，可用于残差连接。",
+          "defaults": {},
+          "parameters": [],
+          "ports": [
+            {
+              "id": "left",
+              "name": "left",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "right",
+              "name": "right",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        },
+        {
+          "kind": "Concat",
+          "label": "张量拼接",
+          "category": "merge",
+          "description": "沿指定轴拼接两路张量，其他维度与类型须相同。",
+          "defaults": {
+            "dim": 1
+          },
+          "parameters": [
+            {
+              "name": "dim",
+              "type": "integer",
+              "default": 1,
+              "min": -8,
+              "max": 7
+            }
+          ],
+          "ports": [
+            {
+              "id": "a",
+              "name": "a",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "b",
+              "name": "b",
+              "direction": "in",
+              "type": "tensor"
+            },
+            {
+              "id": "output",
+              "name": "output",
+              "direction": "out",
+              "type": "tensor"
+            }
+          ]
+        }
+      ],
+      "unsupported": [
+        "Sigmoid",
+        "Tanh",
+        "Conv1d",
+        "AvgPool2d",
+        "BatchNorm1d",
+        "MultiheadAttention",
+        "LSTM"
+      ],
+      "limits": {
+        "nodes": 128,
+        "edges": 384
+      },
+      "verification": "static-declared-tensors; no model import or execution"
+    }
+  },
+  "positiveStaticCases": [
+    {
+      "kind": "Input",
+      "nodes": 2,
+      "connections": 1,
+      "output": {
+        "shape": [
+          1,
+          16
+        ],
+        "dtype": "float32"
+      },
+      "sourceConstructorKinds": [],
+      "artifact": "docs/evidence/m4-routing-user-simulation-v2/ai-novice/artifacts/Input.json"
+    },
+    {
+      "kind": "Output",
+      "nodes": 2,
+      "connections": 1,
+      "output": {
+        "shape": [
+          1,
+          16
+        ],
+        "dtype": "float32"
+      },
+      "sourceConstructorKinds": [],
+      "artifact": "docs/evidence/m4-routing-user-simulation-v2/ai-novice/artifacts/Output.json"
+    },
+    {
+      "kind": "Linear",
+      "nodes": 3,
+      "connections": 2,
+      "output": {
+        "shape": [
+          1,
+          32
+        ],
+        "dtype": "float32"
+      },
+      "sourceConstructorKinds": [
+        "Linear"
+      ],
+      "artifact": "docs/evidence/m4-routing-user-simulation-v2/ai-novice/artifacts/Linear.json"
+    },
+    {
+      "kind": "ReLU",
+      "nodes": 3,
+      "connections": 2,
+      "output": {
+        "shape": [
+          1,
+          16
+        ],
+        "dtype": "float32"
+      },
+      "sourceConstructorKinds": [
+        "ReLU"
+      ],
+      "artifact": "docs/evidence/m4-routing-user-simulation-v2/ai-novice/artifacts/ReLU.json"
+    },
+    {
+      "kind": "GELU",
+      "nodes": 3,
+      "connections": 2,
+      "output": {
+        "shape": [
+          1,
+          16
+        ],
+        "dtype": "float32"
+      },
+      "sourceConstructorKinds": [
+        "GELU"
+      ],
+      "artifact": "docs/evidence/m4-routing-user-simulation-v2/ai-novice/artifacts/GELU.json"
+    },
+    {
+      "kind": "SiLU",
+      "nodes": 3,
+      "connections": 2,
+      "output": {
+        "shape": [
+          1,
+          16
+        ],
+        "dtype": "float32"
+      },
+      "sourceConstructorKinds": [
+        "SiLU"
+      ],
+      "artifact": "docs/evidence/m4-routing-user-simulation-v2/ai-novice/artifacts/SiLU.json"
+    },
+    {
+      "kind": "Identity",
+      "nodes": 3,
+      "connections": 2,
+      "output": {
+        "shape": [
+          1,
+          16
+        ],
+        "dtype": "float32"
+      },
+      "sourceConstructorKinds": [
+        "Identity"
+      ],
+      "artifact": "docs/evidence/m4-routing-user-simulation-v2/ai-novice/artifacts/Identity.json"
+    },
+    {
+      "kind": "Dropout",
+      "nodes": 3,
+      "connections": 2,
+      "output": {
+        "shape": [
+          1,
+          16
+        ],
+        "dtype": "float32"
+      },
+      "sourceConstructorKinds": [
+        "Dropout"
+      ],
+      "artifact": "docs/evidence/m4-routing-user-simulation-v2/ai-novice/artifacts/Dropout.json"
+    },
+    {
+      "kind": "Flatten",
+      "nodes": 3,
+      "connections": 2,
+      "output": {
+        "shape": [
+          1,
+          6
+        ],
+        "dtype": "float32"
+      },
+      "sourceConstructorKinds": [
+        "Flatten"
+      ],
+      "artifact": "docs/evidence/m4-routing-user-simulation-v2/ai-novice/artifacts/Flatten.json"
+    },
+    {
+      "kind": "Conv2d",
+      "nodes": 3,
+      "connections": 2,
+      "output": {
+        "shape": [
+          1,
+          16,
+          6,
+          6
+        ],
+        "dtype": "float32"
+      },
+      "sourceConstructorKinds": [
+        "Conv2d"
+      ],
+      "artifact": "docs/evidence/m4-routing-user-simulation-v2/ai-novice/artifacts/Conv2d.json"
+    },
+    {
+      "kind": "MaxPool2d",
+      "nodes": 3,
+      "connections": 2,
+      "output": {
+        "shape": [
+          1,
+          3,
+          4,
+          4
+        ],
+        "dtype": "float32"
+      },
+      "sourceConstructorKinds": [
+        "MaxPool2d"
+      ],
+      "artifact": "docs/evidence/m4-routing-user-simulation-v2/ai-novice/artifacts/MaxPool2d.json"
+    },
+    {
+      "kind": "AdaptiveAvgPool2d",
+      "nodes": 3,
+      "connections": 2,
+      "output": {
+        "shape": [
+          1,
+          3,
+          1,
+          1
+        ],
+        "dtype": "float32"
+      },
+      "sourceConstructorKinds": [
+        "AdaptiveAvgPool2d"
+      ],
+      "artifact": "docs/evidence/m4-routing-user-simulation-v2/ai-novice/artifacts/AdaptiveAvgPool2d.json"
+    },
+    {
+      "kind": "BatchNorm2d",
+      "nodes": 3,
+      "connections": 2,
+      "output": {
+        "shape": [
+          2,
+          16,
+          4,
+          4
+        ],
+        "dtype": "float32"
+      },
+      "sourceConstructorKinds": [
+        "BatchNorm2d"
+      ],
+      "artifact": "docs/evidence/m4-routing-user-simulation-v2/ai-novice/artifacts/BatchNorm2d.json"
+    },
+    {
+      "kind": "LayerNorm",
+      "nodes": 3,
+      "connections": 2,
+      "output": {
+        "shape": [
+          1,
+          16
+        ],
+        "dtype": "float32"
+      },
+      "sourceConstructorKinds": [
+        "LayerNorm"
+      ],
+      "artifact": "docs/evidence/m4-routing-user-simulation-v2/ai-novice/artifacts/LayerNorm.json"
+    },
+    {
+      "kind": "Embedding",
+      "nodes": 3,
+      "connections": 2,
+      "output": {
+        "shape": [
+          1,
+          8,
+          16
+        ],
+        "dtype": "float32"
+      },
+      "sourceConstructorKinds": [
+        "Embedding"
+      ],
+      "artifact": "docs/evidence/m4-routing-user-simulation-v2/ai-novice/artifacts/Embedding.json"
+    },
+    {
+      "kind": "Add",
+      "nodes": 4,
+      "connections": 3,
+      "output": {
+        "shape": [
+          1,
+          16
+        ],
+        "dtype": "float32"
+      },
+      "sourceConstructorKinds": [],
+      "artifact": "docs/evidence/m4-routing-user-simulation-v2/ai-novice/artifacts/Add.json"
+    },
+    {
+      "kind": "Concat",
+      "nodes": 4,
+      "connections": 3,
+      "output": {
+        "shape": [
+          1,
+          32
+        ],
+        "dtype": "float32"
+      },
+      "sourceConstructorKinds": [],
+      "artifact": "docs/evidence/m4-routing-user-simulation-v2/ai-novice/artifacts/Concat.json"
+    }
+  ],
+  "negativeStaticCases": [
+    {
+      "case": "Linear upstream last dimension 16 versus input feature 8",
+      "diagnostics": [
+        {
+          "code": "linear_input_features_mismatch",
+          "message": "Linear 的输入末维为 16，但 in_features 为 8。请让 in_features 与上游末维一致。",
+          "technical": "Linear: final input dimension 16 does not equal in_features 8.",
+          "nodeId": "layer",
+          "parameter": "in_features",
+          "portId": "input",
+          "expected": 8,
+          "actual": 16
+        }
+      ],
+      "draftPreserved": true
+    },
+    {
+      "case": "default Input shape cannot feed Conv2d",
+      "diagnostics": [
+        {
+          "code": "input_rank_mismatch",
+          "message": "Conv2d 需要 3 维 CHW 或 4 维 NCHW 输入，当前输入为 2 维。",
+          "technical": "Conv2d: Conv2d requires a CHW or NCHW tensor.",
+          "nodeId": "layer",
+          "portId": "input",
+          "expected": [
+            3,
+            4
+          ],
+          "actual": 2
+        }
+      ],
+      "draftPreserved": true
+    },
+    {
+      "case": "default float32 Input cannot feed Embedding",
+      "diagnostics": [
+        {
+          "code": "input_dtype_mismatch",
+          "message": "Embedding 需要 int64 索引，当前上游声明为 float32。请修改输入的 dtype。",
+          "technical": "Embedding: Embedding requires int64 indices.",
+          "nodeId": "layer",
+          "portId": "input",
+          "expected": "int64",
+          "actual": "float32"
+        }
+      ],
+      "draftPreserved": true
+    },
+    {
+      "case": "Add does not broadcast",
+      "diagnostics": [
+        {
+          "code": "add_input_shape_mismatch",
+          "message": "Add 两路输入形状须完全一致，当前为 [1, 16] 和 [1, 1]；此建模范围不支持隐式广播。",
+          "technical": "Add: Add requires equal shapes; implicit broadcasting is unsupported.",
+          "nodeId": "layer",
+          "portId": "right",
+          "expected": [
+            1,
+            16
+          ],
+          "actual": [
+            1,
+            1
+          ]
+        }
+      ],
+      "draftPreserved": true
+    },
+    {
+      "case": "unsupported Sigmoid",
+      "diagnostics": [
+        {
+          "code": "unsupported_module",
+          "message": "该模块不在当前可生成并验证的模块目录中，请选择左侧目录中的模块。",
+          "technical": "Unsupported authored module: Sigmoid.",
+          "nodeId": "layer"
+        }
+      ],
+      "draftPreserved": true
+    },
+    {
+      "case": "unsupported Tanh",
+      "diagnostics": [
+        {
+          "code": "unsupported_module",
+          "message": "该模块不在当前可生成并验证的模块目录中，请选择左侧目录中的模块。",
+          "technical": "Unsupported authored module: Tanh.",
+          "nodeId": "layer"
+        }
+      ],
+      "draftPreserved": true
+    },
+    {
+      "case": "unsupported Softmax",
+      "diagnostics": [
+        {
+          "code": "unsupported_module",
+          "message": "该模块不在当前可生成并验证的模块目录中，请选择左侧目录中的模块。",
+          "technical": "Unsupported authored module: Softmax.",
+          "nodeId": "layer"
+        }
+      ],
+      "draftPreserved": true
+    },
+    {
+      "case": "unsupported Conv1d",
+      "diagnostics": [
+        {
+          "code": "unsupported_module",
+          "message": "该模块不在当前可生成并验证的模块目录中，请选择左侧目录中的模块。",
+          "technical": "Unsupported authored module: Conv1d.",
+          "nodeId": "layer"
+        }
+      ],
+      "draftPreserved": true
+    },
+    {
+      "case": "unsupported AvgPool2d",
+      "diagnostics": [
+        {
+          "code": "unsupported_module",
+          "message": "该模块不在当前可生成并验证的模块目录中，请选择左侧目录中的模块。",
+          "technical": "Unsupported authored module: AvgPool2d.",
+          "nodeId": "layer"
+        }
+      ],
+      "draftPreserved": true
+    },
+    {
+      "case": "unsupported BatchNorm1d",
+      "diagnostics": [
+        {
+          "code": "unsupported_module",
+          "message": "该模块不在当前可生成并验证的模块目录中，请选择左侧目录中的模块。",
+          "technical": "Unsupported authored module: BatchNorm1d.",
+          "nodeId": "layer"
+        }
+      ],
+      "draftPreserved": true
+    },
+    {
+      "case": "unsupported MultiheadAttention",
+      "diagnostics": [
+        {
+          "code": "unsupported_module",
+          "message": "该模块不在当前可生成并验证的模块目录中，请选择左侧目录中的模块。",
+          "technical": "Unsupported authored module: MultiheadAttention.",
+          "nodeId": "layer"
+        }
+      ],
+      "draftPreserved": true
+    },
+    {
+      "case": "unsupported LSTM",
+      "diagnostics": [
+        {
+          "code": "unsupported_module",
+          "message": "该模块不在当前可生成并验证的模块目录中，请选择左侧目录中的模块。",
+          "technical": "Unsupported authored module: LSTM.",
+          "nodeId": "layer"
+        }
+      ],
+      "draftPreserved": true
+    },
+    {
+      "case": "unsupported GRU",
+      "diagnostics": [
+        {
+          "code": "unsupported_module",
+          "message": "该模块不在当前可生成并验证的模块目录中，请选择左侧目录中的模块。",
+          "technical": "Unsupported authored module: GRU.",
+          "nodeId": "layer"
+        }
+      ],
+      "draftPreserved": true
+    },
+    {
+      "case": "unsupported Reshape",
+      "diagnostics": [
+        {
+          "code": "unsupported_module",
+          "message": "该模块不在当前可生成并验证的模块目录中，请选择左侧目录中的模块。",
+          "technical": "Unsupported authored module: Reshape.",
+          "nodeId": "layer"
+        }
+      ],
+      "draftPreserved": true
+    },
+    {
+      "case": "unsupported Transpose",
+      "diagnostics": [
+        {
+          "code": "unsupported_module",
+          "message": "该模块不在当前可生成并验证的模块目录中，请选择左侧目录中的模块。",
+          "technical": "Unsupported authored module: Transpose.",
+          "nodeId": "layer"
+        }
+      ],
+      "draftPreserved": true
+    },
+    {
+      "case": "unbound graph cannot generate source",
+      "diagnostics": [
+        {
+          "code": "unbound-input",
+          "message": "Linear 的输入端口 input 尚未连接，请连接上游模块。",
+          "technical": "Linear: connect input.",
+          "nodeId": "layer",
+          "portIds": [
+            "input"
+          ],
+          "portId": "input"
+        },
+        {
+          "code": "unbound-input",
+          "message": "Output 的输入端口 input 尚未连接，请连接上游模块。",
+          "technical": "Output: connect input.",
+          "nodeId": "out",
+          "portIds": [
+            "input"
+          ],
+          "portId": "input"
+        },
+        {
+          "code": "unused-node",
+          "message": "这些模块尚未通向命名输出；生成 Python 前请连接到输出，或移除未使用模块。",
+          "technical": "Every module must contribute to a named Output before generating Python.",
+          "nodeIds": [
+            "in",
+            "layer"
+          ]
+        }
+      ],
+      "draftPreserved": true
+    },
+    {
+      "case": "saving contradictory shape is refused",
+      "diagnostics": [
+        {
+          "code": "linear_input_features_mismatch",
+          "message": "Linear 的输入末维为 16，但 in_features 为 8。请让 in_features 与上游末维一致。",
+          "technical": "Linear: final input dimension 16 does not equal in_features 8.",
+          "nodeId": "layer",
+          "parameter": "in_features",
+          "portId": "input",
+          "expected": 8,
+          "actual": 16
+        }
+      ],
+      "savedPartialDraftPreserved": true
+    }
+  ],
+  "incompleteDraftPersistence": {
+    "saveReopenExact": true,
+    "complete": false,
+    "issues": [
+      {
+        "code": "unbound-input",
+        "message": "Linear 的输入端口 input 尚未连接，请连接上游模块。",
+        "technical": "Linear: connect input.",
+        "nodeId": "layer",
+        "portIds": [
+          "input"
+        ],
+        "portId": "input"
+      },
+      {
+        "code": "unbound-input",
+        "message": "Output 的输入端口 input 尚未连接，请连接上游模块。",
+        "technical": "Output: connect input.",
+        "nodeId": "out",
+        "portIds": [
+          "input"
+        ],
+        "portId": "input"
+      },
+      {
+        "code": "unused-node",
+        "message": "这些模块尚未通向命名输出；生成 Python 前请连接到输出，或移除未使用模块。",
+        "technical": "Every module must contribute to a named Output before generating Python.",
+        "nodeIds": [
+          "in",
+          "layer"
+        ]
+      }
+    ]
+  },
+  "inputBindingsBeforeAndAfterExact": [
+    {
+      "path": "AGENTS.md",
+      "bytes": 2022,
+      "sha256": "4356c80e92e8f1443caf14cc9c3c8cd2a5d7a2da6f73e044902a3227fd91c112"
+    },
+    {
+      "path": "docs/m4-routing-components-v1.md",
+      "bytes": 2798,
+      "sha256": "80e5aa0430aa55e667fe2a871c87215429d3ecea1929665248a8a7e789753ff0"
+    },
+    {
+      "path": "src/archcanvas_authoring/draft.py",
+      "bytes": 43984,
+      "sha256": "cce519d8ae9e865fedccb5981b34a9884c51cceca43c951eff59333ba322231d"
+    },
+    {
+      "path": "src/archcanvas_cli/drafts.py",
+      "bytes": 3394,
+      "sha256": "b19cf223ae2f9ab3c21b498381529de0f4868bff36e4dc17b091b2e42be58023"
+    },
+    {
+      "path": "studio/src/AuthoringStudio.tsx",
+      "bytes": 52682,
+      "sha256": "1f231d354a0ae62e35825de51fea0d944969c05c4bb31e249a20873edd762e76"
+    },
+    {
+      "path": "studio/src/AuthoringStudio.css",
+      "bytes": 12619,
+      "sha256": "57a6d61aa6c5124322e78da0cff28b2391214230b52f0f3d0b367528368f055e"
+    },
+    {
+      "path": "studio/src/authoring.ts",
+      "bytes": 14689,
+      "sha256": "7b812cc41da42a4c82ba8419d2062233d354b47a4da03aa777b23bf1d07b69f4"
+    },
+    {
+      "path": "studio/src/authoringPresets.ts",
+      "bytes": 10192,
+      "sha256": "1a1192839ed50865bc235f0dc3f859f2ffcfaea54db5df5aa5a35a9c1f981bc5"
+    },
+    {
+      "path": "studio/src/draftParameterHelp.ts",
+      "bytes": 8551,
+      "sha256": "fd84c1482c527ed940eab235788215258ef798bc82255e4a0e2b15b1d04abe40"
+    },
+    {
+      "path": "studio/src/draftValidation.ts",
+      "bytes": 9525,
+      "sha256": "2a9de5e5f0815051778961775c80ef85d8375b56f6bb660d4034d1ffea738496"
+    },
+    {
+      "path": "studio/src/authoringFeedback.ts",
+      "bytes": 3724,
+      "sha256": "b6786d3e46c7f6ca37aa97b974f9203a59c3277886d033634487e32fdb2d123b"
+    },
+    {
+      "path": "studio/src/App.tsx",
+      "bytes": 81778,
+      "sha256": "a5f1c039393124fdbb8131d79f5dc55550113bb49669745e4358e5ba01094696"
+    },
+    {
+      "path": "studio/src/api.ts",
+      "bytes": 11399,
+      "sha256": "38f4bbe9d8f61d4f1bac798b02acdba2cf29028b7574d8816f9cf7a4deda3a92"
+    },
+    {
+      "path": "studio/dist/index.html",
+      "bytes": 477,
+      "sha256": "f2bf2d71e7241c8b7b599c0fa2a81bc59cfc788ef4424f2219200ea77f0bf0bd"
+    },
+    {
+      "path": "studio/dist/assets/index-B32ccWRJ.js",
+      "bytes": 522176,
+      "sha256": "1ba52af85bc7df646d488e4ba55170fc05403ee4d06b658b551ddcfd3cac01b0"
+    },
+    {
+      "path": "studio/dist/assets/index-BOWsNy5e.css",
+      "bytes": 40668,
+      "sha256": "6999df7b5cdda09d30ac75b6f9ae9cad258bacf315e95fc456d40279afe9abd5"
+    }
+  ],
+  "limits": [
+    "Controlled static graphs, not 17 native UI user tasks.",
+    "Generated source was parsed, never imported or executed.",
+    "No current browser pixels or human usability measured by this script."
+  ]
+}

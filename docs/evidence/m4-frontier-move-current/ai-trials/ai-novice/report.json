@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "role": "AI simulated novice, not a human participant",
+  "audit": "m4-frontier-move-current-ai-novice/1",
+  "createdUtc": "2026-10-06T15:20:00Z",
+  "stage": "m4-frontier-move-current",
+  "status": "bounded-five-step-narrative-completed",
+  "taskSucceeded": false,
+  "taskSuccessReason": "The visual editing half is boundedly evidenced, but no fresh mounted authoring-studio session was run in this frontier sequence; therefore a complete from-zero authoring task is not claimed.",
+  "modelExecuted": false,
+  "humanParticipants": 0,
+  "humanAcceptanceContribution": 0,
+  "productSourceEdited": false,
+  "timing": {
+    "taskTimeSeconds": null,
+    "type": "evidence-review timing only; no human task duration"
+  },
+  "browserPolicy": "The frontier browser evidence was read through public DOM/SVG and screenshots. No hidden state, fetch construction, event dispatch, or direct document mutation was used. Source was read only to bind the authoring-library claims and is clearly separated from mounted-browser observations.",
+  "observedBuild": {
+    "server": "http://127.0.0.1:43441/",
+    "browserTab": "4",
+    "assetUrl": "http://127.0.0.1:43441/assets/index-CW7T4YOE.js",
+    "localAsset": "studio/dist/assets/index-CW7T4YOE.js",
+    "localAssetSha256": "95bd74ca7168f29450b996d6bac1260a2c8058cf68606ee421d7ca1aee461d96",
+    "bindingLimit": "The hash is the local dist asset; the public SVG records the served asset URL. It is not a browser-response extraction."
+  },
+  "scenario": "AI novice tries to understand the canvas, find the blank-model authoring library and its network starts, select an object, move it in all four directions with undo, then collapse/re-expand and save/reopen a DenseStress300 figure.",
+  "authoringObservationBoundary": "The current frontier browser sequence starts from a seeded source-bound DenseStress300 document. It does not contain a mounted authoring-studio capture of a fresh blank draft. The five-step account therefore marks authoring discovery and use as source-grounded expected novice actions, while marking frontier editing actions as public-browser observations.",
+  "steps": [
+    {
+      "step": 1,
+      "goal": "从零理解画布",
+      "mode": "source-grounded novice walkthrough; no fresh authoring browser frame in this stage",
+      "action": "A novice looks for a starting point and reads the empty-workspace instructions, then identifies the model tree, central figure canvas, object inspector, save/export controls, and the visible '搭建模型' entry.",
+      "result": "The authoring source presents 'MODULE LIBRARY / 常用模块', '新建空白模型', a central '从零搭建一个模型' prompt, and an explicit four-step hint: drag Input, add modules, connect ports, save/generate. In the seeded frontier canvas, the left tree shows DenseStress300/network and the central figure has a clear canvas/toolbar split; the right inspector exposes the selected object's name, style, coordinates, and movement scope.",
+      "noviceRead": "The central blank prompt and the top-level 搭建模型 button are understandable. The seeded figure's 300-repeat overview is much harder to parse: at 13–15% individual labels and arrows are too small to read, so a novice needs fit/zoom or collapse before reasoning about a layer.",
+      "evidence": [
+        "studio/src/App.tsx:776-783",
+        "studio/src/AuthoringStudio.tsx:340-347",
+        "studio/src/AuthoringStudio.tsx:366-369",
+        "docs/evidence/m4-frontier-move-current/browser/15-reexpanded18-fit.png",
+        "docs/evidence/m4-frontier-move-current/browser/14-collapsed17-fit.png"
+      ],
+      "observed": false,
+      "status": "discoverable-by-source-and-bounded-visual-review"
+    },
+    {
+      "step": 2,
+      "goal": "发现并使用左侧预制模块库",
+      "mode": "source-grounded expected interaction; not counted as a mounted-browser authoring completion",
+      "action": "The novice switches the left library from 基础模块 to 网络起点, sees three cards, and chooses a card such as 最小 MLP; the source supports either clicking the card or dragging it into the draft canvas. The novice can alternatively search for a named module and click/drag a single card.",
+      "result": "The formal catalog has 17 base modules and the authoring UI displays the catalog count. The three transparent starting graphs are 最小 MLP (5 modules), 小型 CNN (8 modules), and 残差 MLP (6 modules); inserted nodes and connections remain editable. The 17 kinds are Input, Output, Linear, ReLU, GELU, SiLU, Identity, Dropout, Flatten, Conv2d, MaxPool2d, AdaptiveAvgPool2d, BatchNorm2d, LayerNorm, Embedding, Add, and Concat.",
+      "noviceRead": "The two-tab split, search field, card plus icon, and copy '拖入画布，或点击添加' make the intended action clear. For a novice, Attention and LSTM are likely search dead ends because the UI explicitly says they are unsupported; Softmax/Sigmoid/Tanh are also absent from the supported catalog. The three starts cover common MLP/CNN/residual paths but do not represent a broad transformer or recurrent library.",
+      "evidence": [
+        "studio/src/AuthoringStudio.tsx:343-347",
+        "studio/src/authoringPresets.ts:8-38",
+        "src/archcanvas_authoring/draft.py:51-126",
+        "tests/test_authoring.py:160-168"
+      ],
+      "observed": false,
+      "status": "library-and-gesture-contract-present; mounted-authoring-use-not-certified-in-this-frontier-sequence"
+    },
+    {
+      "step": 3,
+      "goal": "选择对象",
+      "mode": "public-browser observed",
+      "action": "The novice selects Linear 1 in the left hierarchy and checks the object inspector before moving it.",
+      "result": "The public SVG and DOM keep the stable id call:instance:model.DenseStress300.network.0 / aria-label Linear 1. The inspector screenshot exposes display name, glyph, fill/stroke, X/Y, and the 移动范围 select. The selected object remains one object while current-frontier is chosen.",
+      "noviceRead": "Selection is discoverable from either the hierarchy or the visible object. The inspector's labels make the distinction between styling and layout clear; a novice can see that the model facts are read-only and that movement scope is a separate choice.",
+      "evidence": [
+        "docs/evidence/m4-frontier-move-current/browser/02-right24-current7.json",
+        "docs/evidence/m4-frontier-move-current/browser/02-right24-current7.svg",
+        "docs/evidence/m4-frontier-move-current/browser/14-collapsed17-fit.png",
+        "studio/src/App.tsx:813-823"
+      ],
+      "observed": true,
+      "status": "success-bounded-to-Linear-1"
+    },
+    {
+      "step": 4,
+      "goal": "四向移动与撤销",
+      "mode": "public-browser DOM/SVG observed; screenshot pixels are separately quality-checked",
+      "action": "The novice applies a 24 canvas-unit current-frontier move to the selected Linear 1 in each direction and invokes Ctrl+Z after each move.",
+      "result": "Complete SVG readbacks show the expected sequence: right x110→134 then undo x110; up y316→292 then undo y316; down y316→340 then undo y316; left x110→86 then undo x110. Revisions advance 7→14 and every readback reports complete=true. The footer names the applied scope as 仅当前视图 and advertises Ctrl+Z.",
+      "directionMatrix": {
+        "right": {"apply": "browser/02-right24-current7.json", "undo": "browser/03-right-undo8.json", "expected": "x 110→134→110"},
+        "up": {"apply": "browser/04-up24-current.json", "undo": "browser/05-up-undo.json", "expected": "y 316→292→316"},
+        "down": {"apply": "browser/06-down24-current.json", "undo": "browser/07-down-undo.json", "expected": "y 316→340→316"},
+        "left": {"apply": "browser/08-left24-current.json", "undo": "browser/09-left-undo.json", "expected": "x 110→86→110"}
+      },
+      "noviceRead": "The four directions are understandable from the command bar and inspector; the chosen current-frontier scope is visible in the footer. The large canvas is zoomed to about 15%, so the movement is easier to verify through coordinates than by judging the pixel displacement. Undo is obvious and restores the coordinate in the SVG contract.",
+      "visualLimit": "The original named PNG frames are stale/misaligned for several states (02/04/06/08 show the pre-move or previous revision in pixels). They are retained as raw attempts but excluded from movement-pixel claims. Complete segmented SVG/JSON is the authority for this bounded matrix.",
+      "evidence": [
+        "docs/evidence/m4-frontier-move-current/browser/02-right24-current7.json",
+        "docs/evidence/m4-frontier-move-current/browser/03-right-undo8.json",
+        "docs/evidence/m4-frontier-move-current/browser/04-up24-current.json",
+        "docs/evidence/m4-frontier-move-current/browser/05-up-undo.json",
+        "docs/evidence/m4-frontier-move-current/browser/06-down24-current.json",
+        "docs/evidence/m4-frontier-move-current/browser/07-down-undo.json",
+        "docs/evidence/m4-frontier-move-current/browser/08-left24-current.json",
+        "docs/evidence/m4-frontier-move-current/browser/09-left-undo.json",
+        "studio/src/moveCommand.ts:1-28",
+        "studio/src/App.tsx:690-718"
+      ],
+      "observed": true,
+      "status": "complete-svg-matrix; visual-pixel-gate-open"
+    },
+    {
+      "step": 5,
+      "goal": "折叠、展开、保存与重开",
+      "mode": "public-browser observed with corrected fit frames",
+      "action": "The novice collapses the network, fits the compact view, re-expands it, fits the expanded view, saves revision 16, and reopens the saved document.",
+      "result": "The compact document has four visible bodies and output world Y=354; the fit frame 14-collapsed17-fit.png shows DenseStress300→features/network→output with two short vertical arrows at 97%. The expanded fit frame 15-reexpanded18-fit.png has 304 visible bodies at 13%; the grid is orderly but individual labels/arrows are too small for novice reading. The formal saved16/reopened16 SVG bytes are exact and revision 16 is preserved; the public DOM keeps the expanded ids and pinned features input.",
+      "noviceRead": "Collapse is an effective way to get an understandable overview; the compact view has no visible route crossings and the repeated network card is clear. Re-expansion restores the full graph and preserves the pinned input, but the resulting overview is too dense to inspect without zooming into a local region. Save/reopen is easy to identify from the footer, while the camera may need an explicit fit after reopening.",
+      "evidence": [
+        "docs/evidence/m4-frontier-move-current/browser/14-collapsed17-fit.json",
+        "docs/evidence/m4-frontier-move-current/browser/14-collapsed17-fit.png",
+        "docs/evidence/m4-frontier-move-current/browser/15-reexpanded18-fit.json",
+        "docs/evidence/m4-frontier-move-current/browser/15-reexpanded18-fit.png",
+        "docs/evidence/m4-frontier-move-current/browser/12-saved16.json",
+        "docs/evidence/m4-frontier-move-current/browser/13-reopened16.json",
+        "docs/evidence/m4-frontier-move-current/browser/receipt.json"
+      ],
+      "observed": true,
+      "status": "compact-and-expanded-fit-frames-confirmed; save-reopen-svg-exact"
+    }
+  ],
+  "moduleLibrary": {
+    "baseModuleCount": 17,
+    "baseKinds": ["Input", "Output", "Linear", "ReLU", "GELU", "SiLU", "Identity", "Dropout", "Flatten", "Conv2d", "MaxPool2d", "AdaptiveAvgPool2d", "BatchNorm2d", "LayerNorm", "Embedding", "Add", "Concat"],
+    "transparentNetworkStartCount": 3,
+    "transparentNetworkStarts": ["最小 MLP", "小型 CNN", "残差 MLP"],
+    "supportedEntryModes": ["click card", "drag card into canvas"],
+    "staticOnly": true,
+    "unsupportedMentionedByUi": ["Attention", "LSTM"],
+    "unsupportedCatalogExamples": ["Sigmoid", "Tanh", "Conv1d", "AvgPool2d", "BatchNorm1d", "MultiheadAttention", "LSTM"],
+    "noviceAssessment": "Sufficient for common feed-forward, convolutional, normalization, embedding, merge, and residual sketches; insufficient for transformer attention, recurrent LSTM, and several familiar activations/pooling names. No claim is made that every card was individually dragged, connected, checked, generated, or executed in this trial."
+  },
+  "visualReview": {
+    "compact": {
+      "frame": "browser/14-collapsed17-fit.png",
+      "observed": "At 97%, four bodies and the two vertical data arrows are legible; no visible crossing or unnecessary bend in this compact state.",
+      "limit": "This is a four-body view, not a global 300-layer route review."
+    },
+    "expanded": {
+      "frame": "browser/15-reexpanded18-fit.png",
+      "observed": "At 13%, the 300-leaf grid is orderly and contained, but labels/arrows cannot be read one by one.",
+      "limit": "No global minimum-crossing, publication-size, presented-FPS, font-embedding, or human visual approval follows."
+    },
+    "staleFramesExcluded": [
+      {"path": "browser/10-collapsed-current.png", "reason": "pixels show expanded 300-node state while JSON is collapsed rev15"},
+      {"path": "browser/11-reexpanded-current.png", "reason": "pixels show compact four-body state while JSON is expanded rev16"},
+      {"path": "browser/13-reopened16.png", "reason": "pixels show a different zoom/revision than the JSON reopened16 state"},
+      {"path": "browser/02-right24-current7.png", "reason": "pixel frame shows pre-move appearance although SVG/JSON coordinate is x134"},
+      {"path": "browser/04-up24-current.png", "reason": "pixel frame shows the prior y316 appearance although SVG/JSON coordinate is y292"},
+      {"path": "browser/06-down24-current.png", "reason": "pixel frame shows the prior y316 appearance although SVG/JSON coordinate is y340"},
+      {"path": "browser/08-left24-current.png", "reason": "pixel frame shows the prior x110 appearance although SVG/JSON coordinate is x86"}
+    ]
+  },
+  "findings": [
+    {"id": "N1", "severity": "success-bounded", "finding": "The object tree, stable object identity, inspector, and current-frontier scope are discoverable enough for a simulated novice to select and move one object.", "basis": "step3; browser/02-right24-current7.json; studio/src/App.tsx:813-823"},
+    {"id": "N2", "severity": "success-bounded", "finding": "The formal authoring design exposes a useful left library with 17 base modules and three editable network starts, and each card advertises both click and drag insertion.", "basis": "step2; studio/src/AuthoringStudio.tsx:343-347; studio/src/authoringPresets.ts:8-38; src/archcanvas_authoring/draft.py:51-126"},
+    {"id": "N3", "severity": "usability-improvement", "finding": "A 300-node expanded overview is visually dense at fit scale; the compact view is the practical novice starting point, while local zoom is needed for individual labels, ports, and arrows.", "basis": "browser/14-collapsed17-fit.png; browser/15-reexpanded18-fit.png"},
+    {"id": "N4", "severity": "usability-improvement", "finding": "The UI explicitly names Attention and LSTM as unavailable, but a novice looking for common transformer or recurrent blocks will still encounter a dead end; the catalog also omits familiar Sigmoid/Tanh/Softmax-style choices.", "basis": "studio/src/AuthoringStudio.tsx:343; src/archcanvas_authoring/draft.py:145-158"},
+    {"id": "N5", "severity": "visual-data-quality", "finding": "Several named PNG screenshots are stale relative to their public JSON/SVG state. Complete segmented SVG readback is trustworthy for the four-direction coordinate matrix; those PNGs cannot be used as visual proof of the corresponding move.", "basis": "visualReview.staleFramesExcluded; browser/receipt.json"},
+    {"id": "N6", "severity": "limit", "finding": "This is an AI simulation and a source-grounded authoring walkthrough, not a real researcher trial. It provides zero human participants, no 180-second completion rate, and no publication-size human sign-off.", "basis": "humanParticipants=0; stage README; browser/receipt.json"}
+  ],
+  "limits": [
+    "No model import or execution; static declarations and source-bound SVG only.",
+    "No fresh mounted authoring-studio browser capture in this frontier sequence; the 17+3 library count and insertion semantics are source evidence, not a fresh authoring success claim.",
+    "No assertion that all 17 modules or all 3 presets were individually inserted, connected, statically checked, generated, or executed.",
+    "The compact and expanded fit frames are bounded visual checks. Dense-grid readability, global route beauty, unnecessary bends/crossings, physical publication size, font shaping, and presented performance remain open gates.",
+    "The stale screenshot attempts remain in place for auditability and are explicitly excluded from pixel-state claims.",
+    "AI contribution does not count toward the 3–5 real researcher requirement; M4 remains partial and M5 not started."
+  ],
+  "researchGate": "not_run",
+  "m4": "partial",
+  "m5": "not_started"
+}

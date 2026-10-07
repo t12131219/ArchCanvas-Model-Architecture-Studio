@@ -1,0 +1,211 @@
+{
+  "protocol": "archcanvas-performance-current-formal-build-audit/1",
+  "createdUtc": "2026-10-06T05:51:37.177862+00:00",
+  "scope": "Read-only current formal dist/source/runtime-path audit; no browser operation, product edit, test/build rerun, model execution or dependency installation.",
+  "currentFormalBuild": {
+    "indexHtml": {
+      "path": "studio/dist/index.html",
+      "bytes": 477,
+      "sha256": "0041904c70f6586653fa3e35f691e50947f008bce4b0840e492b16855a7876ff",
+      "snapshot": "docs/evidence/m4-performance-next-audit-attempt-2/inputs/00-index.html"
+    },
+    "js": {
+      "path": "studio/dist/assets/index-thbum3BQ.js",
+      "bytes": 480202,
+      "sha256": "8718e7498a4939db9630ce633a071b08f423a49d695c11ab58251126e8af72c6",
+      "snapshot": "docs/evidence/m4-performance-next-audit-attempt-2/inputs/01-index-thbum3BQ.js"
+    },
+    "css": {
+      "path": "studio/dist/assets/index-QPVAzYp6.css",
+      "bytes": 39454,
+      "sha256": "10afb70aa720ca53e01428e17d8487a4b4a0a06a994a69fd70d982335ceb9b08",
+      "snapshot": "docs/evidence/m4-performance-next-audit-attempt-2/inputs/02-index-QPVAzYp6.css"
+    },
+    "statusFile": {
+      "path": "docs/evidence/m4-readable-canvas-status.json",
+      "sha256": "6c3c156e6b53b9d0964432e45052a0901062d2202a908088e3324247c6c9cdb8"
+    },
+    "statusBuild": {
+      "js": "index-thbum3BQ.js",
+      "css": "index-QPVAzYp6.css",
+      "studioTests": "300/300 pass, 0 skipped, 0 failed",
+      "strictBuild": "TypeScript/Vite exit 0"
+    }
+  },
+  "sourceBindings": [
+    {
+      "path": "studio/src/PerfBenchmarkPanel.tsx",
+      "bytes": 3970,
+      "sha256": "3b48d1b60ced3ea66b74196702aba5736d1c161344344564fa745768c6b8fa4d",
+      "snapshot": "docs/evidence/m4-performance-next-audit-attempt-2/inputs/03-PerfBenchmarkPanel.tsx"
+    },
+    {
+      "path": "studio/src/perfBenchmark.ts",
+      "bytes": 9276,
+      "sha256": "717d31cc065e8e4a41cb5cdbb1a80d92314eb35a203a54afa514e57d741cd382",
+      "snapshot": "docs/evidence/m4-performance-next-audit-attempt-2/inputs/04-perfBenchmark.ts"
+    },
+    {
+      "path": "studio/src/nativePerformance.ts",
+      "bytes": 10968,
+      "sha256": "905b7cf06fc6a4b7ef3bfe39ef1bd4d562b9f0f86bdb1be3c85b0f913ce98859",
+      "snapshot": "docs/evidence/m4-performance-next-audit-attempt-2/inputs/05-nativePerformance.ts"
+    },
+    {
+      "path": "studio/src/perf.ts",
+      "bytes": 10302,
+      "sha256": "6e5e8faa14018b2db7d3f0604981bfd5a9386bd7d3ca6d7798c9cd3a2d5825ad",
+      "snapshot": "docs/evidence/m4-performance-next-audit-attempt-2/inputs/06-perf.ts"
+    },
+    {
+      "path": "scripts/validate_studio_performance.mjs",
+      "bytes": 6796,
+      "sha256": "0c5dc2f9317ad674610c170cba152001c66826ab7f57d87a96b8aa08636e3baf",
+      "snapshot": "docs/evidence/m4-performance-next-audit-attempt-2/inputs/07-validate_studio_performance.mjs"
+    },
+    {
+      "path": "scripts/validate_native_performance.mjs",
+      "bytes": 6877,
+      "sha256": "17e4a9c447e94b3bb568bfe747d4307d675de01f4d44cd7f3ed991da66ecbfee",
+      "snapshot": "docs/evidence/m4-performance-next-audit-attempt-2/inputs/08-validate_native_performance.mjs"
+    }
+  ],
+  "browserEntry": {
+    "urlPattern": "http://127.0.0.1:<port>/?benchmark=1",
+    "panelStringsPresentInCurrentAsset": {
+      "运行 20 组性能采样": 1,
+      "原生输入与空间采样": 1,
+      "two-animation-frame-paint-proxy": 1,
+      "native-event-timing-to-next-paint": 1
+    },
+    "scenario": "Synthetic DOM tree clicks; 20 expand/collapse pairs and fit; two animation frames are explicitly named a paint proxy.",
+    "nativePanel": "Ordinary click/pointerdown capture plus PerformanceObserver Event Timing and two-frame geometry sampling; missing/ambiguous entries remain null.",
+    "formalRuntimeCommand": "PYTHONPATH=src .venv/bin/python -m archcanvas_cli serve --host 127.0.0.1 --port <port> --data-dir <isolated-/tmp-dir> --studio-dir studio/dist",
+    "runtimeProvenance": "The formal server's startup capabilities identify the project root, formal modules, and studio_dir path; this audit did not claim model execution or runtime verification."
+  },
+  "validators": {
+    "studioSmall": {
+      "command": "node scripts/validate_studio_performance.mjs docs/evidence/m4-studio-performance.json",
+      "exitCode": 0,
+      "stdout": "{\n  \"file\": \"docs/evidence/m4-studio-performance.json\",\n  \"target\": {\n    \"canonicalNodeId\": \"repeat:instance:model.ResidualCNN.blocks\",\n    \"label\": \"blocks\",\n    \"depth\": 1\n  },\n  \"viewport\": {\n    \"width\": 1102,\n    \"height\": 905,\n    \"devicePixelRatio\": 1\n  },\n  \"trials\": 40,\n  \"expandPaintProxyP95Ms\": 996.4000000715314,\n  \"collapsePaintProxyP95Ms\": 998.6000000953791,\n  \"fps\": 1.6814635458568439,\n  \"intervalsOver50Ms\": 2,\n  \"p95FrameMs\": 983.3999999999942,\n  \"maxLongTaskMs\": 0,\n  \"visibility\": {\n    \"atStart\": \"visible\",\n    \"atEnd\": \"visible\",\n    \"changes\": 0\n  },\n  \"idleFrameBaseline\": {\n    \"requestedMs\": 2000,\n    \"elapsedMs\": 2980.600000095379,\n    \"frameCount\": 3,\n    \"fps\": 1.0065087565939743,\n    \"droppedFrames\": 2,\n    \"p95FrameMs\": 1000,\n    \"maxFrameMs\": 1000\n  },\n  \"expandHandlerP95Ms\": 1.7999999523162842,\n  \"collapseHandlerP95Ms\": 1.899999976158142,\n  \"status\": \"validated\"\n}\n",
+      "stderr": ""
+    },
+    "studioStress": {
+      "command": "node scripts/validate_studio_performance.mjs docs/evidence/m4-studio-performance-stress.json",
+      "exitCode": 0,
+      "stdout": "{\n  \"file\": \"docs/evidence/m4-studio-performance-stress.json\",\n  \"target\": {\n    \"canonicalNodeId\": \"call:instance:model.DenseStress300.network\",\n    \"label\": \"network\",\n    \"depth\": 1\n  },\n  \"viewport\": {\n    \"width\": 1102,\n    \"height\": 905,\n    \"devicePixelRatio\": 1\n  },\n  \"trials\": 40,\n  \"expandPaintProxyP95Ms\": 1005.4000000000015,\n  \"collapsePaintProxyP95Ms\": 1955.199999999997,\n  \"fps\": 1.3344898912072303,\n  \"intervalsOver50Ms\": 3,\n  \"p95FrameMs\": 1016.5999999999985,\n  \"maxLongTaskMs\": 101,\n  \"visibility\": {\n    \"atStart\": \"visible\",\n    \"atEnd\": \"visible\",\n    \"changes\": 0\n  },\n  \"idleFrameBaseline\": {\n    \"requestedMs\": 2000,\n    \"elapsedMs\": 2939.200000071527,\n    \"frameCount\": 3,\n    \"fps\": 1.0206859009005829,\n    \"droppedFrames\": 2,\n    \"p95FrameMs\": 1000,\n    \"maxFrameMs\": 1000\n  },\n  \"expandHandlerP95Ms\": 44.10000002384186,\n  \"collapseHandlerP95Ms\": 40,\n  \"status\": \"validated\"\n}\n",
+      "stderr": ""
+    },
+    "nativeSmoke": {
+      "command": "node scripts/validate_native_performance.mjs docs/evidence/m4-native-performance-stress-smoke.json",
+      "exitCode": 0,
+      "stdout": "{\n  \"status\": \"validated-engineering-receipt\",\n  \"capturedTrials\": 2,\n  \"validSceneTrials\": 2,\n  \"matchedNativeTrials\": 2,\n  \"nativeInputToNextPaintP95Ms\": 2024,\n  \"anchorScreenMaxPx\": 0,\n  \"measuredPinCount\": 2,\n  \"pinCanvasMaxPx\": 0,\n  \"unmeasuredPinCount\": 0,\n  \"certification\": \"pending-fixed-environment-and-review\",\n  \"fps\": 2.15774700784491,\n  \"limitation\": \"Validation checks receipt consistency, not hardware/font lock, human participation or publication quality.\"\n}\n",
+      "stderr": ""
+    },
+    "nativeIntrusion": {
+      "command": "node scripts/validate_native_performance.mjs docs/evidence/m4-native-performance-intrusion-current.json",
+      "exitCode": 0,
+      "stdout": "{\n  \"status\": \"validated-engineering-receipt\",\n  \"capturedTrials\": 9,\n  \"validSceneTrials\": 9,\n  \"matchedNativeTrials\": 8,\n  \"nativeInputToNextPaintP95Ms\": 3024,\n  \"anchorScreenMaxPx\": 0,\n  \"measuredPinCount\": 8,\n  \"pinCanvasMaxPx\": 0,\n  \"unmeasuredPinCount\": 0,\n  \"certification\": \"pending-fixed-environment-and-review\",\n  \"fps\": 2.0099031604154374,\n  \"limitation\": \"Validation checks receipt consistency, not hardware/font lock, human participation or publication quality.\"\n}\n",
+      "stderr": ""
+    }
+  },
+  "currentReceiptBuildStatus": {
+    "readableCanvasBuild": "index-thbum3BQ.js / index-QPVAzYp6.css",
+    "handoffPerformanceBuild": "index-ye7sAyyI.js",
+    "handoffPerformanceBuildSha256": "3e6fd1fea0cb5b3c286758e1bc6216e21e87f59ce0479e704faae80c5ed63164",
+    "historicalReceiptsAreCurrentBuildBound": false,
+    "reason": "The retained Studio/native JSON receipts point at prior localhost URLs and do not bind the current thbum3BQ asset digest; they remain historical diagnostics."
+  },
+  "claims": {
+    "currentStudioABMeasured": false,
+    "presentedFpsCertified": false,
+    "continuousInputToPaintCertified": false,
+    "nativeReceiptCertification": "pending-fixed-environment-and-review",
+    "humanParticipants": 0,
+    "m4Complete": false,
+    "formalBenchmarkPathPresentInCurrentAsset": true,
+    "browserRenderVerifiedByThisAuditor": false
+  },
+  "nextAction": {
+    "first": "Run a fresh current-build browser sample only when an actual compositor/presentation trace is available, or have an operator use the host native performance recorder.",
+    "requiredBinding": [
+      "current dist asset hashes",
+      "viewport/DPR/UA/font/hardware lock",
+      "source/document/IR IDs",
+      "whole trace and action timestamps"
+    ],
+    "mustNotPromote": [
+      "rAF callback cadence",
+      "DOM geometry after two animation frames",
+      "PerformanceObserver Event Timing subset",
+      "screenshot arrival"
+    ],
+    "allowedInterim": "Use ?benchmark=1 for engineering diagnostics and preserve unmatched/ambiguous Event Timing as null; do not call its proxy FPS presented FPS."
+  },
+  "productSourceChanged": false,
+  "browserOperatedByAuditor": false,
+  "dependenciesInstalled": false,
+  "modelsExecuted": false,
+  "sourceBinding": {
+    "readOnlyAuditSource": "docs/evidence/m4-performance-next-audit-attempt-2/audit.py",
+    "note": "Receipt generated before final bounded-claims correction; final readback binds the actual report bytes."
+  },
+  "attemptLedger": [
+    {
+      "action": "sandbox formal server start on 42937",
+      "result": "exit 2 EPERM; no listening claimed"
+    },
+    {
+      "action": "escalated formal server start on 42937",
+      "result": "session 43839 returned formal startup capabilities; this exact session was stopped with Ctrl+C; it is distinct from parent session 39008"
+    },
+    {
+      "action": "subagent CUA inventory and attempted create visible tab",
+      "result": "inventory empty; IAB visibility unsupported in a subagent thread; no browser render/input occurred"
+    },
+    {
+      "action": "sandbox URL read",
+      "result": "EPERM; no HTTP/render verification"
+    },
+    {
+      "action": "two 2s timeout startup attempts for provenance log",
+      "result": "exit 124 with 0 bytes startup output; not accepted as service or browser evidence"
+    },
+    {
+      "action": "four historical receipt validators",
+      "result": "all exit 0; consistency only, not current browser/performance certification"
+    },
+    {
+      "action": "read-only order ambiguity synthetic counterexample",
+      "result": "product first trial matched a shared candidate; validator accepted one match; bilateral uniqueness absent; not a browser measurement"
+    }
+  ],
+  "counterexample": "docs/evidence/m4-performance-next-audit-attempt-2/native-order-counterexample.json",
+  "hierarchyVisiblePerformance": {
+    "scope": "Frozen historical oI5sT67U diagnosis; does not certify current thbum3BQ build.",
+    "readme": "docs/evidence/m4-hierarchy-visible-performance/README.md",
+    "productRawBytes": 9239688,
+    "productValidation": "docs/evidence/m4-performance-next-audit-attempt-2/hierarchy-product-validation.json",
+    "controlValidation": "docs/evidence/m4-performance-next-audit-attempt-2/hierarchy-control-validation.json",
+    "validatorExitCodes": {
+      "product": 0,
+      "control": 0
+    },
+    "currentAssetsMatch": false,
+    "note": "The control validator reports both old named assets absent and current index.html digest changed, while helper sources match."
+  },
+  "nativeMatchingCounterexample": {
+    "reproduction": "docs/evidence/m4-performance-next-audit-attempt-2/native-order-counterexample.mjs",
+    "result": "docs/evidence/m4-performance-next-audit-attempt-2/native-order-counterexample.json",
+    "bilateralUniqueExpected": [
+      null,
+      null
+    ],
+    "currentProductMatches": [
+      true,
+      false
+    ],
+    "validatorAcceptedOrderBiasedMatch": true,
+    "scope": "Synthetic read-only reproduction before the matching fix; not browser performance or participant evidence."
+  }
+}

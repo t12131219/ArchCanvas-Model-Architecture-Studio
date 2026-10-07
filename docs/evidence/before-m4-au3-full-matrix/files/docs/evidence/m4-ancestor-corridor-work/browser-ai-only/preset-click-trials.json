@@ -1,0 +1,214 @@
+{
+  "aiOnly": true,
+  "trials": [
+    {
+      "label": "最小 MLP",
+      "key": "mlp",
+      "nodes": [
+        {
+          "id": "n_5e71cbfc23a9411eaf9e44dec602028c",
+          "kind": "Input",
+          "label": "输入",
+          "transform": "translate(-206 188)"
+        },
+        {
+          "id": "n_370c26bf07f6495dad4ce5940b57e356",
+          "kind": "Linear",
+          "label": "隐藏层 16 → 32",
+          "transform": "translate(42 188)"
+        },
+        {
+          "id": "n_831a89cf04e24deebff3fe4947a3071a",
+          "kind": "ReLU",
+          "label": "ReLU 激活",
+          "transform": "translate(290 188)"
+        },
+        {
+          "id": "n_5c31ca180a6f436dbbcfb7f88db1ed8c",
+          "kind": "Linear",
+          "label": "输出层 32 → 4",
+          "transform": "translate(538 188)"
+        },
+        {
+          "id": "n_6c988f3092124373acb21771ffc03629",
+          "kind": "Output",
+          "label": "输出",
+          "transform": "translate(786 188)"
+        }
+      ],
+      "edges": [
+        {
+          "d": "M -30 254 H 6 V 254 H 42",
+          "id": "e_3591d9e7b41b4064873089d8f4131f8f"
+        },
+        {
+          "d": "M 218 254 H 254 V 254 H 290",
+          "id": "e_ced7d78c9e3e4159a2ee170516648902"
+        },
+        {
+          "d": "M 466 254 H 502 V 254 H 538",
+          "id": "e_60ed306ca225408dbaa56f1082031984"
+        },
+        {
+          "d": "M 714 254 H 750 V 254 H 786",
+          "id": "e_74e4dc35165e4358916194dff6de3948"
+        }
+      ],
+      "footer": "已添加：最小 MLP。可在右侧修改输入形状，逐个选择模块编辑；一次撤销即可移除本次添加。"
+    },
+    {
+      "label": "小型 CNN",
+      "key": "cnn",
+      "nodes": [
+        {
+          "id": "n_d4ec2a8f77394fa08bded4205bbc4b1a",
+          "kind": "Input",
+          "label": "图像输入",
+          "transform": "translate(-46 98)"
+        },
+        {
+          "id": "n_35e850be968b4490883a8963ebbf7add",
+          "kind": "Conv2d",
+          "label": "卷积 3 → 8",
+          "transform": "translate(178 98)"
+        },
+        {
+          "id": "n_692c76ae6ac94ef3aa42136dfc85291c",
+          "kind": "ReLU",
+          "label": "ReLU 激活",
+          "transform": "translate(402 98)"
+        },
+        {
+          "id": "n_56d9e45383234b42ae60d0b7a4ee3a7a",
+          "kind": "MaxPool2d",
+          "label": "最大池化 2 × 2",
+          "transform": "translate(626 98)"
+        },
+        {
+          "id": "n_16023864010d4796a306ef5a408e9b60",
+          "kind": "AdaptiveAvgPool2d",
+          "label": "平均池化 1 × 1",
+          "transform": "translate(-46 278)"
+        },
+        {
+          "id": "n_d27f7edc7fd047dabd5b8f4c829b7d09",
+          "kind": "Flatten",
+          "label": "展平",
+          "transform": "translate(178 278)"
+        },
+        {
+          "id": "n_0d666aa664e7450597e274a417bee1f0",
+          "kind": "Linear",
+          "label": "分类头 8 → 4",
+          "transform": "translate(402 278)"
+        },
+        {
+          "id": "n_09078a2b6f48409c86681fec598d853d",
+          "kind": "Output",
+          "label": "输出",
+          "transform": "translate(626 278)"
+        }
+      ],
+      "edges": [
+        {
+          "d": "M 130 164 H 154 V 164 H 178",
+          "id": "e_1eb0486668294b96aecdf046bc3521bf"
+        },
+        {
+          "d": "M 354 164 H 378 V 164 H 402",
+          "id": "e_13c58177ac6d4f06b888b6f9c2b451b5"
+        },
+        {
+          "d": "M 578 164 H 602 V 164 H 626",
+          "id": "e_218639a05cee4fa29da960c4ada87f69"
+        },
+        {
+          "d": "M 802 164 H 808 V 204 H -52 V 344 H -46",
+          "id": "e_041a9268970049678f0a0423f9c698ba"
+        },
+        {
+          "d": "M 130 344 H 154 V 344 H 178",
+          "id": "e_599e15fe45f34029ba531a8dae9f3e8e"
+        },
+        {
+          "d": "M 354 344 H 378 V 344 H 402",
+          "id": "e_1cd18dedc95948d4a9d891df9dc97674"
+        },
+        {
+          "d": "M 578 344 H 602 V 344 H 626",
+          "id": "e_344f2634250946ef84d23a3740bd0e88"
+        }
+      ],
+      "footer": "已添加：小型 CNN。可在右侧修改输入形状，逐个选择模块编辑；一次撤销即可移除本次添加。"
+    },
+    {
+      "label": "残差 MLP",
+      "key": "residual-mlp",
+      "nodes": [
+        {
+          "id": "n_028bcc29c3374d16aa9a57baf4b41482",
+          "kind": "Input",
+          "label": "输入",
+          "transform": "translate(-330 188)"
+        },
+        {
+          "id": "n_e8dc34242c844b1faf174ceba22abee0",
+          "kind": "Linear",
+          "label": "隐藏层 16 → 32",
+          "transform": "translate(-82 188)"
+        },
+        {
+          "id": "n_6b06f5bfc2854a6d91247b70d42bbb90",
+          "kind": "ReLU",
+          "label": "ReLU 激活",
+          "transform": "translate(166 188)"
+        },
+        {
+          "id": "n_30390a00dbff43fc8fe3b082ffa24b71",
+          "kind": "Linear",
+          "label": "投影层 32 → 16",
+          "transform": "translate(414 188)"
+        },
+        {
+          "id": "n_ee6ea25368b14271ad24660a987071c8",
+          "kind": "Add",
+          "label": "残差相加",
+          "transform": "translate(662 188)"
+        },
+        {
+          "id": "n_6ab1185c5cc2410ea7529e2030684613",
+          "kind": "Output",
+          "label": "输出",
+          "transform": "translate(910 188)"
+        }
+      ],
+      "edges": [
+        {
+          "d": "M -154 254 H -118 V 254 H -82",
+          "id": "e_bf86487b6d2c4ffba74547915a32c889"
+        },
+        {
+          "d": "M 94 254 H 130 V 254 H 166",
+          "id": "e_29f281edd92b415d9f506dc1d9a1845d"
+        },
+        {
+          "d": "M 342 254 H 378 V 254 H 414",
+          "id": "e_b86bbac3550146d08b893146aa5cf739"
+        },
+        {
+          "d": "M 590 254 H 626 V 248 H 662",
+          "id": "e_e7889d1b1fc74eedb1d572670f920ea5"
+        },
+        {
+          "d": "M -154 254 H -148 V 294 H 656 V 260 H 662",
+          "id": "e_41984effb0834052b681812cd656db41"
+        },
+        {
+          "d": "M 838 254 H 874 V 254 H 910",
+          "id": "e_cd89dfec4f694f5f9beb82cdca861050"
+        }
+      ],
+      "footer": "已添加：残差 MLP。可在右侧修改输入形状，逐个选择模块编辑；一次撤销即可移除本次添加。"
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "schema": "archcanvas-m5-independent-safety-audit/1",
+  "role": "Independent AI read-only product review; synthetic fixtures written only in temporary directories",
+  "inputs": [
+    {
+      "path": "scripts/m5_beta_bundle.py",
+      "bytes": 23629,
+      "sha256": "9b2946091e4ee082c892d730863efa7ee3def0827ac7491472d3e5a4b6316107"
+    },
+    {
+      "path": "scripts/check_m5_beta_release.py",
+      "bytes": 8777,
+      "sha256": "6239bddacb74dffcbd7abdf40e83751b4a2b3bd4029a1c4a5abaf0a6f5db13f8"
+    },
+    {
+      "path": "schemas/m5-beta-release.schema.json",
+      "bytes": 3008,
+      "sha256": "362f540fadaf07376aea0f86799f9abfb6afa716639f849a056361a61f467922"
+    },
+    {
+      "path": "docs/evidence/m5-beta-release-work/independent-audit.py",
+      "bytes": 12344,
+      "sha256": "ee74e3aa3723c7691eed707517ed97d57c87ef8370e73a2cd9c00a16f41f0bba"
+    }
+  ],
+  "inputsUnchangedDuringAudit": true,
+  "status": "passed",
+  "passed": 16,
+  "total": 16,
+  "cases": [
+    {
+      "name": "archive rejects parent-traversal",
+      "status": "passed",
+      "detail": "non-regular or unsafe archive member: archcanvas-0.1.0-beta.1/../escape"
+    },
+    {
+      "name": "archive rejects absolute-path",
+      "status": "passed",
+      "detail": "non-regular or unsafe archive member: /tmp/escape"
+    },
+    {
+      "name": "archive rejects symbolic-link",
+      "status": "passed",
+      "detail": "non-regular or unsafe archive member: archcanvas-0.1.0-beta.1/link"
+    },
+    {
+      "name": "archive rejects hard-link",
+      "status": "passed",
+      "detail": "non-regular or unsafe archive member: archcanvas-0.1.0-beta.1/link"
+    },
+    {
+      "name": "manifest malformed shape 0 is cleanly rejected",
+      "status": "passed",
+      "detail": "unsupported bundle identity"
+    },
+    {
+      "name": "manifest malformed shape 1 is cleanly rejected",
+      "status": "passed",
+      "detail": "invalid bundle version"
+    },
+    {
+      "name": "manifest malformed shape 2 is cleanly rejected",
+      "status": "passed",
+      "detail": "invalid bundle inventory row"
+    },
+    {
+      "name": "manifest malformed shape 3 is cleanly rejected",
+      "status": "passed",
+      "detail": "invalid bundle hash or byte count"
+    },
+    {
+      "name": "archive cannot claim three-host E2E",
+      "status": "passed",
+      "detail": "beta preview cannot certify uncollected host E2E"
+    },
+    {
+      "name": "installed metadata cannot claim three-host E2E",
+      "status": "passed",
+      "detail": "beta preview cannot certify uncollected host E2E"
+    },
+    {
+      "name": "unknown current symlink is not replaced",
+      "status": "passed",
+      "detail": "current symlink is not registered; refusing to replace user content"
+    },
+    {
+      "name": "user activation file is not overwritten",
+      "status": "passed",
+      "detail": "activation.json is not a recognized local installation receipt"
+    },
+    {
+      "name": "stale activation temporary symlink cannot overwrite target",
+      "status": "passed",
+      "detail": "stale .activation-next.json requires explicit cleanup"
+    },
+    {
+      "name": "failed inner-release validation leaves no installed version",
+      "status": "passed",
+      "detail": "bundle release schema invalid: $manifest.build.runtimeSource: must equal 'formal-project'"
+    },
+    {
+      "name": "archive rejects file/directory prefix collision before extraction",
+      "status": "passed",
+      "detail": "bundle file/directory prefix collision: foo/bar"
+    },
+    {
+      "name": "upgrade and rollback preserve both version payloads",
+      "status": "passed",
+      "detail": "Both immutable version payloads preserved through upgrade and rollback; current points to the first version."
+    }
+  ],
+  "limits": [
+    "Synthetic minimum payload verifies safety contracts, not completeness of the real release archive.",
+    "No host E2E, human participant, model execution, publication or public release is certified."
+  ]
+}

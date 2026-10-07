@@ -1,0 +1,73 @@
+✔ source-grounded distant memory caption has an owned-route guide instead of silently floating beside mask routes (29.018206ms)
+✔ a safe close caption keeps its coordinates and creates no decorative guide (0.3825ms)
+✔ general translated CJK captions use short collision-free guides without model-name or ID dependencies (2.591607ms)
+✔ crowded and shared-route attachments preserve captions and give explicit diagnostics instead of unsafe guide connections (12.318578ms)
+✔ notes, other caption envelopes, crossing routes and reserved guides remain obstacles in a general multi-label batch (3.272678ms)
+✔ whole/detail, aliases, monochrome, save/reopen and undo/redo keep caption decoration outside canonical metadata (55.337185ms)
+✔ a general stress batch preserves every canonical edge and produces deterministic nonintersecting decorations (86.01263ms)
+✔ a dense batch above the deterministic association limit keeps every label and emits diagnostics (0.71615ms)
+✔ geometry-check exhaustion in a still-supported batch preserves remaining captions with explicit budget evidence (234.223615ms)
+✔ a later moved caption clears the visible stroke of an earlier reserved guide (6.201394ms)
+✖ a narrow guide cannot visually overlap or touch a parallel foreign tensor stroke (1.034258ms)
+✖ uncertifiable foreign stroke widths preserve text with a diagnostic instead of emitting guides (1.183771ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 10
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 495.152124
+
+✖ failing tests:
+
+test at tests/caption-guide-independent.test.ts:243:1
+✖ a narrow guide cannot visually overlap or touch a parallel foreign tensor stroke (1.034258ms)
+  AssertionError [ERR_ASSERTION]: the guide and unrelated tensor stroke envelopes must remain separate
+      at verify (file:///home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/studio/tests/caption-guide-independent.test.ts:75:14)
+      at TestContext.<anonymous> (file:///home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/studio/tests/caption-guide-independent.test.ts:249:5)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/caption-guide-independent.test.ts:255:1
+✖ uncertifiable foreign stroke widths preserve text with a diagnostic instead of emitting guides (1.183771ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   {
+  +     id: 'caption-guide:own',
+  +     kind: 'caption-guide',
+  +     path: 'M 101 30 L 101 62',
+  +     sceneEdgeId: 'own',
+  +     stroke: '#123456',
+  +     width: 0.8
+  +   }
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/studio/tests/caption-guide-independent.test.ts:260:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Array],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

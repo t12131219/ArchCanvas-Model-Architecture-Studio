@@ -1,0 +1,7 @@
+# Transformer level0 paper85 — independent pixel review
+
+Actually viewed both original JPEG images (1280 × 720). The **primer has an export modal** while the same-case public observation says dialogCount0 and both complete DOM snapshots show no dialog. This is a visible coarse-state mismatch. No cause is established. The primer is retained; the final screenshot does not cancel it.
+
+The **final screenshot is consistent at coarse scale** with the normal Studio baseline: Transformer, saved/rev1, root-only expansion, paper85/color, Page inspector, 54% zoom, three mask cards, two token and embedding branches, collapsed encoder/decoder, projection/output and legend. Public SVG/snapshot document and revision bindings agree, and the 696 × 806 page under public camera scale predicts the visible paper proportions. Fine typography, glyph metrics, pixel endpoints/arrowheads, runtime behavior, human approval and performance remain unverified.
+
+The JSON binds the two images, public SVG, public observation, both complete DOM snapshots, stored-envelope snapshot/receipt and contextual environment records. All 10 bindings were rehashed unchanged. Discovery reads preceded some inherited bindings, so this is not an immutable-first-acquisition claim. Byte-equal before/after DOM does not prove screenshot state. Contextual support-iframe UA/DPR records contain no native font/hardware lock and zero app performance trials.

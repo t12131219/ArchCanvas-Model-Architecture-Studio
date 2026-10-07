@@ -1,6 +1,55 @@
 # ArchCanvas Studio · 视觉与受限双向审核 Alpha
 
-当前（2026-10-05）构建为 `index-BcFxpKDY.js`（SHA256 `98eae2934004ecaec4036f7b0746fb8304b3412c467b2417b68988dd4e4afe3a`），本轮产品字节未改。[完整浏览器矩阵与代理问题报告](docs/m4-bcf-browser-matrix.md)记录 **36/36 基线＋3/3 编辑态、39张实际截图与234份工件**，三模型保存重开SVG一致。独立几何/像素复核已完成，Transformer深层交叉、手动移动越界/碰撞与17模块缺组合预制仍待修；材料覆盖不代表出版人审。当前原生输入诊断保留失败/缺失与分母，持续presented FPS/完整INP、活动取消、真实尺寸/字体/硬件和3–5真人任务仍未认证。五席8961–8965未分配、真人0，AI不计真人，M4保持partial，未进入M5。前轮Studio136/136、strict/build和独立发行9项保留Bc范围；Python319/319保留obx测试时绑定及未改Python字节范围，本轮未重复产品全套测试。
+2026-10-07：M5 已完成本地 Beta.2 出口，详见 [Beta.2 目录发现与安装生命周期](docs/m5-beta2.md) 和 [完成收据](docs/evidence/m5-completion-v1/receipt.json)：分类/别名/参数搜索、透明起点组成展示、可恢复卸载与恢复、安装版本拒绝/重启检查。当前 Studio **491/491**、strict/build 0、publication **11/11**；M4 `partial`、M5 `complete-local-beta`。Beta.1 冻结包保留，三宿主实际客户端 E2E、真人及出版审看按证据保持开放。
+
+以下阶段条目保留各自冻结构建的历史范围。
+
+2026-10-07：按用户要求已进入 **M5 Beta 发布准备**，不等待 M4 真人席位或出版审看。当前 M4 工程收据为 Studio **483/483**、strict/build exit 0、publication **11/11**；M4 仍 `partial`、真人 0。最新范围见 [M4 AI 模拟试用 v2](docs/m4-routing-user-simulation-v2.md) 与 [M5 发布工作](docs/m5-beta-release.md)。下方原“当前/最终”段落按各自历史构建读取。
+
+M5 首片段交付本地 [0.1.0-beta.1 预览包](.archcanvas/releases/archcanvas-0.1.0-beta.1.tar.gz)、版本目录安装/升级/回滚和 [85/180 mm 导出预检](docs/m5-demo-export.md)。包外 [最终收据](docs/evidence/m5-beta-release-work/final-receipt.json)记录包摘要、独立目录核验与测试范围；三宿主 E2E 仍按实际证据登记，候选包不等于公开 Beta 已发布。
+
+上一阶段见 [M4 局部路由与搭建页恢复](docs/m4-routing-components-v1.md)：密集图交点 71→38、重叠 4→1，右侧参数/检查面板恢复，拖入反馈补齐。Studio 470/470、strict/build 0、publication 11/11；新五席 readiness 127/127。下移窄缝仍有 6 对唯一入侵，M4 partial、真人 0。
+
+## 历史状态：受限 memory 连线连续性（2026-10-06）
+
+当前 `index-CU5JhnoS.js` / `index--unhoRTb.css` 的[统一收据](docs/evidence/m4-memory-continuity-current/checks-final-attempt-2/receipt.json)为 Studio **436/436**、fail/skip/cancel0，strict TypeScript/Vite exit0、publication **11/11** skip0；115源码/测试/配置＋3dist＝**118**，另11publication输入。36历史core＋1detail夹具单独冻结，115不是完整传递依赖清单。见[阶段](docs/m4-memory-continuity.md)、[门](docs/evidence/m4-current-gate-audit.json)及[source seal](docs/evidence/m4-memory-continuity-current/implementation-work/source-seal-attempt-2/report.json)。
+
+collapsed memory在完整同场景原route batch完成后，才尝试Repeat轮廓感知的侧边/中点路线；完整fixed/chosen peers、nominal body/header/stroke、端口法向和两段6单位lead均保护，unknown/budget不足保留同场景batch。dy14→15例从49→644.3改善为49→50，端点仅1/0位移；非memory路线/端口与canonical事实保持。840production行14623关系、624adopt（y576/gap48）；实际140case18272独审为有限几何，不等于840模型、全域最少交叉或美观通过。窄gap、expanded/retained route、mask拥挤与字体/arrowhead仍开放。
+
+[浏览器/导出独审](docs/evidence/m4-memory-continuity-current/independent-browser-export-review/readback-attempt-2/report.json)2840/2840是17records、16fullpublicXML和2actual工件的数据关系。Encoder上下16、左右24world及四次undo，保存47/storage7与settled重开已记录；12初reopen仍90%默认camera，后续68%。02/04footer滞后、10状态滞后、16stale modal保留；17仅root有限亲看完整figure/legend/footer47无modal，不认证全部rasterfresh/firstpaint。真实whole180SVG/PDF与saved47 full document2/2exact，最低名义文字6.56018pt；初2838/2840两oracle错误保留，不认证85/180mm人审。
+
+[原KAUB性能诊断](docs/evidence/m4-readable-grid-browser-next/README.md)保留四toggle p95520ms、collapsed output y=-28236缺陷及300小字不批准。[continuous读回](docs/evidence/m4-readable-grid-browser-next/continuous-browser/independent-readback-attempt-2/README.md)26/29保留三项真实proxy分歧：独立pan994.9/drag1716.1/wheel45.2ms只是首次DOM变化，非因果input-to-paint。rAF 不是实际呈现 FPS；当前readable300、continuous≤50ms、medium<500ms、固定硬件/字体A/B×3与presented≥50FPS未认证。
+
+M4 `partial`、M5 `not_started`、真人 0。AI 不计真人；历史3AI角色和17基础模块＋3透明起点保持原范围，未逐种生成/执行。[新研究准备](docs/evidence/m4-memory-continuity-current/research-readiness-independent/report.json)313/313仅readiness：87implementation/4baseline，5pristine席位43631–43635；旧25包427文件exact、上一viewport包正式verifyexit1stale。未服务/probe/分配/collect，3–5真人五步≤180秒/≥80%及85/180mm人审开放。13入口第二`##`后历史正文、旧stage/gold/failure/package原字节保留。正式工程从头实现、独立于Temp runtime/fallback，无新认证复用，未执行生成模型；后续字节变化不继承本阶段认证。
+
+最新 follow-up 见 [M4 frontier status v2](docs/m4-frontier-status-v2.md)：`index-dUAO0Njz.js` 修复搭建页保存、重开、生成和打开新副本的进行中状态提示。Studio 468/468、strict/build 0、publication 11/11；最新五席研究包已独立 verify 0、readiness 127/127，但尚未分配或收集真人。复杂图连线交叉/弯折、出版审看、呈现性能和真人任务仍是开放门。
+
+本阶段新增 [M4 frontier-scoped movement](docs/m4-frontier-move.md)：视觉移动使用画布世界单位，省略范围保持 `all-frontiers` 默认语义，显式 `current-frontier` 只更新当前可见层级；拖动、对齐、位置修复和文字指令共享范围，预览与提交保持一致。当前正式收据为 [checks 468/468 + strict/build + publication 11/11](docs/evidence/m4-frontier-move-current/checks-final-attempt-2/receipt.json)、[43441 浏览器验证](docs/evidence/m4-frontier-move-current/browser/receipt.json)，新 dist 为 `index-BgHBYTuI.js`（SHA256 `3558247f5624a4f7380b2f916cabafe7ba5dbe7fa09178f7180b3d436efd1bef`）。独立 core/workload/UI 合同分别为 18/18、48/48、14/14；这些是有限阶段证据，不与 Studio 总数相加。历史 bad300 all-frontiers 算术和失败保留，新候选来自 unbroken grid4 的 fresh typed current-frontier 操作。AI 模拟试用仍不计真人；M4 `partial`、M5 `not_started`、真人 0，presented FPS、全局连线美观、出版尺寸和真人任务仍开放。
+
+## 历史版本记录
+
+### 历史 thbum 可读画布阶段（2026-10-06）
+
+当前构建为 `index-thbum3BQ.js` / `index-QPVAzYp6.css`。本轮加入有界画布文字补偿、长标题省略与端口提示避让；Studio 300/300、0 skipped，strict TypeScript/Vite 退出 0。浏览器补采与像素复核的有界结果见 [M4 可读画布记录](docs/m4-readable-canvas.md) 和 [browser manifest](docs/evidence/m4-readable-canvas-work/browser-final/manifest.json)。M4 仍 partial、M5 未开始、真人 0。
+
+旧 BV 模块库阶段保留 15 组 DOM/公开状态/JPEG，但独立复核记录 `pixelSynchrony=failed`：多张动作 JPEG 比对应状态滞后一步，不能认证切换、搜索、清空或添加后的可见结果；原件与失败报告继续保留。
+
+
+历史 BV（2026-10-06）为 `index-BV-fWDiR.js` / `index-QPVAzYp6.css`。[模块库可发现性与预制起点](docs/m4-module-library.md)增加“基础模块 17 / 网络起点 3”入口；默认直达 Input、Output、Linear 与激活模块，搜索词会跨两类结果。最终专项48/48、Studio284/284、strict TypeScript/Vite退出0；本轮未执行模型或安装依赖。
+
+实际浏览器复核保留待连接状态、草稿4节点3连线、跨类搜索、未支持 Attention 说明、Identity/MLP/Input 添加后撤销，以及保存重开。入口切换只改列表视图，不改草稿、历史、选择、相机或连接。15组新BV状态/JPEG绑定在 [模块库浏览证据](docs/evidence/m4-module-library-work/browser-attempt-1/manifest.json)；此前CW22组静态检查/四向移动/参数引导保留原范围。
+
+M4仍partial、M5未开始、真人0。AI审查不计真人；复杂图路由、逐模块生成、出版尺寸、呈现性能与真人任务仍未认证。[BV 历史 schema16 状态](docs/evidence/m4-human-review-handoff-status-followup.json)单独绑定本轮；schema15与CW/BSA旧证据保留各自归档，不继承为BV浏览器认证。
+
+历史版本说明：当前（2026-10-06）为 `index-Dzp9we5t.js` / `index-B6WbMowt.css`。[折叠残差路线与重叠保护](docs/m4-collapsed-residual.md)保持独立residual端口/角色/事实并有界缩短真实折叠代理路线；最终专项24/24、Studio203/203、strict/build退出0。新CNN12配置/128工件（12fit＋9local）已采，独立文件/语义/几何核对12/12通过，AI像素观察收据已冻结（21新图＋4历史L0）；交互/出版的8项标题位置精确比较false保留，不认证跨模式整XML一致或出版美学；旧au339矩阵、四向/history/保存和作者链不继承新build。17基础模块＋3透明起点仍存在；当前研究包未prepare/verify、真人0，性能未新测，M4partial、M5未开始。
+
+[切换前171文件快照](docs/evidence/before-m4-collapsed-residual/manifest.json)保留旧mutable输入、原seal和末读；旧seal2883绑定通过未变原路径或明确快照解析。下方“当前/本轮/最终”只指各自旧版本和冻结时点，旧raw/manifest/seal不回写，不计新renderer认证。
+
+历史au3（2026-10-06）构建为 `index-au3IB_0Q.js` / `index-B6WbMowt.css`。本轮[au3 浏览器矩阵与四向操作](docs/m4-au3-current-matrix.md)已 collect 36 基线＋3 编辑后视图、234 工件；三个模型共12方向的实际拖动、撤销重做、保存重开有独立核对。36张fit及19张局部/编辑图分别AI审查，旧MLP右移失配保留，新起点补采单列。CNN外绕残差、窄缝拥挤、MLP边界折角和Transformer小移大改线仍是具体问题；文件完整不认证美观或出版。当前full observer保留6尝试/5完成、14eligible/10matched/4interactions、matched子集p95 3000ms；约1秒rAF间隔不是呈现帧认证。产品源码/build未改，沿用源码精确绑定的179/179、strict/build exit0；此前发行9/9是其209源码/654依赖/5symlink冻结副本范围，后续Skill文档改动不称同一完整发行字节。已有au3 4节点3边搭建链保存重开、静态生成及新工作副本保存保持独立证据；17模块＋3起点不等于逐模块完整验收。M4 partial、M5未开始，当前研究包未prepare/verify、0分配/收集/真人；AI不能替代真人。[文档更新前归档](docs/evidence/before-m4-au3-full-matrix/manifest.json)保存此前4233绑定、24末读supplemental及两个原receipt；下方旧“当前/本轮/最终”只指各自版本和冻结时点。
+
+历史ChS（2026-10-05）为 `index-ChS0wIgb.js`（SHA256 `05019f89f0de0c0c622df7a2cc1a13ed58477c456244c97209a0f37db79139c9`）与 `index-CsXMONBp.css`。[ChS浏览器矩阵](docs/m4-chs-current-matrix.md)已通过正式collect：36基础＋三模型各一编辑后，共39例/234工件，artifactCoverage=complete；人工审看仍pending、真人0。17基础模块＋3透明网络起点及位置修复继续使用同一产品，既有Studio152/152、strict/build0、独立发行9项保持版本范围，本轮未重跑产品套件。新五席研究包72实施绑定、4baseline、8991–8995仅登记，0分配/收集/真人。不同tensor交叉/重叠、repeat背景叠片、说明空白和密集图字号仍是问题；presented性能/活动取消/物理出版未认证，M4 partial、未进入M5。此前799绑定加原seal共800文件已在[文档更新前归档](docs/evidence/before-m4-chs-browser-matrix/manifest.json)逐字保留；以下历史记录只按各自版本/时点读取。
+
+[切换前2894绑定原字节](docs/evidence/before-m4-move-recovery-presets/manifest.json)保留旧Bc seal/status/矩阵/诊断/源码；下方历史记录中的“当前/本轮/最终”仅指其明确旧构建和冻结时点，不计新build浏览器、性能或真人认证。旧raw、seal、manifest和研究包不回写。
 
 本轮文档更新前的478个封印绑定和旧seal原字节已[逐字节归档](docs/evidence/before-m4-bcf-browser-matrix/manifest.json)；下方历史记录按其明确构建/时点阅读，旧失败和seal不回写。
 

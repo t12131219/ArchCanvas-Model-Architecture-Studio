@@ -1,0 +1,87 @@
+--- frozen-before/studio/src/authoring.ts
++++ current/studio/src/authoring.ts
+@@ -13,6 +13,45 @@
+ export type DraftHistory = { draft: AuthoredDraft; past: AuthoredDraft[]; future: AuthoredDraft[] };
+ export const DRAFT_WIDTH = 176;
+ export const DRAFT_HEIGHT = 100;
++export type DraftFlow = 'horizontal' | 'vertical';
++
++/** Project ports along the connected graph's main axis without moving cards. */
++export function draftFlow(draft: AuthoredDraft): DraftFlow {
++  const nodes = new Map(draft.nodes.map(node => [node.id, node]));
++  let horizontal = 0, vertical = 0;
++  for (const edge of draft.edges) {
++    const source = nodes.get(edge.source.nodeId), target = nodes.get(edge.target.nodeId);
++    if (!source || !target) continue;
++    horizontal += Math.abs(target.position.x - source.position.x);
++    vertical += Math.abs(target.position.y - source.position.y);
++  }
++  return vertical > horizontal ? 'vertical' : 'horizontal';
++}
++
++/** Adding another independent network must not turn existing port projections. */
++export function draftNodeFlows(draft: AuthoredDraft): Record<string, DraftFlow> {
++  const nodes = new Map(draft.nodes.map(node => [node.id, node]));
++  const adjacent = new Map(draft.nodes.map(node => [node.id, new Set<string>()]));
++  for (const edge of draft.edges) {
++    if (!nodes.has(edge.source.nodeId) || !nodes.has(edge.target.nodeId)) continue;
++    adjacent.get(edge.source.nodeId)!.add(edge.target.nodeId);
++    adjacent.get(edge.target.nodeId)!.add(edge.source.nodeId);
++  }
++  const flows: Record<string, DraftFlow> = {}, visited = new Set<string>();
++  for (const node of draft.nodes) {
++    if (visited.has(node.id)) continue;
++    const component = new Set<string>(), waiting = [node.id];
++    while (waiting.length) {
++      const id = waiting.pop()!;
++      if (visited.has(id)) continue;
++      visited.add(id); component.add(id); waiting.push(...adjacent.get(id)!);
++    }
++    const flow = draftFlow({ ...draft, nodes: draft.nodes.filter(item => component.has(item.id)),
++      edges: draft.edges.filter(edge => component.has(edge.source.nodeId) && component.has(edge.target.nodeId)) });
++    for (const id of component) flows[id] = flow;
++  }
++  return flows;
++}
+ 
+ export function parseDraftCache(value: unknown): { draft: AuthoredDraft; storageRevision: number; savedRevision: number } | null {
+   if (!value || typeof value !== 'object') return null;
+@@ -82,13 +121,15 @@
+   }
+   draft.edges.push({ id, source: { ...source }, target: { ...target } });
+ }
+-export function portPoint(node: DraftNode, module: DraftModule, portId: string) {
++export function portPoint(node: DraftNode, module: DraftModule, portId: string, flow: DraftFlow = 'horizontal') {
+   const port = module.ports.find(item => item.id === portId);
+   if (!port) throw new Error('未知端口');
+   const peers = module.ports.filter(item => item.direction === port.direction), index = peers.indexOf(port);
++  if (flow === 'vertical') return { x: node.position.x + (index + 1) * DRAFT_WIDTH / (peers.length + 1), y: node.position.y + (port.direction === 'in' ? 0 : DRAFT_HEIGHT) };
+   return { x: node.position.x + (port.direction === 'in' ? 0 : DRAFT_WIDTH), y: node.position.y + 48 + (index + 1) * 36 / (peers.length + 1) };
+ }
+ export function draftRoutes(draft: AuthoredDraft, catalog: DraftCatalog) {
++  const flow = draftFlow(draft), nodeFlows = draftNodeFlows(draft);
+   const nodes: SceneNode[] = draft.nodes.map(node => ({ id: node.id, x: node.position.x, y: node.position.y, width: DRAFT_WIDTH, height: DRAFT_HEIGHT,
+     localX: node.position.x, localY: node.position.y, label: node.label, subtitle: '', headerHeight: 0, kind: node.kind, category: 'operator',
+     fill: '#ffffff', stroke: '#355247', glyph: 'operator', expanded: false, expandable: false, pinned: false, evidence: 'contract', ports: [] }));
+@@ -97,13 +138,17 @@
+     const source = byId.get(edge.source.nodeId), target = byId.get(edge.target.nodeId);
+     const sourceModule = catalog.modules.find(module => module.kind === source?.kind), targetModule = catalog.modules.find(module => module.kind === target?.kind);
+     if (!source || !target || !sourceModule || !targetModule || !sourceModule.ports.some(port => port.id === edge.source.portId) || !targetModule.ports.some(port => port.id === edge.target.portId)) return [];
+-    const start = portPoint(source, sourceModule, edge.source.portId), end = portPoint(target, targetModule, edge.target.portId);
+-    const middle = (start.x + end.x) / 2;
++    const componentFlow = nodeFlows[source.id];
++    const start = portPoint(source, sourceModule, edge.source.portId, componentFlow), end = portPoint(target, targetModule, edge.target.portId, componentFlow);
++    const middle = componentFlow === 'horizontal' ? (start.x + end.x) / 2 : (start.y + end.y) / 2;
++    const preferredPath = componentFlow === 'horizontal'
++      ? start.y === end.y ? `M ${start.x} ${start.y} H ${end.x}` : `M ${start.x} ${start.y} H ${middle} V ${end.y} H ${end.x}`
++      : start.x === end.x ? `M ${start.x} ${start.y} V ${end.y}` : `M ${start.x} ${start.y} V ${middle} H ${end.x} V ${end.y}`;
+     return [{ id: edge.id, sourceId: source.id, targetId: target.id, tensorId: JSON.stringify([source.id, edge.source.portId]),
+-      start, end, preferredPath: `M ${start.x} ${start.y} H ${middle} V ${end.y} H ${end.x}` }];
++      start, end, preferredPath }];
+   });
+   const routed = router.batch(requests), routes = requests.map((request, index) => ({ ...routed[index], id: request.id }));
+-  return { routes, overlaps: router.overlaps };
++  return { routes, overlaps: router.overlaps, flow, nodeFlows };
+ }
+ /** Only explicit user layout requests move objects; rank order is deterministic. */
+ export function arrangeDraft(draft: AuthoredDraft) {

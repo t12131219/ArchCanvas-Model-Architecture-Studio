@@ -1,0 +1,898 @@
+{
+  "createdUtc": "2026-10-06T06:36:33.358847+00:00",
+  "expectationAuthority": "Independent manually enumerated graph edges/roles and Add categories, not generated from product output or reachability helper.",
+  "fixtures": [
+    {
+      "name": "right-skip",
+      "draft": {
+        "schemaVersion": 1,
+        "mode": "authored-draft",
+        "id": "draft-right-skip",
+        "title": "Independent handwritten source roles",
+        "revision": 0,
+        "nodes": [
+          {
+            "id": "x",
+            "kind": "Input",
+            "label": "Handwritten x",
+            "parameters": {
+              "shape": [
+                1,
+                16
+              ],
+              "dtype": "float32"
+            },
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "h",
+            "kind": "Identity",
+            "label": "Handwritten h",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "sum",
+            "kind": "Add",
+            "label": "Handwritten sum",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "out",
+            "kind": "Output",
+            "label": "Handwritten out",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "trunk",
+            "source": {
+              "nodeId": "x",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "h",
+              "portId": "input"
+            }
+          },
+          {
+            "id": "main",
+            "source": {
+              "nodeId": "h",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "sum",
+              "portId": "left"
+            }
+          },
+          {
+            "id": "skip",
+            "source": {
+              "nodeId": "x",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "sum",
+              "portId": "right"
+            }
+          },
+          {
+            "id": "exit",
+            "source": {
+              "nodeId": "sum",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "out",
+              "portId": "input"
+            }
+          }
+        ]
+      },
+      "expectedEdgeRoles": {
+        "trunk": "data",
+        "main": "data",
+        "skip": "residual",
+        "exit": "data"
+      },
+      "expectedAddCategories": {
+        "sum": "residual"
+      }
+    },
+    {
+      "name": "left-skip",
+      "draft": {
+        "schemaVersion": 1,
+        "mode": "authored-draft",
+        "id": "draft-left-skip",
+        "title": "Independent handwritten source roles",
+        "revision": 0,
+        "nodes": [
+          {
+            "id": "x",
+            "kind": "Input",
+            "label": "Handwritten x",
+            "parameters": {
+              "shape": [
+                1,
+                16
+              ],
+              "dtype": "float32"
+            },
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "h",
+            "kind": "Identity",
+            "label": "Handwritten h",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "sum",
+            "kind": "Add",
+            "label": "Handwritten sum",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "out",
+            "kind": "Output",
+            "label": "Handwritten out",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "trunk",
+            "source": {
+              "nodeId": "x",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "h",
+              "portId": "input"
+            }
+          },
+          {
+            "id": "main",
+            "source": {
+              "nodeId": "h",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "sum",
+              "portId": "right"
+            }
+          },
+          {
+            "id": "skip",
+            "source": {
+              "nodeId": "x",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "sum",
+              "portId": "left"
+            }
+          },
+          {
+            "id": "exit",
+            "source": {
+              "nodeId": "sum",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "out",
+              "portId": "input"
+            }
+          }
+        ]
+      },
+      "expectedEdgeRoles": {
+        "trunk": "data",
+        "main": "data",
+        "skip": "residual",
+        "exit": "data"
+      },
+      "expectedAddCategories": {
+        "sum": "residual"
+      }
+    },
+    {
+      "name": "transitive",
+      "draft": {
+        "schemaVersion": 1,
+        "mode": "authored-draft",
+        "id": "draft-transitive",
+        "title": "Independent handwritten source roles",
+        "revision": 0,
+        "nodes": [
+          {
+            "id": "x",
+            "kind": "Input",
+            "label": "Handwritten x",
+            "parameters": {
+              "shape": [
+                1,
+                16
+              ],
+              "dtype": "float32"
+            },
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "a",
+            "kind": "Identity",
+            "label": "Handwritten a",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "b",
+            "kind": "ReLU",
+            "label": "Handwritten b",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "c",
+            "kind": "Identity",
+            "label": "Handwritten c",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "sum",
+            "kind": "Add",
+            "label": "Handwritten sum",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "out",
+            "kind": "Output",
+            "label": "Handwritten out",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "x-a",
+            "source": {
+              "nodeId": "x",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "a",
+              "portId": "input"
+            }
+          },
+          {
+            "id": "a-b",
+            "source": {
+              "nodeId": "a",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "b",
+              "portId": "input"
+            }
+          },
+          {
+            "id": "b-c",
+            "source": {
+              "nodeId": "b",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "c",
+              "portId": "input"
+            }
+          },
+          {
+            "id": "main",
+            "source": {
+              "nodeId": "c",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "sum",
+              "portId": "left"
+            }
+          },
+          {
+            "id": "skip",
+            "source": {
+              "nodeId": "x",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "sum",
+              "portId": "right"
+            }
+          },
+          {
+            "id": "exit",
+            "source": {
+              "nodeId": "sum",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "out",
+              "portId": "input"
+            }
+          }
+        ]
+      },
+      "expectedEdgeRoles": {
+        "x-a": "data",
+        "a-b": "data",
+        "b-c": "data",
+        "main": "data",
+        "skip": "residual",
+        "exit": "data"
+      },
+      "expectedAddCategories": {
+        "sum": "residual"
+      }
+    },
+    {
+      "name": "siblings",
+      "draft": {
+        "schemaVersion": 1,
+        "mode": "authored-draft",
+        "id": "draft-siblings",
+        "title": "Independent handwritten source roles",
+        "revision": 0,
+        "nodes": [
+          {
+            "id": "x",
+            "kind": "Input",
+            "label": "Handwritten x",
+            "parameters": {
+              "shape": [
+                1,
+                16
+              ],
+              "dtype": "float32"
+            },
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "a",
+            "kind": "Identity",
+            "label": "Handwritten a",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "b",
+            "kind": "ReLU",
+            "label": "Handwritten b",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "sum",
+            "kind": "Add",
+            "label": "Handwritten sum",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "out",
+            "kind": "Output",
+            "label": "Handwritten out",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "x-a",
+            "source": {
+              "nodeId": "x",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "a",
+              "portId": "input"
+            }
+          },
+          {
+            "id": "x-b",
+            "source": {
+              "nodeId": "x",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "b",
+              "portId": "input"
+            }
+          },
+          {
+            "id": "left",
+            "source": {
+              "nodeId": "a",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "sum",
+              "portId": "left"
+            }
+          },
+          {
+            "id": "right",
+            "source": {
+              "nodeId": "b",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "sum",
+              "portId": "right"
+            }
+          },
+          {
+            "id": "exit",
+            "source": {
+              "nodeId": "sum",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "out",
+              "portId": "input"
+            }
+          }
+        ]
+      },
+      "expectedEdgeRoles": {
+        "x-a": "data",
+        "x-b": "data",
+        "left": "data",
+        "right": "data",
+        "exit": "data"
+      },
+      "expectedAddCategories": {
+        "sum": "operator"
+      }
+    },
+    {
+      "name": "equal-producer",
+      "draft": {
+        "schemaVersion": 1,
+        "mode": "authored-draft",
+        "id": "draft-equal-producer",
+        "title": "Independent handwritten source roles",
+        "revision": 0,
+        "nodes": [
+          {
+            "id": "x",
+            "kind": "Input",
+            "label": "Handwritten x",
+            "parameters": {
+              "shape": [
+                1,
+                16
+              ],
+              "dtype": "float32"
+            },
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "sum",
+            "kind": "Add",
+            "label": "Handwritten sum",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "out",
+            "kind": "Output",
+            "label": "Handwritten out",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "left",
+            "source": {
+              "nodeId": "x",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "sum",
+              "portId": "left"
+            }
+          },
+          {
+            "id": "right",
+            "source": {
+              "nodeId": "x",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "sum",
+              "portId": "right"
+            }
+          },
+          {
+            "id": "exit",
+            "source": {
+              "nodeId": "sum",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "out",
+              "portId": "input"
+            }
+          }
+        ]
+      },
+      "expectedEdgeRoles": {
+        "left": "data",
+        "right": "data",
+        "exit": "data"
+      },
+      "expectedAddCategories": {
+        "sum": "operator"
+      }
+    },
+    {
+      "name": "concat-ancestor",
+      "draft": {
+        "schemaVersion": 1,
+        "mode": "authored-draft",
+        "id": "draft-concat-ancestor",
+        "title": "Independent handwritten source roles",
+        "revision": 0,
+        "nodes": [
+          {
+            "id": "x",
+            "kind": "Input",
+            "label": "Handwritten x",
+            "parameters": {
+              "shape": [
+                1,
+                16
+              ],
+              "dtype": "float32"
+            },
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "h",
+            "kind": "Identity",
+            "label": "Handwritten h",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "cat",
+            "kind": "Concat",
+            "label": "Handwritten cat",
+            "parameters": {
+              "dim": 1
+            },
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "out",
+            "kind": "Output",
+            "label": "Handwritten out",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "trunk",
+            "source": {
+              "nodeId": "x",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "h",
+              "portId": "input"
+            }
+          },
+          {
+            "id": "a",
+            "source": {
+              "nodeId": "x",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "cat",
+              "portId": "a"
+            }
+          },
+          {
+            "id": "b",
+            "source": {
+              "nodeId": "h",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "cat",
+              "portId": "b"
+            }
+          },
+          {
+            "id": "exit",
+            "source": {
+              "nodeId": "cat",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "out",
+              "portId": "input"
+            }
+          }
+        ]
+      },
+      "expectedEdgeRoles": {
+        "trunk": "data",
+        "a": "data",
+        "b": "data",
+        "exit": "data"
+      },
+      "expectedAddCategories": {}
+    },
+    {
+      "name": "nested",
+      "draft": {
+        "schemaVersion": 1,
+        "mode": "authored-draft",
+        "id": "draft-nested",
+        "title": "Independent handwritten source roles",
+        "revision": 0,
+        "nodes": [
+          {
+            "id": "x",
+            "kind": "Input",
+            "label": "Handwritten x",
+            "parameters": {
+              "shape": [
+                1,
+                16
+              ],
+              "dtype": "float32"
+            },
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "h",
+            "kind": "Identity",
+            "label": "Handwritten h",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "sum",
+            "kind": "Add",
+            "label": "Handwritten sum",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "g",
+            "kind": "GELU",
+            "label": "Handwritten g",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "sum2",
+            "kind": "Add",
+            "label": "Handwritten sum2",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": "out",
+            "kind": "Output",
+            "label": "Handwritten out",
+            "parameters": {},
+            "position": {
+              "x": 0,
+              "y": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "trunk",
+            "source": {
+              "nodeId": "x",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "h",
+              "portId": "input"
+            }
+          },
+          {
+            "id": "main1",
+            "source": {
+              "nodeId": "h",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "sum",
+              "portId": "left"
+            }
+          },
+          {
+            "id": "skip1",
+            "source": {
+              "nodeId": "x",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "sum",
+              "portId": "right"
+            }
+          },
+          {
+            "id": "to-g",
+            "source": {
+              "nodeId": "sum",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "g",
+              "portId": "input"
+            }
+          },
+          {
+            "id": "main2",
+            "source": {
+              "nodeId": "g",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "sum2",
+              "portId": "right"
+            }
+          },
+          {
+            "id": "skip2",
+            "source": {
+              "nodeId": "sum",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "sum2",
+              "portId": "left"
+            }
+          },
+          {
+            "id": "exit",
+            "source": {
+              "nodeId": "sum2",
+              "portId": "output"
+            },
+            "target": {
+              "nodeId": "out",
+              "portId": "input"
+            }
+          }
+        ]
+      },
+      "expectedEdgeRoles": {
+        "trunk": "data",
+        "main1": "data",
+        "skip1": "residual",
+        "to-g": "data",
+        "main2": "data",
+        "skip2": "residual",
+        "exit": "data"
+      },
+      "expectedAddCategories": {
+        "sum": "residual",
+        "sum2": "residual"
+      }
+    }
+  ]
+}

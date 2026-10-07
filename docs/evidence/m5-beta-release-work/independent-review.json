@@ -1,0 +1,142 @@
+{
+  "schema": "archcanvas-m5-independent-release-review/1",
+  "actor": "Independent AI read-only product reviewer; no human, host E2E or publication reviewer",
+  "scope": [
+    "scripts/m5_beta_bundle.py",
+    "scripts/check_m5_beta_release.py",
+    "schemas/m5-beta-release.schema.json",
+    "tests/test_m5_beta_bundle.py",
+    "tests/test_m5_beta_release.py",
+    "tests/test_m5_beta_preflight.py"
+  ],
+  "method": "Read source and contracts, reproduce concrete failures in temporary synthetic archives and local prefixes, notify implementation agent, then rerun independent adversarial checks after source freeze. No product or parent-owned documentation edits.",
+  "initialFindings": [
+    {
+      "id": "archive-prefix-collision",
+      "severity": "P1",
+      "initialReproduction": "A complete self-consistent tar inventory containing regular files foo and foo/bar passed read_bundle. install wrote foo and then raised FileExistsError on foo/bar, leaving releases/0.1.0-beta.1 in the final location.",
+      "resolution": "validate_bundle_metadata rejects parent/file path collisions before materialization; install uses an exclusive staging tree with verification before final rename.",
+      "finalCase": "archive rejects file/directory prefix collision before extraction"
+    },
+    {
+      "id": "failed-inner-metadata-install",
+      "severity": "P1",
+      "initialReproduction": "A bundle with complete outer hashes but an inner release manifest runtimeSource=forbidden-other-tree passed read_bundle, then install wrote the final version directory before metadata verification failed. Final directory remained.",
+      "resolution": "read_bundle validates inner release metadata and artifact hashes before any write. install verifies its own staging tree, then renames it; failed staging cleans only its own temporary tree.",
+      "finalCases": [
+        "failed inner-release validation leaves no installed version",
+        "failed staging removes only its own temporary tree"
+      ]
+    },
+    {
+      "id": "malformed-manifest-shapes",
+      "severity": "P2",
+      "initialReproduction": "Top-level bundle manifest [] raised AttributeError and files=[[]] raised TypeError rather than a clean ValueError.",
+      "resolution": "validate_bundle_metadata now checks the manifest, version, inventory row shape, digest and literal integer byte count before use.",
+      "finalCases": [
+        "manifest malformed shape 0 is cleanly rejected",
+        "manifest malformed shape 2 is cleanly rejected",
+        "manifest malformed shape 3 is cleanly rejected"
+      ]
+    },
+    {
+      "id": "malformed-inner-schema-vocabulary",
+      "severity": "P2",
+      "initialReproduction": "A self-consistent archive containing inner release schema {\"type\": []} reached validate_schema and raised TypeError: unhashable type list.",
+      "resolution": "validate_schema rejects unsupported type and malformed vocabulary structures; inner metadata separately verifies rows/artifacts and conservative scope even if its bundled schema is weakened.",
+      "finalCases": [
+        "inner schema invalid-type-array is cleanly rejected",
+        "weakening inner schema cannot forge three-host E2E"
+      ]
+    },
+    {
+      "id": "release-test-error-contract",
+      "severity": "P2",
+      "initialReproduction": "The initial 6-test release run had 4 failures: stale schema hash in the manifest, and 3 diagnostic substring expectations after schema validation was added.",
+      "resolution": "Final manifest hashes and tests agree with schema diagnostics; the final 29-test release/bundle/preflight suite passes."
+    }
+  ],
+  "initialEvidenceLimit": "Initial failures were observed directly in tool output and reported to Root and the implementation agent. The first pre-fix input bytes were not saved or hashed; this report does not claim a replayable sealed pre-fix snapshot. The independent final audit is replayable and hash-bound.",
+  "additionalFinalChecks": [
+    "Reject parent traversal, absolute paths, tar symlinks and hard links before extraction.",
+    "Refuse unknown current symlinks, unrecognized activation files and stale activation temporary symlinks; user bytes are preserved.",
+    "Reject forged three-host E2E claims in archives and installed metadata; host rows remain not-tested.",
+    "Upgrade and rollback preserve both version payloads and change the registered current pointer.",
+    "Current source inputs remained byte-identical throughout the independent audit."
+  ],
+  "validation": {
+    "independentAdversarial": {
+      "command": ".venv/bin/python docs/evidence/m5-beta-release-work/independent-audit.py",
+      "passed": 20,
+      "total": 20,
+      "inputsUnchangedDuringAudit": true,
+      "report": {
+        "path": "docs/evidence/m5-beta-release-work/independent-safety-final-v2.json",
+        "bytes": 4721,
+        "sha256": "26280703f71984046afb5a3abbdd7c421669ecc249bfc7855230ad2b472defe3"
+      }
+    },
+    "productSuite": {
+      "command": ".venv/bin/python -m unittest tests.test_m5_beta_release tests.test_m5_beta_bundle tests.test_m5_beta_preflight -v",
+      "passed": 29,
+      "total": 29,
+      "exitCode": 0,
+      "log": {
+        "path": "docs/evidence/m5-beta-release-work/independent-product-suite-final.log",
+        "bytes": 4532,
+        "sha256": "2dd7da5bfef143f46fbdb7d980ebdfd02ce77729eba214f575fab9e11be360ea"
+      }
+    },
+    "priorIntermediateReport": {
+      "path": "docs/evidence/m5-beta-release-work/independent-safety-after-atomic-fix.json",
+      "bytes": 4000,
+      "sha256": "b4e983cc867fc2a73035ba55c16afa8e1f60b291cb396678cd7557e3e42d79df"
+    }
+  },
+  "inputs": [
+    {
+      "path": "scripts/m5_beta_bundle.py",
+      "bytes": 25234,
+      "sha256": "4eeebd2049a6032ca24df8f54d89f5bd349ae6a90252416c4aaf3c1881b997f0"
+    },
+    {
+      "path": "scripts/check_m5_beta_release.py",
+      "bytes": 9877,
+      "sha256": "92362e2f272a426a5c4d44c200461ad65671e58723a76493610da5e00d2649c6"
+    },
+    {
+      "path": "schemas/m5-beta-release.schema.json",
+      "bytes": 3008,
+      "sha256": "362f540fadaf07376aea0f86799f9abfb6afa716639f849a056361a61f467922"
+    },
+    {
+      "path": "docs/evidence/m5-beta-release-work/independent-audit.py",
+      "bytes": 14259,
+      "sha256": "34c6906f44833561e0cbd4e2ce68b425103ad7842215d549838a4a0f977bd28d"
+    },
+    {
+      "path": "tests/test_m5_beta_bundle.py",
+      "bytes": 10711,
+      "sha256": "66d333e34fc8fbe3ded7cd452802cdc0e8d2e8e2cffeb679fa7c7939123ea833"
+    },
+    {
+      "path": "tests/test_m5_beta_release.py",
+      "bytes": 2940,
+      "sha256": "50c30bdcc483a98dc3f8943dd895f363251ea343a839f5e437f07a8a5f846037"
+    },
+    {
+      "path": "tests/test_m5_beta_preflight.py",
+      "bytes": 4674,
+      "sha256": "09a37e941514d7f92f083f35e2e1c898536d35e090d8ec5f98a2598e2bd3b007"
+    }
+  ],
+  "status": "passed-with-stated-scope-limits",
+  "remainingFindings": [],
+  "limits": [
+    "Synthetic minimum payloads verify safety boundaries; they do not prove completeness or user usability of the real beta archive.",
+    "The product suite performs a real pack/extraction/three-fixture standalone analysis; it is not a three-host E2E run, a model execution, a human study or a publication approval.",
+    "Archive checksum inventory detects inconsistent bytes; it is not a publisher authenticity signature.",
+    "This review covers offline local installation contracts. Activation updates a symlink and state receipt as separate filesystem operations; it does not certify crash durability or OS-level concurrent adversarial races.",
+    "M4 remains partial and M5 remains in_progress. No public release is declared."
+  ]
+}

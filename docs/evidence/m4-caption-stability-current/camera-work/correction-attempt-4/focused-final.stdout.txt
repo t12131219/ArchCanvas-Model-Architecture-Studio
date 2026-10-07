@@ -1,0 +1,48 @@
+✔ pointerup endpoint is available without an intervening move or RAF (1.316977ms)
+✔ terminal endpoint includes movement beyond the last sampled preview (0.136306ms)
+✔ pan displacement is measured in CSS pixels and never divided by zoom (0.153461ms)
+✔ returning to start restores exact initial camera without cumulative drift (0.220476ms)
+✔ viewport-origin shift alone does not masquerade as a pointer delta (0.106097ms)
+✔ a second pointer cannot update or finish the original pan (0.113382ms)
+✔ initial camera snapshot and caller input remain untouched (0.116851ms)
+✔ invalid start coordinates, zoom and pointer identity are rejected (0.307573ms)
+✔ world camera keeps the sealed Transformer scene continuous across negative bounds (63.471419ms)
+✔ fit, focus, pointer-centered zoom and pan use world coordinates (0.344885ms)
+✔ same-viewport reload preserves exact camera and independently calculated world centre (0.449104ms)
+✔ a resized reopened viewport preserves world centre and zoom through new pixel translation (0.103008ms)
+✔ source/IR/document identities and visual revisions prevent stale or cross-model reuse (0.103786ms)
+✔ per-document source/IR keys isolate values without adding revision to the key (0.125713ms)
+✔ invalid stored versions, centres, scales, viewport and identity are refused rather than coerced (0.186331ms)
+✔ fit scales below .15 remain valid while unsafe captures are rejected (0.128733ms)
+✔ malformed, absent, oversized, disabled and quota-failed storage leave a graceful fallback (0.184628ms)
+✔ delayed restore cannot supersede explicit fit, zoom, focus, pan or a newer document load (0.09849ms)
+✔ terminal pan is saved and cancellation can restore the prior camera without retaining the preview (0.120838ms)
+✔ capture/restore/tickets mutate no input and store revisions without touching Canvas/history (0.580075ms)
+✔ a deliberately adopted reconciled identity can retain view while old source state remains isolated (0.126897ms)
+✔ actual App initialization callbacks read the owned saved view before any initial write (84.539392ms)
+✔ actual App persistence callback refuses previews then writes terminal camera and rollback (18.293895ms)
+✖ actual App delayed callback rejects later intent/load/revision and handles deferred viewport (61.384235ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 23
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 460.908185
+
+✖ failing tests:
+
+test at tests/camera-view-state-independent.test.ts:246:1
+✖ actual App delayed callback rejects later intent/load/revision and handles deferred viewport (61.384235ms)
+  ValidationError: document: source binding digest differs from architecture
+      at validateDocument (file:///home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/studio/src/core/validate.ts:134:55)
+      at createHistory (file:///home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/studio/src/core/document.ts:281:73)
+      at h.historyRef.current.createHistory (file:///home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/studio/tests/camera-view-state-independent.test.ts:252:74)
+      at TestContext.<anonymous> (file:///home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/studio/tests/camera-view-state-independent.test.ts:255:70)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
