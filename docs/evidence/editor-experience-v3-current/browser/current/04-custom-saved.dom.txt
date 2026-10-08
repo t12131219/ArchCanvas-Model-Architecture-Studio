@@ -1,0 +1,135 @@
+- banner:
+  - generic: ArchCanvas
+  - generic: MODEL ARCHITECTURE STUDIO
+  - textbox "模型草稿名称": MLP · 编辑副本
+  - generic "模型 ⌄"
+  - group "工作区模式":
+    - button "视图"
+    - button "编辑" [pressed]
+  - generic: 草稿已保存
+  - button "保存":
+    - text: 保存
+- complementary:
+  - text: MODULE LIBRARY
+  - heading "常用模块 74" [level=2]:
+    - text: 常用模块
+    - generic: "74"
+  - paragraph:
+    - text: 拖入画布，或点击添加。
+    - text: 输入 → 计算模块 → 输出
+  - group "模块库浏览方式":
+    - button "基础模块 74" [pressed]:
+      - text: 基础模块
+      - generic: "74"
+    - button "网络起点 23":
+      - text: 网络起点
+      - generic: "23"
+  - textbox "搜索模块":
+    - /placeholder: 名称、别名或参数，如 FC / padding
+  - text: 模块分类
+  - combobox "筛选模块分类":
+    - option "全部分类 · 74"
+    - option "输入与输出 · 2"
+    - option "全连接 · 1"
+    - option "基础算子 · 4"
+    - option "形状变换 · 8"
+    - option "激活函数 · 16"
+    - option "正则化 · 6"
+    - option "卷积 · 6"
+    - option "池化 · 12"
+    - option "归一化 · 9"
+    - option "嵌入 · 1"
+    - option "注意力 · 1"
+    - option "循环与序列 · 3"
+    - option "合并与分支 · 5"
+    - option "自定义源码模块 · 1" [selected]
+  - generic: 可按类别、英文别名或参数搜索；网络起点也按组成模块匹配。
+  - button "源码自定义模块":
+    - text: 源码自定义模块
+  - status: 分类结果：基础模块 1（自定义源码模块）。
+  - button "重置筛选"
+  - heading "自定义源码模块" [level=3]
+  - button "添加 Custom_e8b6d3ad1f51395c22a0773c":
+    - generic: Custom_e8b6d3ad1f51395c22a0773c
+    - generic: 双路融合
+  - generic: 常用模型的无环草稿。参数和连线通过静态检查后，生成新模型。
+- main:
+  - generic: MLP · 编辑副本
+  - generic: MODEL ARCHITECTURE · 模型编辑
+  - button "模型层级"
+  - status: 搭建撤销 1 · 重做 0；制图历史 0 / 0 在“视图”中继续。两处历史分别保留，撤销不会改写原始源码。
+  - button "选择" [pressed]:
+    - text: 选择
+  - button "平移":
+    - text: 平移
+  - button "撤销草稿":
+  - button "重做草稿" [disabled]:
+  - button "按连接排版"
+  - button "检查模型"
+  - button "适合画布":
+    - text: 适合画布
+  - button "草稿缩小": −
+  - button "草稿缩放百分比": 100%
+  - button "草稿放大": +
+  - img "模型搭建画布":
+    - generic "数据流"
+    - generic "数据流"
+    - generic "features"
+    - generic "Input"
+    - button "features features 输出端口":
+      - generic: features
+    - generic "features 选择并拖动"
+    - generic "network"
+    - generic "Module"
+    - button "network input 输入端口":
+      - generic: input
+    - button "network output 输出端口":
+      - generic: output
+    - generic "network 选择并拖动"
+    - generic "output"
+    - generic "Output"
+    - button "output value 输入端口":
+      - generic: value
+    - generic "output 选择并拖动"
+    - generic "双路融合"
+    - generic "PairFusion"
+    - button "双路融合 features 输入端口":
+      - generic: features
+    - button "双路融合 memory 输入端口":
+      - generic: memory
+    - button "双路融合 output['main'] 输出端口":
+      - generic: output['main']
+    - button "双路融合 output['skip'] 输出端口":
+      - generic: output['skip']
+    - generic "双路融合 选择并拖动"
+  - complementary "悬浮图例":
+    - button "收起悬浮图例" [expanded]:
+      - generic: 图例
+      - generic: ›
+    - generic: ▦
+    - generic: Input
+    - generic: ▯
+    - generic: Container
+    - generic: ▯
+    - generic: Linear
+    - generic: ▯
+    - generic: Activation
+    - generic: ▦
+    - generic: Output
+    - generic: 数据流
+  - generic: Shift 连续选择 · 框选 / Ctrl+A 多选 · 拖动整体 · 滚轮缩放 · 中键/Alt 平移 · 输出端口 → 输入端口 · 方向键移动 16 · Delete 删除 · Escape 取消 · Ctrl+Z 撤销
+- complementary:
+  - text: MODEL PROPERTIES
+  - heading "每一步都在图上完成" [level=2]
+  - list:
+    - listitem: 拖入 Input，设置输入形状。
+    - listitem: 拖入常用模块，编辑参数。
+    - listitem: 连接端口，加入 Output。
+    - listitem: 保存草稿，生成模型与论文图。
+  - paragraph: 随时点击“检查模型”，查看缺少的连接与声明形状；完成后再生成。当前是静态建模，模型尚未执行。
+  - region "模型静态检查":
+    - heading "检查当前结构" [level=3]
+    - paragraph: 参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。
+    - button "检查模型"
+  - generic: 5 模块 2 连接
+- status: 模型草稿已保存；可重开继续搭建。

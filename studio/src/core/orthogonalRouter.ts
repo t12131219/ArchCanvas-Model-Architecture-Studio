@@ -123,6 +123,14 @@ function validDirections(points: RoutePoint[], original: RoutePoint[]) {
   }
   return true;
 }
+/** Final geometry contract for every route published to the scene. Route
+ * refinement has several independent candidate generators; this guard keeps
+ * a malformed candidate from reaching `path`, whose compact H/V serializer
+ * cannot represent a diagonal segment. */
+function isOrthogonal(points: readonly RoutePoint[]) {
+  return points.length >= 2 && points.every((point, index) => Number.isFinite(point.x) && Number.isFinite(point.y) &&
+    (index === 0 || point.x === points[index - 1].x || point.y === points[index - 1].y));
+}
 function conflictNoWorse(candidate: ConflictCost, original: ConflictCost) {
   return candidate.crossingPairs <= original.crossingPairs && candidate.crossingPoints <= original.crossingPoints && candidate.overlapPairs <= original.overlapPairs &&
     candidate.disjointCrossingPairs <= original.disjointCrossingPairs && candidate.disjointCrossingPoints <= original.disjointCrossingPoints && candidate.disjointOverlapPairs <= original.disjointOverlapPairs &&
@@ -405,7 +413,11 @@ export function createOrthogonalRouter(nodes: readonly SceneNode[]) {
    * Every accepted replacement is monotone for crossing/overlap counts against
    * the current complete batch, including the disjoint-owner subset. */
   const batch = (requests: readonly RouteRequest[]): RouteResult[] => {
-    const results = requests.map(route);
+    // Retain an immutable, axis-checked result as the final safety net for
+    // every refinement phase. A malformed candidate must never replace this
+    // baseline in the published batch.
+    const initialResults = requests.map(route);
+    const results = initialResults.map(result => ({ ...result, points: result.points.slice() }));
     if (!requests.length || requests.length > ROUTE_REFINEMENT_BUDGET.maxRoutes || nodes.length > ROUTE_REFINEMENT_BUDGET.maxNodes ||
       results.reduce((total, result) => total + result.points.length, 0) > ROUTE_REFINEMENT_BUDGET.maxRoutePoints) return results;
     const geometry = results.map(result => simplified(result.points, false)), boxes = geometry.map(bounds);
@@ -952,7 +964,12 @@ export function createOrthogonalRouter(nodes: readonly SceneNode[]) {
     refineCollapsedResiduals();
     refineShortcuts();
     refineComponents();
-    return refineReadableRoutes(nodes, requests, results);
+    const refined = refineReadableRoutes(nodes, requests, results);
+    return refined.map((result, index) => {
+      if (isOrthogonal(result.points)) return result;
+      const fallback = initialResults[index];
+      return { ...fallback, points: fallback.points.slice() };
+    });
   };
   return Object.assign(route, { overlaps, headerOverlaps, batch });
 }

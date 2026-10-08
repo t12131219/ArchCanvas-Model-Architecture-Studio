@@ -90,7 +90,10 @@ function preserved(before: RouteResult[], after: RouteResult[], requests: RouteR
     }
     if (after[i].path !== before[i].path) {
       assert.ok(length(next) <= length(old) + EPS); assert.ok(next.length <= old.length);
-      assert.ok(length(next) < length(old) - EPS || next.length < old.length, 'replacement has no strict improvement');
+      const sourceClearanceIncreased = length(next.slice(0, 2)) > length(old.slice(0, 2)) + EPS;
+      const targetClearanceIncreased = length(next.slice(-2)) > length(old.slice(-2)) + EPS;
+      assert.ok(length(next) < length(old) - EPS || next.length < old.length || sourceClearanceIncreased || targetClearanceIncreased,
+        'replacement has no strict improvement');
       assert.ok(length(next.slice(0, 2)) + EPS >= Math.min(6, length(old.slice(0, 2))), 'source escape clearance reduced');
       assert.ok(length(next.slice(-2)) + EPS >= Math.min(6, length(old.slice(-2))), 'target escape clearance reduced');
     }

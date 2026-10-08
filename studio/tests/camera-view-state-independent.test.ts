@@ -6,7 +6,7 @@ import { cameraAtPanInput, beginCameraPan } from '../src/cameraGesture.ts';
 import { fitCameraToBounds } from '../src/cameraProjection.ts';
 import { cameraViewportSize } from '../src/cameraViewport.ts';
 import type { CameraViewport } from '../src/cameraViewport.ts';
-import { createDocument, createHistory, reduceHistory } from '../src/core/index.ts';
+import { createDocument, createHistory, reduceHistory, editorSceneBounds } from '../src/core/index.ts';
 import { canApplyCameraViewTicket, cameraViewStorageKey, captureCameraView, readCameraView,
   restoreCameraView, sameCameraViewDocument, writeCameraView } from '../src/cameraViewState.ts';
 import type { CameraViewIdentity, CameraViewStorage } from '../src/cameraViewState.ts';
@@ -204,7 +204,8 @@ function appCameraHarness() {
     canApplyCameraViewTicket, sameCameraViewDocument, readCameraView, writeCameraView, cameraViewportSize,
     requestAnimationFrame: (callback: FrameRequestCallback) => { const id = ++nextFrame; pending.set(id, callback); return id; },
     cancelAnimationFrame: (id: number) => { pending.delete(id); },
-    buildScene: (doc: CanvasDocument) => { sceneInputs.push(doc); return { bounds: { x: 0, y: 0, width: 400, height: 200 } }; }, fitCameraToBounds };
+    buildScene: (doc: CanvasDocument) => { sceneInputs.push(doc); return { bounds: { x: 0, y: 0, width: 400, height: 200 } }; },
+    editorSceneBounds: (scene: { bounds: { x: number; y: number; width: number; height: number } }) => scene.bounds, fitCameraToBounds };
   const compiled = ts.transpileModule(snippets, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
   const callbacks = new Function(...Object.keys(environment), `${compiled}\nreturn { persistCamera, claimCamera, commitCamera, initializeCamera };`)(...Object.values(environment)) as {
     persistCamera: (doc?: CanvasDocument, view?: typeof camera) => void;

@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "createdUtc": "2026-10-07T15:07:45Z",
+  "updatedUtc": "2026-10-07T15:07:45Z",
+  "scope": "editor-experience-v3 current-worktree audit",
+  "status": "verified-local-editor-v3",
+  "sourceDocument": "docs/editor-experience-v3.md",
+  "implementationDirection": "formal project from scratch; legacy prototype runtime and fallback are not used",
+  "requirementAudit": [
+    {
+      "requirement": "routing separation",
+      "status": "verified-local-with-ai-browser-boundary",
+      "evidence": [
+        "checks/route-editor-v3-final.txt: route-lanes-v3 + orthogonal-routing + move-recovery + layout-recovery 35/35",
+        "full Studio 568/568 includes 41 saved hierarchical/movement scenes"
+      ],
+      "guardContract": "canonical endpoints, manual anchors, pins, contacts and former overlap spans are retained; overlap-to-cross is allowed only when overlap strictly decreases and new crossings stay inside the former overlap span",
+      "missingOrLimited": [
+        "AI browser evidence is an overview/sample and does not certify global route aesthetics or publication acceptance"
+      ]
+    },
+    {
+      "requirement": "implicit model root",
+      "status": "verified-local-with-ai-browser-boundary",
+      "evidence": [
+        "checks/editor-presentation-editor-v3-final.txt: 8/8",
+        "full Studio 568/568",
+        "browser/final/01-mlp-view.ax.txt and 07-custom-generated-view.ax.txt"
+      ],
+      "result": "expanded roots retain hierarchy/layout constraints while root frame/title/ports are omitted from editor world SVG; title is workspace furniture",
+      "missingOrLimited": [
+        "live browser sample is MLP/custom; CNN/Transformer coverage is source-level tests"
+      ]
+    },
+    {
+      "requirement": "single view/edit switch",
+      "status": "verified-local-with-ai-browser-boundary",
+      "evidence": [
+        "checks/editor-workflow-editor-v3-final.txt: 21/21",
+        "browser/final/02-mlp-edit.ax.txt, 06-custom-connected-saved.ax.txt, 07-custom-generated-view.ax.txt, 08-custom-return-edit.ax.txt, 09-custom-second-view.ax.txt"
+      ],
+      "result": "blank/imported workflow contracts preserve draft/history/camera/selection; failure retention and stale async protection are covered; browser reached saved 5-module/4-connection draft and generated view",
+      "missingOrLimited": [
+        "browser receipt is AI evidence, not a human usability study"
+      ]
+    },
+    {
+      "requirement": "floating legend",
+      "status": "verified-local-with-ai-browser-boundary",
+      "evidence": [
+        "checks/editor-presentation-editor-v3-final.txt: 8/8",
+        "browser/final/01-mlp-view.ax.txt and 02-mlp-edit.ax.txt show expanded legend; live AX state confirmed collapsed state"
+      ],
+      "result": "legend is a fixed, collapsible screen layer outside editor world SVG and fit geometry",
+      "missingOrLimited": [
+        "no human publication-size review; export omission is source/test evidence rather than a human visual sign-off"
+      ]
+    },
+    {
+      "requirement": "custom Python nn.Module modules",
+      "status": "verified-local-with-ai-browser-boundary",
+      "evidence": [
+        "checks/custom-modules-final-permitted.txt: Python 15/15 including permitted loopback HTTP 2/2",
+        "checks/editor-workflow-editor-v3-final.txt: 21/21",
+        "browser/final/03-custom-preview.ax.txt, 04-custom-inserted.ax.txt, 05-custom-connected-1.ax.txt, 06-custom-connected-saved.ax.txt, 07-custom-generated-view.ax.txt"
+      ],
+      "result": "static source preview supports named multi-input/multi-output PairFusion, insertion, named connections, save and generated view; unknown shape remains unknown and model is not executed",
+      "missingOrLimited": [
+        "AI browser evidence does not certify arbitrary Python semantics or human acceptance"
+      ]
+    }
+  ],
+  "observedChecks": [
+    {
+      "id": "studio-full-editor-v3-final",
+      "command": "NODE_OPTIONS=--max-old-space-size=12288 npm test",
+      "path": "checks/studio-full-editor-v3-final.txt",
+      "observedPasses": 568,
+      "observedFailures": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "termination": "clean",
+      "sha256": "286373bb195ca21b16ac442c13c42c846d0652fe631ff1c4e934470a1f397ce5"
+    },
+    {
+      "id": "route-editor-v3-final",
+      "command": "NODE_OPTIONS=--max-old-space-size=12288 node --experimental-strip-types --test --test-isolation=none tests/route-lanes-v3.test.ts tests/orthogonal-routing.test.ts tests/move-recovery-independent.test.ts tests/layout-recovery-safety-independent.test.ts",
+      "path": "checks/route-editor-v3-final.txt",
+      "observedPasses": 35,
+      "observedFailures": 0,
+      "termination": "clean",
+      "sha256": "f58af6e63f67b85363f30753008f1d2a5d79a351909157801e60b5fe819488ed"
+    },
+    {
+      "id": "editor-workflow-editor-v3-final",
+      "command": "NODE_OPTIONS=--max-old-space-size=12288 node --experimental-strip-types --test --test-isolation=none tests/editor-workflow-independent.test.ts",
+      "path": "checks/editor-workflow-editor-v3-final.txt",
+      "observedPasses": 21,
+      "observedFailures": 0,
+      "termination": "clean",
+      "sha256": "40f597da5d33a971c73b5e19cd60eb0a836d2b0d5d0deaa288ecb32ffad7a5a3"
+    },
+    {
+      "id": "editor-presentation-editor-v3-final",
+      "command": "NODE_OPTIONS=--max-old-space-size=12288 node --experimental-strip-types --test --test-isolation=none tests/editor-presentation-independent.test.ts",
+      "path": "checks/editor-presentation-editor-v3-final.txt",
+      "observedPasses": 8,
+      "observedFailures": 0,
+      "termination": "clean",
+      "sha256": "30732575a3d391f20153e54233092ebd4e00fda53e2235a1e3515b847fe768d5"
+    },
+    {
+      "id": "custom-modules-final-permitted",
+      "command": "PYTHONPATH=src .venv/bin/python -m unittest tests.test_custom_modules tests.test_custom_modules_http -v",
+      "path": "checks/custom-modules-final-permitted.txt",
+      "observedPasses": 15,
+      "observedFailures": 0,
+      "skipped": 0,
+      "termination": "clean on permitted loopback host",
+      "sha256": "7c9fa68c2c5706327d84b44b9674978788e96eb60b2008b085833101385a9f14"
+    },
+    {
+      "id": "studio-build-editor-v3-final",
+      "command": "npm run build",
+      "path": "checks/studio-build-editor-v3-final.txt",
+      "observed": "TypeScript and Vite build completed; chunk-size warning only",
+      "termination": "clean",
+      "sha256": "2cbcdc671bedf373d3bdb97a9f5a733e555009619838e366c6b704b3e25a82e9"
+    }
+  ],
+  "currentWorktreeObservations": {
+    "distAssets": [
+      {
+        "path": "studio/dist/assets/index-y7sJoz5g.js",
+        "bytes": 609613,
+        "sha256": "febc1a2bec66c374ff98406c9188123a7ff2fef7c89e286525832b2fa9a62e4a"
+      },
+      {
+        "path": "studio/dist/assets/index-CZR1k8bj.css",
+        "bytes": 47079,
+        "sha256": "ca5ffb990d957773627b3c1867588267fce2ec0f8d99e373da1c8d898615f5d3"
+      },
+      {
+        "path": "studio/dist/index.html",
+        "bytes": 477,
+        "sha256": "b6c796622d5f0a73071da471ac59c136ac719aab4d3f443f3ece2cf942210383"
+      }
+    ],
+    "temporaryDebugSearch": {
+      "found": false,
+      "command": "rg -n 'DEBUG_ROUTE|DBG_|ARCH_DEBUG|DETAIL_ROUTE|LANE_STAGE|console\\.error' studio/src/core studio/src/App.tsx studio/src/AuthoringStudio.tsx"
+    },
+    "gitDiffCheck": "clean",
+    "catalogObservedInLiveBrowser": {
+      "atomicModules": 74,
+      "networkStarters": 23,
+      "categories": 13
+    },
+    "m4HumanParticipants": 0,
+    "publicationHumanReview": false,
+    "threeHostClientE2E": "not-tested"
+  },
+  "completionDecision": "complete-local-editor-v3-with-m4-human-and-publication-gates-open",
+  "claimBoundary": "Local implementation and automated contracts are verified. AI/browser evidence is bound to the final local build but is not human acceptance. Do not claim public release, publication aesthetics, presented FPS, arbitrary model execution, or three-host client E2E."
+}

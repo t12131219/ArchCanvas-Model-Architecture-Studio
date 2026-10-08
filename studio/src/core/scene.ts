@@ -11,6 +11,7 @@ import { nodeVisualOutline, projectVisualPort } from './nodeVisualOutline.ts';
 import type { VisualSide } from './nodeVisualOutline.ts';
 import { edgeLabelBounds, placeEdgeLabels } from './edgeLabelPlacement.ts';
 import { indexAtomicRelations } from './atomicFrontier.ts';
+import { routeLaneConflicts } from './routeLaneConflicts.ts';
 
 type Box = { x: number; y: number; width: number; height: number };
 const num = (n: number) => Math.round(n * 10) / 10;
@@ -245,6 +246,11 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
       }
       for (const [side, entries] of group.sideOrder) entries.sort((a, b) => {
         const first = group.orderMeta.get(a)!, second = group.orderMeta.get(b)!;
+        // Top/bottom slots are topology ordered, never re-sorted by a moved
+        // opposite card. Data precedes residual consistently at both ends;
+        // using insertion order at a merge can otherwise reverse the lanes
+        // and force a residual to share/cross the ordinary data corridor.
+        if (side === 'top' || side === 'bottom') return roleOrder[first.role] - roleOrder[second.role] || first.tie - second.tie || a.localeCompare(b);
         return first.score - second.score || roleOrder[first.role] - roleOrder[second.role] || first.tie - second.tie || a.localeCompare(b);
       });
     }
@@ -260,18 +266,11 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
     const canonical = byId.get(nodeId)!.ports.find(p => p.id === portId)!;
     const group = (direction === 'out' ? outgoing : incoming).get(id)!;
     const ordered = group.sideOrder.get(side) ?? [displayKey];
-    // Preserve the authored slot sequence for top/bottom lanes.  Sorting a
-    // shared source by the current opposite-card coordinate makes a manual
-    // move swap two ports and can create a new peer contact in the short
-    // lead outside the card.  Horizontal ports may still use their local
-    // side order because their y coordinate is independent of the lane x
-    // sequence.
-    const sideIndex = side === 'top' || side === 'bottom'
-      ? Math.max(0, group.indices.get(key) ?? 0)
-      : Math.max(0, ordered.indexOf(displayKey));
-    const sideCount = side === 'top' || side === 'bottom'
-      ? Math.max(1, group.indices.size)
-      : Math.max(1, ordered.length);
+    // Slot order is stable under movement and canonical bindings stay in
+    // architecture order. Each side has its own slots: a memory side port
+    // must not create an unused top/bottom slot or reverse a residual join.
+    const sideIndex = Math.max(0, ordered.indexOf(displayKey));
+    const sideCount = Math.max(1, ordered.length);
     const canonicalEdgeIds = [...group.canonicalIds.get(displayKey)!];
     // Canonical bindings follow architecture order, even if a collapsed
     // projection bundles non-adjacent canonical edges together.
@@ -316,8 +315,8 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
       const branchChain: SceneNode[] = []; let ancestor: SceneNode | undefined = targetBox;
       while (ancestor && !isAncestor(ancestor.id, s) && ancestor.id !== s) { branchChain.push(ancestor); ancestor = ancestor.parentId ? sceneById.get(ancestor.parentId) : undefined; }
       const branch = branchChain.at(-1) ?? targetBox;
-      const corridor = side === 'left' ? Math.min(targetOutline.x, branch.x) - 14 - channel * 8
-        : Math.max(targetOutline.x + targetOutline.width, branch.x + branch.width) + 14 + channel * 8;
+      const corridor = side === 'left' ? Math.min(targetOutline.x, branch.x) - 16 - channel * 8
+        : Math.max(targetOutline.x + targetOutline.width, branch.x + branch.width) + 16 + channel * 8;
       const gate = sides.source === 'top' ? Math.min(...maskSources.map(id => sceneById.get(id)!.y)) - 8 * (topMaskSources.length - topMaskSources.indexOf(s))
         : a.y + 6 + channel * 8;
       path = `M ${num(a.x)} ${num(a.y)} V ${num(gate)} H ${num(corridor)} V ${num(b.y)} H ${num(b.x)}`;
@@ -433,6 +432,9 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
     }
     if (routed.blockedBy.length) routeDiagnostics.push({ level: 'warning', code: 'layout-route-blocked', objectIds: routed.blockedBy, edgeId: edge.id, message: `Edge "${edge.id}" crosses object bodies or headers (${routed.blockedBy.join(', ')}). No clear route was found within the routing budget. Object anchors are preserved; move the reported objects or increase spacing to resolve this routing conflict.` });
   });
+  for (const conflict of routeLaneConflicts(edges)) routeDiagnostics.push({ level: 'warning', code: 'layout-route-overlap',
+    edgeId: conflict.firstId, relatedEdgeIds: [conflict.firstId, conflict.secondId],
+    message: `Edges "${conflict.firstId}" and "${conflict.secondId}" share ${Math.round(conflict.length * 100) / 100} world units of an ambiguous lane. No fully separated route was found within the routing budget. Node anchors and canonical bindings are preserved; increase spacing or move the connected objects to provide another corridor.` });
   const maxBottom = Math.max(160, ...[...visualBounds.values()].map(b => b.y + b.height));
   const legend = document.legendItems.map((item, i) => ({ ...item, color: document.pageSpec.preset === 'monochrome' ? '#ffffff' : item.color,
     x: 50 + i % 3 * 185, y: maxBottom + 52 + Math.floor(i / 3) * 27 }));

@@ -138,6 +138,10 @@
               {
                 "type": "string",
                 "pattern": "^Source_[a-f0-9]{24}$"
+              },
+              {
+                "type": "string",
+                "pattern": "^Custom_[a-f0-9]{24}$"
               }
             ]
           },
@@ -223,6 +227,37 @@
                     }
                   }
                 }
+              }
+            }
+          },
+          "visual": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "width",
+              "height",
+              "fill",
+              "stroke"
+            ],
+            "description": "Standalone card appearance; does not imply a semantic container.",
+            "properties": {
+              "width": {
+                "type": "number",
+                "minimum": 10,
+                "maximum": 1000000
+              },
+              "height": {
+                "type": "number",
+                "minimum": 10,
+                "maximum": 1000000
+              },
+              "fill": {
+                "type": "string",
+                "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+              },
+              "stroke": {
+                "type": "string",
+                "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
               }
             }
           }
@@ -334,6 +369,14 @@
         }
       },
       "description": "Saved source edits hidden by a folded frontier, including removed-source tombstones."
+    },
+    "customModules": {
+      "type": "array",
+      "maxItems": 24,
+      "items": {
+        "$ref": "#/$defs/customModule"
+      },
+      "description": "Digest-bound source modules and inferred named tensor boundary contracts. Source remains static; output shapes are unknown."
     }
   },
   "allOf": [
@@ -356,5 +399,153 @@
         }
       }
     }
-  ]
+  ],
+  "$defs": {
+    "customModule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "source",
+        "entry",
+        "label",
+        "constructorValues",
+        "kind",
+        "digest",
+        "sourceDigest",
+        "inputs",
+        "outputs"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128000
+        },
+        "entry": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "constructorValues": {
+          "type": "object"
+        },
+        "kind": {
+          "type": "string",
+          "pattern": "^Custom_[a-f0-9]{24}$"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "sourceDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "inputs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "positionalOnly"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"
+              },
+              "name": {
+                "type": "string"
+              },
+              "positionalOnly": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "path"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^output(_[0-9]+)?$"
+              },
+              "name": {
+                "type": "string"
+              },
+              "path": {
+                "type": "array",
+                "maxItems": 32,
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "index"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "const": "index"
+                        },
+                        "index": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "key"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "const": "key"
+                        },
+                        "key": {
+                          "type": [
+                            "string",
+                            "integer",
+                            "number",
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }

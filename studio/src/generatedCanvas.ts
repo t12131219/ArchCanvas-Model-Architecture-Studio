@@ -5,6 +5,7 @@ import type { Architecture, EdgeStyle } from './core/types.ts';
 import { TOKENS } from './core/tokens.ts';
 import { textWidth } from './core/typography.ts';
 import type { AuthoredDraft, DraftNode } from './authoring.ts';
+import { sameGeneratedDraft } from './generatedWorkspace.ts';
 
 type GeneratedBindings = {
   nodeBindings: Record<string, string>;
@@ -23,8 +24,11 @@ export function createGeneratedCanvas(architecture: Architecture, generationDraf
     if (!node || !byId.has(id) || used.has(id)) throw new Error('生成模型的部件映射不唯一，已保留原草稿。');
     used.add(id);
   }
-  if (presentationDraft !== generationDraft && (draft.id !== generationDraft.id || !draft.sourceProvenance || !generationDraft.sourceProvenance ||
-      draft.sourceProvenance.sourceDigest !== generationDraft.sourceProvenance.sourceDigest || draft.sourceProvenance.irDigest !== generationDraft.sourceProvenance.irDigest)) {
+  const sourceMatches = draft.sourceProvenance && generationDraft.sourceProvenance &&
+    draft.sourceProvenance.sourceDigest === generationDraft.sourceProvenance.sourceDigest &&
+    draft.sourceProvenance.irDigest === generationDraft.sourceProvenance.irDigest;
+  const authoredMatches = !draft.sourceProvenance && !generationDraft.sourceProvenance && sameGeneratedDraft(draft, generationDraft);
+  if (presentationDraft !== generationDraft && (draft.id !== generationDraft.id || (!sourceMatches && !authoredMatches))) {
     throw new Error('生成模型的展示草稿与源码来源不一致，已保留原草稿。');
   }
   // Generation expands source regions to verify their complete graph. The
@@ -59,8 +63,8 @@ export function createGeneratedCanvas(architecture: Architecture, generationDraf
     const known = absolute.get(id); if (known) return known;
     const node = byId.get(id)!, retained = bound.get(id), fallback = baseById.get(id);
     const children = expanded.has(id) ? node.children.map(position) : [];
-    const width = retained?.presentation?.width ?? fallback?.width ?? 176;
-    const height = retained?.presentation?.height ?? fallback?.height ?? 100;
+    const width = retained?.visual?.width ?? retained?.presentation?.width ?? fallback?.width ?? 176;
+    const height = retained?.visual?.height ?? retained?.presentation?.height ?? fallback?.height ?? 100;
     let box: Box;
     if (retained) box = { ...retained.position, width, height };
     else if (children.length) {
@@ -77,7 +81,7 @@ export function createGeneratedCanvas(architecture: Architecture, generationDraf
   for (const [id, box] of absolute) {
     const parentId = byId.get(id)!.parentId, parent = parentId ? absolute.get(parentId) : undefined;
     document.layout[id] = { x: box.x - (parent?.x ?? 0), y: box.y - (parent?.y ?? 0), width: box.width, height: box.height };
-    const presentation = bound.get(id)?.presentation;
+    const presentation = bound.get(id)?.visual ?? bound.get(id)?.presentation;
     if (presentation) document.nodeStyleOverrides[id] = { fill: presentation.fill, stroke: presentation.stroke };
   }
   document.layoutByFrontier = {};

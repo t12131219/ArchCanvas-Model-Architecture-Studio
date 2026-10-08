@@ -60,7 +60,7 @@ def capabilities() -> dict:
         "schemaVersion": 1,
         "runtimeVersion": archcanvas_cli.__version__,
         "sourceAnalysis": True,
-        "modelAuthoring": {"mode": "authored-draft", "catalog": "/api/authoring/catalog", "generation": "new-managed-copy", "sourceImport": "/api/authoring/import-source", "sourceFrontier": "/api/authoring/source-frontier", "runtimeVerified": False},
+        "modelAuthoring": {"mode": "authored-draft", "catalog": "/api/authoring/catalog", "generation": "new-managed-copy", "sourceImport": "/api/authoring/import-source", "sourceFrontier": "/api/authoring/source-frontier", "customModulePreview": "/api/authoring/custom-modules/preview", "runtimeVerified": False},
         "documentPersistence": True,
         "semanticWriteback": True,
         "supportedIntents": ["set_dropout_probability", "update_configuration", "replace_activation", "rebind_input"],
@@ -420,6 +420,8 @@ class Handler(BaseHTTPRequestHandler):
                 validate_document(payload["document"], payload["document"].get("id", ""))
                 from archcanvas_authoring.source_import import rebase_source_frontier
                 self.send_json(200, rebase_source_frontier(payload["draft"], payload["document"], payload["scene"]))
+            elif path == "/api/authoring/custom-modules/preview":
+                self.send_json(200, archcanvas_authoring.preview_custom_module(payload))
             elif path in ("/api/authoring/validate", "/api/authoring/generate"):
                 if set(payload) != {"draft"}:
                     raise ValueError("Authoring requires one draft; paths and existing project ids are not accepted.")

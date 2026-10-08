@@ -12,6 +12,8 @@ import type { AuthoringWorkspace, SourceAuthoringView } from '../src/sourceAutho
 import type { AuthoredDraft } from '../src/authoring.ts';
 import type { ImportedSourceDraft } from '../src/api.ts';
 import type { CanvasDocument, Scene } from '../src/core/types.ts';
+import { resumeGeneratedWorkspace, readGeneratedWorkspace, writeGeneratedWorkspace } from '../src/generatedWorkspace.ts';
+import type { GeneratedWorkspaceBinding } from '../src/generatedWorkspace.ts';
 
 const run = promisify(execFile), project = fileURLToPath(new URL('../../', import.meta.url));
 async function python(expression: string, value?: unknown) {
@@ -42,17 +44,20 @@ function extract(file: string, component: string, names: string[]) {
 function appHarness(document: CanvasDocument, imported: ImportedSourceDraft) {
   const historyRef = { current: createHistory(document) }, cameraRef = { current: { ...view.camera } }, loadSequence = { current: 2 };
   const authoringSessions = { current: new Map<string, AuthoringWorkspace>() }, authoringSessionKey = { current: null as string | null };
+  const generatedWorkspaces = { current: new Map<string, GeneratedWorkspaceBinding>() }, baselines: Array<AuthoredDraft | undefined> = [];
+  const cache = new Map<string, string>(), localStorage = { getItem: (key: string) => cache.get(key) ?? null, setItem: (key: string, value: string) => { cache.set(key, value); } };
   const opened: AuthoringWorkspace[] = [], failures: string[] = [], busyStates: boolean[] = [], apiCalls: string[] = [];
-  const env = { historyRef, cameraRef, loadSequence, authoringSessions, authoringSessionKey, selection: { kind: 'node', ids: [] as string[] }, tool: 'select', busy: false,
+  const env = { historyRef, cameraRef, loadSequence, authoringSessions, authoringSessionKey, generatedWorkspaces, resumeGeneratedWorkspace, readGeneratedWorkspace, writeGeneratedWorkspace, localStorage, selection: { kind: 'node', ids: [] as string[] }, tool: 'select', busy: false,
     activeRecovery: null, cancelGesture: () => {}, readCameraViewport: () => view.viewport, sourceAuthoringKey, followSourceView, resumeSourceAuthoring, buildScene,
     api: { importSourceDraft: async () => { apiCalls.push('import'); return imported; }, sourceDraftFrontier: async (draft: AuthoredDraft, doc: CanvasDocument, scene: Scene) => { apiCalls.push('rebase'); return rebaseSource(draft, doc, scene); } },
     setFailure: (value: string) => { failures.push(value); }, setBusy: (value: boolean) => { busyStates.push(value); },
+    setBrowseBaseline: (draft: AuthoredDraft | undefined) => { baselines.push(draft); },
     setAuthoringWorkspace: (workspace: AuthoringWorkspace) => { opened.push(workspace); }, setAuthoringOpen: () => {} };
-  const code = ts.transpileModule(extract('App.tsx', 'App', ['sourceDraftKey', 'retainAuthoringWorkspace', 'continueModelAuthoring']),
+  const code = ts.transpileModule(extract('App.tsx', 'App', ['sourceDraftKey', 'cacheGeneratedWorkspace', 'retainAuthoringWorkspace', 'continueModelAuthoring']),
     { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
   const callbacks = new Function(...Object.keys(env), `${code};return {continueModelAuthoring,retainAuthoringWorkspace,steer(ids,nextTool){selection={kind:'node',ids};tool=nextTool}};`)(...Object.values(env)) as {
       continueModelAuthoring: () => Promise<void>; retainAuthoringWorkspace: (workspace: AuthoringWorkspace) => void; steer: (ids: string[], tool: string) => void };
-  return { ...callbacks, historyRef, cameraRef, authoringSessions, opened, failures, busyStates, apiCalls };
+  return { ...callbacks, historyRef, cameraRef, authoringSessions, generatedWorkspaces, baselines, opened, failures, busyStates, apiCalls };
 }
 
 test('actual App callbacks retain draft undo/redo and follow same-revision camera, selection and tool on multiple returns', async () => {
@@ -110,7 +115,7 @@ test('actual App visual-revision return reprojects complete history and preserve
   const before = JSON.stringify(h.historyRef.current); await h.continueModelAuthoring();
   const resumed = h.opened.at(-1)!; assert.equal(resumed.history!.past.length, 1); assert.equal(resumed.draft.title, 'edited title');
   assert.equal(resumed.draft.sourceProvenance!.visualRevision, h.historyRef.current.document.revision); assert.equal(JSON.stringify(h.historyRef.current), before);
-  assert.deepEqual(resumed.sourceHistory, { past: 1, future: 0 }); assert.deepEqual(h.apiCalls, ['import', 'rebase', 'rebase']);
+  assert.deepEqual(resumed.sourceHistory, { past: 1, future: 0 }); assert.deepEqual(h.apiCalls, ['import', 'rebase', 'rebase', 'rebase'], 'draft, undo snapshot and no-change view baseline are each rebased');
 });
 
 test('changed source/IR or an invalid history rebase is rejected atomically before replacing a retained session', async () => {
@@ -134,7 +139,7 @@ test('saved/reopened draft retains view and undo, browser recovery restores both
   assert.equal(saved.history!.past.length, 2); assert.equal(saved.draft.title, original.title); assert.equal(saved.savedRevision, saved.draft.revision);
   assert.deepEqual(saved.camera, view.camera); assert.deepEqual(saved.selection, workspace.selection); assert.equal(saved.tool, 'pan');
   assert.equal(travelDraft(saved.history!, 'undo').draft.title, 'unsaved title');
-  const reloaded = parseAuthoringWorkspace(JSON.parse(JSON.stringify(saved)))!; assert.deepEqual(reloaded, saved);
+  const reloaded = parseAuthoringWorkspace(JSON.parse(JSON.stringify(saved)))!; assert.deepEqual(reloaded, { ...saved, viewBaseline: undefined });
   const corrupt = structuredClone(saved); corrupt.history!.past[0].sourceProvenance!.sourceDigest = 'changed'; assert.equal(parseAuthoringWorkspace(corrupt), null);
   const noChange = reopenAuthoringWorkspace(saved, original, 2); assert.equal(noChange.history, saved.history);
 });

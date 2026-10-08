@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { buildScene, createDocument, createHistory, reconcileDocument, reduceHistory, renderSvg, validateArchitecture } from './core';
+import { buildScene, createDocument, createHistory, reconcileDocument, reduceHistory, renderSvg, validateArchitecture, presentEditorScene, editorSceneBounds, implicitRootIds } from './core';
 import type { Architecture, CanvasDocument, HistoryState, MoveScope, ScenePort, VisualOperation } from './core';
 import { api } from './api';
 import type { Binding, Capabilities, Example, InputSpec, RebindOptions, Transaction } from './api';
@@ -35,6 +35,12 @@ import type { AuthoringWorkspace } from './AuthoringStudio';
 import type { GeneratedDraft } from './api';
 import { createGeneratedCanvas } from './generatedCanvas';
 import { followSourceView, resumeSourceAuthoring, sourceAuthoringKey } from './sourceAuthoringSession';
+import { WorkspaceModeSwitch } from './WorkspaceModeSwitch';
+import { FloatingLegend } from './FloatingLegend';
+import { resumeGeneratedWorkspace, generatedSourceView, sameGeneratedDraft, readGeneratedWorkspace, writeGeneratedWorkspace, authoringViewSelection } from './generatedWorkspace';
+import type { GeneratedWorkspaceBinding } from './generatedWorkspace';
+import { blankDraft } from './authoring';
+import type { AuthoredDraft } from './authoring';
 
 type Selection = { kind: 'node' | 'edge' | 'legend' | 'annotation'; ids: string[] };
 type Camera = CameraState;
@@ -67,6 +73,8 @@ export default function App() {
   const [authoringWorkspace, setAuthoringWorkspace] = useState<AuthoringWorkspace | undefined>();
   const authoringSessions = useRef(new Map<string, AuthoringWorkspace>());
   const authoringSessionKey = useRef<string | null>(null);
+  const generatedWorkspaces = useRef(new Map<string, GeneratedWorkspaceBinding>());
+  const [browseBaseline, setBrowseBaseline] = useState<AuthoredDraft | undefined>();
   const [history, setHistory] = useState<HistoryState | null>(null);
   const [examples, setExamples] = useState<Example[]>([]);
   const [exampleId, setExampleId] = useState('');
@@ -126,8 +134,9 @@ export default function App() {
   const current = history?.document;
   const committedScene = useMemo(() => current ? buildScene(current) : null, [current]);
   const activeRecovery = recoveryPreview && recoveryPreview.document === current && selection.kind === 'node' && selection.ids.length === 1 && selection.ids[0] === recoveryPreview.plan.id ? recoveryPreview : null;
-  const scene = useMemo(() => activeRecovery ? activeRecovery.plan.scene : preview && preview.document === current ? previewMoveScene(preview.session, preview.dx, preview.dy) : committedScene, [current, committedScene, preview, activeRecovery]);
-  const markup = useMemo(() => scene ? renderSvg(scene, { interactive: true, background: false }) : '', [scene]);
+  const scene = useMemo(() => { const result = activeRecovery ? activeRecovery.plan.scene : preview && preview.document === current ? previewMoveScene(preview.session, preview.dx, preview.dy) : committedScene; return result ? presentEditorScene(result) : null; }, [current, committedScene, preview, activeRecovery]);
+  const markup = useMemo(() => scene ? renderSvg(scene, { interactive: true, background: false, presentation: 'editor' }) : '', [scene]);
+  const implicitRoots = useMemo(() => scene ? implicitRootIds(scene) : new Set<string>(), [scene]);
   const architecture = current?.architecture;
   const selectedNode = selection.kind === 'node' ? architecture?.nodes.find(n => n.id === selection.ids[0]) : undefined;
   const selectedEdge = selection.kind === 'edge' ? architecture?.edges.find(n => n.id === selection.ids[0]) : undefined;
@@ -306,7 +315,7 @@ export default function App() {
         if (!rect || rect.width <= 96 || rect.height <= 92) { if (attempt < 3) schedule(attempt + 1); return; }
         const viewport = { width: rect.width, height: rect.height };
         const recovered = restore ? readCameraView(cameraSessionStorage(), ticket.identity, viewport) : null;
-        const view = recovered ?? fitCameraToBounds(buildScene(active).bounds, viewport);
+        const view = recovered ?? fitCameraToBounds(editorSceneBounds(buildScene(active)), viewport);
         pendingCameraInitialization.current = null;
         cameraOwner.current = ticket.identity; cameraViewport.current = viewport;
         cameraRef.current = view; setCamera(view);
@@ -322,7 +331,7 @@ export default function App() {
     if (!doc || !viewportRef.current) return;
     const interaction = studioTelemetry.beginInteraction('fit-canvas');
     try {
-      const { bounds } = buildScene(doc);
+      const bounds = editorSceneBounds(buildScene(doc));
       const { width, height } = viewportRef.current.getBoundingClientRect();
       if (width <= 96 || height <= 92) return;
       commitCamera(fitCameraToBounds(bounds, { width, height }), doc);
@@ -572,7 +581,7 @@ export default function App() {
     if (active.type === 'box' && scene && Math.hypot(active.dx, active.dy) > 4) {
       const { x, y } = viewportToWorld(active.camera, { x: Math.min(active.x, active.x + active.dx), y: Math.min(active.y, active.y + active.dy) });
       const right = x + Math.abs(active.dx) / active.camera.zoom, bottom = y + Math.abs(active.dy) / active.camera.zoom;
-      const ids = scene.nodes.filter(n => n.x >= x && n.y >= y && n.x + n.width <= right && n.y + n.height <= bottom).map(n => n.id);
+      const ids = scene.nodes.filter(n => !implicitRoots.has(n.id) && n.x >= x && n.y >= y && n.x + n.width <= right && n.y + n.height <= bottom).map(n => n.id);
       setSelection({ kind: 'node', ids: [...new Set([...active.ids, ...ids])] });
     }
     synchronizeCameraViewport();
@@ -694,7 +703,7 @@ export default function App() {
   }
   function align() {
     if (!scene || selection.kind !== 'node' || selection.ids.length < 2) return;
-    const selected = scene.nodes.filter(n => selection.ids.includes(n.id));
+    const selected = scene.nodes.filter(n => !implicitRoots.has(n.id) && selection.ids.includes(n.id));
     const left = Math.min(...selected.map(n => n.x));
     apply(selected.map(n => ({ type: 'move', ids: [n.id], dx: left - n.x, dy: 0, scope: layoutMoveScope })), '已左对齐所选对象');
   }
@@ -762,14 +771,27 @@ export default function App() {
   }
 
   function sourceDraftKey(document: CanvasDocument) { return sourceAuthoringKey(document); }
+  function cacheGeneratedWorkspace(workspace: AuthoringWorkspace, binding: GeneratedWorkspaceBinding) {
+    try { writeGeneratedWorkspace(localStorage, workspace, binding); }
+    catch { setFailure('浏览器未能保留工作区恢复记录；请保存当前草稿与画布。'); }
+  }
   function retainAuthoringWorkspace(workspace: AuthoringWorkspace) {
-    if (authoringSessionKey.current) authoringSessions.current.set(authoringSessionKey.current, { ...workspace,
-      sourceHistory: { past: historyRef.current?.past.length ?? 0, future: historyRef.current?.future.length ?? 0 } });
+    const key = authoringSessionKey.current;
+    if (!key) return;
+    const retained = { ...workspace, viewBaseline: workspace.viewBaseline ?? authoringSessions.current.get(key)?.viewBaseline,
+      sourceHistory: { past: historyRef.current?.past.length ?? 0, future: historyRef.current?.future.length ?? 0 } };
+    authoringSessions.current.set(key, retained);
+    for (const binding of generatedWorkspaces.current.values()) if (binding.workspaceKey === key) cacheGeneratedWorkspace(retained, binding);
   }
   function openBlankAuthoring() {
     cancelGesture();
-    authoringSessionKey.current = 'blank';
-    setAuthoringWorkspace(authoringSessions.current.get('blank'));
+    const draft = blankDraft(`draft-${crypto.randomUUID()}`);
+    const key = `draft:${draft.id}`;
+    const workspace: AuthoringWorkspace = { draft, storageRevision: 0, savedRevision: -1 };
+    authoringSessions.current.set(key, workspace);
+    authoringSessionKey.current = key;
+    setAuthoringWorkspace(workspace);
+    setBrowseBaseline(undefined);
     setAuthoringOpen(true);
   }
   async function continueModelAuthoring() {
@@ -777,13 +799,41 @@ export default function App() {
     const frozen = historyRef.current?.document;
     if (!frozen || busy || activeRecovery) return;
     const sequence = loadSequence.current, key = sourceDraftKey(frozen);
+    let generatedBinding = generatedWorkspaces.current.get(key);
+    if (!generatedBinding) {
+      const recovered = readGeneratedWorkspace(localStorage, frozen);
+      if (recovered) {
+        generatedBinding = recovered.binding; generatedWorkspaces.current.set(key, generatedBinding);
+        authoringSessions.current.set(generatedBinding.workspaceKey, recovered.workspace);
+      }
+    }
+    if (generatedBinding) {
+      const workspace = authoringSessions.current.get(generatedBinding.workspaceKey);
+      if (workspace) {
+        setBusy(true); setFailure('');
+        try {
+          const view = { selection: selection.kind === 'node' ? selection.ids : [],
+            camera: { ...cameraRef.current }, viewport: readCameraViewport() ?? undefined, tool,
+            sourceHistory: { past: historyRef.current?.past.length ?? 0, future: historyRef.current?.future.length ?? 0 } };
+          const translated = generatedSourceView(workspace, frozen, generatedBinding);
+          const rebased = translated ? await resumeSourceAuthoring(workspace, translated, view,
+            (draft, document, scene) => api.sourceDraftFrontier(draft, document, scene)) : workspace;
+          if (sequence !== loadSequence.current || frozen !== historyRef.current?.document) return;
+          const resumed = resumeGeneratedWorkspace(rebased, frozen, generatedBinding, view);
+          authoringSessions.current.set(generatedBinding.workspaceKey, resumed); authoringSessionKey.current = generatedBinding.workspaceKey;
+          cacheGeneratedWorkspace(resumed, generatedBinding);
+          setBrowseBaseline(resumed.draft); setAuthoringWorkspace(resumed); setAuthoringOpen(true); return;
+        } catch (error) { if (sequence === loadSequence.current) setFailure(String(error)); return; }
+        finally { if (sequence === loadSequence.current) setBusy(false); }
+      }
+    }
     const retained = authoringSessions.current.get(key);
     if (retained) {
       const retainedRevision = retained.draft.sourceProvenance?.visualRevision;
       if (retainedRevision === frozen.revision) {
         const workspace = followSourceView(retained, { selection: selection.kind === 'node' ? selection.ids : [], camera: { ...cameraRef.current }, viewport: readCameraViewport() ?? undefined, tool,
           sourceHistory: { past: historyRef.current?.past.length ?? 0, future: historyRef.current?.future.length ?? 0 } });
-        authoringSessions.current.set(key, workspace); authoringSessionKey.current = key; setAuthoringWorkspace(workspace); setAuthoringOpen(true); return;
+        authoringSessions.current.set(key, workspace); authoringSessionKey.current = key; setBrowseBaseline(workspace.viewBaseline); setAuthoringWorkspace(workspace); setAuthoringOpen(true); return;
       }
       setBusy(true); setFailure('');
       try {
@@ -792,6 +842,7 @@ export default function App() {
           (draft, document, scene) => api.sourceDraftFrontier(draft, document, scene));
         if (sequence !== loadSequence.current || frozen !== historyRef.current?.document) return;
         authoringSessions.current.set(key, workspace); authoringSessionKey.current = key;
+        setBrowseBaseline(workspace.viewBaseline);
         setAuthoringWorkspace(workspace); setAuthoringOpen(true); return;
       } catch (error) {
         if (sequence === loadSequence.current) setFailure(`源码视图已变化，无法安全重连编辑副本：${String(error)}`);
@@ -808,11 +859,12 @@ export default function App() {
     try {
       const imported = await api.importSourceDraft(frozen, buildScene(frozen));
       if (sequence !== loadSequence.current || frozen !== historyRef.current?.document) return;
-      const workspace: AuthoringWorkspace = { draft: imported.draft, storageRevision: 0, savedRevision: -1,
+      const workspace: AuthoringWorkspace = { draft: imported.draft, viewBaseline: structuredClone(imported.draft), storageRevision: 0, savedRevision: -1,
         selection: selection.kind === 'node' ? selection.ids.map(id => imported.sceneNodeBindings[id]).filter(Boolean) : [],
         camera: { ...cameraRef.current }, viewport: readCameraViewport() ?? undefined, tool,
         sourceHistory: { past: historyRef.current?.past.length ?? 0, future: historyRef.current?.future.length ?? 0 } };
       authoringSessions.current.set(key, workspace); authoringSessionKey.current = key;
+      setBrowseBaseline(workspace.draft);
       setAuthoringWorkspace(workspace); setAuthoringOpen(true);
     } catch (error) {
       if (sequence === loadSequence.current) setFailure(`无法进入模型编辑，当前画布已保留：${String(error)}`);
@@ -829,6 +881,13 @@ export default function App() {
     if (sequence !== loadSequence.current) return;
     const retained = createGeneratedCanvas(project.architecture, generated.draft, generated, generated.presentationDraft);
     const document = retained.document;
+    if (workspace && authoringSessionKey.current) {
+      const binding = { workspaceKey: authoringSessionKey.current,
+        documentId: document.id, sourceDigest: document.sourceBindingDigest, irDigest: document.architecture.irDigest,
+        draft: structuredClone(workspace.draft), nodeBindings: { ...generated.nodeBindings, ...generated.containerBindings }, visualRevision: document.revision };
+      generatedWorkspaces.current.set(sourceDraftKey(document), binding);
+      cacheGeneratedWorkspace(workspace, binding);
+    }
     historyRef.current = createHistory(document); setHistory(historyRef.current);
     setSelection({ kind: 'node', ids: (workspace?.selection ?? []).flatMap(id => retained.nodeBindings[id] ? [retained.nodeBindings[id]] : []) });
     setProjectId(project.id); setExampleId(''); setAuthoringOpen(false);
@@ -836,13 +895,22 @@ export default function App() {
     else initializeCamera(document, sequence, false);
     setNotice(`已打开新模型工作副本，并保留搭建位置与视角。模型未执行。${retained.unmappedNodeIds.length ? ` ${retained.unmappedNodeIds.length} 个展示框没有对应的新源码节点。` : ''}${retained.unresolvedEdgeStyles.length ? ` ${retained.unresolvedEdgeStyles.length} 条连线样式待核对。` : ''}`);
   }
-  if (authoringOpen) return <AuthoringStudio initialWorkspace={authoringWorkspace} onViewState={retainAuthoringWorkspace} onClose={() => setAuthoringOpen(false)} onOpen={openGeneratedModel} />;
+  if (authoringOpen) return <AuthoringStudio key={authoringSessionKey.current} initialWorkspace={authoringWorkspace} browseBaseline={browseBaseline}
+    onViewState={retainAuthoringWorkspace} onClose={() => setAuthoringOpen(false)} onOpen={openGeneratedModel}
+    onNewBlank={workspace => { retainAuthoringWorkspace(workspace); openBlankAuthoring(); }}
+    onReuseView={workspace => {
+      retainAuthoringWorkspace(workspace);
+      if (!browseBaseline || !sameGeneratedDraft(workspace.draft, browseBaseline)) throw new Error('编辑内容已变化，需要重新生成视图。');
+      if (workspace.camera) commitCamera(workspace.camera);
+      setSelection({ kind: 'node', ids: authoringViewSelection(workspace, current ? generatedWorkspaces.current.get(sourceDraftKey(current)) : undefined) });
+      setTool(workspace.tool ?? 'select'); setAuthoringOpen(false);
+    }} />;
 
   return <div className="studio">
     <header className="topbar">
       <div className="brand"><span className="brand-mark"><i /><i /><i /></span><span>ArchCanvas<small>MODEL ARCHITECTURE STUDIO</small></span></div>
       <div className="project-breadcrumb"><span className="slash">/</span><Icon name="file" size={15} /><span>{current?.title ?? '模型工作台'}</span><span className="alpha-tag">ALPHA</span></div>
-      <div className="header-actions"><div className="canvas-mode-actions"><button disabled={!current || busy || !!review || !!activeRecovery} onClick={() => void continueModelAuthoring()}><Icon name="layers" size={15} />编辑当前模型</button><button disabled={busy || !!review || !!activeRecovery} onClick={openBlankAuthoring}><Icon name="plus" size={15} />从零搭建</button></div><span className={`save-state ${dirty ? 'dirty' : ''}`}><i />{current ? dirty ? '有未保存编辑' : '已保存' : '等待文档'}</span><button onClick={save} disabled={!current || busy || !!activeRecovery}><Icon name="save" size={15} />保存</button><button className="primary" onClick={() => current && setExportDocument(structuredClone(current))} disabled={!current || busy || !!activeRecovery}><Icon name="export" size={16} />导出论文图</button></div>
+      <div className="header-actions"><details className="workspace-menu"><summary>模型 <span>⌄</span></summary><div><button disabled={busy || !!review || !!activeRecovery} onClick={openBlankAuthoring}><Icon name="plus" size={15} />新建空白模型</button><button disabled={busy || !!review} onClick={() => setImportOpen(true)}><Icon name="file" size={15} />导入 Python 源码</button><button disabled={!current} onClick={() => setSourceOpen(true)}><Icon name="code" size={15} />查看源码</button></div></details><WorkspaceModeSwitch mode="view" disabled={!current || busy || !!review || !!activeRecovery} onView={() => {}} onEdit={() => void continueModelAuthoring()} /><span className={`save-state ${dirty ? 'dirty' : ''}`}><i />{current ? dirty ? '有未保存编辑' : '已保存' : '等待文档'}</span><button onClick={save} disabled={!current || busy || !!activeRecovery}><Icon name="save" size={15} />保存</button><button className="primary" onClick={() => current && setExportDocument(structuredClone(current))} disabled={!current || busy || !!activeRecovery}><Icon name="export" size={16} />导出</button></div>
     </header>
     <div className="workspace">
       <aside className="navigator">
@@ -854,17 +922,19 @@ export default function App() {
         <div className="navigator-bottom"><button className={sourceOpen ? 'active' : ''} onClick={() => setSourceOpen(x => !x)} disabled={!current}><Icon name="code" size={16} />查看源码证据<Icon name="chevron" size={13} /></button><div className="source-note"><span className="live-dot" />静态分析 · 未执行模型<p>{projectId ? '当前为 Studio 工作副本。' : '样式和显示名仅修改画布。'}</p></div></div>
       </aside>
       <main className="main">
+        <div className="workspace-caption"><b>{current?.title ?? '模型工作台'}</b><span>MODEL ARCHITECTURE · 静态源码视图</span></div>
         <div className="canvas-toolbar"><div className="tool-group"><button title="选择 / Shift 多选 · V" aria-label="选择对象" aria-pressed={tool === 'select'} className={`tool ${tool === 'select' ? 'selected' : ''}`} onClick={() => chooseTool('select')}><Icon name="arrow" /></button><button title="拖动画布 · H" aria-label="平移画布" aria-pressed={tool === 'pan'} className={`tool ${tool === 'pan' ? 'selected' : ''}`} onClick={() => chooseTool('pan')}><Icon name="hand" /></button><span className="tool-divider" /><button className="tool" onClick={undo} disabled={!history?.past.length} title="撤销 Ctrl+Z"><Icon name="undo" /></button><button className="tool" onClick={redo} disabled={!history?.future.length} title="重做 Ctrl+Shift+Z"><Icon name="redo" /></button><span className="tool-divider" /><button className="tool" onClick={align} disabled={selection.ids.length < 2} title="左对齐"><Icon name="align" /></button><button className="tool" onClick={() => apply([{ type: 'pin', ids: selection.ids, pinned: !current?.pinnedObjects.includes(selection.ids[0]) }])} disabled={!selection.ids.length || selection.kind !== 'node'} title="固定 / 解锁"><Icon name="pin" /></button></div><div className="paper-preset"><span className="mini-paper" /><select aria-label="页面预设" value={current?.pageSpec.preset ?? 'paper'} disabled={!current} onChange={e => apply([{ type: 'page', page: { preset: e.target.value as 'paper' | 'monochrome' } }])}><option value="paper">论文 · 彩色</option><option value="monochrome">论文 · 黑白</option></select></div><div className="tool-group"><button className={`tool ${grid ? 'selected' : ''}`} title="显示点阵网格" aria-label="显示点阵网格" aria-pressed={grid} onClick={() => setGrid(x => !x)}><Icon name="grid" size={16} /></button><button className="tool" onClick={() => fit()} title="适合画布 F"><Icon name="fit" /></button></div></div>
         <div ref={viewportRef} className={`canvas-viewport ${grid ? 'with-grid' : ''} ${tool === 'pan' ? 'pan-tool' : ''} ${isPanning ? 'is-panning' : ''}`} data-canvas-tool={tool} data-canvas-surface="infinite" data-camera={JSON.stringify(camera)} style={grid ? { backgroundSize: `${dotGrid.spacing}px ${dotGrid.spacing}px`, backgroundPosition: `${dotGrid.x - dotGrid.spacing / 2}px ${dotGrid.y - dotGrid.spacing / 2}px` } : undefined} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerCancelled} onLostPointerCapture={pointerCancelled} onDoubleClick={event => { if (tool === 'pan' || space.current || event.button !== 0 || editingTarget(event.target) || (event.target as Element).closest('[data-port-id],[data-expand-id]')) return; const id = (event.target as Element).closest('[data-node-id]')?.getAttribute('data-node-id'); const n = architecture?.nodes.find(n => n.id === id); if (n) { inlineCancelled.current = false; setInline({ id: n.id, label: current?.displayAliases[n.id] ?? n.label }); setSelection({ kind: 'node', ids: [n.id] }); } }}>
           <div className="canvas-heading"><span>INFINITE CANVAS</span><div>{current?.pageSpec.widthMm ?? 180} mm <i /> {current?.pageSpec.preset === 'monochrome' ? 'MONOCHROME' : 'PAPER COLOR'}</div></div>
           {scene && paperPosition && <div className="paper infinite-scene" style={{ width: scene.bounds.width, height: scene.bounds.height, transform: `translate(${paperPosition.x}px, ${paperPosition.y}px) scale(${camera.zoom})` }}>
             <div className="publication-scene" data-scene-kind={activeRecovery ? 'recovery-preview' : preview && preview.document === current ? 'move-preview' : 'committed'} data-committed-revision={current?.revision} data-pinned-ids={JSON.stringify(current?.pinnedObjects ?? [])} data-expanded-ids={JSON.stringify(current?.expandedIds ?? [])} dangerouslySetInnerHTML={{ __html: markup }} />
             {portDraft && <svg className="connection-draft" width={scene.bounds.width} height={scene.bounds.height} viewBox={`${scene.bounds.x} ${scene.bounds.y} ${scene.bounds.width} ${scene.bounds.height}`} aria-label="改接草稿与可用来源"><path d={`M ${portDraft.port.x} ${portDraft.port.y} L ${portDraft.x} ${portDraft.y}`} stroke="#bd7533" strokeWidth="2" strokeDasharray="5 4" fill="none" />{candidatePorts(portDraft.options).map(p => <circle key={p.id} cx={p.x} cy={p.y} r="9" stroke="#35876b" strokeWidth="2" fill="#deeee6" opacity=".8" />)}</svg>}
-            {selection.kind === 'node' && scene.nodes.filter(n => selection.ids.includes(n.id)).map(n => <div key={n.id} className="selection-outline" style={{ left: n.x - scene.bounds.x - 3, top: n.y - scene.bounds.y - 3, width: n.width + 6, height: n.height + 6 }}><span /><span /><span /><span />{current?.pinnedObjects.includes(n.id) && <b>固定</b>}</div>)}
+            {selection.kind === 'node' && scene.nodes.filter(n => !implicitRoots.has(n.id) && selection.ids.includes(n.id)).map(n => <div key={n.id} className="selection-outline" style={{ left: n.x - scene.bounds.x - 3, top: n.y - scene.bounds.y - 3, width: n.width + 6, height: n.height + 6 }}><span /><span /><span /><span />{current?.pinnedObjects.includes(n.id) && <b>固定</b>}</div>)}
             {inline && (() => { const n = scene.nodes.find(n => n.id === inline.id); return n ? <input autoFocus className="inline-editor" aria-label="原位编辑显示名" style={{ left: n.x - scene.bounds.x + 4, top: n.y - scene.bounds.y + 8, width: n.width - 8 }} value={inline.label} onChange={e => setInline({ ...inline, label: e.target.value })} onKeyDown={e => { if (e.nativeEvent.isComposing) return; if (e.key === 'Enter') { inlineCancelled.current = true; apply([{ type: 'alias', id: inline.id, label: inline.label }]); setInline(null); } if (e.key === 'Escape') { inlineCancelled.current = true; setInline(null); } }} onBlur={() => { if (!inlineCancelled.current) apply([{ type: 'alias', id: inline.id, label: inline.label }]); setInline(null); }} /> : null; })()}
           </div>}
           {!scene && <div className="empty-state"><Icon name="layers" size={40} /><h2>让模型结构成为可编辑的论文图</h2><p>{failure || '正在从源码构建第一张画布…'}</p><button onClick={() => void loadExample(examples[0]?.id ?? 'transformer')}>重新连接</button></div>}
           {box && <div className="marquee" style={{ left: box.x, top: box.y, width: box.width, height: box.height }} />}
+          {scene && <FloatingLegend scene={scene} onEdit={() => setPanel('legend')} />}
           <div className="zoom-control" onPointerDown={event => event.stopPropagation()}><button onClick={() => zoomCamera(1 / 1.2)} aria-label="缩小"><Icon name="minus" size={15} /></button><button className="zoom-value" onClick={() => zoomCamera('reset')} title="100%">{Math.round(camera.zoom * 100)}%</button><button onClick={() => zoomCamera(1.2)} aria-label="放大"><Icon name="plus" size={15} /></button><span /><button onClick={() => fit()} aria-label="适合画布"><Icon name="fit" size={15} /></button></div>
           <div className="canvas-hint">{portDraft ? '拖向绿色来源端口；松开只创建提案' : tool === 'pan' ? <>拖动平移<span>·</span>V 返回选择<span>·</span>滚轮缩放</> : <>滚轮缩放<span>·</span>H / 空格平移<span>·</span>输入端口拖向来源创建提案</>}</div>
         </div>
@@ -887,7 +957,7 @@ export default function App() {
         {panel === 'object' && selectedEdge && current && <><div className="object-heading"><Icon name="arrow" /><div><h2>{selectedEdge.label || selectedEdge.role}</h2><span>张量关系 · {selectedEdge.role}</span></div></div><section className="property-section"><h3>连线样式</h3><label className="field-label">颜色</label><input type="color" aria-label="连线颜色" disabled={current.pageSpec.preset === 'monochrome'} value={selectedEdgeAppearance?.stroke ?? '#64748b'} onChange={e => apply([{ type: 'edgeStyle', id: selectedEdge.id, style: { stroke: e.target.value } }])} />{current.pageSpec.preset === 'monochrome' && <p className="field-help">黑白模式统一使用灰色；已设置的颜色在论文彩色模式生效。</p>}<label className="field-label">线宽</label><input aria-label="连线宽度" type="range" min="1" max="4" step="0.5" value={selectedEdgeAppearance?.width ?? 1.5} onChange={e => apply([{ type: 'edgeStyle', id: selectedEdge.id, style: { width: Number(e.target.value) } }])} /><label className="check-field"><input type="checkbox" checked={selectedEdgeAppearance?.dashed ?? false} onChange={e => apply([{ type: 'edgeStyle', id: selectedEdge.id, style: { dashed: e.target.checked } }])} />使用虚线</label>{selectedEdgeAppearance && <p className="field-help">当前线型：{edgePatternLabel(selectedEdgeAppearance)} · {current.edgeStyleOverrides[selectedEdge.id]?.dashed === undefined ? '角色默认' : '用户覆盖'}。更改复选框后使用显式实线或通用虚线；可撤销最近编辑。</p>}</section><section className="property-section"><h3>当前端口绑定</h3><p className="field-help">{selectedEdge.source.portId} → {selectedEdge.target.portId}</p><p className="field-help">改走线样式不会改变模型计算关系。</p></section><ConnectionEditor key={`${architecture?.sourceDigest}:${selectedEdge.id}:${JSON.stringify(inputSpec)}`} document={current} nodeId={selectedEdge.target.nodeId} portId={selectedEdge.target.portId} busy={busy} inputSpec={inputSpec} onSetup={() => setRuntimeOpen(true)} enabled={!!capabilities?.supportedIntents?.includes('rebind_input')} onInspect={inspectRebind} onPrepare={prepareRebind} /></>}
         {panel === 'object' && selectedAnnotation && <><h2>说明文字</h2><TextField label="内容" value={selectedAnnotation.text} onCommit={text => apply([{ type: 'annotation', annotation: { ...selectedAnnotation, text } }])} />{annotationConflicts.length > 0 && <p className="annotation-overlap" role="status">说明正文与 {annotationConflicts.length} 个对象重叠。可移到图下方，再检查导出。</p>}<button className="full-button" onClick={moveAnnotationBelow}><Icon name="align" size={14} />移到图下方</button><button className="text-button" onClick={() => focusAnnotation(selectedAnnotation.id)}>聚焦这段说明</button><button className="full-button" onClick={() => { apply([{ type: 'removeAnnotation', id: selectedAnnotation.id }]); setSelection({ kind: 'node', ids: [] }); }}>移除说明</button></>}
         {panel === 'object' && !selectedNode && !selectedEdge && !selectedAnnotation && <><div className="inspector-empty"><div className="empty-symbol"><Icon name="arrow" size={24} /></div><h2>从一个对象开始</h2><p>选择模块、连线或说明文字，<br />调整论文图的呈现方式。</p><div className="shortcut-line"><kbd>Shift</kbd> 多选对象</div><div className="shortcut-line"><kbd>双击</kbd> 编辑显示名</div></div><div className="document-summary"><div className="eyebrow">SOURCE-GROUNDED CANVAS</div><h3>{current?.title ?? 'ArchCanvas'}</h3><p>一份模型事实，一份可持续编辑的画布。</p><div><b>{architecture?.nodes.length ?? '—'}</b><span>事实对象</span><b>{architecture?.edges.length ?? '—'}</b><span>端口关系</span></div></div>{!!architecture?.diagnostics.length && <div className="diagnostics"><h3>分析边界</h3>{architecture.diagnostics.slice(0, 4).map((d, i) => <p key={i}>{d.message}</p>)}</div>}</>}
-        {panel === 'legend' && current && <><div className="panel-heading"><h2>图例编辑</h2><p>图例属于画布，随当前版本保存和导出。</p>{current.pageSpec.preset === 'monochrome' && <p className="field-help">图下方另显示当前可见连线的角色与实际线型；此连线图例随视图和样式自动更新。</p>}</div><div className="legend-list">{current.legendItems.map((item, index) => <div className="legend-editor" key={item.id}><div className="legend-row"><input type="color" aria-label={`图例颜色 ${index + 1}`} value={item.color} onChange={e => apply([{ type: 'legend', items: current.legendItems.map(x => x.id === item.id ? { ...x, color: e.target.value } : x) }])} /><TextField label="" value={item.label} onCommit={label => apply([{ type: 'legend', items: current.legendItems.map(x => x.id === item.id ? { ...x, label } : x) }])} /><button className="tool" aria-label={`删除图例 ${index + 1}`} onClick={() => apply([{ type: 'legend', items: current.legendItems.filter(x => x.id !== item.id) }])}><Icon name="close" size={13} /></button></div><div className="legend-controls"><select aria-label={`图例符号 ${index + 1}`} value={item.glyph} onChange={e => apply([{ type: 'legend', items: current.legendItems.map(x => x.id === item.id ? { ...x, glyph: e.target.value as 'module' } : x) }])}>{['module', 'operator', 'tensor', 'attention', 'norm', 'add', 'opaque'].map(g => <option key={g}>{g}</option>)}</select><button disabled={index === 0} onClick={() => { const items = [...current.legendItems]; [items[index - 1], items[index]] = [items[index], items[index - 1]]; apply([{ type: 'legend', items }]); }} title="上移">↑</button><button disabled={index === current.legendItems.length - 1} onClick={() => { const items = [...current.legendItems]; [items[index + 1], items[index]] = [items[index], items[index + 1]]; apply([{ type: 'legend', items }]); }} title="下移">↓</button></div></div>)}</div><button className="full-button" onClick={() => apply([{ type: 'legend', items: [...current.legendItems, { id: `legend-${crypto.randomUUID()}`, label: '自定义图例', color: '#dcebf6', glyph: 'module' }] }])}><Icon name="plus" size={15} />添加图例条目</button></>}
+        {panel === 'legend' && current && <><div className="panel-heading"><h2>图例编辑</h2><p>图例属于画布，随当前版本保存和导出。</p>{current.pageSpec.preset === 'monochrome' && <p className="field-help">悬浮图例显示当前可见连线的角色与实际线型；出版图例随视图和样式自动更新。</p>}</div><div className="legend-list">{current.legendItems.map((item, index) => <div className="legend-editor" key={item.id}><div className="legend-row"><input type="color" aria-label={`图例颜色 ${index + 1}`} value={item.color} onChange={e => apply([{ type: 'legend', items: current.legendItems.map(x => x.id === item.id ? { ...x, color: e.target.value } : x) }])} /><TextField label="" value={item.label} onCommit={label => apply([{ type: 'legend', items: current.legendItems.map(x => x.id === item.id ? { ...x, label } : x) }])} /><button className="tool" aria-label={`删除图例 ${index + 1}`} onClick={() => apply([{ type: 'legend', items: current.legendItems.filter(x => x.id !== item.id) }])}><Icon name="close" size={13} /></button></div><div className="legend-controls"><select aria-label={`图例符号 ${index + 1}`} value={item.glyph} onChange={e => apply([{ type: 'legend', items: current.legendItems.map(x => x.id === item.id ? { ...x, glyph: e.target.value as 'module' } : x) }])}>{['module', 'operator', 'tensor', 'attention', 'norm', 'add', 'opaque'].map(g => <option key={g}>{g}</option>)}</select><button disabled={index === 0} onClick={() => { const items = [...current.legendItems]; [items[index - 1], items[index]] = [items[index], items[index - 1]]; apply([{ type: 'legend', items }]); }} title="上移">↑</button><button disabled={index === current.legendItems.length - 1} onClick={() => { const items = [...current.legendItems]; [items[index + 1], items[index]] = [items[index], items[index + 1]]; apply([{ type: 'legend', items }]); }} title="下移">↓</button></div></div>)}</div><button className="full-button" onClick={() => apply([{ type: 'legend', items: [...current.legendItems, { id: `legend-${crypto.randomUUID()}`, label: '自定义图例', color: '#dcebf6', glyph: 'module' }] }])}><Icon name="plus" size={15} />添加图例条目</button></>}
         {panel === 'page' && current && <><div className="panel-heading"><h2>出版页面</h2><p>SVG、PDF 与 PNG 共用当前画布场景。</p></div><section className="property-section"><label className="field-label">物理页宽</label><div className="segmented">{[85, 180].map(widthMm => <button key={widthMm} className={current.pageSpec.widthMm === widthMm ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { widthMm } }])}>{widthMm} mm</button>)}</div><label className="field-label">背景</label><div className="color-field"><input aria-label="页面背景" type="color" value={current.pageSpec.background} onChange={e => apply([{ type: 'page', page: { background: e.target.value } }])} /><code>{current.pageSpec.background}</code></div><label className="field-label">配色</label><div className="segmented"><button className={current.pageSpec.preset === 'paper' ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { preset: 'paper' } }])}>论文彩色</button><button className={current.pageSpec.preset === 'monochrome' ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { preset: 'monochrome' } }])}>黑白</button></div></section><section className="property-section"><h3>说明与工件</h3><button className="full-button" onClick={addAnnotation}><Icon name="plus" size={14} />添加说明文字</button><button className="full-button" onClick={() => download(`${current.id}.archcanvas.json`, JSON.stringify(current, null, 2), 'application/json')}><Icon name="save" size={14} />下载画布文档</button><p className="field-help">导出论文图可生成 SVG、PDF 或 PNG，并保留可重开的文件链接与导出收据。</p></section></>}
       </div><div className="inspector-footer"><Icon name="info" size={14} /><span>视觉编辑不修改模型源码</span></div></aside>
     </div>

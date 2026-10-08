@@ -70,6 +70,18 @@ def _text(value: Any, context: str, limit=120) -> str:
     return value
 
 
+def _visual(value: Any, node_id: str | None = None) -> dict:
+    """Standalone card appearance; this does not establish semantic grouping."""
+    _keys(value, {"width", "height", "fill", "stroke"}, "Draft node visual style")
+    if any(type(value[key]) not in (int, float) or not math.isfinite(value[key]) or not 10 <= value[key] <= 1_000_000 for key in ("width", "height")):
+        _fail("Draft visual dimensions must be finite and between 10 and 1000000.", "invalid_draft_visual",
+              "部件显示尺寸必须是 10 到一百万之间的有限数值。", nodeId=node_id)
+    if any(type(value[key]) is not str or not re.fullmatch(r"#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})", value[key]) for key in ("fill", "stroke")):
+        _fail("Draft visual colors require hexadecimal CSS colors.", "invalid_draft_visual",
+              "部件显示颜色需要有效的十六进制颜色，例如 #dfeee7。", nodeId=node_id)
+    return deepcopy(value)
+
+
 def _parameter(value: Any, field: dict, node: str, node_id: str | None):
     context = f"{node}.{field['name']}"
     type_ = field["type"]
@@ -117,7 +129,11 @@ def validate_draft(draft: dict, *, require_complete: bool = False) -> dict:
     if isinstance(draft, dict) and "sourceProvenance" in draft:
         from .source_import import validate_source_draft
         return validate_source_draft(draft, require_complete=require_complete)
-    _keys(draft, {"schemaVersion", "mode", "id", "title", "revision", "nodes", "edges"}, "Authored draft")
+    _keys(draft, {"schemaVersion", "mode", "id", "title", "revision", "nodes", "edges"} | ({"customModules"} if "customModules" in draft else set()), "Authored draft")
+    from .custom_modules import validate_custom_definitions, custom_spec
+    custom = validate_custom_definitions(draft.get("customModules", []))
+    custom_kinds = {item["kind"] for item in custom}
+    specs = {**_BY_KIND, **{item["kind"]: custom_spec(item) for item in custom}}
     if type(draft["schemaVersion"]) is not int or draft["schemaVersion"] != 1 or draft["mode"] != "authored-draft":
         _fail("Only authored-draft schemaVersion 1 is accepted; imported CanvasDocuments cannot be authored drafts.",
               "invalid_draft_schema", "建模只接受独立的 authored-draft 版本 1 草稿，不能把已导入的图当作建模草稿。")
@@ -135,16 +151,16 @@ def validate_draft(draft: dict, *, require_complete: bool = False) -> dict:
                               and isinstance(raw.get("id"), str) and IDENTITY.fullmatch(raw["id"]))
     nodes = {}
     for raw in draft["nodes"]:
-        _keys(raw, {"id", "kind", "label", "parameters", "position"}, "Draft node")
+        _keys(raw, {"id", "kind", "label", "parameters", "position"} | ({"visual"} if "visual" in raw else set()), "Draft node")
         identity = _identity(raw["id"], "Node id")
         diagnostic_identity = identity if identity_counts[identity] == 1 else None
         if identity in nodes:
             _fail(f"Duplicate node id: {identity}.", "duplicate_node_identity", "草稿存在重复模块标识，无法确定唯一目标。")
-        if not isinstance(raw["kind"], str) or raw["kind"] not in _BY_KIND:
+        if not isinstance(raw["kind"], str) or raw["kind"] not in specs:
             _fail(f"Unsupported authored module: {raw['kind']}.", "unsupported_module",
                   "该模块不在当前可生成并验证的模块目录中，请选择左侧目录中的模块。", nodeId=diagnostic_identity)
         label = _text(raw["label"], f"{identity} label")
-        spec = _BY_KIND[raw["kind"]]
+        spec = specs[raw["kind"]]
         if not isinstance(raw["parameters"], dict) or set(raw["parameters"]) - set(spec["defaults"]):
             _fail(f"{label}: unknown parameter; only the registered fields are accepted.", "unknown_parameter",
                   "模块只接受参数表中已注册的字段，请移除未知参数。", nodeId=diagnostic_identity)
@@ -154,9 +170,12 @@ def validate_draft(draft: dict, *, require_complete: bool = False) -> dict:
         if any(type(v) not in (int, float) or abs(v) > 1000000 or not math.isfinite(v) for v in raw["position"].values()):
             _fail(f"{label}: position must contain finite coordinates within ±1000000.", "invalid_position",
                   "模块位置必须是有限坐标，且在正负一百万范围内。", nodeId=diagnostic_identity)
-        _validate_parameters({'id': diagnostic_identity, 'kind': raw['kind'], 'parameters': params}, _fail)
+        if raw['kind'] not in custom_kinds:
+            _validate_parameters({'id': diagnostic_identity, 'kind': raw['kind'], 'parameters': params}, _fail)
         nodes[identity] = {"id": identity, "kind": raw["kind"], "label": label,
                            "parameters": params, "position": deepcopy(raw["position"])}
+        if "visual" in raw:
+            nodes[identity]["visual"] = _visual(raw["visual"], diagnostic_identity)
     edges, edge_ids, bound = [], set(), {}
     incoming, outgoing = {n: [] for n in nodes}, {n: [] for n in nodes}
     for raw in draft["edges"]:
@@ -169,7 +188,7 @@ def validate_draft(draft: dict, *, require_complete: bool = False) -> dict:
             _keys(raw[endpoint], {"nodeId", "portId"}, f"Connection {identity} {endpoint}")
             node_id, port_id = raw[endpoint]["nodeId"], raw[endpoint]["portId"]
             if not isinstance(node_id, str) or node_id not in nodes or not isinstance(port_id, str) or not any(
-                    p["id"] == port_id and p["direction"] == direction for p in _BY_KIND[nodes[node_id]["kind"]]["ports"]):
+                    p["id"] == port_id and p["direction"] == direction for p in specs[nodes[node_id]["kind"]]["ports"]):
                 _fail(f"Connection {identity}: {endpoint} must identify an exact declared {direction} port of its own node.",
                       "invalid_connection_endpoint", "连接端点须使用该模块已声明且方向正确的端口，请重新连接。",
                       edgeId=identity, endpoint=endpoint)
@@ -203,13 +222,13 @@ def validate_draft(draft: dict, *, require_complete: bool = False) -> dict:
         issues.append(_diagnostic("missing-output", "请至少添加一个输出模块。", "Add at least one Output module."))
     for identity in order:
         node = nodes[identity]
-        required = [p["id"] for p in _BY_KIND[node["kind"]]["ports"] if p["direction"] == "in"]
+        required = [p["id"] for p in specs[node["kind"]]["ports"] if p["direction"] == "in"]
         missing = [p for p in required if (identity, p) not in bound]
         if missing:
             issues.append(_diagnostic("unbound-input", f"{node['kind']} 的输入端口 {', '.join(missing)} 尚未连接，请连接上游模块。",
                                       f"{node['label']}: connect {', '.join(missing)}.", nodeId=identity,
                                       portIds=missing, portId=missing[0] if len(missing) == 1 else None))
-        elif all((bound[identity, p]['source']['nodeId'], bound[identity, p]['source']['portId']) in port_tensors for p in required):
+        elif node["kind"] not in custom_kinds and all((bound[identity, p]['source']['nodeId'], bound[identity, p]['source']['portId']) in port_tensors for p in required):
             outputs = _infer_outputs(node, [port_tensors[bound[identity, p]['source']['nodeId'], bound[identity, p]['source']['portId']] for p in required], _fail, _axis)
             tensors[identity] = outputs['output']
             for port, tensor in outputs.items(): port_tensors[identity, port] = tensor
@@ -226,11 +245,14 @@ def validate_draft(draft: dict, *, require_complete: bool = False) -> dict:
         issues.append(_diagnostic("unused-node", "这些模块尚未通向命名输出；生成 Python 前请连接到输出，或移除未使用模块。",
                                   "Every module must contribute to a named Output before generating Python.", nodeIds=unused))
     normalized["nodes"], normalized["edges"] = list(nodes.values()), edges
+    if "customModules" in draft:
+        normalized["customModules"] = custom
     if require_complete and issues:
         raise DraftError("Draft is incomplete: " + " ".join(item["technical"] for item in issues), diagnostics=issues)
     return {"draft": normalized, "draftDigest": _digest(normalized), "complete": not issues,
             "issues": issues, "tensors": tensors, "portTensors": {n: {p: t for (i, p), t in port_tensors.items() if i == n} for n in nodes}, "order": order,
-            "verification": "static-declared-tensors; no model execution"}
+            "verification": "static-topology; custom output shapes unknown; no model execution" if custom else "static-declared-tensors; no model execution",
+            **({"unknownTensorNodeIds": [identity for identity in order if identity not in tensors]} if custom else {})}
 
 
 def _name(identity: str) -> str:
@@ -452,6 +474,9 @@ def generate_model(draft: dict) -> dict:
     if isinstance(draft, dict) and "sourceProvenance" in draft:
         from .source_import import generate_source_draft
         return generate_source_draft(draft)
+    if isinstance(draft, dict) and draft.get("customModules"):
+        from .source_generation_groups import generate_grouped_source
+        return generate_grouped_source(draft)
     validation = validate_draft(draft, require_complete=True)
     source = _source(validation)
     architecture = analyze_source(source, ENTRY)

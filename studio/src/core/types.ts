@@ -155,9 +155,10 @@ export interface SceneEdge {
 export interface SceneDiagnostic {
   level: string;
   message: string;
-  code?: 'layout-overlap' | 'layout-header-overlap' | 'layout-route-blocked' | 'layout-outside-parent' | 'layout-edge-label-blocked' | 'layout-edge-label-association';
+  code?: 'layout-overlap' | 'layout-header-overlap' | 'layout-route-blocked' | 'layout-route-overlap' | 'layout-outside-parent' | 'layout-edge-label-blocked' | 'layout-edge-label-association';
   objectIds?: string[];
   edgeId?: string;
+  relatedEdgeIds?: string[];
 }
 /** Derived caption decoration, never a tensor binding or an editable edge. */
 export interface SceneCaptionGuide {
@@ -218,5 +219,11 @@ export interface DetailExportScope {
   omittedAnnotationIds: string[];
 }
 export interface ExportSceneOptions { nodeId?: string; widthMm?: number }
+export interface RenderSvgOptions {
+  interactive?: boolean;
+  background?: boolean;
+  /** Publication is the default; editor omits furniture and expanded root decorations. */
+  presentation?: 'publication' | 'editor';
+}
 export interface HistoryState { document: CanvasDocument; past: CanvasDocument[]; future: CanvasDocument[] }
 export type HistoryAction = { type: 'apply'; operations: VisualOperation[]; baseRevision?: number } | { type: 'undo' } | { type: 'redo' };

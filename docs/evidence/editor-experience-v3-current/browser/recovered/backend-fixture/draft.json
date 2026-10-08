@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "mode": "authored-draft",
+  "id": "draft-pair-acceptance",
+  "title": "双输入双输出静态验收",
+  "revision": 0,
+  "customModules": [
+    {
+      "schemaVersion": 1,
+      "source": "from torch import nn\n\nclass PairFusion(nn.Module):\n    def __init__(self, width=4, bias=False):\n        super().__init__()\n        self.project = nn.Linear(width, width, bias=bias)\n\n    def forward(self, left, *, right):\n        return self.project(left), right\n",
+      "entry": "PairFusion",
+      "label": "双输入双输出模块",
+      "constructorValues": {
+        "bias": false,
+        "width": 4
+      },
+      "kind": "Custom_3675543d27d130dc41dbb90d",
+      "digest": "3675543d27d130dc41dbb90db89927e3d8f37f5dd9df99264527779af6a5a906",
+      "sourceDigest": "5f59b478ee1979117dad72ffa95614d4c8b859c72be0a41ea3529b194b7e1a61",
+      "inputs": [
+        {
+          "id": "left",
+          "name": "left",
+          "positionalOnly": false
+        },
+        {
+          "id": "right",
+          "name": "right",
+          "positionalOnly": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "output_1",
+          "name": "output[0]",
+          "path": [
+            {
+              "kind": "index",
+              "index": 0
+            }
+          ]
+        },
+        {
+          "id": "output_2",
+          "name": "output[1]",
+          "path": [
+            {
+              "kind": "index",
+              "index": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "id": "left_input",
+      "kind": "Input",
+      "label": "left_input",
+      "parameters": {
+        "shape": [
+          2,
+          4
+        ],
+        "dtype": "float32"
+      },
+      "position": {
+        "x": 100,
+        "y": 100
+      }
+    },
+    {
+      "id": "right_input",
+      "kind": "Input",
+      "label": "right_input",
+      "parameters": {
+        "shape": [
+          2,
+          4
+        ],
+        "dtype": "float32"
+      },
+      "position": {
+        "x": 100,
+        "y": 300
+      }
+    },
+    {
+      "id": "pair",
+      "kind": "Custom_3675543d27d130dc41dbb90d",
+      "label": "pair",
+      "parameters": {},
+      "position": {
+        "x": 430,
+        "y": 200
+      }
+    },
+    {
+      "id": "left_output",
+      "kind": "Output",
+      "label": "left_output",
+      "parameters": {},
+      "position": {
+        "x": 800,
+        "y": 100
+      }
+    },
+    {
+      "id": "right_output",
+      "kind": "Output",
+      "label": "right_output",
+      "parameters": {},
+      "position": {
+        "x": 800,
+        "y": 300
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "left_to_pair",
+      "source": {
+        "nodeId": "left_input",
+        "portId": "output"
+      },
+      "target": {
+        "nodeId": "pair",
+        "portId": "left"
+      }
+    },
+    {
+      "id": "right_to_pair",
+      "source": {
+        "nodeId": "right_input",
+        "portId": "output"
+      },
+      "target": {
+        "nodeId": "pair",
+        "portId": "right"
+      }
+    },
+    {
+      "id": "pair_to_left",
+      "source": {
+        "nodeId": "pair",
+        "portId": "output_1"
+      },
+      "target": {
+        "nodeId": "left_output",
+        "portId": "input"
+      }
+    },
+    {
+      "id": "pair_to_right",
+      "source": {
+        "nodeId": "pair",
+        "portId": "output_2"
+      },
+      "target": {
+        "nodeId": "right_output",
+        "portId": "input"
+      }
+    }
+  ]
+}

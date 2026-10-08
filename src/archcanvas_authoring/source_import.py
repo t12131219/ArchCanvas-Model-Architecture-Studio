@@ -16,7 +16,7 @@ import tempfile
 import uuid
 
 from archcanvas_python import analyze_project
-from .draft import DraftError, _digest, _identity, _keys, _text, _parameter, _diagnostic
+from .draft import DraftError, _digest, _identity, _keys, _text, _parameter, _diagnostic, _visual
 
 SOURCE_VERIFICATION = "source-preserved-graph; no model execution"
 MAX_SOURCE_NODES, MAX_SOURCE_EDGES = 1200, 3600
@@ -177,7 +177,9 @@ def import_source_draft(document: dict, scene: dict) -> dict:
 
 def validate_source_draft(draft: dict, *, require_complete=False) -> dict:
     from .draft import module_catalog
-    _keys(draft, {"schemaVersion", "mode", "id", "title", "revision", "nodes", "edges", "sourceProvenance"} | ({"sourceCache"} if "sourceCache" in draft else set()), "Source-derived draft")
+    _keys(draft, {"schemaVersion", "mode", "id", "title", "revision", "nodes", "edges", "sourceProvenance"} | ({"sourceCache"} if "sourceCache" in draft else set()) | ({"customModules"} if "customModules" in draft else set()), "Source-derived draft")
+    from .custom_modules import validate_custom_definitions, custom_spec
+    custom = validate_custom_definitions(draft.get("customModules", []))
     if "sourceCache" in draft:
         _keys(draft["sourceCache"], {"nodes", "edges", "removedNodeIds", "removedCanonicalEdgeIds"}, "Source edit cache")
         _safe_json(draft["sourceCache"])
@@ -197,10 +199,10 @@ def validate_source_draft(draft: dict, *, require_complete=False) -> dict:
         raise DraftError("Source provenance lost its original source/IR binding.")
     if not isinstance(draft["nodes"], list) or len(draft["nodes"]) > MAX_SOURCE_NODES or not isinstance(draft["edges"], list) or len(draft["edges"]) > MAX_SOURCE_EDGES:
         raise DraftError("Source-derived draft exceeds its node/connection budget.")
-    specs = {item["kind"]: item for item in module_catalog()["modules"] + provenance["modules"]}
+    specs = {item["kind"]: item for item in module_catalog()["modules"] + provenance["modules"] + [custom_spec(item) for item in custom]}
     nodes, incoming, outgoing, issues = {}, {}, {}, []
     for node in draft["nodes"]:
-        _keys(node, {"id", "kind", "label", "parameters", "position"} | ({"presentation"} if "presentation" in node else set()), "Source draft node")
+        _keys(node, {"id", "kind", "label", "parameters", "position"} | ({"presentation"} if "presentation" in node else set()) | ({"visual"} if "visual" in node else set()), "Source draft node")
         identity = _identity(node["id"], "Node id")
         if identity in nodes or node["kind"] not in specs:
             raise DraftError("Duplicate or unregistered source-draft node.")
@@ -215,6 +217,8 @@ def validate_source_draft(draft: dict, *, require_complete=False) -> dict:
             if not isinstance(style, dict) or any(type(style.get(d)) not in (int, float) or not math.isfinite(style[d]) or not 10 <= style[d] <= 1_000_000 for d in ("width", "height")):
                 raise DraftError("Imported object dimensions must be finite.")
             _safe_json(style)
+        if "visual" in node:
+            _visual(node["visual"], identity)
         nodes[identity] = node; incoming[identity] = []; outgoing[identity] = []
     bound, identities = {}, set()
     for edge in draft["edges"]:
@@ -410,8 +414,10 @@ def generate_source_draft(draft: dict) -> dict:
         and not node.get("presentation", {}).get("group")
         for node in draft["nodes"]
     )
-    materialize = not {"Input", "Output"} <= visible_kinds and {"Input", "Output"} <= canonical_kinds and hidden_groups
-    grouped = any(node.get("presentation", {}).get("group") for node in draft["nodes"])
+    custom_composition = bool(draft.get("customModules"))
+    materialize = ((not {"Input", "Output"} <= visible_kinds)
+                   and {"Input", "Output"} <= canonical_kinds and hidden_groups)
+    grouped = custom_composition or any(node.get("presentation", {}).get("group") for node in draft["nodes"])
     if materialize or grouped:
         # Group constructors have no independent lowering contract. Refuse
         # parameter edits explicitly instead of silently dropping them while
@@ -649,6 +655,8 @@ def rebase_source_frontier(draft: dict, document: dict, scene: dict) -> dict:
         if previous_node:
             node["label"], node["parameters"], node["position"] = deepcopy(previous_node["label"]), deepcopy(previous_node["parameters"]), deepcopy(previous_node["position"])
             node["presentation"]["fill"], node["presentation"]["stroke"] = previous_node.get("presentation", node["presentation"])["fill"], previous_node.get("presentation", node["presentation"])["stroke"]
+            if "visual" in previous_node:
+                node["visual"] = deepcopy(previous_node["visual"])
         nodes.append(node)
     visible = {node["id"] for node in nodes}
     for node in draft["nodes"]:
@@ -693,5 +701,7 @@ def rebase_source_frontier(draft: dict, document: dict, scene: dict) -> dict:
     provenance["digest"] = _digest({key: value for key, value in provenance.items() if key != "digest"})
     fresh.update({"id": draft["id"], "title": draft["title"], "revision": draft["revision"], "nodes": nodes, "edges": edges,
                   "sourceCache": {"nodes": list(cached_nodes.values()), "edges": list(changed_edges.values()), "removedNodeIds": sorted(removed_nodes), "removedCanonicalEdgeIds": sorted(removed_edges)}})
+    if "customModules" in draft:
+        fresh["customModules"] = deepcopy(draft["customModules"])
     validate_source_draft(fresh)
     return {**imported, "draft": fresh, "provenanceDigest": provenance["digest"]}

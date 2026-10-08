@@ -12,6 +12,8 @@ import { blankDraft, draftHistory } from '../src/authoring.ts';
 import type { AuthoredDraft } from '../src/authoring.ts';
 import type { GeneratedDraft, ImportedSourceDraft } from '../src/api.ts';
 import { sourceFrontierDocument } from '../src/sourceDraftFrontier.ts';
+import { sourceAuthoringKey } from '../src/sourceAuthoringSession.ts';
+import type { GeneratedWorkspaceBinding } from '../src/generatedWorkspace.ts';
 
 const project = fileURLToPath(new URL('../../', import.meta.url));
 const run = promisify(execFile);
@@ -170,11 +172,14 @@ test('actual generate callback keeps the collapsed Transformer frontier and anch
   // Run the actual App callback as well: the generator receipt keeps the
   // complete graph, while App must pass the presentation snapshot through to
   // createGeneratedCanvas and restore current selection/camera on that scene.
-  const workspace = { selection: [memoryMask.id], camera: { x: 54, y: 0, zoom: 1 }, tool: 'select' };
+  const workspace = { draft: snapshot, history: currentRef.current, selection: [memoryMask.id], camera: { x: 54, y: 0, zoom: 1 }, tool: 'select' };
   let openedDocument: CanvasDocument | undefined, selected: unknown, restoredCamera: unknown;
   const appCurrent = { current: null as ReturnType<typeof createHistory> | null };
+  const generatedWorkspaces = { current: new Map<string, GeneratedWorkspaceBinding>() };
   const open = actualCallback('App.tsx', 'App', 'openGeneratedModel', {
     cancelGesture: () => {}, authoringSessionKey: { current: 'active' }, authoringSessions: { current: new Map([['active', workspace]]) },
+    generatedWorkspaces, sourceDraftKey: sourceAuthoringKey,
+    cacheGeneratedWorkspace: () => {},
     loadSequence: { current: 0 }, cameraOwner: { current: null }, cameraIntent: { current: 0 },
     api: { register: async (architecture: Architecture) => ({ id: 'generated-project', architecture }) }, openArchitecture: async () => {}, createGeneratedCanvas,
     createHistory, historyRef: appCurrent, setHistory: (history: ReturnType<typeof createHistory>) => { openedDocument = history.document; },
@@ -186,4 +191,9 @@ test('actual generate callback keeps the collapsed Transformer frontier and anch
   assert.equal(buildScene(openedDocument).nodes.length, 12);
   assert.deepEqual(selected, { kind: 'node', ids: [result.nodeBindings[memoryMask.id]] });
   assert.deepEqual(restoredCamera, workspace.camera);
+  const binding = generatedWorkspaces.current.get(sourceAuthoringKey(openedDocument));
+  assert.ok(binding, 'the actual opening callback links this new view to the exact retained draft workspace');
+  assert.equal(binding.workspaceKey, 'active'); assert.deepEqual(binding.draft, snapshot);
+  assert.deepEqual(binding.nodeBindings, { ...generated.nodeBindings, ...(generated.containerBindings ?? {}), ...result.nodeBindings });
+  assert.equal(binding.visualRevision, openedDocument.revision);
 });

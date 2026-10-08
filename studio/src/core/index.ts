@@ -3,8 +3,11 @@ export { createDocument, applyVisualBatch, createHistory, reduceHistory, reconci
 export { buildScene } from './scene.ts';
 export { buildExportScene, publicationPreflight, detailExportChoices } from './exportScene.ts';
 export { renderSvg, svgBody, escapeXml } from './svg.ts';
+export { implicitRootIds, editorSceneBounds, presentEditorScene, editorLegendItems } from './editorPresentation.ts';
+export type { EditorEdgeLegend, EditorLegendItems } from './editorPresentation.ts';
 export { validateArchitecture, validateDocument, ValidationError } from './validate.ts';
 export { CATEGORY_STYLES, TOKENS, VISUAL_VERSION } from './tokens.ts';
 export { effectiveEdgeAppearance, edgeAppearanceKey, edgeDashPattern, edgePatternLabel } from './edgePresentation.ts';
+export { routeLaneConflicts, sharedRoutePresentation } from './routeLaneConflicts.ts';
 export { buildEdgeLegend, visibleEdgeLegend } from './edgeLegend.ts';
 export { sourceNodeFacts, instanceCalls, outputPathText, compactOutputPath, evidenceText } from './nodeFacts.ts';

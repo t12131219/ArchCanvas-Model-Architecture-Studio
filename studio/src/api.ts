@@ -1,5 +1,6 @@
 import type { Architecture, CanvasDocument, ParameterOrigin, Scene } from './core';
 import type { AuthoredDraft, DraftCatalog } from './authoring';
+import type { CustomModulePreview } from './customModules';
 
 export type GeneratedDraft = { draft: AuthoredDraft; presentationDraft?: AuthoredDraft; draftDigest: string; source: string; entry: string; architecture: Architecture; nodeBindings: Record<string, string>; containerBindings?: Record<string, string>; edgeBindings?: Record<string, string[]>; verification: Record<string, unknown> };
 export type ImportedSourceDraft = { draft: AuthoredDraft; sourceNodeBindings: Record<string, string>; sceneNodeBindings: Record<string, string>; provenanceDigest: string; verification: string };
@@ -65,6 +66,7 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
   return result as T;
 }
 export const api = {
+  previewCustomModule: (value: { source: string; entry: string; label: string; constructorValues: Record<string, unknown> }) => mutation<CustomModulePreview>('/authoring/custom-modules/preview', value),
   importSourceDraft: (document: CanvasDocument, scene: Scene) => mutation<ImportedSourceDraft>('/authoring/import-source', { document, scene }),
   sourceDraftFrontier: (draft: AuthoredDraft, document: CanvasDocument, scene: Scene) => mutation<ImportedSourceDraft>('/authoring/source-frontier', { draft, document, scene }),
   authoringCatalog: () => request<DraftCatalog>('/authoring/catalog'),

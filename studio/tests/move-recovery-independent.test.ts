@@ -182,7 +182,7 @@ test('explicit recovery preview is obstacle-safe and commit is one reversible vi
   }
 });
 
-test('recovery respects selected pin, descendant pin and a clear right move without changing documents', () => {
+test('recovery respects pins and keeps an unchanged route-only warning distinct from an unneeded body-clear object', () => {
   const left = applyVisualBatch(document(), [{ type: 'move', ids: ['first'], dx: -52, dy: 0 }]);
   const pinned = applyVisualBatch(left, [{ type: 'pin', ids: ['first'], pinned: true }]);
   for (const [doc, id] of [[pinned, 'first'], [pinned, 'network'], [pinned, 'root']] as const) {
@@ -190,9 +190,38 @@ test('recovery respects selected pin, descendant pin and a clear right move with
     assert.equal(plan.status, 'unavailable'); assert.ok('reason' in plan && plan.reason.length > 0);
     assert.equal(JSON.stringify(doc), bytes);
   }
-  const right = applyVisualBatch(document(), [{ type: 'move', ids: ['first'], dx: 52, dy: 0 }]);
-  const bytes = JSON.stringify(right), plan = planLayoutRecovery(right, 'first');
-  assert.equal(plan.status, 'unneeded'); assert.equal(JSON.stringify(right), bytes);
+  // Keep this clear-right assertion independent of the route solver's choice
+  // of a residual fan-out corridor. Route-only retention and improvement are
+  // covered by the separate final-geometry safety fixture below.
+  const clear = document(); clear.architecture.edges = clear.architecture.edges.filter(edge => edge.id !== 'fanout');
+  const right = applyVisualBatch(clear, [{ type: 'move', ids: ['first'], dx: 52, dy: 0 }]);
+  const scene = buildScene(right), bytes = JSON.stringify(right);
+  assert.deepEqual(bodyConflicts(scene, 'first'), []);
+  assert.equal(planLayoutRecovery(right, 'first').status, 'unneeded');
+  assert.equal(planLayoutRecovery(right, 'output').status, 'unneeded');
+  assert.equal(JSON.stringify(right), bytes);
+});
+
+test('a partial overlap reduction cannot be offered as selected-object position recovery', () => {
+  const nodes: ArchitectureNode[] = ['chosen', 'blocker', 'lower'].map(id => ({
+    id, label: id, kind: 'Linear', category: 'linear', children: [], ports: [], parameters: {}, evidence: 'source',
+  }));
+  const doc = createDocument({ schemaVersion: 1, id: 'two-overlap-obstacles', label: 'Two independent obstacles', entry: 'Model',
+    sourceDigest: 'two-overlap-source', irDigest: 'two-overlap-ir', sources: [], diagnostics: [], nodes, edges: [] });
+  doc.layout = { chosen: { x: 0, y: 100 }, blocker: { x: 180, y: 100 }, lower: { x: 100, y: 130 } };
+  const bytes = JSON.stringify(doc), before = buildScene(doc);
+  assert.deepEqual(bodyConflicts(before, 'chosen').sort(), ['body:blocker', 'body:lower']);
+  // The nearer x=-56 candidate clears blocker, but its right=138 still
+  // intersects lower over x=100..138, y=130..162. A smaller existing
+  // collision remains a collision rather than a completed repair.
+  const partial = buildScene(applyVisualBatch(doc, [{ type: 'move', ids: ['chosen'], dx: -56, dy: 0 }]));
+  assert.deepEqual(bodyConflicts(partial, 'chosen'), ['body:lower']);
+  const plan = planLayoutRecovery(doc, 'chosen');
+  assert.equal(plan.status, 'ready');
+  assert.deepEqual(bodyConflicts(plan.scene, 'chosen'), []);
+  assert.notDeepEqual([plan.operation.dx, plan.operation.dy], [-56, 0]);
+  assert.deepEqual(plan.scene.nodes.filter(node => node.id !== 'chosen'), before.nodes.filter(node => node.id !== 'chosen'));
+  assert.equal(JSON.stringify(doc), bytes);
 });
 
 test('touching the true parent border is contained while even a one-unit left escape is diagnosed', () => {

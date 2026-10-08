@@ -3,6 +3,8 @@ import type { SceneNode } from './core/types.ts';
 import type { Architecture, CanvasDocument } from './core/types.ts';
 import { refineDraftRoutes } from './draftRouting.ts';
 import { draftModuleSize, draftNodeBounds, draftNodeSize, draftPortPoint } from './draftNodeGeometry.ts';
+import { customModuleCatalog, readCustomModuleDefinition } from './customModules.ts';
+import type { CustomModuleDefinition } from './customModules.ts';
 export { DRAFT_WIDTH, DRAFT_HEIGHT, DRAFT_PORT_PITCH, draftModuleSize, draftNodeBounds, draftNodeSize, draftPortSpacing } from './draftNodeGeometry.ts';
 
 export type DraftValue = number | boolean | string | number[];
@@ -11,13 +13,14 @@ export type DraftParameter = { name: string; type: 'integer' | 'number' | 'boole
 export type DraftModule = { kind: string; label: string; category: string; description: string; defaults: Record<string, DraftValue>; parameters: DraftParameter[]; ports: DraftPort[] };
 export type DraftCatalog = { schemaVersion: 1; mode: 'authored-draft'; modules: DraftModule[]; unsupported: unknown[] };
 export type DraftPresentation = { width: number; height: number; fill: string; stroke: string; group: boolean; parentId?: string; ports: Record<string, { x: number; y: number }> };
-export type DraftNode = { id: string; kind: string; label: string; parameters: Record<string, DraftValue>; position: { x: number; y: number }; presentation?: DraftPresentation };
+export type DraftVisual = { width: number; height: number; fill: string; stroke: string };
+export type DraftNode = { id: string; kind: string; label: string; parameters: Record<string, DraftValue>; position: { x: number; y: number }; presentation?: DraftPresentation; visual?: DraftVisual };
 export type DraftEndpoint = { nodeId: string; portId: string };
 export type DraftEdge = { id: string; source: DraftEndpoint; target: DraftEndpoint };
 export type SourceDraftRef = { nodeId: string; sceneNodeId: string; kind: string; category: string; evidence: string; portBindings: Record<string, { nodeId: string; portId: string }[]>; originalParameters: Record<string, DraftValue>; group: boolean; instanceId?: string; repeat?: { count: number; sharing: 'independent' | 'shared' } };
 export type DraftSourceProvenance = { schemaVersion: 1; digest: string; documentId: string; visualRevision: number; sourceDigest: string; irDigest: string; architecture: Architecture; canvas: CanvasDocument; modules: DraftModule[]; nodeRefs: Record<string, SourceDraftRef>; edgeRefs: Record<string, string[]>; originalGraph: { nodes: DraftNode[]; edges: DraftEdge[] } };
 export type SourceDraftCache = { nodes: DraftNode[]; edges: DraftEdge[]; removedNodeIds: string[]; removedCanonicalEdgeIds: string[] };
-export type AuthoredDraft = { schemaVersion: 1; mode: 'authored-draft'; id: string; title: string; revision: number; nodes: DraftNode[]; edges: DraftEdge[]; sourceProvenance?: DraftSourceProvenance; sourceCache?: SourceDraftCache };
+export type AuthoredDraft = { schemaVersion: 1; mode: 'authored-draft'; id: string; title: string; revision: number; nodes: DraftNode[]; edges: DraftEdge[]; customModules?: CustomModuleDefinition[]; sourceProvenance?: DraftSourceProvenance; sourceCache?: SourceDraftCache };
 export type DraftHistory = { draft: AuthoredDraft; past: AuthoredDraft[]; future: AuthoredDraft[] };
 export type DraftFlow = 'horizontal' | 'vertical';
 const MAX_DRAFT_NODES = 128;
@@ -25,10 +28,18 @@ const MAX_DRAFT_EDGES = 384;
 
 /** Source frontier modules are retained in the draft, never advertised as presets. */
 export function sourceDraftCatalog(draft: AuthoredDraft, catalog: DraftCatalog | null): DraftCatalog | null {
-  return catalog && draft.sourceProvenance ? { ...catalog, modules: [...catalog.modules, ...draft.sourceProvenance.modules] } : catalog;
+  return catalog ? { ...catalog, modules: [...catalog.modules, ...(draft.sourceProvenance?.modules ?? []), ...(draft.customModules ?? []).map(customModuleCatalog)] } : null;
 }
 export function draftSourceKind(draft: AuthoredDraft, node: DraftNode): string {
-  return draft.sourceProvenance?.nodeRefs[node.id]?.kind ?? node.kind;
+  return draft.sourceProvenance?.nodeRefs[node.id]?.kind ?? draft.customModules?.find(module => module.kind === node.kind)?.entry ?? node.kind;
+}
+export function implicitDraftRootIds(draft: AuthoredDraft): Set<string> {
+  const architecture = draft.sourceProvenance?.architecture;
+  if (!architecture) return new Set();
+  return new Set(draft.nodes.filter(node => {
+    const canonical = architecture.nodes.find(item => item.id === draft.sourceProvenance?.nodeRefs[node.id]?.nodeId);
+    return node.presentation?.group && canonical && !canonical.parentId && canonical.children.length > 0;
+  }).map(node => node.id));
 }
 /** Moving an expanded source group moves its descendants in the same undo step. */
 export function draftMoveIds(draft: AuthoredDraft, selection: readonly string[]): string[] {
@@ -99,8 +110,14 @@ export function parseDraftCache(value: unknown): { draft: AuthoredDraft; storage
   const parameter = (p: unknown) => typeof p === 'boolean' || typeof p === 'string' || (typeof p === 'number' && Number.isFinite(p)) || (Array.isArray(p) && p.every(n => typeof n === 'number' && Number.isFinite(n)));
   if (!draft || draft.mode !== 'authored-draft' || draft.schemaVersion !== 1 || !identity(draft.id) || !draft.id.startsWith('draft-') || !text(draft.title) || !Number.isSafeInteger(draft.revision) || draft.revision < 0 || !Array.isArray(draft.nodes) || draft.nodes.length > (draft.sourceProvenance ? 1200 : MAX_DRAFT_NODES) || !Array.isArray(draft.edges) || draft.edges.length > (draft.sourceProvenance ? 3600 : MAX_DRAFT_EDGES)) return null;
   const ids = new Set<string>(), edgeIds = new Set<string>();
+  if (draft.customModules) {
+    if (!Array.isArray(draft.customModules) || draft.customModules.length > 32) return null;
+    try { for (const definition of draft.customModules) readCustomModuleDefinition(definition); } catch { return null; }
+    if (new Set(draft.customModules.map(module => module.kind)).size !== draft.customModules.length) return null;
+  }
   for (const node of draft.nodes) {
     if (!node || !identity(node.id) || ids.has(node.id) || !text(node.kind) || !text(node.label) || !node.position || !safeNumber(node.position.x) || !safeNumber(node.position.y) || !node.parameters || Array.isArray(node.parameters) || typeof node.parameters !== 'object' || !Object.values(node.parameters).every(parameter)) return null;
+    if (node.visual && (!['width', 'height'].every(key => typeof node.visual![key as 'width' | 'height'] === 'number' && Number.isFinite(node.visual![key as 'width' | 'height']) && node.visual![key as 'width' | 'height'] >= 10 && node.visual![key as 'width' | 'height'] <= 1000000) || ![node.visual.fill, node.visual.stroke].every(color => typeof color === 'string' && /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(color)))) return null;
     ids.add(node.id);
   }
   for (const edge of draft.edges) {

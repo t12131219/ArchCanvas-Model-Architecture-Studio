@@ -8,7 +8,7 @@ import type { CameraViewport } from './cameraViewport.ts';
 
 export type DraftCamera = { x: number; y: number; zoom: number };
 export type AuthoringWorkspace = { draft: AuthoredDraft; history?: DraftHistory; storageRevision?: number; savedRevision?: number;
-  selection?: string[]; camera?: DraftCamera; viewport?: CameraViewport; tool?: 'select' | 'pan'; sourceHistory?: { past: number; future: number } };
+  selection?: string[]; camera?: DraftCamera; viewport?: CameraViewport; tool?: 'select' | 'pan'; sourceHistory?: { past: number; future: number }; viewBaseline?: AuthoredDraft };
 export type SourceAuthoringView = { selection: string[]; camera: DraftCamera; viewport?: CameraViewport; tool: 'select' | 'pan'; sourceHistory: { past: number; future: number } };
 export type RebaseSourceDraft = (draft: AuthoredDraft, document: CanvasDocument, scene: Scene) => Promise<ImportedSourceDraft>;
 
@@ -93,7 +93,8 @@ export async function resumeSourceAuthoring(workspace: AuthoringWorkspace, docum
   for (const snapshot of history.future) future.push(await project(snapshot));
   const changed = JSON.stringify(draft) !== JSON.stringify(history.draft);
   if (changed) draft.revision = history.draft.revision + 1;
-  return followSourceView({ ...workspace, draft, history: { draft, past, future } }, view);
+  const viewBaseline = workspace.viewBaseline ? await project(workspace.viewBaseline, true) : undefined;
+  return followSourceView({ ...workspace, draft, history: { draft, past, future }, viewBaseline }, view);
 }
 
 /** Reopening server bytes retains existing undo and the current view. */
@@ -132,6 +133,8 @@ export function parseAuthoringWorkspace(value: unknown): AuthoringWorkspace | nu
   const visible = new Set(base.draft.nodes.map(node => node.id));
   if (raw.selection && (!Array.isArray(raw.selection) || !raw.selection.every(id => typeof id === 'string'))) return null;
   if (raw.tool && raw.tool !== 'select' && raw.tool !== 'pan') return null;
+  const viewBaseline = raw.viewBaseline === undefined ? undefined : parseDraftCache({ draft: raw.viewBaseline, storageRevision: 0, savedRevision: -1 })?.draft;
+  if (raw.viewBaseline !== undefined && (!viewBaseline || viewBaseline.id !== base.draft.id)) return null;
   return { ...base, history: recovered, selection: (raw.selection as string[] | undefined)?.filter(id => visible.has(id)) ?? [],
-    camera: camera ? { ...camera } : undefined, viewport: cameraViewportSize(raw.viewport as CameraViewport | undefined) ?? undefined, tool: raw.tool as AuthoringWorkspace['tool'] };
+    camera: camera ? { ...camera } : undefined, viewport: cameraViewportSize(raw.viewport as CameraViewport | undefined) ?? undefined, tool: raw.tool as AuthoringWorkspace['tool'], viewBaseline };
 }

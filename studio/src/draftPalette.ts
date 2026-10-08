@@ -2,6 +2,7 @@ import type { DraftCatalog, DraftModule } from './authoring.ts';
 import type { DraftPreset } from './authoringPresets.ts';
 
 const CATEGORY_LABELS: Readonly<Record<string, string>> = {
+  custom: '自定义源码模块',
   io: '输入与输出', dense: '全连接', activation: '激活函数', operator: '基础算子',
   regularization: '正则化', reshape: '形状变换', convolution: '卷积', pooling: '池化',
   normalization: '归一化', embedding: '嵌入', merge: '合并与分支', attention: '注意力', recurrent: '循环与序列',

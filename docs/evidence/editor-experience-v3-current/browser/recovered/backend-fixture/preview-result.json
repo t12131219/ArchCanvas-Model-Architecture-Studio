@@ -1,0 +1,627 @@
+{
+  "definition": {
+    "schemaVersion": 1,
+    "source": "from torch import nn\n\nclass PairFusion(nn.Module):\n    def __init__(self, width=4, bias=False):\n        super().__init__()\n        self.project = nn.Linear(width, width, bias=bias)\n\n    def forward(self, left, *, right):\n        return self.project(left), right\n",
+    "entry": "PairFusion",
+    "label": "双输入双输出模块",
+    "constructorValues": {
+      "bias": false,
+      "width": 4
+    },
+    "kind": "Custom_3675543d27d130dc41dbb90d",
+    "digest": "3675543d27d130dc41dbb90db89927e3d8f37f5dd9df99264527779af6a5a906",
+    "sourceDigest": "5f59b478ee1979117dad72ffa95614d4c8b859c72be0a41ea3529b194b7e1a61",
+    "inputs": [
+      {
+        "id": "left",
+        "name": "left",
+        "positionalOnly": false
+      },
+      {
+        "id": "right",
+        "name": "right",
+        "positionalOnly": false
+      }
+    ],
+    "outputs": [
+      {
+        "id": "output_1",
+        "name": "output[0]",
+        "path": [
+          {
+            "kind": "index",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "id": "output_2",
+        "name": "output[1]",
+        "path": [
+          {
+            "kind": "index",
+            "index": 1
+          }
+        ]
+      }
+    ]
+  },
+  "module": {
+    "kind": "Custom_3675543d27d130dc41dbb90d",
+    "label": "双输入双输出模块",
+    "category": "custom",
+    "description": "源码自定义模块；具名端口已静态检查，输出形状未知，模型未执行。",
+    "defaults": {},
+    "parameters": [],
+    "ports": [
+      {
+        "id": "left",
+        "name": "left",
+        "direction": "in",
+        "type": "tensor"
+      },
+      {
+        "id": "right",
+        "name": "right",
+        "direction": "in",
+        "type": "tensor"
+      },
+      {
+        "id": "output_1",
+        "name": "output[0]",
+        "direction": "out",
+        "type": "tensor"
+      },
+      {
+        "id": "output_2",
+        "name": "output[1]",
+        "direction": "out",
+        "type": "tensor"
+      }
+    ]
+  },
+  "architecture": {
+    "schemaVersion": 1,
+    "id": "architecture:archcanvas_custom_probe._ArchCanvasCustomProbe",
+    "label": "_ArchCanvasCustomProbe",
+    "sourceDigest": "e1ae9f98ff29ceabe41bf3b3ba08f11d0de1f4ec21abe0fe0bad37af0b5f3451",
+    "irDigest": "d253d796bdfc11f5e6f7179c58148f2bb9b4e31a3894d20e707921be9e0bd40d",
+    "entry": "archcanvas_custom_probe:_ArchCanvasCustomProbe",
+    "nodes": [
+      {
+        "id": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:left",
+        "label": "left",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:left:out:left",
+            "name": "left",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "archcanvas_custom_probe.py",
+          "line": 7,
+          "endLine": 8,
+          "expression": "def forward(self, left, right):\n        return self.module(left=left, right=right)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe"
+      },
+      {
+        "id": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:right",
+        "label": "right",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:right:out:right",
+            "name": "right",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "archcanvas_custom_probe.py",
+          "line": 7,
+          "endLine": 8,
+          "expression": "def forward(self, left, right):\n        return self.module(left=left, right=right)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe"
+      },
+      {
+        "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe",
+        "label": "_ArchCanvasCustomProbe",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "input:archcanvas_custom_probe._ArchCanvasCustomProbe:right",
+          "input:archcanvas_custom_probe._ArchCanvasCustomProbe:left",
+          "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module",
+          "output:archcanvas_custom_probe._ArchCanvasCustomProbe:0",
+          "output:archcanvas_custom_probe._ArchCanvasCustomProbe:1"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe:in:left",
+            "name": "left",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe:in:right",
+            "name": "right",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 1
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "archcanvas_custom_probe.py",
+          "line": 3,
+          "endLine": 8,
+          "expression": "class _ArchCanvasCustomProbe(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.module = _ArchCanvasCustomModule()\n    def forward(self, left, right):\n        return self.module(left=left, right=right)"
+        },
+        "evidence": "source",
+        "instanceId": "instance:archcanvas_custom_probe._ArchCanvasCustomProbe",
+        "callId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe"
+      },
+      {
+        "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module",
+        "label": "module",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner",
+          "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_1",
+          "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_2"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module:in:left",
+            "name": "left",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module:in:right",
+            "name": "right",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 1
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "archcanvas_custom_probe.py",
+          "line": 8,
+          "endLine": 8,
+          "expression": "self.module(left=left, right=right)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe",
+        "instanceId": "instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module",
+        "callId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module"
+      },
+      {
+        "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner",
+        "label": "inner",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner.project"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner:in:left",
+            "name": "left",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner:in:right",
+            "name": "right",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 1
+          }
+        ],
+        "parameters": {
+          "width": 4,
+          "bias": false
+        },
+        "source": {
+          "path": "archcanvas_custom_3675543d27d130dc41dbb90d.py",
+          "line": 22,
+          "endLine": 22,
+          "expression": "self.inner(left=left, right=right)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module",
+        "instanceId": "instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner",
+        "callId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner"
+      },
+      {
+        "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner.project",
+        "label": "project",
+        "kind": "Linear",
+        "category": "linear",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner.project:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner.project:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "in_features": 4,
+          "out_features": 4,
+          "bias": false
+        },
+        "source": {
+          "path": "archcanvas_custom_3675543d27d130dc41dbb90d.py",
+          "line": 9,
+          "endLine": 9,
+          "expression": "self.project(left)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner",
+        "instanceId": "instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner.project",
+        "callId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner.project",
+        "parameterOrigins": {
+          "in_features": {
+            "kind": "constructor_argument",
+            "path": "archcanvas_custom_3675543d27d130dc41dbb90d.py",
+            "line": 6,
+            "endLine": 6,
+            "expression": "width",
+            "column": 33,
+            "endColumn": 38
+          },
+          "out_features": {
+            "kind": "constructor_argument",
+            "path": "archcanvas_custom_3675543d27d130dc41dbb90d.py",
+            "line": 6,
+            "endLine": 6,
+            "expression": "width",
+            "column": 40,
+            "endColumn": 45
+          },
+          "bias": {
+            "kind": "constructor_argument",
+            "path": "archcanvas_custom_3675543d27d130dc41dbb90d.py",
+            "line": 6,
+            "endLine": 6,
+            "expression": "bias",
+            "column": 52,
+            "endColumn": 56
+          }
+        }
+      },
+      {
+        "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_1",
+        "label": "output 1",
+        "kind": "Identity",
+        "category": "operator",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_1:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_1:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "archcanvas_custom_3675543d27d130dc41dbb90d.py",
+          "line": 23,
+          "endLine": 23,
+          "expression": "self.output_1(result[0])"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module",
+        "instanceId": "instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_1",
+        "callId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_1"
+      },
+      {
+        "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_2",
+        "label": "output 2",
+        "kind": "Identity",
+        "category": "operator",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_2:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_2:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "archcanvas_custom_3675543d27d130dc41dbb90d.py",
+          "line": 23,
+          "endLine": 23,
+          "expression": "self.output_2(result[1])"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module",
+        "instanceId": "instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_2",
+        "callId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_2"
+      },
+      {
+        "id": "output:archcanvas_custom_probe._ArchCanvasCustomProbe:0",
+        "label": "output 1",
+        "kind": "Output",
+        "category": "output",
+        "children": [],
+        "ports": [
+          {
+            "id": "output:archcanvas_custom_probe._ArchCanvasCustomProbe:0:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "archcanvas_custom_probe.py",
+          "line": 7,
+          "endLine": 8,
+          "expression": "def forward(self, left, right):\n        return self.module(left=left, right=right)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe",
+        "outputPath": [
+          {
+            "kind": "key",
+            "key": "output_1"
+          }
+        ]
+      },
+      {
+        "id": "output:archcanvas_custom_probe._ArchCanvasCustomProbe:1",
+        "label": "output 2",
+        "kind": "Output",
+        "category": "output",
+        "children": [],
+        "ports": [
+          {
+            "id": "output:archcanvas_custom_probe._ArchCanvasCustomProbe:1:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "archcanvas_custom_probe.py",
+          "line": 7,
+          "endLine": 8,
+          "expression": "def forward(self, left, right):\n        return self.module(left=left, right=right)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe",
+        "outputPath": [
+          {
+            "kind": "key",
+            "key": "output_2"
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:0",
+        "source": {
+          "nodeId": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:left",
+          "portId": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:left:out:left"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe",
+          "portId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe:in:left"
+        },
+        "tensorId": "tensor:input:archcanvas_custom_probe._ArchCanvasCustomProbe:left:left",
+        "role": "data"
+      },
+      {
+        "id": "edge:1",
+        "source": {
+          "nodeId": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:right",
+          "portId": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:right:out:right"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe",
+          "portId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe:in:right"
+        },
+        "tensorId": "tensor:input:archcanvas_custom_probe._ArchCanvasCustomProbe:right:right",
+        "role": "data"
+      },
+      {
+        "id": "edge:2",
+        "source": {
+          "nodeId": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:left",
+          "portId": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:left:out:left"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module",
+          "portId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module:in:left"
+        },
+        "tensorId": "tensor:input:archcanvas_custom_probe._ArchCanvasCustomProbe:left:left",
+        "role": "data"
+      },
+      {
+        "id": "edge:3",
+        "source": {
+          "nodeId": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:right",
+          "portId": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:right:out:right"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module",
+          "portId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module:in:right"
+        },
+        "tensorId": "tensor:input:archcanvas_custom_probe._ArchCanvasCustomProbe:right:right",
+        "role": "data"
+      },
+      {
+        "id": "edge:4",
+        "source": {
+          "nodeId": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:left",
+          "portId": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:left:out:left"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner",
+          "portId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner:in:left"
+        },
+        "tensorId": "tensor:input:archcanvas_custom_probe._ArchCanvasCustomProbe:left:left",
+        "role": "data"
+      },
+      {
+        "id": "edge:5",
+        "source": {
+          "nodeId": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:right",
+          "portId": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:right:out:right"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner",
+          "portId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner:in:right"
+        },
+        "tensorId": "tensor:input:archcanvas_custom_probe._ArchCanvasCustomProbe:right:right",
+        "role": "data"
+      },
+      {
+        "id": "edge:6",
+        "source": {
+          "nodeId": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:left",
+          "portId": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:left:out:left"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner.project",
+          "portId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner.project:in:input"
+        },
+        "tensorId": "tensor:input:archcanvas_custom_probe._ArchCanvasCustomProbe:left:left",
+        "role": "data"
+      },
+      {
+        "id": "edge:7",
+        "source": {
+          "nodeId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner.project",
+          "portId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner.project:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_1",
+          "portId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_1:in:input"
+        },
+        "tensorId": "tensor:call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.inner.project:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:8",
+        "source": {
+          "nodeId": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:right",
+          "portId": "input:archcanvas_custom_probe._ArchCanvasCustomProbe:right:out:right"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_2",
+          "portId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_2:in:input"
+        },
+        "tensorId": "tensor:input:archcanvas_custom_probe._ArchCanvasCustomProbe:right:right",
+        "role": "data"
+      },
+      {
+        "id": "edge:9",
+        "source": {
+          "nodeId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_1",
+          "portId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_1:out:output"
+        },
+        "target": {
+          "nodeId": "output:archcanvas_custom_probe._ArchCanvasCustomProbe:0",
+          "portId": "output:archcanvas_custom_probe._ArchCanvasCustomProbe:0:in:value"
+        },
+        "tensorId": "tensor:call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_1:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:10",
+        "source": {
+          "nodeId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_2",
+          "portId": "call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_2:out:output"
+        },
+        "target": {
+          "nodeId": "output:archcanvas_custom_probe._ArchCanvasCustomProbe:1",
+          "portId": "output:archcanvas_custom_probe._ArchCanvasCustomProbe:1:in:value"
+        },
+        "tensorId": "tensor:call:instance:archcanvas_custom_probe._ArchCanvasCustomProbe.module.output_2:output",
+        "role": "data"
+      }
+    ],
+    "diagnostics": [
+      {
+        "level": "info",
+        "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+      }
+    ],
+    "sources": [
+      {
+        "path": "archcanvas_custom_3675543d27d130dc41dbb90d.py",
+        "content": "from torch import nn\n\nclass PairFusion(nn.Module):\n    def __init__(self, width=4, bias=False):\n        super().__init__()\n        self.project = nn.Linear(width, width, bias=bias)\n\n    def forward(self, left, *, right):\n        return self.project(left), right\n\n# Stable output anchors for ArchCanvas composition; no execution occurred.\nfrom torch import nn as _archcanvas_nn\n\nclass _ArchCanvasCustomModule(_archcanvas_nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.inner = PairFusion(width=4, bias=False)\n        self.output_1 = _archcanvas_nn.Identity()\n        self.output_2 = _archcanvas_nn.Identity()\n\n    def forward(self, left, right):\n        result = self.inner(left=left, right=right)\n        return {'output_1': self.output_1(result[0]), 'output_2': self.output_2(result[1])}\n",
+        "digest": "eb581ac24b0fa6b8e113a44ea38184cedbd9e31519de40b958e8dc53c183e7ae"
+      },
+      {
+        "path": "archcanvas_custom_probe.py",
+        "content": "from torch import nn\nfrom archcanvas_custom_3675543d27d130dc41dbb90d import _ArchCanvasCustomModule\nclass _ArchCanvasCustomProbe(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.module = _ArchCanvasCustomModule()\n    def forward(self, left, right):\n        return self.module(left=left, right=right)\n",
+        "digest": "9cf039b6550acad292436f98b86b1e0bc2b3def77515030d8f7f9f8b67c8c5da"
+      }
+    ]
+  },
+  "verification": {
+    "status": "passed",
+    "scope": "static-source-and-named-module-boundary",
+    "modelExecution": "not_run",
+    "shapeInference": "unknown",
+    "opaqueNodeIds": [],
+    "warnings": []
+  }
+}

@@ -126,7 +126,8 @@ function appHarness(scope:MoveScope=all, ids:string[]=['output'], commandText=''
   const element={getBoundingClientRect:()=>({left:20,top:40,width:640,height:600}),
     setPointerCapture:(id:number)=>{captured.add(id);events.push('capture');},hasPointerCapture:(id:number)=>captured.has(id),
     releasePointerCapture:(id:number)=>{captured.delete(id);events.push('release');}};
-  const environment={historyRef,current,scene,cameraRef,gesture,portGesture,frame,viewportRef:{current:element},
+  const implicitRoots = new Set<string>();
+  const environment={historyRef,current,scene,implicitRoots,cameraRef,gesture,portGesture,frame,viewportRef:{current:element},
     portRequest:{current:0},space:{current:false},tool:'select',busy:false,inputSpec:null,
     layoutMoveScope:scope,selection:{kind:'node',ids},command:commandText,activeRecovery:null,
     selectedNode:current.architecture.nodes.find(n=>n.id===ids[0]),selectedSceneNode:scene.nodes.find(n=>n.id===ids[0]),

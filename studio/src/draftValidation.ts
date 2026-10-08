@@ -1,4 +1,5 @@
 import type { AuthoredDraft, DraftValue, DraftPresentation, DraftSourceProvenance, SourceDraftCache } from './authoring.ts';
+import { readCustomModuleDefinition } from './customModules.ts';
 
 export type DraftTensor = { shape: number[]; dtype: 'float32' | 'float64' | 'int64' };
 export type DraftDiagnosticValue = null | boolean | number | string | DraftDiagnosticValue[] | { [key: string]: DraftDiagnosticValue };
@@ -11,7 +12,8 @@ export type DraftValidation = {
   draft: AuthoredDraft; draftDigest: string; complete: boolean; issues: DraftValidationDiagnostic[];
   tensors: Record<string, DraftTensor>; order: string[];
   portTensors?: Record<string, Record<string, DraftTensor>>;
-  verification: 'static-declared-tensors; no model execution' | 'source-preserved-graph; no model execution';
+  verification: 'static-declared-tensors; no model execution' | 'source-preserved-graph; no model execution' | 'static-topology; custom output shapes unknown; no model execution';
+  unknownTensorNodeIds?: string[];
 };
 
 const STATIC_VERIFICATION = 'static-declared-tensors; no model execution';
@@ -41,11 +43,11 @@ function parameter(value: unknown): DraftValue {
 }
 function readDraft(value: unknown): AuthoredDraft {
   const draft = record(value);
-  keys(draft, ['schemaVersion', 'mode', 'id', 'title', 'revision', 'nodes', 'edges'], ['sourceProvenance', 'sourceCache']);
+  keys(draft, ['schemaVersion', 'mode', 'id', 'title', 'revision', 'nodes', 'edges'], ['sourceProvenance', 'sourceCache', 'customModules']);
   if (draft.schemaVersion !== 1 || draft.mode !== 'authored-draft' || !Number.isSafeInteger(draft.revision) || (draft.revision as number) < 0 || !Array.isArray(draft.nodes) || draft.nodes.length > (draft.sourceProvenance ? 1200 : 128) || !Array.isArray(draft.edges) || draft.edges.length > (draft.sourceProvenance ? 3600 : 384)) invalid();
   const nodeIds = new Set<string>(), edgeIds = new Set<string>();
   const nodes = (draft.nodes as unknown[]).map(value => {
-    const node = record(value); keys(node, ['id', 'kind', 'label', 'parameters', 'position'], draft.sourceProvenance ? ['presentation'] : []);
+    const node = record(value); keys(node, ['id', 'kind', 'label', 'parameters', 'position'], draft.sourceProvenance ? ['presentation', 'visual'] : ['visual']);
     const id = identity(node.id); if (nodeIds.has(id)) invalid(); nodeIds.add(id);
     const position = record(node.position); keys(position, ['x', 'y']);
     if (![position.x, position.y].every(item => typeof item === 'number' && Number.isFinite(item) && Math.abs(item) <= 1_000_000)) invalid();
@@ -57,7 +59,13 @@ function readDraft(value: unknown): AuthoredDraft {
       const ports = Object.fromEntries(Object.entries(record(p.ports)).map(([id, item]) => { const point = record(item); keys(point, ['x', 'y']); if (![point.x, point.y].every(n => typeof n === 'number' && Number.isFinite(n))) invalid(); return [identity(id), { x: point.x as number, y: point.y as number }]; }));
       presentation = { width: p.width as number, height: p.height as number, fill: text(p.fill), stroke: text(p.stroke), group: p.group as boolean, ports, ...(p.parentId ? { parentId: identity(p.parentId) } : {}) };
     }
-    return { id, kind: text(node.kind), label: text(node.label), parameters, position: { x: position.x as number, y: position.y as number }, ...(presentation ? { presentation } : {}) };
+    let visual;
+    if (node.visual !== undefined) {
+      const p = record(node.visual); keys(p, ['width', 'height', 'fill', 'stroke']);
+      if (![p.width, p.height].every(item => typeof item === 'number' && Number.isFinite(item) && item >= 10 && item <= 1000000) || ![p.fill, p.stroke].every(color => typeof color === 'string' && /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(color))) invalid();
+      visual = { width: p.width as number, height: p.height as number, fill: p.fill as string, stroke: p.stroke as string };
+    }
+    return { id, kind: text(node.kind), label: text(node.label), parameters, position: { x: position.x as number, y: position.y as number }, ...(presentation ? { presentation } : {}), ...(visual ? { visual } : {}) };
   });
   const edges = (draft.edges as unknown[]).map(value => {
     const edge = record(value); keys(edge, ['id', 'source', 'target']);
@@ -77,7 +85,8 @@ function readDraft(value: unknown): AuthoredDraft {
     sourceProvenance = structuredClone(provenance) as DraftSourceProvenance;
   }
   const sourceCache = draft.sourceCache ? structuredClone(record(draft.sourceCache)) as SourceDraftCache : undefined;
-  return { schemaVersion: 1, mode: 'authored-draft', id: identity(draft.id), title: text(draft.title), revision: draft.revision as number, nodes, edges, ...(sourceProvenance ? { sourceProvenance } : {}), ...(sourceCache ? { sourceCache } : {}) };
+  const customModules = draft.customModules ? (Array.isArray(draft.customModules) && draft.customModules.length <= 32 ? draft.customModules.map(readCustomModuleDefinition) : invalid()) : undefined;
+  return { schemaVersion: 1, mode: 'authored-draft', id: identity(draft.id), title: text(draft.title), revision: draft.revision as number, nodes, edges, ...(sourceProvenance ? { sourceProvenance } : {}), ...(sourceCache ? { sourceCache } : {}), ...(customModules ? { customModules } : {}) };
 }
 function jsonValue(value: unknown, depth = 0): DraftDiagnosticValue {
   if (depth > 8) return invalid();
@@ -111,8 +120,8 @@ function readTensor(value: unknown): DraftTensor {
 /** Read only the backend's static-declaration response, never execution/generated-source receipts. */
 export function readDraftValidation(value: unknown): DraftValidation {
   const result = record(value);
-  keys(result, ['draft', 'draftDigest', 'complete', 'issues', 'tensors', 'order', 'verification'], ['portTensors']);
-  if (![STATIC_VERIFICATION, 'source-preserved-graph; no model execution'].includes(result.verification as string) || typeof result.draftDigest !== 'string' || !/^[a-f0-9]{64}$/.test(result.draftDigest) || typeof result.complete !== 'boolean' || !Array.isArray(result.issues) || result.issues.length > 3600 || !Array.isArray(result.order)) invalid();
+  keys(result, ['draft', 'draftDigest', 'complete', 'issues', 'tensors', 'order', 'verification'], ['portTensors', 'unknownTensorNodeIds']);
+  if (![STATIC_VERIFICATION, 'source-preserved-graph; no model execution', 'static-topology; custom output shapes unknown; no model execution'].includes(result.verification as string) || typeof result.draftDigest !== 'string' || !/^[a-f0-9]{64}$/.test(result.draftDigest) || typeof result.complete !== 'boolean' || !Array.isArray(result.issues) || result.issues.length > 3600 || !Array.isArray(result.order)) invalid();
   const draft = readDraft(result.draft), nodeIds = new Set(draft.nodes.map(node => node.id)), edgeIds = new Set(draft.edges.map(edge => edge.id));
   const issues = (result.issues as unknown[]).map(readDiagnostic), order = (result.order as unknown[]).map(identity);
   if (result.complete !== (issues.length === 0) || order.length !== nodeIds.size || new Set(order).size !== order.length || order.some(id => !nodeIds.has(id))) invalid();
@@ -127,14 +136,16 @@ export function readDraftValidation(value: unknown): DraftValidation {
   const portTensors = result.portTensors ? Object.fromEntries(Object.entries(record(result.portTensors)).map(([id, ports]) => {
     if (!nodeIds.has(id)) invalid(); return [id, Object.fromEntries(Object.entries(record(ports)).map(([portId, tensor]) => [identity(portId), readTensor(tensor)]))];
   })) : undefined;
-  if (!draft.sourceProvenance && result.complete && (Object.keys(tensors).length !== nodeIds.size || !draft.nodes.some(node => node.kind === 'Input') || !draft.nodes.some(node => node.kind === 'Output'))) invalid();
-  if (!!draft.sourceProvenance !== (result.verification === 'source-preserved-graph; no model execution')) invalid();
-  return { draft, draftDigest: result.draftDigest as string, complete: result.complete as boolean, issues, tensors, order, verification: result.verification as DraftValidation['verification'], ...(portTensors ? { portTensors } : {}) };
+  if (!draft.sourceProvenance && !draft.customModules?.length && result.complete && (Object.keys(tensors).length !== nodeIds.size || !draft.nodes.some(node => node.kind === 'Input') || !draft.nodes.some(node => node.kind === 'Output'))) invalid();
+  if (draft.customModules?.length ? result.verification !== 'static-topology; custom output shapes unknown; no model execution' : !!draft.sourceProvenance !== (result.verification === 'source-preserved-graph; no model execution')) invalid();
+  const unknownTensorNodeIds = result.unknownTensorNodeIds ? (Array.isArray(result.unknownTensorNodeIds) ? result.unknownTensorNodeIds.map(identity) : invalid()) : undefined;
+  if (unknownTensorNodeIds?.some(id => !nodeIds.has(id) || tensors[id])) invalid();
+  return { draft, draftDigest: result.draftDigest as string, complete: result.complete as boolean, issues, tensors, order, verification: result.verification as DraftValidation['verification'], ...(portTensors ? { portTensors } : {}), ...(unknownTensorNodeIds ? { unknownTensorNodeIds } : {}) };
 }
 
 /** Arrays preserve the server's stable graph/forward ordering; parameter object order has no meaning. */
 export function draftValidationKey(draft: AuthoredDraft): string {
-  return JSON.stringify({ schemaVersion: draft.schemaVersion, mode: draft.mode, id: draft.id, ...(draft.sourceProvenance ? { provenance: draft.sourceProvenance.digest } : {}),
+  return JSON.stringify({ ...(draft.customModules ? { customModules: draft.customModules } : {}), schemaVersion: draft.schemaVersion, mode: draft.mode, id: draft.id, ...(draft.sourceProvenance ? { provenance: draft.sourceProvenance.digest } : {}),
     nodes: draft.nodes.map(node => ({ id: node.id, kind: node.kind,
       parameters: Object.fromEntries(Object.entries(node.parameters).sort(([a], [b]) => a === b ? 0 : a < b ? -1 : 1).map(([name, value]) => [name, parameter(value)])) })),
     edges: draft.edges.map(edge => ({ id: edge.id, source: { nodeId: edge.source.nodeId, portId: edge.source.portId }, target: { nodeId: edge.target.nodeId, portId: edge.target.portId } })) });

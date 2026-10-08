@@ -1,0 +1,799 @@
+{
+  "draft": {
+    "schemaVersion": 1,
+    "mode": "authored-draft",
+    "id": "draft-pair-acceptance",
+    "title": "双输入双输出静态验收",
+    "revision": 0,
+    "customModules": [
+      {
+        "schemaVersion": 1,
+        "source": "from torch import nn\n\nclass PairFusion(nn.Module):\n    def __init__(self, width=4, bias=False):\n        super().__init__()\n        self.project = nn.Linear(width, width, bias=bias)\n\n    def forward(self, left, *, right):\n        return self.project(left), right\n",
+        "entry": "PairFusion",
+        "label": "双输入双输出模块",
+        "constructorValues": {
+          "bias": false,
+          "width": 4
+        },
+        "kind": "Custom_3675543d27d130dc41dbb90d",
+        "digest": "3675543d27d130dc41dbb90db89927e3d8f37f5dd9df99264527779af6a5a906",
+        "sourceDigest": "5f59b478ee1979117dad72ffa95614d4c8b859c72be0a41ea3529b194b7e1a61",
+        "inputs": [
+          {
+            "id": "left",
+            "name": "left",
+            "positionalOnly": false
+          },
+          {
+            "id": "right",
+            "name": "right",
+            "positionalOnly": false
+          }
+        ],
+        "outputs": [
+          {
+            "id": "output_1",
+            "name": "output[0]",
+            "path": [
+              {
+                "kind": "index",
+                "index": 0
+              }
+            ]
+          },
+          {
+            "id": "output_2",
+            "name": "output[1]",
+            "path": [
+              {
+                "kind": "index",
+                "index": 1
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "id": "left_input",
+        "kind": "Input",
+        "label": "left_input",
+        "parameters": {
+          "shape": [
+            2,
+            4
+          ],
+          "dtype": "float32"
+        },
+        "position": {
+          "x": 100,
+          "y": 100
+        }
+      },
+      {
+        "id": "right_input",
+        "kind": "Input",
+        "label": "right_input",
+        "parameters": {
+          "shape": [
+            2,
+            4
+          ],
+          "dtype": "float32"
+        },
+        "position": {
+          "x": 100,
+          "y": 300
+        }
+      },
+      {
+        "id": "pair",
+        "kind": "Custom_3675543d27d130dc41dbb90d",
+        "label": "pair",
+        "parameters": {},
+        "position": {
+          "x": 430,
+          "y": 200
+        }
+      },
+      {
+        "id": "left_output",
+        "kind": "Output",
+        "label": "left_output",
+        "parameters": {},
+        "position": {
+          "x": 800,
+          "y": 100
+        }
+      },
+      {
+        "id": "right_output",
+        "kind": "Output",
+        "label": "right_output",
+        "parameters": {},
+        "position": {
+          "x": 800,
+          "y": 300
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "left_to_pair",
+        "source": {
+          "nodeId": "left_input",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "pair",
+          "portId": "left"
+        }
+      },
+      {
+        "id": "right_to_pair",
+        "source": {
+          "nodeId": "right_input",
+          "portId": "output"
+        },
+        "target": {
+          "nodeId": "pair",
+          "portId": "right"
+        }
+      },
+      {
+        "id": "pair_to_left",
+        "source": {
+          "nodeId": "pair",
+          "portId": "output_1"
+        },
+        "target": {
+          "nodeId": "left_output",
+          "portId": "input"
+        }
+      },
+      {
+        "id": "pair_to_right",
+        "source": {
+          "nodeId": "pair",
+          "portId": "output_2"
+        },
+        "target": {
+          "nodeId": "right_output",
+          "portId": "input"
+        }
+      }
+    ]
+  },
+  "draftDigest": "4fdb472b36e30563540fc4251132889f7ebd2da371c5b7cbe1eef8da24879116",
+  "entry": "archcanvas_grouped:AuthoredModel",
+  "source": "\"\"\"Fresh grouped ArchCanvas source; static graph only.\"\"\"\nimport torch\nfrom torch import nn\nimport archcanvas_custom_3675543d27d130dc41dbb90d\n\nclass AuthoredModel(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.node_47d8bd468778 = archcanvas_custom_3675543d27d130dc41dbb90d._ArchCanvasCustomModule()\n\n    def forward(self, node_c49861d8496a46f5, node_c58ed84f60e4b904):\n        node_47d8bd468778 = self.node_47d8bd468778(left=node_c49861d8496a46f5, right=node_c58ed84f60e4b904)\n        return {'left_output': node_47d8bd468778['output_1'], 'right_output': node_47d8bd468778['output_2']}\n",
+  "architecture": {
+    "schemaVersion": 1,
+    "id": "architecture:archcanvas_grouped.AuthoredModel",
+    "label": "AuthoredModel",
+    "sourceDigest": "b8986e3ebe714c95e7b2b481962920160a4b8321891ee9428eb248aeb4029044",
+    "irDigest": "e64904a42f9f147b63740abf2548e9c3f31210d6384ab38772d6cca305ee2132",
+    "entry": "archcanvas_grouped:AuthoredModel",
+    "nodes": [
+      {
+        "id": "input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5",
+        "label": "node_c49861d8496a46f5",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5:out:node_c49861d8496a46f5",
+            "name": "node_c49861d8496a46f5",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "archcanvas_grouped.py",
+          "line": 11,
+          "endLine": 13,
+          "expression": "def forward(self, node_c49861d8496a46f5, node_c58ed84f60e4b904):\n        node_47d8bd468778 = self.node_47d8bd468778(left=node_c49861d8496a46f5, right=node_c58ed84f60e4b904)\n        return {'left_output': node_47d8bd468778['output_1'], 'right_output': node_47d8bd468778['output_2']}"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:archcanvas_grouped.AuthoredModel"
+      },
+      {
+        "id": "input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904",
+        "label": "node_c58ed84f60e4b904",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904:out:node_c58ed84f60e4b904",
+            "name": "node_c58ed84f60e4b904",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "archcanvas_grouped.py",
+          "line": 11,
+          "endLine": 13,
+          "expression": "def forward(self, node_c49861d8496a46f5, node_c58ed84f60e4b904):\n        node_47d8bd468778 = self.node_47d8bd468778(left=node_c49861d8496a46f5, right=node_c58ed84f60e4b904)\n        return {'left_output': node_47d8bd468778['output_1'], 'right_output': node_47d8bd468778['output_2']}"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:archcanvas_grouped.AuthoredModel"
+      },
+      {
+        "id": "call:instance:archcanvas_grouped.AuthoredModel",
+        "label": "AuthoredModel",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904",
+          "input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5",
+          "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778",
+          "output:archcanvas_grouped.AuthoredModel:0",
+          "output:archcanvas_grouped.AuthoredModel:1"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:archcanvas_grouped.AuthoredModel:in:node_c49861d8496a46f5",
+            "name": "node_c49861d8496a46f5",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:archcanvas_grouped.AuthoredModel:in:node_c58ed84f60e4b904",
+            "name": "node_c58ed84f60e4b904",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 1
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "archcanvas_grouped.py",
+          "line": 6,
+          "endLine": 13,
+          "expression": "class AuthoredModel(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.node_47d8bd468778 = archcanvas_custom_3675543d27d130dc41dbb90d._ArchCanvasCustomModule()\n\n    def forward(self, node_c49861d8496a46f5, node_c58ed84f60e4b904):\n        node_47d8bd468778 = self.node_47d8bd468778(left=node_c49861d8496a46f5, right=node_c58ed84f60e4b904)\n        return {'left_output': node_47d8bd468778['output_1'], 'right_output': node_47d8bd468778['output_2']}"
+        },
+        "evidence": "source",
+        "instanceId": "instance:archcanvas_grouped.AuthoredModel",
+        "callId": "call:instance:archcanvas_grouped.AuthoredModel"
+      },
+      {
+        "id": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778",
+        "label": "node 47d8bd468778",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner",
+          "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_1",
+          "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_2"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778:in:left",
+            "name": "left",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778:in:right",
+            "name": "right",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 1
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "archcanvas_grouped.py",
+          "line": 12,
+          "endLine": 12,
+          "expression": "self.node_47d8bd468778(left=node_c49861d8496a46f5, right=node_c58ed84f60e4b904)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:archcanvas_grouped.AuthoredModel",
+        "instanceId": "instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778",
+        "callId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778"
+      },
+      {
+        "id": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner",
+        "label": "inner",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner.project"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner:in:left",
+            "name": "left",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner:in:right",
+            "name": "right",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 1
+          }
+        ],
+        "parameters": {
+          "width": 4,
+          "bias": false
+        },
+        "source": {
+          "path": "archcanvas_custom_3675543d27d130dc41dbb90d.py",
+          "line": 22,
+          "endLine": 22,
+          "expression": "self.inner(left=left, right=right)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778",
+        "instanceId": "instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner",
+        "callId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner"
+      },
+      {
+        "id": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner.project",
+        "label": "project",
+        "kind": "Linear",
+        "category": "linear",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner.project:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner.project:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "in_features": 4,
+          "out_features": 4,
+          "bias": false
+        },
+        "source": {
+          "path": "archcanvas_custom_3675543d27d130dc41dbb90d.py",
+          "line": 9,
+          "endLine": 9,
+          "expression": "self.project(left)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner",
+        "instanceId": "instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner.project",
+        "callId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner.project",
+        "parameterOrigins": {
+          "in_features": {
+            "kind": "constructor_argument",
+            "path": "archcanvas_custom_3675543d27d130dc41dbb90d.py",
+            "line": 6,
+            "endLine": 6,
+            "expression": "width",
+            "column": 33,
+            "endColumn": 38
+          },
+          "out_features": {
+            "kind": "constructor_argument",
+            "path": "archcanvas_custom_3675543d27d130dc41dbb90d.py",
+            "line": 6,
+            "endLine": 6,
+            "expression": "width",
+            "column": 40,
+            "endColumn": 45
+          },
+          "bias": {
+            "kind": "constructor_argument",
+            "path": "archcanvas_custom_3675543d27d130dc41dbb90d.py",
+            "line": 6,
+            "endLine": 6,
+            "expression": "bias",
+            "column": 52,
+            "endColumn": 56
+          }
+        }
+      },
+      {
+        "id": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_1",
+        "label": "output 1",
+        "kind": "Identity",
+        "category": "operator",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_1:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_1:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "archcanvas_custom_3675543d27d130dc41dbb90d.py",
+          "line": 23,
+          "endLine": 23,
+          "expression": "self.output_1(result[0])"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778",
+        "instanceId": "instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_1",
+        "callId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_1"
+      },
+      {
+        "id": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_2",
+        "label": "output 2",
+        "kind": "Identity",
+        "category": "operator",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_2:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_2:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "archcanvas_custom_3675543d27d130dc41dbb90d.py",
+          "line": 23,
+          "endLine": 23,
+          "expression": "self.output_2(result[1])"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778",
+        "instanceId": "instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_2",
+        "callId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_2"
+      },
+      {
+        "id": "output:archcanvas_grouped.AuthoredModel:0",
+        "label": "output 1",
+        "kind": "Output",
+        "category": "output",
+        "children": [],
+        "ports": [
+          {
+            "id": "output:archcanvas_grouped.AuthoredModel:0:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "archcanvas_grouped.py",
+          "line": 11,
+          "endLine": 13,
+          "expression": "def forward(self, node_c49861d8496a46f5, node_c58ed84f60e4b904):\n        node_47d8bd468778 = self.node_47d8bd468778(left=node_c49861d8496a46f5, right=node_c58ed84f60e4b904)\n        return {'left_output': node_47d8bd468778['output_1'], 'right_output': node_47d8bd468778['output_2']}"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:archcanvas_grouped.AuthoredModel",
+        "outputPath": [
+          {
+            "kind": "key",
+            "key": "left_output"
+          }
+        ]
+      },
+      {
+        "id": "output:archcanvas_grouped.AuthoredModel:1",
+        "label": "output 2",
+        "kind": "Output",
+        "category": "output",
+        "children": [],
+        "ports": [
+          {
+            "id": "output:archcanvas_grouped.AuthoredModel:1:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "archcanvas_grouped.py",
+          "line": 11,
+          "endLine": 13,
+          "expression": "def forward(self, node_c49861d8496a46f5, node_c58ed84f60e4b904):\n        node_47d8bd468778 = self.node_47d8bd468778(left=node_c49861d8496a46f5, right=node_c58ed84f60e4b904)\n        return {'left_output': node_47d8bd468778['output_1'], 'right_output': node_47d8bd468778['output_2']}"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:archcanvas_grouped.AuthoredModel",
+        "outputPath": [
+          {
+            "kind": "key",
+            "key": "right_output"
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:0",
+        "source": {
+          "nodeId": "input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5",
+          "portId": "input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5:out:node_c49861d8496a46f5"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_grouped.AuthoredModel",
+          "portId": "call:instance:archcanvas_grouped.AuthoredModel:in:node_c49861d8496a46f5"
+        },
+        "tensorId": "tensor:input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5:node_c49861d8496a46f5",
+        "role": "data"
+      },
+      {
+        "id": "edge:1",
+        "source": {
+          "nodeId": "input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904",
+          "portId": "input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904:out:node_c58ed84f60e4b904"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_grouped.AuthoredModel",
+          "portId": "call:instance:archcanvas_grouped.AuthoredModel:in:node_c58ed84f60e4b904"
+        },
+        "tensorId": "tensor:input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904:node_c58ed84f60e4b904",
+        "role": "data"
+      },
+      {
+        "id": "edge:2",
+        "source": {
+          "nodeId": "input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5",
+          "portId": "input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5:out:node_c49861d8496a46f5"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778",
+          "portId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778:in:left"
+        },
+        "tensorId": "tensor:input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5:node_c49861d8496a46f5",
+        "role": "data"
+      },
+      {
+        "id": "edge:3",
+        "source": {
+          "nodeId": "input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904",
+          "portId": "input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904:out:node_c58ed84f60e4b904"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778",
+          "portId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778:in:right"
+        },
+        "tensorId": "tensor:input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904:node_c58ed84f60e4b904",
+        "role": "data"
+      },
+      {
+        "id": "edge:4",
+        "source": {
+          "nodeId": "input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5",
+          "portId": "input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5:out:node_c49861d8496a46f5"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner",
+          "portId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner:in:left"
+        },
+        "tensorId": "tensor:input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5:node_c49861d8496a46f5",
+        "role": "data"
+      },
+      {
+        "id": "edge:5",
+        "source": {
+          "nodeId": "input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904",
+          "portId": "input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904:out:node_c58ed84f60e4b904"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner",
+          "portId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner:in:right"
+        },
+        "tensorId": "tensor:input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904:node_c58ed84f60e4b904",
+        "role": "data"
+      },
+      {
+        "id": "edge:6",
+        "source": {
+          "nodeId": "input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5",
+          "portId": "input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5:out:node_c49861d8496a46f5"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner.project",
+          "portId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner.project:in:input"
+        },
+        "tensorId": "tensor:input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5:node_c49861d8496a46f5",
+        "role": "data"
+      },
+      {
+        "id": "edge:7",
+        "source": {
+          "nodeId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner.project",
+          "portId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner.project:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_1",
+          "portId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_1:in:input"
+        },
+        "tensorId": "tensor:call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.inner.project:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:8",
+        "source": {
+          "nodeId": "input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904",
+          "portId": "input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904:out:node_c58ed84f60e4b904"
+        },
+        "target": {
+          "nodeId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_2",
+          "portId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_2:in:input"
+        },
+        "tensorId": "tensor:input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904:node_c58ed84f60e4b904",
+        "role": "data"
+      },
+      {
+        "id": "edge:9",
+        "source": {
+          "nodeId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_1",
+          "portId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_1:out:output"
+        },
+        "target": {
+          "nodeId": "output:archcanvas_grouped.AuthoredModel:0",
+          "portId": "output:archcanvas_grouped.AuthoredModel:0:in:value"
+        },
+        "tensorId": "tensor:call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_1:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:10",
+        "source": {
+          "nodeId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_2",
+          "portId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_2:out:output"
+        },
+        "target": {
+          "nodeId": "output:archcanvas_grouped.AuthoredModel:1",
+          "portId": "output:archcanvas_grouped.AuthoredModel:1:in:value"
+        },
+        "tensorId": "tensor:call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_2:output",
+        "role": "data"
+      }
+    ],
+    "diagnostics": [
+      {
+        "level": "info",
+        "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+      }
+    ],
+    "sources": [
+      {
+        "path": "archcanvas_custom_3675543d27d130dc41dbb90d.py",
+        "content": "from torch import nn\n\nclass PairFusion(nn.Module):\n    def __init__(self, width=4, bias=False):\n        super().__init__()\n        self.project = nn.Linear(width, width, bias=bias)\n\n    def forward(self, left, *, right):\n        return self.project(left), right\n\n# Stable output anchors for ArchCanvas composition; no execution occurred.\nfrom torch import nn as _archcanvas_nn\n\nclass _ArchCanvasCustomModule(_archcanvas_nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.inner = PairFusion(width=4, bias=False)\n        self.output_1 = _archcanvas_nn.Identity()\n        self.output_2 = _archcanvas_nn.Identity()\n\n    def forward(self, left, right):\n        result = self.inner(left=left, right=right)\n        return {'output_1': self.output_1(result[0]), 'output_2': self.output_2(result[1])}\n",
+        "digest": "eb581ac24b0fa6b8e113a44ea38184cedbd9e31519de40b958e8dc53c183e7ae"
+      },
+      {
+        "path": "archcanvas_grouped.py",
+        "content": "\"\"\"Fresh grouped ArchCanvas source; static graph only.\"\"\"\nimport torch\nfrom torch import nn\nimport archcanvas_custom_3675543d27d130dc41dbb90d\n\nclass AuthoredModel(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.node_47d8bd468778 = archcanvas_custom_3675543d27d130dc41dbb90d._ArchCanvasCustomModule()\n\n    def forward(self, node_c49861d8496a46f5, node_c58ed84f60e4b904):\n        node_47d8bd468778 = self.node_47d8bd468778(left=node_c49861d8496a46f5, right=node_c58ed84f60e4b904)\n        return {'left_output': node_47d8bd468778['output_1'], 'right_output': node_47d8bd468778['output_2']}\n",
+        "digest": "920e8e5ef3b66d6ee9751098d8528223bdc3c867f2abc3f44530dc5c5817da77"
+      }
+    ]
+  },
+  "nodeBindings": {
+    "left_input": "input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5",
+    "right_input": "input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904",
+    "pair": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778",
+    "left_output": "output:archcanvas_grouped.AuthoredModel:0",
+    "right_output": "output:archcanvas_grouped.AuthoredModel:1"
+  },
+  "containerBindings": {},
+  "edgeBindings": {
+    "left_to_pair": [
+      "edge:2"
+    ],
+    "right_to_pair": [
+      "edge:3"
+    ],
+    "pair_to_left": [
+      "edge:9"
+    ],
+    "pair_to_right": [
+      "edge:10"
+    ]
+  },
+  "portBindings": {
+    "left_to_pair": {
+      "source": {
+        "nodeId": "input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5",
+        "portId": "input:archcanvas_grouped.AuthoredModel:node_c49861d8496a46f5:out:node_c49861d8496a46f5"
+      },
+      "target": {
+        "nodeId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778",
+        "portId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778:in:left"
+      },
+      "architectureEdges": [
+        "edge:2"
+      ],
+      "projected": false
+    },
+    "right_to_pair": {
+      "source": {
+        "nodeId": "input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904",
+        "portId": "input:archcanvas_grouped.AuthoredModel:node_c58ed84f60e4b904:out:node_c58ed84f60e4b904"
+      },
+      "target": {
+        "nodeId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778",
+        "portId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778:in:right"
+      },
+      "architectureEdges": [
+        "edge:3"
+      ],
+      "projected": false
+    },
+    "pair_to_left": {
+      "source": {
+        "nodeId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_1",
+        "portId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_1:out:output"
+      },
+      "target": {
+        "nodeId": "output:archcanvas_grouped.AuthoredModel:0",
+        "portId": "output:archcanvas_grouped.AuthoredModel:0:in:value"
+      },
+      "architectureEdges": [
+        "edge:9"
+      ],
+      "projected": false
+    },
+    "pair_to_right": {
+      "source": {
+        "nodeId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_2",
+        "portId": "call:instance:archcanvas_grouped.AuthoredModel.node_47d8bd468778.output_2:out:output"
+      },
+      "target": {
+        "nodeId": "output:archcanvas_grouped.AuthoredModel:1",
+        "portId": "output:archcanvas_grouped.AuthoredModel:1:in:value"
+      },
+      "architectureEdges": [
+        "edge:10"
+      ],
+      "projected": false
+    }
+  },
+  "verification": {
+    "status": "passed",
+    "scope": "real-grouped-source-and-static-ir",
+    "modelExecution": "not_run",
+    "customModuleDefinitions": 1,
+    "customOutputShapes": "unknown",
+    "customBoundaryBindings": 4,
+    "limitations": [
+      "Declared tensors are static contracts; source is never executed.",
+      "Custom source output shapes are unknown; successful static composition does not establish runtime compatibility."
+    ]
+  }
+}

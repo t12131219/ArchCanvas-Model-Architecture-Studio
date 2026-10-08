@@ -114,7 +114,8 @@ function appHarness(tool: 'pan' | 'select' = 'pan', observerAvailable = true) {
     disconnect() { this.record.disconnected = true; }
   }
   const scene = buildScene(historyRef.current.document);
-  const environment = { historyRef, cameraRef, cameraOwner, cameraViewport, cameraIntent, loadSequence, cameraInitializationFrame, pendingCameraInitialization, frame,
+  const implicitRoots = new Set<string>();
+  const environment = { historyRef, implicitRoots, cameraRef, cameraOwner, cameraViewport, cameraIntent, loadSequence, cameraInitializationFrame, pendingCameraInitialization, frame,
     gesture, portGesture, portRequest: { current: 0 }, viewportRef, scene, current: historyRef.current.document, tool,
     activeRecovery: null, layoutMoveScope: 'all-frontiers', space: { current: false }, busy: false, inputSpec: null, selection: { kind: 'node', ids: [] },
     editingTarget: () => false, setPreview: () => {}, setRecoveryPreview: () => {}, setBox: () => {}, setPortDraft: () => {},
