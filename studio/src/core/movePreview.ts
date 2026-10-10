@@ -1,4 +1,4 @@
-import type { CanvasDocument, MoveScope, Scene } from './types.ts';
+import type { CanvasDocument, MoveScope, Scene, SceneBuildOptions } from './types.ts';
 import { effectiveVisibleFrontier, resolveMoveScope } from './document.ts';
 import { buildScene } from './scene.ts';
 import { finite, textValue, validateDocument, ValidationError } from './validate.ts';
@@ -57,7 +57,7 @@ export function prepareMovePreview(document: CanvasDocument, ids: readonly strin
 }
 
 /** Render the exact committed move geometry without mutating a document or history. */
-export function previewMoveScene(session: MovePreviewSession, dx: number, dy: number): Scene {
+export function previewMoveScene(session: MovePreviewSession, dx: number, dy: number, options: SceneBuildOptions = {}): Scene {
   const context = prepared.get(session);
   if (!context) throw new ValidationError('move preview: unknown gesture snapshot');
   finite(dx, 'move.dx'); finite(dy, 'move.dy');
@@ -68,5 +68,5 @@ export function previewMoveScene(session: MovePreviewSession, dx: number, dy: nu
   }
   // Stored frontier positions matter on a later expand/collapse, not this scene.
   // The real commit applies the session's scope through the guarded move operation.
-  return buildScene({ ...base, layout, revision: base.revision + 1 });
+  return buildScene({ ...base, layout, revision: base.revision + 1 }, options);
 }

@@ -1,4 +1,4 @@
-import type { ArchitectureNode, CanvasDocument, EdgeRole, Scene, SceneNode, ScenePort } from './types.ts';
+import type { ArchitectureNode, CanvasDocument, EdgeRole, Scene, SceneBuildOptions, SceneNode, ScenePort } from './types.ts';
 import { CATEGORY_STYLES, TOKENS } from './tokens.ts';
 import { effectiveEdgeAppearance, edgeAppearanceKey } from './edgePresentation.ts';
 import { buildEdgeLegend } from './edgeLegend.ts';
@@ -12,10 +12,16 @@ import type { VisualSide } from './nodeVisualOutline.ts';
 import { edgeLabelBounds, placeEdgeLabels } from './edgeLabelPlacement.ts';
 import { indexAtomicRelations } from './atomicFrontier.ts';
 import { routeLaneConflicts } from './routeLaneConflicts.ts';
+import { implicitRootIds } from './containerPresentation.ts';
+import { portLayoutKey, portLayoutPoint, portRoutePath, selectRoutingPorts } from './portRouting.ts';
+import { visualPortSide } from './nodeVisualOutline.ts';
+import { routeSourceRelations, sourceRelationLegend } from './sourceRelationRoutes.ts';
 
 type Box = { x: number; y: number; width: number; height: number };
 const num = (n: number) => Math.round(n * 10) / 10;
 function subtitle(n: ArchitectureNode, callCount: number, hasDisplayAlias: boolean): string {
+  if (n.sourceStructure) return `${n.parameters.sourceType ?? 'source structure'} · path unresolved`;
+  if (n.evidence === 'opaque' && n.children.length) return 'conditional paths · expand to inspect';
   if (n.evidence === 'opaque') return 'unresolved · opaque boundary';
   if (n.repeat) return `${n.repeat.count} × ${n.repeat.sharing === 'shared' ? 'shared instances' : 'independent instances'}`;
   // An explicit visual alias supplies the output caption. The real return path
@@ -31,8 +37,8 @@ function subtitle(n: ArchitectureNode, callCount: number, hasDisplayAlias: boole
 }
 
 /** One deterministic projection used by both interactive display and publication export. */
-export function buildScene(document: CanvasDocument): Scene {
-  return buildSceneProjection(document, true);
+export function buildScene(document: CanvasDocument, options: SceneBuildOptions = {}): Scene {
+  return buildSceneProjection(document, true, options.presentation === 'editor');
 }
 
 /** Internal same-scene original-policy batch used to compose detail routing
@@ -41,7 +47,7 @@ export function buildSceneRouteBaseline(document: CanvasDocument): Scene {
   return buildSceneProjection(document, false);
 }
 
-function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolean): Scene {
+function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolean, editor = false): Scene {
   const architecture = document.architecture, byId = new Map(architecture.nodes.map(n => [n.id, n]));
   const sourceFacts = sourceNodeFacts(architecture), factsById = new Map(sourceFacts.map(fact => [fact.id, fact]));
   const expanded = new Set(document.expandedIds), visible = new Set<string>(), boxes = new Map<string, Box>();
@@ -55,7 +61,9 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
   }
   function arrange(ids: string[], padding: number, top: number): Box {
     const set = new Set(ids), ranks = new Map(ids.map(id => [id, 0]));
-    const links = architecture.edges.filter(e => e.role === 'data').map(e => [directChild(e.source.nodeId, set), directChild(e.target.nodeId, set)]).filter(([s, t]) => s && t && s !== t) as [string, string][];
+    const dependencies = [...architecture.edges.filter(e => e.role === 'data').map(e => [e.source.nodeId, e.target.nodeId]),
+      ...(architecture.sourceRelations ?? []).map(e => [e.sourceId, e.targetId])];
+    const links = dependencies.map(([source, target]) => [directChild(source, set), directChild(target, set)]).filter(([s, t]) => s && t && s !== t) as [string, string][];
     // Auxiliary mask inputs are a dedicated side channel. They remain compact and never widen the main token lane.
     const isAuxiliary = (id: string) => {
       const n = byId.get(id)!;
@@ -70,7 +78,8 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
       if (!changed) break;
       if (pass === ids.length - 1) cyclic = true;
     }
-    if (cyclic || (ids.length > 1 && !links.length)) ids.forEach((id, index) => ranks.set(id, index));
+    const alternativePaths = ids.length > 1 && ids.every(id => byId.get(id)!.kind === 'SourceBranch');
+    if (cyclic || (ids.length > 1 && !links.length && !alternativePaths)) ids.forEach((id, index) => ranks.set(id, index));
     const levels = [...new Set([...ranks.values()])].sort((a, b) => a - b);
     const rows = new Map<number, string[]>();
     for (const id of primaryIds) { const level = ranks.get(id)!; const row = rows.get(level) ?? []; row.push(id); rows.set(level, row); }
@@ -140,12 +149,16 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
   }
   roots.forEach(id => place(id, 0, 0));
   const sceneById = new Map(nodes.map(n => [n.id, n]));
+  // Logical ancestry and saved local positions survive; hidden root frames
+  // have no body/header obstacles or containment constraints in the editor.
+  const unframedIds = editor ? implicitRootIds({ nodes }) : new Set<string>();
+  const physicalNodes = nodes.filter(node => !unframedIds.has(node.id));
   const visualBounds = new Map(nodes.map(node => [node.id, nodeVisualOutline(node).bounds]));
   const containmentDiagnostics: Scene['diagnostics'] = [];
   for (const node of nodes) {
     const parent = node.parentId ? sceneById.get(node.parentId) : undefined;
     const outline = visualBounds.get(node.id)!;
-    if (parent?.expanded && (outline.x < parent.x - 1e-6 || outline.y < parent.y - 1e-6 ||
+    if (parent?.expanded && !unframedIds.has(parent.id) && (outline.x < parent.x - 1e-6 || outline.y < parent.y - 1e-6 ||
         outline.x + outline.width > parent.x + parent.width + 1e-6 || outline.y + outline.height > parent.y + parent.height + 1e-6)) {
       containmentDiagnostics.push({ level: 'warning', code: 'layout-outside-parent', objectIds: [node.id, parent.id],
         message: `Object "${node.id}" extends outside its expanded parent "${parent.id}". Its manual anchor is preserved; move it inside the parent or preview a position repair.` });
@@ -206,6 +219,10 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
       return { source: 'bottom', target: 'top' };
     }
     return { source: 'bottom', target: 'top' };
+  }).map((sides, index) => {
+    const { e, s, t } = projected[index];
+    return { source: document.portLayoutOverrides?.[portLayoutKey(s, e.source.nodeId, e.source.portId, e.role)]?.side ?? sides.source,
+      target: document.portLayoutOverrides?.[portLayoutKey(t, e.target.nodeId, e.target.portId, e.role)]?.side ?? sides.target };
   });
   type PortGroups = {
     indices: Map<string, number>;
@@ -282,9 +299,10 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
     const anchor = side === 'right' || side === 'left'
       ? { x: side === 'right' ? node.x + node.width : node.x, y: sideY }
       : { x: node.x + node.width * (sideIndex + 1) / (sideCount + 1), y: side === 'bottom' ? node.y + node.height : node.y };
+    const layoutKey = portLayoutKey(id, nodeId, portId, role), manual = document.portLayoutOverrides?.[layoutKey];
     const p: ScenePort = { id: side === (direction === 'out' ? 'bottom' : 'top') ? key : `${key}:${side}`,
       canonicalNodeId: nodeId, canonicalPortId: portId, canonicalBindings, canonicalEdgeIds, direction, role: canonical.role, name: canonical.name,
-      ...projectVisualPort(node, anchor, side),
+      ...(manual ? portLayoutPoint(node, manual) : projectVisualPort(node, anchor, side)), layoutKey, side, manual: !!manual,
       proxy: nodeId !== id };
     node.ports.push(p);
     const byKey = existingPorts.get(id) ?? new Map<string, ScenePort>(); byKey.set(displayKey, p); existingPorts.set(id, byKey);
@@ -295,9 +313,10 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
   const topMaskSources = maskSources.filter(id => projected.some((item, n) => item.s === id && item.e.role === 'mask' && displaySides[n].source === 'top'))
     .sort((first, second) => sceneById.get(first)!.x - sceneById.get(second)!.x);
   const maskChannels = new Map<string, number>();
-  const route = createOrthogonalRouter(nodes), routeDiagnostics: Scene['diagnostics'] = [];
+  const route = createOrthogonalRouter(nodes, unframedIds), routeDiagnostics: Scene['diagnostics'] = [];
   const routePoints: RoutePoint[] = [];
   const routeRequests: RouteRequest[] = [];
+  const routingPorts: { source: ScenePort; target: ScenePort }[] = [];
   for (const overlap of route.overlaps) routeDiagnostics.push({ level: 'warning', code: 'layout-overlap', objectIds: [overlap.first, overlap.second], message: `Objects "${overlap.first}" and "${overlap.second}" overlap. Their manual anchors are preserved; move the objects or increase spacing to resolve this layout conflict.` });
   for (const overlap of route.headerOverlaps) routeDiagnostics.push({ level: 'warning', code: 'layout-header-overlap', objectIds: [overlap.node, overlap.ancestor], message: `Object "${overlap.node}" overlaps the header of its expanded ancestor "${overlap.ancestor}". Its manual anchor is preserved; move the object below the header to resolve this layout conflict.` });
   const edges = projected.map(({ e, s, t }, index) => {
@@ -307,6 +326,7 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
     const targetBox = sceneById.get(t)!;
     const sides = displaySides[index];
     const a = port(s, e.source.nodeId, e.source.portId, 'out', e.role, sides.source), b = port(t, e.target.nodeId, e.target.portId, 'in', e.role, sides.target);
+    routingPorts.push({ source: a, target: b });
     const special = e.role !== 'data' || b.y < a.y || sides.source !== 'bottom' || sides.target !== 'top';
     let path: string, labelX: number, labelY: number;
     if (e.role === 'mask') {
@@ -342,6 +362,7 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
       path = `M ${num(a.x)} ${num(a.y)} V ${num(mid)} H ${num(b.x)} V ${num(b.y)}`;
       labelX = (a.x + b.x) / 2 + 8; labelY = mid - 7;
     }
+    if (a.manual || b.manual) path = portRoutePath(a, b, sides.source, sides.target);
     const canonicalIds = e._canonicalEdgeIds ?? [e.id];
     const canonicalEdgesForRoute = canonicalIds.map(id => canonicalEdges.get(id)?.edge).filter(Boolean) as typeof architecture.edges;
     const appearance = effectiveEdgeAppearance(document.pageSpec.preset, e.role, document.edgeStyleOverrides[e.id]);
@@ -360,17 +381,27 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
     routeRequests.push({ sourceId: s, targetId: t, tensorId: e.tensorId, role: e.role,
       appearance, canonicalEdgeIds: canonicalIds, canonicalSource: resolved ? { ...exactSource } : undefined,
       canonicalTarget: collapsedTarget ? { ...exactTarget } : undefined,
-      displaySide: sides.source, start: { x: a.x, y: a.y }, end: { x: b.x, y: b.y }, preferredPath: path });
+      displaySide: sides.source, fixedPorts: !!(a.manual || b.manual), ...(a.manual || b.manual ? { sourceSide: sides.source, targetSide: sides.target, minimumLeadLength: 12 } : {}), start: { x: a.x, y: a.y }, end: { x: b.x, y: b.y }, preferredPath: path });
     return { id: e.id, sourceId: s, targetId: t, source: e.source, target: e.target, canonicalEdgeIds: e._canonicalEdgeIds ?? [e.id], tensorId: e.tensorId, role: e.role,
       path, ...appearance, label: e.label ?? (e.role === 'memory' ? 'memory' : ''), labelX, labelY };
   });
   // Display sides own distinct immutable port projections; every request and
   // its final public circle use the same endpoint throughout batch routing.
+  const candidates = selectRoutingPorts(nodes, nodes.flatMap(node => node.ports.map(p => ({ ...p, id: `${node.id}:${p.id}`, nodeId: node.id,
+    // Preserve typed auxiliary channels and hierarchy proxies. Ordinary data
+    // ports can select another exposed side without moving an authored card.
+    fixed: !!p.manual || !p.layoutKey || document.portLayoutOverrides?.[p.layoutKey] !== null || p.proxy || node.expanded || !p.canonicalEdgeIds.every(id => canonicalEdges.get(id)?.edge.role === 'data') }))),
+    routeRequests.map((request, i) => ({ ...request, sourcePortKey: `${request.sourceId}:${routingPorts[i].source.id}`, targetPortKey: `${request.targetId}:${routingPorts[i].target.id}` })), route);
+  for (const node of nodes) for (const p of node.ports) {
+    const chosen = candidates.anchors.get(`${node.id}:${p.id}`);
+    if (chosen) { p.x = chosen.x; p.y = chosen.y; p.side = visualPortSide(node, p); }
+  }
+  candidates.requests.forEach((request, i) => { routeRequests[i] = { ...request, displaySide: routingPorts[i].source.side }; });
   const routedEdges = route.batch(routeRequests);
   // The original complete formal batch remains fixed. A late memory display
   // projection must be safe against these already routed peers; changing the
   // input policy and rerunning the batch can perturb unrelated mask/residuals.
-  const memoryProjections = memoryContinuity ? projectMemoryContinuity(nodes, routeRequests, routedEdges) : new Map();
+  const memoryProjections = memoryContinuity ? projectMemoryContinuity(nodes, routeRequests, routedEdges, undefined, unframedIds) : new Map();
   if (memoryProjections.size) {
     for (const [index, projection] of memoryProjections) {
       displaySides[index] = { source: 'right', target: 'left' };
@@ -435,6 +466,9 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
   for (const conflict of routeLaneConflicts(edges)) routeDiagnostics.push({ level: 'warning', code: 'layout-route-overlap',
     edgeId: conflict.firstId, relatedEdgeIds: [conflict.firstId, conflict.secondId],
     message: `Edges "${conflict.firstId}" and "${conflict.secondId}" share ${Math.round(conflict.length * 100) / 100} world units of an ambiguous lane. No fully separated route was found within the routing budget. Node anchors and canonical bindings are preserved; increase spacing or move the connected objects to provide another corridor.` });
+  const sourceRouting = routeSourceRelations(architecture, nodes, document.pageSpec.preset === 'monochrome', unframedIds);
+  routePoints.push(...sourceRouting.points);
+  routeDiagnostics.push(...sourceRouting.diagnostics);
   const maxBottom = Math.max(160, ...[...visualBounds.values()].map(b => b.y + b.height));
   const legend = document.legendItems.map((item, i) => ({ ...item, color: document.pageSpec.preset === 'monochrome' ? '#ffffff' : item.color,
     x: 50 + i % 3 * 185, y: maxBottom + 52 + Math.floor(i / 3) * 27 }));
@@ -442,7 +476,7 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
     const width = a.width ?? Math.max(150, Math.min(400, textWidth(a.text, 11) + 20));
     return { ...a, width, height: Math.max(a.height ?? 34, wrapText(a.text, width - 20, 11).length * 15 + 20) };
   });
-  const labelPlacement = placeEdgeLabels(nodes, edges, annotations);
+  const labelPlacement = placeEdgeLabels(physicalNodes, edges, annotations);
   for (const edge of edges) {
     const position = labelPlacement.placements.get(edge.id);
     if (position) { edge.labelX = position.x; edge.labelY = position.y; }
@@ -457,11 +491,12 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
   const edgeLegendLayout = { x: 50, y: Math.max(maxBottom + 35, ...routePoints.map(point => point.y + 20), ...guideYs.map(y => y + 20), ...labelBounds.map(b => b.y + b.height + 20), ...legend.map(l => l.y + 8)) + 24, availableWidth: modelRight - 70 };
   const edgeLegend = buildEdgeLegend(edges, document.pageSpec.preset, edgeLegendLayout, annotations,
     [...nodes, ...edges, ...legend, ...annotations].map(item => item.id));
-  const right = Math.max(contentRight, ...edgeLegend.map(item => item.x + item.width + 20));
-  const bottom = Math.max(maxBottom + 35, ...routePoints.map(point => point.y + 20), ...guideYs.map(y => y + 20), ...labelBounds.map(b => b.y + b.height + 20), ...legend.map(l => l.y + 25), ...annotations.map(a => a.y + a.height + 20), ...edgeLegend.map(item => item.y + item.height + 20));
+  const sourceLegend = sourceRouting.relations.length ? sourceRelationLegend(50, Math.max(edgeLegendLayout.y, ...edgeLegend.map(item => item.y + item.height + 12), ...annotations.map(a => a.y + a.height + 12))) : undefined;
+  const right = Math.max(contentRight, ...edgeLegend.map(item => item.x + item.width + 20), sourceLegend ? sourceLegend.x + sourceLegend.width + 20 : 0);
+  const bottom = Math.max(maxBottom + 35, ...routePoints.map(point => point.y + 20), ...guideYs.map(y => y + 20), ...labelBounds.map(b => b.y + b.height + 20), ...legend.map(l => l.y + 25), ...annotations.map(a => a.y + a.height + 20), ...edgeLegend.map(item => item.y + item.height + 20), sourceLegend ? sourceLegend.y + sourceLegend.height + 20 : 0);
   const minX = Math.min(0, ...nodes.map(n => n.x - 30), ...routePoints.map(point => point.x - 20), ...guideXs.map(x => x - 20), ...labelBounds.map(b => b.x - 20), ...annotations.map(a => a.x - 20));
   const minY = Math.min(0, ...nodes.map(n => n.y - 30), ...routePoints.map(point => point.y - 20), ...guideYs.map(y => y - 20), ...labelBounds.map(b => b.y - 20), ...annotations.map(a => a.y - 20));
-  const layoutDiagnostics: Scene['diagnostics'] = nodes.filter(n => n.pinned).flatMap(pinned => nodes.filter(n => {
+  const layoutDiagnostics: Scene['diagnostics'] = physicalNodes.filter(n => n.pinned).flatMap(pinned => physicalNodes.filter(n => {
     const bounds = visualBounds.get(pinned.id)!;
     return n.expanded && n.id !== pinned.id && !isAncestor(n.id, pinned.id) && !isAncestor(pinned.id, n.id) &&
       bounds.x < n.x + n.width && bounds.x + bounds.width > n.x && bounds.y < n.y + n.height && bounds.y + bounds.height > n.y;
@@ -470,6 +505,7 @@ function buildSceneProjection(document: CanvasDocument, memoryContinuity: boolea
     bounds: { x: minX, y: minY, width: right - minX, height: bottom - minY }, nodes, edges, hiddenEdges, legend, annotations,
     ...(labelPlacement.guides.length ? { captionGuides: labelPlacement.guides } : {}),
     ...(edgeLegend.length ? { edgeLegend, edgeLegendLayout } : {}),
+    ...(sourceRouting.relations.length ? { sourceRelations: sourceRouting.relations, sourceRelationLegend: sourceLegend } : {}),
     pageSpec: document.pageSpec, sourceDigest: architecture.sourceDigest, irDigest: architecture.irDigest, sourceFacts,
     diagnostics: [...architecture.diagnostics, ...containmentDiagnostics, ...layoutDiagnostics, ...routeDiagnostics, ...labelPlacement.diagnostics] };
 }

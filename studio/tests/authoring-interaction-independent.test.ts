@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { addDraftNode, arrangeDraft, blankDraft, changeDraft, connectDraft, draftHistory, draftRoutes, nextDraftPosition, parseDraftCache, portPoint, removeDraftNode, travelDraft } from '../src/authoring.ts';
+import { addDraftNode, arrangeDraft, blankDraft, changeDraft, connectDraft, draftHistory, draftRoutes, nextDraftPosition, parseDraftCache, portPoint, removeDraftNode, setDraftPortLayout, travelDraft } from '../src/authoring.ts';
 import type { AuthoredDraft, DraftCatalog, DraftEndpoint, DraftModule } from '../src/authoring.ts';
 import { api } from '../src/api.ts';
 import { beginCameraPan, cameraAtPanInput } from '../src/cameraGesture.ts';
@@ -49,7 +49,7 @@ function assertRoutes(draft: AuthoredDraft, expectClear = true) {
   for (const edge of draft.edges) {
     const route = geometry.routes.find(item => item.id === edge.id)!;
     const points = pathPoints(route.path), source = draft.nodes.find(node => node.id === edge.source.nodeId)!, target = draft.nodes.find(node => node.id === edge.target.nodeId)!;
-    const a = portPoint(source, module(source.kind), edge.source.portId), b = portPoint(target, module(target.kind), edge.target.portId);
+    const a = geometry.ports[source.id][edge.source.portId], b = geometry.ports[target.id][edge.target.portId];
     assert.ok(Math.hypot(points[0][0] - a.x, points[0][1] - a.y) <= .02);
     assert.ok(Math.hypot(points.at(-1)![0] - b.x, points.at(-1)![1] - b.y) <= .02);
     const hits = draft.nodes.filter(node => points.slice(1).some((point, index) => bodyHit(points[index], point, node))).map(node => node.id);
@@ -147,6 +147,10 @@ test('explicit DAG arrange handles merge longest-path dependencies without overl
 test('manual covering overlaps keep anchors and report every retained routing obstruction', () => {
   const draft = chain();
   addDraftNode(draft, module('Identity'), 'cover', { x: 480, y: 80 });
+  // Pin the two endpoints so this sensor exercises the retained-obstruction
+  // path. Automatic port candidates are allowed to route around the cover.
+  setDraftPortLayout(draft, endpoint('linear', 'output'), { side: 'right', offset: .5 });
+  setDraftPortLayout(draft, endpoint('relu', 'input'), { side: 'left', offset: .5 });
   const original = JSON.stringify(draft), geometry = assertRoutes(draft, false);
   assert.ok(geometry.overlaps.some(pair => [pair.first, pair.second].includes('cover')));
   assert.ok(geometry.routes.some(route => route.blockedBy.includes('cover')));

@@ -30,7 +30,10 @@ class ResearchTrialTests(unittest.TestCase):
         for name in ('src', 'fixtures/transformer', 'studio/src/core', 'studio/dist'):
             shutil.copytree(FORMAL / name, self.project / name, ignore=shutil.ignore_patterns('__pycache__'))
         (self.project / 'scripts').mkdir()
-        for name in ('research_trial.py', 'research_trial_core.mjs', 'summarize_research_tasks.py', 'export_canvas.mjs'):
+        # ``export_canvas.mjs`` stages the artifact and receipt through the
+        # paired commit helper. Keep the frozen test checkout complete so the
+        # trial exercises the same export contract as the formal runtime.
+        for name in ('research_trial.py', 'research_trial_core.mjs', 'summarize_research_tasks.py', 'export_canvas.mjs', 'atomic_export.mjs'):
             shutil.copyfile(FORMAL / 'scripts' / name, self.project / 'scripts' / name)
         self.old_root, module.ROOT = module.ROOT, self.project
         self.package = self.root / 'package'

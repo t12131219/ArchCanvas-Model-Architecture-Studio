@@ -6,8 +6,9 @@ from pathlib import Path
 import shutil
 import subprocess
 import unittest
+from unittest.mock import patch
 
-from archcanvas_authoring import DraftError, generate_model, import_source_draft, rebase_source_frontier, validate_draft
+from archcanvas_authoring import DraftError, generate_model, import_source_draft, rebase_source_frontier, validate_draft, module_catalog
 from archcanvas_python import analyze_project
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,7 +22,7 @@ import fs from 'node:fs';
 import {createDocument,applyVisualBatch,buildScene} from './src/core/index.ts';
 const input=JSON.parse(fs.readFileSync(0,'utf8'));
 let document=input.document ?? createDocument(input.architecture);
-document=applyVisualBatch(document,document.architecture.nodes.filter(n=>n.children.length && !n.id.startsWith('instance:'))
+if(input.expanded !== 'overview') document=applyVisualBatch(document,document.architecture.nodes.filter(n=>n.children.length && !n.id.startsWith('instance:'))
  .map(n=>({type:'expand',id:n.id,expanded:input.expanded})));
 process.stdout.write(JSON.stringify({document,scene:buildScene(document)}));
 """
@@ -33,6 +34,51 @@ process.stdout.write(JSON.stringify({document,scene:buildScene(document)}));
 
 @unittest.skipUnless(shutil.which("node"), "Current renderer requires Node.js")
 class SourceAuthoringBridgeTests(unittest.TestCase):
+    def test_partial_transformer_generation_preserves_visible_node_and_proxy_edge_bindings(self):
+        view = source_view('transformer', expanded='overview')
+        draft = import_source_draft(view['document'], view['scene'])['draft']
+        self.assertEqual(len(draft['nodes']), 12)
+        self.assertTrue(any(not n['presentation']['group'] and
+                            draft['sourceProvenance']['nodeRefs'][n['id']]['kind'] == 'Repeat' for n in draft['nodes']))
+        draft['nodes'][1]['position']['x'] -= 7
+        before = deepcopy(draft)
+        result = generate_model(draft)
+        self.assertEqual(draft, before)
+        self.assertEqual(result['draft'], before)
+        self.assertEqual(len(result['architecture']['nodes']), 49)
+        self.assertEqual(set(result['nodeBindings']) | set(result['containerBindings']), {n['id'] for n in draft['nodes']})
+        self.assertEqual(set(result['edgeBindings']), {e['id'] for e in draft['edges']})
+        actual_edges = {e['id'] for e in result['architecture']['edges']}
+        self.assertTrue(all(ids and set(ids) <= actual_edges for ids in result['edgeBindings'].values()))
+
+    def test_partial_transformer_rejects_unconnected_attention_before_materialization(self):
+        view = source_view('transformer', expanded='overview')
+        draft = import_source_draft(view['document'], view['scene'])['draft']
+        spec = next(m for m in module_catalog()['modules'] if m['kind'] == 'MultiheadAttention')
+        draft['nodes'].append(dict(id='unconnected_attention', kind=spec['kind'], label=spec['label'],
+                                   parameters=deepcopy(spec['defaults']), position=dict(x=99, y=511)))
+        before = deepcopy(draft)
+        with patch('archcanvas_authoring.source_import._materialize_collapsed_frontier', side_effect=AssertionError('Invalid graph was expanded')):
+            with self.assertRaises(DraftError) as caught:
+                generate_model(draft)
+        self.assertEqual({d['portId'] for d in caught.exception.diagnostics}, {'query', 'key', 'value'})
+        self.assertTrue(all(d['nodeId'] == 'unconnected_attention' for d in caught.exception.diagnostics))
+        self.assertEqual(draft, before)
+
+    def test_partial_transformer_connected_addition_preserves_rebased_proxy_bindings(self):
+        view = source_view('transformer', expanded='overview')
+        draft = import_source_draft(view['document'], view['scene'])['draft']
+        encoder = next(n for n in draft['nodes'] if n['label'] == 'encoder')
+        existing = next(e for e in draft['edges'] if e['source']['nodeId'] == encoder['id'])
+        draft['nodes'].append(dict(id='tap', kind='Identity', label='Identity', parameters={}, position=dict(x=99, y=511)))
+        draft['edges'].append(dict(id='tap_edge', source=deepcopy(existing['source']), target=dict(nodeId='tap', portId='input')))
+        before = deepcopy(draft)
+        result = generate_model(draft)
+        self.assertEqual(result['draft'], before)
+        self.assertIn('tap', result['nodeBindings'])
+        self.assertTrue(result['edgeBindings']['tap_edge'])
+        self.assertEqual(set(result['edgeBindings']), {e['id'] for e in draft['edges']})
+
     def test_actual_current_frontiers_retain_complete_source_and_ports(self):
         for fixture in ("mlp", "residual_cnn", "transformer"):
             for expanded in (False, True):

@@ -322,7 +322,7 @@ def validate_custom_definitions(raw):
 
 def custom_spec(definition):
     return {"kind": definition["kind"], "label": definition["label"], "category": "custom",
-            "description": "源码自定义模块；具名端口已静态检查，输出形状未知，模型未执行。",
+            "description": "Custom source module; named ports are statically checked, output shapes are unknown, and the model has not been executed.",
             "defaults": {}, "parameters": [],
             "ports": [{"id": port["id"], "name": port["name"], "direction": direction, "type": "tensor"}
                       for direction, key in (("in", "inputs"), ("out", "outputs")) for port in definition[key]]}

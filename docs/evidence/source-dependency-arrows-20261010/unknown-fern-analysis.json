@@ -1,0 +1,464 @@
+{
+  "schemaVersion": 1,
+  "id": "architecture:model.UnknownFern",
+  "label": "UnknownFern",
+  "sourceDigest": "6ecea4fd3f751eedf6c9d2aa6cedc6523f166687b89c873b1f9a8d25c6e4dde8",
+  "irDigest": "b933984af19827bbc50d4cc77f55662630b57b0fc828bc89fdda079395132b25",
+  "entry": "model:UnknownFern",
+  "nodes": [
+    {
+      "id": "input:model.UnknownFern:x",
+      "label": "x",
+      "kind": "Input",
+      "category": "input",
+      "children": [],
+      "ports": [
+        {
+          "id": "input:model.UnknownFern:x:out:x",
+          "name": "x",
+          "direction": "out",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {},
+      "source": {
+        "path": "model.py",
+        "line": 9,
+        "endLine": 12,
+        "expression": "def forward(self,x):\n  if self.enabled: x=self.left(x)\n  else: x=self.right(x)\n  return x"
+      },
+      "evidence": "source",
+      "parentId": "call:instance:model.UnknownFern"
+    },
+    {
+      "id": "call:instance:model.UnknownFern",
+      "label": "UnknownFern",
+      "kind": "Module",
+      "category": "container",
+      "children": [
+        "input:model.UnknownFern:x",
+        "op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1",
+        "output:model.UnknownFern:0"
+      ],
+      "ports": [
+        {
+          "id": "call:instance:model.UnknownFern:in:x",
+          "name": "x",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {},
+      "source": {
+        "path": "model.py",
+        "line": 6,
+        "endLine": 12,
+        "expression": "class UnknownFern(nn.Module):\n def __init__(self,config):\n  super().__init__(); self.enabled=config.alternative; self.left=FernCell(); self.right=FernCell()\n def forward(self,x):\n  if self.enabled: x=self.left(x)\n  else: x=self.right(x)\n  return x"
+      },
+      "evidence": "source",
+      "instanceId": "instance:model.UnknownFern",
+      "callId": "call:instance:model.UnknownFern"
+    },
+    {
+      "id": "op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1",
+      "label": "ConditionalRegion",
+      "kind": "ConditionalRegion",
+      "category": "opaque",
+      "children": [
+        "source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb",
+        "source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2"
+      ],
+      "ports": [
+        {
+          "id": "op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:in:x",
+          "name": "x",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        },
+        {
+          "id": "op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:out:output",
+          "name": "output",
+          "direction": "out",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {},
+      "source": {
+        "path": "model.py",
+        "line": 10,
+        "endLine": 11,
+        "expression": "if self.enabled: x=self.left(x)\n  else: x=self.right(x)"
+      },
+      "evidence": "opaque",
+      "parentId": "call:instance:model.UnknownFern"
+    },
+    {
+      "id": "output:model.UnknownFern:0",
+      "label": "output",
+      "kind": "Output",
+      "category": "output",
+      "children": [],
+      "ports": [
+        {
+          "id": "output:model.UnknownFern:0:in:value",
+          "name": "value",
+          "direction": "in",
+          "role": "data",
+          "ordinal": 0
+        }
+      ],
+      "parameters": {},
+      "source": {
+        "path": "model.py",
+        "line": 9,
+        "endLine": 12,
+        "expression": "def forward(self,x):\n  if self.enabled: x=self.left(x)\n  else: x=self.right(x)\n  return x"
+      },
+      "evidence": "source",
+      "parentId": "call:instance:model.UnknownFern",
+      "outputPath": []
+    },
+    {
+      "id": "source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb",
+      "label": "if self.enabled",
+      "kind": "SourceBranch",
+      "category": "container",
+      "children": [
+        "source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb:SourceModule:a3bafa6045"
+      ],
+      "ports": [],
+      "parameters": {
+        "condition": "self.enabled"
+      },
+      "source": {
+        "path": "model.py",
+        "line": 10,
+        "endLine": 11,
+        "expression": "if self.enabled: x=self.left(x)\n  else: x=self.right(x)"
+      },
+      "evidence": "source",
+      "parentId": "op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1",
+      "sourceStructure": true
+    },
+    {
+      "id": "source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2",
+      "label": "else",
+      "kind": "SourceBranch",
+      "category": "container",
+      "children": [
+        "source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2:SourceModule:a3bafa6045"
+      ],
+      "ports": [],
+      "parameters": {
+        "condition": "not (self.enabled)"
+      },
+      "source": {
+        "path": "model.py",
+        "line": 10,
+        "endLine": 11,
+        "expression": "if self.enabled: x=self.left(x)\n  else: x=self.right(x)"
+      },
+      "evidence": "source",
+      "parentId": "op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1",
+      "sourceStructure": true
+    },
+    {
+      "id": "source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb:SourceModule:a3bafa6045",
+      "label": "left",
+      "kind": "SourceModule",
+      "category": "container",
+      "children": [
+        "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb:SourceModule:a3bafa6045:SourceModule:940a18d715",
+        "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb:SourceModule:a3bafa6045:SourceModule:fdc09fa927",
+        "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb:SourceModule:a3bafa6045:SourceModule:0bdf30381d"
+      ],
+      "ports": [],
+      "parameters": {
+        "sourceType": "FernCell",
+        "construction": "FernCell()",
+        "definition": "model:FernCell"
+      },
+      "source": {
+        "path": "model.py",
+        "line": 8,
+        "endLine": 8,
+        "expression": "FernCell()"
+      },
+      "evidence": "source",
+      "parentId": "source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb",
+      "sourceStructure": true
+    },
+    {
+      "id": "source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2:SourceModule:a3bafa6045",
+      "label": "right",
+      "kind": "SourceModule",
+      "category": "container",
+      "children": [
+        "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2:SourceModule:a3bafa6045:SourceModule:940a18d715",
+        "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2:SourceModule:a3bafa6045:SourceModule:fdc09fa927",
+        "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2:SourceModule:a3bafa6045:SourceModule:0bdf30381d"
+      ],
+      "ports": [],
+      "parameters": {
+        "sourceType": "FernCell",
+        "construction": "FernCell()",
+        "definition": "model:FernCell"
+      },
+      "source": {
+        "path": "model.py",
+        "line": 8,
+        "endLine": 8,
+        "expression": "FernCell()"
+      },
+      "evidence": "source",
+      "parentId": "source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2",
+      "sourceStructure": true
+    },
+    {
+      "id": "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb:SourceModule:a3bafa6045:SourceModule:940a18d715",
+      "label": "head",
+      "kind": "SourceModule",
+      "category": "container",
+      "children": [],
+      "ports": [],
+      "parameters": {
+        "sourceType": "nn.Linear",
+        "construction": "nn.Linear(4, 2)"
+      },
+      "source": {
+        "path": "model.py",
+        "line": 4,
+        "endLine": 4,
+        "expression": "nn.Linear(4,2)"
+      },
+      "evidence": "source",
+      "parentId": "source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb:SourceModule:a3bafa6045",
+      "sourceStructure": true
+    },
+    {
+      "id": "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb:SourceModule:a3bafa6045:SourceModule:fdc09fa927",
+      "label": "activation",
+      "kind": "SourceModule",
+      "category": "container",
+      "children": [],
+      "ports": [],
+      "parameters": {
+        "sourceType": "nn.GELU",
+        "construction": "nn.GELU()"
+      },
+      "source": {
+        "path": "model.py",
+        "line": 4,
+        "endLine": 4,
+        "expression": "nn.GELU()"
+      },
+      "evidence": "source",
+      "parentId": "source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb:SourceModule:a3bafa6045",
+      "sourceStructure": true
+    },
+    {
+      "id": "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb:SourceModule:a3bafa6045:SourceModule:0bdf30381d",
+      "label": "projection",
+      "kind": "SourceModule",
+      "category": "container",
+      "children": [],
+      "ports": [],
+      "parameters": {
+        "sourceType": "nn.Linear",
+        "construction": "nn.Linear(4, 4)"
+      },
+      "source": {
+        "path": "model.py",
+        "line": 4,
+        "endLine": 4,
+        "expression": "nn.Linear(4,4)"
+      },
+      "evidence": "source",
+      "parentId": "source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb:SourceModule:a3bafa6045",
+      "sourceStructure": true
+    },
+    {
+      "id": "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2:SourceModule:a3bafa6045:SourceModule:940a18d715",
+      "label": "head",
+      "kind": "SourceModule",
+      "category": "container",
+      "children": [],
+      "ports": [],
+      "parameters": {
+        "sourceType": "nn.Linear",
+        "construction": "nn.Linear(4, 2)"
+      },
+      "source": {
+        "path": "model.py",
+        "line": 4,
+        "endLine": 4,
+        "expression": "nn.Linear(4,2)"
+      },
+      "evidence": "source",
+      "parentId": "source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2:SourceModule:a3bafa6045",
+      "sourceStructure": true
+    },
+    {
+      "id": "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2:SourceModule:a3bafa6045:SourceModule:fdc09fa927",
+      "label": "activation",
+      "kind": "SourceModule",
+      "category": "container",
+      "children": [],
+      "ports": [],
+      "parameters": {
+        "sourceType": "nn.GELU",
+        "construction": "nn.GELU()"
+      },
+      "source": {
+        "path": "model.py",
+        "line": 4,
+        "endLine": 4,
+        "expression": "nn.GELU()"
+      },
+      "evidence": "source",
+      "parentId": "source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2:SourceModule:a3bafa6045",
+      "sourceStructure": true
+    },
+    {
+      "id": "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2:SourceModule:a3bafa6045:SourceModule:0bdf30381d",
+      "label": "projection",
+      "kind": "SourceModule",
+      "category": "container",
+      "children": [],
+      "ports": [],
+      "parameters": {
+        "sourceType": "nn.Linear",
+        "construction": "nn.Linear(4, 4)"
+      },
+      "source": {
+        "path": "model.py",
+        "line": 4,
+        "endLine": 4,
+        "expression": "nn.Linear(4,4)"
+      },
+      "evidence": "source",
+      "parentId": "source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2:SourceModule:a3bafa6045",
+      "sourceStructure": true
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge:0",
+      "source": {
+        "nodeId": "input:model.UnknownFern:x",
+        "portId": "input:model.UnknownFern:x:out:x"
+      },
+      "target": {
+        "nodeId": "call:instance:model.UnknownFern",
+        "portId": "call:instance:model.UnknownFern:in:x"
+      },
+      "tensorId": "tensor:input:model.UnknownFern:x:x",
+      "role": "data"
+    },
+    {
+      "id": "edge:1",
+      "source": {
+        "nodeId": "input:model.UnknownFern:x",
+        "portId": "input:model.UnknownFern:x:out:x"
+      },
+      "target": {
+        "nodeId": "op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1",
+        "portId": "op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:in:x"
+      },
+      "tensorId": "tensor:input:model.UnknownFern:x:x",
+      "role": "data"
+    },
+    {
+      "id": "edge:2",
+      "source": {
+        "nodeId": "op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1",
+        "portId": "op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:out:output"
+      },
+      "target": {
+        "nodeId": "output:model.UnknownFern:0",
+        "portId": "output:model.UnknownFern:0:in:value"
+      },
+      "tensorId": "tensor:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:output",
+      "role": "data"
+    }
+  ],
+  "diagnostics": [
+    {
+      "level": "info",
+      "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+    },
+    {
+      "level": "warning",
+      "message": "Constructor arguments for UnknownFern remain symbolic (config); this is not a claim of valid executable instantiation."
+    },
+    {
+      "level": "warning",
+      "message": "Unresolved initializer assignment at model.py:8; attribute enabled remains opaque."
+    },
+    {
+      "level": "warning",
+      "message": "Unsupported control/state region ConditionalRegion at model.py:10; affected values are opaque."
+    }
+  ],
+  "sources": [
+    {
+      "path": "model.py",
+      "content": "from torch import nn\nclass FernCell(nn.Module):\n def __init__(self):\n  super().__init__(); self.projection=nn.Linear(4,4); self.activation=nn.GELU(); self.head=nn.Linear(4,2)\n def forward(self,x): return self.head(self.activation(self.projection(x)))\nclass UnknownFern(nn.Module):\n def __init__(self,config):\n  super().__init__(); self.enabled=config.alternative; self.left=FernCell(); self.right=FernCell()\n def forward(self,x):\n  if self.enabled: x=self.left(x)\n  else: x=self.right(x)\n  return x\n",
+      "digest": "6fb1b1bca0b17f3561807e928a9b12fac4493e82941f409f2985b7a1901f2db2"
+    }
+  ],
+  "sourceRelations": [
+    {
+      "id": "source-relation:e71a038bc7334629bb90cb91",
+      "sourceId": "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb:SourceModule:a3bafa6045:SourceModule:0bdf30381d",
+      "targetId": "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb:SourceModule:a3bafa6045:SourceModule:fdc09fa927",
+      "kind": "value-dependency",
+      "source": {
+        "path": "model.py",
+        "line": 5,
+        "endLine": 5,
+        "expression": "self.activation(self.projection(x))"
+      }
+    },
+    {
+      "id": "source-relation:a19ed1944859986b5af72689",
+      "sourceId": "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb:SourceModule:a3bafa6045:SourceModule:fdc09fa927",
+      "targetId": "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb:SourceModule:a3bafa6045:SourceModule:940a18d715",
+      "kind": "value-dependency",
+      "source": {
+        "path": "model.py",
+        "line": 5,
+        "endLine": 5,
+        "expression": "self.head(self.activation(self.projection(x)))"
+      }
+    },
+    {
+      "id": "source-relation:ef4534f01904dd6dab4f1265",
+      "sourceId": "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2:SourceModule:a3bafa6045:SourceModule:0bdf30381d",
+      "targetId": "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2:SourceModule:a3bafa6045:SourceModule:fdc09fa927",
+      "kind": "value-dependency",
+      "source": {
+        "path": "model.py",
+        "line": 5,
+        "endLine": 5,
+        "expression": "self.activation(self.projection(x))"
+      }
+    },
+    {
+      "id": "source-relation:580b9588ee59a59dc32e8e1b",
+      "sourceId": "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2:SourceModule:a3bafa6045:SourceModule:fdc09fa927",
+      "targetId": "source:source:source:op:call:instance:model.UnknownFern:ConditionalRegion:69090bb3e1:SourceBranch:733d3de4fb@2:SourceModule:a3bafa6045:SourceModule:940a18d715",
+      "kind": "value-dependency",
+      "source": {
+        "path": "model.py",
+        "line": 5,
+        "endLine": 5,
+        "expression": "self.head(self.activation(self.projection(x)))"
+      }
+    }
+  ]
+}

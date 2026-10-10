@@ -33,7 +33,7 @@ COMMON = {
 }
 ATTRIBUTES = {
     "svg": {"width", "height", "viewBox", "preserveAspectRatio", "data-document-id", "data-revision"},
-    "g": {"data-node-id", "data-canonical-id", "data-edge-id", "data-tensor-id", "data-legend-id", "data-annotation-id", "data-edge-legend-id", "data-edge-role"},
+    "g": {"data-node-id", "data-canonical-id", "data-edge-id", "data-tensor-id", "data-legend-id", "data-annotation-id", "data-edge-legend-id", "data-edge-role", "data-source-relation-id", "data-source-relation-legend"},
     "rect": {"x", "y", "width", "height", "rx", "ry"},
     "circle": {"cx", "cy", "r", "data-port-id", "data-node-id"},
     "path": {"d", "marker-end", "marker-start", "marker-mid", "data-caption-guide-id", "data-caption-for-edge", "pointer-events"},

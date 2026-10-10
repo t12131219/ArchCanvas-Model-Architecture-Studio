@@ -76,6 +76,13 @@
           "digest"
         ]
       }
+    },
+    "sourceRelations": {
+      "type": "array",
+      "maxItems": 1440,
+      "items": {
+        "$ref": "#/$defs/SourceRelation"
+      }
     }
   },
   "required": [
@@ -166,6 +173,13 @@
               "digest"
             ]
           }
+        },
+        "sourceRelations": {
+          "type": "array",
+          "maxItems": 1440,
+          "items": {
+            "$ref": "#/$defs/SourceRelation"
+          }
         }
       },
       "required": [
@@ -248,6 +262,10 @@
             "contract",
             "opaque"
           ]
+        },
+        "sourceStructure": {
+          "const": true,
+          "description": "Source inspection hierarchy without tensor ports or executable instance claims."
         },
         "repeat": {
           "type": "object",
@@ -344,17 +362,28 @@
         {
           "if": {
             "required": [
-              "outputPath"
+              "sourceStructure"
             ]
           },
           "then": {
+            "required": [
+              "source"
+            ],
             "properties": {
               "kind": {
-                "const": "Output"
+                "pattern": "^Source"
               },
-              "category": {
-                "const": "output"
-              }
+              "evidence": {
+                "const": "source"
+              },
+              "ports": {
+                "maxItems": 0
+              },
+              "instanceId": false,
+              "callId": false,
+              "repeat": false,
+              "outputPath": false,
+              "parameterOrigins": false
             }
           }
         }
@@ -646,6 +675,113 @@
             "kind",
             "key"
           ]
+        }
+      ]
+    },
+    "SourceRelation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "sourceId": {
+          "type": "string"
+        },
+        "targetId": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "value-dependency",
+            "boundary-dependency"
+          ]
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "line": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "endLine": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "expression": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "line",
+            "endLine",
+            "expression"
+          ]
+        },
+        "boundary": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "nodeIds": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            },
+            "edgeIds": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            },
+            "complete": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "nodeIds",
+            "edgeIds",
+            "complete"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "sourceId",
+        "targetId",
+        "kind",
+        "source"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "boundary-dependency"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "boundary"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "boundary"
+              ]
+            }
+          }
         }
       ]
     }

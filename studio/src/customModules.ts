@@ -9,7 +9,7 @@ export type CustomModulePreview = { definition: CustomModuleDefinition; module: 
 
 export function customModuleCatalog(definition: CustomModuleDefinition): DraftModule {
   return { kind: definition.kind, label: definition.label, category: 'custom',
-    description: `${definition.entry} · 自定义源码模块，输出形状未推测`, defaults: {}, parameters: [],
+    description: `${definition.entry} · custom source module; output shapes are unknown`, defaults: {}, parameters: [],
     ports: [...definition.inputs.map(input => ({ id: input.id, name: input.name, direction: 'in' as const, type: 'tensor' as const })),
       ...definition.outputs.map(output => ({ id: output.id, name: output.name, direction: 'out' as const, type: 'tensor' as const }))] };
 }

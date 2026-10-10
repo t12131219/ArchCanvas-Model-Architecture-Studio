@@ -16,6 +16,29 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="archcanvas", description="Static analysis and Studio by default; explicit isolated profiles verify reviewed structural source changes.")
     subcommands = parser.add_subparsers(dest="command", required=True)
     subcommands.add_parser("capabilities", help="Report implemented capabilities and actual package provenance")
+    subcommands.add_parser("doctor", help="Identify actual runtime version, assets, module counts and next step without model execution")
+    opening = subcommands.add_parser("open", help="Statically analyze a model and return its exact persisted canvas session URL")
+    inputs = opening.add_mutually_exclusive_group(required=True)
+    inputs.add_argument("--root", type=Path)
+    inputs.add_argument("--source", type=Path)
+    opening.add_argument("--entry", required=True)
+    opening.add_argument("--server", default="http://127.0.0.1:8765")
+    session = subcommands.add_parser("session", help="Read, apply visual operations, undo, redo, save or export the same persisted canvas")
+    actions = session.add_subparsers(dest="session_action", required=True)
+    for action in ("read", "apply", "undo", "redo", "save", "export"):
+        operation = actions.add_parser(action)
+        operation.add_argument("--server", default="http://127.0.0.1:8765")
+        operation.add_argument("--document-id", required=True)
+        if action != "read":
+            operation.add_argument("--expected-revision", type=int, required=True)
+        if action not in ("read", "save"):
+            operation.add_argument("--visual-revision", type=int, required=True)
+        if action == "apply": operation.add_argument("--operations", type=Path, required=True, help="JSON array of the Studio typed visual operations")
+        if action == "save": operation.add_argument("--document", type=Path, required=True, help="CanvasDocument or saved history envelope")
+        if action == "export":
+            operation.add_argument("--format", choices=("svg", "pdf", "png"), default="svg")
+            operation.add_argument("--dpi", type=int, default=300)
+            operation.add_argument("--width-mm", type=float)
     analyze = subcommands.add_parser("analyze", help="Analyze an explicit model class without importing user source")
     inputs = analyze.add_mutually_exclusive_group(required=True)
     inputs.add_argument("--root", type=Path, help="Python source root; entry is module:Class")
@@ -54,7 +77,7 @@ def main(argv: list[str] | None = None) -> int:
     serve = subcommands.add_parser("serve", help="Start loopback-only Studio/API service")
     serve.add_argument("--host", default="127.0.0.1", choices=("127.0.0.1", "localhost"))
     serve.add_argument("--port", type=int, default=8765)
-    serve.add_argument("--data-dir", type=Path)
+    serve.add_argument("--data-dir", type=Path, help="Complete independent state root (documents, projects, drafts, exports, transactions)")
     serve.add_argument("--studio-dir", type=Path)
     runtime = subcommands.add_parser("runtime", help="Explicit isolated model execution; never required for static source viewing")
     runtime.add_argument("--root", type=Path, required=True)
@@ -65,7 +88,32 @@ def main(argv: list[str] | None = None) -> int:
     runtime.add_argument("--output", type=Path)
     options = parser.parse_args(argv)
     try:
-        if options.command == "capabilities":
+        if options.command == "doctor":
+            from .doctor import diagnose
+            result = diagnose()
+        elif options.command in ("open", "session"):
+            from .client import request
+            from urllib.parse import quote
+            if options.command == "open":
+                architecture = analyze_project(options.root, options.entry) if options.root else analyze_source(options.source.read_text(encoding="utf-8-sig"), options.entry, options.source.name, raw_bytes=options.source.read_bytes())
+                result = request(options.server, "/api/open", {"architecture": architecture})
+            else:
+                path = "/api/canvas-sessions/" + quote(options.document_id, safe="")
+                action = options.session_action
+                if action == "read": result = request(options.server, path)
+                elif action == "save":
+                    value = json.loads(options.document.read_text())
+                    result = request(options.server, "/api/documents/" + quote(options.document_id, safe=""),
+                                     {"document": value.get("document", value), "expectedRevision": options.expected_revision,
+                                      **({"history": value["history"]} if "history" in value else {})}, "PUT")
+                else:
+                    payload = {"expectedRevision": options.expected_revision, "visualRevision": options.visual_revision}
+                    if action == "apply": payload["operations"] = json.loads(options.operations.read_text())
+                    if action == "export":
+                        payload.update(format=options.format, dpi=options.dpi)
+                        if options.width_mm is not None: payload["options"] = {"widthMm": options.width_mm}
+                    result = request(options.server, path + "/" + action, payload)
+        elif options.command == "capabilities":
             result = capabilities()
         elif options.command == "analyze":
             if options.root:
@@ -130,7 +178,7 @@ def main(argv: list[str] | None = None) -> int:
                 server.server_close()
             return 0
         print(json.dumps(result, ensure_ascii=False, indent=2))
-        return 0
+        return 2 if options.command == "doctor" and result["status"] != "ready-local" else 0
     except (AnalysisError, OSError, UnicodeError, ValueError) as exc:
         print(json.dumps({"error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2

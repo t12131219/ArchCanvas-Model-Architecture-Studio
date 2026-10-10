@@ -1,10 +1,11 @@
 import type { DraftFlow, DraftPort } from './authoring.ts';
 import { textWidth } from './core/typography.ts';
+import type { PortLayout } from './core/types.ts';
 
 /** Side-port hits cover the dot and label; vertical hits reserve peer space.
  * Vertical label text also receives events on the owning port group. */
-export function draftPortPresentation(port: DraftPort, x: number, y: number, flow: DraftFlow, peerSpacing = Infinity, fontSize = 9, compact = false) {
-  const input = port.direction === 'in';
+export function draftPortPresentation(port: DraftPort, x: number, y: number, flow: DraftFlow, peerSpacing = Infinity, fontSize = 9, compact = false, side?: PortLayout['side']) {
+  const input = side ? side === 'left' || side === 'top' : port.direction === 'in';
   // The catalog-driven side slots leave room for compensated overview text;
   // this cap also keeps callers with narrower custom slots from colliding.
   const labelFontSize = flow === 'horizontal' ? Math.min(fontSize, peerSpacing * .75) : fontSize;

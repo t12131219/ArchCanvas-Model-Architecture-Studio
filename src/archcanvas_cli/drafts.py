@@ -11,6 +11,9 @@ from pathlib import Path
 from archcanvas_authoring import validate_draft
 
 
+MAX_DRAFT_BYTES = 16_000_000
+
+
 class DraftConflict(ValueError):
     def __init__(self, revision: int):
         self.revision = revision
@@ -36,7 +39,7 @@ class DraftStore:
             path = self.path(identity)
             if not path.exists():
                 return None
-            if path.stat().st_size > 4_000_000:
+            if path.stat().st_size > MAX_DRAFT_BYTES:
                 raise ValueError("Saved draft exceeds its persistence budget.")
             try:
                 value = json.loads(path.read_text(encoding="utf-8"))
@@ -62,7 +65,7 @@ class DraftStore:
                 raise DraftConflict(revision)
             result = {"draft": draft, "revision": revision + 1}
             encoded = json.dumps(result, ensure_ascii=False, allow_nan=False).encode()
-            if len(encoded) > 4_000_000:
+            if len(encoded) > MAX_DRAFT_BYTES:
                 raise ValueError("Draft exceeds its persistence budget.")
             descriptor, temporary = tempfile.mkstemp(prefix=".draft-", dir=self.directory)
             try:

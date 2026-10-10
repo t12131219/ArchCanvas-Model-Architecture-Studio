@@ -34,12 +34,12 @@ function unique(values: string[], path: string) {
 }
 export function validateArchitecture(value: unknown): Architecture {
   const a = object(value, 'architecture');
-  fields(a, ['schemaVersion', 'id', 'label', 'sourceDigest', 'irDigest', 'entry', 'nodes', 'edges', 'diagnostics', 'sources'], 'architecture');
+  fields(a, ['schemaVersion', 'id', 'label', 'sourceDigest', 'irDigest', 'entry', 'nodes', 'edges', 'sourceRelations', 'diagnostics', 'sources'], 'architecture');
   if (a.schemaVersion !== 1) throw new ValidationError('architecture.schemaVersion: unsupported version');
   for (const k of ['id', 'label', 'sourceDigest', 'irDigest', 'entry']) textValue(a[k], `architecture.${k}`);
   const nodes = array(a.nodes, 'architecture.nodes').map((v, i) => {
     const n = object(v, `nodes[${i}]`);
-    fields(n, ['id', 'label', 'kind', 'category', 'parentId', 'children', 'ports', 'parameters', 'parameterOrigins', 'source', 'evidence', 'repeat', 'instanceId', 'callId', 'outputPath'], 'node');
+    fields(n, ['id', 'label', 'kind', 'category', 'parentId', 'children', 'ports', 'parameters', 'parameterOrigins', 'source', 'evidence', 'repeat', 'instanceId', 'callId', 'outputPath', 'sourceStructure'], 'node');
     for (const k of ['id', 'label', 'kind', 'category']) textValue(n[k], `node.${k}`);
     for (const k of ['parentId', 'instanceId', 'callId']) if (n[k] !== undefined) textValue(n[k], `node.${k}`);
     unique(strings(n.children, 'node.children'), 'node.children');
@@ -55,6 +55,8 @@ export function validateArchitecture(value: unknown): Architecture {
       if (![line, end, column, endColumn].every(Number.isInteger) || line < 1 || end < line || column < 0 || endColumn < 0 || (line === end && endColumn < column)) throw new ValidationError('parameterOrigin: invalid UTF-8 span');
     }
     member(n.evidence, ['source', 'contract', 'opaque'], 'node.evidence');
+    if (n.sourceStructure !== undefined && (n.sourceStructure !== true || n.evidence !== 'source' || !n.source || !String(n.kind).startsWith('Source') || array(n.ports, 'node.ports').length || n.instanceId !== undefined || n.callId !== undefined || n.repeat !== undefined || n.outputPath !== undefined || n.parameterOrigins !== undefined))
+      throw new ValidationError('sourceStructure: source inspection cannot declare tensor ports, instances or semantic parameter edits');
     if (n.outputPath !== undefined) {
       if (n.kind !== 'Output' || n.category !== 'output') throw new ValidationError('node.outputPath: only graph Output nodes can declare a return slot');
       for (const value of array(n.outputPath, 'node.outputPath')) {
@@ -118,6 +120,48 @@ export function validateArchitecture(value: unknown): Architecture {
     return e;
   });
   unique(edges.map(e => e.id as string), 'architecture.edges');
+  if (a.sourceRelations !== undefined) {
+    const sourceRelations = array(a.sourceRelations, 'architecture.sourceRelations');
+    if (sourceRelations.length > 1440) throw new ValidationError('architecture.sourceRelations: exceeds 1440 relation budget');
+    const relations = sourceRelations.map(value => {
+      const relation = object(value, 'sourceRelation');
+      fields(relation, ['id', 'sourceId', 'targetId', 'kind', 'source', 'boundary'], 'sourceRelation');
+      for (const key of ['id', 'sourceId', 'targetId']) textValue(relation[key], `sourceRelation.${key}`);
+      member(relation.kind, ['value-dependency', 'boundary-dependency'], 'sourceRelation.kind');
+      if (relation.sourceId === relation.targetId || ![relation.sourceId, relation.targetId].every(id => byId.has(id as string)))
+        throw new ValidationError('sourceRelation: distinct existing endpoints required');
+      if (relation.kind === 'value-dependency') {
+        if (relation.boundary !== undefined || ![relation.sourceId, relation.targetId].every(id => byId.get(id as string)?.sourceStructure === true))
+          throw new ValidationError('sourceRelation: internal arrows require source inspection endpoints');
+      } else {
+        const boundary = object(relation.boundary, 'sourceRelation.boundary');
+        fields(boundary, ['nodeIds', 'edgeIds', 'complete'], 'sourceRelation.boundary');
+        const nodeIds = array(boundary.nodeIds, 'sourceRelation.boundary.nodeIds').map(id => textValue(id, 'sourceRelation.boundary.nodeId'));
+        const edgeIds = array(boundary.edgeIds, 'sourceRelation.boundary.edgeIds').map(id => textValue(id, 'sourceRelation.boundary.edgeId'));
+        unique(nodeIds, 'sourceRelation.boundary.nodeIds'); unique(edgeIds, 'sourceRelation.boundary.edgeIds');
+        if (!nodeIds.length || !edgeIds.length || typeof boundary.complete !== 'boolean' || nodeIds.some(id => byId.get(id)?.kind !== 'ConditionalRegion' || byId.get(id)?.sourceStructure === true))
+          throw new ValidationError('sourceRelation: canonical conditional boundaries required');
+        const bindings = edgeIds.map(id => edges.find(edge => edge.id === id));
+        if (bindings.some(edge => !edge || ![edge.source, edge.target].some(end => nodeIds.includes((end as Obj).nodeId as string))) ||
+            nodeIds.some(id => !bindings.some(edge => [edge!.source, edge!.target].some(end => (end as Obj).nodeId === id))))
+          throw new ValidationError('sourceRelation: boundary edges must reference their canonical boundaries');
+        const peers = new Set(bindings.flatMap(edge => [edge!.source, edge!.target].map(end => (end as Obj).nodeId)));
+        for (const endpoint of [relation.sourceId, relation.targetId]) {
+          let node = byId.get(endpoint as string);
+          const inspection = node?.sourceStructure === true;
+          while (node && !nodeIds.includes(node.id as string)) node = byId.get(node.parentId as string);
+          if (!(inspection && node) && !peers.has(endpoint)) throw new ValidationError('sourceRelation: endpoint has no boundary binding or inspected ancestry');
+        }
+      }
+      const source = object(relation.source, 'sourceRelation.source');
+      fields(source, ['path', 'line', 'endLine', 'expression'], 'sourceRelation.source');
+      textValue(source.path, 'sourceRelation.source.path'); textValue(source.expression, 'sourceRelation.source.expression');
+      const line = finite(source.line, 'sourceRelation.source.line'), end = finite(source.endLine, 'sourceRelation.source.endLine');
+      if (!Number.isInteger(line) || !Number.isInteger(end) || line < 1 || end < line) throw new ValidationError('sourceRelation: invalid source interval');
+      return relation;
+    });
+    unique(relations.map(relation => relation.id as string), 'architecture.sourceRelations');
+  }
   for (const v of array(a.diagnostics, 'architecture.diagnostics')) { const d = object(v, 'diagnostic'); fields(d, ['level', 'message'], 'diagnostic'); textValue(d.level, 'diagnostic.level'); textValue(d.message, 'diagnostic.message'); }
   for (const v of array(a.sources, 'architecture.sources')) { const s = object(v, 'source'); fields(s, ['path', 'content', 'digest'], 'source'); for (const k of ['path', 'content', 'digest']) textValue(s[k], `source.${k}`); }
   return value as Architecture;
@@ -125,7 +169,7 @@ export function validateArchitecture(value: unknown): Architecture {
 
 export function validateDocument(value: unknown): CanvasDocument {
   const d = object(value, 'document');
-  fields(d, ['schemaVersion', 'id', 'title', 'revision', 'sourceBindingDigest', 'architecture', 'displayAliases', 'nodeStyleOverrides', 'edgeStyleOverrides', 'legendItems', 'annotations', 'pageSpec', 'expandedIds', 'layout', 'layoutByFrontier', 'pinnedObjects'], 'document');
+  fields(d, ['schemaVersion', 'id', 'title', 'revision', 'sourceBindingDigest', 'architecture', 'displayAliases', 'nodeStyleOverrides', 'edgeStyleOverrides', 'portLayoutOverrides', 'legendItems', 'annotations', 'pageSpec', 'expandedIds', 'layout', 'layoutByFrontier', 'pinnedObjects'], 'document');
   if (d.schemaVersion !== 1) throw new ValidationError('document.schemaVersion: unsupported version');
   for (const k of ['id', 'title', 'sourceBindingDigest']) textValue(d[k], `document.${k}`);
   if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(d.id as string)) throw new ValidationError('document.id: use a safe persistent identity');
@@ -144,6 +188,19 @@ export function validateDocument(value: unknown): CanvasDocument {
     if (s.stroke !== undefined) color(s.stroke, 'edgeStyle.stroke');
     if (s.width !== undefined && (finite(s.width, 'edgeStyle.width') < 0.25 || Number(s.width) > 12)) throw new ValidationError('edgeStyle.width: outside supported interval');
     if (s.dashed !== undefined && typeof s.dashed !== 'boolean') throw new ValidationError('edgeStyle.dashed: expected boolean');
+  }
+  if (d.portLayoutOverrides !== undefined) for (const [key, value] of Object.entries(object(d.portLayoutOverrides, 'portLayoutOverrides'))) {
+    let binding: unknown;
+    try { binding = JSON.parse(key); } catch { throw new ValidationError('portLayoutOverrides: invalid binding key'); }
+    if (!Array.isArray(binding) || binding.length !== 4 || !binding.every(item => typeof item === 'string')) throw new ValidationError('portLayoutOverrides: invalid binding key');
+    const [ownerId, nodeId, portId, role] = binding;
+    reference(ownerId, nodeIds, 'portLayoutOverrides.owner'); reference(nodeId, nodeIds, 'portLayoutOverrides.node');
+    if (!a.nodes.find(node => node.id === nodeId)!.ports.some(port => port.id === portId)) throw new ValidationError('portLayoutOverrides: unknown port');
+    member(role, ['data', 'residual', 'memory', 'mask'], 'portLayoutOverrides.role');
+    if (value === null) continue;
+    const layout = object(value, 'portLayout'); fields(layout, ['side', 'offset'], 'portLayout');
+    member(layout.side, ['top', 'right', 'bottom', 'left'], 'portLayout.side');
+    if (finite(layout.offset, 'portLayout.offset') < 0 || Number(layout.offset) > 1) throw new ValidationError('portLayout.offset: expected 0–1');
   }
   const legendIds: string[] = [];
   for (const lv of array(d.legendItems, 'legendItems')) { const l = object(lv, 'legend'); fields(l, ['id', 'label', 'color', 'glyph'], 'legend'); legendIds.push(textValue(l.id, 'legend.id')); textValue(l.label, 'legend.label'); color(l.color, 'legend.color'); member(l.glyph, GLYPHS, 'legend.glyph'); }

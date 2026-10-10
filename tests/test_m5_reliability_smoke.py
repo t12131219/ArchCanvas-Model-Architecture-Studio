@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from scripts.m5_beta_bundle import pack, verify
+from scripts.m5_beta_bundle import pack, stage_current_candidate, verify
 from scripts.m5_host_install import HOST_TARGETS, install_host
 from scripts.m5_reliability_smoke import FailureClient, run_reliability
 
@@ -22,7 +22,8 @@ class InstalledReliabilityTests(unittest.TestCase):
         cls.work = Path(cls.temporary.name)
         cls.release = cls.work / "release"
         bundle = cls.work / "current-candidate.tar.gz"
-        pack(ROOT, bundle)
+        source = stage_current_candidate(ROOT, cls.work / "current-source", "0.1.0-beta.3")
+        pack(source, bundle)
         verify(bundle, cls.release, analyze=False)
         workspace = cls.work / "workspace"
         workspace.mkdir()

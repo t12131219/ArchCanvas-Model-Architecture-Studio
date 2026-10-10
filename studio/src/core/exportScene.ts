@@ -9,6 +9,7 @@ import { createOrthogonalRouter, orthogonalPathPoints } from './orthogonalRouter
 import { nodeVisualOutline, projectVisualPort, visualPortSide } from './nodeVisualOutline.ts';
 import { edgeLabelBounds, placeEdgeLabels } from './edgeLabelPlacement.ts';
 import { projectMemoryContinuity } from './memoryContinuity.ts';
+import { routeSourceRelations, sourceRelationLegend } from './sourceRelationRoutes.ts';
 import type { ArchitectureEdge, CanvasDocument, DetailExportScope, ExportSceneOptions, Scene, SceneNode, ScenePort } from './types.ts';
 
 function pathPoints(path: string): { x: number; y: number }[] {
@@ -211,13 +212,16 @@ export function buildExportScene(document: CanvasDocument, options: ExportSceneO
     canonicalNodeIds: [...inside], internalEdgeIds: internal.map(edge => edge.id), hiddenInternalEdgeIds: internal.filter(edge => !represented.has(edge.id)).map(edge => edge.id),
     boundaryEdges: crossing.map(edge => ({ edgeId: edge.id, direction: inside.has(edge.target.nodeId) ? 'in' : 'out', source: structuredClone(edge.source), target: structuredClone(edge.target), tensorId: edge.tensorId, role: edge.role })),
     omittedEdgeIds: omitted.map(edge => edge.id), includedAnnotationIds: annotations.map(annotation => annotation.id), omittedAnnotationIds: scene.annotations.filter(annotation => !contained(annotation)).map(annotation => annotation.id) };
-  const points = edges.flatMap(edge => pathPoints(edge.path));
+  const sourceRouting = routeSourceRelations({ nodes: architecture.nodes,
+    sourceRelations: architecture.sourceRelations?.filter(relation => inside.has(relation.sourceId) && inside.has(relation.targetId)) }, nodes, scene.pageSpec.preset === 'monochrome');
+  const points = [...edges.flatMap(edge => pathPoints(edge.path)), ...sourceRouting.points];
   const contentRight = Math.max(selected.width + 35, ...visualBounds.map(bounds => bounds.x + bounds.width), ...labelBounds.map(bounds => bounds.x + bounds.width), ...guidePoints.map(point => point.x), ...points.map(point => point.x), ...legend.map(item => item.x + textWidth(item.label, 10) + 35));
   const edgeLegendLayout = { x: 35, y: Math.max(maxBottom + 38, ...legend.map(item => item.y + 20), ...points.map(point => point.y + 20)) + 24,
     availableWidth: Math.max(240, contentRight - 35) };
   const edgeLegend = buildEdgeLegend(edges, scene.pageSpec.preset, edgeLegendLayout, annotations,
     [...nodes, ...edges, ...legend, ...annotations].map(item => item.id));
-  const citationY = Math.max(maxBottom + 38, ...legend.map(item => item.y + 20), ...edgeLegend.map(item => item.y + item.height + 16));
+  const sourceLegend = sourceRouting.relations.length ? sourceRelationLegend(35, Math.max(edgeLegendLayout.y, ...edgeLegend.map(item => item.y + item.height + 12))) : undefined;
+  const citationY = Math.max(maxBottom + 38, ...legend.map(item => item.y + 20), ...edgeLegend.map(item => item.y + item.height + 16), sourceLegend ? sourceLegend.y + sourceLegend.height + 12 : 0);
   const citationText = `${document.title} · ${selected.label} · rev ${document.revision}\n${crossing.length} boundary bindings shown; ${internal.length - represented.size} internal adapter/hidden bindings retained in metadata.`;
   const citationWidth = Math.max(240, selected.width);
   let citationId = 'detail-provenance';
@@ -225,16 +229,18 @@ export function buildExportScene(document: CanvasDocument, options: ExportSceneO
   annotations.push({ id: citationId, text: citationText, x: 35, y: citationY + 12, width: citationWidth,
     height: Math.max(68, wrapText(citationText, citationWidth - 20, 11).length * 15 + 20) });
   const subtitle = 'MODEL ARCHITECTURE · SOURCE-BOUND VIEW';
-  const right = Math.max(50 + textWidth(selected.label, 19), 50 + textWidth(subtitle, 10) + subtitle.length * 1.4, ...visualBounds.map(bounds => bounds.x + bounds.width), ...points.map(point => point.x), ...guidePoints.map(point => point.x), ...labelBounds.map(bounds => bounds.x + bounds.width), ...legend.map(item => item.x + textWidth(item.label, 10) + 35), ...annotations.map(annotation => annotation.x + annotation.width), ...edgeLegend.map(item => item.x + item.width));
+  const right = Math.max(50 + textWidth(selected.label, 19), 50 + textWidth(subtitle, 10) + subtitle.length * 1.4, ...visualBounds.map(bounds => bounds.x + bounds.width), ...points.map(point => point.x), ...guidePoints.map(point => point.x), ...labelBounds.map(bounds => bounds.x + bounds.width), ...legend.map(item => item.x + textWidth(item.label, 10) + 35), ...annotations.map(annotation => annotation.x + annotation.width), ...edgeLegend.map(item => item.x + item.width), sourceLegend ? sourceLegend.x + sourceLegend.width : 0);
   const bottom = Math.max(...visualBounds.map(bounds => bounds.y + bounds.height), ...points.map(point => point.y), ...guidePoints.map(point => point.y), ...labelBounds.map(bounds => bounds.y + bounds.height), ...annotations.map(annotation => annotation.y + annotation.height));
   const minX = Math.min(0, ...nodes.map(node => node.x - 15), ...points.map(point => point.x - 15), ...guidePoints.map(point => point.x - 15), ...labelBounds.map(bounds => bounds.x - 15), ...annotations.map(annotation => annotation.x - 15));
   const minY = Math.min(0, ...nodes.map(node => node.y - 15), ...points.map(point => point.y - 15), ...guidePoints.map(point => point.y - 15), ...labelBounds.map(bounds => bounds.y - 15), ...annotations.map(annotation => annotation.y - 15));
   const detailBase = { ...scene }; delete detailBase.edgeLegend; delete detailBase.edgeLegendLayout; delete detailBase.captionGuides;
+  delete detailBase.sourceRelations; delete detailBase.sourceRelationLegend;
   return { ...detailBase, title: selected.label, bounds: { x: minX, y: minY, width: right + 35 - minX, height: bottom + 35 - minY }, nodes, edges,
     hiddenEdges: scope.hiddenInternalEdgeIds, legend, annotations, exportScope: scope,
     ...(edgeLegend.length ? { edgeLegend, edgeLegendLayout } : {}),
+    ...(sourceRouting.relations.length ? { sourceRelations: sourceRouting.relations, sourceRelationLegend: sourceLegend } : {}),
     ...(labelPlacement.guides.length ? { captionGuides: labelPlacement.guides } : {}),
-    diagnostics: [...scene.diagnostics.filter(diagnostic => diagnostic.code !== 'layout-edge-label-blocked' && diagnostic.code !== 'layout-edge-label-association'), ...routeDiagnostics, ...labelPlacement.diagnostics,
+    diagnostics: [...scene.diagnostics.filter(diagnostic => diagnostic.code !== 'layout-edge-label-blocked' && diagnostic.code !== 'layout-edge-label-association'), ...routeDiagnostics, ...sourceRouting.diagnostics, ...labelPlacement.diagnostics,
       { level: 'info', message: `Detail page of ${selected.id}; every boundary binding is explicitly shown. Unrelated edges and outside annotations are listed in exportScope metadata.` }] };
 }
 

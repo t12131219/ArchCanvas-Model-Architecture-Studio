@@ -16,10 +16,27 @@ import tempfile
 import uuid
 
 from archcanvas_python import analyze_project
-from .draft import DraftError, _digest, _identity, _keys, _text, _parameter, _diagnostic, _visual
+from .draft import DraftError, _digest, _identity, _keys, _text, _parameter, _diagnostic, _visual, _port_layouts
 
 SOURCE_VERIFICATION = "source-preserved-graph; no model execution"
 MAX_SOURCE_NODES, MAX_SOURCE_EDGES = 1200, 3600
+
+
+def _provenance_digest(value):
+    """Bind JSON number values across Python and browser serialization.
+
+    JSON.stringify emits 0 for 0.0. Preserve all actual values, source bytes,
+    and IR bindings while treating these identical JSON numbers alike.
+    """
+    def numbers(item):
+        if type(item) is float and math.isfinite(item) and item.is_integer():
+            return int(item)
+        if isinstance(item, list):
+            return [numbers(child) for child in item]
+        if isinstance(item, dict):
+            return {key: numbers(child) for key, child in item.items()}
+        return item
+    return _digest(numbers(value))
 
 
 def _safe_json(value, depth=0):
@@ -140,7 +157,7 @@ def import_source_draft(document: dict, scene: dict) -> dict:
             ports.append({"id": port_id, "name": port["name"], "direction": port["direction"], "type": "tensor"})
             port_maps[raw["id"], port["id"]] = port_id
             port_bindings[port_id] = deepcopy(bindings)
-        module = {"kind": kind, "label": fact["kind"], "category": "source", "description": "保留的源码部件；原层级、重复、共享与未知事实保存在来源记录中。", "defaults": deepcopy(params),
+        module = {"kind": kind, "label": fact["kind"], "category": "source", "description": "Source module; original hierarchy, repetition, shared instances and unresolved facts are retained in provenance.", "defaults": deepcopy(params),
                   "parameters": [_field_from_source(name, value, fields) for name, value in params.items()], "ports": ports}
         modules.append(module)
         group = bool(raw.get("expanded") and fact.get("children"))
@@ -149,6 +166,9 @@ def import_source_draft(document: dict, scene: dict) -> dict:
         if raw.get("parentId") in scene_bindings:
             presentation["parentId"] = scene_bindings[raw["parentId"]]
         nodes.append({"id": identity, "kind": kind, "label": raw["label"][:120] or fact["kind"], "parameters": params, "position": _position({"x": raw["x"], "y": raw["y"]}), "presentation": presentation})
+        manual_ports = {port_maps[raw["id"], p["id"]]: deepcopy(document.get("portLayoutOverrides", {}).get(p.get("layoutKey"))) for p in raw.get("ports", []) if p.get("layoutKey") in document.get("portLayoutOverrides", {})}
+        if manual_ports:
+            nodes[-1]["portLayouts"] = manual_ports
         refs[identity] = {"nodeId": canonical, "sceneNodeId": raw["id"], "kind": fact["kind"], "category": fact["category"], "evidence": fact["evidence"], "portBindings": port_bindings,
                           "originalParameters": deepcopy(params), "group": group, **({"instanceId": fact["instanceId"]} if "instanceId" in fact else {}), **({"repeat": deepcopy(fact["repeat"])} if "repeat" in fact else {})}
     edges = []
@@ -169,17 +189,40 @@ def import_source_draft(document: dict, scene: dict) -> dict:
         edges.append({"id": _identifier("e_", raw["id"]), "source": endpoint(source_key, "out"), "target": endpoint(target_key, "in")})
     provenance = {"schemaVersion": 1, "documentId": document["id"], "visualRevision": document["revision"], "sourceDigest": architecture["sourceDigest"], "irDigest": architecture["irDigest"],
                   "architecture": architecture, "canvas": deepcopy(document), "modules": modules, "nodeRefs": refs, "edgeRefs": {_identifier("e_", e["id"]): deepcopy(e["canonicalEdgeIds"]) for e in raw_edges}, "originalGraph": {"nodes": deepcopy(nodes), "edges": deepcopy(edges)}}
-    provenance["digest"] = _digest(provenance)
+    provenance["digest"] = _provenance_digest(provenance)
     draft = {"schemaVersion": 1, "mode": "authored-draft", "id": "draft-" + str(uuid.uuid4()), "title": (document["title"][:108] + " · 编辑副本"), "revision": 0, "nodes": nodes, "edges": edges, "sourceProvenance": provenance}
     validate_source_draft(draft)
     return {"draft": draft, "sceneNodeBindings": scene_bindings, "sourceNodeBindings": {raw.get("canonicalNodeId", raw["id"]): scene_bindings[raw["id"]] for raw in raw_nodes}, "provenanceDigest": provenance["digest"], "verification": SOURCE_VERIFICATION}
 
 
+def _retain_view_frontier(draft: dict, view: dict) -> dict:
+    """Keep the compact source view separate from the editable composition."""
+    source, before = draft["sourceProvenance"], view["sourceProvenance"]
+    if any(source.get(key) != before.get(key) for key in ("documentId", "visualRevision", "sourceDigest", "irDigest")):
+        raise DraftError("Editing and view frontiers must belong to the same source document revision.")
+    source["viewCanvas"] = deepcopy(before["canvas"])
+    source["viewGraph"] = deepcopy(before["originalGraph"])
+    source["digest"] = _provenance_digest({key: value for key, value in source.items() if key != "digest"})
+    validate_source_draft(draft)
+    return draft
+
+
+def import_editable_source_draft(document: dict, scene: dict, editing_document: dict, editing_scene: dict) -> dict:
+    view = import_source_draft(document, scene)
+    imported = import_source_draft(editing_document, editing_scene)
+    imported["draft"]["id"] = view["draft"]["id"]
+    _retain_view_frontier(imported["draft"], view["draft"])
+    imported["provenanceDigest"] = imported["draft"]["sourceProvenance"]["digest"]
+    return imported
+
+
 def validate_source_draft(draft: dict, *, require_complete=False) -> dict:
     from .draft import module_catalog
-    _keys(draft, {"schemaVersion", "mode", "id", "title", "revision", "nodes", "edges", "sourceProvenance"} | ({"sourceCache"} if "sourceCache" in draft else set()) | ({"customModules"} if "customModules" in draft else set()), "Source-derived draft")
+    _keys(draft, {"schemaVersion", "mode", "id", "title", "revision", "nodes", "edges", "sourceProvenance"} | ({"sourceCache"} if "sourceCache" in draft else set()) | ({"customModules"} if "customModules" in draft else set()) | ({"allowUnusedNodes"} if "allowUnusedNodes" in draft else set()), "Source-derived draft")
     from .custom_modules import validate_custom_definitions, custom_spec
     custom = validate_custom_definitions(draft.get("customModules", []))
+    if "allowUnusedNodes" in draft and type(draft["allowUnusedNodes"]) is not bool:
+        raise DraftError("allowUnusedNodes must be boolean.")
     if "sourceCache" in draft:
         _keys(draft["sourceCache"], {"nodes", "edges", "removedNodeIds", "removedCanonicalEdgeIds"}, "Source edit cache")
         _safe_json(draft["sourceCache"])
@@ -192,7 +235,9 @@ def validate_source_draft(draft: dict, *, require_complete=False) -> dict:
         raise DraftError("Invalid source-derived revision.")
     provenance = draft["sourceProvenance"]
     _safe_json(provenance)
-    if not isinstance(provenance, dict) or provenance.get("schemaVersion") != 1 or provenance.get("digest") != _digest({k: v for k, v in provenance.items() if k != "digest"}):
+    # Existing Python-only receipts remain readable without rewriting history.
+    body = {k: v for k, v in provenance.items() if k != "digest"} if isinstance(provenance, dict) else {}
+    if not isinstance(provenance, dict) or provenance.get("schemaVersion") != 1 or provenance.get("digest") not in (_provenance_digest(body), _digest(body)):
         raise DraftError("Source provenance digest changed; source facts cannot be edited in the draft.")
     architecture = provenance.get("architecture", {})
     if provenance.get("sourceDigest") != architecture.get("sourceDigest") or provenance.get("irDigest") != architecture.get("irDigest"):
@@ -202,7 +247,7 @@ def validate_source_draft(draft: dict, *, require_complete=False) -> dict:
     specs = {item["kind"]: item for item in module_catalog()["modules"] + provenance["modules"] + [custom_spec(item) for item in custom]}
     nodes, incoming, outgoing, issues = {}, {}, {}, []
     for node in draft["nodes"]:
-        _keys(node, {"id", "kind", "label", "parameters", "position"} | ({"presentation"} if "presentation" in node else set()) | ({"visual"} if "visual" in node else set()), "Source draft node")
+        _keys(node, {"id", "kind", "label", "parameters", "position"} | ({"presentation"} if "presentation" in node else set()) | ({"visual"} if "visual" in node else set()) | ({"portLayouts"} if "portLayouts" in node else set()), "Source draft node")
         identity = _identity(node["id"], "Node id")
         if identity in nodes or node["kind"] not in specs:
             raise DraftError("Duplicate or unregistered source-draft node.")
@@ -219,6 +264,8 @@ def validate_source_draft(draft: dict, *, require_complete=False) -> dict:
             _safe_json(style)
         if "visual" in node:
             _visual(node["visual"], identity)
+        if "portLayouts" in node:
+            _port_layouts(node["portLayouts"], {p["id"] for p in spec["ports"]})
         nodes[identity] = node; incoming[identity] = []; outgoing[identity] = []
     bound, identities = {}, set()
     for edge in draft["edges"]:
@@ -375,9 +422,45 @@ def _project_materialized_result(result: dict, original: dict, by_canonical: dic
         visible_by_materialized[by_canonical.get(canonical, identity)] = identity
     for field in ("nodeBindings", "containerBindings"):
         result[field] = {visible_by_materialized[key]: value for key, value in result.get(field, {}).items() if key in visible_by_materialized}
-    visible_edges = {edge["id"] for edge in original["edges"]}
-    for field in ("edgeBindings", "portBindings"):
-        result[field] = {key: value for key, value in result.get(field, {}).items() if key in visible_edges}
+    # A displayed proxy edge can represent several canonical leaf edges. Its
+    # ID changes on expansion, so project the independently verified paths
+    # back through source identities instead of dropping its port/style map.
+    materialized = result["draft"]
+    canonical_edges = {}
+    for identity, canonical_ids in materialized["sourceProvenance"]["edgeRefs"].items():
+        for canonical in canonical_ids:
+            canonical_edges.setdefault(canonical, set()).add(identity)
+    original_edges = {edge["id"]: edge for edge in original["sourceProvenance"]["originalGraph"]["edges"]}
+    edge_bindings, port_bindings = {}, {}
+    for edge in original["edges"]:
+        identity = edge["id"]
+        candidates = {identity} if identity in result.get("edgeBindings", {}) else set()
+        if original_edges.get(identity) == edge:
+            for canonical in original["sourceProvenance"]["edgeRefs"].get(identity, []):
+                candidates.update(canonical_edges.get(canonical, set()))
+        else:
+            # A rewire/fan-out rebased through a collapsed proxy has derived
+            # IDs, bound to the original edit ID and its exact new endpoints.
+            for item in materialized["edges"]:
+                derived = _identifier("r_", json.dumps([identity, item["source"], item["target"]], sort_keys=True))
+                if item["id"] == derived:
+                    candidates.add(item["id"])
+        paths = sorted({generated for key in candidates for generated in result.get("edgeBindings", {}).get(key, [])})
+        if not paths:
+            # Retained custom boundaries can expose a valid multi-slot edge
+            # whose analyzer identity is intentionally hidden behind the
+            # adapter. Keep the relation unresolved for style projection; the
+            # grouped generator has already independently checked its ports.
+            if result.get("verification", {}).get("retainedSourceModules") or result.get("verification", {}).get("customBoundaryBindings") or result.get("entry", "").startswith("archcanvas_composed:"):
+                edge_bindings[identity] = []
+                port_bindings[identity] = {"source": deepcopy(edge["source"]), "target": deepcopy(edge["target"]),
+                                           "architectureEdges": [], "projected": True}
+                continue
+            raise DraftError("Materialized source lost a visible connection binding.")
+        edge_bindings[identity] = paths
+        port_bindings[identity] = {"source": deepcopy(edge["source"]), "target": deepcopy(edge["target"]),
+                                   "architectureEdges": paths, "projected": True}
+    result["edgeBindings"], result["portBindings"] = edge_bindings, port_bindings
     result["draft"] = deepcopy(original)
     result["draftDigest"] = _digest(original)
     verification = dict(result.get("verification", {}))
@@ -406,6 +489,13 @@ def generate_source_draft(draft: dict) -> dict:
     provenance = draft["sourceProvenance"]
     refs = provenance["nodeRefs"]
     canonical_nodes = provenance["architecture"]["nodes"]
+    if any(node.get('sourceStructure') for node in canonical_nodes):
+        raise DraftError(
+            'Source inspection is expandable but has no verified tensor lowering; preserve presentation edits on the original canvas.',
+            diagnostics=[_diagnostic('unsupported-source-structure',
+                                    '源码分支可以展开查看；尚未确定实际路径和张量连接。展示修改可以保存到原画布，结构生成需要真实配置和受支持的解析规则。',
+                                    'Keep visual edits on the source canvas; provide configuration evidence before semantic generation.')],
+        )
     canonical_facts = {node["id"]: node for node in canonical_nodes}
     visible_kinds = {refs.get(node["id"], {}).get("kind", node["kind"]) for node in draft["nodes"]}
     canonical_kinds = {node["kind"] for node in canonical_nodes}
@@ -415,8 +505,14 @@ def generate_source_draft(draft: dict) -> dict:
         for node in draft["nodes"]
     )
     custom_composition = bool(draft.get("customModules"))
-    materialize = ((not {"Input", "Output"} <= visible_kinds)
-                   and {"Input", "Output"} <= canonical_kinds and hidden_groups)
+    retained_custom_source = any(item.get("path", "").startswith("archcanvas_custom_")
+                                for item in provenance.get("architecture", {}).get("sources", []))
+    # Partial frontiers (e.g. expanded Transformer with collapsed encoder and
+    # decoder) need the same canonical materialization as a collapsed root.
+    # The browser must not expand and route every intermediate scene merely
+    # to generate source. Validate the edited frontier above before restoring
+    # hidden facts, and rebase its cache so additions/deletions stay effective.
+    materialize = hidden_groups and {"Input", "Output"} <= canonical_kinds and not retained_custom_source
     grouped = custom_composition or any(node.get("presentation", {}).get("group") for node in draft["nodes"])
     if materialize or grouped:
         # Group constructors have no independent lowering contract. Refuse
@@ -657,6 +753,33 @@ def rebase_source_frontier(draft: dict, document: dict, scene: dict) -> dict:
             node["presentation"]["fill"], node["presentation"]["stroke"] = previous_node.get("presentation", node["presentation"])["fill"], previous_node.get("presentation", node["presentation"])["stroke"]
             if "visual" in previous_node:
                 node["visual"] = deepcopy(previous_node["visual"])
+            if "portLayouts" in previous_node:
+                # Scene port IDs include projection/side information and may
+                # change between frontiers. Retain offsets through canonical
+                # bindings rather than attaching obsolete IDs to the new spec.
+                current_ref = provenance["nodeRefs"][node["id"]]
+                previous_ref = refs[node["id"]]
+                current_ports = modules[node["kind"]]["ports"]
+                previous_spec = next((m for m in old["modules"] if m["kind"] == previous_node["kind"]), {})
+                previous_ports = {p["id"]: p for p in previous_spec.get("ports", [])}
+                layouts = {}
+                for port_id, layout in previous_node["portLayouts"].items():
+                    if any(p["id"] == port_id for p in current_ports):
+                        layouts[port_id] = deepcopy(layout)
+                        continue
+                    pairs = {(p["nodeId"], p["portId"]) for p in previous_ref["portBindings"].get(port_id, [])}
+                    candidates = [p for p in current_ports if pairs & {
+                        (b["nodeId"], b["portId"]) for b in current_ref["portBindings"].get(p["id"], [])}]
+                    previous_port = previous_ports.get(port_id)
+                    if previous_port:
+                        candidates = [p for p in candidates if p["direction"] == previous_port["direction"]]
+                        named = [p for p in candidates if p["name"] == previous_port["name"]]
+                        if named:
+                            candidates = named
+                    for port in candidates:
+                        layouts[port["id"]] = deepcopy(layout)
+                if layouts:
+                    node["portLayouts"] = layouts
         nodes.append(node)
     visible = {node["id"] for node in nodes}
     for node in draft["nodes"]:
@@ -698,7 +821,10 @@ def rebase_source_frontier(draft: dict, document: dict, scene: dict) -> dict:
                     edges = [item for item in edges if item["target"] != target]
                 edges.append({"id": identity, "source": source, "target": target})
     provenance["nodeRefs"], provenance["modules"] = refs, list(modules.values())
-    provenance["digest"] = _digest({key: value for key, value in provenance.items() if key != "digest"})
+    for key in ("viewCanvas", "viewGraph"):
+        if key in old:
+            provenance[key] = deepcopy(old[key])
+    provenance["digest"] = _provenance_digest({key: value for key, value in provenance.items() if key != "digest"})
     fresh.update({"id": draft["id"], "title": draft["title"], "revision": draft["revision"], "nodes": nodes, "edges": edges,
                   "sourceCache": {"nodes": list(cached_nodes.values()), "edges": list(changed_edges.values()), "removedNodeIds": sorted(removed_nodes), "removedCanonicalEdgeIds": sorted(removed_edges)}})
     if "customModules" in draft:

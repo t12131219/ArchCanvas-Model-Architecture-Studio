@@ -23,8 +23,10 @@ from archcanvas_python import AnalysisError, analyze_project, analyze_source, va
 from archcanvas_transactions import TransactionManager
 from .workspace import Workspace
 from .drafts import DraftStore, DraftConflict
+from .canvas import canvas_operation
 
 MAX_REQUEST_BYTES = 4_000_000
+MAX_SOURCE_REQUEST_BYTES = 16_000_000
 DOCUMENT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
 EXAMPLES = (
     {"id": "transformer", "name": "Encoder–Decoder Transformer", "description": "Multi-file source, independent repeated encoder layers, cross-attention Q/K/V, masks and residual paths.", "entry": "model:Transformer"},
@@ -62,6 +64,8 @@ def capabilities() -> dict:
         "sourceAnalysis": True,
         "modelAuthoring": {"mode": "authored-draft", "catalog": "/api/authoring/catalog", "generation": "new-managed-copy", "sourceImport": "/api/authoring/import-source", "sourceFrontier": "/api/authoring/source-frontier", "customModulePreview": "/api/authoring/custom-modules/preview", "runtimeVerified": False},
         "documentPersistence": True,
+        "canvasSessions": {"open": "/api/open", "read": "/api/canvas-sessions/{documentId}", "actions": ["apply", "undo", "redo", "export"],
+                           "operations": "studio-typescript-core", "history": "persistent", "stateRoot": "data-dir", "modelExecution": False},
         "semanticWriteback": True,
         "supportedIntents": ["set_dropout_probability", "update_configuration", "replace_activation", "rebind_input"],
         "semanticScope": {"operators": {"Dropout": ["p"], "MultiheadAttention": ["dropout"]}, "origins": ["explicit-float-literal", "unique-module-top-level-float-all-probability-readers"], "httpCommit": "managed-workspace-copy-only", "runtimeVerified": False},
@@ -115,6 +119,22 @@ def validate_document(document: object, identity: str):
         raise ValueError("Architecture node identities must be unique.")
     if not all(isinstance(value, str) and value in canonical_ids for value in document["expandedIds"] + document["pinnedObjects"]):
         raise ValueError("Expanded and pinned objects must reference canonical node identities.")
+    if "portLayoutOverrides" in document:
+        layouts = document["portLayoutOverrides"]
+        if not isinstance(layouts, dict):
+            raise ValueError("Document portLayoutOverrides must be an object.")
+        facts = {node["id"]: node for node in architecture["nodes"]}
+        for key, layout in layouts.items():
+            binding = json.loads(key)
+            if not isinstance(binding, list) or len(binding) != 4 or not all(isinstance(item, str) for item in binding):
+                raise ValueError("Invalid port layout binding key.")
+            owner, node, port, role = binding
+            if owner not in facts or node not in facts or not any(p["id"] == port for p in facts[node].get("ports", [])) or role not in ("data", "residual", "memory", "mask"):
+                raise ValueError("Port layout must reference an existing canonical binding.")
+            if layout is None:
+                continue
+            if not isinstance(layout, dict) or set(layout) != {"side", "offset"} or layout["side"] not in ("top", "right", "bottom", "left") or type(layout["offset"]) not in (int, float) or not 0 <= layout["offset"] <= 1:
+                raise ValueError("Port layout requires an exposed side and an offset between 0 and 1.")
 
 
 class DocumentStore:
@@ -140,17 +160,34 @@ class DocumentStore:
                 raise ValueError("Saved document exceeds the size budget.")
             try:
                 value = json.loads(path.read_text(encoding="utf-8"))
+                from .persistence import decode_envelope
+                value = decode_envelope(value)
             except (OSError, UnicodeError, json.JSONDecodeError) as exc:
                 raise ValueError("Saved document is unreadable; it was not overwritten.") from exc
             if not isinstance(value, dict) or type(value.get("revision")) is not int or value["revision"] < 1:
                 raise ValueError("Saved document envelope is invalid; it was not overwritten.")
             validate_document(value.get("document"), identity)
+            if "history" in value:
+                self.validate_history(value["history"], value["document"])
             return value
 
-    def put(self, identity: str, document: dict, expected_revision: int) -> dict:
+    @staticmethod
+    def validate_history(history: dict, document: dict):
+        if not isinstance(history, dict) or set(history) != {"document", "past", "future"} or history["document"] != document:
+            raise ValueError("Saved canvas history does not match its current document.")
+        if any(not isinstance(history[key], list) or len(history[key]) > 100 for key in ("past", "future")):
+            raise ValueError("Canvas history exceeds its snapshot budget.")
+        for snapshot in history["past"] + history["future"]:
+            validate_document(snapshot, document["id"])
+            if snapshot["architecture"] != document["architecture"] or snapshot["sourceBindingDigest"] != document["sourceBindingDigest"]:
+                raise ValueError("Canvas history changed its source binding.")
+
+    def put(self, identity: str, document: dict, expected_revision: int, *, history: dict | None = None, project_id: str | None = None) -> dict:
         if type(expected_revision) is not int or expected_revision < 0:
             raise ValueError("expectedRevision must be a non-negative storage revision.")
         validate_document(document, identity)
+        if history is not None:
+            self.validate_history(history, document)
         with self.lock:
             current = self.get(identity)
             revision = current["revision"] if current else 0
@@ -159,7 +196,12 @@ class DocumentStore:
             if current and (current["document"]["architecture"] != document["architecture"] or current["document"]["sourceBindingDigest"] != document["sourceBindingDigest"]):
                 raise ValueError("A visual document save cannot change canonical architecture or source binding.")
             result = {"document": document, "revision": revision + 1}
-            encoded = json.dumps(result, ensure_ascii=False, allow_nan=False, separators=(",", ":")).encode()
+            if history is not None:
+                result["history"] = history
+            if project_id or current and current.get("projectId"):
+                result["projectId"] = project_id or current["projectId"]
+            from .persistence import encode_envelope
+            encoded = json.dumps(encode_envelope(result), ensure_ascii=False, allow_nan=False, separators=(",", ":")).encode()
             if len(encoded) > MAX_REQUEST_BYTES:
                 raise ValueError("Document exceeds the 4 MB persistence budget.")
             path = self.path(identity)
@@ -183,10 +225,11 @@ class ArchCanvasServer(ThreadingHTTPServer):
         if address[0] not in ("127.0.0.1", "localhost", "::1"):
             raise ValueError("The ArchCanvas service accepts loopback addresses only.")
         root = project_root()
-        self.store = DocumentStore(data_dir or (root or Path.cwd()) / ".archcanvas" / "documents")
-        self.workspace = Workspace(self.store.directory.parent, root)
-        self.drafts = DraftStore(self.store.directory.parent / "drafts")
-        self.transactions = TransactionManager(self.store.directory.parent / "transactions")
+        self.state_root = (data_dir or (root or Path.cwd()) / ".archcanvas").resolve()
+        self.store = DocumentStore(self.state_root / "documents")
+        self.workspace = Workspace(self.state_root, root)
+        self.drafts = DraftStore(self.state_root / "drafts")
+        self.transactions = TransactionManager(self.state_root / "transactions")
         self.session_token = secrets.token_urlsafe(32)
         self.studio_dir = (studio_dir or (root / "studio" / "dist" if root else Path.cwd() / "studio" / "dist")).resolve()
         self.fixture_root = root / "fixtures" if root else None
@@ -288,15 +331,19 @@ class Handler(BaseHTTPRequestHandler):
             length = int(self.headers.get("Content-Length", "-1"))
         except ValueError as exc:
             raise ValueError("Content-Length must be an integer.") from exc
-        if not 0 <= length <= MAX_REQUEST_BYTES:
-            raise ValueError("JSON request body must fit within 4 MB.")
+        path = unquote(urlsplit(self.path).path)
+        source_authoring = path in {"/api/authoring/import-source", "/api/authoring/source-frontier", "/api/authoring/validate", "/api/authoring/generate"} or path.startswith("/api/authoring/drafts/")
+        budget = MAX_SOURCE_REQUEST_BYTES if source_authoring else MAX_REQUEST_BYTES
+        if not 0 <= length <= budget:
+            raise ValueError(f"JSON request body must fit within {budget // 1_000_000} MB.")
         try:
             result = json.loads(self.rfile.read(length).decode("utf-8"), parse_constant=lambda _: (_ for _ in ()).throw(ValueError("Non-finite JSON values are not supported.")))
         except (UnicodeError, json.JSONDecodeError) as exc:
             raise ValueError("Request body must contain valid UTF-8 JSON.") from exc
         if not isinstance(result, dict):
             raise ValueError("JSON request must be an object.")
-        return result
+        from .persistence import decode_envelope
+        return decode_envelope(result)
 
     def do_OPTIONS(self):
         if not self.guard():
@@ -319,6 +366,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(200, capabilities())
             elif path == "/api/session":
                 self.send_json(200, {"token": self.server.session_token})
+            elif path.startswith("/api/canvas-sessions/"):
+                saved = self.server.store.get(path.removeprefix("/api/canvas-sessions/"))
+                self.send_json(200 if saved else 404, saved or {"error": "Canvas session not found."})
             elif path == "/api/authoring/catalog":
                 self.send_json(200, archcanvas_authoring.module_catalog())
             elif path.startswith("/api/authoring/drafts/"):
@@ -401,7 +451,46 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             payload = self.body()
-            if path == "/api/analyze":
+            if path == "/api/open":
+                if set(payload) != {"architecture"}:
+                    raise ValueError("Open requires an analyzed architecture with frozen source text; HTTP paths are not accepted.")
+                history = canvas_operation(project_root(), {"action": "create", "architecture": payload["architecture"]})
+                document = history["document"]
+                with self.server.store.lock:
+                    saved = self.server.store.get(document["id"])
+                    if saved is not None and saved["document"]["architecture"] != document["architecture"]:
+                        raise ValueError("The existing canvas identity belongs to different source facts.")
+                    if saved is None:
+                        architecture = payload["architecture"]
+                        project = self.server.workspace.register({key: architecture[key] for key in ("entry", "sources", "sourceDigest", "irDigest")})
+                        saved = self.server.store.put(document["id"], document, 0, history=history, project_id=project["id"])
+                identity = document["id"]
+                self.send_json(201, {"documentId": identity, "sessionId": identity, "projectId": saved.get("projectId"),
+                                     "revision": saved["revision"], "url": f"http://127.0.0.1:{self.server.server_address[1]}/?documentId={identity}"})
+            elif path.startswith("/api/canvas-sessions/"):
+                parts = path.removeprefix("/api/canvas-sessions/").split("/")
+                if len(parts) != 2 or parts[1] not in ("apply", "undo", "redo", "export"):
+                    raise ValueError("Unknown canvas session action.")
+                identity, action = parts
+                allowed = {"expectedRevision", "visualRevision"} | ({"operations"} if action == "apply" else {"format", "dpi", "options"} if action == "export" else set())
+                if set(payload) - allowed or not {"expectedRevision", "visualRevision"} <= set(payload) or action == "apply" and "operations" not in payload:
+                    raise ValueError("Canvas actions require exact storage and visual revisions.")
+                with self.server.store.lock:
+                    saved = self.server.store.get(identity)
+                    if saved is None:
+                        raise ValueError("Canvas session not found.")
+                    if type(payload["expectedRevision"]) is not int or payload["expectedRevision"] != saved["revision"]:
+                        raise ConflictError(saved["revision"])
+                    if type(payload["visualRevision"]) is not int or payload["visualRevision"] != saved["document"]["revision"]:
+                        raise ValueError("Canvas visual revision changed; read the same session again.")
+                    if action == "export":
+                        result = self.server.workspace.export(saved["document"], payload.get("format", "svg"), payload.get("dpi", 300), payload.get("options"))
+                    else:
+                        history = canvas_operation(project_root(), {"action": action, "document": saved["document"], "history": saved.get("history"),
+                                                                  "operations": payload.get("operations"), "visualRevision": payload["visualRevision"]})
+                        result = self.server.store.put(identity, history["document"], saved["revision"], history=history)
+                self.send_json(200, result)
+            elif path == "/api/analyze":
                 if set(payload) - {"source", "entry", "filename"}:
                     raise ValueError("Analyze accepts source text, entry and optional logical filename only; filesystem roots are not accepted over HTTP.")
                 if not isinstance(payload.get("entry"), str) or not isinstance(payload.get("filename", "model.py"), str):
@@ -410,16 +499,28 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/projects":
                 self.send_json(201, self.server.workspace.register(payload))
             elif path == "/api/authoring/import-source":
-                if set(payload) != {"document", "scene"}:
+                if set(payload) not in ({"document", "scene"}, {"document", "scene", "editingDocument", "editingScene"}):
                     raise ValueError("Source import requires the current document and scene.")
                 validate_document(payload["document"], payload["document"].get("id", ""))
-                self.send_json(201, archcanvas_authoring.import_source_draft(payload["document"], payload["scene"]))
+                if "editingDocument" in payload:
+                    validate_document(payload["editingDocument"], payload["document"].get("id", ""))
+                    from archcanvas_authoring.source_import import import_editable_source_draft
+                    result = import_editable_source_draft(payload["document"], payload["scene"], payload["editingDocument"], payload["editingScene"])
+                else:
+                    result = archcanvas_authoring.import_source_draft(payload["document"], payload["scene"])
+                self.send_json(201, result)
             elif path == "/api/authoring/source-frontier":
-                if set(payload) != {"draft", "document", "scene"}:
+                if set(payload) not in ({"draft", "document", "scene"}, {"draft", "document", "scene", "viewDocument", "viewScene"}):
                     raise ValueError("Source frontier requires draft, current source document and scene.")
                 validate_document(payload["document"], payload["document"].get("id", ""))
-                from archcanvas_authoring.source_import import rebase_source_frontier
-                self.send_json(200, rebase_source_frontier(payload["draft"], payload["document"], payload["scene"]))
+                from archcanvas_authoring.source_import import rebase_source_frontier, _retain_view_frontier
+                result = rebase_source_frontier(payload["draft"], payload["document"], payload["scene"])
+                if "viewDocument" in payload:
+                    validate_document(payload["viewDocument"], payload["document"].get("id", ""))
+                    view = archcanvas_authoring.import_source_draft(payload["viewDocument"], payload["viewScene"])
+                    _retain_view_frontier(result["draft"], view["draft"])
+                    result["provenanceDigest"] = result["draft"]["sourceProvenance"]["digest"]
+                self.send_json(200, result)
             elif path == "/api/authoring/custom-modules/preview":
                 self.send_json(200, archcanvas_authoring.preview_custom_module(payload))
             elif path in ("/api/authoring/validate", "/api/authoring/generate"):
@@ -516,7 +617,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(200, receipt)
             else:
                 self.send_json(404, {"error": "Unknown API route."})
-        except DraftConflict as exc:
+        except (DraftConflict, ConflictError) as exc:
             self.send_json(409, {"error": str(exc), "revision": exc.revision})
         except archcanvas_authoring.DraftError as exc:
             self.send_json(400, {"error": str(exc), "diagnostics": exc.diagnostics})
@@ -532,9 +633,10 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             payload = self.body()
-            if set(payload) != {"document", "expectedRevision"}:
+            if set(payload) not in ({"document", "expectedRevision"}, {"document", "expectedRevision", "history"}):
                 raise ValueError("Document save requires document and expectedRevision.")
-            self.send_json(200, self.server.store.put(path.removeprefix("/api/documents/"), payload["document"], payload["expectedRevision"]))
+            history = canvas_operation(project_root(), {"action": "validate", "document": payload["document"], "history": payload["history"]}) if "history" in payload else None
+            self.send_json(200, self.server.store.put(path.removeprefix("/api/documents/"), payload["document"], payload["expectedRevision"], history=history))
         except ConflictError as exc:
             self.send_json(409, {"error": str(exc), "revision": exc.revision})
         except ValueError as exc:

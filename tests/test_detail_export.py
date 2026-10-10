@@ -103,7 +103,7 @@ class DetailHTTPTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory(prefix="archcanvas-detail-http-", dir="/tmp")
         self.directory = Path(self.temporary.name)
         self.document, self.path, self.selected = current_document(self.directory)
-        self.server = ArchCanvasServer(("127.0.0.1", 0), data_dir=self.directory / "managed/documents", studio_dir=self.directory / "dist")
+        self.server = ArchCanvasServer(("127.0.0.1", 0), data_dir=self.directory / "managed", studio_dir=self.directory / "dist")
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
         self.url = f"http://127.0.0.1:{self.server.server_address[1]}"

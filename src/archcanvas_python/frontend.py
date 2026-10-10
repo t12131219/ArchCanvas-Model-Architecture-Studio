@@ -7,12 +7,15 @@ eval, or exec runs. Unknown Python remains an opaque source-backed boundary.
 from __future__ import annotations
 
 import ast
+import copy
 import hashlib
 import json
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+from .source_structure import SourceStructure
 
 MAX_FILES = 80
 MAX_BYTES = 2_000_000
@@ -38,6 +41,11 @@ def literal(node: ast.AST | None, env: dict[str, Any]) -> Any:
         return node.value
     if isinstance(node, ast.Name) and node.id in env:
         return env[node.id]
+    if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "self":
+        return env.get(f"self.{node.attr}", UNKNOWN)
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+        value = literal(node.operand, env)
+        return not value if type(value) is bool else UNKNOWN
     if isinstance(node, (ast.Tuple, ast.List)):
         values = [literal(item, env) for item in node.elts]
         if all(value is not UNKNOWN for value in values):
@@ -77,6 +85,7 @@ class Unit:
     imports: dict[str, str] = field(default_factory=dict)
     classes: dict[str, ast.ClassDef] = field(default_factory=dict)
     constants: dict[str, Any] = field(default_factory=dict)
+    functions: dict[str, ast.FunctionDef] = field(default_factory=dict)
     raw_digest: str | None = None
 
     def expression(self, node: ast.AST) -> str:
@@ -88,7 +97,7 @@ class Unit:
                 return ""
             if node.id in self.imports:
                 return self.imports[node.id]
-            return f"{self.module}.{node.id}" if node.id in self.classes else node.id
+            return f"{self.module}.{node.id}" if node.id in self.classes or node.id in self.functions else node.id
         if isinstance(node, ast.Attribute):
             base = self.resolve(node.value, locals)
             return f"{base}.{node.attr}" if base else ""
@@ -122,6 +131,8 @@ class Corpus:
                 unit.imports.pop(statement.name, None)
             elif isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 unit.imports.pop(statement.name, None)
+                if isinstance(statement, ast.FunctionDef) and not statement.decorator_list:
+                    unit.functions[statement.name] = statement
             elif isinstance(statement, ast.Import):
                 for alias in statement.names:
                     unit.imports[alias.asname or alias.name.split(".")[0]] = alias.name if alias.asname else alias.name.split(".")[0]
@@ -139,6 +150,7 @@ class Corpus:
                 for target in statement.targets:
                     if isinstance(target, ast.Name):
                         unit.imports.pop(target.id, None)
+                        unit.functions.pop(target.id, None)
                 value = literal(statement.value, unit.constants)
                 if value is not UNKNOWN:
                     for target in statement.targets:
@@ -186,6 +198,31 @@ class Corpus:
         if unit and name in unit.imports:
             return self.definition(unit.imports[name], seen)
         return None
+
+    def factory(self, qualified: str, seen: set[str] | None = None) -> tuple[Unit, ast.FunctionDef] | None:
+        seen = set() if seen is None else seen
+        if qualified in seen:
+            return None
+        seen.add(qualified)
+        module, _, name = qualified.rpartition(".")
+        unit = self.load(module)
+        if not unit:
+            return None
+        if name in unit.imports:
+            return self.factory(unit.imports[name], seen)
+        function = unit.functions.get(name)
+        if not function or function.decorator_list:
+            return None
+        # A single return expression is the only supported factory body. No
+        # Python is executed, and no earlier side effect is skipped.
+        body = [item for item in function.body if not (isinstance(item, ast.Expr) and isinstance(item.value, ast.Constant) and isinstance(item.value.value, str))]
+        if len(body) != 1 or not isinstance(body[0], ast.Return) or body[0].value is None:
+            return None
+        bindings = [item for item in unit.tree.body if
+                    isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and item.name == name
+                    or not isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and
+                    any(isinstance(part, ast.Name) and part.id == name and isinstance(part.ctx, (ast.Store, ast.Del)) for part in ast.walk(item))]
+        return (unit, function) if bindings == [function] else None
 
     def framework_is_unshadowed(self) -> bool:
         """A local module named torch cannot prove an external PyTorch contract."""
@@ -266,6 +303,9 @@ class Ref:
     node: str
     port: str
     tensor: str
+    # Inspection-only variable provenance. The canonical tensor/port stays
+    # conservative, while distinct opaque assignments keep distinct exits.
+    source_slot: str | None = None
 
 
 def refs(value: Any) -> list[Ref]:
@@ -329,6 +369,8 @@ class Analyzer:
         self.diagnostics: list[dict[str, str]] = []
         self.counters: dict[str, int] = {}
         self.depth = 0
+        self.source_regions = []
+        self.source_uses = []
 
     def warn(self, message: str):
         if not any(item["message"] == message for item in self.diagnostics):
@@ -378,6 +420,8 @@ class Analyzer:
         for index, value_ref in enumerate(refs(value)):
             port = self.port(node, name if index == 0 else f"{name}.{index}", "in", role)
             self.edges.append({"id": f"edge:{len(self.edges)}", "source": {"nodeId": value_ref.node, "portId": value_ref.port}, "target": {"nodeId": node["id"], "portId": port}, "tensorId": value_ref.tensor, "role": role})
+            if value_ref.source_slot is not None:
+                self.source_uses.append((value_ref, self.edges[-1]))
 
     def is_module(self, unit: Unit, definition: ast.ClassDef, seen: set[str] | None = None) -> bool:
         seen = seen or set()
@@ -394,9 +438,46 @@ class Analyzer:
                 return True
         return False
 
+    @staticmethod
+    def bind_static(function: ast.FunctionDef, args: list[Any], keywords: dict[str, Any], env: dict[str, Any], *, method: bool = False) -> dict[str, Any] | None:
+        positional = [*function.args.posonlyargs, *function.args.args][int(method):]
+        if function.args.vararg or function.args.kwarg or len(args) > len(positional):
+            return None
+        names = [item.arg for item in positional]
+        defaults = dict(zip(names[-len(function.args.defaults):], function.args.defaults)) if function.args.defaults else {}
+        defaults.update({item.arg: value for item, value in zip(function.args.kwonlyargs, function.args.kw_defaults) if value is not None})
+        allowed = set(names + [item.arg for item in function.args.kwonlyargs])
+        bound = dict(zip(names, args))
+        if set(keywords) - allowed or set(bound) & set(keywords):
+            return None
+        bound.update(keywords)
+        for name in allowed - bound.keys():
+            bound[name] = literal(defaults[name], env) if name in defaults else UNKNOWN
+        return bound
+
+    def factory_expression(self, unit: Unit, function: ast.FunctionDef) -> ast.AST | None:
+        expression = next(item.value for item in function.body if isinstance(item, ast.Return))
+        local = {item.arg: UNKNOWN for item in [*function.args.posonlyargs, *function.args.args, *function.args.kwonlyargs]}
+        for part in ast.walk(expression):
+            if isinstance(part, ast.Call):
+                qualified = unit.resolve(part.func, local)
+                short = qualified.rsplit(".", 1)[-1]
+                if qualified == "copy.deepcopy" and "copy" not in self.corpus.units:
+                    continue
+                if qualified == "range" and self.constant_range(part, {**unit.constants, **{key: 1 for key in local}}, unit) is not None:
+                    continue
+                if self.corpus.framework_is_unshadowed() and qualified == f"torch.nn.{short}" and short in (*CONTRACTS, "ModuleList", "Sequential"):
+                    continue
+                return None
+            if isinstance(part, (ast.NamedExpr, ast.Await, ast.Yield, ast.Lambda)):
+                return None
+        return expression
+
     def construct(self, expression: ast.AST, unit: Unit, env: dict[str, Any], attributes: dict[str, Any], identity: str, depth: int = 0) -> Any:
         if depth > 12:
             return None
+        if isinstance(expression, ast.Name) and isinstance(env.get(expression.id), (Spec, list)):
+            return env[expression.id]
         if isinstance(expression, ast.Attribute) and isinstance(expression.value, ast.Name) and expression.value.id == "self":
             return attributes.get(expression.attr)
         if isinstance(expression, ast.List):
@@ -416,6 +497,29 @@ class Analyzer:
             return None
         qualified = unit.resolve(expression.func, env)
         short = qualified.rsplit(".", 1)[-1]
+        if qualified == "copy.deepcopy" and "copy" not in self.corpus.units and len(expression.args) == 1 and not expression.keywords:
+            value = self.construct(expression.args[0], unit, env, attributes, identity, depth + 1)
+            if isinstance(value, Spec):
+                copied = copy.deepcopy(value, {id(item): item for item in self.corpus.units.values()})
+                seen: set[int] = set()
+                def identify(item):
+                    if isinstance(item, Spec) and id(item) not in seen:
+                        seen.add(id(item)); item.identity = f"{identity}@copy:{len(seen)}"
+                        for child in [*item.attributes.values(), *item.items, *item.env.values()]: identify(child)
+                    elif isinstance(item, list):
+                        for child in item: identify(child)
+                identify(copied)
+                return copied
+            return None
+        factory = self.corpus.factory(qualified)
+        if factory:
+            factory_unit, function = factory
+            body = self.factory_expression(factory_unit, function)
+            if body is not None and not any(keyword.arg is None for keyword in expression.keywords):
+                argument = lambda value: self.construct(value, unit, env, attributes, identity, depth + 1) or literal(value, env)
+                bound = self.bind_static(function, [argument(value) for value in expression.args], {item.arg: argument(item.value) for item in expression.keywords}, factory_unit.constants)
+                if bound is not None:
+                    return self.construct(body, factory_unit, {**factory_unit.constants, **bound}, {}, identity, depth + 1)
         if qualified in ("torch.nn.ModuleList", "torch.nn.Sequential") and self.corpus.framework_is_unshadowed():
             if short == "ModuleList":
                 items = self.construct(expression.args[0], unit, env, attributes, identity, depth + 1) if expression.args else []
@@ -438,14 +542,14 @@ class Analyzer:
                 for param in params:
                     local[param.arg] = literal(defaults.get(param.arg), local) if param.arg in defaults else UNKNOWN
                 for param, arg in zip(params, expression.args):
-                    local[param.arg] = literal(arg, env)
+                    local[param.arg] = self.construct(arg, unit, env, attributes, identity, depth + 1) or literal(arg, env)
                 for keyword in expression.keywords:
                     if keyword.arg:
-                        local[keyword.arg] = literal(keyword.value, env)
+                        local[keyword.arg] = self.construct(keyword.value, unit, env, attributes, identity, depth + 1) or literal(keyword.value, env)
                 unresolved = [param.arg for param in params if local.get(param.arg) is UNKNOWN]
                 if unresolved:
                     self.warn(f"Constructor arguments for {cls.name} remain symbolic ({', '.join(unresolved)}); this is not a claim of valid executable instantiation.")
-            spec = Spec(identity, cls.name, "container", {key: value for key, value in local.items() if value is not UNKNOWN}, own_unit, expression, cls, local)
+            spec = Spec(identity, cls.name, "container", {key: value for key, value in local.items() if value is not UNKNOWN and not isinstance(value, Spec) and not (isinstance(value, list) and any(isinstance(item, Spec) for item in value))}, own_unit, expression, cls, local)
             if initializer:
                 self.initializer_statements(initializer.body, spec, depth)
             return spec
@@ -478,6 +582,7 @@ class Analyzer:
         mutated: set[str] = set()
         local_names: set[str] = set()
         unknown_self_call = False
+        local_mutations: set[str] = set()
 
         def self_attribute(node: ast.AST) -> str | None:
             while isinstance(node, (ast.Attribute, ast.Subscript)):
@@ -488,6 +593,11 @@ class Analyzer:
 
         for statement in statements:
             for item in ast.walk(statement):
+                if isinstance(item, (ast.Attribute, ast.Subscript)) and isinstance(item.ctx, (ast.Store, ast.Del)):
+                    base = item.value
+                    while isinstance(base, (ast.Attribute, ast.Subscript)): base = base.value
+                    if isinstance(base, ast.Name) and isinstance(spec.env.get(base.id), (Spec, list)):
+                        local_mutations.add(base.id)
                 if isinstance(item, ast.Name) and isinstance(item.ctx, (ast.Store, ast.Del)):
                     local_names.add(item.id)
                 if isinstance(item, (ast.Attribute, ast.Subscript)) and isinstance(item.ctx, (ast.Store, ast.Del)):
@@ -496,6 +606,12 @@ class Analyzer:
                         direct = isinstance(item, ast.Attribute) and isinstance(item.value, ast.Name) and item.value.id == "self"
                         (replaced if direct else mutated).add(attribute)
                 if isinstance(item, ast.Call):
+                    dependencies = [*item.args, *(keyword.value for keyword in item.keywords)]
+                    if isinstance(item.func, ast.Attribute): dependencies.append(item.func.value)
+                    for argument in dependencies:
+                        for part in ast.walk(argument):
+                            if isinstance(part, ast.Name) and isinstance(spec.env.get(part.id), (Spec, list)):
+                                local_mutations.add(part.id)
                     if isinstance(item.func, ast.Attribute):
                         attribute = self_attribute(item.func.value)
                         if attribute:
@@ -510,6 +626,17 @@ class Analyzer:
                             attribute = self_attribute(dependency)
                             if attribute:
                                 mutated.add(attribute)
+        visited: set[int] = set()
+        def invalidate_local(value):
+            if isinstance(value, Spec) and id(value) not in visited:
+                visited.add(id(value))
+                for child in [*value.attributes.values(), *value.items]: invalidate_local(child)
+                value.kind, value.category = "OpaqueModule", "opaque"
+                value.parameters.clear(); value.parameter_origins.clear(); value.definition = None
+                value.env.clear(); value.attributes.clear(); value.items.clear()
+            elif isinstance(value, list):
+                for child in value: invalidate_local(child)
+        for name in local_mutations: invalidate_local(spec.env.get(name))
         if unknown_self_call:
             mutated.update(spec.attributes)
         mutated_identities = {spec.attributes[name].identity for name in mutated
@@ -618,17 +745,75 @@ class Analyzer:
             trusted_constructor = (self.corpus.framework_is_unshadowed()
                                    and qualified == f"torch.nn.{short}"
                                    and (short in CONTRACTS or short in ("ModuleList", "Sequential")))
-            if trusted_constructor:
+            factory = self.corpus.factory(qualified)
+            trusted_factory = factory and self.factory_expression(*factory) is not None
+            trusted_copy = qualified == "copy.deepcopy" and "copy" not in self.corpus.units and len(item.args) == 1 and not item.keywords
+            definition = self.corpus.definition(qualified)
+            analyzed_constructor = definition and self.is_module(*definition) and any(isinstance(member, ast.FunctionDef) and member.name == "__init__" for member in definition[1].body)
+            if trusted_constructor or trusted_factory or trusted_copy or analyzed_constructor:
                 continue
             dependencies = [*item.args, *(keyword.value for keyword in item.keywords)]
             if isinstance(item.func, ast.Attribute):
                 dependencies.append(item.func.value)
-            if any(isinstance(dependency, ast.Name) and dependency.id == "self"
+            if any(isinstance(dependency, ast.Name) and (dependency.id == "self" or isinstance(spec.env.get(dependency.id), (Spec, list)))
                    for argument in dependencies for dependency in ast.walk(argument)):
                 # Use an expression wrapper so this only invalidates mutations,
                 # not the separate attribute receiving the helper's return.
                 statement = ast.copy_location(ast.Expr(value=item), item)
                 self.initializer_unknown([statement], spec)
+
+    def parameter_only_initializer(self, expression: ast.AST, spec: Spec) -> bool:
+        """A narrow standard Module contract: initialize tensors, not topology.
+
+        Certify the AST shape and every call. Similar names and arbitrary
+        initializer helpers never inherit this contract.
+        """
+        if not spec.definition or not self.corpus.framework_is_unshadowed():
+            return False
+        if any(spec.unit.resolve(base) != "torch.nn.Module" for base in spec.definition.bases):
+            return False
+        if not (isinstance(expression, ast.Call) and isinstance(expression.func, ast.Attribute)
+                and isinstance(expression.func.value, ast.Name) and expression.func.value.id == "self"
+                and not expression.args and not expression.keywords):
+            return False
+        name = expression.func.attr
+        if name in spec.attributes or f"self.{name}" in spec.env:
+            return False
+        members = [item for item in spec.definition.body if getattr(item, "name", None) == name]
+        if len(members) != 1 or not isinstance(members[0], ast.FunctionDef) or members[0].decorator_list:
+            return False
+        method = members[0]
+        body = [item for item in method.body if not (isinstance(item, ast.Expr) and isinstance(item.value, ast.Constant) and isinstance(item.value.value, str))]
+        if len(body) != 1 or not isinstance(body[0], ast.For):
+            return False
+        loop = body[0]
+        if not isinstance(loop.target, ast.Name) or loop.orelse:
+            return False
+        iterator = loop.iter
+        if not (isinstance(iterator, ast.Call) and isinstance(iterator.func, ast.Attribute) and iterator.func.attr == "parameters"
+                and isinstance(iterator.func.value, ast.Name) and iterator.func.value.id == "self"
+                and not iterator.args and not iterator.keywords):
+            return False
+        if any(getattr(item, "name", None) == "parameters" for item in spec.definition.body) or "parameters" in spec.attributes:
+            return False
+        parameter = loop.target.id
+        initializers = {"zeros_", "ones_", "constant_", "uniform_", "normal_", "xavier_uniform_", "xavier_normal_", "kaiming_uniform_", "kaiming_normal_", "trunc_normal_", "orthogonal_", "sparse_"}
+        allowed_nodes = (ast.Expr, ast.Call, ast.Attribute, ast.Name, ast.Load, ast.If, ast.Compare, ast.Constant,
+                         ast.Gt, ast.GtE, ast.Lt, ast.LtE, ast.Eq, ast.NotEq, ast.keyword, ast.UnaryOp, ast.USub, ast.UAdd)
+        for statement in loop.body:
+            for item in ast.walk(statement):
+                if not isinstance(item, allowed_nodes): return False
+                if isinstance(item, ast.Name) and item.id != parameter and item.id not in spec.unit.imports: return False
+                if isinstance(item, ast.Call):
+                    dim = (isinstance(item.func, ast.Attribute) and isinstance(item.func.value, ast.Name)
+                           and item.func.value.id == parameter and item.func.attr == "dim" and not item.args and not item.keywords)
+                    qualified = spec.unit.resolve(item.func)
+                    init = (qualified.removeprefix("torch.nn.init.") in initializers and qualified.startswith("torch.nn.init.")
+                            and item.args and isinstance(item.args[0], ast.Name) and item.args[0].id == parameter
+                            and all(literal(arg, spec.env) is not UNKNOWN for arg in item.args[1:])
+                            and all(keyword.arg and literal(keyword.value, spec.env) is not UNKNOWN for keyword in item.keywords))
+                    if not dim and not init: return False
+        return bool(loop.body)
 
     def initializer_statements(self, statements: list[ast.stmt], spec: Spec, depth: int) -> bool:
         """Recover direct construction and constant branches, never unknown paths."""
@@ -663,7 +848,9 @@ class Analyzer:
                             if value is UNKNOWN:
                                 self.warn(f"Unresolved initializer assignment at {spec.unit.path}:{statement.lineno}; attribute {target.attr} remains opaque.")
                     elif isinstance(target, ast.Name):
-                        spec.env[target.id] = literal(statement.value, spec.env)
+                        built = self.construct(statement.value, spec.unit, spec.env, spec.attributes,
+                                               f"{spec.identity}.{target.id}@construction:{statement.lineno}", depth + 1)
+                        spec.env[target.id] = built if built is not None else literal(statement.value, spec.env)
                     else:
                         self.initializer_unknown([statement], spec)
             elif isinstance(statement, ast.If):
@@ -688,6 +875,8 @@ class Analyzer:
                   and "super" not in spec.env and not statement.value.func.value.args
                   and not statement.value.func.value.keywords and not statement.value.args and not statement.value.keywords):
                 continue  # The external Module initializer supplies no diagram internals.
+            elif isinstance(statement, ast.Expr) and self.parameter_only_initializer(statement.value, spec):
+                continue
             else:
                 self.initializer_unknown([statement], spec)
         return False
@@ -847,7 +1036,7 @@ class Analyzer:
             return "left" if left_is_bypass else "right"
         return None
 
-    def operator(self, source: ast.AST, spec: Spec, parent: str, kind: str, inputs: list[tuple[str, Any]], category: str = "operator", evidence: str = "source", outputs: list[str] | None = None) -> Any:
+    def operator(self, source: ast.AST, spec: Spec, parent: str, kind: str, inputs: list[tuple[str, Any]], category: str = "operator", evidence: str = "source", outputs: list[str] | None = None, parameters: dict | None = None) -> Any:
         # The source structure and operation occurrence, rather than line number,
         # identify a call. Inserting comments therefore preserves diagram IDs.
         fingerprint = digest(ast.dump(source, include_attributes=False))[:10]
@@ -855,6 +1044,8 @@ class Analyzer:
         if kind == "Add":
             category = "residual" if residual_operand else "operator"
         node = self.node(f"op:{parent}:{kind}:{fingerprint}", kind, kind, category, parent, spec.unit, source, evidence=evidence)
+        if parameters is not None:
+            node["parameters"] = parameters
         for name, value in inputs:
             self.bind(value, node, name, "residual" if name == residual_operand else "data")
         if outputs:
@@ -909,6 +1100,25 @@ class Analyzer:
             keywords = {keyword.arg: self.expression(keyword.value, spec, values, parent) for keyword in expression.keywords if keyword.arg}
             if isinstance(target, Spec):
                 return self.invoke(target, args, keywords, parent, spec.unit, expression)
+            if (spec.definition and isinstance(expression.func, ast.Attribute) and isinstance(expression.func.value, ast.Name)
+                    and expression.func.value.id == "self" and expression.func.attr not in spec.attributes and f"self.{expression.func.attr}" not in spec.env):
+                members = [item for item in spec.definition.body if getattr(item, "name", None) == expression.func.attr
+                           or isinstance(item, (ast.Assign, ast.AnnAssign)) and any(isinstance(part, ast.Name) and part.id == expression.func.attr and isinstance(part.ctx, ast.Store) for part in ast.walk(item))]
+                method = members[0] if len(members) == 1 else None
+                if (isinstance(method, ast.FunctionDef) and not method.decorator_list and self.depth < 12
+                        and not any(isinstance(item, ast.Starred) for item in expression.args)
+                        and not any(item.arg is None for item in expression.keywords)
+                        and not any(isinstance(item, ast.Attribute) and isinstance(item.ctx, (ast.Store, ast.Del)) for item in ast.walk(method))):
+                    bound = self.bind_static(method, args, keywords, spec.env, method=True)
+                    if bound is not None:
+                        self.depth += 1
+                        try:
+                            result, returned = self.statements(method.body, spec, bound, parent)
+                        finally:
+                            self.depth -= 1
+                        if returned:
+                            return result
+
             qualified = spec.unit.resolve(expression.func, spec.env | values)
             functional = {
                 "torch.nn.functional.relu": "ReLU", "torch.nn.functional.gelu": "GELU", "torch.nn.functional.dropout": "Dropout",
@@ -925,7 +1135,27 @@ class Analyzer:
                         return self.operator(expression, spec, parent, method.capitalize(),
                                              [("input", receiver)] + [(f"arg{index}", value) for index, value in enumerate(args)] + list(keywords.items()),
                                              "opaque", evidence="opaque")
-                    return self.operator(expression, spec, parent, method.capitalize(), [("input", receiver)], evidence="contract")
+                    # Tensor method arguments are model facts, not palette
+                    # defaults. Retain their static literal axes/shapes so an
+                    # expanded editor can recreate the authored calculation.
+                    positional = [literal(arg, spec.env | values) for arg in expression.args]
+                    named = {keyword.arg: literal(keyword.value, spec.env | values) for keyword in expression.keywords if keyword.arg}
+                    parameters = {}
+                    signatures = {"flatten": (["start_dim", "end_dim"], {"start_dim": 0, "end_dim": -1}),
+                                  "transpose": (["dim0", "dim1"], {}),
+                                  "mean": (["dim", "keepdim"], {"keepdim": False}),
+                                  "sum": (["dim", "keepdim"], {"keepdim": False}),
+                                  "unsqueeze": (["dim"], {}), "squeeze": (["dim"], {})}
+                    if method in signatures:
+                        fields, defaults = signatures[method]
+                        parameters = {**defaults, **dict(zip(fields, positional)), **named}
+                    elif method in ("reshape", "view", "permute"):
+                        shape = positional[0] if len(positional) == 1 and isinstance(positional[0], (list, tuple)) else positional
+                        parameters = {"dims" if method == "permute" else "shape": list(shape)}
+                    def literal_parameter(value):
+                        return type(value) in (int, float, bool, str) or isinstance(value, (list, tuple)) and all(literal_parameter(item) for item in value)
+                    parameters = {key: list(value) if isinstance(value, tuple) else value for key, value in parameters.items() if literal_parameter(value)}
+                    return self.operator(expression, spec, parent, "Reshape" if method == "view" else method.capitalize(), [("input", receiver)], evidence="contract", parameters=parameters)
                 if refs(receiver):
                     args.insert(0, receiver)
             self.warn(f"Unsupported call {spec.unit.expression(expression.func)} at {spec.unit.path}:{expression.lineno}; retained opaque.")
@@ -996,7 +1226,8 @@ class Analyzer:
                     # A conditional return must not disappear into a later graph.
                     if any(isinstance(item, ast.Return) for item in ast.walk(statement)):
                         boundary = next(node for node in reversed(self.nodes) if node["parentId"] == parent)
-                        return self.out(boundary), True
+                        output = self.out(boundary)
+                        return Ref(output.node, output.port, output.tensor, '$return'), True
             elif isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Constant):
                 continue  # A docstring is data, not a model operation.
             elif isinstance(statement, ast.Expr):
@@ -1009,9 +1240,12 @@ class Analyzer:
         self.warn(f"Unsupported control/state region {kind} at {spec.unit.path}:{statement.lineno}; affected values are opaque.")
         involved = sorted({item.id for item in ast.walk(statement) if isinstance(item, ast.Name) and isinstance(item.ctx, ast.Load) and item.id in values})
         output = self.operator(statement, spec, parent, kind, [(name, values[name]) for name in involved], "opaque", evidence="opaque")
+        if isinstance(statement, ast.If):
+            region = next(node for node in self.nodes if node["id"] == output.node)
+            self.source_regions.append((region, statement, spec, {name: values[name] for name in involved}))
         assigned = {item.id for item in ast.walk(statement) if isinstance(item, ast.Name) and isinstance(item.ctx, ast.Store)}
         for name in assigned:
-            values[name] = output
+            values[name] = Ref(output.node, output.port, output.tensor, name) if isinstance(statement, ast.If) else output
         return output
 
     def analyze(self, module: str, name: str) -> dict[str, Any]:
@@ -1050,6 +1284,9 @@ class Analyzer:
             node = self.node(f"output:{module}.{name}:{index}", "output" if len(bindings) == 1 else f"output {index + 1}", "Output", "output", root_id, own_unit, forward)
             node["outputPath"] = path
             self.bind(value, node, "value")
+        # Expose available branch syntax and local definitions independently
+        # of the conservative tensor graph. No branch/config is selected.
+        source_relations = SourceStructure(self, MAX_NODES).populate(self.source_regions)
         validate_output_paths(self.nodes)
         source_files = [{"path": unit.path, "content": unit.content, "digest": unit.raw_digest} for unit in sorted(self.corpus.units.values(), key=lambda value: value.path)]
         source_digest = digest([{key: value for key, value in source.items() if key != "content"} for source in source_files])
@@ -1060,8 +1297,11 @@ class Analyzer:
                 item["parameterOrigins"] = {name: {"kind": origin["kind"], "expression": origin["expression"], "path": origin["path"]} for name, origin in node["parameterOrigins"].items()}
             semantic_nodes.append(item)
         semantic = {"entry": f"{module}:{name}", "nodes": semantic_nodes, "edges": self.edges}
+        if source_relations:
+            semantic['sourceRelations'] = [{k:v for k,v in relation.items() if k != 'source'} for relation in source_relations]
         self.diagnostics.insert(0, {"level": "info", "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."})
-        return {"schemaVersion": 1, "id": f"architecture:{module}.{name}", "label": name, "sourceDigest": source_digest, "irDigest": digest(semantic), "entry": f"{module}:{name}", "nodes": self.nodes, "edges": self.edges, "diagnostics": self.diagnostics, "sources": source_files}
+        return {"schemaVersion": 1, "id": f"architecture:{module}.{name}", "label": name, "sourceDigest": source_digest, "irDigest": digest(semantic), "entry": f"{module}:{name}", "nodes": self.nodes, "edges": self.edges, "diagnostics": self.diagnostics, "sources": source_files,
+                **({'sourceRelations':source_relations} if source_relations else {})}
 
 
 def analyze_project(root: str | Path, entry: str) -> dict[str, Any]:

@@ -133,7 +133,7 @@ function appHarness(scope:MoveScope=all, ids:string[]=['output'], commandText=''
     selectedNode:current.architecture.nodes.find(n=>n.id===ids[0]),selectedSceneNode:scene.nodes.find(n=>n.id===ids[0]),
     editingTarget:()=>false,claimGestureCamera:()=>{events.push('claim');},
     synchronizeCameraViewport:()=>{events.push('synchronize');},
-    setPreview:(value:unknown)=>{preview=typeof value==='function'?(value as (p:unknown)=>unknown)(preview):value;},
+    setPortLayoutPreview:()=>{},portEditing:false,setPreview:(value:unknown)=>{preview=typeof value==='function'?(value as (p:unknown)=>unknown)(preview):value;},
     setRecoveryPreview:(value:unknown)=>{recovery=value;},setBox:()=>{},setPortDraft:()=>{},setIsPanning:()=>{},
     setSelection:()=>{},setPanel:()=>{},setFailure:(value:string)=>{failures.push(value);},setNotice:(value:string)=>{notices.push(value);},
     setCommand:(value:string)=>{commands.push(value);},setLayoutMoveScope:(value:MoveScope)=>{scopeChanges.push(value);},

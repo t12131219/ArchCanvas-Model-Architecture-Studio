@@ -23,6 +23,10 @@ class M4HoldoutTests(unittest.TestCase):
         nodes = {}
         ports = {}
         for node in architecture["nodes"]:
+            if node.get('sourceStructure'):
+                self.assertEqual(node['ports'], [])
+                self.assertNotIn('instanceId', node)
+                continue  # Inspection hierarchy is additional syntax, not tensor facts.
             instance = node.get("instanceId", "")
             if instance == prefix:
                 name = "root"
@@ -195,7 +199,10 @@ class M4HoldoutTests(unittest.TestCase):
         architecture, nodes = self.family("GraphForecast")
         self.assertEqual(nodes["message"]["children"], [])
         self.assertFalse(any(node["kind"] in ("MultiheadAttention", "ReLU", "Softmax") for node in architecture["nodes"]))
-        self.assertEqual(nodes["ConditionalRegion"]["children"], [])
+        boundary = nodes["ConditionalRegion"]
+        branches = [node for node in architecture['nodes'] if node['id'] in boundary['children']]
+        self.assertEqual([node['kind'] for node in branches], ['SourceBranch', 'SourceBranch'])
+        self.assertTrue(all(node.get('sourceStructure') and not node['ports'] for node in branches))
 
     def test_ssm_named_scan_and_dynamic_loop_are_opaque(self):
         architecture, nodes = self.family("DynamicStateSpace")

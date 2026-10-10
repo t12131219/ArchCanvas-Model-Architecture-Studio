@@ -10,7 +10,7 @@ import unittest
 import uuid
 from unittest.mock import patch
 
-from scripts.m5_beta_bundle import pack, verify
+from scripts.m5_beta_bundle import pack, stage_current_candidate, verify
 from scripts.m5_host_install import (
     BUNDLE_MANIFEST,
     CONTRACT_NAME,
@@ -31,7 +31,8 @@ class M5HostInstallTests(unittest.TestCase):
         cls.work = Path(cls.temp.name)
         cls.release = cls.work / "independent-release"
         bundle = cls.work / "current-candidate.tar.gz"
-        pack(ROOT, bundle)
+        source = stage_current_candidate(ROOT, cls.work / "current-source", "0.1.0-beta.3")
+        pack(source, bundle)
         verify(bundle, cls.release, analyze=False)
 
     @classmethod
@@ -68,9 +69,9 @@ class M5HostInstallTests(unittest.TestCase):
 
     def test_rewritten_document_links_are_local_and_survive_move(self) -> None:
         skill, _ = self.install()
-        text = (skill / "SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("runtime/release/docs/m5-beta-release.md", text)
-        self.assertNotIn("../../docs/m5-beta-release.md", text)
+        text = (skill / "references/visual-workflow.md").read_text(encoding="utf-8")
+        self.assertIn("../runtime/release/docs/m5-beta-release.md", text)
+        self.assertNotIn("../../../docs/m5-beta-release.md", text)
         moved = self.work / "moved" / "archcanvas"
         moved.parent.mkdir()
         shutil.move(skill, moved)

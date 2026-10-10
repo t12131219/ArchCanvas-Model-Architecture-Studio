@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Node 24+ loads the formal TypeScript core directly. Never regenerate model facts.
-import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
+import { readFile, mkdir, access } from 'node:fs/promises';
+import { commitExportPair } from './atomic_export.mjs';
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { dirname, resolve, extname } from 'node:path';
@@ -49,7 +50,6 @@ try {
   const conversionReceipt = JSON.parse(converted.stderr.trim());
   const path = resolve(output);
   await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, converted.stdout);
   const receipt = {
     ...conversionReceipt,
     path, documentId: document.id, revision: document.revision,
@@ -62,7 +62,8 @@ try {
     exportScope: scene.exportScope ?? { kind: 'document' },
     physicalPreflight: publicationPreflight(scene),
   };
-  await writeFile(`${path}.receipt.json`, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
+  if (createHash('sha256').update(converted.stdout).digest('hex') !== receipt.outputDigest) throw new Error('Converted artifact does not match its receipt digest');
+  await commitExportPair(path, converted.stdout, receipt);
   console.log(JSON.stringify(receipt, null, 2));
 } catch (error) {
   console.error(JSON.stringify({ error: error.message }));

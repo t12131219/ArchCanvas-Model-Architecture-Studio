@@ -81,8 +81,11 @@ test('parameter field order is irrelevant while graph-array order remains signif
   second.nodes.reverse(); assert.notEqual(draftValidationKey(second), key);
   second.nodes.reverse(); second.edges.reverse(); assert.notEqual(draftValidationKey(second), key);
   const fields = JSON.parse(key);
-  assert.deepEqual(Object.keys(fields), ['schemaVersion', 'mode', 'id', 'nodes', 'edges']);
+  assert.deepEqual(Object.keys(fields), ['allowUnusedNodes', 'schemaVersion', 'mode', 'id', 'nodes', 'edges']);
   assert.deepEqual(Object.keys(fields.nodes[1]), ['id', 'kind', 'parameters']);
+  const retained = { ...first, allowUnusedNodes: true };
+  assert.notEqual(draftValidationKey(retained), key, 'retention changes require a fresh check');
+  assert.equal(draftValidationKey({ ...first, allowUnusedNodes: false }), key);
 });
 
 test('complete static response preserves tensor declarations and identities while isolating them from mutable response data', () => {

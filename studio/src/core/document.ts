@@ -2,6 +2,7 @@ import type { Architecture, CanvasDocument, HistoryAction, HistoryState, MoveSco
 import { CATEGORY_STYLES, TOKENS } from './tokens.ts';
 import { buildScene } from './scene.ts';
 import { fields, finite, object, textValue, validateArchitecture, validateDocument, ValidationError } from './validate.ts';
+import { portLayoutKey } from './portRouting.ts';
 
 const clone = <T>(v: T): T => structuredClone(v);
 const FRONTIER_PREFIX = 'visible-frontier/1:';
@@ -157,6 +158,10 @@ export function reconcileDocument(previous: CanvasDocument, architecture: Archit
   document.displayAliases = clone(filter(previous.displayAliases, nodes));
   document.nodeStyleOverrides = clone(filter(previous.nodeStyleOverrides, nodes));
   document.edgeStyleOverrides = clone(filter(previous.edgeStyleOverrides, edges));
+  if (previous.portLayoutOverrides) document.portLayoutOverrides = clone(Object.fromEntries(Object.entries(previous.portLayoutOverrides).filter(([key]) => {
+    const [owner, node, port] = JSON.parse(key) as string[];
+    return nodes.has(owner) && nodes.has(node) && architecture.nodes.find(n => n.id === node)?.ports.some(p => p.id === port);
+  })));
   document.layout = { ...document.layout, ...clone(filter(previous.layout, nodes)) };
   document.expandedIds = previous.expandedIds.filter(id => nodes.has(id) && architecture.nodes.find(n => n.id === id)!.children.length > 0);
   document.pinnedObjects = previous.pinnedObjects.filter(id => nodes.has(id));
@@ -249,9 +254,35 @@ export function applyVisualBatch(document: CanvasDocument, operations: VisualOpe
   for (const raw of operations) {
     const op = object(raw, 'operation');
     switch (op.type) {
+      case 'title': fields(op, ['type', 'title'], 'operation'); next.title = textValue(op.title, 'title'); break;
       case 'alias': fields(op, ['type', 'id', 'label'], 'operation'); next.displayAliases[target(op.id)] = textValue(op.label, 'alias.label'); break;
       case 'nodeStyle': { fields(op, ['type', 'id', 'style'], 'operation'); const id = target(op.id); next.nodeStyleOverrides[id] = { ...next.nodeStyleOverrides[id], ...object(op.style, 'nodeStyle') }; break; }
       case 'edgeStyle': { fields(op, ['type', 'id', 'style'], 'operation'); const id = target(op.id, edgeIds); next.edgeStyleOverrides[id] = { ...next.edgeStyleOverrides[id], ...object(op.style, 'edgeStyle') }; break; }
+      case 'portLayout': {
+        fields(op, ['type', 'ownerId', 'nodeId', 'portId', 'role', 'layout'], 'operation');
+        const key = portLayoutKey(target(op.ownerId), target(op.nodeId), textValue(op.portId, 'portLayout.portId'), op.role as import('./types.ts').EdgeRole);
+        if (!next.architecture.nodes.find(node => node.id === op.nodeId)?.ports.some(port => port.id === op.portId) || !['data', 'residual', 'memory', 'mask'].includes(op.role as string)) throw new ValidationError('portLayout: unknown port or role');
+        next.portLayoutOverrides ??= {};
+        if (op.layout === null) next.portLayoutOverrides[key] = null;
+        else next.portLayoutOverrides[key] = clone(object(op.layout, 'portLayout')) as unknown as import('./types.ts').PortLayout;
+        break;
+      }
+      case 'nodeLayout': {
+        fields(op, ['type', 'id', 'position'], 'operation');
+        const id = target(op.id), position = object(op.position, 'nodeLayout.position');
+        fields(position, ['x', 'y', 'width', 'height'], 'nodeLayout.position');
+        const x = finite(position.x, 'nodeLayout.x'), y = finite(position.y, 'nodeLayout.y');
+        for (const key of ['width', 'height']) if (position[key] !== undefined && finite(position[key], `nodeLayout.${key}`) <= 0)
+          throw new ValidationError(`nodeLayout.${key}: expected positive size`);
+        if (subtreePinned(next, id)) break;
+        const previous = next.layout[id];
+        next.layout[id] = { ...previous, ...position, x, y } as import('./types.ts').Position;
+        for (const snapshot of Object.values(next.layoutByFrontier)) if (snapshot[id]) {
+          if (previous) { snapshot[id].x += x - previous.x; snapshot[id].y += y - previous.y; }
+          else { snapshot[id].x = x; snapshot[id].y = y; }
+        }
+        break;
+      }
       case 'move': {
         fields(op, ['type', 'ids', 'dx', 'dy', 'scope'], 'operation'); if (!Array.isArray(op.ids)) throw new ValidationError('move.ids: expected array');
         const scope = resolveMoveScope(op.scope);

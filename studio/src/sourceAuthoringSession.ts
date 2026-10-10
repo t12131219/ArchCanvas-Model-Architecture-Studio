@@ -28,7 +28,9 @@ function selectedDraftIds(draft: AuthoredDraft, canonicalIds: readonly string[])
 }
 export function followSourceView(workspace: AuthoringWorkspace, view: SourceAuthoringView): AuthoringWorkspace {
   return { ...workspace, selection: [...new Set(selectedDraftIds(workspace.draft, view.selection))],
-    camera: { ...view.camera }, viewport: view.viewport ? { ...view.viewport } : undefined, tool: view.tool, sourceHistory: { ...view.sourceHistory } };
+    camera: { ...(workspace.draft.sourceProvenance?.viewCanvas && workspace.camera ? workspace.camera : view.camera) },
+    viewport: workspace.draft.sourceProvenance?.viewCanvas ? workspace.viewport : view.viewport ? { ...view.viewport } : undefined,
+    tool: view.tool, sourceHistory: { ...view.sourceHistory } };
 }
 export function authoringCameraAtViewport(camera: DraftCamera, previous: CameraViewport | undefined, next: CameraViewport): DraftCamera {
   return previous ? resizeCameraViewport(camera, previous, next) ?? camera : camera;

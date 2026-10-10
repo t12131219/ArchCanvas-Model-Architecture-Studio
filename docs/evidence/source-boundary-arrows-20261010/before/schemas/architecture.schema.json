@@ -1,0 +1,733 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://archcanvas.local/schemas/architecture-v1.json",
+  "title": "ArchCanvas Architecture v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "sourceDigest": {
+      "type": "string"
+    },
+    "irDigest": {
+      "type": "string"
+    },
+    "entry": {
+      "type": "string"
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Node"
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Edge"
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "level": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "level",
+          "message"
+        ]
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "digest": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "content",
+          "digest"
+        ]
+      }
+    },
+    "sourceRelations": {
+      "type": "array",
+      "maxItems": 1440,
+      "items": {
+        "$ref": "#/$defs/SourceRelation"
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "label",
+    "sourceDigest",
+    "irDigest",
+    "entry",
+    "nodes",
+    "edges",
+    "diagnostics",
+    "sources"
+  ],
+  "$defs": {
+    "Architecture": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "sourceDigest": {
+          "type": "string"
+        },
+        "irDigest": {
+          "type": "string"
+        },
+        "entry": {
+          "type": "string"
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Node"
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Edge"
+          }
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "level": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "level",
+              "message"
+            ]
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string"
+              },
+              "digest": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "content",
+              "digest"
+            ]
+          }
+        },
+        "sourceRelations": {
+          "type": "array",
+          "maxItems": 1440,
+          "items": {
+            "$ref": "#/$defs/SourceRelation"
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "id",
+        "label",
+        "sourceDigest",
+        "irDigest",
+        "entry",
+        "nodes",
+        "edges",
+        "diagnostics",
+        "sources"
+      ]
+    },
+    "Node": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "parentId": {
+          "type": "string"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "ports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Port"
+          }
+        },
+        "parameters": {
+          "type": "object"
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "line": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "endLine": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "expression": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "line",
+            "endLine",
+            "expression"
+          ]
+        },
+        "evidence": {
+          "enum": [
+            "source",
+            "contract",
+            "opaque"
+          ]
+        },
+        "sourceStructure": {
+          "const": true,
+          "description": "Source inspection hierarchy without tensor ports or executable instance claims."
+        },
+        "repeat": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "sharing": {
+              "enum": [
+                "independent",
+                "shared"
+              ]
+            }
+          },
+          "required": [
+            "count",
+            "sharing"
+          ]
+        },
+        "instanceId": {
+          "type": "string"
+        },
+        "callId": {
+          "type": "string"
+        },
+        "parameterOrigins": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "literal",
+                  "constructor_argument",
+                  "derived",
+                  "unknown"
+                ]
+              },
+              "path": {
+                "type": "string"
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "endLine": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "column": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "endColumn": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "expression": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "path",
+              "line",
+              "endLine",
+              "column",
+              "endColumn",
+              "expression"
+            ]
+          }
+        },
+        "outputPath": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OutputPathSegment"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "kind",
+        "category",
+        "children",
+        "ports",
+        "parameters",
+        "evidence"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "sourceStructure"
+            ]
+          },
+          "then": {
+            "required": [
+              "source"
+            ],
+            "properties": {
+              "kind": {
+                "pattern": "^Source"
+              },
+              "evidence": {
+                "const": "source"
+              },
+              "ports": {
+                "maxItems": 0
+              },
+              "instanceId": false,
+              "callId": false,
+              "repeat": false,
+              "outputPath": false,
+              "parameterOrigins": false
+            }
+          }
+        }
+      ]
+    },
+    "Port": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "direction": {
+          "enum": [
+            "in",
+            "out"
+          ]
+        },
+        "role": {
+          "type": "string"
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "direction",
+        "role",
+        "ordinal"
+      ]
+    },
+    "Binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "nodeId": {
+          "type": "string"
+        },
+        "portId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "nodeId",
+        "portId"
+      ]
+    },
+    "Edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/Binding"
+        },
+        "target": {
+          "$ref": "#/$defs/Binding"
+        },
+        "tensorId": {
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "data",
+            "residual",
+            "memory",
+            "mask"
+          ]
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "source",
+        "target",
+        "tensorId",
+        "role"
+      ]
+    },
+    "Position": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ]
+    },
+    "NodeStyle": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fill": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?(?:[0-9a-fA-F]{2})?$"
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?(?:[0-9a-fA-F]{2})?$"
+        },
+        "glyph": {
+          "enum": [
+            "module",
+            "operator",
+            "tensor",
+            "add",
+            "attention",
+            "norm",
+            "opaque"
+          ]
+        }
+      },
+      "required": []
+    },
+    "EdgeStyle": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stroke": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?(?:[0-9a-fA-F]{2})?$"
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0.25,
+          "maximum": 12
+        },
+        "dashed": {
+          "type": "boolean"
+        }
+      },
+      "required": []
+    },
+    "LegendItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?(?:[0-9a-fA-F]{2})?$"
+        },
+        "glyph": {
+          "enum": [
+            "module",
+            "operator",
+            "tensor",
+            "add",
+            "attention",
+            "norm",
+            "opaque"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "color",
+        "glyph"
+      ]
+    },
+    "Annotation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "x",
+        "y"
+      ]
+    },
+    "PageSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "widthMm": {
+          "type": "number",
+          "minimum": 25,
+          "maximum": 1000
+        },
+        "background": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?(?:[0-9a-fA-F]{2})?$"
+        },
+        "preset": {
+          "enum": [
+            "paper",
+            "monochrome"
+          ]
+        }
+      },
+      "required": [
+        "widthMm",
+        "background",
+        "preset"
+      ]
+    },
+    "OutputPathSegment": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "index"
+            },
+            "index": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "kind",
+            "index"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "key"
+            },
+            "key": {
+              "type": [
+                "string",
+                "number",
+                "boolean",
+                "null"
+              ],
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "kind",
+            "key"
+          ]
+        }
+      ]
+    },
+    "SourceRelation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "sourceId": {
+          "type": "string"
+        },
+        "targetId": {
+          "type": "string"
+        },
+        "kind": {
+          "const": "value-dependency"
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "line": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "endLine": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "expression": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "line",
+            "endLine",
+            "expression"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "sourceId",
+        "targetId",
+        "kind",
+        "source"
+      ]
+    }
+  }
+}

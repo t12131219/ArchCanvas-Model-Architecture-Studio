@@ -1,3 +1,4 @@
+import { sameSourceSemantics } from '../src/sourcePresentation.ts';
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -67,9 +68,9 @@ function callbacks(file: string, component: string, names: string[], environment
 function browseHarness(draft: AuthoredDraft, options: { baseline?: AuthoredDraft; generate?: (value: AuthoredDraft) => Promise<GeneratedDraft>; open?: (value: GeneratedDraft) => Promise<void> } = {}) {
   const currentRef = { current: draftHistory(draft) }, retained: AuthoringWorkspace[] = [], reused: AuthoringWorkspace[] = [], opened: GeneratedDraft[] = [], errors: string[] = [];
   const busyStates: boolean[] = [], operations: Array<string | null> = [], generatedInputs: AuthoredDraft[] = [], flight = { current: false };
-  const env = { busy: false, invalidFieldsRef: { current: [] }, currentRef, storageRevision: 4, savedRevision: 2,
+  const env = { busy: false, portEditing: false, invalidFieldsRef: { current: [] }, currentRef, storageRevision: 4, savedRevision: 2,
     selectedIds: ['linear'], camera: { ...view.camera }, cameraViewport: { current: view.viewport }, tool: view.tool, initial: { sourceHistory: view.sourceHistory },
-    browseBaseline: options.baseline, onReuseView: (workspace: AuthoringWorkspace) => { reused.push(workspace); }, sameGeneratedDraft,
+    browseBaseline: options.baseline, onReuseView: (workspace: AuthoringWorkspace) => { reused.push(workspace); }, sameGeneratedDraft, sameSourceSemantics,
     // Aliases cover the product's synchronous lock without replacing the actual callback.
     browsing: flight, browseInFlight: flight, browseFlight: flight,
     cancel: () => {}, clearError: () => {}, setBusy: (value: boolean) => { busyStates.push(value); }, setBusyOperation: (value: string | null) => { operations.push(value); },
@@ -92,7 +93,7 @@ function generatedAppHarness(workspace: AuthoringWorkspace, existing?: CanvasDoc
   const localStorage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value); } };
   const env = { ...generatedWorkspaceHelpers, historyRef, cameraRef, authoringSessions, authoringSessionKey, generatedWorkspaces,
     localStorage, selection, sourceAuthoringKey, followSourceView, resumeSourceAuthoring, buildScene, createGeneratedCanvas, createHistory, blankDraft,
-    loadSequence: { current: 0 }, cameraOwner: { current: null }, cameraIntent: { current: 0 }, tool: 'pan', busy: false, activeRecovery: null,
+    loadSequence: { current: 0 }, cameraOwner: { current: null }, cameraIntent: { current: 0 }, tool: 'pan', busy: false, portEditing: false, activeRecovery: null,
     cancelGesture: () => {}, readCameraViewport: () => view.viewport, openArchitecture: async () => {},
     api: { register: async (architecture: Architecture) => { registered.push(architecture); return { id: 'managed-generated', architecture }; },
       importSourceDraft: async () => { throw new Error('A generated view must resume the original draft, not import a new one'); },
@@ -132,7 +133,7 @@ test('new-blank from the editor hands off the exact unsaved draft and history be
   const history = changeDraft(draftHistory(sourceDraft), draft => { draft.nodes[1].label = '未保存的修改'; });
   const snapshots: AuthoringWorkspace[] = [];
   const currentRef = { current: history };
-  const env = { busy: false, cancel: () => {}, onNewBlank: (workspace: AuthoringWorkspace) => snapshots.push(workspace), currentRef,
+  const env = { busy: false, portEditing: false, cancel: () => {}, onNewBlank: (workspace: AuthoringWorkspace) => snapshots.push(workspace), currentRef,
     storageRevision: 4, savedRevision: 0, selectedIds: ['linear'], camera: view.camera,
     cameraViewport: { current: view.viewport }, tool: 'pan', initial: { sourceHistory: view.sourceHistory, viewBaseline: sourceDraft } };
   callbacks('AuthoringStudio.tsx', 'AuthoringStudio', ['startBlankDraft'], env).startBlankDraft();
@@ -373,7 +374,7 @@ test('malformed custom source/class/constructor/port/output contracts cannot ent
 
 test('actual custom-module insertion registers once, supports repeated instances and persists definitions plus undo', () => {
   const currentRef = { current: draftHistory(sourceDraft) }, selected: string[] = [], notices: string[] = [];
-  const env = { busy: false, catalog, currentRef, svgRef: { current: null }, draftModuleSize, nextDraftPosition, addDraftNode,
+  const env = { busy: false, portEditing: false, catalog, currentRef, svgRef: { current: null }, draftModuleSize, nextDraftPosition, addDraftNode,
     crypto, point: (x: number, y: number) => ({ x, y }),
     apply: (update: Parameters<typeof changeDraft>[1]) => { currentRef.current = changeDraft(currentRef.current, update); return currentRef.current.draft; },
     setSelection: (value: { node: string }) => { selected.push(value.node); }, setPaletteView: () => {}, setPaletteCategory: () => {}, setSearch: () => {}, setCustomModuleOpen: () => {},

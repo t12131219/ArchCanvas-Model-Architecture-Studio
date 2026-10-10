@@ -34,8 +34,8 @@ def _fail(technical: str, code: str, message: str, **details):
     raise DraftError(technical, diagnostics=[_diagnostic(code, message, technical, **details)])
 
 
-MAX_NODES = 128
-MAX_EDGES = 384
+MAX_NODES = 1200
+MAX_EDGES = 3600
 IDENTITY = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}\Z")
 ENTRY = "model:AuthoredModel"
 
@@ -82,6 +82,19 @@ def _visual(value: Any, node_id: str | None = None) -> dict:
     return deepcopy(value)
 
 
+def _port_layouts(value: Any, port_ids: set[str]) -> dict:
+    """Display attachments are persisted independently of tensor bindings."""
+    if not isinstance(value, dict) or set(value) - port_ids:
+        raise DraftError("Port layouts must reference registered ports.")
+    for layout in value.values():
+        if layout is None:
+            continue
+        _keys(layout, {"side", "offset"}, "Port layout")
+        if layout["side"] not in ("top", "right", "bottom", "left") or type(layout["offset"]) not in (int, float) or not math.isfinite(layout["offset"]) or not 0 <= layout["offset"] <= 1:
+            raise DraftError("Port layout requires an exposed side and a finite offset between 0 and 1.")
+    return deepcopy(value)
+
+
 def _parameter(value: Any, field: dict, node: str, node_id: str | None):
     context = f"{node}.{field['name']}"
     type_ = field["type"]
@@ -123,13 +136,14 @@ def validate_draft(draft: dict, *, require_complete: bool = False) -> dict:
     """Normalize a separate draft; reject malformed or contradictory graphs.
 
     Incomplete graphs can be saved while building. Generation requires all
-    ports to be bound and all nodes to contribute to at least one named output.
+    ports to be bound. Unused branches require explicit retention; otherwise all
+    nodes must contribute to at least one named output.
     Shape facts are deductions from declarations, not sampled execution.
     """
     if isinstance(draft, dict) and "sourceProvenance" in draft:
         from .source_import import validate_source_draft
         return validate_source_draft(draft, require_complete=require_complete)
-    _keys(draft, {"schemaVersion", "mode", "id", "title", "revision", "nodes", "edges"} | ({"customModules"} if "customModules" in draft else set()), "Authored draft")
+    _keys(draft, {"schemaVersion", "mode", "id", "title", "revision", "nodes", "edges"} | ({"customModules"} if "customModules" in draft else set()) | ({"allowUnusedNodes"} if "allowUnusedNodes" in draft else set()), "Authored draft")
     from .custom_modules import validate_custom_definitions, custom_spec
     custom = validate_custom_definitions(draft.get("customModules", []))
     custom_kinds = {item["kind"] for item in custom}
@@ -142,16 +156,20 @@ def validate_draft(draft: dict, *, require_complete: bool = False) -> dict:
     if type(draft["revision"]) is not int or not 0 <= draft["revision"] <= 2**53 - 1:
         _fail("Draft revision must be a nonnegative safe integer.", "invalid_revision", "草稿版本号须为非负安全整数。")
     if not isinstance(draft["nodes"], list) or len(draft["nodes"]) > MAX_NODES or not isinstance(draft["edges"], list) or len(draft["edges"]) > MAX_EDGES:
-        _fail("An authored draft permits at most 128 nodes and 384 connections.", "draft_budget_exceeded",
-              "建模草稿最多允许 128 个模块、384 条连接，请缩小草稿。")
+        _fail("An authored draft permits at most 1200 nodes and 3600 connections.", "draft_budget_exceeded",
+              "建模草稿最多允许 1200 个模块、3600 条连接，请缩小草稿。")
     normalized = {key: deepcopy(draft[key]) for key in ("schemaVersion", "mode", "id", "title", "revision")}
+    if "allowUnusedNodes" in draft:
+        if type(draft["allowUnusedNodes"]) is not bool:
+            _fail("allowUnusedNodes must be boolean.", "invalid_unused_policy", "保留未使用分支选项必须为布尔值。")
+        normalized["allowUnusedNodes"] = draft["allowUnusedNodes"]
     # Do not point at a node if another raw node uses the same identity, even
     # when an earlier parameter failure precedes the duplicate-id check.
     identity_counts = Counter(raw.get("id") for raw in draft["nodes"] if isinstance(raw, dict)
                               and isinstance(raw.get("id"), str) and IDENTITY.fullmatch(raw["id"]))
     nodes = {}
     for raw in draft["nodes"]:
-        _keys(raw, {"id", "kind", "label", "parameters", "position"} | ({"visual"} if "visual" in raw else set()), "Draft node")
+        _keys(raw, {"id", "kind", "label", "parameters", "position"} | ({"visual"} if "visual" in raw else set()) | ({"portLayouts"} if "portLayouts" in raw else set()), "Draft node")
         identity = _identity(raw["id"], "Node id")
         diagnostic_identity = identity if identity_counts[identity] == 1 else None
         if identity in nodes:
@@ -176,6 +194,8 @@ def validate_draft(draft: dict, *, require_complete: bool = False) -> dict:
                            "parameters": params, "position": deepcopy(raw["position"])}
         if "visual" in raw:
             nodes[identity]["visual"] = _visual(raw["visual"], diagnostic_identity)
+        if "portLayouts" in raw:
+            nodes[identity]["portLayouts"] = _port_layouts(raw["portLayouts"], {p["id"] for p in spec["ports"]})
     edges, edge_ids, bound = [], set(), {}
     incoming, outgoing = {n: [] for n in nodes}, {n: [] for n in nodes}
     for raw in draft["edges"]:
@@ -241,7 +261,7 @@ def validate_draft(draft: dict, *, require_complete: bool = False) -> dict:
                 used.add(producer)
                 pending.append(producer)
     unused = [n for n in nodes if n not in used]
-    if unused:
+    if unused and not draft.get("allowUnusedNodes", False):
         issues.append(_diagnostic("unused-node", "这些模块尚未通向命名输出；生成 Python 前请连接到输出，或移除未使用模块。",
                                   "Every module must contribute to a named Output before generating Python.", nodeIds=unused))
     normalized["nodes"], normalized["edges"] = list(nodes.values()), edges
@@ -372,6 +392,14 @@ def verify_generated(draft: dict, architecture: dict) -> dict:
         if match.get("parentId") != root["id"] or match.get("children") != [] or match.get("evidence") == "opaque":
             raise DraftError(f"{node['label']}: generated node containment/evidence differs from its authoring contract.")
         params = {} if kind in ({"Input", "Output"} | _FUNCTIONAL) else deepcopy(node["parameters"])
+        if kind in ('Reshape', 'Transpose', 'Permute', 'Unsqueeze', 'Squeeze', 'Mean', 'Sum'):
+            params = deepcopy(node["parameters"])
+            source_id = producers[identity, 'input']['source']['nodeId']
+            rank = len(validated["tensors"][source_id]['shape'])
+            if kind == 'Reshape': params = {'shape': validated['tensors'][identity]['shape']}
+            elif kind == 'Transpose': params = {key: value % rank for key, value in params.items()}
+            elif kind in ('Mean', 'Sum', 'Squeeze'): params['dim'] %= rank
+            elif kind == 'Unsqueeze': params['dim'] %= rank + 1
         if kind in _FLOAT_MODULES:
             params["dtype"] = {"expression": "torch.float32", "origin": "unknown"}
         if match.get("parameters") != params:

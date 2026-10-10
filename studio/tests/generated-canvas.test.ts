@@ -1,3 +1,4 @@
+import { sameSourceSemantics } from '../src/sourcePresentation.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -8,15 +9,55 @@ import ts from 'typescript';
 import { createGeneratedCanvas } from '../src/generatedCanvas.ts';
 import { buildScene, createDocument, createHistory, renderSvg } from '../src/core/index.ts';
 import type { Architecture, ArchitectureNode, CanvasDocument } from '../src/core/types.ts';
-import { blankDraft, draftHistory } from '../src/authoring.ts';
+import { blankDraft, changeDraft, draftHistory, travelDraft } from '../src/authoring.ts';
 import type { AuthoredDraft } from '../src/authoring.ts';
 import type { GeneratedDraft, ImportedSourceDraft } from '../src/api.ts';
-import { sourceFrontierDocument } from '../src/sourceDraftFrontier.ts';
+import { ApiError } from '../src/api.ts';
 import { sourceAuthoringKey } from '../src/sourceAuthoringSession.ts';
+import { readGeneratedWorkspace, writeGeneratedWorkspace } from '../src/generatedWorkspace.ts';
 import type { GeneratedWorkspaceBinding } from '../src/generatedWorkspace.ts';
+import { sameGeneratedDraft } from '../src/generatedWorkspace.ts';
 
 const project = fileURLToPath(new URL('../../', import.meta.url));
 const run = promisify(execFile);
+
+test('actual edit→view rejects an unconnected Attention before source expansion, preserving draft history and a responsive event loop', async () => {
+  const architecture = await sourceBackend('print(json.dumps(analyze_project(Path(sys.argv[1])/"fixtures"/"transformer", "model:Transformer")))') as Architecture;
+  const document = createDocument(architecture);
+  const imported = await sourceBackend('print(json.dumps(import_source_draft(v[0],v[1])))', [document, buildScene(document)]) as ImportedSourceDraft;
+  let history = changeDraft(draftHistory(imported.draft), draft => {
+    draft.nodes.push({ id: 'attention', kind: 'MultiheadAttention', label: 'MultiheadAttention',
+      parameters: { embed_dim: 16, num_heads: 4, dropout: .1, bias: true, batch_first: true }, position: { x: 99, y: 511 } });
+  });
+  history = travelDraft(changeDraft(history, draft => { draft.title = 'future title'; }), 'undo');
+  const bytes = JSON.stringify(history), currentRef = { current: history }, browsing = { current: false };
+  const errors: ApiError[] = [], busy: boolean[] = [], submissions: AuthoredDraft[] = [];
+  let opened = 0, reprojected = 0, responsive = false;
+  const browse = actualCallback('AuthoringStudio.tsx', 'AuthoringStudio', 'browse', {
+    busy: false, browsing, invalidFieldsRef: { current: [] }, cancel: () => {}, clearError: () => {}, currentRef,
+    storageRevision: 0, savedRevision: -1, selectedIds: ['attention'], camera: { x: 0, y: 0, zoom: 1 },
+    cameraViewport: { current: { width: 1000, height: 700 } }, tool: 'select', initial: {},
+    browseBaseline: imported.draft, onReuseView: () => { throw new Error('modified draft reused'); }, sameGeneratedDraft, sameSourceSemantics,
+    setBusy: (value: boolean) => { busy.push(value); }, setBusyOperation: () => {},
+    reprojectSourceDraft: () => { reprojected++; throw new Error('UI thread expanded source before validation'); },
+    api: { generateDraft: async (draft: AuthoredDraft) => {
+      submissions.push(draft);
+      const response = await sourceBackend('from archcanvas_authoring import DraftError\ntry: print(json.dumps(generate_model(v)))\nexcept DraftError as e: print(json.dumps({"error": str(e), "diagnostics": e.diagnostics}))', draft) as { error: string; diagnostics: unknown };
+      throw new ApiError(response.error, 422, response.diagnostics);
+    } },
+    viewStateRef: { current: () => { throw new Error('invalid model retained as generated'); } },
+    onOpen: async () => { opened++; }, reportError: (error: ApiError) => { errors.push(error); },
+  });
+  setImmediate(() => { responsive = true; });
+  const pending = browse();
+  assert.deepEqual(submissions, [history.draft], 'the edited frontier is submitted immediately');
+  await pending;
+  assert.equal(reprojected, 0); assert.equal(opened, 0); assert.equal(responsive, true);
+  assert.equal(JSON.stringify(currentRef.current), bytes); assert.equal(currentRef.current.future.length, 1);
+  assert.deepEqual(busy, [true, false]); assert.equal(browsing.current, false);
+  assert.deepEqual((errors[0].diagnostics as { portId: string }[]).map(item => item.portId), ['query', 'key', 'value']);
+});
+
 async function sourceBackend(expression: string, value?: unknown) {
   const args = ['-I', '-S', '-B', '-c',
     `import sys,json;sys.path.insert(0,sys.argv[1]+"/src");from pathlib import Path;from archcanvas_python import analyze_project;from archcanvas_authoring import import_source_draft,rebase_source_frontier,generate_model;v=json.load(sys.stdin);${expression}`, project];
@@ -137,12 +178,16 @@ test('actual generate callback keeps the collapsed Transformer frontier and anch
   const memoryMask = snapshot.nodes.find(node => snapshot.sourceProvenance!.nodeRefs[node.id].nodeId === 'input:model.Transformer:memory_mask')!;
   // Same small move seen in the browser: preserve the exact editable card.
   memoryMask.position.y -= 4;
+  const maskPort = Object.keys(memoryMask.presentation!.ports)[0];
+  memoryMask.portLayouts = { [maskPort]: { side: 'top', offset: .25 } };
+  const tokens = snapshot.nodes.find(node => node.label === 'source_tokens')!;
+  const tokensPort = Object.keys(tokens.presentation!.ports)[0];
+  tokens.portLayouts = { [tokensPort]: null };
   let generated: GeneratedDraft | undefined;
   const currentRef = { current: draftHistory(snapshot) };
-  const reproject = async (draft: AuthoredDraft) => {
-    const document = sourceFrontierDocument(draft);
-    return (await sourceBackend('print(json.dumps(rebase_source_frontier(v[0],v[1],v[2])))', [draft, document, buildScene(document)]) as ImportedSourceDraft).draft;
-  };
+  // Generation must never route a sequence of fully expanded source scenes
+  // on the UI thread; canonical materialization belongs to the server.
+  const reproject = async () => { throw new Error('generation attempted synchronous source expansion'); };
   const callback = actualCallback('AuthoringStudio.tsx', 'AuthoringStudio', 'generate', {
     busy: false, invalidFieldsRef: { current: [] }, cancel: () => {}, setBusy: () => {}, setBusyOperation: () => {}, clearError: () => {}, currentRef,
     reprojectSourceDraft: reproject, api: { generateDraft: (draft: AuthoredDraft) => sourceBackend('print(json.dumps(generate_model(v)))', draft) },
@@ -152,7 +197,9 @@ test('actual generate callback keeps the collapsed Transformer frontier and anch
   await callback();
   assert.ok(generated && generated.presentationDraft);
   assert.equal(generated.presentationDraft, snapshot, 'the actual callback retains the editing snapshot');
-  assert.equal(generated.draft.nodes.length, 49, 'static generation still verifies the full source graph');
+  assert.deepEqual(generated.draft, snapshot, 'the response binds to the edited frontier after verifying hidden facts');
+  assert.equal(generated.architecture.nodes.length, 49, 'static generation still verifies the full source graph');
+  assert.deepEqual(Object.keys(generated.edgeBindings ?? {}).sort(), snapshot.edges.map(edge => edge.id).sort());
   const result = createGeneratedCanvas(generated.architecture, generated.draft, generated, generated.presentationDraft), scene = buildScene(result.document);
   assert.equal(scene.nodes.length, 12, 'opening generation must not expand hidden encoder/decoder modules');
   assert.deepEqual(result.unmappedNodeIds, []);
@@ -169,6 +216,17 @@ test('actual generate callback keeps the collapsed Transformer frontier and anch
   assert.equal(JSON.stringify(snapshot), originalBytes);
   assert.deepEqual(result.document.architecture, generated.architecture, 'presentation projection cannot rewrite generation IR');
   assert.match(renderSvg(scene), /memory_mask/);
+  const mask = scene.nodes.find(node => node.id === result.nodeBindings[memoryMask.id])!;
+  assert.equal(mask.ports.find(port => port.manual)!.y, mask.y, 'manual top-side port survives canonical generation');
+  assert.ok(Object.values(result.document.portLayoutOverrides ?? {}).some(layout => layout === null), 'automatic port reset survives generation');
+  const stored = new Map<string, string>(), storage = { getItem: (key: string) => stored.get(key) ?? null, setItem: (key: string, value: string) => { stored.set(key, value); } };
+  const cacheBinding: GeneratedWorkspaceBinding = { workspaceKey: 'transformer-session', documentId: result.document.id,
+    sourceDigest: result.document.sourceBindingDigest, irDigest: result.document.architecture.irDigest,
+    visualRevision: result.document.revision, draft: snapshot, nodeBindings: result.nodeBindings, edgeBindings: generated.edgeBindings };
+  writeGeneratedWorkspace(storage, { draft: snapshot, history: currentRef.current, storageRevision: 0, savedRevision: -1 }, cacheBinding);
+  const recovered = readGeneratedWorkspace(storage, result.document);
+  assert.ok(recovered, 'reloading the generated view retains edge IDs distinct from node IDs');
+  assert.deepEqual(recovered.binding.edgeBindings, generated.edgeBindings);
   // Run the actual App callback as well: the generator receipt keeps the
   // complete graph, while App must pass the presentation snapshot through to
   // createGeneratedCanvas and restore current selection/camera on that scene.

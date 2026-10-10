@@ -1,0 +1,505 @@
+--- a/studio/src/authoring.ts
++++ b/studio/src/authoring.ts
+@@ -24,11 +24,11 @@
+ export type SourceDraftRef = { nodeId: string; sceneNodeId: string; kind: string; category: string; evidence: string; portBindings: Record<string, { nodeId: string; portId: string }[]>; originalParameters: Record<string, DraftValue>; group: boolean; instanceId?: string; repeat?: { count: number; sharing: 'independent' | 'shared' } };
+ export type DraftSourceProvenance = { schemaVersion: 1; digest: string; documentId: string; visualRevision: number; sourceDigest: string; irDigest: string; architecture: Architecture; canvas: CanvasDocument; viewCanvas?: CanvasDocument; viewGraph?: { nodes: DraftNode[]; edges: DraftEdge[] }; modules: DraftModule[]; nodeRefs: Record<string, SourceDraftRef>; edgeRefs: Record<string, string[]>; originalGraph: { nodes: DraftNode[]; edges: DraftEdge[] } };
+ export type SourceDraftCache = { nodes: DraftNode[]; edges: DraftEdge[]; removedNodeIds: string[]; removedCanonicalEdgeIds: string[] };
+-export type AuthoredDraft = { schemaVersion: 1; mode: 'authored-draft'; id: string; title: string; revision: number; nodes: DraftNode[]; edges: DraftEdge[]; customModules?: CustomModuleDefinition[]; sourceProvenance?: DraftSourceProvenance; sourceCache?: SourceDraftCache };
++export type AuthoredDraft = { schemaVersion: 1; mode: 'authored-draft'; id: string; title: string; revision: number; nodes: DraftNode[]; edges: DraftEdge[]; allowUnusedNodes?: boolean; customModules?: CustomModuleDefinition[]; sourceProvenance?: DraftSourceProvenance; sourceCache?: SourceDraftCache };
+ export type DraftHistory = { draft: AuthoredDraft; past: AuthoredDraft[]; future: AuthoredDraft[] };
+ export type DraftFlow = 'horizontal' | 'vertical';
+-const MAX_DRAFT_NODES = 128;
+-const MAX_DRAFT_EDGES = 384;
++export const MAX_DRAFT_NODES = 1200;
++export const MAX_DRAFT_EDGES = 3600;
+ 
+ /** Source frontier modules are retained in the draft, never advertised as presets. */
+ export function sourceDraftCatalog(draft: AuthoredDraft, catalog: DraftCatalog | null): DraftCatalog | null {
+@@ -112,7 +112,8 @@
+   const text = (label: unknown) => typeof label === 'string' && label.length > 0 && label.length <= 120 && !/[\x00-\x1f]/.test(label);
+   const safeNumber = (n: unknown) => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= 1_000_000;
+   const parameter = (p: unknown) => typeof p === 'boolean' || typeof p === 'string' || (typeof p === 'number' && Number.isFinite(p)) || (Array.isArray(p) && p.every(n => typeof n === 'number' && Number.isFinite(n)));
+-  if (!draft || draft.mode !== 'authored-draft' || draft.schemaVersion !== 1 || !identity(draft.id) || !draft.id.startsWith('draft-') || !text(draft.title) || !Number.isSafeInteger(draft.revision) || draft.revision < 0 || !Array.isArray(draft.nodes) || draft.nodes.length > (draft.sourceProvenance ? 1200 : MAX_DRAFT_NODES) || !Array.isArray(draft.edges) || draft.edges.length > (draft.sourceProvenance ? 3600 : MAX_DRAFT_EDGES)) return null;
++  if (!draft || draft.mode !== 'authored-draft' || draft.schemaVersion !== 1 || !identity(draft.id) || !draft.id.startsWith('draft-') || !text(draft.title) || !Number.isSafeInteger(draft.revision) || draft.revision < 0 || !Array.isArray(draft.nodes) || draft.nodes.length > MAX_DRAFT_NODES || !Array.isArray(draft.edges) || draft.edges.length > MAX_DRAFT_EDGES) return null;
++  if (draft.allowUnusedNodes !== undefined && typeof draft.allowUnusedNodes !== 'boolean') return null;
+   const ids = new Set<string>(), edgeIds = new Set<string>();
+   if (draft.customModules) {
+     if (!Array.isArray(draft.customModules) || draft.customModules.length > 32) return null;
+@@ -164,17 +165,37 @@
+     : { draft, past: [...history.past, history.draft], future: stack.slice(0, -1) };
+ }
+ export function addDraftNode(draft: AuthoredDraft, module: DraftModule, id: string, position: { x: number; y: number }) {
+-  if (draft.nodes.length >= (draft.sourceProvenance ? 1200 : MAX_DRAFT_NODES)) throw new Error(`草稿达到模块数量上限（最多 ${draft.sourceProvenance ? 1200 : MAX_DRAFT_NODES} 个）；请删除一个模块后重试。`);
++  if (draft.nodes.length >= MAX_DRAFT_NODES) throw new Error(`草稿达到模块数量上限（最多 ${MAX_DRAFT_NODES} 个）；请删除一个模块后重试。`);
+   draft.nodes.push({ id, kind: module.kind, label: module.label, parameters: structuredClone(module.defaults), position });
+ }
+ export function removeDraftNode(draft: AuthoredDraft, id: string) {
+   const ids = new Set(draftMoveIds(draft, [id]));
++  // Empty expanded containers are removed with their last child. Otherwise
++  // the invisible source root prevents a genuinely blank editor and retains
++  // lowering restrictions from a graph that the user has already deleted.
++  let changed = true;
++  while (changed) {
++    changed = false;
++    for (const node of draft.nodes) if (!ids.has(node.id) && node.presentation?.group &&
++      draft.nodes.some(child => child.presentation?.parentId === node.id && ids.has(child.id)) &&
++      !draft.nodes.some(child => child.presentation?.parentId === node.id && !ids.has(child.id))) {
++      ids.add(node.id); changed = true;
++    }
++  }
+   draft.nodes = draft.nodes.filter(node => !ids.has(node.id));
+   draft.edges = draft.edges.filter(edge => !ids.has(edge.source.nodeId) && !ids.has(edge.target.nodeId));
++  if (draft.sourceCache) {
++    draft.sourceCache.removedNodeIds = [...new Set([...draft.sourceCache.removedNodeIds, ...ids])];
++    draft.sourceCache.nodes = draft.sourceCache.nodes.filter(node => !ids.has(node.id));
++    draft.sourceCache.edges = draft.sourceCache.edges.filter(edge => !ids.has(edge.source.nodeId) && !ids.has(edge.target.nodeId));
++  }
++  if (!draft.nodes.length) {
++    delete draft.sourceProvenance; delete draft.sourceCache;
++  }
+ }
+ /** A draft binding has one producer and preserves fan-out; cycles are rejected before mutation. */
+ export function connectDraft(draft: AuthoredDraft, catalog: DraftCatalog, source: DraftEndpoint, target: DraftEndpoint, id: string) {
+-  if (draft.edges.length >= (draft.sourceProvenance ? 3600 : MAX_DRAFT_EDGES)) throw new Error(`草稿达到连接数量上限（最多 ${draft.sourceProvenance ? 3600 : MAX_DRAFT_EDGES} 条）；请删除一条连接后重试。`);
++  if (draft.edges.length >= MAX_DRAFT_EDGES) throw new Error(`草稿达到连接数量上限（最多 ${MAX_DRAFT_EDGES} 条）；请删除一条连接后重试。`);
+   const port = (end: DraftEndpoint) => catalog.modules.find(module => module.kind === draft.nodes.find(node => node.id === end.nodeId)?.kind)?.ports.find(item => item.id === end.portId);
+   if (port(source)?.direction !== 'out' || port(target)?.direction !== 'in') throw new Error('请从输出端口连接到输入端口。');
+   if (source.nodeId === target.nodeId) throw new Error('模块不能连接到自身。');
+
+--- a/studio/src/AuthoringStudio.tsx
++++ b/studio/src/AuthoringStudio.tsx
+@@ -434,7 +434,7 @@
+       if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); deleteSelection(); }
+       const move = { ArrowLeft: [-16, 0], ArrowRight: [16, 0], ArrowUp: [0, -16], ArrowDown: [0, 16] }[event.key];
+       if (move && selectedIds.length) { event.preventDefault(); apply(value => moveDraftNodes(value, selectedIds, move[0], move[1])); }
+-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') { event.preventDefault(); const ids = draft.nodes.filter(node => !node.presentation?.group).map(node => node.id); setSelection({ node: ids.at(-1), nodes: ids }); }
++      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') { event.preventDefault(); const ids = draft.nodes.map(node => node.id); setSelection({ node: ids.at(-1), nodes: ids }); }
+     };
+     const blur = () => cancel();
+     window.addEventListener('keydown', key); window.addEventListener('blur', blur);
+@@ -576,7 +576,7 @@
+           </svg>{!!(geometry.routes.length || sourceRouting.relations.length) && <FloatingLegend scene={{ sourceRelations: sourceRouting.relations, legend: draft.sourceProvenance?.canvas.legendItems ?? [], edges: presentedRoutes.map(route => ({ id: route.id, role: edgeRoles.get(route.id) ?? 'data', stroke: edgeRoles.get(route.id) === 'residual' ? '#a76d35' : '#628572', width: 1.8, dashed: edgeRoles.get(route.id) === 'residual' })) }} />}{tool !== 'pan' && hintNode && hintPort && hintPosition && <div id="draft-port-tooltip" ref={hintRef} className="draft-port-tooltip" role="tooltip" style={{ ...(measuredHint?.key === hintLayoutKey ? { left: measuredHint.left, top: measuredHint.top } : hintPosition), maxHeight: Math.max(1, viewportSize.height - 24) }}><b>{hintNode.label} · {hintPort.name}</b><span>{hintPort.direction === 'in' ? '输入端口' : '输出端口'}{hintBinding && hintProducer ? ` · 来自 ${hintProducer.label}` : hintPort.direction === 'in' ? ' · 尚未连接' : ' · 可连接多个下游'}</span>{hintTensor ? <span>{draftTensorLabel(hintTensor)}</span> : <span>形状待检查 · 模型尚未执行</span>}<small>{portEditing ? '拖动连接点到模块边缘；自动走线会跟随更新。' : hintPort.direction === 'out' ? '点击或按 Enter 选择，再连接输入端口。' : connection ? '点击或按 Enter 连接；形状以静态检查为准。' : '先选择输出端口，再连接到这里。'}</small></div>}{!draft.nodes.length && <div className="draft-empty"><span>从零搭建一个模型</span><h2>把第一个 Input 拖到这里</h2><p>再加入 Linear、激活函数与 Output。<br />也可以从左侧“网络起点”加入完整 MLP、CNN 或残差网络。</p><button disabled={!catalog} onClick={() => { const input = catalog?.modules.find(module => module.kind === 'Input'); if (input) add(input, { x: 80, y: 120 }); }}>添加输入</button></div>}
+         </div><div className="draft-help">{portEditing && "连接点模式：拖动端口到任一边缘 · "}Shift 连续选择 · 框选 / Ctrl+A 多选 · 拖动整体 · 滚轮缩放 · 中键/Alt 平移 · 输出端口 → 输入端口 · 方向键移动 16 · Delete 删除 · Escape 取消 · Ctrl+Z 撤销</div>
+       </main>
+-      <aside className="draft-inspector"><span className="eyebrow">MODEL PROPERTIES</span>{selected && selectedModule ? <><h2>{draftSourceKind(draft, selected)}</h2>{selectedIds.length > 1 && <p>已选择 {selectedIds.length} 个部件；拖动或方向键可整体移动。</p>}{draft.sourceProvenance?.nodeRefs[selected.id] && <div className="draft-source-evidence"><b>源码编辑副本</b><p>保留完整源码、层级、共享和未知事实。此处结构编辑只影响独立草稿。</p><code>{draft.sourceProvenance.nodeRefs[selected.id].nodeId}</code><details><summary>原始参数与事实</summary><pre>{JSON.stringify(draft.sourceProvenance.architecture.nodes.find(node => node.id === draft.sourceProvenance?.nodeRefs[selected.id]?.nodeId)?.parameters, null, 2)}</pre></details><p>{draft.sourceProvenance.nodeRefs[selected.id].repeat && `重复 ${draft.sourceProvenance.nodeRefs[selected.id].repeat!.count} 次 · ${draft.sourceProvenance.nodeRefs[selected.id].repeat!.sharing}`} {draft.sourceProvenance.nodeRefs[selected.id].evidence === 'opaque' && '未知区域：可移动、重连或替换；生成需明确表达式。'}</p></div>}{draft.sourceProvenance?.architecture.nodes.find(node => node.id === draft.sourceProvenance?.nodeRefs[selected.id]?.nodeId)?.children.length ? <button disabled={busy} onClick={() => void toggleSourceHierarchy(selected.id)}>{selected.presentation?.group ? '折叠此源码区域' : '展开此源码区域'}</button> : null}<label className="draft-field">显示名称<DraftTextInput ariaLabel="模块显示名称" value={selected.label} disabled={busy} onCommit={label => apply(value => { value.nodes.find(node => node.id === selected.id)!.label = label; })} /></label><div className="draft-param-fields">{selectedModule.parameters.map(parameter => <DraftField key={`${selected.id}:${parameter.name}`} kind={selected.kind} parameter={parameter} value={selected.parameters[parameter.name]} disabled={busy} error={feedback?.target?.nodeId === selected.id && feedback.target.parameter === parameter.name ? feedback.message : undefined} onValidity={invalid => fieldValidity(selected.id, parameter.name, invalid)} onDiscardInvalid={discardInvalidInput} onCommit={value => apply(next => { next.nodes.find(node => node.id === selected.id)!.parameters[parameter.name] = value; })} />)}</div><p className="draft-description">{selectedModule.description}</p><button disabled={busy} onClick={() => apply(value => { for (const port of selectedModule.ports) setDraftPortLayout(value, { nodeId: selected.id, portId: port.id }, null); })}>恢复自动连接点</button>{selected.kind === 'Linear' && <p className="draft-parameter-help">例如输入形状为 [1, 16] 时，in_features 应为 16；out_features 决定输出最后一维。</p>}<div className="draft-coordinate">{(['x', 'y'] as const).map(axis => <label key={axis}>{axis.toUpperCase()}<input aria-label={`模块 ${axis.toUpperCase()} 坐标`} type="number" value={selected.position[axis]} disabled={busy} onChange={event => { if (event.target.value && Number.isFinite(Number(event.target.value))) apply(value => { value.nodes.find(node => node.id === selected.id)!.position[axis] = Number(event.target.value); }); }} /></label>)}</div><button disabled={busy} onClick={deleteSelection}>删除模块及相连连线</button></> : selection.edge ? <><h2>张量连线</h2><p>此连线定义模块的输入来源。</p><button disabled={busy} onClick={deleteSelection}>删除连线</button></> : <><h2>每一步都在图上完成</h2><ol><li>拖入 Input，设置输入形状。</li><li>拖入常用模块，编辑参数。</li><li>连接端口，加入 Output。</li><li>保存草稿，生成模型与论文图。</li></ol><p>随时点击“检查模型”，查看缺少的连接与声明形状；完成后再生成。当前是静态建模，模型尚未执行。</p></>}<section className="draft-check" aria-label="模型静态检查"><h3>{checked ? checked.complete ? draft.customModules?.length ? '连接检查通过 · 自定义形状未知' : draft.sourceProvenance ? '连接检查通过' : '静态检查通过' : `${checked.issues.length} 项待完成` : '检查当前结构'}</h3><p>{checked ? draft.customModules?.length ? '仅检查静态连接；自定义模块及下游输出形状未推测，模型尚未执行。' : draft.sourceProvenance ? '保留源码事实；当前连接检查不推测未知形状，模型尚未执行。' : '以下形状来自静态声明，模型尚未执行。' : '参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。'}</p>{selected && checked?.tensors[selected.id] && <div className="draft-checked-tensor">{draftTensorLabel(checked.tensors[selected.id])}</div>}{checked?.issues.map((issue, index) => { const targets = (issue.nodeId ? [issue.nodeId] : issue.nodeIds ?? []).filter(id => draft.nodes.filter(node => node.id === id).length === 1); return <div className="draft-check-issue" key={`${issue.code}:${index}`}><span>{issue.message}</span>{targets.map(id => <button key={id} onClick={() => { reportError(new ApiError(issue.technical ?? issue.message, 400, [{ ...issue, nodeId: id }])); }}>{`定位 ${draft.nodes.find(node => node.id === id)!.label}`}</button>)}</div>; })}<button disabled={busy || !catalog || !!invalidFields.length} onClick={() => void check()}>{checked ? '重新检查' : '检查模型'}</button></section><div className="draft-summary"><b>{draft.nodes.length}</b> 模块 <b>{draft.edges.length}</b> 连接</div></aside>
++      <aside className="draft-inspector"><span className="eyebrow">MODEL PROPERTIES</span>{selected && selectedModule ? <><h2>{draftSourceKind(draft, selected)}</h2>{selectedIds.length > 1 && <p>已选择 {selectedIds.length} 个部件；拖动或方向键可整体移动。</p>}{draft.sourceProvenance?.nodeRefs[selected.id] && <div className="draft-source-evidence"><b>源码编辑副本</b><p>保留完整源码、层级、共享和未知事实。此处结构编辑只影响独立草稿。</p><code>{draft.sourceProvenance.nodeRefs[selected.id].nodeId}</code><details><summary>原始参数与事实</summary><pre>{JSON.stringify(draft.sourceProvenance.architecture.nodes.find(node => node.id === draft.sourceProvenance?.nodeRefs[selected.id]?.nodeId)?.parameters, null, 2)}</pre></details><p>{draft.sourceProvenance.nodeRefs[selected.id].repeat && `重复 ${draft.sourceProvenance.nodeRefs[selected.id].repeat!.count} 次 · ${draft.sourceProvenance.nodeRefs[selected.id].repeat!.sharing}`} {draft.sourceProvenance.nodeRefs[selected.id].evidence === 'opaque' && '未知区域：可移动、重连或替换；生成需明确表达式。'}</p></div>}{draft.sourceProvenance?.architecture.nodes.find(node => node.id === draft.sourceProvenance?.nodeRefs[selected.id]?.nodeId)?.children.length ? <button disabled={busy} onClick={() => void toggleSourceHierarchy(selected.id)}>{selected.presentation?.group ? '折叠此源码区域' : '展开此源码区域'}</button> : null}<label className="draft-field">显示名称<DraftTextInput ariaLabel="模块显示名称" value={selected.label} disabled={busy} onCommit={label => apply(value => { value.nodes.find(node => node.id === selected.id)!.label = label; })} /></label><div className="draft-param-fields">{selectedModule.parameters.map(parameter => <DraftField key={`${selected.id}:${parameter.name}`} kind={selected.kind} parameter={parameter} value={selected.parameters[parameter.name]} disabled={busy} error={feedback?.target?.nodeId === selected.id && feedback.target.parameter === parameter.name ? feedback.message : undefined} onValidity={invalid => fieldValidity(selected.id, parameter.name, invalid)} onDiscardInvalid={discardInvalidInput} onCommit={value => apply(next => { next.nodes.find(node => node.id === selected.id)!.parameters[parameter.name] = value; })} />)}</div><p className="draft-description">{selectedModule.description}</p><button disabled={busy} onClick={() => apply(value => { for (const port of selectedModule.ports) setDraftPortLayout(value, { nodeId: selected.id, portId: port.id }, null); })}>恢复自动连接点</button>{selected.kind === 'Linear' && <p className="draft-parameter-help">例如输入形状为 [1, 16] 时，in_features 应为 16；out_features 决定输出最后一维。</p>}<div className="draft-coordinate">{(['x', 'y'] as const).map(axis => <label key={axis}>{axis.toUpperCase()}<input aria-label={`模块 ${axis.toUpperCase()} 坐标`} type="number" value={selected.position[axis]} disabled={busy} onChange={event => { if (event.target.value && Number.isFinite(Number(event.target.value))) apply(value => { value.nodes.find(node => node.id === selected.id)!.position[axis] = Number(event.target.value); }); }} /></label>)}</div><button disabled={busy} onClick={deleteSelection}>删除模块及相连连线</button></> : selection.edge ? <><h2>张量连线</h2><p>此连线定义模块的输入来源。</p><button disabled={busy} onClick={deleteSelection}>删除连线</button></> : <><h2>每一步都在图上完成</h2><ol><li>拖入 Input，设置输入形状。</li><li>拖入常用模块，编辑参数。</li><li>连接端口，加入 Output。</li><li>保存草稿，生成模型与论文图。</li></ol><p>随时点击“检查模型”，查看缺少的连接与声明形状；完成后再生成。当前是静态建模，模型尚未执行。</p></>}<label className="check-field"><input type="checkbox" aria-label="保留未使用分支" checked={draft.allowUnusedNodes ?? false} disabled={busy} onChange={event => apply(value => { value.allowUnusedNodes = event.target.checked; })} />保留未使用分支</label><p className="field-help">重建源码中的独立分支时可启用；所有输入端口仍须连接，分支会写入新源码。</p><section className="draft-check" aria-label="模型静态检查"><h3>{checked ? checked.complete ? draft.customModules?.length ? '连接检查通过 · 自定义形状未知' : draft.sourceProvenance ? '连接检查通过' : '静态检查通过' : `${checked.issues.length} 项待完成` : '检查当前结构'}</h3><p>{checked ? draft.customModules?.length ? '仅检查静态连接；自定义模块及下游输出形状未推测，模型尚未执行。' : draft.sourceProvenance ? '保留源码事实；当前连接检查不推测未知形状，模型尚未执行。' : '以下形状来自静态声明，模型尚未执行。' : '参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。'}</p>{selected && checked?.tensors[selected.id] && <div className="draft-checked-tensor">{draftTensorLabel(checked.tensors[selected.id])}</div>}{checked?.issues.map((issue, index) => { const targets = (issue.nodeId ? [issue.nodeId] : issue.nodeIds ?? []).filter(id => draft.nodes.filter(node => node.id === id).length === 1); return <div className="draft-check-issue" key={`${issue.code}:${index}`}><span>{issue.message}</span>{targets.map(id => <button key={id} onClick={() => { reportError(new ApiError(issue.technical ?? issue.message, 400, [{ ...issue, nodeId: id }])); }}>{`定位 ${draft.nodes.find(node => node.id === id)!.label}`}</button>)}</div>; })}<button disabled={busy || !catalog || !!invalidFields.length} onClick={() => void check()}>{checked ? '重新检查' : '检查模型'}</button></section><div className="draft-summary"><b>{draft.nodes.length}</b> 模块 <b>{draft.edges.length}</b> 连接</div></aside>
+     </div><footer className={`authoring-status ${error ? 'error' : ''}`} role={error || invalidFields.length ? 'alert' : 'status'}>{busy ? ({ check: '正在检查模型…', save: '正在保存草稿…', reopen: '正在重开保存的草稿…', generate: '正在生成并核对模型…', open: '正在打开新工作副本…', frontier: '正在展开源码层级并保留草稿编辑…' }[busyOperation ?? 'check']) : invalidFields.length ? '参数输入尚未有效：请修正标记字段，或按 Escape 恢复上次有效值，再保存或生成。' : error || currentNotice}{!busy && error && feedback?.target && <button onClick={() => focusDraftNode(feedback.target!.nodeId)}>定位出错模块</button>}{!busy && error && feedback?.technical && <details><summary>技术详情</summary><span>{feedback.technical}</span></details>}</footer>
+     {customModuleOpen && <CustomModuleDialog onClose={() => setCustomModuleOpen(false)} onInsert={insertCustomModule} />}
+     {generated && <div className="modal-backdrop"><section className="authoring-review" role="dialog" aria-modal="true" aria-label="生成的新模型"><div className="modal-heading"><div><span className="eyebrow">NEW MODEL</span><h2>模型已生成并静态核对</h2></div><button onClick={() => setGenerated(null)} disabled={busy}><Icon name="close" /></button></div><p>{generated.draft.sourceProvenance ? '原源码已保留在独立新副本，生成源码通过语法与静态分析检查；不声明数值等价或执行验证。' : '节点、端口、参数和连接已与新源码的分析结果核对。'}接下来可打开论文图、编辑样式并导出；模型尚未执行。</p><pre>{generated.source}</pre><div className="modal-actions"><button disabled={busy} onClick={() => setGenerated(null)}>继续搭建</button><button className="primary" disabled={busy} onClick={async () => { setBusy(true); setBusyOperation('open'); try { await onOpen(generated); } catch (reason) { reportError(reason); setBusyOperation(null); setBusy(false); } }}>创建新工作副本并打开论文图</button></div></section></div>}
+
+--- a/studio/src/authoringPresets.ts
++++ b/studio/src/authoringPresets.ts
+@@ -1,4 +1,4 @@
+-import { connectDraft, draftModuleSize, draftNodeBounds } from './authoring.ts';
++import { MAX_DRAFT_NODES, MAX_DRAFT_EDGES, connectDraft, draftModuleSize, draftNodeBounds } from './authoring.ts';
+ import type { AuthoredDraft, DraftCatalog, DraftModule, DraftParameter, DraftValue } from './authoring.ts';
+ 
+ type PresetNode = { key: string; kind: string; label: string; parameters?: Record<string, DraftValue>; x: number; y: number };
+@@ -185,7 +185,7 @@
+   const preset = draftPresets.find(item => item.id === presetId);
+   if (!preset) throw new Error('未找到此网络起点。');
+   const unavailable = draftPresetUnavailable(preset, catalog); if (unavailable) throw new Error(unavailable);
+-  if (draft.nodes.length + preset.nodes.length > 128 || draft.edges.length + preset.edges.length > 384) throw new Error('空间不足：草稿最多允许 128 个模块、384 条连接。');
++  if (draft.nodes.length + preset.nodes.length > MAX_DRAFT_NODES || draft.edges.length + preset.edges.length > MAX_DRAFT_EDGES) throw new Error(`空间不足：草稿最多允许 ${MAX_DRAFT_NODES} 个模块、${MAX_DRAFT_EDGES} 条连接。`);
+   if (!Number.isFinite(preferred.x) || !Number.isFinite(preferred.y) || Math.abs(preferred.x) > 1_000_000 || Math.abs(preferred.y) > 1_000_000) throw new Error('请在有效画布位置添加网络。');
+   const { width, height } = draftPresetSize(preset, catalog);
+   let position = { x: Math.round(preferred.x), y: Math.round(preferred.y) };
+
+--- a/studio/src/draftValidation.ts
++++ b/studio/src/draftValidation.ts
+@@ -1,7 +1,8 @@
++import { MAX_DRAFT_NODES, MAX_DRAFT_EDGES } from './authoring.ts';
+ import type { AuthoredDraft, DraftValue, DraftPresentation, DraftSourceProvenance, SourceDraftCache } from './authoring.ts';
+ import { readCustomModuleDefinition } from './customModules.ts';
+ 
+-export type DraftTensor = { shape: number[]; dtype: 'float32' | 'float64' | 'int64' };
++export type DraftTensor = { shape: number[]; dtype: 'float32' | 'float64' | 'int64' | 'bool' };
+ export type DraftDiagnosticValue = null | boolean | number | string | DraftDiagnosticValue[] | { [key: string]: DraftDiagnosticValue };
+ export type DraftValidationDiagnostic = {
+   code: string; message: string; technical?: string;
+@@ -43,8 +44,9 @@
+ }
+ function readDraft(value: unknown): AuthoredDraft {
+   const draft = record(value);
+-  keys(draft, ['schemaVersion', 'mode', 'id', 'title', 'revision', 'nodes', 'edges'], ['sourceProvenance', 'sourceCache', 'customModules']);
+-  if (draft.schemaVersion !== 1 || draft.mode !== 'authored-draft' || !Number.isSafeInteger(draft.revision) || (draft.revision as number) < 0 || !Array.isArray(draft.nodes) || draft.nodes.length > (draft.sourceProvenance ? 1200 : 128) || !Array.isArray(draft.edges) || draft.edges.length > (draft.sourceProvenance ? 3600 : 384)) invalid();
++  keys(draft, ['schemaVersion', 'mode', 'id', 'title', 'revision', 'nodes', 'edges'], ['sourceProvenance', 'sourceCache', 'customModules', 'allowUnusedNodes']);
++  if (draft.schemaVersion !== 1 || draft.mode !== 'authored-draft' || !Number.isSafeInteger(draft.revision) || (draft.revision as number) < 0 || !Array.isArray(draft.nodes) || draft.nodes.length > MAX_DRAFT_NODES || !Array.isArray(draft.edges) || draft.edges.length > MAX_DRAFT_EDGES) invalid();
++  if (draft.allowUnusedNodes !== undefined && typeof draft.allowUnusedNodes !== 'boolean') invalid();
+   const nodeIds = new Set<string>(), edgeIds = new Set<string>();
+   const nodes = (draft.nodes as unknown[]).map(value => {
+     const node = record(value); keys(node, ['id', 'kind', 'label', 'parameters', 'position'], draft.sourceProvenance ? ['presentation', 'visual', 'portLayouts'] : ['visual', 'portLayouts']);
+@@ -93,7 +95,7 @@
+   }
+   const sourceCache = draft.sourceCache ? structuredClone(record(draft.sourceCache)) as SourceDraftCache : undefined;
+   const customModules = draft.customModules ? (Array.isArray(draft.customModules) && draft.customModules.length <= 32 ? draft.customModules.map(readCustomModuleDefinition) : invalid()) : undefined;
+-  return { schemaVersion: 1, mode: 'authored-draft', id: identity(draft.id), title: text(draft.title), revision: draft.revision as number, nodes, edges, ...(sourceProvenance ? { sourceProvenance } : {}), ...(sourceCache ? { sourceCache } : {}), ...(customModules ? { customModules } : {}) };
++  return { schemaVersion: 1, mode: 'authored-draft', id: identity(draft.id), title: text(draft.title), revision: draft.revision as number, nodes, edges, ...(draft.allowUnusedNodes !== undefined ? { allowUnusedNodes: draft.allowUnusedNodes as boolean } : {}), ...(sourceProvenance ? { sourceProvenance } : {}), ...(sourceCache ? { sourceCache } : {}), ...(customModules ? { customModules } : {}) };
+ }
+ function jsonValue(value: unknown, depth = 0): DraftDiagnosticValue {
+   if (depth > 8) return invalid();
+@@ -109,7 +111,7 @@
+   for (const key of ['nodeId', 'parameter', 'portId', 'edgeId'] as const) if (Object.hasOwn(diagnostic, key)) result[key] = identity(diagnostic[key]);
+   for (const key of ['nodeIds', 'portIds'] as const) {
+     if (!Object.hasOwn(diagnostic, key)) continue;
+-    if (!Array.isArray(diagnostic[key]) || !diagnostic[key].length || diagnostic[key].length > 128) invalid();
++    if (!Array.isArray(diagnostic[key]) || !diagnostic[key].length || diagnostic[key].length > MAX_DRAFT_NODES) invalid();
+     const ids = (diagnostic[key] as unknown[]).map(identity); if (new Set(ids).size !== ids.length) invalid(); result[key] = ids;
+   }
+   if (Object.hasOwn(diagnostic, 'endpoint')) {
+@@ -120,7 +122,7 @@
+ }
+ function readTensor(value: unknown): DraftTensor {
+   const tensor = record(value); keys(tensor, ['shape', 'dtype']);
+-  if (!Array.isArray(tensor.shape) || tensor.shape.length < 1 || tensor.shape.length > 8 || !tensor.shape.every(item => typeof item === 'number' && Number.isSafeInteger(item) && item > 0) || tensor.shape.reduce((size, item) => size * item, 1) > 1_000_000_000 || !['float32', 'float64', 'int64'].includes(tensor.dtype as string)) invalid();
++  if (!Array.isArray(tensor.shape) || tensor.shape.length < 1 || tensor.shape.length > 8 || !tensor.shape.every(item => typeof item === 'number' && Number.isSafeInteger(item) && item > 0) || tensor.shape.reduce((size, item) => size * item, 1) > 1_000_000_000 || !['float32', 'float64', 'int64', 'bool'].includes(tensor.dtype as string)) invalid();
+   return { shape: [...tensor.shape as number[]], dtype: tensor.dtype as DraftTensor['dtype'] };
+ }
+ 
+@@ -152,7 +154,7 @@
+ 
+ /** Arrays preserve the server's stable graph/forward ordering; parameter object order has no meaning. */
+ export function draftValidationKey(draft: AuthoredDraft): string {
+-  return JSON.stringify({ ...(draft.customModules ? { customModules: draft.customModules } : {}), schemaVersion: draft.schemaVersion, mode: draft.mode, id: draft.id, ...(draft.sourceProvenance ? { provenance: draft.sourceProvenance.digest } : {}),
++  return JSON.stringify({ allowUnusedNodes: draft.allowUnusedNodes ?? false, ...(draft.customModules ? { customModules: draft.customModules } : {}), schemaVersion: draft.schemaVersion, mode: draft.mode, id: draft.id, ...(draft.sourceProvenance ? { provenance: draft.sourceProvenance.digest } : {}),
+     nodes: draft.nodes.map(node => ({ id: node.id, kind: node.kind,
+       parameters: Object.fromEntries(Object.entries(node.parameters).sort(([a], [b]) => a === b ? 0 : a < b ? -1 : 1).map(([name, value]) => [name, parameter(value)])) })),
+     edges: draft.edges.map(edge => ({ id: edge.id, source: { nodeId: edge.source.nodeId, portId: edge.source.portId }, target: { nodeId: edge.target.nodeId, portId: edge.target.portId } })) });
+
+--- a/src/archcanvas_authoring/draft.py
++++ b/src/archcanvas_authoring/draft.py
+@@ -34,8 +34,8 @@
+     raise DraftError(technical, diagnostics=[_diagnostic(code, message, technical, **details)])
+ 
+ 
+-MAX_NODES = 128
+-MAX_EDGES = 384
++MAX_NODES = 1200
++MAX_EDGES = 3600
+ IDENTITY = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}\Z")
+ ENTRY = "model:AuthoredModel"
+ 
+@@ -136,13 +136,14 @@
+     """Normalize a separate draft; reject malformed or contradictory graphs.
+ 
+     Incomplete graphs can be saved while building. Generation requires all
+-    ports to be bound and all nodes to contribute to at least one named output.
++    ports to be bound. Unused branches require explicit retention; otherwise all
++    nodes must contribute to at least one named output.
+     Shape facts are deductions from declarations, not sampled execution.
+     """
+     if isinstance(draft, dict) and "sourceProvenance" in draft:
+         from .source_import import validate_source_draft
+         return validate_source_draft(draft, require_complete=require_complete)
+-    _keys(draft, {"schemaVersion", "mode", "id", "title", "revision", "nodes", "edges"} | ({"customModules"} if "customModules" in draft else set()), "Authored draft")
++    _keys(draft, {"schemaVersion", "mode", "id", "title", "revision", "nodes", "edges"} | ({"customModules"} if "customModules" in draft else set()) | ({"allowUnusedNodes"} if "allowUnusedNodes" in draft else set()), "Authored draft")
+     from .custom_modules import validate_custom_definitions, custom_spec
+     custom = validate_custom_definitions(draft.get("customModules", []))
+     custom_kinds = {item["kind"] for item in custom}
+@@ -155,9 +156,13 @@
+     if type(draft["revision"]) is not int or not 0 <= draft["revision"] <= 2**53 - 1:
+         _fail("Draft revision must be a nonnegative safe integer.", "invalid_revision", "草稿版本号须为非负安全整数。")
+     if not isinstance(draft["nodes"], list) or len(draft["nodes"]) > MAX_NODES or not isinstance(draft["edges"], list) or len(draft["edges"]) > MAX_EDGES:
+-        _fail("An authored draft permits at most 128 nodes and 384 connections.", "draft_budget_exceeded",
+-              "建模草稿最多允许 128 个模块、384 条连接，请缩小草稿。")
++        _fail("An authored draft permits at most 1200 nodes and 3600 connections.", "draft_budget_exceeded",
++              "建模草稿最多允许 1200 个模块、3600 条连接，请缩小草稿。")
+     normalized = {key: deepcopy(draft[key]) for key in ("schemaVersion", "mode", "id", "title", "revision")}
++    if "allowUnusedNodes" in draft:
++        if type(draft["allowUnusedNodes"]) is not bool:
++            _fail("allowUnusedNodes must be boolean.", "invalid_unused_policy", "保留未使用分支选项必须为布尔值。")
++        normalized["allowUnusedNodes"] = draft["allowUnusedNodes"]
+     # Do not point at a node if another raw node uses the same identity, even
+     # when an earlier parameter failure precedes the duplicate-id check.
+     identity_counts = Counter(raw.get("id") for raw in draft["nodes"] if isinstance(raw, dict)
+@@ -256,7 +261,7 @@
+                 used.add(producer)
+                 pending.append(producer)
+     unused = [n for n in nodes if n not in used]
+-    if unused:
++    if unused and not draft.get("allowUnusedNodes", False):
+         issues.append(_diagnostic("unused-node", "这些模块尚未通向命名输出；生成 Python 前请连接到输出，或移除未使用模块。",
+                                   "Every module must contribute to a named Output before generating Python.", nodeIds=unused))
+     normalized["nodes"], normalized["edges"] = list(nodes.values()), edges
+@@ -387,6 +392,14 @@
+         if match.get("parentId") != root["id"] or match.get("children") != [] or match.get("evidence") == "opaque":
+             raise DraftError(f"{node['label']}: generated node containment/evidence differs from its authoring contract.")
+         params = {} if kind in ({"Input", "Output"} | _FUNCTIONAL) else deepcopy(node["parameters"])
++        if kind in ('Reshape', 'Transpose', 'Permute', 'Unsqueeze', 'Squeeze', 'Mean', 'Sum'):
++            params = deepcopy(node["parameters"])
++            source_id = producers[identity, 'input']['source']['nodeId']
++            rank = len(validated["tensors"][source_id]['shape'])
++            if kind == 'Reshape': params = {'shape': validated['tensors'][identity]['shape']}
++            elif kind == 'Transpose': params = {key: value % rank for key, value in params.items()}
++            elif kind in ('Mean', 'Sum', 'Squeeze'): params['dim'] %= rank
++            elif kind == 'Unsqueeze': params['dim'] %= rank + 1
+         if kind in _FLOAT_MODULES:
+             params["dtype"] = {"expression": "torch.float32", "origin": "unknown"}
+         if match.get("parameters") != params:
+
+--- a/src/archcanvas_authoring/source_import.py
++++ b/src/archcanvas_authoring/source_import.py
+@@ -218,9 +218,11 @@
+ 
+ def validate_source_draft(draft: dict, *, require_complete=False) -> dict:
+     from .draft import module_catalog
+-    _keys(draft, {"schemaVersion", "mode", "id", "title", "revision", "nodes", "edges", "sourceProvenance"} | ({"sourceCache"} if "sourceCache" in draft else set()) | ({"customModules"} if "customModules" in draft else set()), "Source-derived draft")
++    _keys(draft, {"schemaVersion", "mode", "id", "title", "revision", "nodes", "edges", "sourceProvenance"} | ({"sourceCache"} if "sourceCache" in draft else set()) | ({"customModules"} if "customModules" in draft else set()) | ({"allowUnusedNodes"} if "allowUnusedNodes" in draft else set()), "Source-derived draft")
+     from .custom_modules import validate_custom_definitions, custom_spec
+     custom = validate_custom_definitions(draft.get("customModules", []))
++    if "allowUnusedNodes" in draft and type(draft["allowUnusedNodes"]) is not bool:
++        raise DraftError("allowUnusedNodes must be boolean.")
+     if "sourceCache" in draft:
+         _keys(draft["sourceCache"], {"nodes", "edges", "removedNodeIds", "removedCanonicalEdgeIds"}, "Source edit cache")
+         _safe_json(draft["sourceCache"])
+
+--- a/src/archcanvas_authoring/source_generation_groups.py
++++ b/src/archcanvas_authoring/source_generation_groups.py
+@@ -226,6 +226,7 @@
+ 
+     class_names = {g: _safe_class(g) for g in groups}
+     class_defs, emitted = [], set()
++    emitted_functions: dict[tuple[str, str | None], list[str]] = {}
+ 
+     def constructor(node):
+         module_kind = kind(node)
+@@ -349,6 +350,7 @@
+                 raise DraftError(f"{node['label']}.{name} 缺少精确输入张量；ports={[(p.get('name'), p.get('id')) for p in ports(node, 'in')]}; values={list(values)}")
+ 
+             if module_kind in FUNCTIONAL:
++                emitted_functions.setdefault((module_kind, scope), []).append(identity)
+                 params = node.get("parameters", {})
+                 if module_kind in ("Add", "Subtract", "Multiply", "Divide", "MatMul"):
+                     op = {"Add": "+", "Subtract": "-", "Multiply": "*", "Divide": "/", "MatMul": "@"}[module_kind]
+@@ -385,7 +387,7 @@
+                     if previous is None:
+                         arguments_for_call.append((semantic_name, argument))
+             if module_kind == "MultiheadAttention":
+-                keyword_args = [f"{name}={value}" for name, value in arguments_for_call if name in {"query", "key", "value", "attn_mask"}]
++                keyword_args = [f"{name}={value}" for name, value in arguments_for_call if name in {"query", "key", "value", "attn_mask", "key_padding_mask"}]
+                 need_weights = any("weights" in semantic_names(node, port) for port in ports(node, "out"))
+                 expression = f"{reference}({', '.join(keyword_args)}, need_weights={need_weights!r})"
+             elif module_kind in custom or identity in retained:
+@@ -463,7 +465,6 @@
+ 
+     node_bindings, container_bindings = {}, {}
+     instance_occurrences: dict[str, int] = {}
+-    functional_occurrences: dict[tuple[str, str | None], int] = {}
+     def constructor_symbol(identity):
+         key = refs.get(identity, {}).get("instanceId", identity)
+         same_scope = [item["id"] for item in original["nodes"] if refs.get(item["id"], {}).get("instanceId", item["id"]) == key and owner(item["id"]) == owner(identity)]
+@@ -497,7 +498,10 @@
+             parent_arch = ({**node_bindings, **container_bindings}.get(parent_identity) if parent_identity else f"call:instance:{generation_module}.AuthoredModel")
+             key = (module_kind, parent_arch)
+             candidates = [item for item in architecture["nodes"] if item.get("kind") == module_kind and item.get("parentId") == parent_arch]
+-            occurrence = functional_occurrences.get(key, 0); functional_occurrences[key] = occurrence + 1
++            # Independent ready branches can be emitted in a different order
++            # from the draft's insertion order. Bind each functional operation
++            # to its actual source emission, not the order of stored cards.
++            occurrence = emitted_functions[(module_kind, parent_identity)].index(node["id"])
+             matches = [candidates[occurrence]] if occurrence < len(candidates) else []
+         else:
+             if node["id"] in virtual_roots:
+
+--- a/src/archcanvas_authoring/catalog.py
++++ b/src/archcanvas_authoring/catalog.py
+@@ -29,7 +29,7 @@
+ CATALOG = [
+     module('Input', 'io', '输入', 'Declare the input shape and dtype; declarations are not runtime observations.', [
+         field('shape', 'integer-array', [1, 16], **SHAPE),
+-        field('dtype', 'choice', 'float32', options=['float32', 'float64', 'int64'])], inputs=()),
++        field('dtype', 'choice', 'float32', options=['float32', 'float64', 'int64', 'bool'])], inputs=()),
+     module('Output', 'io', '输出', 'Expose a tensor as a named model output.', outputs=()),
+     module('Linear', 'dense', '全连接', 'Transform the last input dimension; requires float32.', [
+         field('in_features', 'integer', 16, **POS), field('out_features', 'integer', 32, **POS), field('bias', 'boolean', True)]),
+
+--- a/studio/tests/draft-limits-independent.test.ts
++++ b/studio/tests/draft-limits-independent.test.ts
+@@ -5,14 +5,14 @@
+ 
+ // Literal fixtures and boundaries come from the published draft/cache limits,
+ // not imported product constants. A wide input collector makes the edge limit
+-// reachable without violating the separate 128-node limit or producer rules.
++// reachable without violating the separate 1200-node limit or producer rules.
+ const input: DraftModule = {
+   kind: 'Input', label: '输入', category: 'input', description: 'Independent input fixture',
+   defaults: { shape: [1, 8] }, parameters: [], ports: [{ id: 'output', name: 'output', direction: 'out', type: 'tensor' }],
+ };
+ const collector: DraftModule = {
+   kind: 'Collector', label: '汇合', category: 'merge', description: 'Independent wide collector fixture', defaults: {}, parameters: [],
+-  ports: Array.from({ length: 385 }, (_, i) => ({ id: `input-${i}`, name: `input-${i}`, direction: 'in', type: 'tensor' })),
++  ports: Array.from({ length: 3601 }, (_, i) => ({ id: `input-${i}`, name: `input-${i}`, direction: 'in', type: 'tensor' })),
+ };
+ const catalog: DraftCatalog = { schemaVersion: 1, mode: 'authored-draft', modules: [input, collector], unsupported: [] };
+ 
+@@ -41,47 +41,47 @@
+   assert.deepEqual(loaded.draft, draft);
+ }
+ 
+-test('128th node is accepted and cacheable; 129th fails before any byte changes', () => {
+-  const draft = nodes(127);
+-  addDraftNode(draft, input, 'node-127', { x: 1270, y: 0 });
+-  assert.equal(draft.nodes.length, 128);
++test('1200th node is accepted and cacheable; 1201th fails before any byte changes', () => {
++  const draft = nodes(1199);
++  addDraftNode(draft, input, 'node-1199', { x: 11990, y: 0 });
++  assert.equal(draft.nodes.length, 1200);
+   assertCacheable(draft);
+   const bytes = JSON.stringify(draft);
+-  assert.throws(() => addDraftNode(draft, input, 'node-128', { x: 1280, y: 0 }), /128/);
++  assert.throws(() => addDraftNode(draft, input, 'node-1200', { x: 12000, y: 0 }), /1200/);
+   assert.equal(JSON.stringify(draft), bytes);
+ });
+ 
+-test('384th connection is accepted and cacheable; 385th fails before any byte changes', () => {
+-  const draft = edges(383);
+-  appendEdge(draft, 383);
++test('3600th connection is accepted and cacheable; 3601th fails before any byte changes', () => {
++  const draft = edges(3599);
++  appendEdge(draft, 3599);
+   assert.equal(draft.nodes.length, 2, 'edge capacity is separate from node capacity');
+-  assert.equal(draft.edges.length, 384);
++  assert.equal(draft.edges.length, 3600);
+   assertCacheable(draft);
+   const bytes = JSON.stringify(draft);
+-  assert.throws(() => appendEdge(draft, 384), /384/);
++  assert.throws(() => appendEdge(draft, 3600), /3600/);
+   assert.equal(JSON.stringify(draft), bytes);
+ });
+ 
+ test('deleting a module or connection releases capacity for another edit', () => {
+-  const nodeDraft = nodes(128);
++  const nodeDraft = nodes(1200);
+   removeDraftNode(nodeDraft, 'node-0');
+   addDraftNode(nodeDraft, input, 'replacement-node', { x: -100, y: 0 });
+-  assert.equal(nodeDraft.nodes.length, 128);
++  assert.equal(nodeDraft.nodes.length, 1200);
+   assert.ok(nodeDraft.nodes.some(node => node.id === 'replacement-node'));
+   assertCacheable(nodeDraft);
+ 
+-  const edgeDraft = edges(384);
++  const edgeDraft = edges(3600);
+   edgeDraft.edges = edgeDraft.edges.filter(edge => edge.id !== 'edge-0');
+-  appendEdge(edgeDraft, 384);
+-  assert.equal(edgeDraft.edges.length, 384);
+-  assert.ok(edgeDraft.edges.some(edge => edge.id === 'edge-384'));
++  appendEdge(edgeDraft, 3600);
++  assert.equal(edgeDraft.edges.length, 3600);
++  assert.ok(edgeDraft.edges.some(edge => edge.id === 'edge-3600'));
+   assertCacheable(edgeDraft);
+ });
+ 
+ test('failed limit edits preserve history, revision, past and redo bytes', () => {
+   for (const [draft, edit, limit] of [
+-    [nodes(128), (next: AuthoredDraft) => addDraftNode(next, input, 'overflow', { x: 0, y: 0 }), /128/],
+-    [edges(384), (next: AuthoredDraft) => appendEdge(next, 384), /384/],
++    [nodes(1200), (next: AuthoredDraft) => addDraftNode(next, input, 'overflow', { x: 0, y: 0 }), /1200/],
++    [edges(3600), (next: AuthoredDraft) => appendEdge(next, 3600), /3600/],
+   ] as const) {
+     const history = draftHistory(draft);
+     history.past = [{ ...structuredClone(draft), revision: 6, title: '过去状态' }];
+
+--- a/studio/tests/authoring-presets.test.ts
++++ b/studio/tests/authoring-presets.test.ts
+@@ -91,9 +91,9 @@
+     assert.equal(JSON.stringify(initial), before);
+   }
+   const fullNodes = structuredClone(initial);
+-  for (let i = 0; i < 121; i++) fullNodes.nodes.push({ id: `old${i}`, kind: 'Input', label: '旧输入', parameters: {}, position: { x: 0, y: i * 128 } });
++  for (let i = 0; i < 1193; i++) fullNodes.nodes.push({ id: `old${i}`, kind: 'Input', label: '旧输入', parameters: {}, position: { x: 0, y: i * 128 } });
+   const fullEdges = structuredClone(initial);
+-  for (let i = 0; i < 378; i++) fullEdges.edges.push({ id: `old-edge${i}`, source: { nodeId: 'x', portId: 'output' }, target: { nodeId: 'y', portId: 'input' } });
++  for (let i = 0; i < 3594; i++) fullEdges.edges.push({ id: `old-edge${i}`, source: { nodeId: 'x', portId: 'output' }, target: { nodeId: 'y', portId: 'input' } });
+   for (const [draft, at] of [[fullNodes, { x: 0, y: 0 }], [fullEdges, { x: 0, y: 0 }], [initial, { x: 999_999, y: 0 }], [initial, { x: NaN, y: 0 }]] as const) {
+     const before = JSON.stringify(draft);
+     assert.throws(() => insertDraftPreset(draft, catalog, 'cnn', at, ids())); assert.equal(JSON.stringify(draft), before);
+
+--- a/src/archcanvas_python/frontend.py
++++ b/src/archcanvas_python/frontend.py
+@@ -1036,7 +1036,7 @@
+             return "left" if left_is_bypass else "right"
+         return None
+ 
+-    def operator(self, source: ast.AST, spec: Spec, parent: str, kind: str, inputs: list[tuple[str, Any]], category: str = "operator", evidence: str = "source", outputs: list[str] | None = None) -> Any:
++    def operator(self, source: ast.AST, spec: Spec, parent: str, kind: str, inputs: list[tuple[str, Any]], category: str = "operator", evidence: str = "source", outputs: list[str] | None = None, parameters: dict | None = None) -> Any:
+         # The source structure and operation occurrence, rather than line number,
+         # identify a call. Inserting comments therefore preserves diagram IDs.
+         fingerprint = digest(ast.dump(source, include_attributes=False))[:10]
+@@ -1044,6 +1044,8 @@
+         if kind == "Add":
+             category = "residual" if residual_operand else "operator"
+         node = self.node(f"op:{parent}:{kind}:{fingerprint}", kind, kind, category, parent, spec.unit, source, evidence=evidence)
++        if parameters is not None:
++            node["parameters"] = parameters
+         for name, value in inputs:
+             self.bind(value, node, name, "residual" if name == residual_operand else "data")
+         if outputs:
+@@ -1133,7 +1135,27 @@
+                         return self.operator(expression, spec, parent, method.capitalize(),
+                                              [("input", receiver)] + [(f"arg{index}", value) for index, value in enumerate(args)] + list(keywords.items()),
+                                              "opaque", evidence="opaque")
+-                    return self.operator(expression, spec, parent, method.capitalize(), [("input", receiver)], evidence="contract")
++                    # Tensor method arguments are model facts, not palette
++                    # defaults. Retain their static literal axes/shapes so an
++                    # expanded editor can recreate the authored calculation.
++                    positional = [literal(arg, spec.env | values) for arg in expression.args]
++                    named = {keyword.arg: literal(keyword.value, spec.env | values) for keyword in expression.keywords if keyword.arg}
++                    parameters = {}
++                    signatures = {"flatten": (["start_dim", "end_dim"], {"start_dim": 0, "end_dim": -1}),
++                                  "transpose": (["dim0", "dim1"], {}),
++                                  "mean": (["dim", "keepdim"], {"keepdim": False}),
++                                  "sum": (["dim", "keepdim"], {"keepdim": False}),
++                                  "unsqueeze": (["dim"], {}), "squeeze": (["dim"], {})}
++                    if method in signatures:
++                        fields, defaults = signatures[method]
++                        parameters = {**defaults, **dict(zip(fields, positional)), **named}
++                    elif method in ("reshape", "view", "permute"):
++                        shape = positional[0] if len(positional) == 1 and isinstance(positional[0], (list, tuple)) else positional
++                        parameters = {"dims" if method == "permute" else "shape": list(shape)}
++                    def literal_parameter(value):
++                        return type(value) in (int, float, bool, str) or isinstance(value, (list, tuple)) and all(literal_parameter(item) for item in value)
++                    parameters = {key: list(value) if isinstance(value, tuple) else value for key, value in parameters.items() if literal_parameter(value)}
++                    return self.operator(expression, spec, parent, "Reshape" if method == "view" else method.capitalize(), [("input", receiver)], evidence="contract", parameters=parameters)
+                 if refs(receiver):
+                     args.insert(0, receiver)
+             self.warn(f"Unsupported call {spec.unit.expression(expression.func)} at {spec.unit.path}:{expression.lineno}; retained opaque.")
+
+--- a/tests/m4_holdout_integrity_oracle.py
++++ b/tests/m4_holdout_integrity_oracle.py
+@@ -50,9 +50,9 @@
+                     {"in_channels": 3, "out_channels": 16, "kernel_size": 4, "stride": 4},
+                     "self.patch_projection(image)"),
+     "flatten": authored("Flatten", "operator", "contract", "root", ports("input"),
+-                        expression="tokens.flatten(2)"),
++                        {"start_dim": 2, "end_dim": -1}, expression="tokens.flatten(2)"),
+     "transpose": authored("Transpose", "operator", "contract", "root", ports("input"),
+-                          expression="tokens.flatten(2).transpose(1, 2)"),
++                          {"dim0": 1, "dim1": 2}, expression="tokens.flatten(2).transpose(1, 2)"),
+     "block": module("root", ("tokens",), "block", {"dim": 16, "heads": 4}, "self.block(tokens)"),
+     "norm": atomic("LayerNorm", "norm", "block", "block.norm", {"normalized_shape": 16}, "self.norm(tokens)"),
+     "attention": atomic("MultiheadAttention", "attention", "block", "block.attention",
+@@ -70,7 +70,7 @@
+     "mlp_residual": authored("Add", "residual", "source", "block",
+                              (("left", "in", "residual", 0), ("right", "in", "data", 1),
+                               ("output", "out", "data", 0)), expression="tokens + self.mlp(tokens)"),
+-    "pool": authored("Mean", "operator", "contract", "root", ports("input"), expression="tokens.mean(dim=1)"),
++    "pool": authored("Mean", "operator", "contract", "root", ports("input"), {"dim": 1, "keepdim": False}, expression="tokens.mean(dim=1)"),
+     "classifier": atomic("Linear", "linear", "root", "classifier", {"in_features": 16, "out_features": 10}, "self.classifier(pooled)"),
+     "output": output_node(),
+ }
+
+--- a/studio/tests/draft-validation-independent.test.ts
++++ b/studio/tests/draft-validation-independent.test.ts
+@@ -81,8 +81,11 @@
+   second.nodes.reverse(); assert.notEqual(draftValidationKey(second), key);
+   second.nodes.reverse(); second.edges.reverse(); assert.notEqual(draftValidationKey(second), key);
+   const fields = JSON.parse(key);
+-  assert.deepEqual(Object.keys(fields), ['schemaVersion', 'mode', 'id', 'nodes', 'edges']);
++  assert.deepEqual(Object.keys(fields), ['allowUnusedNodes', 'schemaVersion', 'mode', 'id', 'nodes', 'edges']);
+   assert.deepEqual(Object.keys(fields.nodes[1]), ['id', 'kind', 'parameters']);
++  const retained = { ...first, allowUnusedNodes: true };
++  assert.notEqual(draftValidationKey(retained), key, 'retention changes require a fresh check');
++  assert.equal(draftValidationKey({ ...first, allowUnusedNodes: false }), key);
+ });
+ 
+ test('complete static response preserves tensor declarations and identities while isolating them from mutable response data', () => {

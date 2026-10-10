@@ -27,6 +27,8 @@ def named_nodes(architecture, expected):
     prefix = "instance:" + expected["entry"].replace(":", ".")
     names, nodes = {}, {}
     for value in architecture["nodes"]:
+        if value.get('sourceStructure'):
+            continue
         identity = value["id"]
         require(identity not in names, "duplicate node identity")
         instance = value.get("instanceId")
@@ -66,6 +68,24 @@ def check_holdout(architecture, entry, fixture_root):
     require(source["content"] == raw.decode("utf-8"), "source content differs")
     require(source["digest"] == hashlib.sha256(raw).hexdigest(), "source SHA differs")
     names, nodes = named_nodes(architecture, expected)
+    inspection = {node['id']:node for node in architecture['nodes'] if node.get('sourceStructure')}
+    # An independent authored-source oracle for the additive view hierarchy.
+    # It never relaxes the frozen tensor/call inventory or permits invented
+    # registered operators to masquerade as source inspection.
+    require(len(inspection) == (3 if entry == 'GraphForecast' else 0), 'source inspection inventory differs')
+    for node in inspection.values():
+        require(node['sourceStructure'] is True and node['evidence']=='source' and not node['ports'], 'inspection invented tensor facts')
+        require(not any(key in node for key in ('instanceId','callId','repeat','outputPath','parameterOrigins')), 'inspection invented execution facts')
+        require(node['source']['expression'] in source['content'], 'inspection expression absent from source')
+    if inspection:
+        region=nodes['ConditionalRegion']
+        branches=[inspection[id] for id in region['children']]
+        require([n['kind'] for n in branches]==['SourceBranch','SourceBranch'] and [n['label'] for n in branches]==['if features.sum() > 0','else'], 'source branch alternatives differ')
+        require(all(n['parentId']==region['id'] for n in branches), 'inspection parent differs')
+        require(len(branches[0]['children'])==1 and not branches[1]['children'], 'source branch members differ')
+        activation=inspection[branches[0]['children'][0]]
+        require(activation['kind']=='SourceModule' and activation['label']=='activation' and activation['parameters']=={'sourceType':'nn.ReLU','construction':'nn.ReLU()'}, 'inspection constructor differs')
+        require(activation['parentId']==branches[0]['id'] and not activation['children'], 'inspection module containment differs')
     local_ports, calls, instance_calls = {}, set(), defaultdict(list)
     prefix = "instance:" + expected["entry"].replace(":", ".")
     for name, value in nodes.items():
@@ -75,11 +95,11 @@ def check_holdout(architecture, entry, fixture_root):
         parent = value.get("parentId")
         require(parent is None or parent in names, name + ": dangling parent")
         require(names.get(parent) == facts["parent"], name + ": parent differs")
-        require(all(child in names for child in value["children"]), name + ": dangling child")
+        require(all(child in names or child in inspection for child in value["children"]), name + ": dangling child")
         # A custom root's sibling membership does not claim layout/source order.
         # Counter preserves multiplicity; repeats/Sequential additionally retain
         # the authored execution order of their independent members.
-        observed_children = [names[child] for child in value["children"]]
+        observed_children = [names[child] for child in value["children"] if child not in inspection]
         wanted_children = expected["children"].get(name, ())
         require(Counter(observed_children) == Counter(wanted_children), name + ": complete containment differs")
         if facts["repeat"] is not None:
@@ -150,7 +170,7 @@ def check_holdout(architecture, entry, fixture_root):
         "portCount": len(local_ports), "tensorCount": len(tensor_producers), "callCount": len(calls),
         "instanceCount": len(instance_calls), "opaqueNodeCount": sum(node["evidence"] == "opaque" for node in nodes.values()),
         "nodes": sorted(nodes), "relations": sorted(relations),
-        "containment": {name: sorted(names[child] for child in node["children"]) for name, node in sorted(nodes.items()) if node["children"]},
+        "containment": {name: sorted(names[child] for child in node["children"] if child not in inspection) for name, node in sorted(nodes.items()) if any(child not in inspection for child in node["children"])},
         "instanceCalls": {key: sorted(values) for key, values in sorted(instance_calls.items())},
         "tensors": [{"producer": [names[producer[0]], local_ports[producer]["name"]],
                      "consumers": sorted(tensor_consumers[tensor])} for producer, tensor in sorted(producer_tensors.items())],

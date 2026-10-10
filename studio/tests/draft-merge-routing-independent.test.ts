@@ -70,6 +70,20 @@ function makeDraft(id: string, nodes: [string, string, number, number][], edges:
   const draft = blankDraft(id); draft.title = 'Independent fixed-port routing';
   draft.nodes = nodes.map(([nodeId, kind, x, y]) => ({ id: nodeId, kind, label: nodeId, parameters: structuredClone(catalog.modules.find(module => module.kind === kind)!.defaults), position: { x, y } }));
   draft.edges = edges.map(([edgeId, sourceId, targetId, port]) => ({ id: edgeId, source: { nodeId: sourceId, portId: 'output' }, target: { nodeId: targetId, portId: port } }));
+  // Keep this fixed-anchor acceptance suite explicit under the new default
+  // candidate policy. It also verifies manual side/offset constraints.
+  const dx = draft.edges.reduce((sum, e) => sum + Math.abs(draft.nodes.find(n => n.id === e.source.nodeId)!.position.x - draft.nodes.find(n => n.id === e.target.nodeId)!.position.x), 0);
+  const dy = draft.edges.reduce((sum, e) => sum + Math.abs(draft.nodes.find(n => n.id === e.source.nodeId)!.position.y - draft.nodes.find(n => n.id === e.target.nodeId)!.position.y), 0);
+  const flow = dy > dx ? 'vertical' : 'horizontal';
+  for (const node of draft.nodes) {
+    const module = catalog.modules.find(m => m.kind === node.kind)!;
+    const height = node.kind === 'Add' || node.kind === 'Concat' ? 140 : 100;
+    node.portLayouts = Object.fromEntries(module.ports.map(port => {
+      const p = anchor(node, port.id, flow);
+      const side = flow === 'horizontal' ? port.direction === 'in' ? 'left' : 'right' : port.direction === 'in' ? 'top' : 'bottom';
+      return [port.id, { side, offset: (flow === 'horizontal' ? p.y - node.position.y - 12 : p.x - node.position.x - 12) / (flow === 'horizontal' ? height - 24 : 152) }];
+    }));
+  }
   return draft;
 }
 const mergeBindings: [string, string, string, string][] = [

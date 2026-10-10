@@ -59,7 +59,8 @@ function segmentDistance(a: RoutePoint, b: RoutePoint, c: RoutePoint, d: RoutePo
 /** Replace only eligible memory display routes. Every other final batch path
  * is fixed, including same-tensor peers. No generic router pass runs afterward. */
 export function projectMemoryContinuity(nodes: readonly SceneNode[], requests: readonly RouteRequest[],
-  baseline: readonly RouteResult[], limits: MemoryContinuityBudget = MEMORY_CONTINUITY_BUDGET): Map<number, MemoryProjection> {
+  baseline: readonly RouteResult[], limits: MemoryContinuityBudget = MEMORY_CONTINUITY_BUDGET,
+  unframedIds: ReadonlySet<string> = new Set()): Map<number, MemoryProjection> {
   const accepted = new Map<number, MemoryProjection>();
   const budgetKeys = Object.keys(MEMORY_CONTINUITY_BUDGET) as (keyof MemoryContinuityBudget)[];
   if (!limits || Object.keys(limits).length !== budgetKeys.length || budgetKeys.some(key =>
@@ -124,7 +125,7 @@ export function projectMemoryContinuity(nodes: readonly SceneNode[], requests: r
   const widths = requests.map(appearanceWidth);
   for (let index = 0; index < requests.length; index++) {
     const request = requests[index], original = fixedGeometry[index], width = widths[index];
-    if (request.role !== 'memory' || width === null || baseline[index].blockedBy.length) continue;
+    if (request.role !== 'memory' || request.fixedPorts || width === null || baseline[index].blockedBy.length) continue;
     if (++work.candidates > limits.maxCandidates) break;
     const source = byId.get(request.sourceId), target = byId.get(request.targetId);
     if (!source || !target || source.expanded || target.expanded) continue;
@@ -153,6 +154,7 @@ export function projectMemoryContinuity(nodes: readonly SceneNode[], requests: r
     if (!self || self.contacts.length || self.spans.size) continue;
     let clear = true;
     for (const node of nodes) {
+      if (unframedIds.has(node.id)) continue;
       const own = node.id === source.id || node.id === target.id;
       const boxes = owners.has(node.id)
         ? node.expanded ? [{ left: node.x, top: node.y, right: node.x + node.width, bottom: node.y + node.headerHeight }] : []

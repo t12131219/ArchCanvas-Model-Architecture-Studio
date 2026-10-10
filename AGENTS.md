@@ -12,4 +12,4 @@ The product is a portable Skill for Codex, Claude Code, and the official DeepSee
 
 Visual gestures and language edits share the same CanvasDocument, typed operations, and undo history. Visual edits do not write model source. Semantic changes use supported intents, isolated preparation, independent verification, concrete human review, and guarded commit.
 
-The current `skills/archcanvas` distribution contains instructions and references only. Do not advertise planned runtime commands or editor functions as implemented.
+The source-tree `skills/archcanvas` launcher binds to this formal checkout; verified installations bind to their embedded runtime. Read the actual doctor/capabilities response before claiming a command, catalog size or editor function. Instruction-only copies without a binding cannot deliver a canvas. Historical package and host evidence do not certify current development bytes.

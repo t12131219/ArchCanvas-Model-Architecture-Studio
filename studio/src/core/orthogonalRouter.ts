@@ -14,6 +14,13 @@ export interface RouteRequest {
   /** Set only when every represented branch targets the same hidden binding through a collapsed proxy. */
   canonicalTarget?: RouteCanonicalSource;
   displaySide?: 'bottom' | 'top' | 'right' | 'left';
+  /** A manual display attachment must survive later endpoint projections. */
+  fixedPorts?: boolean;
+  /** Cheap endpoint candidate probes omit the grid fallback; final batches keep it. */
+  candidateProbe?: boolean;
+  sourceSide?: 'bottom' | 'top' | 'right' | 'left';
+  targetSide?: 'bottom' | 'top' | 'right' | 'left';
+  minimumLeadLength?: number;
 }
 export interface RouteResult { path: string; points: RoutePoint[]; changed: boolean; blockedBy: string[] }
 const CLEARANCE = 6, EPSILON = .01;
@@ -266,10 +273,10 @@ function shortcutGeometrySubset(after: ShortcutGeometry, before: ShortcutGeometr
     [...after.overlaps].every(([key, intervals]) => intervals.every(([low, high]) =>
       before.overlaps.get(key)?.some(([a, b]) => a <= low + SHORTCUT_EPSILON && b >= high - SHORTCUT_EPSILON)));
 }
-function lead(point: RoutePoint, node: SceneNode): RoutePoint {
-  const side = visualPortSide(node, point);
-  return { x: number(point.x + (side === 'right' ? CLEARANCE : side === 'left' ? -CLEARANCE : 0)),
-    y: number(point.y + (side === 'bottom' ? CLEARANCE : side === 'top' ? -CLEARANCE : 0)) };
+function lead(point: RoutePoint, node: SceneNode, length = CLEARANCE, override?: RouteRequest['sourceSide']): RoutePoint {
+  const side = override ?? visualPortSide(node, point);
+  return { x: number(point.x + (side === 'right' ? length : side === 'left' ? -length : 0)),
+    y: number(point.y + (side === 'bottom' ? length : side === 'top' ? -length : 0)) };
 }
 
 /** Local bounded Hanan-grid fallback, used only when a single corridor fails. */
@@ -324,13 +331,13 @@ function gridRoute(start: RoutePoint, end: RoutePoint, rectangles: Rectangle[], 
 }
 
 /** One geometry-only router for canvas and detail export. It never moves nodes. */
-export function createOrthogonalRouter(nodes: readonly SceneNode[]) {
+export function createOrthogonalRouter(nodes: readonly SceneNode[], unframedIds: ReadonlySet<string> = new Set()) {
   const byId = new Map(nodes.map(node => [node.id, node]));
   const outlines = nodes.map(node => ({ node, outline: nodeVisualOutline(node) }));
-  const bodyById = new Map(outlines.map(({ node, outline }) => [node.id, outline.rectangles.map(rectangle => ({
+  const bodyById = new Map(outlines.map(({ node, outline }) => [node.id, unframedIds.has(node.id) ? [] : outline.rectangles.map(rectangle => ({
     id: node.id, left: rectangle.x, top: rectangle.y, right: rectangle.x + rectangle.width, bottom: rectangle.y + rectangle.height }))]));
   const rectangles = [...bodyById.values()].flat();
-  const ownerBounds = outlines.map(({ node, outline: { bounds } }) => ({
+  const ownerBounds = outlines.filter(({ node }) => !unframedIds.has(node.id)).map(({ node, outline: { bounds } }) => ({
     id: node.id, left: bounds.x, top: bounds.y, right: bounds.x + bounds.width, bottom: bounds.y + bounds.height }));
   // Long expanded frames belong in their own index: their large vertical span
   // must not keep every earlier leaf in a dense Sequential's broad phase.
@@ -338,7 +345,7 @@ export function createOrthogonalRouter(nodes: readonly SceneNode[]) {
   const leavesNearY = verticalIndex(rectangles.filter(rectangle => !expandedIds.has(rectangle.id)));
   const framesNearY = verticalIndex(rectangles.filter(rectangle => expandedIds.has(rectangle.id)));
   const nearY = (top: number, bottom: number) => [...leavesNearY(top, bottom), ...framesNearY(top, bottom)];
-  const headers = new Map(nodes.filter(node => node.expanded).map(node => [node.id,
+  const headers = new Map(nodes.filter(node => node.expanded && !unframedIds.has(node.id)).map(node => [node.id,
     { id: node.id, left: node.x, top: node.y, right: node.x + node.width, bottom: node.y + node.headerHeight }]));
   const ancestors = new Map<string, Set<string>>();
   for (const node of nodes) { const ids = new Set<string>(); let parent = node.parentId;
@@ -369,6 +376,15 @@ export function createOrthogonalRouter(nodes: readonly SceneNode[]) {
     const ancestorHeaders = [...excluded].filter(id => id !== request.sourceId && id !== request.targetId).flatMap(id => headers.get(id) ?? []);
     const endpointBodies = [...sourceBodies, ...(request.sourceId === request.targetId ? [] : targetBodies)];
     const blocked = new Set(collisions(original, [...ancestorHeaders, ...endpointBodies]));
+    const start = { x: number(request.start.x), y: number(request.start.y) }, end = { x: number(request.end.x), y: number(request.end.y) };
+    const minimumLead = request.minimumLeadLength ?? CLEARANCE;
+    const a = lead(start, byId.get(request.sourceId)!, minimumLead, request.sourceSide), b = lead(end, byId.get(request.targetId)!, minimumLead, request.targetSide);
+    const normalSafe = (points: RoutePoint[]) => {
+      if (!request.sourceSide && !request.targetSide) return true;
+      if (!validDirections(points, [start, a, b, end])) return false;
+      return routeLength(points.slice(0, 2)) + EPSILON >= minimumLead && routeLength(points.slice(-2)) + EPSILON >= minimumLead;
+    };
+    if (!normalSafe(original)) { blocked.add(request.sourceId); blocked.add(request.targetId); }
     for (let index = 1; index < original.length; index++) {
       const a = original[index - 1], b = original[index];
       for (const rectangle of nearY(Math.min(a.y, b.y), Math.max(a.y, b.y))) {
@@ -379,8 +395,6 @@ export function createOrthogonalRouter(nodes: readonly SceneNode[]) {
     if (!blockedBy.length) return { path: request.preferredPath, points: original, changed: false, blockedBy: [] };
     const unrelated = rectangles.filter(rectangle => !excluded.has(rectangle.id));
     const visibleObstacles = [...unrelated, ...ancestorHeaders];
-    const start = { x: number(request.start.x), y: number(request.start.y) }, end = { x: number(request.end.x), y: number(request.end.y) };
-    const a = lead(start, byId.get(request.sourceId)!), b = lead(end, byId.get(request.targetId)!);
     const padded = visibleObstacles.map(rectangle => ({ ...rectangle, left: rectangle.left - CLEARANCE, top: rectangle.top - CLEARANCE,
       right: rectangle.right + CLEARANCE, bottom: rectangle.bottom + CLEARANCE }));
     // Endpoint bodies remain obstacles during the middle search. Leads alone
@@ -400,11 +414,11 @@ export function createOrthogonalRouter(nodes: readonly SceneNode[]) {
       const middle = simplified(candidate); if (collisions(middle, obstacles).length) continue;
       const complete = simplified([start, ...middle, end]);
       const candidateCost = cost(complete);
-      if (candidateCost < bestCost && !collisions(complete, [...visibleObstacles, ...endpointBodies]).length) { best = complete; bestCost = candidateCost; }
+      if (candidateCost < bestCost && normalSafe(complete) && !collisions(complete, [...visibleObstacles, ...endpointBodies]).length) { best = complete; bestCost = candidateCost; }
     }
-    if (!best) {
+    if (!best && !request.candidateProbe) {
       const middle = gridRoute(a, b, obstacles, xs, ys);
-      if (middle) { const complete = simplified([start, ...middle, end]); if (!collisions(complete, [...visibleObstacles, ...endpointBodies]).length) best = complete; }
+      if (middle) { const complete = simplified([start, ...middle, end]); if (normalSafe(complete) && !collisions(complete, [...visibleObstacles, ...endpointBodies]).length) best = complete; }
     }
     return best ? { path: path(best), points: best, changed: true, blockedBy: [] } : { path: request.preferredPath, points: original, changed: false, blockedBy };
   };
@@ -795,7 +809,7 @@ export function createOrthogonalRouter(nodes: readonly SceneNode[]) {
     };
     // A clear proxy residual can still make a long detour without conflict
     // pressure. It needs this bounded proposal even when the generic pass exits.
-    if (!conflicted.length) { refineCollapsedResiduals(); refineShortcuts(); refineComponents(); return refineReadableRoutes(nodes, requests, results); }
+    if (!conflicted.length) { refineCollapsedResiduals(); refineShortcuts(); refineComponents(); return refineReadableRoutes(nodes, requests, results, unframedIds); }
     // Shared-source proposals use exact, resolved canonical identity and the
     // current rendered appearance. Equal tensor names alone are insufficient.
     const familyMembers = new Map<string, number[]>(), familyKeys = new Map<number, string>();
@@ -818,7 +832,7 @@ export function createOrthogonalRouter(nodes: readonly SceneNode[]) {
       // Find the outermost source-only frame before the common ancestry. This
       // selects a corridor beside the endpoint branches rather than the page.
       const sourceOnly = sourceChain.filter(id => members.every(index => id !== requests[index].targetId && !ancestors.get(requests[index].targetId)?.has(id)));
-      const frame = sourceOnly.map(id => byId.get(id)!).filter(node => node.expanded).at(-1);
+      const frame = sourceOnly.map(id => byId.get(id)!).filter(node => node.expanded && !unframedIds.has(node.id)).at(-1);
       if (!frame) return [];
       const outline = nodeVisualOutline(frame).bounds;
       const targetCenters = members.map(index => { const target = byId.get(requests[index].targetId)!; return target.x + target.width / 2; });
@@ -964,12 +978,27 @@ export function createOrthogonalRouter(nodes: readonly SceneNode[]) {
     refineCollapsedResiduals();
     refineShortcuts();
     refineComponents();
-    const refined = refineReadableRoutes(nodes, requests, results);
+    const refined = refineReadableRoutes(nodes, requests, results, unframedIds);
     return refined.map((result, index) => {
-      if (isOrthogonal(result.points)) return result;
+      const request = requests[index], minimum = request.minimumLeadLength ?? CLEARANCE;
+      const sourceLead = lead(request.start, byId.get(request.sourceId)!, minimum, request.sourceSide);
+      const targetLead = lead(request.end, byId.get(request.targetId)!, minimum, request.targetSide);
+      const normalsSafe = !request.sourceSide && !request.targetSide || validDirections(result.points, [request.start, sourceLead, targetLead, request.end]) &&
+        routeLength(result.points.slice(0, 2)) + EPSILON >= minimum && routeLength(result.points.slice(-2)) + EPSILON >= minimum;
+      if (isOrthogonal(result.points) && normalsSafe) return result;
       const fallback = initialResults[index];
       return { ...fallback, points: fallback.points.slice() };
     });
   };
-  return Object.assign(route, { overlaps, headerOverlaps, batch });
+  // Some bounded refinement phases can return early. Enforce explicit manual
+  // normals and lead lengths at the public boundary as well as at finalization.
+  const constrainedBatch = (requests: readonly RouteRequest[]) => batch(requests).map((result, index) => {
+    const request = requests[index];
+    if (!request.sourceSide && !request.targetSide) return result;
+    const minimum = request.minimumLeadLength ?? CLEARANCE;
+    const a = lead(request.start, byId.get(request.sourceId)!, minimum, request.sourceSide), b = lead(request.end, byId.get(request.targetId)!, minimum, request.targetSide);
+    return validDirections(result.points, [request.start, a, b, request.end]) && routeLength(result.points.slice(0, 2)) + EPSILON >= minimum &&
+      routeLength(result.points.slice(-2)) + EPSILON >= minimum ? result : route(request);
+  });
+  return Object.assign(route, { overlaps, headerOverlaps, batch: constrainedBatch });
 }

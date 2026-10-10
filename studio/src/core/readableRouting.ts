@@ -43,14 +43,17 @@ const normal = (node: SceneNode, p: RoutePoint) => {
 /** Refine geometry, never canonical binding/style/port identities. Every peer
  * pair is checked individually: improvements elsewhere cannot conceal a newly
  * introduced crossing or a longer overlap. Equal tensor IDs do not bypass it. */
-export function refineReadableRoutes(nodes: readonly SceneNode[], requests: readonly RouteRequest[], baseline: readonly RouteResult[]) {
+export function refineReadableRoutes(nodes: readonly SceneNode[], requests: readonly RouteRequest[], baseline: readonly RouteResult[],
+  unframedIds: ReadonlySet<string> = new Set()) {
   const limits = READABLE_ROUTE_BUDGET, results = baseline.map(result => ({ ...result }));
   if (nodes.length > limits.maxNodes || requests.length > limits.maxRoutes || requests.length !== baseline.length ||
       baseline.reduce((sum, r) => sum + r.points.length, 0) > limits.maxRoutePoints) return results;
   const byId = new Map(nodes.map(n => [n.id, n])), geometry = baseline.map(r => simplify(r.points));
-  const outlines = new Map(nodes.map(n => [n.id, nodeVisualOutline(n).rectangles.map(r => ({ id: n.id, ...r }))]));
+  const physicalNodes = nodes.filter(n => !unframedIds.has(n.id));
+  const outlines = new Map(nodes.map(n => [n.id, unframedIds.has(n.id) ? [] : nodeVisualOutline(n).rectangles.map(r => ({ id: n.id, ...r }))]));
   const ancestors = (id: string) => { const result = new Set<string>(); let parent = byId.get(id)?.parentId;
-    while (parent && byId.has(parent) && !result.has(parent)) { result.add(parent); parent = byId.get(parent)?.parentId; } return result; };
+    const visited = new Set<string>();
+    while (parent && byId.has(parent) && !visited.has(parent)) { visited.add(parent); if (!unframedIds.has(parent)) result.add(parent); parent = byId.get(parent)?.parentId; } return result; };
   const work = { candidates: 0, accepted: 0, pairs: 0, segments: 0, obstacles: 0 };
   const exhausted = () => work.candidates >= limits.maxCandidates || work.accepted >= limits.maxAccepted ||
     work.pairs >= limits.maxPairChecks || work.segments >= limits.maxSegmentChecks || work.obstacles >= limits.maxObstacleChecks;
@@ -127,7 +130,7 @@ export function refineReadableRoutes(nodes: readonly SceneNode[], requests: read
     // headers and the two endpoint bodies may not be traversed. Unrelated
     // body corridors remain governed by the complete peer/budget checks.
     const rectangles: Rect[] = [
-      ...nodes.flatMap(node => owners.has(node.id) && node.expanded
+      ...physicalNodes.flatMap(node => owners.has(node.id) && node.expanded
         ? [{ id: node.id, x: node.x, y: node.y, width: node.width, height: node.headerHeight }] : []),
       ...outlines.get(source.id)!, ...outlines.get(target.id)!,
     ];
@@ -158,7 +161,7 @@ export function refineReadableRoutes(nodes: readonly SceneNode[], requests: read
         n > 1 && (p.x - original[n - 1].x) * (original[n - 1].x - original[n - 2].x) + (p.y - original[n - 1].y) * (original[n - 1].y - original[n - 2].y) < 0)) continue;
     const start = original[0], end = original.at(-1)!, first = normal(source, start), last = normal(target, end);
     const owners = new Set([...ancestors(source.id), ...ancestors(target.id)]);
-    const rectangles: Rect[] = nodes.flatMap(n => owners.has(n.id) ? n.expanded
+    const rectangles: Rect[] = physicalNodes.flatMap(n => owners.has(n.id) ? n.expanded
       ? [{ id: n.id, x: n.x, y: n.y, width: n.width, height: n.headerHeight }] : [] : outlines.get(n.id)!);
     const segmentClearance = (a: RoutePoint, b: RoutePoint, r: Rect) => {
       const lowX = Math.min(a.x, b.x), highX = Math.max(a.x, b.x), lowY = Math.min(a.y, b.y), highY = Math.max(a.y, b.y);
@@ -221,7 +224,7 @@ export function refineReadableRoutes(nodes: readonly SceneNode[], requests: read
     if (!originalSelf || originalSelf.crossings || originalSelf.overlap || originalSelf.contacts) continue;
     const coordinates = (axis: 'x' | 'y') => {
       const values = new Set<number>(original.map(p => p[axis]));
-      for (const n of nodes) {
+      for (const n of physicalNodes) {
         const bounds = nodeVisualOutline(n).bounds;
         for (const gap of [GAP, 18, 28]) {
           values.add(round((axis === 'x' ? bounds.x : bounds.y) - gap));

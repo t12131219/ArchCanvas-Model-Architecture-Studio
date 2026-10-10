@@ -51,7 +51,7 @@ test('actual AuthoringStudio title clicks select two compact nodes and its point
   const names = ['pointerDown', 'pointerMove', 'pointerUp'], snippets = names.map(name => { const statement = component.body!.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === name); assert.ok(statement); return statement.getText(ast); });
   const selectedIds: string[] = [], gesture = { current: null as any }, currentRef = { current: draftHistory(draft) }; let preview: typeof draft | null = null, connections = 0;
   const element = { setPointerCapture: () => {}, hasPointerCapture: () => true, releasePointerCapture: () => {} };
-  const env = { busy: false, gesture, currentRef, tool: 'select', camera: { x: 0, y: 0, zoom: 1 }, catalog, selectedIds, connection: null, clearError: () => {}, selectDraftNode, moveDraftNodes, draftNodeSize,
+  const env = { busy: false, portEditing: false, gesture, currentRef, tool: 'select', camera: { x: 0, y: 0, zoom: 1 }, catalog, selectedIds, connection: null, clearError: () => {}, selectDraftNode, moveDraftNodes, draftNodeSize,
     setSelection: (value: { nodes?: string[] }) => { selectedIds.splice(0, selectedIds.length, ...(value.nodes ?? [])); }, setConnection: (value: unknown) => { if (value) connections++; },
     setMarquee: () => {}, setNotice: () => {}, setPreview: (value: typeof draft) => { preview = value; }, point: (x: number, y: number) => ({ x, y }), connect: () => { connections++; },
     apply: (update: Parameters<typeof changeDraft>[1]) => { currentRef.current = changeDraft(currentRef.current, update); },

@@ -56,7 +56,9 @@ class Stage2HTTPTests(unittest.TestCase):
         self.original_path.write_bytes(SOURCE.encode())
         self.before = analyze_project(self.original_root, "model:Model")
         try:
-            self.server = ArchCanvasServer(("127.0.0.1", 0), data_dir=self.workspace / "managed" / "documents", studio_dir=self.workspace / "dist")
+            # ``data_dir`` is the complete state root. Documents, projects,
+            # drafts, exports and transactions are all isolated beneath it.
+            self.server = ArchCanvasServer(("127.0.0.1", 0), data_dir=self.workspace / "managed", studio_dir=self.workspace / "dist")
         except PermissionError:
             self.temporary.cleanup()
             self.skipTest("The execution sandbox forbids loopback sockets; run these HTTP tests in an allowed local host.")

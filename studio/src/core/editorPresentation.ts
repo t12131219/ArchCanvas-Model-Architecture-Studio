@@ -3,12 +3,9 @@ import { edgeAppearanceKey, edgeDashPattern } from './edgePresentation.ts';
 import { nodeVisualOutline } from './nodeVisualOutline.ts';
 import { edgeLabelBounds } from './edgeLabelPlacement.ts';
 import { orthogonalPathPoints } from './orthogonalRouter.ts';
+import { implicitRootIds } from './containerPresentation.ts';
 
-/** A root remains in the scene for hierarchy, layout, ports and routing facts.
- * Only its expanded editor decoration is implicit. Collapsed roots are cards. */
-export function implicitRootIds(scene: { nodes: readonly { id: string; parentId?: string; boundary?: boolean; expanded: boolean; expandable: boolean }[] }): Set<string> {
-  return new Set(scene.nodes.filter(node => !node.parentId && !node.boundary && node.expanded && node.expandable).map(node => node.id));
-}
+export { implicitRootIds } from './containerPresentation.ts';
 
 /** Fit the editable world content, independently of publication furniture.
  * Title, both legends and the implicit root do not reserve infinite-canvas
@@ -19,6 +16,7 @@ export function editorSceneBounds(scene: Scene): Bounds {
   rectangles.push(...scene.annotations.map(({ x, y, width, height }) => ({ x, y, width, height })));
   rectangles.push(...scene.edges.filter(edge => edge.label).map(edge => edgeLabelBounds(edge.label, edge.labelX, edge.labelY)));
   const points = [...scene.edges.flatMap(edge => orthogonalPathPoints(edge.path)),
+    ...(scene.sourceRelations ?? []).flatMap(relation => orthogonalPathPoints(relation.path)),
     ...(scene.captionGuides ?? []).flatMap(guide => orthogonalPathPoints(guide.path))];
   if (!rectangles.length && !points.length) return { x: 0, y: 0, width: 320, height: 200 };
   const padding = Math.max(24, ...scene.edges.map(edge => edge.width * 5.5 + 8));
@@ -29,7 +27,7 @@ export function editorSceneBounds(scene: Scene): Bounds {
   return { x: left - padding, y: top - padding, width: Math.max(1, right - left + 2 * padding), height: Math.max(1, bottom - top + 2 * padding) };
 }
 
-/** Keep the complete constraint scene while selecting editor-only view bounds.
+/** Keep the logical hierarchy while selecting editor-only view bounds.
  * Render with presentation: 'editor'; SVG viewBox and world wrapper then share
  * these exact bounds without changing node/route coordinates or the document. */
 export function presentEditorScene(scene: Scene): Scene {

@@ -8,6 +8,7 @@ version directories; activation and rollback change only its current pointer.
 from __future__ import annotations
 
 import argparse
+import datetime
 import gzip
 import hashlib
 import io
@@ -40,6 +41,7 @@ SOURCE_FILES = (
     "scripts/m5_beta_bundle.py", "scripts/m5_beta_preflight.py", "scripts/export_canvas.mjs",
     "tests/test_m5_beta_release.py", "tests/test_m5_beta_bundle.py", "tests/test_m5_beta_preflight.py",
 )
+CURRENT_HELPERS = ("scripts/atomic_export.mjs", "scripts/canvas_bridge.mjs")
 LIFECYCLE_FILES = (
     "scripts/m5_host_install.py", "scripts/m5_host_smoke.py", "scripts/m5_host_uninstall.py",
     "scripts/m5_reliability_smoke.py", "tests/test_m5_host_install.py", "tests/test_m5_host_smoke.py",
@@ -58,7 +60,7 @@ def required_release_files(version: str) -> set[str]:
     numbers = tuple(int(part) for part in version.replace("-beta.", ".").split("."))
     # beta.1 is immutable and predates the host lifecycle utilities. Its own
     # recorded inventory remains valid for installation and rollback.
-    return set(SOURCE_FILES) | (set(LIFECYCLE_FILES) if numbers >= (0, 1, 0, 2) else set())
+    return set(SOURCE_FILES) | (set(LIFECYCLE_FILES) if numbers >= (0, 1, 0, 2) else set()) | (set(CURRENT_HELPERS) if numbers >= (0, 1, 0, 3) else set())
 
 
 def digest(data: bytes) -> str:
@@ -102,7 +104,76 @@ def source_paths(root: Path) -> list[Path]:
             raise ValueError(f"bundle optional evidence symlink forbidden: {path}")
         if path.is_file():
             paths.add(path)
+    for name in CURRENT_HELPERS:
+        path = root / name
+        if path.is_symlink():
+            raise ValueError(f"bundle helper symlink forbidden: {name}")
+        if path.is_file():
+            paths.add(path)
     return sorted(paths, key=lambda path: path.relative_to(root).as_posix())
+
+
+def stage_current_candidate(root: Path, staging: Path, version: str) -> Path:
+    """Materialize a release manifest for the current development bytes.
+
+    Historical Beta manifests intentionally remain immutable.  This helper
+    creates an isolated source tree whose release metadata is bound to the
+    current Studio assets, so pack/verify/install can be rerun without editing
+    the historical receipt in the formal checkout.
+    """
+    root, staging = Path(root).resolve(), Path(staging).resolve()
+    if not VERSION.fullmatch(version):
+        raise ValueError("candidate version must use beta semantic version")
+    if any(staging.is_relative_to(root / directory) for directory in SOURCE_DIRS):
+        raise ValueError("candidate staging must not be inside packaged source directories")
+    if staging.exists():
+        raise ValueError(f"candidate staging directory already exists: {staging}")
+    staging.mkdir(parents=True)
+    try:
+        for source in source_paths(root):
+            destination = staging / source.relative_to(root)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+        for name in CURRENT_HELPERS:
+            source = root / name
+            if source.is_file() and not source.is_symlink():
+                destination = staging / name
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+        metadata_path = staging / "docs/evidence/m5-beta-release-manifest.json"
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        metadata["releaseVersion"] = version
+        metadata["releaseId"] = f"archcanvas-m5-beta-{version}"
+        metadata["generatedAt"] = datetime.date.today().isoformat()
+        try:
+            metadata["build"]["gitCommit"] = subprocess.check_output(
+                ["git", "-C", str(root), "rev-parse", "HEAD"], text=True, stderr=subprocess.DEVNULL,
+            ).strip()
+        except (OSError, subprocess.CalledProcessError):
+            # A source archive can be candidate-built without its .git folder;
+            # retain the checked-in commit only if it is already valid.
+            pass
+        metadata["build"]["workingTree"] = "dirty-uncommitted"
+        artifacts = []
+        for path in sorted((staging / "studio/dist").rglob("*")):
+            if path.is_file():
+                relative = path.relative_to(staging).as_posix()
+                role = "entrypoint" if relative == "studio/dist/index.html" else "stylesheet" if path.suffix == ".css" else "javascript"
+                artifacts.append({"path": relative, "sha256": digest(path.read_bytes()), "role": role})
+        schema = staging / "schemas/m5-beta-release.schema.json"
+        artifacts.append({"path": schema.relative_to(staging).as_posix(), "sha256": digest(schema.read_bytes()), "role": "schema"})
+        metadata["artifacts"] = artifacts
+        metadata["knownLimitations"] = [
+            "Local unsigned beta-preview candidate; public Beta publication and host certification remain pending.",
+            "The current runtime catalog is discovered by doctor; this candidate does not execute user models.",
+            "Three-host client E2E, human research tasks, performance and publication-size review remain not-tested.",
+            "Unknown source regions remain source-backed opaque boundaries until independent lowering evidence exists.",
+        ]
+        metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return staging
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
 
 
 def pack(root: Path, output: Path, version: str | None = None) -> dict:
@@ -119,6 +190,10 @@ def pack(root: Path, output: Path, version: str | None = None) -> dict:
     if output.exists():
         raise ValueError(f"refusing to replace an existing bundle: {output}")
     contents = {path.relative_to(root).as_posix(): path.read_bytes() for path in source_paths(root)}
+    # Older frozen bundles retain their original inventories. New checkouts
+    # bind every helper imported by the current runtime/export entry points.
+    for name in CURRENT_HELPERS:
+        if (root / name).is_file(): contents[name] = (root / name).read_bytes()
     manifest = {
         "schemaVersion": 1, "product": "archcanvas", "kind": "local-beta-preview",
         "version": bundle_version, "releaseMetadataVersion": release["releaseVersion"],
@@ -441,6 +516,10 @@ def install(bundle: Path, prefix: Path, activate_now: bool = False) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
+    candidate_parser = commands.add_parser("candidate", help="Stage current bytes, bind a new manifest, pack and independently verify")
+    candidate_parser.add_argument("--project-root", type=Path, default=Path(__file__).resolve().parents[1])
+    candidate_parser.add_argument("--output", type=Path, required=True)
+    candidate_parser.add_argument("--version", required=True)
     pack_parser = commands.add_parser("pack", help="Create a new local preview archive from settled formal bytes")
     pack_parser.add_argument("--project-root", type=Path, default=Path(__file__).resolve().parents[1])
     pack_parser.add_argument("--output", type=Path, required=True)
@@ -458,7 +537,15 @@ def main() -> int:
         action_parser.add_argument("--version", required=True)
     args = parser.parse_args()
     try:
-        if args.command == "pack":
+        if args.command == "candidate":
+            if args.output.exists():
+                raise ValueError(f"refusing to replace an existing bundle: {args.output}")
+            with tempfile.TemporaryDirectory(prefix="archcanvas-candidate-") as temporary:
+                staging = stage_current_candidate(args.project_root, Path(temporary) / "source", args.version)
+                packed = pack(staging, args.output, args.version)
+                checked = verify(args.output, Path(temporary) / "verified")
+                result = {**packed, "verification": checked, "historicalManifestChanged": False}
+        elif args.command == "pack":
             result = pack(args.project_root, args.output, args.version)
         elif args.command == "verify":
             result = verify(args.bundle, args.extract_to)

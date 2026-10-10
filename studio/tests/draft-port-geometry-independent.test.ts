@@ -194,6 +194,8 @@ test('router treats the new lower band as a real obstacle and preserves bindings
   addDraftNode(draft, module('Output'), 'target', { x: 650, y: 100 });
   addDraftNode(draft, module('Add'), 'barrier', { x: 350, y: 55 });
   draft.edges = [{ id: 'binding', source: { nodeId: 'source', portId: 'output' }, target: { nodeId: 'target', portId: 'input' } }];
+  draft.nodes[0].portLayouts = { output: { side: 'right', offset: 54 / 76 } };
+  draft.nodes[1].portLayouts = { input: { side: 'left', offset: 54 / 76 } };
   const original = JSON.stringify(draft), history = draftHistory(draft);
   for (const [dx, dy] of [[0, 0], [-16, 0], [16, 0], [0, -16], [0, 16]]) {
     const moved = changeDraft(history, value => { value.nodes[2].position.x += dx; value.nodes[2].position.y += dy; });

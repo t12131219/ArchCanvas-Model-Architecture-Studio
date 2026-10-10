@@ -10,7 +10,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from scripts.m5_beta_bundle import BUNDLE_MANIFEST, activate, install, pack, read_bundle, source_paths, verify
+from scripts.m5_beta_bundle import BUNDLE_MANIFEST, activate, install, pack, read_bundle, source_paths, stage_current_candidate, verify
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,7 +34,8 @@ class M5BetaBundleTests(unittest.TestCase):
         cls.temporary = tempfile.TemporaryDirectory(prefix="archcanvas-m5-bundle-tests-")
         cls.work = Path(cls.temporary.name)
         cls.bundle = cls.work / "archcanvas-0.1.0-beta.1.tar.gz"
-        cls.package = pack(ROOT, cls.bundle)
+        cls.source = stage_current_candidate(ROOT, cls.work / "current-source", "0.1.0-beta.3")
+        cls.package = pack(cls.source, cls.bundle)
         cls.version = cls.package["version"]
         cls.next_version = cls.version.rsplit(".", 1)[0] + "." + str(int(cls.version.rsplit(".", 1)[1]) + 1)
 
@@ -61,18 +62,9 @@ class M5BetaBundleTests(unittest.TestCase):
         prefix = self.work / "upgrade-prefix"
         first = install(self.bundle, prefix, True)
         second_bundle = self.work / f"archcanvas-{self.next_version}.tar.gz"
-        # The newer package is explicitly a synthetic test source tree.
-        candidate = self.work / "synthetic-next-source"
-        candidate.mkdir()
-        for source in source_paths(ROOT):
-            destination = candidate / source.relative_to(ROOT)
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source, destination)
-        metadata_path = candidate / "docs/evidence/m5-beta-release-manifest.json"
-        metadata = json.loads(metadata_path.read_text())
-        metadata["releaseVersion"] = self.next_version
-        metadata["releaseId"] = f"archcanvas-m5-beta-{self.next_version}"
-        metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+        # The newer package is explicitly a synthetic test source tree whose
+        # manifest is regenerated from the current staged Studio assets.
+        candidate = stage_current_candidate(ROOT, self.work / "synthetic-next-source", self.next_version)
         pack(candidate, second_bundle)
         verify(second_bundle, self.work / "synthetic-next-extraction")
         install(second_bundle, prefix, True)
@@ -83,11 +75,11 @@ class M5BetaBundleTests(unittest.TestCase):
 
     def test_existing_bundle_is_never_overwritten(self) -> None:
         with self.assertRaisesRegex(ValueError, "existing bundle"):
-            pack(ROOT, self.bundle)
+            pack(self.source, self.bundle)
 
     def test_version_override_cannot_relabel_release_metadata(self) -> None:
         with self.assertRaisesRegex(ValueError, "must match"):
-            pack(ROOT, self.work / "forged-next.tar.gz", self.next_version)
+            pack(self.source, self.work / "forged-next.tar.gz", self.next_version)
 
     def test_archive_traversal_is_rejected(self) -> None:
         malicious = self.work / "traversal.tar.gz"

@@ -124,7 +124,7 @@ def prepare(output: Path, slots: int = 5, first_port: int = 8871) -> dict:
             (slot / 'incoming').mkdir()
             (slot / 'workspace/exports').mkdir()
             record = {'slotId': identity, 'participantCode': None, 'assignment': 'unassigned',
-                      'port': first_port + index, 'dataDir': f'slots/{identity}/workspace/documents',
+                      'port': first_port + index, 'dataDir': f'slots/{identity}/workspace',
                       'baselineEnvelope': file_binding(documents / f"{document['id']}.json", temporary),
                       'baselineStorageRevision': envelope['revision']}
             write_json(slot / 'review-template.json', {'protocol': PROTOCOL, 'slotId': identity,
@@ -133,7 +133,7 @@ def prepare(output: Path, slots: int = 5, first_port: int = 8871) -> dict:
                 'sourceUnchanged': 'pending', 'publicationReadability': 'pending', 'overallOutcome': 'pending'})
             slot_records.append(record)
         tools = [ROOT / 'scripts/research_trial.py', ROOT / 'scripts/research_trial_core.mjs',
-                 ROOT / 'scripts/export_canvas.mjs', ROOT / 'scripts/summarize_research_tasks.py',
+                 ROOT / 'scripts/export_canvas.mjs', ROOT / 'scripts/atomic_export.mjs', ROOT / 'scripts/summarize_research_tasks.py',
                  *sorted((ROOT / 'src').rglob('*.py')),
                  *sorted(path for path in (ROOT / 'studio/src').rglob('*') if path.suffix in ('.ts', '.tsx', '.css')),
                  *sorted(path for path in (ROOT / 'studio/dist').rglob('*') if path.is_file())]

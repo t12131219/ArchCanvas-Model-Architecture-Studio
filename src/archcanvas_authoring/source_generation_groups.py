@@ -226,6 +226,7 @@ def generate_grouped_source(draft: dict) -> dict:
 
     class_names = {g: _safe_class(g) for g in groups}
     class_defs, emitted = [], set()
+    emitted_functions: dict[tuple[str, str | None], list[str]] = {}
 
     def constructor(node):
         module_kind = kind(node)
@@ -349,6 +350,7 @@ def generate_grouped_source(draft: dict) -> dict:
                 raise DraftError(f"{node['label']}.{name} 缺少精确输入张量；ports={[(p.get('name'), p.get('id')) for p in ports(node, 'in')]}; values={list(values)}")
 
             if module_kind in FUNCTIONAL:
+                emitted_functions.setdefault((module_kind, scope), []).append(identity)
                 params = node.get("parameters", {})
                 if module_kind in ("Add", "Subtract", "Multiply", "Divide", "MatMul"):
                     op = {"Add": "+", "Subtract": "-", "Multiply": "*", "Divide": "/", "MatMul": "@"}[module_kind]
@@ -385,7 +387,7 @@ def generate_grouped_source(draft: dict) -> dict:
                     if previous is None:
                         arguments_for_call.append((semantic_name, argument))
             if module_kind == "MultiheadAttention":
-                keyword_args = [f"{name}={value}" for name, value in arguments_for_call if name in {"query", "key", "value", "attn_mask"}]
+                keyword_args = [f"{name}={value}" for name, value in arguments_for_call if name in {"query", "key", "value", "attn_mask", "key_padding_mask"}]
                 need_weights = any("weights" in semantic_names(node, port) for port in ports(node, "out"))
                 expression = f"{reference}({', '.join(keyword_args)}, need_weights={need_weights!r})"
             elif module_kind in custom or identity in retained:
@@ -463,7 +465,6 @@ def generate_grouped_source(draft: dict) -> dict:
 
     node_bindings, container_bindings = {}, {}
     instance_occurrences: dict[str, int] = {}
-    functional_occurrences: dict[tuple[str, str | None], int] = {}
     def constructor_symbol(identity):
         key = refs.get(identity, {}).get("instanceId", identity)
         same_scope = [item["id"] for item in original["nodes"] if refs.get(item["id"], {}).get("instanceId", item["id"]) == key and owner(item["id"]) == owner(identity)]
@@ -497,7 +498,10 @@ def generate_grouped_source(draft: dict) -> dict:
             parent_arch = ({**node_bindings, **container_bindings}.get(parent_identity) if parent_identity else f"call:instance:{generation_module}.AuthoredModel")
             key = (module_kind, parent_arch)
             candidates = [item for item in architecture["nodes"] if item.get("kind") == module_kind and item.get("parentId") == parent_arch]
-            occurrence = functional_occurrences.get(key, 0); functional_occurrences[key] = occurrence + 1
+            # Independent ready branches can be emitted in a different order
+            # from the draft's insertion order. Bind each functional operation
+            # to its actual source emission, not the order of stored cards.
+            occurrence = emitted_functions[(module_kind, parent_identity)].index(node["id"])
             matches = [candidates[occurrence]] if occurrence < len(candidates) else []
         else:
             if node["id"] in virtual_roots:

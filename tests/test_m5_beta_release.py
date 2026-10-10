@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import json
 import unittest
+import tempfile
+import tarfile
 from pathlib import Path
 
 from scripts.check_m5_beta_release import validate
+from scripts.m5_beta_bundle import stage_current_candidate
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -12,10 +15,30 @@ MANIFEST = ROOT / "docs/evidence/m5-beta-release-manifest.json"
 
 
 class M5BetaReleaseTests(unittest.TestCase):
-    def test_current_manifest_is_valid_and_keeps_m4_partial(self) -> None:
+    def test_frozen_manifest_matches_frozen_release(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-        self.assertEqual(validate(manifest, ROOT), [])
+        archive = ROOT / ".archcanvas/releases/archcanvas-0.1.0-beta.2.tar.gz"
+        with tempfile.TemporaryDirectory() as directory:
+            frozen = Path(directory)
+            # Read only the manifest-bound artifacts and schema from the trusted
+            # frozen release; do not execute or extract arbitrary archive paths.
+            with tarfile.open(archive, "r:gz") as bundle:
+                for relative in {row["path"] for row in manifest["artifacts"]} | {"schemas/m5-beta-release.schema.json"}:
+                    data = bundle.extractfile(f"archcanvas-0.1.0-beta.2/{relative}").read()
+                    target = frozen / relative
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(data)
+            self.assertEqual(validate(manifest, frozen), [])
         self.assertEqual(manifest["gates"], {"m4": "partial", "m5": "in_progress"})
+
+    def test_current_candidate_has_independent_valid_manifest(self) -> None:
+        historical = MANIFEST.read_bytes()
+        with tempfile.TemporaryDirectory() as directory:
+            staged = stage_current_candidate(ROOT, Path(directory) / "candidate", "0.1.0-beta.4")
+            current = json.loads((staged / "docs/evidence/m5-beta-release-manifest.json").read_text())
+            self.assertEqual(validate(current, staged), [])
+            self.assertEqual(current["releaseVersion"], "0.1.0-beta.4")
+        self.assertEqual(MANIFEST.read_bytes(), historical)
 
     def test_hash_mismatch_is_rejected(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))

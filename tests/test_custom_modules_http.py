@@ -25,7 +25,7 @@ class CustomModuleHTTPTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory(prefix="archcanvas-custom-http-")
         self.root = Path(self.temporary.name)
         try:
-            self.server = ArchCanvasServer(("127.0.0.1", 0), data_dir=self.root / "documents", studio_dir=self.root / "studio")
+            self.server = ArchCanvasServer(("127.0.0.1", 0), data_dir=self.root, studio_dir=self.root / "studio")
         except PermissionError:
             self.temporary.cleanup()
             self.skipTest("Loopback socket creation unavailable in sandbox; run on permitted host.")
@@ -81,7 +81,7 @@ class CustomModuleHTTPTests(unittest.TestCase):
         # Recreate the HTTP service so reopening uses disk, not the first
         # handler/store instance or any browser-session definition metadata.
         self.server.shutdown(); self.server.server_close(); self.thread.join()
-        self.server = ArchCanvasServer(("127.0.0.1", 0), data_dir=self.root / "documents", studio_dir=self.root / "studio")
+        self.server = ArchCanvasServer(("127.0.0.1", 0), data_dir=self.root, studio_dir=self.root / "studio")
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
         self.url = f"http://127.0.0.1:{self.server.server_address[1]}"

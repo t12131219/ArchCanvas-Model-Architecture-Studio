@@ -1,4 +1,4 @@
-import type { Bounds, CanvasDocument, MoveScope, Scene, SceneDiagnostic, VisualOperation } from './types.ts';
+import type { Bounds, CanvasDocument, MoveScope, Scene, SceneBuildOptions, SceneDiagnostic, VisualOperation } from './types.ts';
 import { resolveMoveScope } from './document.ts';
 import { buildScene } from './scene.ts';
 import { prepareMovePreview, previewMoveScene } from './movePreview.ts';
@@ -8,6 +8,7 @@ import { orthogonalPathPoints } from './orthogonalRouter.ts';
 import { routeLaneConflicts } from './routeLaneConflicts.ts';
 import { edgeLabelBounds } from './edgeLabelPlacement.ts';
 import { nodeVisualOutline } from './nodeVisualOutline.ts';
+import { implicitRootIds } from './containerPresentation.ts';
 
 type Move = Extract<VisualOperation, { type: 'move' }>;
 export type LayoutRecoveryPlan =
@@ -84,13 +85,13 @@ function insideLength(path: string, bodies: readonly Bounds[]): number {
   }
   return result;
 }
-function captionMetrics(scene: Scene, diagnostic: SceneDiagnostic): Map<string, number> {
+function captionMetrics(scene: Scene, diagnostic: SceneDiagnostic, unframedIds: ReadonlySet<string>): Map<string, number> {
   const edge = scene.edges.find(item => item.id === diagnostic.edgeId), metrics = new Map<string, number>();
   if (!edge?.label) return metrics;
   const caption = edgeLabelBounds(edge.label, edge.labelX, edge.labelY);
   // Compare each peer separately: a caption losing one blocker must not be
   // allowed to penetrate another body or unrelated route more deeply.
-  for (const node of scene.nodes) metrics.set(`node:${node.id}`, unionIntersectionArea([caption], node.expanded
+  for (const node of scene.nodes.filter(node => !unframedIds.has(node.id))) metrics.set(`node:${node.id}`, unionIntersectionArea([caption], node.expanded
     ? [{ ...node, height: node.headerHeight }] : nodeVisualOutline(node).rectangles));
   for (const annotation of scene.annotations) metrics.set(`annotation:${annotation.id}`, area(caption, annotation));
   for (const other of scene.edges) if (other.id !== edge.id) {
@@ -146,10 +147,11 @@ function severity(scene: Scene, diagnostic: SceneDiagnostic): number {
 }
 
 /** An explicit proposal, never an implicit clamp or a change to source facts. */
-export function planLayoutRecovery(document: CanvasDocument, id: string, scope?: MoveScope): LayoutRecoveryPlan {
+export function planLayoutRecovery(document: CanvasDocument, id: string, scope?: MoveScope, options: SceneBuildOptions = {}): LayoutRecoveryPlan {
   validateDocument(document);
   const moveScope = resolveMoveScope(scope);
-  const original = buildScene(document), selected = original.nodes.find(node => node.id === id);
+  const original = buildScene(document, options), selected = original.nodes.find(node => node.id === id);
+  const unframedIds = options.presentation === 'editor' ? implicitRootIds(original) : new Set<string>();
   if (!selected) return { status: 'unavailable', reason: '请先选择一个当前可见的对象。' };
   const moving = descendants(document, id);
   if (document.pinnedObjects.some(pin => moving.has(pin))) return { status: 'unavailable', reason: '选中对象或其内部对象已固定。取消固定后再预览位置修复。' };
@@ -163,10 +165,10 @@ export function planLayoutRecovery(document: CanvasDocument, id: string, scope?:
   const ancestors = new Set<string>();
   let parentId = byId.get(id)?.parentId;
   while (parentId) { ancestors.add(parentId); parentId = byId.get(parentId)?.parentId; }
-  const parent = original.nodes.find(node => node.id === selected.parentId);
+  const parent = original.nodes.find(node => node.id === selected.parentId && !unframedIds.has(node.id));
   const left = parent?.expanded ? parent.x + TOKENS.padding : Number.NEGATIVE_INFINITY;
   const top = parent?.expanded ? parent.y + parent.headerHeight + 16 : Number.NEGATIVE_INFINITY;
-  const obstacles = original.nodes.filter(node => !moving.has(node.id) && !ancestors.has(node.id));
+  const obstacles = original.nodes.filter(node => !moving.has(node.id) && !ancestors.has(node.id) && !unframedIds.has(node.id));
   const positions = new Map<string, { x: number; y: number }>();
   const add = (x: number, y: number) => {
     x = Math.max(left, x); y = Math.max(top, y);
@@ -190,7 +192,7 @@ export function planLayoutRecovery(document: CanvasDocument, id: string, scope?:
     Math.abs(a.x - selected.x) + Math.abs(a.y - selected.y) - Math.abs(b.x - selected.x) - Math.abs(b.y - selected.y) || a.y - b.y || a.x - b.x).slice(0, LAYOUT_RECOVERY_CANDIDATE_LIMIT);
   const existing = new Map(original.diagnostics.filter(diagnostic => diagnostic.code).map(diagnostic => [signature(diagnostic), severity(original, diagnostic)]));
   const captions = new Map(original.diagnostics.filter(diagnostic => diagnostic.code?.startsWith('layout-edge-label-'))
-    .map(diagnostic => [signature(diagnostic), captionMetrics(original, diagnostic)]));
+    .map(diagnostic => [signature(diagnostic), captionMetrics(original, diagnostic, unframedIds)]));
   const blocked = new Map(original.diagnostics.filter(diagnostic => diagnostic.code === 'layout-route-blocked')
     .map(diagnostic => [signature(diagnostic), blockedMetrics(original, diagnostic)]));
   const session = prepareMovePreview(document, [id], moveScope);
@@ -198,13 +200,13 @@ export function planLayoutRecovery(document: CanvasDocument, id: string, scope?:
   for (const position of candidates) {
     candidateCount++;
     const dx = position.x - selected.x, dy = position.y - selected.y;
-    const scene = previewMoveScene(session, dx, dy);
+    const scene = previewMoveScene(session, dx, dy, options);
     const selectedDiagnostics = conflicts(scene, moving);
     const worsened = (diagnostic: SceneDiagnostic) => diagnostic.code &&
       (!existing.has(signature(diagnostic)) || severity(scene, diagnostic) > existing.get(signature(diagnostic))! + 1e-6 ||
         (diagnostic.code === 'layout-route-blocked' && [...blockedMetrics(scene, diagnostic)].some(([peer, value]) =>
           value > (blocked.get(signature(diagnostic))?.get(peer) ?? 0) + 1e-6)) ||
-        (diagnostic.code.startsWith('layout-edge-label-') && [...captionMetrics(scene, diagnostic)].some(([peer, value]) =>
+        (diagnostic.code.startsWith('layout-edge-label-') && [...captionMetrics(scene, diagnostic, unframedIds)].some(([peer, value]) =>
           value > (captions.get(signature(diagnostic))?.get(peer) ?? 0) + 1e-6)));
     // A position repair must actually clear every selected body/header/parent
     // conflict. Existing route warnings may survive only without new peers or

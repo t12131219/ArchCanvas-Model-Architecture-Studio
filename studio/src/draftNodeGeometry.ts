@@ -1,4 +1,5 @@
 import type { DraftCatalog, DraftFlow, DraftModule, DraftNode, DraftPort } from './authoring.ts';
+import { portLayoutPoint } from './core/portRouting.ts';
 
 export const DRAFT_WIDTH = 176;
 export const DRAFT_HEIGHT = 100;
@@ -34,7 +35,9 @@ export function draftPortSpacing(module: DraftModule, direction: DraftPort['dire
 export function draftPortPoint(node: DraftNode, module: DraftModule, portId: string, flow: DraftFlow) {
   const port = module.ports.find(item => item.id === portId);
   if (!port) throw new Error('未知端口');
-  const retained = node.presentation?.ports[portId];
+  const manual = node.portLayouts?.[portId];
+  if (manual) return portLayoutPoint({ ...node.position, ...(node.visual ?? node.presentation ?? draftModuleSize(module)), expanded: false, headerHeight: 0 }, manual);
+  const retained = node.portLayouts?.[portId] === null ? undefined : node.presentation?.ports[portId];
   if (retained) return { x: node.position.x + retained.x, y: node.position.y + retained.y };
   const peers = module.ports.filter(item => item.direction === port.direction), index = peers.indexOf(port);
   const size = node.visual ?? draftModuleSize(module);

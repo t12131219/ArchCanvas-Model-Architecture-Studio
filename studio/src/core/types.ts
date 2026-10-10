@@ -21,6 +21,8 @@ export interface ArchitectureNode {
   parameterOrigins?: Record<string, ParameterOrigin>;
   source?: { path: string; line: number; endLine: number; expression: string };
   evidence: 'source' | 'contract' | 'opaque';
+  /** Source inspection hierarchy; not an executable tensor producer. */
+  sourceStructure?: true;
   repeat?: { count: number; sharing: 'independent' | 'shared' };
   instanceId?: string;
   callId?: string;
@@ -32,6 +34,7 @@ export interface SourceNodeFact {
   id: string; sourceLabel: string; kind: string; category: string; evidence: ArchitectureNode['evidence'];
   instanceId?: string; callId?: string; callCount?: number;
   repeat?: ArchitectureNode['repeat']; outputPath?: OutputPathSegment[]; source?: ArchitectureNode['source'];
+  sourceStructure?: true;
 }
 export interface ParameterOrigin {
   kind: 'literal' | 'constructor_argument' | 'derived' | 'unknown';
@@ -45,6 +48,15 @@ export interface ArchitectureEdge {
   role: EdgeRole;
   label?: string;
 }
+/** Static source def/use evidence; never a verified tensor/port binding. */
+export interface SourceRelation {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  kind: 'value-dependency' | 'boundary-dependency';
+  source: NonNullable<ArchitectureNode['source']>;
+  boundary?: { nodeIds: string[]; edgeIds: string[]; complete: boolean };
+}
 export interface Architecture {
   schemaVersion: 1;
   id: string;
@@ -54,10 +66,12 @@ export interface Architecture {
   entry: string;
   nodes: ArchitectureNode[];
   edges: ArchitectureEdge[];
+  sourceRelations?: SourceRelation[];
   diagnostics: { level: string; message: string }[];
   sources: { path: string; content: string; digest: string }[];
 }
 export interface Position { x: number; y: number; width?: number; height?: number }
+export interface PortLayout { side: 'top' | 'right' | 'bottom' | 'left'; offset: number }
 export interface NodeStyle { fill?: string; stroke?: string; glyph?: Glyph }
 export interface EdgeStyle { stroke?: string; width?: number; dashed?: boolean }
 export interface LegendItem { id: string; label: string; color: string; glyph: Glyph }
@@ -73,6 +87,8 @@ export interface CanvasDocument {
   displayAliases: Record<string, string>;
   nodeStyleOverrides: Record<string, NodeStyle>;
   edgeStyleOverrides: Record<string, EdgeStyle>;
+  /** Visual port positions, keyed by owner and canonical binding; omitted in older documents. */
+  portLayoutOverrides?: Record<string, PortLayout | null>;
   legendItems: LegendItem[];
   annotations: Annotation[];
   pageSpec: PageSpec;
@@ -83,9 +99,12 @@ export interface CanvasDocument {
 }
 export type MoveScope = 'all-frontiers' | 'current-frontier';
 export type VisualOperation =
+  | { type: 'title'; title: string }
   | { type: 'alias'; id: string; label: string }
   | { type: 'nodeStyle'; id: string; style: NodeStyle }
   | { type: 'edgeStyle'; id: string; style: EdgeStyle }
+  | { type: 'portLayout'; ownerId: string; nodeId: string; portId: string; role: EdgeRole; layout: PortLayout | null }
+  | { type: 'nodeLayout'; id: string; position: Position }
   | { type: 'move'; ids: string[]; dx: number; dy: number; scope?: MoveScope }
   | { type: 'expand'; id: string; expanded: boolean }
   | { type: 'legend'; items: LegendItem[] }
@@ -107,6 +126,9 @@ export interface ScenePort {
   x: number;
   y: number;
   proxy: boolean;
+  layoutKey?: string;
+  side?: PortLayout['side'];
+  manual?: boolean;
 }
 export interface SceneNode extends Bounds {
   id: string;
@@ -151,6 +173,19 @@ export interface SceneEdge {
   labelX: number;
   labelY: number;
 }
+export interface SceneSourceRelation {
+  id: string;
+  canonicalRelationIds: string[];
+  sourceId: string;
+  targetId: string;
+  path: string;
+  stroke: string;
+  width: number;
+  dashed: true;
+  evidence: SourceRelation[];
+  /** Derived display coverage; never changes evidence or canonical bindings. */
+  coveredEdgeIds?: string[];
+}
 /** Presentation conflicts are separate from canonical source diagnostics. */
 export interface SceneDiagnostic {
   level: string;
@@ -191,6 +226,8 @@ export interface Scene {
   bounds: Bounds;
   nodes: SceneNode[];
   edges: SceneEdge[];
+  sourceRelations?: SceneSourceRelation[];
+  sourceRelationLegend?: Bounds;
   captionGuides?: SceneCaptionGuide[];
   hiddenEdges: string[];
   legend: (LegendItem & { x: number; y: number })[];
@@ -205,6 +242,7 @@ export interface Scene {
   sourceFacts: SourceNodeFact[];
   exportScope?: DetailExportScope;
 }
+export interface SceneBuildOptions { presentation?: 'editor' | 'publication' }
 export interface DetailExportScope {
   kind: 'detail';
   selectedNodeId: string;

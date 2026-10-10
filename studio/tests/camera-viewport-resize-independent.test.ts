@@ -117,8 +117,8 @@ function appHarness(tool: 'pan' | 'select' = 'pan', observerAvailable = true) {
   const implicitRoots = new Set<string>();
   const environment = { historyRef, implicitRoots, cameraRef, cameraOwner, cameraViewport, cameraIntent, loadSequence, cameraInitializationFrame, pendingCameraInitialization, frame,
     gesture, portGesture, portRequest: { current: 0 }, viewportRef, scene, current: historyRef.current.document, tool,
-    activeRecovery: null, layoutMoveScope: 'all-frontiers', space: { current: false }, busy: false, inputSpec: null, selection: { kind: 'node', ids: [] },
-    editingTarget: () => false, setPreview: () => {}, setRecoveryPreview: () => {}, setBox: () => {}, setPortDraft: () => {},
+    activeRecovery: null, layoutMoveScope: 'all-frontiers', space: { current: false }, busy: false, portEditing: false, inputSpec: null, selection: { kind: 'node', ids: [] },
+    editingTarget: () => false, setPreview: () => {}, setPortLayoutPreview: () => {}, setRecoveryPreview: () => {}, setBox: () => {}, setPortDraft: () => {},
     setIsPanning: () => {}, setPanel: () => {}, setFailure: () => {}, setNotice: () => {},
     setCamera: (view: CameraState) => { rendered.push({ ...view }); },
     setHistory: (value: HistoryState) => { assert.equal(value, historyRef.current); },

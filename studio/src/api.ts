@@ -1,4 +1,5 @@
-import type { Architecture, CanvasDocument, ParameterOrigin, Scene } from './core';
+import { canvasSavePayload } from './canvasPersistence.ts';
+import type { Architecture, CanvasDocument, HistoryState, ParameterOrigin, Scene } from './core';
 import type { AuthoredDraft, DraftCatalog } from './authoring';
 import type { CustomModulePreview } from './customModules';
 
@@ -67,8 +68,19 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
 }
 export const api = {
   previewCustomModule: (value: { source: string; entry: string; label: string; constructorValues: Record<string, unknown> }) => mutation<CustomModulePreview>('/authoring/custom-modules/preview', value),
-  importSourceDraft: (document: CanvasDocument, scene: Scene) => mutation<ImportedSourceDraft>('/authoring/import-source', { document, scene }),
-  sourceDraftFrontier: (draft: AuthoredDraft, document: CanvasDocument, scene: Scene) => mutation<ImportedSourceDraft>('/authoring/source-frontier', { draft, document, scene }),
+  importSourceDraft: async (document: CanvasDocument, scene: Scene) => {
+    const { sourceEditingProjection } = await import('./sourceEditingClient.ts');
+    const editing = await sourceEditingProjection(document);
+    return mutation<ImportedSourceDraft>('/authoring/import-source', { document, scene, editingDocument: editing.document, editingScene: editing.scene });
+  },
+  sourceDraftFrontier: async (draft: AuthoredDraft, document: CanvasDocument, scene: Scene, forEditing = false) => {
+    if (forEditing && draft.sourceProvenance?.viewCanvas) {
+      const { sourceEditingProjection } = await import('./sourceEditingClient.ts');
+      const editing = await sourceEditingProjection(document, draft.sourceProvenance.canvas, draft.sourceProvenance.viewCanvas);
+      return mutation<ImportedSourceDraft>('/authoring/source-frontier', { draft, document: editing.document, scene: editing.scene, viewDocument: document, viewScene: scene });
+    }
+    return mutation<ImportedSourceDraft>('/authoring/source-frontier', { draft, document, scene });
+  },
   authoringCatalog: () => request<DraftCatalog>('/authoring/catalog'),
   draft: (id: string) => request<{ draft: AuthoredDraft; revision: number }>(`/authoring/drafts/${encodeURIComponent(id)}`),
   saveDraft: (draft: AuthoredDraft, expectedRevision: number) => mutation<{ draft: AuthoredDraft; revision: number }>(`/authoring/drafts/${encodeURIComponent(draft.id)}`, { draft, expectedRevision }),
@@ -77,8 +89,8 @@ export const api = {
   capabilities: () => request<Capabilities>('/capabilities'),
   examples: () => request<Example[]>('/examples'),
   example: (id: string) => request<Architecture>(`/examples/${encodeURIComponent(id)}`),
-  document: (id: string) => request<{ document: CanvasDocument; revision: number }>(`/documents/${encodeURIComponent(id)}`),
-  save: (document: CanvasDocument, expectedRevision: number) => request<{ document: CanvasDocument; revision: number }>(`/documents/${encodeURIComponent(document.id)}`, { method: 'PUT', body: JSON.stringify({ document, expectedRevision }) }),
+  document: (id: string) => request<{ document: CanvasDocument; revision: number; history?: HistoryState; projectId?: string }>(`/documents/${encodeURIComponent(id)}`),
+  save: (document: CanvasDocument, expectedRevision: number, history?: HistoryState) => request<{ document: CanvasDocument; revision: number }>(`/documents/${encodeURIComponent(document.id)}`, { method: 'PUT', body: JSON.stringify(canvasSavePayload(document, expectedRevision, history)) }),
   analyze: (source: string, entry: string, filename: string) => request<Architecture>('/analyze', { method: 'POST', body: JSON.stringify({ source, entry, filename }) }),
   register: (architecture: Architecture) => mutation<ManagedProject>('/projects', { entry: architecture.entry, sources: architecture.sources, sourceDigest: architecture.sourceDigest, irDigest: architecture.irDigest }),
   project: (id: string) => request<ManagedProject>(`/projects/${encodeURIComponent(id)}`),

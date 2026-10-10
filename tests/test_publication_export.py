@@ -30,6 +30,54 @@ def chunks(png):
 
 
 class PublicationTests(unittest.TestCase):
+    def test_unfamiliar_source_dependency_arrows_survive_real_publication_formats(self):
+        from archcanvas_python import analyze_source
+        source = '''from torch import nn
+class UncataloguedBriar(nn.Module):
+ def __init__(self, config):
+  super().__init__(); self.enabled=config.enabled
+  self.projection=nn.Linear(4,4); self.activation=nn.GELU(); self.head=nn.Linear(4,2)
+ def forward(self,x):
+  if self.enabled: return self.head(self.activation(self.projection(x)))
+  return x
+'''
+        architecture = analyze_source(source, 'model:UncataloguedBriar')
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'architecture.json'
+            path.write_text(json.dumps(architecture))
+            bootstrap = '''import fs from 'node:fs';
+import {createDocument,buildExportScene,renderSvg} from './studio/src/core/index.ts';
+import {projectSourceEditing} from './studio/src/sourceEditingProjection.ts';
+const architecture=JSON.parse(fs.readFileSync(process.argv[1]));
+const document=projectSourceEditing(createDocument(architecture)).document;
+process.stdout.write(renderSvg(buildExportScene(document)));
+'''
+            rendered = subprocess.run(['node', '--experimental-strip-types', '--input-type=module', '-e', bootstrap, str(path)], cwd=ROOT, capture_output=True, timeout=15)
+            self.assertEqual(rendered.returncode, 0, rendered.stderr.decode())
+            svg = rendered.stdout.decode()
+        namespace = '{http://www.w3.org/2000/svg}'
+        original = ET.fromstring(svg)
+        metadata = json.loads(original.find(namespace + 'metadata').text)
+        self.assertEqual(len(metadata['renderedSourceRelations']), 4)
+        groups = original.findall('.//' + namespace + 'g[@data-source-relation-id]')
+        self.assertEqual(len(groups), 4)
+        self.assertTrue(all('pointer-events' not in group.attrib for group in groups))
+        formats = ['svg'] + (['pdf', 'png'] if AVAILABLE['pdf'] and AVAILABLE['png'] else [])
+        for format in formats:
+            with self.subTest(format=format):
+                exported = export_svg(svg, format, 180, 150)
+                self.assertTrue(exported['receipt']['geometryVerified'])
+                if format == 'svg':
+                    converted = ET.fromstring(exported['data'])
+                    self.assertEqual(len(converted.findall('.//' + namespace + 'g[@data-source-relation-id]')), 4)
+                    after = json.loads(converted.find(namespace + 'metadata').text)
+                    self.assertEqual(after['renderedSourceRelations'], metadata['renderedSourceRelations'])
+                    self.assertEqual(after['renderedBindings'], metadata['renderedBindings'])
+                elif format == 'png':
+                    self.assertTrue(exported['data'].startswith(b'\x89PNG\r\n\x1a\n'))
+                else:
+                    self.assertTrue(exported['data'].startswith(b'%PDF-'))
+
     @unittest.skipUnless(shutil.which("node"), "Node is unavailable")
     def test_source_grounded_caption_guide_survives_current_scene_all_formats(self):
         # Analyze source statically and use the real formal scene/export entry;

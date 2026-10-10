@@ -16,7 +16,7 @@ import unittest
 import uuid
 from unittest.mock import patch
 
-from scripts.m5_beta_bundle import pack, verify
+from scripts.m5_beta_bundle import pack, stage_current_candidate, verify
 from scripts.m5_host_install import HOST_TARGETS, install_host, verify_install
 from scripts.m5_host_uninstall import ARCHIVE_RECEIPT, _rename_no_replace, preview, restore, uninstall
 
@@ -34,7 +34,8 @@ class M5HostUninstallTests(unittest.TestCase):
         cls.temp = tempfile.TemporaryDirectory(prefix="archcanvas-m5-host-uninstall-")
         cls.work = Path(cls.temp.name)
         cls.bundle = cls.work / "candidate.tar.gz"
-        pack(ROOT, cls.bundle)
+        source = stage_current_candidate(ROOT, cls.work / "current-source", "0.1.0-beta.3")
+        pack(source, cls.bundle)
         cls.release = cls.work / "verified-candidate"
         verify(cls.bundle, cls.release, analyze=False)
         cls.bundle_digest = hashlib.sha256(cls.bundle.read_bytes()).hexdigest()

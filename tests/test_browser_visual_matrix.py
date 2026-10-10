@@ -31,7 +31,10 @@ class BrowserVisualMatrixTests(unittest.TestCase):
         python = str(FORMAL / '.venv/bin/python') if (FORMAL / '.venv/bin/python').exists() else shutil.which('python3')
         result = subprocess.run([python, str(cls.project / 'scripts/check_visual_golds.py'),
             '--project', str(cls.project), '--python', python, '--output', str(cls.core_dir)],
-            capture_output=True, text=True, timeout=30)
+            # Current source-composition and routing coverage renders more
+            # variants than the historical 30-second budget allowed. Keep a
+            # bounded timeout while leaving room for the full current gold set.
+            capture_output=True, text=True, timeout=120)
         if result.returncode:
             raise RuntimeError(result.stderr)
 
